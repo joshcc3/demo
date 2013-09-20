@@ -1,0 +1,85 @@
+retrieve CLASSPATH->lib
+retrieve SOURCEPATH->lib/src
+retrieve LIBPATH->lib
+retrieve SCRIPTS->bin
+retrieve RAKE->rake
+retrieve JS->web/js/
+retrieve GIT_INFO->git/
+retrieve JS_SOUND_FILES->web/js
+retrieve WAV_SOUND_FILES->web/sounds
+
+config default
+
+  # Libraries and containers
+  include google.guava/r06
+  include fastutil/6.3
+  include photon-runtime-java/1.0.0.81
+  include com.drwtrading.photocols/0.9.4
+
+  # JSON
+  include drw.london.json/1.0.0.4
+  include json/1
+
+  # Jetlang
+  include jetlang/0.2.11
+  include jetlang-with-src/0.2.0
+  include drw.jetlang-core/1.0.0.145
+  include drw.london.jetlang-with-stats/23
+
+  # Web
+  include jquery/1.4.2
+  include org.jboss.netty-netty/3.2.7.Final
+  include drw.sso.client-java/1.0.0.32
+  include drw.london.server-common/1.0.0.43
+  include drw.simple-webbit-server/28:with-deps
+  include org.webbitserver-webbit-rest/0.3.0
+  include drw.london.javascript-common/1.0.0.32
+  include drw.london.sounds/15
+
+  # Monitoring
+  include drw.monitoring/1.0.0.54
+
+  # Photons
+  include log4j/1.2.16 # For protocols
+  include photon-runtime-java/1.0.0.81
+
+  # MD
+  include io.netty-netty/3.2.7.Final
+  include com.drwtrading.london.protocols.photon.marketdata/37
+  include com.drwtrading.london.prices/14
+  include drw.london.esquilatency/1.0.0.20
+  include drw.frontoffice.book/1.0.0.4
+  include photon-runtime-java/1.0.0.81
+  include nns/2.0.0.70
+
+  # Execution
+  include com.drwtrading.london.protocols.photon.execution/213
+  include com.drwtrading.photons.ladder/1.0.0.37
+
+  # Testing
+  include junit/4.10
+
+  # Research
+  include joda.time/1.6
+  include org.apache.commons.math/2.2
+
+  # OPXL
+  include drw.opxl/1.5.1
+end
+
+config build
+  include :default
+  include :scripts
+end
+
+config test
+  include :rake
+end
+
+config scripts
+  include drw.london.admin-scripts/1.0.4.19
+end
+
+config rake
+  include drw.london.rake/1.0.1.9
+end
