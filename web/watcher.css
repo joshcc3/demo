@@ -1,0 +1,109 @@
+body {
+    background-color: #111;
+    font-family: helvetica, arial, sans-serif;
+
+}
+
+.box td {
+    background-color: #004845;
+    font-size: 15px;
+    margin: 5px;
+    color: white;
+    width: 50px;
+    text-align: right;
+    border-left: 1px solid;
+}
+
+.box td.msg {
+    width: 180px;
+    text-align: left;
+    font-size: 12px;
+    padding-left: 5px;
+}
+
+table.tob {
+    width: 800px;
+    margin: 0px;
+    padding: 10px;
+}
+
+.template {
+    display: none !important;
+}
+
+.pad {
+    height: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    font-family: helvetica, arial, sans-serif;
+}
+
+.box td.bidPx {
+    background-color: #1b2754 !important;
+    font-size: 18px;
+}
+
+.box td.askPx {
+    background-color: #361010 !important;
+    font-size: 18px;
+}
+
+.bidHigher {
+    border: 2px solid #00a9ff;
+}
+
+.moreBid {
+    border: 2px solid #00a9ff;
+}
+
+.offeredLower {
+    border: 2px solid #ff021d;
+}
+
+.moreOffered {
+    border: 2px solid #ff021d;
+}
+
+.bidLower {
+    border: 1px solid #0e23ff;
+}
+
+.lessBid {
+    border: 1px solid #0e23ff;
+}
+
+.offeredHigher {
+    border: 1px solid #8d0110;
+}
+
+.lessOffered {
+    border: 1px solid #8d0110;
+
+}
+.tshirt {
+    border: 1px solid #af7507;
+}
+
+
+.box td.old {
+    background-color: #3b3b3b;
+    -webkit-transition: all 3s ease-in-out;
+}
+
+.ignore {
+    background-color: orange;
+    width: 70px;
+    border-radius: 2px;
+    padding: 3px;
+    margin: 5px;
+    float: left;
+}
+
+.ignores {
+    width: 600px;
+}
+
+.alerts {
+    position: absolute;
+    top: 50px;
+}

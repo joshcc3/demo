@@ -45,7 +45,7 @@ config default
 
   # MD
   include io.netty-netty/3.2.7.Final
-  include com.drwtrading.london.protocols.photon.marketdata/37
+  include com.drwtrading.london.protocols.photon.marketdata/38
   include com.drwtrading.london.prices/14
   include drw.london.esquilatency/1.0.0.20
   include drw.frontoffice.book/1.0.0.4
@@ -53,7 +53,7 @@ config default
   include nns/2.0.0.70
 
   # Execution
-  include com.drwtrading.london.protocols.photon.execution/213
+  include com.drwtrading.london.protocols.photon.execution/214
   include com.drwtrading.photons.ladder/1.0.0.37
 
   # Testing

@@ -75,6 +75,8 @@ public class LadderView {
         public static final String ORDER_TYPE_RIGHT = "order_type_right";
         public static final String AUTO_HEDGE_LEFT = "chk_auto_hedge_left";
         public static final String AUTO_HEDGE_RIGHT = "chk_auto_hedge_right";
+        public static final String WORKING_BID = "working_bid";
+        public static final String WORKING_OFFER = "working_offer";
     }
 
     private final WebSocketClient client;
@@ -235,14 +237,19 @@ public class LadderView {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (!pendingRefDataAndSettle && m != null && m.book != null) {
             for (Long price : levelByPrice.keySet()) {
-                if (m.topOfBook != null && m.topOfBook.getBestBid().getPrice() == price) {
+
+                if (m.topOfBook != null && m.topOfBook.getBestBid().isExists() && m.topOfBook.getBestBid().getPrice() == price) {
                     bidQty(price, m.topOfBook.getBestBid().getQuantity());
+                } else if (m.auctionIndicativePrice != null && m.auctionIndicativePrice.isHasIndicativePrice() && m.auctionIndicativePrice.getIndicativePrice() == price) {
+                    bidQty(price, m.auctionIndicativePrice.getQuantity());
                 } else {
                     bidQty(price, m.book.getLevel(price, Side.BID).getQuantity());
                 }
 
-                if (m.topOfBook != null && m.topOfBook.getBestOffer().getPrice() == price) {
+                if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestOffer().getPrice() == price) {
                     offerQty(price, m.topOfBook.getBestOffer().getQuantity());
+                } else if (m.auctionIndicativePrice != null && m.auctionIndicativePrice.isHasIndicativePrice() && m.auctionIndicativePrice.getIndicativePrice() == price) {
+                    offerQty(price, m.auctionIndicativePrice.getQuantity());
                 } else {
                     offerQty(price, m.book.getLevel(price, Side.OFFER).getQuantity());
                 }
@@ -360,10 +367,11 @@ public class LadderView {
     private boolean autoHedgeRight = true;
     private String orderTypeLeft = "";
     private String orderTypeRight = "";
+    private int orderSeqNo = 0;
 
 
     public void tryToDrawClickTrading() {
-        if(!pendingRefDataAndSettle) {
+        if (!pendingRefDataAndSettle) {
             ui.txt(Html.INP_QTY, clickTradingBoxQty);
             ui.txt(Html.INP_RELOAD, reloadBoxQty);
             ui.txt(Html.AUTO_HEDGE_LEFT, autoHedgeLeft);
@@ -375,7 +383,7 @@ public class LadderView {
 
     private void onUpdate(String label, Map<String, String> dataArg) {
         String value = dataArg.get("value");
-        if(Html.INP_RELOAD.equals(label)) {
+        if (Html.INP_RELOAD.equals(label)) {
             reloadBoxQty = Integer.valueOf(value);
         } else if (Html.INP_QTY.equals(label)) {
             clickTradingBoxQty = Integer.valueOf(value);
@@ -394,26 +402,54 @@ public class LadderView {
     }
 
     private void onClick(String label, Map<String, String> data) {
-        if (Html.BUTTON_QTY.containsKey(label)) {
-            clickTradingBoxQty += Html.BUTTON_QTY.get(label);
-        } else if (Html.BUTTON_CLR.equals(label)) {
-            clickTradingBoxQty = 0;
-        } else {
-            for (Long price : levelByPrice.keySet()) {
-                // Dispatch on cell type
+
+        String button = data.get("button");
+
+        if ("left".equals(button)) {
+            if (Html.BUTTON_QTY.containsKey(label)) {
+                clickTradingBoxQty += Html.BUTTON_QTY.get(label);
+            } else if (Html.BUTTON_CLR.equals(label)) {
+                clickTradingBoxQty = 0;
+            } else if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
+                submitOrderClick(label, data, orderTypeLeft, autoHedgeLeft);
+            } else if (label.startsWith(Html.ORDER)) {
+                long price = Long.valueOf(data.get("price"));
                 if (label.equals(orderKey(price))) {
-                    if (data.containsKey("price") && !Long.valueOf(data.get("price")).equals(price)) {
-                        throw new IllegalArgumentException(client.toString() + ": Received click on box " + label + " for price " + price + " but UI thinks it is price " + data.get("price") + " , data: " + data.toString());
-                    }
                     cancelWorkingOrders(price, data);
-                } else if (label.equals(bidKey(price))) {
-                    clickTradingBoxQty = reloadBoxQty;
-                } else if (label.equals(offerKey(price))) {
-                    clickTradingBoxQty = reloadBoxQty;
                 }
             }
+        } else if ("right".equals(button)) {
+            if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
+                submitOrderClick(label, data, orderTypeRight, autoHedgeRight);
+            }
         }
+
         tryToDrawClickTrading();
+    }
+
+    private void submitOrderClick(String label, Map<String, String> data, String orderType, boolean autoHedge) {
+
+        long price = Long.valueOf(data.get("price"));
+
+        com.drwtrading.london.protocols.photon.execution.Side side = label.equals(bidKey(price))
+                ? com.drwtrading.london.protocols.photon.execution.Side.BID
+                : label.equals(offerKey(price)) ? com.drwtrading.london.protocols.photon.execution.Side.OFFER
+                : null;
+
+        if (side == null) {
+            throw new IllegalArgumentException("Price " + price + " did not match key " + label);
+        }
+
+        if (orderType != null && clickTradingBoxQty > 0) {
+            RemoteOrderType remoteOrderType = RemoteOrderType.valueOf(orderType);
+            String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
+            RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(
+                    serverName, client.getUserName(), orderSeqNo++, new RemoteOrder(
+                    symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, client.getUserName()));
+            remoteOmsByServer.publish(serverName, remoteSubmitOrder);
+        }
+
+        clickTradingBoxQty = reloadBoxQty;
     }
 
     private void cancelWorkingOrders(Long price, Map<String, String> data) {
@@ -440,8 +476,8 @@ public class LadderView {
     public void workingQty(long price, int qty, String side) {
         ui.txt(orderKey(price), qty > 0 ? qty : Html.EMPTY);
         ui.cls(orderKey(price), Html.WORKING_QTY, qty > 0);
-        ui.cls(orderKey(price), "working_bid", side.equals("bid"));
-        ui.cls(orderKey(price), "working_offer", side.equals("offer"));
+        ui.cls(orderKey(price), Html.WORKING_BID, side.equals("bid"));
+        ui.cls(orderKey(price), Html.WORKING_OFFER, side.equals("offer"));
     }
 
     private String laserKey(String name) {

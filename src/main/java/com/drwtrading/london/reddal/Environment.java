@@ -2,8 +2,11 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.network.NetworkInterfaces;
+import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.drwtrading.monitoring.stats.StatsPublisher;
 import com.drwtrading.monitoring.transport.NullTransport;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,7 +14,11 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 public class Environment {
 
@@ -65,7 +72,6 @@ public class Environment {
     }
 
 
-
     public List<String> remoteCommandServers() {
         return config.getListOrEmpty("remotecommands");
     }
@@ -75,7 +81,8 @@ public class Environment {
         return new LadderOptions(
                 config.getListOrEmpty("options.orderTypesLeft"),
                 config.getListOrEmpty("options.orderTypesRight"),
-                config.getListOrEmpty("options.traders"));
+                config.getListOrEmpty("options.traders"),
+                getServerResolver());
     }
 
 
@@ -92,6 +99,51 @@ public class Environment {
 
     public StatsPublisher getStatsPublisher() {
         return new StatsPublisher("", new NullTransport());
+    }
+
+    public static interface RemoteOrderServerResolver {
+        public String resolveToServerName(String symbol, RemoteOrderType orderType);
+    }
+
+    public static class RemoteOrderMatcher {
+        public final Pattern symbolPattern;
+        public final Set<String> orderTypes;
+
+        public RemoteOrderMatcher(Pattern symbolPattern, Set<String> orderTypes) {
+            this.symbolPattern = symbolPattern;
+            this.orderTypes = orderTypes;
+        }
+
+        public boolean matches(String symbol, RemoteOrderType remoteOrderType) {
+            return symbolPattern.matcher(symbol).find() && (orderTypes == null || orderTypes.contains(remoteOrderType.toString()));
+        }
+    }
+
+    public RemoteOrderServerResolver getServerResolver() {
+
+        final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<String, RemoteOrderMatcher>();
+
+        for (String remoteServer : remoteCommandServers()) {
+            Pattern pattern = Pattern.compile(config.getOrDefault(remoteServer + ".symbolRegex", ".*"));
+            Set<String> orderTypes = ImmutableSet.copyOf(config.getListOrDefault(remoteServer + ".orderTypes", ImmutableList.of("*")));
+            if (orderTypes.size() == 1 && orderTypes.contains("*")) {
+                orderTypes = null;
+            }
+            matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypes));
+        }
+
+        return new RemoteOrderServerResolver() {
+            @Override
+            public String resolveToServerName(String symbol, RemoteOrderType orderType) {
+                for (Map.Entry<String, RemoteOrderMatcher> entry : matchers.entrySet()) {
+                    if (entry.getValue().matches(symbol, orderType)) {
+                        return entry.getKey();
+                    }
+                }
+                throw new IllegalArgumentException("No matching remote order server for " + symbol + " " + orderType);
+            }
+        };
+
     }
 
 }

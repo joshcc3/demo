@@ -172,11 +172,10 @@ public class Main {
             // Ladder presenter
             {
                 final TypedChannel<WebSocketControlMessage> websocket = createWebPageWithWebSocket("ladder", "ladder", fiber, webapp);
-
                 LadderPresenter presenter = new LadderPresenter(Channels.remoteOrderCommandPublisher, environment.ladderOptions());
                 Channels.fullBook.subscribe(Fibers.ladder.getFiber(), new BatchSubscriber<MarketDataEvent>(Fibers.ladder.getFiber(), presenter.onMarketData(), 0, TimeUnit.MILLISECONDS));
                 Fibers.ladder.subscribe(presenter, websocket, Channels.workingOrders, Channels.metaData);
-                Fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 100, 10, TimeUnit.MILLISECONDS);
+                Fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 100, 30, TimeUnit.MILLISECONDS);
             }
 
         }

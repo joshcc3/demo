@@ -29,7 +29,7 @@ body {
     position: absolute;
     left: 42px;
     top: 0px;
-    width: 160px;
+    width: 161px;
     z-index: 0;
 }
 
@@ -120,9 +120,9 @@ body {
 }
 
 .trade {
-    padding: 0px;
     color: black;
     left: 130px;
+    width:  29px;
     font-size: 10px;
     background-color: white;
     z-index: 2;
@@ -273,10 +273,10 @@ body {
 }
 
 #chk_auto_hedge_left {
-    top:  96px;
-    height:  16px;
+    top: 96px;
+    height: 16px;
     left: 30px;
-    width:  10px;
+    width: 10px;
 }
 
 #order_type_right {
@@ -284,21 +284,20 @@ body {
 }
 
 #chk_auto_hedge_right {
-    top:  112px;
-    height:  16px;
+    top: 112px;
+    height: 16px;
     left: 30px;
-    width:  10px;
+    width: 10px;
 }
-
 
 
 </style>
 <script>
 
 // Constants
-var ArgSeparator = '\0';
-var CmdSeparator = '\1';
-var DataSeparator = '\2';
+var ARG_SEPARATOR = '\0';
+var CMD_SEPARATOR = '\1';
+var DATA_SEPARATOR = '\2';
 
 var LEFT_CLICK_BUTTON = 1;
 var MIDDLE_CLICK_BUTTON = 2;
@@ -307,15 +306,26 @@ var RIGHT_CLICK_BUTTON = 3;
 // Globals
 var ws;
 var Data = {};
+var Regexps = {};
+
+function getRegexp(pattern, modifiers) {
+    var key = (pattern + "_" + modifiers);
+    var regExp = Regexps[key];
+    if (!regExp) {
+        regExp = new RegExp(pattern, modifiers);
+        Regexps[key] = regExp;
+    }
+    return regExp;
+}
 
 // Utilities
 function send(/* varargs */) {
-    ws.send(Array.prototype.slice.call(arguments).join(ArgSeparator));
+    ws.send(Array.prototype.slice.call(arguments).join(ARG_SEPARATOR));
 }
 
 function set(k, v) {
     var elem = q(k);
-    if(elem.tagName == "INPUT" && elem.type == "checkbox") {
+    if (elem.tagName == "INPUT" && elem.type == "checkbox") {
         elem.checked = v == "true";
     } else if (elem.tagName == "INPUT" || elem.tagName == "SELECT") {
         elem.value = v;
@@ -325,10 +335,8 @@ function set(k, v) {
 }
 
 function packData(elementId, extra) {
-
     var data = [];
     var elem = q(elementId);
-
 
     var stored = Data[elementId];
     if (stored) {
@@ -339,7 +347,7 @@ function packData(elementId, extra) {
             }
         }
     }
-    
+
     if (extra) {
         for (var k in extra) {
             if (extra.hasOwnProperty(k)) {
@@ -358,23 +366,13 @@ function packData(elementId, extra) {
         data.push(elem.innerText);
     }
 
-    return data.join(DataSeparator);
+    return data.join(DATA_SEPARATOR);
 }
 
 function q(s) {
     return document.getElementById(s)
 }
 
-var Regexps = {};
-function getRegexp(pattern, modifiers) {
-    var key = (pattern + "_" + modifiers);
-    var regExp = Regexps[key];
-    if (!regExp) {
-        regExp = new RegExp(pattern, modifiers);
-        Regexps[key] = regExp;
-    }
-    return regExp;
-}
 
 function toggleClass(id, cls, enabled) {
     var elem = q(id);
@@ -408,7 +406,6 @@ function drawLadder(levels) {
     rows.find(".row").remove();
     for (var i = 0; i < levels; i++) {
         var row = $("#row_template").clone().removeClass("template");
-
         row.attr('id', 'row_' + i);
         row.find('.order').attr('id', 'order_' + i).text(' ');
         row.find('.bid').attr('id', 'bid_' + i).text(' ');
@@ -416,26 +413,9 @@ function drawLadder(levels) {
         row.find('.offer').attr('id', 'offer_' + i).text(' ');
         row.find('.trade').attr('id', 'trade_' + i).text(' ').toggleClass('hidden', true);
         row.find('.volume').attr('id', 'volume_' + i).text(' ');
-
-        row.find('.column').each(function (i, cell) {
-            cell = $(cell);
-            cell.unbind().bind('mousedown', function (e) {
-                var elementId = cell.attr('id');
-                var button = getButton(e);
-                send('click', elementId, packData(elementId,{"button": button}));
-                e.stopPropagation();
-                return false;
-            })
-                    .bind("contextmenu", function(e){
-                        e.preventDefault();
-                        return false;
-                    });
-
-        });
-
         rows.append(row);
     }
-    ladder.bind("contextmenu", function(e){
+    ladder.bind("contextmenu", function (e) {
         return false;
     });
 
@@ -446,12 +426,29 @@ function drawLadder(levels) {
     ladder.unbind().bind('mousewheel',
             function (event) {
                 send('scroll', event.wheelDelta > 0 ? "up" : "down");
-            }).bind("mousedown",
-            function (e) {
-                if (e.which == MIDDLE_CLICK_BUTTON) {
-                    subscribe();
-                }
             });
+
+    ladder.find('.column').each(function (i, cell) {
+        cell = $(cell);
+        cell.unbind()
+                .bind('mousedown', function (e) {
+                    var elementId = cell.attr('id');
+                    var button = getButton(e);
+                    if (elementId.slice(0, 6) == "price_" && button == "middle") {
+                        subscribe();
+                    } else {
+                        send('click', elementId, packData(elementId, {"button": button}));
+                    }
+                    e.stopPropagation();
+                    return false;
+                })
+                .bind("contextmenu", function (e) {
+                    e.preventDefault();
+                    return false;
+                });
+
+    });
+
 }
 
 
@@ -466,9 +463,9 @@ var Handler = function () {
     var self = this;
 
     self.msg = function (data) {
-        var cmds = data.split(CmdSeparator);
+        var cmds = data.split(CMD_SEPARATOR);
         cmds.forEach(function (cmd) {
-            var args = cmd.split(ArgSeparator);
+            var args = cmd.split(ARG_SEPARATOR);
             if (self[args[0]]) {
                 self[args[0]](args);
             } else {
@@ -494,18 +491,24 @@ var Handler = function () {
         Data = {};
     };
 
-    self.trading = function(args) {
+    self.trading = function (args) {
 
         var clickTrading = args[1] == "true";
+        $("#clicktrading").toggleClass("hidden", !clickTrading);
+
+        if(!clickTrading) {
+            return;
+        }
+
         var nOrderTypesLeft = parseInt(args[2]);
-        var orderTypesLeft = args.slice(3, 3+nOrderTypesLeft);
-        var nOrderTypesRight = parseInt(args[3+nOrderTypesLeft]);
-        var orderTypesRight= args.slice(3+nOrderTypesLeft+1, 3+nOrderTypesLeft+1+nOrderTypesRight);
+        var orderTypesLeft = args.slice(3, 3 + nOrderTypesLeft);
+        var nOrderTypesRight = parseInt(args[3 + nOrderTypesLeft]);
+        var orderTypesRight = args.slice(3 + nOrderTypesLeft + 1, 3 + nOrderTypesLeft + 1 + nOrderTypesRight);
 
         $("button").each(function (i, el) {
-            $(el).unbind().bind('click', function () {
+            $(el).unbind().bind('click', function (e) {
                 var elementId = $(el).attr('id');
-                send('click', elementId, packData(elementId));
+                send('click', elementId, packData(elementId, {"button": getButton(e)}));
             });
         });
 
@@ -523,17 +526,17 @@ var Handler = function () {
             send('update', el.id, packData(el.id));
         });
 
-        $("#order_type_left").each(function(i, el) {
+        $("#order_type_left").each(function (i, el) {
             $(el).find("option").remove();
-            orderTypesLeft.forEach(function(orderType){
+            orderTypesLeft.forEach(function (orderType) {
                 var option = $("<option value=\"" + orderType + "\">" + orderType + "</option>");
                 $(el).append(option);
             });
         });
 
-        $("#order_type_right").each(function(i, el) {
+        $("#order_type_right").each(function (i, el) {
             $(el).find("option").remove();
-            orderTypesRight.forEach(function(orderType){
+            orderTypesRight.forEach(function (orderType) {
                 var option = $("<option value=\"" + orderType + "\">" + orderType + "</option>");
                 $(el).append(option);
             });
@@ -545,8 +548,6 @@ var Handler = function () {
             });
             send('update', el.id, packData(el.id));
         });
-
-        $("#clicktrading").toggleClass("hidden", !clickTrading);
 
     };
 
@@ -580,11 +581,22 @@ var Handler = function () {
 
 }
 
+function calcLevels() {
+    return parseInt(($(window).height() - 15) / 15);
+}
+
+var NumLevels = 0;
 function subscribe() {
     var symbols = document.location.hash.substr(1);
-    var numLevels = parseInt(($(window).height() - 15) / 15);
-    send("ladder-subscribe", symbols, numLevels);
+    NumLevels = calcLevels();
+    send("ladder-subscribe", symbols, NumLevels);
     window.addEventListener("hashchange", subscribe, false);
+}
+
+function resizeIfNecessary(){
+    if(calcLevels() != NumLevels) {
+        subscribe();
+    }
 }
 
 $(function () {
@@ -593,6 +605,7 @@ $(function () {
     ws.logToConsole = true;
     ws.onmessage = handler.msg;
     subscribe();
+    setInterval(resizeIfNecessary, 200);
 });
 
 </script>
@@ -622,36 +635,10 @@ $(function () {
         <button id="btn_qty_100" class="quantity_button col_1 row_3">100</button>
         <button id="btn_qty_69" class="quantity_button col_2 row_3">69</button>
         <button id="btn_clear">CLR</button>
-        <input id="inp_reload" type="text" value="50" />
-        <select class="order_type" id="order_type_left">
-            <option value="HAWK">HAWK</option>
-            <option value="MANUAL">MANUAL</option>
-            <option value="QUICKDRAW">QUICKDRAW</option>
-            <option value="BROKER">BROKER</option>
-            <option value="STRING_QUOTE">STRING_QUOTE</option>
-            <option value="STRING_TAKE">STRING_TAKE</option>
-            <option value="TAKER">TAKER</option>
-            <option value="GTC">GTC</option>
-            <option value="GTC_AUTOPULL">GTC_AUTOPULL</option>
-            <option value="GTC_QUICKDRAW">GTC_QUICKDRAW</option>
-            <option value="SPRINTER">SPRINTER</option>
-            <option value="NONE">NONE</option>
-        </select>
+        <input id="inp_reload" type="text" value="50"/>
+        <select class="order_type" id="order_type_left"></select>
         <input type="checkbox" id="chk_auto_hedge_left" checked="checked"/>
-        <select class="order_type" id="order_type_right">
-            <option value="MANUAL">MANUAL</option>
-            <option value="QUICKDRAW">QUICKDRAW</option>
-            <option value="HAWK">HAWK</option>
-            <option value="BROKER">BROKER</option>
-            <option value="STRING_QUOTE">STRING_QUOTE</option>
-            <option value="STRING_TAKE">STRING_TAKE</option>
-            <option value="TAKER">TAKER</option>
-            <option value="GTC">GTC</option>
-            <option value="GTC_AUTOPULL">GTC_AUTOPULL</option>
-            <option value="GTC_QUICKDRAW">GTC_QUICKDRAW</option>
-            <option value="SPRINTER">SPRINTER</option>
-            <option value="NONE">NONE</option>
-        </select>
+        <select class="order_type" id="order_type_right"></select>
         <input type="checkbox" id="chk_auto_hedge_right" checked="checked"/>
     </div>
     <div id="ladder">
