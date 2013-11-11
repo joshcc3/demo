@@ -13,10 +13,11 @@ import com.drwtrading.london.protocols.photon.marketdata.ProductBookStateEvent;
 import com.drwtrading.london.protocols.photon.marketdata.SettlementDataEvent;
 import com.drwtrading.london.protocols.photon.marketdata.TickBand;
 import com.drwtrading.london.protocols.photon.marketdata.TopOfBook;
+import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolume;
 import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
 import com.drwtrading.london.protocols.photon.marketdata.TradeUpdate;
-import com.drwtrading.london.reddal.util.MarketDataEventUtil;
 import com.drwtrading.london.reddal.data.TradeTracker;
+import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 
@@ -41,6 +42,7 @@ public class MarketDataForSymbol {
     public PriceFormat priceFormat;
     public TradeTracker tradeTracker = new TradeTracker();
     public ObjectList<TickBand> tickBands;
+    public TotalTradedVolume totalTradedVolume;
 
     public MarketDataForSymbol(String symbol) {
         this.symbol = symbol;
@@ -75,6 +77,8 @@ public class MarketDataForSymbol {
                 bookState = (ProductBookStateEvent) e;
             } else if (e instanceof SettlementDataEvent) {
                 settle = (SettlementDataEvent) e;
+            } else if (e instanceof TotalTradedVolume) {
+                totalTradedVolume = (TotalTradedVolume) e;
             }
             if (book != null) {
                 book.apply(e);

@@ -1,8 +1,8 @@
 package com.drwtrading.london.reddal;
 
+import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
@@ -15,21 +15,27 @@ import com.drwtrading.london.protocols.photon.marketdata.TradeUpdate;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.util.KeyedPublisher;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketClient;
-import com.drwtrading.websockets.WebSocketOutboundData;
 import com.google.common.base.Joiner;
 import org.jetlang.channels.Publisher;
 
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class LadderView {
+
+    public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
+    public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".00");
 
     public static class Html {
         public static final String EMPTY = " ";
@@ -53,6 +59,8 @@ public class LadderView {
         public static final String TRADED_UP = "traded_up";
         public static final String TRADED_DOWN = "traded_down";
         public static final String TRADED_AGAIN = "traded_again";
+        public static final String POSITIVE = "positive";
+        public static final String NEGATIVE = "negative";
         public static final String BLANK = " ";
 
         // Click-trading
@@ -60,11 +68,11 @@ public class LadderView {
 
         static {
             BUTTON_QTY.put("btn_qty_1", 1);
-            BUTTON_QTY.put("btn_qty_5", 5);
-            BUTTON_QTY.put("btn_qty_10", 10);
-            BUTTON_QTY.put("btn_qty_20", 20);
-            BUTTON_QTY.put("btn_qty_100", 100);
-            BUTTON_QTY.put("btn_qty_69", 69);
+            BUTTON_QTY.put("btn_qty_2", 10);
+            BUTTON_QTY.put("btn_qty_3", 100);
+            BUTTON_QTY.put("btn_qty_4", 1000);
+            BUTTON_QTY.put("btn_qty_5", 5000);
+            BUTTON_QTY.put("btn_qty_6", 10000);
         }
 
         public static final String BUTTON_CLR = "btn_clear";
@@ -77,12 +85,21 @@ public class LadderView {
         public static final String AUTO_HEDGE_RIGHT = "chk_auto_hedge_right";
         public static final String WORKING_BID = "working_bid";
         public static final String WORKING_OFFER = "working_offer";
+        public static final String BUTTONS = "button";
+
+        // Divs
+        public static final String DESK_POSITION = "desk_position";
+        public static final String TOTAL_TRADED_VOLUME = "total_traded_volume";
+        public static final String LAST_TRADE_COD = "last_trade_cod";
+        public static final String LADDER = "ladder";
+        public static final String RECENTERING = "recentering";
     }
 
     private final WebSocketClient client;
-    private final KeyedPublisher<String, RemoteOrderManagementCommand> remoteOmsByServer;
+    private final LadderPresenter.View view;
+    private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final LadderOptions ladderOptions;
-    private final LadderPipe ui;
+    private final UiPipe ui;
 
     public String symbol;
     private MarketDataForSymbol marketDataForSymbol;
@@ -97,38 +114,49 @@ public class LadderView {
     private long topPrice;
     private long bottomPrice;
 
-    public LadderView(WebSocketClient client, Publisher<WebSocketOutboundData> ui, KeyedPublisher<String, RemoteOrderManagementCommand> remoteOmsByServer, LadderOptions ladderOptions) {
+    public int priceShiftIndex = 2;
+
+    public long lastCenteredTime = 0;
+
+    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions) {
         this.client = client;
-        this.remoteOmsByServer = remoteOmsByServer;
+        this.view = view;
+        this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.ladderOptions = ladderOptions;
-        this.ui = new LadderPipeImpl(ui);
+        this.ui = ui;
     }
 
     public void subscribeToSymbol(String symbol, int levels, MarketDataForSymbol marketDataForSymbol, WorkingOrdersForSymbol workingOrdersForSymbol, ExtraDataForSymbol extraDataForSymbol) {
-
         this.symbol = symbol;
         this.marketDataForSymbol = marketDataForSymbol;
         this.workingOrdersForSymbol = workingOrdersForSymbol;
-        dataForSymbol = extraDataForSymbol;
+        this.dataForSymbol = extraDataForSymbol;
         this.levels = levels;
+        this.pendingRefDataAndSettle = true;
 
-        pendingRefDataAndSettle = true;
-        tryToDrawLadder();
-        tryToUpdateEverything();
+
+        drawLadder();
+        updateEverything();
     }
 
-    private void tryToUpdateEverything() {
-        tryToUpdateBook();
-        tryToUpdateTradedVolumes();
-        tryToUpdateLastTrade();
-        tryToUpdateWorkingOrders();
-        tryToDrawExtraData();
+    private void updateEverything() {
+        updateBook();
+        updateTradedVolumes();
+        updateLastTrade();
+        updateWorkingOrders();
+        drawMetaData();
+        updateClock();
+        drawPriceLevels(dataForSymbol);
+    }
+
+    private void updateClock() {
+        ui.txt("clock", SIMPLE_DATE_FORMAT.format(new Date()));
     }
 
     // Events
 
-    public void onWorkingOrderUpdate(WorkingOrderUpdate _) {
-        tryToUpdateWorkingOrders();
+    public void onWorkingOrderUpdate(Main.WorkingOrderUpdateFromServer _) {
+        updateWorkingOrders();
     }
 
     public void onMarketDataEvent(MarketDataEvent marketDataEvent) {
@@ -136,57 +164,120 @@ public class LadderView {
             throw new IllegalStateException("Should not be receiving market data events before being subscribed.");
         }
         if (pendingRefDataAndSettle) {
-            tryToDrawLadder();
+            drawLadder();
         } else if (marketDataEvent instanceof TopOfBook || marketDataEvent instanceof BookConsistencyMarker) {
-            tryToUpdateBook();
+            updateBook();
         } else if (marketDataEvent instanceof TotalTradedVolumeByPrice) {
-            tryToUpdateTradedVolumes();
+            updateTradedVolumes();
         } else if (marketDataEvent instanceof TradeUpdate) {
-            tryToUpdateLastTrade();
+            updateLastTrade();
         }
     }
 
     public void onMetadata(LadderMetadata _) {
-        tryToDrawExtraData();
+        drawMetaData();
     }
 
     // Drawing
 
-    private void tryToDrawExtraData() {
+
+    private void drawMetaData() {
         ExtraDataForSymbol d = dataForSymbol;
-        if (!pendingRefDataAndSettle && d != null) {
-            for (LaserLine laserLine : d.laserLineByName.values()) {
-                String laserKey = laserKey(laserLine.getId());
-                ui.cls(laserKey, Html.HIDDEN, true);
-                if (laserLine.isValid()) {
-                    long price = bottomPrice;
-                    while (price <= topPrice) {
-                        long priceAbove = marketDataForSymbol.tickSizeTracker.priceAbove(price);
-                        if (price <= laserLine.getPrice() && laserLine.getPrice() <= priceAbove && levelByPrice.containsKey(price)) {
-                            long fractionalPrice = laserLine.getPrice() - price;
-                            double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
-                            ui.cls(laserKey, Html.HIDDEN, false);
-                            ui.height(laserKey, priceKey(price), tickFraction);
-                            break;
-                        }
-                        price = priceAbove;
+        MarketDataForSymbol m = marketDataForSymbol;
+        if (!pendingRefDataAndSettle && d != null && m != null) {
+            drawLaserLines(d, m);
+
+            // Desk position
+            if(d.deskPosition != null && d.deskPosition.getPosition() != null && !d.deskPosition.getPosition().equals("")) {
+                ui.txt(Html.DESK_POSITION, d.deskPosition.getPosition());
+                decorateUpDown(Html.DESK_POSITION, new BigDecimal(d.deskPosition.getPosition()).longValue());
+            }
+
+            // Change on day
+            Long lastTradeChangeOnDay = getLastTradeChangeOnDay(m);
+            ui.txt(Html.LAST_TRADE_COD, stripPriceZeros(m, lastTradeChangeOnDay));
+            decorateUpDown(Html.LAST_TRADE_COD, lastTradeChangeOnDay);
+
+            // Update for laserlines
+            drawPriceLevels(dataForSymbol);
+        }
+    }
+
+    private void drawLaserLines(ExtraDataForSymbol d, MarketDataForSymbol m) {
+        // Display laserlines
+        for (LaserLine laserLine : d.laserLineByName.values()) {
+            String laserKey = laserKey(laserLine.getId());
+            ui.cls(laserKey, Html.HIDDEN, true);
+            if (laserLine.isValid()) {
+                long price = bottomPrice;
+                while (price <= topPrice) {
+                    long priceAbove = m.tickSizeTracker.priceAbove(price);
+                    if (price <= laserLine.getPrice() && laserLine.getPrice() <= priceAbove && levelByPrice.containsKey(price)) {
+                        long fractionalPrice = laserLine.getPrice() - price;
+                        double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
+                        ui.cls(laserKey, Html.HIDDEN, false);
+                        ui.height(laserKey, priceKey(price), tickFraction);
+                        break;
                     }
+                    price = priceAbove;
                 }
             }
         }
     }
 
-    private void tryToUpdateWorkingOrders() {
+    private void drawPriceLevels(final ExtraDataForSymbol d) {
+        // Basis points
+        if (d != null && ladderOptions.shiftLaserLines.size() > 0) {
+            int laserLineIndex = priceShiftIndex % (ladderOptions.shiftLaserLines.size() + 1);
+            if (laserLineIndex != ladderOptions.shiftLaserLines.size()) {
+                LaserLine laserLine = d.laserLineByName.get(ladderOptions.shiftLaserLines.get(laserLineIndex));
+                if (laserLine != null && laserLine.isValid() && laserLine.getPrice() > 0) {
+                    for (Long price : levelByPrice.keySet()) {
+                        double points = (10000.0 * (price - laserLine.getPrice())) / laserLine.getPrice();
+                        ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
+                    }
+                    return;
+                }
+            }
+        }
+        if (marketDataForSymbol != null) {
+            for (Long price : levelByPrice.keySet()) {
+                drawPrice(marketDataForSymbol, price);
+            }
+        }
+    }
+
+    private void decorateUpDown(final String key, Long value) {
+        if (value == null) return;
+        ui.cls(key, Html.POSITIVE, value > 0);
+        ui.cls(key, Html.NEGATIVE, value < 0);
+    }
+
+    private String stripPriceZeros(MarketDataForSymbol m, Long price) {
+        return price == null ? "" : m.priceFormat.toBigDecimal(m.priceFormat.protocolsPriceToNormalized(price)).stripTrailingZeros().toPlainString();
+    }
+
+    private Long getLastTradeChangeOnDay(MarketDataForSymbol m) {
+        if (m.lastTrade == null) {
+            return null;
+        }
+        long aMlastTradePrice = m.lastTrade.getPrice();
+        long settlementPrice = m.settle.getSettlementPrice();
+        return aMlastTradePrice - settlementPrice;
+    }
+
+    private void updateWorkingOrders() {
         WorkingOrdersForSymbol w = this.workingOrdersForSymbol;
         if (!pendingRefDataAndSettle && w != null) {
             for (Long price : levelByPrice.keySet()) {
                 int totalQty = 0;
                 String side = "";
                 List<String> keys = new ArrayList<String>();
-                for (WorkingOrderUpdate order : w.ordersByPrice.get(price)) {
+                for (Main.WorkingOrderUpdateFromServer orderFromServer : w.ordersByPrice.get(price)) {
+                    WorkingOrderUpdate order = orderFromServer.value;
                     totalQty += order.getTotalQuantity() - order.getFilledQuantity();
                     side = order.getSide().toString().toLowerCase();
-                    keys.add(WorkingOrdersForSymbol.key(order));
+                    keys.add(orderFromServer.key());
                 }
                 workingQty(price, totalQty, side);
                 ui.data(orderKey(price), "orderKeys", Joiner.on('!').join(keys));
@@ -194,7 +285,7 @@ public class LadderView {
         }
     }
 
-    private void tryToUpdateLastTrade() {
+    private void updateLastTrade() {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (!pendingRefDataAndSettle && m != null && m.tradeTracker != null && m.tradeTracker.quantityTraded != 0) {
             for (Long price : levelByPrice.keySet()) {
@@ -217,23 +308,55 @@ public class LadderView {
         }
     }
 
-    private void tryToUpdateTradedVolumes() {
+    private void updateTradedVolumes() {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (!pendingRefDataAndSettle && m != null && m.totalTradedVolumeByPrice != null) {
+
+            Long minTradedPrice = m.totalTradedVolumeByPrice.isEmpty() ? null : Collections.min(m.totalTradedVolumeByPrice.keySet());
+            Long maxTradedPrice = m.totalTradedVolumeByPrice.isEmpty() ? null : Collections.max(m.totalTradedVolumeByPrice.keySet());
+
             for (Long price : levelByPrice.keySet()) {
                 TotalTradedVolumeByPrice volumeByPrice = m.totalTradedVolumeByPrice.get(price);
                 if (volumeByPrice != null) {
                     ui.txt(volumeKey(price), volumeByPrice.getQuantityTraded());
+                    if (volumeByPrice.getQuantityTraded() == 0) {
+                        System.out.println(volumeByPrice);
+                    }
                     ui.cls(priceKey(price), Html.PRICE_TRADED, volumeByPrice.getQuantityTraded() > 0);
                 } else {
                     ui.txt(volumeKey(price), Html.EMPTY);
                     ui.cls(priceKey(price), Html.PRICE_TRADED, false);
                 }
             }
+
+            for (Long price : levelByPrice.keySet()) {
+                boolean withinTradedRange = minTradedPrice != null && maxTradedPrice != null && price >= minTradedPrice && price <= maxTradedPrice;
+                ui.cls(priceKey(price), Html.PRICE_TRADED, withinTradedRange);
+            }
+
+
+            int quantityTraded = 0;
+
+            if (m.totalTradedVolume != null) {
+                quantityTraded = m.totalTradedVolume.getQuantityTraded();
+            } else {
+                for (TotalTradedVolumeByPrice totalTradedVolumeByPrice : m.totalTradedVolumeByPrice.values()) {
+                    quantityTraded += totalTradedVolumeByPrice.getQuantityTraded();
+                }
+            }
+
+            if (quantityTraded > 1000000) {
+                ui.txt(Html.TOTAL_TRADED_VOLUME, BASIS_POINT_DECIMAL_FORMAT.format(1.0 / 1000000 * quantityTraded) + "M");
+            } else if (quantityTraded > 1000) {
+                ui.txt(Html.TOTAL_TRADED_VOLUME, BASIS_POINT_DECIMAL_FORMAT.format(1.0 / 1000 * quantityTraded) + "K");
+            } else {
+                ui.txt(Html.TOTAL_TRADED_VOLUME, quantityTraded);
+            }
+
         }
     }
 
-    private void tryToUpdateBook() {
+    private void updateBook() {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (!pendingRefDataAndSettle && m != null && m.book != null) {
             for (Long price : levelByPrice.keySet()) {
@@ -257,47 +380,108 @@ public class LadderView {
         }
     }
 
-    private void tryToDrawLadder() {
+    private void drawLadder() {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (m != null && m.refData != null && m.settle != null) {
+            ui.clear();
+
+            ui.txt("symbol", symbol);
+
             pendingRefDataAndSettle = false;
+            centerPrice = getCenterPrice(m);
 
-            // Choose center price
-            centerPrice = m.settle.getSettlementPrice();
-            if (m.lastTrade != null) {
-                centerPrice = m.lastTrade.getPrice();
+            boolean clickTradingEnabled = ladderOptions.traders.contains(client.getUserName());
+
+            view.draw(levels);
+            view.trading(clickTradingEnabled, ladderOptions.orderTypesLeft, ladderOptions.orderTypesRight);
+
+            for (Map.Entry<String, Integer> entry : Html.BUTTON_QTY.entrySet()) {
+                ui.txt(entry.getKey(), entry.getValue() < 1000 ? entry.getValue() : entry.getValue() / 1000 + "K");
             }
-            if (m.auctionIndicativePrice != null) {
-                centerPrice = m.auctionIndicativePrice.getIndicativePrice();
-            }
-            if (m.auctionTradeUpdate != null) {
-                centerPrice = m.auctionTradeUpdate.getPrice();
-            }
-            if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists()) {
-                centerPrice = m.topOfBook.getBestOffer().getPrice();
-            }
-            if (m.topOfBook != null && m.topOfBook.getBestBid().isExists()) {
-                centerPrice = m.topOfBook.getBestBid().getPrice();
+            ui.flush();
+
+            for (int i = 0; i < levels; i++) {
+                ui.clickable("#" + Html.PRICE + i);
+                ui.clickable("#" + Html.BID + i);
+                ui.clickable("#" + Html.OFFER + i);
+                ui.clickable("#" + Html.ORDER + i);
             }
 
-            boolean clickTradingEnabled = true;
-            ui.draw(levels, m.refData.getSymbol());
-            ui.trading(clickTradingEnabled, ladderOptions.orderTypesLeft, ladderOptions.orderTypesRight);
+            ui.clickable(Html.BUTTONS);
+            ui.scrollable("#" + Html.LADDER);
 
             drawPricesAndUpdateTopAndBottomPrice();
         }
     }
 
+    public void checkIfNeedToRecenterAndDoItIfTimeoutElapsed() {
+        MarketDataForSymbol m = marketDataForSymbol;
+        if (!pendingRefDataAndSettle && m != null) {
+            long now = System.currentTimeMillis();
+            long center = getCenterPrice(m);
+            if (center >= bottomPrice && center <= topPrice) {
+                lastCenteredTime = now;
+            } else if (now - lastCenteredTime > 5000) {
+                drawLadder();
+                updateEverything();
+            }
+            ui.cls(Html.LADDER, Html.RECENTERING, lastCenteredTime > 0 && 4000 <= now - lastCenteredTime);
+        }
+    }
+
+
+    private long getCenterPrice(MarketDataForSymbol m) {
+        long center;
+        center = m.settle.getSettlementPrice();
+        if (m.lastTrade != null) {
+            center = m.lastTrade.getPrice();
+        }
+        if (m.auctionIndicativePrice != null) {
+            center = m.auctionIndicativePrice.getIndicativePrice();
+        }
+        if (m.auctionTradeUpdate != null) {
+            center = m.auctionTradeUpdate.getPrice();
+        }
+        if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists()) {
+            center = m.topOfBook.getBestOffer().getPrice();
+        }
+        if (m.topOfBook != null && m.topOfBook.getBestBid().isExists()) {
+            center = m.topOfBook.getBestBid().getPrice();
+        }
+        if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestBid().isExists()) {
+            center = getMidPrice(m);
+        }
+        return center;
+    }
+
+    private long getMidPrice(MarketDataForSymbol m) {
+        int levels = 0;
+
+        long price = m.topOfBook.getBestBid().getPrice();
+        while (price < m.topOfBook.getBestOffer().getPrice()) {
+            price = m.tickSizeTracker.priceAbove(price);
+            levels++;
+        }
+
+        levels /= 2;
+        price = m.topOfBook.getBestBid().getPrice();
+        for (int i = 0; i < levels; i++) {
+            price = m.tickSizeTracker.priceAbove(price);
+        }
+        return price;
+    }
+
     private void drawPricesAndUpdateTopAndBottomPrice() {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (m != null && m.refData != null && m.settle != null) {
+
             int centerLevel = levels / 2;
             long price = centerPrice;
+
             for (int i = 0; i < centerLevel; i++) {
                 price = m.tickSizeTracker.priceAbove(price);
                 topPrice = price;
             }
-
             levelByPrice.clear();
 
             price = topPrice;
@@ -306,7 +490,6 @@ public class LadderView {
 
                 bidQty(price, 0);
                 offerQty(price, 0);
-                ui.txt(priceKey(price), m.priceFormat.format(price));
                 ui.txt(volumeKey(price), Html.EMPTY);
                 ui.txt(orderKey(price), Html.EMPTY);
 
@@ -318,9 +501,14 @@ public class LadderView {
                 price = m.tickSizeTracker.priceBelow(price);
             }
 
+            drawPriceLevels(dataForSymbol);
             ui.flush();
-        }
 
+        }
+    }
+
+    private void drawPrice(MarketDataForSymbol m, long price) {
+        ui.txt(priceKey(price), m.priceFormat.format(price));
     }
 
     // Inbound
@@ -339,7 +527,7 @@ public class LadderView {
                 centerPrice = marketDataForSymbol.tickSizeTracker.priceBelow(centerPrice);
             }
             drawPricesAndUpdateTopAndBottomPrice();
-            tryToUpdateEverything();
+            updateEverything();
         } else if (cmd.equals("update")) {
             onUpdate(args[1], getDataArg(args));
         } else {
@@ -368,7 +556,6 @@ public class LadderView {
     private String orderTypeLeft = "";
     private String orderTypeRight = "";
     private int orderSeqNo = 0;
-
 
     public void tryToDrawClickTrading() {
         if (!pendingRefDataAndSettle) {
@@ -402,9 +589,7 @@ public class LadderView {
     }
 
     private void onClick(String label, Map<String, String> data) {
-
         String button = data.get("button");
-
         if ("left".equals(button)) {
             if (Html.BUTTON_QTY.containsKey(label)) {
                 clickTradingBoxQty += Html.BUTTON_QTY.get(label);
@@ -416,14 +601,23 @@ public class LadderView {
                 long price = Long.valueOf(data.get("price"));
                 if (label.equals(orderKey(price))) {
                     cancelWorkingOrders(price, data);
+                } else {
+                    System.out.println("Mismatched label: " + data.get("price") + " " + orderKey(price) + " " + label);
                 }
+            } else if (label.startsWith(Html.PRICE)) {
+                priceShiftIndex += 1;
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
                 submitOrderClick(label, data, orderTypeRight, autoHedgeRight);
             }
+        } else if ("middle".equals(button)) {
+            if (label.startsWith(Html.PRICE)) {
+                drawLadder();
+            }
         }
 
+        updateEverything();
         tryToDrawClickTrading();
     }
 
@@ -445,8 +639,8 @@ public class LadderView {
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
             RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(
                     serverName, client.getUserName(), orderSeqNo++, new RemoteOrder(
-                    symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, client.getUserName()));
-            remoteOmsByServer.publish(serverName, remoteSubmitOrder);
+                    symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, ladderOptions.tag));
+            remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
         }
 
         clickTradingBoxQty = reloadBoxQty;
@@ -455,8 +649,9 @@ public class LadderView {
     private void cancelWorkingOrders(Long price, Map<String, String> data) {
         WorkingOrdersForSymbol w = this.workingOrdersForSymbol;
         if (!pendingRefDataAndSettle && w != null) {
-            for (WorkingOrderUpdate workingOrderUpdate : w.ordersByPrice.get(price)) {
-                remoteOmsByServer.publish(workingOrderUpdate.getServerName(), new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.MANUAL, false, workingOrderUpdate.getTag())));
+            for (Main.WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByPrice.get(price)) {
+                WorkingOrderUpdate workingOrderUpdate = orderUpdateFromServer.value;
+                remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.MANUAL, false, workingOrderUpdate.getTag()))));
             }
         }
     }
@@ -509,6 +704,8 @@ public class LadderView {
     }
 
     public void flush() {
+        updateClock();
+        checkIfNeedToRecenterAndDoItIfTimeoutElapsed();
         ui.flush();
     }
 

@@ -14,6 +14,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,19 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 public class Environment {
+
+    public static final String MARKET_DATA = "marketData";
+    public static final String WORKING_ORDERS = "workingOrders";
+    public static final String REMOTE_COMMANDS = "remoteCommands";
+    public static final String METADATA = "metadata";
+
+    public boolean opxlDeskPositionEnabled() {
+        return config.getBooleanOrDefault("opxl.deskposition.enabled", false);
+    }
+
+    public boolean opxlLadderTextEnabled() {
+        return config.getBooleanOrDefault("opxl.laddertext.enabled", false);
+    }
 
     public static class HostAndNic {
         public final InetSocketAddress host;
@@ -62,34 +76,28 @@ public class Environment {
         return logDir;
     }
 
-    public List<String> marketDataServers() {
-        return config.getListOrEmpty("mds");
+
+    public List<String> getList(final String prefix) {
+        return ImmutableList.copyOf(config.getListOrEmpty(prefix));
     }
-
-
-    public List<String> workingOrderServers() {
-        return config.getListOrEmpty("workingorders");
-    }
-
-
-    public List<String> remoteCommandServers() {
-        return config.getListOrEmpty("remotecommands");
-    }
-
 
     public LadderOptions ladderOptions() {
         return new LadderOptions(
-                config.getListOrEmpty("options.orderTypesLeft"),
-                config.getListOrEmpty("options.orderTypesRight"),
-                config.getListOrEmpty("options.traders"),
+                getList("trading.orderTypesLeft"),
+                getList("trading.orderTypesRight"),
+                getList("trading.traders"),
+                getList("trading.shiftLaserLines"),
+                config.get("trading.tag"),
                 getServerResolver());
     }
 
 
-    public List<String> metadataServers() {
-        return config.getListOrEmpty("metadata");
+    public HostAndNic getHostAndNic(String prefix, String server) throws SocketException {
+        prefix = prefix + "." + server;
+        final String address = config.get(prefix + ".address");
+        final String nic = config.get(prefix + ".nic");
+        return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])), NetworkInterfaces.find(nic));
     }
-
 
     public HostAndNic getHostAndNic(String prefix) throws SocketException {
         final String address = config.get(prefix + ".address");
@@ -101,29 +109,11 @@ public class Environment {
         return new StatsPublisher("", new NullTransport());
     }
 
-    public static interface RemoteOrderServerResolver {
-        public String resolveToServerName(String symbol, RemoteOrderType orderType);
-    }
-
-    public static class RemoteOrderMatcher {
-        public final Pattern symbolPattern;
-        public final Set<String> orderTypes;
-
-        public RemoteOrderMatcher(Pattern symbolPattern, Set<String> orderTypes) {
-            this.symbolPattern = symbolPattern;
-            this.orderTypes = orderTypes;
-        }
-
-        public boolean matches(String symbol, RemoteOrderType remoteOrderType) {
-            return symbolPattern.matcher(symbol).find() && (orderTypes == null || orderTypes.contains(remoteOrderType.toString()));
-        }
-    }
-
     public RemoteOrderServerResolver getServerResolver() {
 
         final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<String, RemoteOrderMatcher>();
 
-        for (String remoteServer : remoteCommandServers()) {
+        for (String remoteServer : getList(REMOTE_COMMANDS)) {
             Pattern pattern = Pattern.compile(config.getOrDefault(remoteServer + ".symbolRegex", ".*"));
             Set<String> orderTypes = ImmutableSet.copyOf(config.getListOrDefault(remoteServer + ".orderTypes", ImmutableList.of("*")));
             if (orderTypes.size() == 1 && orderTypes.contains("*")) {
@@ -144,6 +134,24 @@ public class Environment {
             }
         };
 
+    }
+
+    public static interface RemoteOrderServerResolver {
+        public String resolveToServerName(String symbol, RemoteOrderType orderType);
+    }
+
+    public static class RemoteOrderMatcher {
+        public final Pattern symbolPattern;
+        public final Set<String> orderTypes;
+
+        public RemoteOrderMatcher(Pattern symbolPattern, Set<String> orderTypes) {
+            this.symbolPattern = symbolPattern;
+            this.orderTypes = orderTypes;
+        }
+
+        public boolean matches(String symbol, RemoteOrderType remoteOrderType) {
+            return symbolPattern.matcher(symbol).find() && (orderTypes == null || orderTypes.contains(remoteOrderType.toString()));
+        }
     }
 
 }

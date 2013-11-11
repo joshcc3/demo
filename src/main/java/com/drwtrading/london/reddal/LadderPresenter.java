@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
@@ -8,7 +9,10 @@ import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.util.KeyedPublisher;
-import com.drwtrading.london.reddal.util.MarketDataEventUtil;
+import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
+import com.drwtrading.london.websocket.WebSocketViews;
+import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
+import com.drwtrading.photons.ladder.DeskPosition;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketConnected;
@@ -22,6 +26,7 @@ import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,8 +34,9 @@ import java.util.Map;
 
 public class LadderPresenter {
 
-    private final KeyedPublisher<String, RemoteOrderManagementCommand> remoteOrderCommandByServer;
+    private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
+
     Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
     Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<Publisher<WebSocketOutboundData>, LadderView>();
     Map<String, MarketDataForSymbol> marketDataBySymbol = new MapMaker().makeComputingMap(new Function<String, MarketDataForSymbol>() {
@@ -52,14 +58,16 @@ public class LadderPresenter {
         }
     });
 
-    public LadderPresenter(KeyedPublisher<String, RemoteOrderManagementCommand> remoteOrderCommandByServer, LadderOptions ladderOptions) {
+    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
     }
 
     @Subscribe
     public void onConnected(WebSocketConnected connected) {
-        viewBySocket.put(connected.getOutboundChannel(), new LadderView(connected.getClient(), connected.getOutboundChannel(), remoteOrderCommandByServer, ladderOptions));
+        UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
+        View view = new WebSocketOutputDispatcher<View>(View.class).wrap(uiPipe.evalPublisher());
+        viewBySocket.put(connected.getOutboundChannel(), new LadderView(connected.getClient(), uiPipe, view ,remoteOrderCommandByServer, ladderOptions));
     }
 
     @Subscribe
@@ -90,23 +98,28 @@ public class LadderPresenter {
     // Data
 
     @Subscribe
-    public void on(WorkingOrderUpdate workingOrderUpdate) {
-        ordersBySymbol.get(workingOrderUpdate.getSymbol()).on(workingOrderUpdate);
-        for (LadderView ladderView : viewsBySymbol.get(workingOrderUpdate.getSymbol())) {
+    public void on(Main.WorkingOrderUpdateFromServer workingOrderUpdate) {
+        ordersBySymbol.get(workingOrderUpdate.value.getSymbol()).on(workingOrderUpdate);
+        for (LadderView ladderView : viewsBySymbol.get(workingOrderUpdate.value.getSymbol())) {
             ladderView.onWorkingOrderUpdate(workingOrderUpdate);
         }
     }
 
     @Subscribe
-    public void on(LadderMetadata ladderMetadata) {
-        if (ladderMetadata instanceof LaserLine) {
-            LaserLine laserLine = (LaserLine) ladderMetadata;
+    public void on(LaserLine laserLine) {
             ExtraDataForSymbol data = dataBySymbol.get(laserLine.getSymbol());
             data.onLaserLine(laserLine);
             for (LadderView ladderView : viewsBySymbol.get(laserLine.getSymbol())) {
-                ladderView.onMetadata(ladderMetadata);
+                ladderView.onMetadata(laserLine);
             }
-        }
+    }
+    @Subscribe
+    public void on(DeskPosition deskPosition) {
+            ExtraDataForSymbol data = dataBySymbol.get(deskPosition.getSymbol());
+            data.onDeskPosition(deskPosition);
+            for (LadderView ladderView : viewsBySymbol.get(deskPosition.getSymbol())) {
+                ladderView.onMetadata(deskPosition);
+            }
     }
 
     public Callback<List<MarketDataEvent>> onMarketData() {
@@ -145,4 +158,9 @@ public class LadderPresenter {
         };
     }
 
+
+    public interface View {
+        public void draw(int levels);
+        public void trading(boolean tradingEnabled, Collection<String> orderTypesLeft, Collection<String> orderTypesRight);
+    }
 }
