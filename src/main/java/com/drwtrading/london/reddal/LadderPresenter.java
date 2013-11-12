@@ -17,6 +17,7 @@ import com.drwtrading.photons.ladder.InfoOnLadder;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
+import com.drwtrading.photons.ladder.LastTrade;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
@@ -83,7 +84,6 @@ public class LadderPresenter {
     @Subscribe
     public void onMessage(WebSocketInboundData msg) {
         String data = msg.getData();
-        System.out.println(msg.getData());
         String[] args = data.split("\0");
         String cmd = args[0];
         LadderView view = viewBySocket.get(msg.getOutboundChannel());
@@ -139,6 +139,15 @@ public class LadderPresenter {
         data.onLadderText(ladderText);
         for (LadderView ladderView : viewsBySymbol.get(ladderText.getSymbol())) {
             ladderView.onMetadata(ladderText);
+        }
+    }
+
+    @Subscribe
+    public void on(LastTrade lastTrade) {
+        ExtraDataForSymbol data = dataBySymbol.get(lastTrade.getSymbol());
+        data.onLastTrade(lastTrade);
+        for (LadderView ladderView : viewsBySymbol.get(lastTrade.getSymbol())) {
+            ladderView.onMetadata(lastTrade);
         }
     }
 

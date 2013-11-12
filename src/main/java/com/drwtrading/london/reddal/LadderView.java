@@ -49,6 +49,7 @@ public class LadderView {
         public static final String ORDER = "order_";
         public static final String TRADE = "trade_";
         public static final String VOLUME = "volume_";
+        public static final String TEXT = "text_";
 
         // Classes
         public static final String PRICE_TRADED = "price_traded";
@@ -63,6 +64,8 @@ public class LadderView {
         public static final String TRADED_AGAIN = "traded_again";
         public static final String POSITIVE = "positive";
         public static final String NEGATIVE = "negative";
+        public static final String LAST_BUY = "last_buy";
+        public static final String LAST_SELL = "last_sell";
         public static final String BLANK = " ";
 
         // Click-trading
@@ -95,7 +98,6 @@ public class LadderView {
         public static final String LAST_TRADE_COD = "last_trade_cod";
         public static final String LADDER = "ladder";
         public static final String RECENTERING = "recentering";
-        public static final String TEXT = "text";
         public static final String BUY_QTY = "buy_qty";
         public static final String SELL_QTY = "sell_qty";
     }
@@ -208,12 +210,17 @@ public class LadderView {
 
             // Ladder info
             if (dataForSymbol.infoOnLadder != null) {
-                ui.txt(Html.TEXT + "_info", dataForSymbol.infoOnLadder.getValue());
+                ui.txt(Html.TEXT + "info", dataForSymbol.infoOnLadder.getValue());
             }
 
             // Ladder test
             for (LadderText ladderText : dataForSymbol.ladderTextByPosition.values()) {
-                ui.txt(Html.TEXT + "_" + ladderText.getCell(), ladderText.getText());
+                ui.txt(Html.TEXT + ladderText.getCell(), ladderText.getText());
+            }
+
+            for (Map.Entry<Long, Integer> entry : levelByPrice.entrySet()) {
+                ui.cls(priceKey(entry.getKey()), Html.LAST_BUY, d.lastBuy != null && d.lastBuy.getPrice() == entry.getKey());
+                ui.cls(priceKey(entry.getKey()), Html.LAST_SELL, d.lastSell != null && d.lastSell.getPrice() == entry.getKey());
             }
         }
     }
@@ -361,9 +368,6 @@ public class LadderView {
                 TotalTradedVolumeByPrice volumeByPrice = m.totalTradedVolumeByPrice.get(price);
                 if (volumeByPrice != null) {
                     ui.txt(volumeKey(price), volumeByPrice.getQuantityTraded());
-                    if (volumeByPrice.getQuantityTraded() == 0) {
-                        System.out.println(volumeByPrice);
-                    }
                     ui.cls(priceKey(price), Html.PRICE_TRADED, volumeByPrice.getQuantityTraded() > 0);
                 } else {
                     ui.txt(volumeKey(price), Html.EMPTY);
@@ -689,18 +693,14 @@ public class LadderView {
     }
 
     private void submitOrderClick(String label, Map<String, String> data, String orderType, boolean autoHedge) {
-
         long price = Long.valueOf(data.get("price"));
-
         com.drwtrading.london.protocols.photon.execution.Side side = label.equals(bidKey(price))
                 ? com.drwtrading.london.protocols.photon.execution.Side.BID
                 : label.equals(offerKey(price)) ? com.drwtrading.london.protocols.photon.execution.Side.OFFER
                 : null;
-
         if (side == null) {
             throw new IllegalArgumentException("Price " + price + " did not match key " + label);
         }
-
         if (orderType != null && clickTradingBoxQty > 0) {
             RemoteOrderType remoteOrderType = RemoteOrderType.valueOf(orderType);
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
@@ -709,7 +709,6 @@ public class LadderView {
                     symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, ladderOptions.tag));
             remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
         }
-
         clickTradingBoxQty = reloadBoxQty;
     }
 
