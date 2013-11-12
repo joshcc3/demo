@@ -26,8 +26,9 @@
                 row.find('.bid').attr('id', 'bid_' + i).text(' ');
                 row.find('.price').attr('id', 'price_' + i).text(' ');
                 row.find('.offer').attr('id', 'offer_' + i).text(' ');
-                row.find('.trade').attr('id', 'trade_' + i).text(' ').toggleClass('hidden', true);
+                row.find('.trade').attr('id', 'trade_' + i).text(' ');
                 row.find('.volume').attr('id', 'volume_' + i).text(' ');
+                row.find('.text').attr('id', 'text_' + i).text(' ');
                 rows.append(row);
             }
         }
@@ -79,7 +80,7 @@
         }
 
         function calcLevels() {
-            return parseInt(($(window).height() - 15) / 15);
+            return parseInt(($(window).height() - 30) / 15);
         }
 
         var NumLevels = 0;
@@ -87,7 +88,7 @@
             var symbols = document.location.hash.substr(1);
             NumLevels = calcLevels();
             handler.send("ladder-subscribe", symbols, NumLevels);
-            window.addEventListener("hashchange", subscribe, false);
+            window.addEventListener("hashchange", function(){window.location.reload();}, false);
         }
 
         function resizeIfNecessary() {
@@ -103,8 +104,6 @@
             ws.onmessage = handler.msg;
             subscribe();
             setInterval(resizeIfNecessary, 200);
-            chrome.app.window.setMinWidth(200);
-
         });
 
     </script>
@@ -115,8 +114,9 @@
     <div class="bid column"></div>
     <div class="price column"></div>
     <div class="offer column"></div>
-    <div class="trade column"></div>
+    <div class="trade column hidden"></div>
     <div class="volume column"></div>
+    <div class="text column hidden"></div>
 </div>
 <div id="workspace">
     <div id="information">
@@ -143,9 +143,16 @@
     </div>
     <div id="ladder">
         <div id="header">
-            <div id="bid_qty"></div>
+            <div id="buy_qty" class="total_qty">12</div>
             <div id="symbol"></div>
-            <div id="ask_qty"></div>
+            <div id="sell_qty" class="total_qty">12</div>
+        </div>
+        <div id="text">
+            <div id="text_r1c1" class="text_cell"></div>
+            <div id="text_r1c2" class="text_cell"></div>
+            <div id="text_r1c3" class="text_cell"></div>
+            <div id="text_r1c4" class="text_cell"></div>
+            <div id="text_info" class="text_cell"></div>
         </div>
         <div id="rows">
             <div id="laser_bid" class="laser bid_color hidden"></div>

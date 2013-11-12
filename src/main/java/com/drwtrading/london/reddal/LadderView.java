@@ -5,6 +5,7 @@ import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
+import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.BookConsistencyMarker;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
@@ -16,6 +17,7 @@ import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.photons.ladder.LadderMetadata;
+import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketClient;
 import com.google.common.base.Joiner;
@@ -93,6 +95,9 @@ public class LadderView {
         public static final String LAST_TRADE_COD = "last_trade_cod";
         public static final String LADDER = "ladder";
         public static final String RECENTERING = "recentering";
+        public static final String TEXT = "text";
+        public static final String BUY_QTY = "buy_qty";
+        public static final String SELL_QTY = "sell_qty";
     }
 
     private final WebSocketClient client;
@@ -188,7 +193,7 @@ public class LadderView {
             drawLaserLines(d, m);
 
             // Desk position
-            if(d.deskPosition != null && d.deskPosition.getPosition() != null && !d.deskPosition.getPosition().equals("")) {
+            if (d.deskPosition != null && d.deskPosition.getPosition() != null && !d.deskPosition.getPosition().equals("")) {
                 ui.txt(Html.DESK_POSITION, d.deskPosition.getPosition());
                 decorateUpDown(Html.DESK_POSITION, new BigDecimal(d.deskPosition.getPosition()).longValue());
             }
@@ -200,6 +205,16 @@ public class LadderView {
 
             // Update for laserlines
             drawPriceLevels(dataForSymbol);
+
+            // Ladder info
+            if (dataForSymbol.infoOnLadder != null) {
+                ui.txt(Html.TEXT + "_info", dataForSymbol.infoOnLadder.getValue());
+            }
+
+            // Ladder test
+            for (LadderText ladderText : dataForSymbol.ladderTextByPosition.values()) {
+                ui.txt(Html.TEXT + "_" + ladderText.getCell(), ladderText.getText());
+            }
         }
     }
 
@@ -210,16 +225,22 @@ public class LadderView {
             ui.cls(laserKey, Html.HIDDEN, true);
             if (laserLine.isValid()) {
                 long price = bottomPrice;
-                while (price <= topPrice) {
-                    long priceAbove = m.tickSizeTracker.priceAbove(price);
-                    if (price <= laserLine.getPrice() && laserLine.getPrice() <= priceAbove && levelByPrice.containsKey(price)) {
-                        long fractionalPrice = laserLine.getPrice() - price;
-                        double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
-                        ui.cls(laserKey, Html.HIDDEN, false);
-                        ui.height(laserKey, priceKey(price), tickFraction);
-                        break;
+                ui.cls(laserKey, Html.HIDDEN, false);
+                if (laserLine.getPrice() > topPrice) {
+                    ui.height(laserKey, priceKey(topPrice), 0.5);
+                } else if (laserLine.getPrice() < bottomPrice) {
+                    ui.height(laserKey, priceKey(bottomPrice), -0.5);
+                } else {
+                    while (price <= topPrice) {
+                        long priceAbove = m.tickSizeTracker.priceAbove(price);
+                        if (price <= laserLine.getPrice() && laserLine.getPrice() <= priceAbove && levelByPrice.containsKey(price)) {
+                            long fractionalPrice = laserLine.getPrice() - price;
+                            double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
+                            ui.height(laserKey, priceKey(price), tickFraction);
+                            break;
+                        }
+                        price = priceAbove;
                     }
-                    price = priceAbove;
                 }
             }
         }
@@ -282,6 +303,27 @@ public class LadderView {
                 workingQty(price, totalQty, side);
                 ui.data(orderKey(price), "orderKeys", Joiner.on('!').join(keys));
             }
+
+            int buyQty = 0;
+            int sellQty = 0;
+
+            for (Main.WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByKey.values()) {
+                if (orderUpdateFromServer.value.getWorkingOrderState() != WorkingOrderState.DEAD) {
+                    int remainingQty = orderUpdateFromServer.value.getTotalQuantity() - orderUpdateFromServer.value.getFilledQuantity();
+                    if (orderUpdateFromServer.value.getSide() == com.drwtrading.london.protocols.photon.execution.Side.BID) {
+                        buyQty += remainingQty;
+                    } else if (orderUpdateFromServer.value.getSide() == com.drwtrading.london.protocols.photon.execution.Side.OFFER) {
+                        sellQty += remainingQty;
+                    }
+                }
+            }
+
+            ui.cls(Html.BUY_QTY, Html.HIDDEN, buyQty == 0);
+            ui.txt(Html.BUY_QTY, buyQty);
+
+            ui.cls(Html.SELL_QTY, Html.HIDDEN, sellQty == 0);
+            ui.txt(Html.SELL_QTY, sellQty);
+
         }
     }
 
@@ -410,6 +452,9 @@ public class LadderView {
             ui.clickable(Html.BUTTONS);
             ui.scrollable("#" + Html.LADDER);
 
+            ui.clickable("#" + Html.BUY_QTY);
+            ui.clickable("#" + Html.SELL_QTY);
+
             drawPricesAndUpdateTopAndBottomPrice();
         }
     }
@@ -528,6 +573,9 @@ public class LadderView {
             }
             drawPricesAndUpdateTopAndBottomPrice();
             updateEverything();
+        } else if (cmd.equals("dblclick")) {
+            String label = args[1];
+            onDoubleClick(label, getDataArg(args));
         } else if (cmd.equals("update")) {
             onUpdate(args[1], getDataArg(args));
         } else {
@@ -586,6 +634,25 @@ public class LadderView {
             throw new IllegalArgumentException("Update for unknown value: " + label + " " + dataArg);
         }
         tryToDrawClickTrading();
+    }
+
+
+    public void onDoubleClick(String label, Map<String, String> dataArg) {
+        if (workingOrdersForSymbol != null) {
+            if (Html.BUY_QTY.equals(label)) {
+                for (Main.WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
+                    if (orderUpdateFromServer.value.getSide() == com.drwtrading.london.protocols.photon.execution.Side.BID) {
+                        cancelOrder(orderUpdateFromServer);
+                    }
+                }
+            } else if (Html.SELL_QTY.equals(label)) {
+                for (Main.WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
+                    if (orderUpdateFromServer.value.getSide() == com.drwtrading.london.protocols.photon.execution.Side.OFFER) {
+                        cancelOrder(orderUpdateFromServer);
+                    }
+                }
+            }
+        }
     }
 
     private void onClick(String label, Map<String, String> data) {
@@ -650,10 +717,14 @@ public class LadderView {
         WorkingOrdersForSymbol w = this.workingOrdersForSymbol;
         if (!pendingRefDataAndSettle && w != null) {
             for (Main.WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByPrice.get(price)) {
-                WorkingOrderUpdate workingOrderUpdate = orderUpdateFromServer.value;
-                remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.MANUAL, false, workingOrderUpdate.getTag()))));
+                cancelOrder(orderUpdateFromServer);
             }
         }
+    }
+
+    private void cancelOrder(Main.WorkingOrderUpdateFromServer orderUpdateFromServer) {
+        WorkingOrderUpdate workingOrderUpdate = orderUpdateFromServer.value;
+        remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.MANUAL, false, workingOrderUpdate.getTag()))));
     }
 
     // Update helpers

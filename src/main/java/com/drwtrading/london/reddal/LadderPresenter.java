@@ -13,7 +13,9 @@ import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
 import com.drwtrading.photons.ladder.DeskPosition;
+import com.drwtrading.photons.ladder.InfoOnLadder;
 import com.drwtrading.photons.ladder.LadderMetadata;
+import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
@@ -120,6 +122,24 @@ public class LadderPresenter {
             for (LadderView ladderView : viewsBySymbol.get(deskPosition.getSymbol())) {
                 ladderView.onMetadata(deskPosition);
             }
+    }
+
+    @Subscribe
+    public void on(InfoOnLadder infoOnLadder) {
+        ExtraDataForSymbol data = dataBySymbol.get(infoOnLadder.getSymbol());
+        data.onInfoOnLadder(infoOnLadder);
+        for (LadderView ladderView : viewsBySymbol.get(infoOnLadder.getSymbol())) {
+            ladderView.onMetadata(infoOnLadder);
+        }
+    }
+
+    @Subscribe
+    public void on(LadderText ladderText) {
+        ExtraDataForSymbol data = dataBySymbol.get(ladderText.getSymbol());
+        data.onLadderText(ladderText);
+        for (LadderView ladderView : viewsBySymbol.get(ladderText.getSymbol())) {
+            ladderView.onMetadata(ladderText);
+        }
     }
 
     public Callback<List<MarketDataEvent>> onMarketData() {
