@@ -226,11 +226,12 @@ traded_down.traded_again {
 }
 
 .positive {
-    background-color: #9babff;
+    background-color: #00b000;
 }
 
 .negative {
-    background-color: #ffc5c5;
+    background-color: #f29106;
+    color: white;
 }
 
 .recentering {
@@ -382,3 +383,20 @@ traded_down.traded_again {
     width: 10px;
 }
 
+#random_reload {
+    color: black;
+    top: 128px;
+    width: 30px;
+    right: 5px;
+}
+#random_reload #chk_random_reload{
+    width: 10px;
+}
+
+.MANUAL{
+    background-color: #d4d0c7;
+}
+
+.HAWK{
+    background-color: #75736d;
+}

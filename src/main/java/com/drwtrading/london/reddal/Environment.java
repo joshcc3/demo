@@ -14,7 +14,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,7 +87,8 @@ public class Environment {
                 getList("trading.traders"),
                 getList("trading.shiftLaserLines"),
                 config.get("trading.tag"),
-                getServerResolver());
+                getServerResolver(),
+                config.getDouble("trading.randomReloadFraction"));
     }
 
 

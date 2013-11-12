@@ -11,13 +11,15 @@ public class LadderOptions {
     public final List<String> shiftLaserLines;
     public final String tag;
     public final Environment.RemoteOrderServerResolver serverResolver;
+    public final double randomReloadFraction;
 
-    public LadderOptions(Collection<String> orderTypesLeft, Collection<String> orderTypesRight, Collection<String> traders, List<String> shiftLaserLines, String tag, Environment.RemoteOrderServerResolver serverResolver) {
+    public LadderOptions(Collection<String> orderTypesLeft, Collection<String> orderTypesRight, Collection<String> traders, List<String> shiftLaserLines, String tag, Environment.RemoteOrderServerResolver serverResolver, double randomReloadFraction) {
         this.orderTypesLeft = orderTypesLeft;
         this.orderTypesRight = orderTypesRight;
         this.traders = traders;
         this.shiftLaserLines = shiftLaserLines;
         this.tag = tag;
         this.serverResolver = serverResolver;
+        this.randomReloadFraction = randomReloadFraction;
     }
 }

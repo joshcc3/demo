@@ -91,6 +91,7 @@ public class LadderView {
         public static final String WORKING_BID = "working_bid";
         public static final String WORKING_OFFER = "working_offer";
         public static final String BUTTONS = "button";
+        public static final String RANDOM_RELOAD = "chk_random_reload";
 
         // Divs
         public static final String DESK_POSITION = "desk_position";
@@ -605,6 +606,7 @@ public class LadderView {
     private int reloadBoxQty = 0;
     private boolean autoHedgeLeft = true;
     private boolean autoHedgeRight = true;
+    private boolean randomReload = false;
     private String orderTypeLeft = "";
     private String orderTypeRight = "";
     private int orderSeqNo = 0;
@@ -617,6 +619,14 @@ public class LadderView {
             ui.txt(Html.AUTO_HEDGE_RIGHT, autoHedgeRight);
             ui.txt(Html.ORDER_TYPE_LEFT, orderTypeLeft);
             ui.txt(Html.ORDER_TYPE_RIGHT, orderTypeRight);
+
+            for (String type : ladderOptions.orderTypesLeft) {
+                ui.cls(Html.ORDER_TYPE_LEFT, type, type.equals(orderTypeLeft));
+            }
+            for (String type : ladderOptions.orderTypesRight) {
+                ui.cls(Html.ORDER_TYPE_RIGHT, type, type.equals(orderTypeRight));
+            }
+
         }
     }
 
@@ -634,6 +644,8 @@ public class LadderView {
             orderTypeLeft = value;
         } else if (Html.ORDER_TYPE_RIGHT.equals(label)) {
             orderTypeRight = value;
+        } else if (Html.RANDOM_RELOAD.equals(label)) {
+            randomReload = "true".equals(value);
         } else {
             throw new IllegalArgumentException("Update for unknown value: " + label + " " + dataArg);
         }
@@ -693,14 +705,17 @@ public class LadderView {
     }
 
     private void submitOrderClick(String label, Map<String, String> data, String orderType, boolean autoHedge) {
+
         long price = Long.valueOf(data.get("price"));
         com.drwtrading.london.protocols.photon.execution.Side side = label.equals(bidKey(price))
                 ? com.drwtrading.london.protocols.photon.execution.Side.BID
                 : label.equals(offerKey(price)) ? com.drwtrading.london.protocols.photon.execution.Side.OFFER
                 : null;
+
         if (side == null) {
             throw new IllegalArgumentException("Price " + price + " did not match key " + label);
         }
+
         if (orderType != null && clickTradingBoxQty > 0) {
             RemoteOrderType remoteOrderType = RemoteOrderType.valueOf(orderType);
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
@@ -709,7 +724,13 @@ public class LadderView {
                     symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, ladderOptions.tag));
             remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
         }
-        clickTradingBoxQty = reloadBoxQty;
+
+        if(randomReload) {
+            clickTradingBoxQty = Math.max(0, reloadBoxQty - (int) (Math.random() * ladderOptions.randomReloadFraction * reloadBoxQty));
+        } else {
+            clickTradingBoxQty = Math.max(0, reloadBoxQty);
+        }
+
     }
 
     private void cancelWorkingOrders(Long price, Map<String, String> data) {
