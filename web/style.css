@@ -1,0 +1,384 @@
+*:not(input) {
+    -webkit-user-select: none;
+    cursor: default;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.template {
+    display: none !important;
+}
+
+body {
+    background-color: #d4d0c7;
+    color: white;;
+    font-size: 10px;
+    font-family: verdana, tahoma, arial, serif;
+}
+
+div {
+    text-spacing: allow-end;
+    -webkit-box-sizing: border-box;
+}
+
+#ladder {
+    position: absolute;
+    left: 42px;
+    top: 0px;
+    width: 201px;
+    z-index: 0;
+}
+
+#rows {
+    position: relative;
+    z-index: 1;
+}
+
+.total_qty {
+    position: absolute;
+    color: white;
+    height: 15px;
+    width: 40px;
+    text-align: center;
+    top: 0px;
+    padding: 1px;
+    font-size: 9px;
+    vertical-align: middle;
+    z-index: 100;
+}
+
+#buy_qty {
+    left: 0px;
+    background-color: #0000c6;
+}
+
+#sell_qty {
+    right: 0px;
+    background-color: #ac0000;
+}
+
+#symbol {
+    position: relative;
+    height: 15px;
+    border: solid 1px black;
+    color: black;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 10px;
+}
+
+.row {
+    z-index: 0;
+    position: relative;
+    height: 15px;
+    border-right: solid 1px gray;
+}
+
+.row:hover {
+    background-color: #a7a49d;
+}
+
+.column {
+    position: absolute;
+    width: 40px;
+    height: 15px;
+    border-left: solid 1px gray;
+    text-align: right;
+    border-bottom: solid 1px gray;
+    z-index: 1;
+    padding: 1px;
+}
+
+.order {
+    left: 0px;
+    text-align: center;
+}
+
+.order.working_qty {
+    background-color: #3c3c3c;
+}
+
+.order.working_qty.working_bid {
+    color: #99f;;
+}
+
+.order.working_qty.working_offer {
+    color: #f99;;
+}
+
+.bid {
+    color: white;
+    background-color: #0000c6;
+    left: 40px;
+}
+
+.bid:hover {
+    background-color: #0000b3 !important;
+}
+
+.bid.bid_active {
+    background-color: #0032ff;
+}
+
+.price {
+    background-color: #999;
+    color: white;
+    left: 80px;
+    width: 50px;
+}
+
+.price.price_traded {
+    background-color: #737373;
+}
+
+.offer {
+    color: black;
+    left: 130px;
+    background-color: #ac0000;
+}
+
+.offer:hover {
+    background-color: #980000 !important;
+}
+
+.offer.offer_active {
+    background-color: #dd0000;
+}
+
+.volume, .trade, .text {
+    color: black;
+    left: 170px;
+    width: 30px;
+}
+
+.volume {
+    font-size: 8px;
+}
+
+.trade {
+    font-size: 10px;
+    background-color: white;
+    z-index: 2;
+}
+
+#text {
+    position: relative;
+    height: 14px;
+    border-right: solid 1px gray;
+    border-bottom: solid 1px gray;
+    text-wrap: none;
+    width: 201px;
+}
+
+.text_cell {
+    position: absolute;
+    color: black;
+    width: 40px;
+    border-left: solid 1px gray;
+    height: 14px;
+    text-align: center;
+    padding: 1px;
+}
+
+#text_r1c1 { left: 0px; }
+#text_r1c2 { left: 40px; }
+#text_r1c3 { left: 80px; }
+#text_r1c4 { left: 120px; }
+#text_info { left: 160px; }
+
+.last_buy {
+    background-color: #7b97ff !important;
+}
+.last_sell {
+    background-color: #b76c58 !important;
+}
+
+.traded_up {
+    background-color: #00ff00 !important;
+}
+
+.traded_up.traded_again {
+    background-color: #99ff22 !important;
+}
+
+.traded_down {
+    background-color: #f29106 !important;
+    color: white !important;
+}
+
+traded_down.traded_again {
+    background-color: #c77706 !important;
+    color: white !important;
+}
+
+.bid_color {
+    border-bottom: solid 1px blue;
+}
+
+.offer_color {
+    border-bottom: solid 1px red;
+}
+
+.green_color {
+    border-bottom: solid 1px #00ff1b;
+}
+
+.positive {
+    background-color: #9babff;
+}
+
+.negative {
+    background-color: #ffc5c5;
+}
+
+.recentering {
+    background-color: #ff41f7;
+    opacity: 0.7;
+}
+
+.laser {
+    position: absolute;
+    height: 1px;
+    width: 50px;
+    top: 0px;
+    left: 80px;
+    z-index: 3;
+}
+
+/*    information    */
+
+#information {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    width: 42px;
+    border: 0px;
+}
+
+#information * {
+    font-size: 10px;
+    position: absolute;
+    margin: 0px;
+    padding: 0px;
+    text-align: center !important;
+    height: 12px;
+    color: black;
+    width: 100%;
+}
+
+#clock {
+    top: 0px;
+    font-size: 9px;
+    height: 12px;
+    text-align: center;
+}
+
+#desk_position {
+    top: 12px;
+}
+
+#last_trade_cod {
+    top: 24px;
+}
+
+#total_traded_volume {
+    top: 36px;
+}
+
+#position {
+    top: 48px;
+}
+
+/*   click trading   */
+
+#clicktrading {
+    position: absolute;
+    left: 0px;
+    top: 60px;
+    width: 42px;
+    border: 0px;
+}
+
+#clicktrading * {
+    position: absolute;
+    font-size: 9px;
+    margin: 0px;
+    padding: 0px;
+    text-align: center;
+}
+
+#inp_qty {
+    width: 40px;
+    height: 16px;
+}
+
+#clicktrading .quantity_button {
+    width: 20px;
+    height: 14px;
+}
+
+#clicktrading .quantity_button.col_1 {
+    left: 0px;
+}
+
+#clicktrading .quantity_button.col_2 {
+    left: 21px;
+}
+
+#clicktrading .quantity_button.row_1 {
+    top: 16px;
+}
+
+#clicktrading .quantity_button.row_2 {
+    top: 32px;
+}
+
+#clicktrading .quantity_button.row_3 {
+    top: 48px;
+}
+
+#btn_clear {
+    width: 40px;
+    height: 16px;
+    top: 64px;
+}
+
+#inp_reload {
+    top: 80px;
+    width: 40px;
+    height: 16px;
+}
+
+.order_type {
+    height: 16px;
+    width: 30px;
+    margin: 0px;
+    font-size: 9px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+#order_type_left {
+    top: 96px;
+}
+
+#chk_auto_hedge_left {
+    top: 96px;
+    height: 16px;
+    left: 30px;
+    width: 10px;
+}
+
+#order_type_right {
+    top: 112px;
+}
+
+#chk_auto_hedge_right {
+    top: 112px;
+    height: 16px;
+    left: 30px;
+    width: 10px;
+}
+
