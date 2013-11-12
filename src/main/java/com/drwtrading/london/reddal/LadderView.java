@@ -652,21 +652,20 @@ public class LadderView {
         tryToDrawClickTrading();
     }
 
-
     public void onDoubleClick(String label, Map<String, String> dataArg) {
         if (workingOrdersForSymbol != null) {
             if (Html.BUY_QTY.equals(label)) {
-                for (Main.WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
-                    if (orderUpdateFromServer.value.getSide() == com.drwtrading.london.protocols.photon.execution.Side.BID) {
-                        cancelOrder(orderUpdateFromServer);
-                    }
-                }
+                cancelAllForSide(com.drwtrading.london.protocols.photon.execution.Side.BID);
             } else if (Html.SELL_QTY.equals(label)) {
-                for (Main.WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
-                    if (orderUpdateFromServer.value.getSide() == com.drwtrading.london.protocols.photon.execution.Side.OFFER) {
-                        cancelOrder(orderUpdateFromServer);
-                    }
-                }
+                cancelAllForSide(com.drwtrading.london.protocols.photon.execution.Side.OFFER);
+            }
+        }
+    }
+
+    private void cancelAllForSide(com.drwtrading.london.protocols.photon.execution.Side side) {
+        for (Main.WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
+            if (orderUpdateFromServer.value.getSide() == side) {
+                cancelOrder(orderUpdateFromServer);
             }
         }
     }
@@ -705,18 +704,27 @@ public class LadderView {
     }
 
     private void submitOrderClick(String label, Map<String, String> data, String orderType, boolean autoHedge) {
-
         long price = Long.valueOf(data.get("price"));
         com.drwtrading.london.protocols.photon.execution.Side side = label.equals(bidKey(price))
                 ? com.drwtrading.london.protocols.photon.execution.Side.BID
                 : label.equals(offerKey(price)) ? com.drwtrading.london.protocols.photon.execution.Side.OFFER
                 : null;
-
         if (side == null) {
             throw new IllegalArgumentException("Price " + price + " did not match key " + label);
         }
-
         if (orderType != null && clickTradingBoxQty > 0) {
+            submitOrder(orderType, autoHedge, price, side);
+        }
+        if (randomReload) {
+            clickTradingBoxQty = Math.max(0, reloadBoxQty - (int) (Math.random() * ladderOptions.randomReloadFraction * reloadBoxQty));
+        } else {
+            clickTradingBoxQty = Math.max(0, reloadBoxQty);
+        }
+
+    }
+
+    private void submitOrder(String orderType, boolean autoHedge, long price, com.drwtrading.london.protocols.photon.execution.Side side) {
+        if (ladderOptions.traders.contains(client.getUserName())) {
             RemoteOrderType remoteOrderType = RemoteOrderType.valueOf(orderType);
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
             RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(
@@ -724,13 +732,6 @@ public class LadderView {
                     symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, ladderOptions.tag));
             remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
         }
-
-        if(randomReload) {
-            clickTradingBoxQty = Math.max(0, reloadBoxQty - (int) (Math.random() * ladderOptions.randomReloadFraction * reloadBoxQty));
-        } else {
-            clickTradingBoxQty = Math.max(0, reloadBoxQty);
-        }
-
     }
 
     private void cancelWorkingOrders(Long price, Map<String, String> data) {
@@ -743,8 +744,10 @@ public class LadderView {
     }
 
     private void cancelOrder(Main.WorkingOrderUpdateFromServer orderUpdateFromServer) {
-        WorkingOrderUpdate workingOrderUpdate = orderUpdateFromServer.value;
-        remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.MANUAL, false, workingOrderUpdate.getTag()))));
+        if (ladderOptions.traders.contains(client.getUserName())) {
+            WorkingOrderUpdate workingOrderUpdate = orderUpdateFromServer.value;
+            remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.MANUAL, false, workingOrderUpdate.getTag()))));
+        }
     }
 
     // Update helpers
