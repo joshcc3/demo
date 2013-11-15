@@ -292,6 +292,16 @@ traded_down.traded_again {
     top: 48px;
 }
 
+#position.positive {
+    background-color: #534efa;
+    color: white;
+}
+
+#position.negative {
+    background-color: #ff7369;
+    color: white;
+}
+
 /*   click trading   */
 
 #clicktrading {

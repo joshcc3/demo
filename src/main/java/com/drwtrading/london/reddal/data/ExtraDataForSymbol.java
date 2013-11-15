@@ -6,6 +6,7 @@ import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.photons.ladder.LastTrade;
 import com.drwtrading.photons.ladder.Side;
+import com.drwtrading.photons.mrphil.Position;
 
 import java.util.Map;
 
@@ -19,6 +20,7 @@ public class ExtraDataForSymbol {
     public final Map<String, LadderText> ladderTextByPosition = newFastMap();
     public LastTrade lastBuy;
     public LastTrade lastSell;
+    public Position dayPosition;
 
 
     public ExtraDataForSymbol(String symbol) {
@@ -48,5 +50,9 @@ public class ExtraDataForSymbol {
         } else if (lastTrade.getSide() == Side.OFFER) {
             lastSell = lastTrade;
         }
+    }
+
+    public void onDayPosition(Position data) {
+        this.dayPosition = data;
     }
 }

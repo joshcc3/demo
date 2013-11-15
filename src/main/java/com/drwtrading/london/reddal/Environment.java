@@ -35,6 +35,10 @@ public class Environment {
         return config.getBooleanOrDefault("opxl.laddertext.enabled", false);
     }
 
+    public HostAndNic getMrPhilHostAndNic() throws SocketException {
+        return getHostAndNic("mr-phil");
+    }
+
     public static class HostAndNic {
         public final InetSocketAddress host;
         public final String nic;

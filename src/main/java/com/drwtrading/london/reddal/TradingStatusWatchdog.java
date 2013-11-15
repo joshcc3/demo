@@ -1,0 +1,71 @@
+package com.drwtrading.london.reddal;
+
+import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.time.Clock;
+import com.drwtrading.london.util.Struct;
+import org.jetlang.channels.Publisher;
+
+import java.util.Map;
+
+import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
+
+public class TradingStatusWatchdog {
+
+    private final Publisher<ServerTradingStatus> tradingStatusPublisher;
+    private final Map<String, Long> lastWorkingOrderEventFromServer = newFastMap();
+    private final Map<String, Long> lastRemoteOrderEventFromServer = newFastMap();
+    private final Map<String, ServerTradingStatus> tradingStatusMap = newFastMap();
+    private final long maxAgeMillis;
+    private final Clock clock;
+
+    public TradingStatusWatchdog(final Publisher<ServerTradingStatus> tradingStatusPublisher, final long maxAgeMillis, final Clock clock) {
+        this.tradingStatusPublisher = tradingStatusPublisher;
+        this.maxAgeMillis = maxAgeMillis;
+        this.clock = clock;
+    }
+
+    @Subscribe
+    public void on(Main.WorkingOrderEventFromServer serverHeartbeat) {
+        lastWorkingOrderEventFromServer.put(serverHeartbeat.fromServer, clock.now());
+    }
+
+    @Subscribe
+    public void on(Main.RemoteOrderEventFromServer managementServerHeartbeat) {
+        lastRemoteOrderEventFromServer.put(managementServerHeartbeat.fromServer, clock.now());
+    }
+
+    public Runnable checkRunnable() {
+        return new Runnable() {
+            @Override
+            public void run() {
+                long now = clock.now();
+                for (Map.Entry<String, Long> entry : lastWorkingOrderEventFromServer.entrySet()) {
+                    Long workingOrderTime = entry.getValue();
+                    Long remoteOrderTime = lastRemoteOrderEventFromServer.get(entry.getKey());
+                    Main.Status workingStatus = workingOrderTime != null && now - workingOrderTime < maxAgeMillis ? Main.Status.OK : Main.Status.NOT_OK;
+                    Main.Status remoteStatus = remoteOrderTime != null && now - remoteOrderTime < maxAgeMillis ? Main.Status.OK : Main.Status.NOT_OK;
+                    Main.Status tradingStatus = workingStatus == Main.Status.OK && remoteStatus == Main.Status.OK ? Main.Status.OK : Main.Status.NOT_OK;
+                    ServerTradingStatus serverTradingStatus = new ServerTradingStatus(entry.getKey(), workingStatus, remoteStatus, tradingStatus);
+                    if (!serverTradingStatus.equals(tradingStatusMap.put(serverTradingStatus.server, serverTradingStatus))) {
+                        tradingStatusPublisher.publish(serverTradingStatus);
+                    }
+                }
+            }
+        };
+    }
+
+
+    public static class ServerTradingStatus extends Struct {
+        public final String server;
+        public final Main.Status workingOrderStatus;
+        public final Main.Status remoteCommandStatus;
+        public final Main.Status tradingStatus;
+
+        public ServerTradingStatus(String server, Main.Status workingOrderStatus, Main.Status remoteCommandStatus, Main.Status tradingStatus) {
+            this.server = server;
+            this.workingOrderStatus = workingOrderStatus;
+            this.remoteCommandStatus = remoteCommandStatus;
+            this.tradingStatus = tradingStatus;
+        }
+    }
+}

@@ -1,23 +1,22 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCommand;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.util.KeyedPublisher;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
-import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
+import com.drwtrading.monitoring.stats.StatsMsg;
+import com.drwtrading.monitoring.stats.StatsPublisher;
 import com.drwtrading.photons.ladder.DeskPosition;
 import com.drwtrading.photons.ladder.InfoOnLadder;
-import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.photons.ladder.LastTrade;
+import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
@@ -32,6 +31,7 @@ import org.jetlang.core.Callback;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -39,6 +39,7 @@ public class LadderPresenter {
 
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
+    private final Publisher<StatsMsg> statsPublisher;
 
     Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
     Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<Publisher<WebSocketOutboundData>, LadderView>();
@@ -61,16 +62,17 @@ public class LadderPresenter {
         }
     });
 
-    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions) {
+    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
+        this.statsPublisher = statsPublisher;
     }
 
     @Subscribe
     public void onConnected(WebSocketConnected connected) {
         UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         View view = new WebSocketOutputDispatcher<View>(View.class).wrap(uiPipe.evalPublisher());
-        viewBySocket.put(connected.getOutboundChannel(), new LadderView(connected.getClient(), uiPipe, view ,remoteOrderCommandByServer, ladderOptions));
+        viewBySocket.put(connected.getOutboundChannel(), new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher));
     }
 
     @Subscribe
@@ -101,7 +103,7 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(Main.WorkingOrderUpdateFromServer workingOrderUpdate) {
-        ordersBySymbol.get(workingOrderUpdate.value.getSymbol()).on(workingOrderUpdate);
+        ordersBySymbol.get(workingOrderUpdate.value.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
         for (LadderView ladderView : viewsBySymbol.get(workingOrderUpdate.value.getSymbol())) {
             ladderView.onWorkingOrderUpdate(workingOrderUpdate);
         }
@@ -109,19 +111,20 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(LaserLine laserLine) {
-            ExtraDataForSymbol data = dataBySymbol.get(laserLine.getSymbol());
-            data.onLaserLine(laserLine);
-            for (LadderView ladderView : viewsBySymbol.get(laserLine.getSymbol())) {
-                ladderView.onMetadata(laserLine);
-            }
+        ExtraDataForSymbol data = dataBySymbol.get(laserLine.getSymbol());
+        data.onLaserLine(laserLine);
+        for (LadderView ladderView : viewsBySymbol.get(laserLine.getSymbol())) {
+            ladderView.onMetadata(laserLine);
+        }
     }
+
     @Subscribe
     public void on(DeskPosition deskPosition) {
-            ExtraDataForSymbol data = dataBySymbol.get(deskPosition.getSymbol());
-            data.onDeskPosition(deskPosition);
-            for (LadderView ladderView : viewsBySymbol.get(deskPosition.getSymbol())) {
-                ladderView.onMetadata(deskPosition);
-            }
+        ExtraDataForSymbol data = dataBySymbol.get(deskPosition.getSymbol());
+        data.onDeskPosition(deskPosition);
+        for (LadderView ladderView : viewsBySymbol.get(deskPosition.getSymbol())) {
+            ladderView.onMetadata(deskPosition);
+        }
     }
 
     @Subscribe
@@ -148,6 +151,25 @@ public class LadderPresenter {
         data.onLastTrade(lastTrade);
         for (LadderView ladderView : viewsBySymbol.get(lastTrade.getSymbol())) {
             ladderView.onMetadata(lastTrade);
+        }
+    }
+
+    @Subscribe
+    public void on(Position position) {
+        ExtraDataForSymbol data = dataBySymbol.get(position.getSymbol());
+        data.onDayPosition(position);
+        for (LadderView ladderView : viewsBySymbol.get(position.getSymbol())) {
+            ladderView.onDayPosition(position);
+        }
+    }
+
+    @Subscribe
+    public void on(TradingStatusWatchdog.ServerTradingStatus serverTradingStatus) {
+        for (WorkingOrdersForSymbol workingOrdersForSymbol : ordersBySymbol.values()) {
+            workingOrdersForSymbol.onTradingStatus(serverTradingStatus);
+        }
+        for (LadderView ladderView : viewsBySymbol.values()) {
+            ladderView.onServerTradingStatus(serverTradingStatus);
         }
     }
 
@@ -190,6 +212,7 @@ public class LadderPresenter {
 
     public interface View {
         public void draw(int levels);
+
         public void trading(boolean tradingEnabled, Collection<String> orderTypesLeft, Collection<String> orderTypesRight);
     }
 }

@@ -22,18 +22,27 @@ import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCom
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
+import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
+import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
+import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.StatsPublisher;
 import com.drwtrading.monitoring.stats.Transport;
+import com.drwtrading.monitoring.transport.NullTransport;
+import com.drwtrading.photocols.PhotocolsHandler;
 import com.drwtrading.photocols.easy.monitoring.IdleConnectionCloser;
+import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
 import com.drwtrading.photons.ladder.DeskPosition;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.ladder.LadderText;
+import com.drwtrading.photons.mrphil.Position;
+import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.base.Function;
@@ -56,6 +65,8 @@ import static com.drwtrading.jetlang.autosubscribe.TypedChannels.create;
 
 public class Main {
 
+    public static final long TRADING_SERVER_TIMEOUT = 3000L;
+
     public static TypedChannel<WebSocketControlMessage> createWebPageWithWebSocket(String alias, String name, FiberBuilder fiber, WebApplication webapp) {
         webapp.alias("/" + alias, "/" + name + ".html");
         TypedChannel<WebSocketControlMessage> websocketChannel = create(WebSocketControlMessage.class);
@@ -67,8 +78,13 @@ public class Main {
         public static final TypedChannel<Throwable> error = create(Throwable.class);
         public static final TypedChannel<MarketDataEvent> fullBook = create(MarketDataEvent.class);
         public static final TypedChannel<LadderMetadata> metaData = create(LadderMetadata.class);
+        public static final TypedChannel<Position> position = create(Position.class);
+        public static final TypedChannel<TradingStatusWatchdog.ServerTradingStatus> tradingStatus = create(TradingStatusWatchdog.ServerTradingStatus.class);
         public static final TypedChannel<WorkingOrderUpdateFromServer> workingOrders = create(WorkingOrderUpdateFromServer.class);
+        public static final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents = create(WorkingOrderEventFromServer.class);
         public static final TypedChannel<RemoteOrderEventFromServer> remoteOrderEvents = create(RemoteOrderEventFromServer.class);
+        public static final TypedChannel<StatsMsg> status = create(StatsMsg.class);
+        public static final TypedChannel<InstrumentDefinitionEvent> refData = create(InstrumentDefinitionEvent.class);
         public static final Publisher<RemoteOrderCommandToServer> remoteOrderCommand = new Publisher<RemoteOrderCommandToServer>() {
             @Override
             public void publish(RemoteOrderCommandToServer msg) {
@@ -97,6 +113,8 @@ public class Main {
         public static final FiberBuilder ladder = fiberGroup.create("Ladder");
         public static final FiberBuilder opxlPosition = fiberGroup.create("OPXL Position");
         public static final FiberBuilder opxlText = fiberGroup.create("OPXL Text");
+        public static final FiberBuilder mrPhil = fiberGroup.create("Mr Phil");
+        public static final FiberBuilder watchdog = fiberGroup.create("Watchdog");
 
         // Ensure the starterFiber is last
         static {
@@ -132,7 +150,16 @@ public class Main {
         public String key() {
             return fromServer + ":" + value.getChainId();
         }
+    }
 
+    public static class WorkingOrderEventFromServer extends Struct {
+        public final String fromServer;
+        public final WorkingOrderEvent value;
+
+        public WorkingOrderEventFromServer(String fromServer, WorkingOrderEvent value) {
+            this.fromServer = fromServer;
+            this.value = value;
+        }
     }
 
     public static class RemoteOrderCommandToServer extends Struct {
@@ -147,13 +174,17 @@ public class Main {
 
 
     public static class RemoteOrderEventFromServer extends Struct {
-        public final String toServer;
+        public final String fromServer;
         public final RemoteOrderManagementEvent value;
 
-        public RemoteOrderEventFromServer(String toServer, RemoteOrderManagementEvent value) {
-            this.toServer = toServer;
+        public RemoteOrderEventFromServer(String fromServer, RemoteOrderManagementEvent value) {
+            this.fromServer = fromServer;
             this.value = value;
         }
+    }
+
+    public static enum Status {
+        OK, NOT_OK
     }
 
 
@@ -185,8 +216,19 @@ public class Main {
             NnsApi nnsApi = new NnsFactory().create();
             statsGroup = nnsApi.multicastGroupFor(environment.getStatsNns());
             Transport statsTransport = new LowTrafficMulticastTransport(statsGroup.getAddress(), statsGroup.getPort(), environment.getStatsInterface());
-            statsPublisher = new StatsPublisher(environment.getStatsName(), statsTransport);
-            statsPublisher.start();
+            final StatsPublisher localStatusPublisher = new StatsPublisher(environment.getStatsName(), statsTransport);
+            localStatusPublisher.start();
+            Fibers.ui.subscribe(new Callback<StatsMsg>() {
+                @Override
+                public void onMessage(StatsMsg message) {
+                    localStatusPublisher.publish(message);
+                }
+            }, Channels.status);
+            statsPublisher = new StatsPublisher(configName, new NullTransport()) {
+                public void publish(StatsMsg statsMsg) {
+                    Channels.status.publish(statsMsg);
+                }
+            };
         }
 
         // Dashboard / monitoring heartbeat
@@ -225,9 +267,14 @@ public class Main {
             // Ladder presenter
             {
                 final TypedChannel<WebSocketControlMessage> websocket = createWebPageWithWebSocket("ladder", "ladder", fiber, webapp);
-                LadderPresenter presenter = new LadderPresenter(Channels.remoteOrderCommand, environment.ladderOptions());
+                LadderPresenter presenter = new LadderPresenter(Channels.remoteOrderCommand, environment.ladderOptions(), Channels.status);
                 Channels.fullBook.subscribe(Fibers.ladder.getFiber(), new BatchSubscriber<MarketDataEvent>(Fibers.ladder.getFiber(), presenter.onMarketData(), 0, TimeUnit.MILLISECONDS));
-                Fibers.ladder.subscribe(presenter, websocket, Channels.workingOrders, Channels.metaData);
+                Fibers.ladder.subscribe(presenter,
+                        websocket,
+                        Channels.workingOrders,
+                        Channels.metaData,
+                        Channels.position,
+                        Channels.tradingStatus);
                 Fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 100, 100, TimeUnit.MILLISECONDS);
             }
 
@@ -238,7 +285,15 @@ public class Main {
             for (String mds : environment.getList(Environment.MARKET_DATA)) {
                 final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
                 final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, Fibers.marketData.getFiber(), Main.EXCEPTION_HANDLER);
-                client.reconnectMillis(3000).inboundTimeoutMillis(new IdleConnectionCloser(environment.getStatsPublisher()), 2000).handler(new JetlangChannelHandler<MarketDataEvent, Void>(Channels.fullBook));
+                client.reconnectMillis(3000).inboundTimeoutMillis(new IdleConnectionCloser(environment.getStatsPublisher()), 2000).handler(new JetlangChannelHandler<MarketDataEvent, Void>(new Publisher<MarketDataEvent>() {
+                    @Override
+                    public void publish(MarketDataEvent msg) {
+                        Channels.fullBook.publish(msg);
+                        if (msg instanceof InstrumentDefinitionEvent) {
+                            Channels.refData.publish((InstrumentDefinitionEvent) msg);
+                        }
+                    }
+                }));
                 Fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
@@ -279,7 +334,8 @@ public class Main {
                             public void publish(RemoteOrderManagementEvent msg) {
                                 Channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg));
                             }
-                        }, Channels.remoteOrderCommandByServer.get(server), Fibers.remoteOrders.getFiber()));
+                        }, Channels.remoteOrderCommandByServer.get(server), Fibers.remoteOrders.getFiber()))
+                        .handler(new InboundTimeoutWatchdog<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(Fibers.remoteOrders.getFiber(), new ConnectionCloser(Channels.status, "Remote order: " + server), TRADING_SERVER_TIMEOUT));
                 Fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
@@ -303,8 +359,10 @@ public class Main {
                                 if (msg instanceof WorkingOrderUpdate) {
                                     Channels.workingOrders.publish(new WorkingOrderUpdateFromServer(server, (WorkingOrderUpdate) msg));
                                 }
+                                Channels.workingOrderEvents.publish(new WorkingOrderEventFromServer(server, msg));
                             }
-                        }));
+                        }))
+                        .handler(new InboundTimeoutWatchdog<WorkingOrderEvent, Void>(Fibers.workingOrders.getFiber(), new ConnectionCloser(Channels.status, "Working order: " + server), TRADING_SERVER_TIMEOUT));
                 Fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
@@ -314,7 +372,32 @@ public class Main {
             }
         }
 
-        // Position
+        // Working orders and remote commands watchdog
+        {
+            TradingStatusWatchdog watchdog = new TradingStatusWatchdog(Channels.tradingStatus, TRADING_SERVER_TIMEOUT, Clock.SYSTEM);
+            Fibers.watchdog.subscribe(watchdog, Channels.workingOrderEvents, Channels.remoteOrderEvents);
+            Fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog.checkRunnable(), 500, 500, TimeUnit.MILLISECONDS);
+        }
+
+        // Mr. Phil position
+        {
+            Environment.HostAndNic hostAndNic = environment.getMrPhilHostAndNic();
+            final OnHeapBufferPhotocolsNioClient<Position, Subscription> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic,
+                    Position.class, Subscription.class, Fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
+            PhotocolsHandler<Position, Subscription> positionHandler = new PositionSubscriptionPhotocolsHandler();
+            Fibers.mrPhil.subscribe(positionHandler, Channels.refData);
+            client.reconnectMillis(5000)
+                    .logFile(new File(logDir, "mr-phil.log"), Fibers.logging.getFiber(), true)
+                    .handler(positionHandler);
+            Fibers.onStart(new Runnable() {
+                @Override
+                public void run() {
+                    client.start();
+                }
+            });
+        }
+
+        // Desk Position
         {
             if (environment.opxlDeskPositionEnabled()) {
                 final OpxlPositionSubscriber opxlPositionSubscriber = new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), Channels.error, config.get("opxl.deskposition.key"), new Publisher<DeskPosition>() {
@@ -364,7 +447,10 @@ public class Main {
         {
             Fibers.logging.subscribe(new ErrorLogger(new File(logDir, "errors.log")).onThrowableCallback(), Channels.error);
             Fibers.logging.subscribe(new JsonChannelLogger(logDir, "metadata.json", Channels.error), Channels.metaData);
-            Fibers.logging.subscribe(new JsonChannelLogger(logDir, "remote-order.json", Channels.error), Channels.workingOrders, Channels.remoteOrderEvents);
+            Fibers.logging.subscribe(new JsonChannelLogger(logDir, "remote-order.json", Channels.error), Channels.workingOrderEvents, Channels.remoteOrderEvents);
+            Fibers.logging.subscribe(new JsonChannelLogger(logDir, "trading-status.json", Channels.error), Channels.tradingStatus);
+            Fibers.logging.subscribe(new JsonChannelLogger(logDir, "position.json", Channels.error), Channels.position);
+            Fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", Channels.error), Channels.status);
             Fibers.logging.subscribe(new Object() {
                 @Subscribe
                 public void on(Throwable throwable) {

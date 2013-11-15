@@ -43,6 +43,7 @@ config default
   include log4j/1.2.16 # For protocols
   include photon-runtime-java/1.0.0.81
   include drw.london.eeif-photocols-client/1
+  include com.drwtrading.photons.mrphil/1.0.0.4
 
 
   # MD
