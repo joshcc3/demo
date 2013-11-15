@@ -18,6 +18,8 @@ import com.drwtrading.london.logging.ErrorLogger;
 import com.drwtrading.london.logging.JsonChannelLogger;
 import com.drwtrading.london.monitoring.MonitoringHeartbeat;
 import com.drwtrading.london.network.NetworkInterfaces;
+import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
+import com.drwtrading.london.photons.indy.IndyEnvelope;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
@@ -27,6 +29,7 @@ import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
+import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
@@ -96,6 +99,9 @@ public class Main {
                 return create(RemoteOrderManagementCommand.class);
             }
         });
+        public static TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);
+        public static TypedChannel<LadderSettings.StoreLadderPref> storeLadderPref = create(LadderSettings.StoreLadderPref.class);
+        public static TypedChannel<EquityIdAndSymbol> equityIdAndSymbol = create(EquityIdAndSymbol.class);
     }
 
     public static class Fibers {
@@ -113,7 +119,9 @@ public class Main {
         public static final FiberBuilder opxlPosition = fiberGroup.create("OPXL Position");
         public static final FiberBuilder opxlText = fiberGroup.create("OPXL Text");
         public static final FiberBuilder mrPhil = fiberGroup.create("Mr Phil");
+        public static final FiberBuilder indy = fiberGroup.create("Indy");
         public static final FiberBuilder watchdog = fiberGroup.create("Watchdog");
+        public static final FiberBuilder settings = fiberGroup.create("Settings");
 
         // Ensure the starterFiber is last
         static {
@@ -266,17 +274,30 @@ public class Main {
             // Ladder presenter
             {
                 final TypedChannel<WebSocketControlMessage> websocket = createWebPageWithWebSocket("ladder", "ladder", fiber, webapp);
-                LadderPresenter presenter = new LadderPresenter(Channels.remoteOrderCommand, environment.ladderOptions(), Channels.status);
+                LadderPresenter presenter = new LadderPresenter(Channels.remoteOrderCommand, environment.ladderOptions(), Channels.status, Channels.storeLadderPref);
                 Channels.fullBook.subscribe(Fibers.ladder.getFiber(), new BatchSubscriber<MarketDataEvent>(Fibers.ladder.getFiber(), presenter.onMarketData(), 0, TimeUnit.MILLISECONDS));
                 Fibers.ladder.subscribe(presenter,
                         websocket,
                         Channels.workingOrders,
                         Channels.metaData,
                         Channels.position,
-                        Channels.tradingStatus);
+                        Channels.tradingStatus,
+                        Channels.ladderPrefsLoaded,
+                        Channels.equityIdAndSymbol);
                 Fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 100, 100, TimeUnit.MILLISECONDS);
             }
+        }
 
+        // Settings
+        {
+            final LadderSettings ladderSettings = new LadderSettings(environment.getSettingsFile(), Channels.ladderPrefsLoaded);
+            Fibers.settings.subscribe(ladderSettings, Channels.storeLadderPref);
+            Fibers.onStart(new Runnable() {
+                @Override
+                public void run() {
+                    Fibers.settings.execute(ladderSettings.loadRunnable());
+                }
+            });
         }
 
         // Market data
@@ -285,8 +306,9 @@ public class Main {
                 final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
                 final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, Fibers.marketData.getFiber(), Main.EXCEPTION_HANDLER);
                 final ProductResetter productResetter = new ProductResetter(Channels.fullBook);
+                final ConnectionCloser connectionCloser = new ConnectionCloser(Channels.status, "Market data: " + mds, productResetter.resetRunnable());
                 client.reconnectMillis(3000)
-                        .handler(new InboundTimeoutWatchdog<MarketDataEvent, Void>(Fibers.marketData.getFiber(), new ConnectionCloser(Channels.status, "Market data: " + mds, productResetter.resetRunnable()), SERVER_TIMEOUT))
+                        .handler(new IdleConnectionTimeoutHandler(connectionCloser, SERVER_TIMEOUT, Fibers.marketData.getFiber()))
                         .handler(new JetlangChannelHandler<MarketDataEvent, Void>(new Publisher<MarketDataEvent>() {
                             @Override
                             public void publish(MarketDataEvent msg) {
@@ -300,7 +322,12 @@ public class Main {
                 Fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
-                        client.start();
+                        Fibers.marketData.execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                client.start();
+                            }
+                        });
                     }
                 });
             }
@@ -400,6 +427,30 @@ public class Main {
             });
         }
 
+        // Indy
+        {
+            if (environment.indyEnabled()) {
+                Environment.HostAndNic hostAndNic = environment.getIndyHostAndNic();
+                final OnHeapBufferPhotocolsNioClient<IndyEnvelope, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic, IndyEnvelope.class, Void.class, Fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
+                client.reconnectMillis(5000)
+                        .logFile(new File(logDir, "indy.log"), Fibers.logging.getFiber(), true)
+                        .handler(new JetlangChannelHandler<IndyEnvelope, Void>(new Publisher<IndyEnvelope>() {
+                            @Override
+                            public void publish(IndyEnvelope msg) {
+                                if (msg.getMessage() instanceof EquityIdAndSymbol) {
+                                    Channels.equityIdAndSymbol.publish((EquityIdAndSymbol) msg.getMessage());
+                                }
+                            }
+                        }));
+                Fibers.onStart(new Runnable() {
+                    @Override
+                    public void run() {
+                        client.start();
+                    }
+                });
+            }
+        }
+
         // Desk Position
         {
             if (environment.opxlDeskPositionEnabled()) {
@@ -453,6 +504,7 @@ public class Main {
             Fibers.logging.subscribe(new JsonChannelLogger(logDir, "remote-order.json", Channels.error), Channels.workingOrderEvents, Channels.remoteOrderEvents);
             Fibers.logging.subscribe(new JsonChannelLogger(logDir, "trading-status.json", Channels.error), Channels.tradingStatus);
             Fibers.logging.subscribe(new JsonChannelLogger(logDir, "position.json", Channels.error), Channels.position);
+            Fibers.logging.subscribe(new JsonChannelLogger(logDir, "preferences.json", Channels.error), Channels.ladderPrefsLoaded, Channels.storeLadderPref);
             Fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", Channels.error), Channels.status);
             Fibers.logging.subscribe(new Object() {
                 @Subscribe

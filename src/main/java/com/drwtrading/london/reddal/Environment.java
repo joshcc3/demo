@@ -39,6 +39,25 @@ public class Environment {
         return getHostAndNic("mr-phil");
     }
 
+    public File getSettingsFile() throws IOException {
+        File file = new File(config.get("settings.file"));
+        if (!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        return file;
+    }
+
+    public boolean indyEnabled() {
+        return config.getBooleanOrDefault("indy.enabled", false);
+    }
+
+    public HostAndNic getIndyHostAndNic() throws SocketException {
+        return getHostAndNic("indy");
+    }
+
     public static class HostAndNic {
         public final InetSocketAddress host;
         public final String nic;

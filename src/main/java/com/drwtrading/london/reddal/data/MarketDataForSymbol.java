@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.frontoffice.book.treemap.TreeMapBookFactory;
+import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.prices.PriceFormat;
 import com.drwtrading.london.prices.PriceFormats;
 import com.drwtrading.london.prices.tickbands.TickSizeTracker;
@@ -11,6 +12,7 @@ import com.drwtrading.london.protocols.photon.marketdata.BasisTradeUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.BlockTradeUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.BookConsistencyMarker;
 import com.drwtrading.london.protocols.photon.marketdata.BookSnapshot;
+import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketStateEvent;
@@ -53,16 +55,16 @@ public class MarketDataForSymbol {
     public TradeTracker tradeTracker = new TradeTracker();
     public ObjectList<TickBand> tickBands;
     public TotalTradedVolume totalTradedVolume;
+    public String isin;
+    public String displaySymbol;
+
     public MarketDataEvent.Visitor<Void> visitor = new MarketDataEvent.Visitor<Void>() {
         @Override
         public Void visitProductReset(ProductReset msg) {
             topOfBook = null;
-            lastTrade = null;
             auctionIndicativePrice = null;
             auctionTradeUpdate = null;
             bookState = null;
-            settle = null;
-            totalTradedVolume = null;
             book.clear();
             return null;
         }
@@ -130,6 +132,11 @@ public class MarketDataForSymbol {
                 tickSizeTracker = new TickSizeTracker(tickBands);
             }
             priceFormat = PriceFormats.from(refData.getPriceStructure().getTickStructure());
+
+            if (refData.getInstrumentStructure() instanceof CashOutrightStructure) {
+                CashOutrightStructure cashOutrightStructure = (CashOutrightStructure) refData.getInstrumentStructure();
+                isin = cashOutrightStructure.getIsin();
+            }
             return null;
         }
 
@@ -197,4 +204,9 @@ public class MarketDataForSymbol {
         }
     }
 
+    public void onEquityIdAndSymbol(EquityIdAndSymbol equityIdAndSymbol) {
+        if (isin != null && equityIdAndSymbol.isPrimary() && isin.equals(equityIdAndSymbol.getEquityId().getIsin())) {
+            displaySymbol = equityIdAndSymbol.getSymbol();
+        }
+    }
 }

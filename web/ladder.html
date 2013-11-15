@@ -101,7 +101,7 @@
 
         $(function () {
             ws = connect();
-            ws.logToConsole = true;
+            ws.logToConsole = false;
             handler = new Handler(ws);
             ws.onmessage = handler.msg;
             subscribe();
@@ -149,9 +149,9 @@
     </div>
     <div id="ladder">
         <div id="header">
-            <div id="buy_qty" class="total_qty">12</div>
+            <div id="buy_qty" class="total_qty hidden"></div>
             <div id="symbol"></div>
-            <div id="sell_qty" class="total_qty">12</div>
+            <div id="sell_qty" class="total_qty hidden"></div>
         </div>
         <div id="text">
             <div id="text_r1c1" class="text_cell"></div>
