@@ -42,9 +42,9 @@ public class TradingStatusWatchdog {
                 for (Map.Entry<String, Long> entry : lastWorkingOrderEventFromServer.entrySet()) {
                     Long workingOrderTime = entry.getValue();
                     Long remoteOrderTime = lastRemoteOrderEventFromServer.get(entry.getKey());
-                    Main.Status workingStatus = workingOrderTime != null && now - workingOrderTime < maxAgeMillis ? Main.Status.OK : Main.Status.NOT_OK;
-                    Main.Status remoteStatus = remoteOrderTime != null && now - remoteOrderTime < maxAgeMillis ? Main.Status.OK : Main.Status.NOT_OK;
-                    Main.Status tradingStatus = workingStatus == Main.Status.OK && remoteStatus == Main.Status.OK ? Main.Status.OK : Main.Status.NOT_OK;
+                    Status workingStatus = workingOrderTime != null && now - workingOrderTime < maxAgeMillis ? Status.OK : Status.NOT_OK;
+                    Status remoteStatus = remoteOrderTime != null && now - remoteOrderTime < maxAgeMillis ? Status.OK : Status.NOT_OK;
+                    Status tradingStatus = workingStatus == Status.OK && remoteStatus == Status.OK ? Status.OK : Status.NOT_OK;
                     ServerTradingStatus serverTradingStatus = new ServerTradingStatus(entry.getKey(), workingStatus, remoteStatus, tradingStatus);
                     if (!serverTradingStatus.equals(tradingStatusMap.put(serverTradingStatus.server, serverTradingStatus))) {
                         tradingStatusPublisher.publish(serverTradingStatus);
@@ -54,14 +54,18 @@ public class TradingStatusWatchdog {
         };
     }
 
+    public static enum Status {
+        OK, NOT_OK
+    }
+
 
     public static class ServerTradingStatus extends Struct {
         public final String server;
-        public final Main.Status workingOrderStatus;
-        public final Main.Status remoteCommandStatus;
-        public final Main.Status tradingStatus;
+        public final Status workingOrderStatus;
+        public final Status remoteCommandStatus;
+        public final Status tradingStatus;
 
-        public ServerTradingStatus(String server, Main.Status workingOrderStatus, Main.Status remoteCommandStatus, Main.Status tradingStatus) {
+        public ServerTradingStatus(String server, Status workingOrderStatus, Status remoteCommandStatus, Status tradingStatus) {
             this.server = server;
             this.workingOrderStatus = workingOrderStatus;
             this.remoteCommandStatus = remoteCommandStatus;

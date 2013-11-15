@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.frontoffice.book.treemap.TreeMapBookFactory;
-import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.prices.PriceFormat;
 import com.drwtrading.london.prices.PriceFormats;
 import com.drwtrading.london.prices.tickbands.TickSizeTracker;
@@ -204,9 +203,7 @@ public class MarketDataForSymbol {
         }
     }
 
-    public void onEquityIdAndSymbol(EquityIdAndSymbol equityIdAndSymbol) {
-        if (isin != null && equityIdAndSymbol.isPrimary() && isin.equals(equityIdAndSymbol.getEquityId().getIsin())) {
-            displaySymbol = equityIdAndSymbol.getSymbol();
-        }
+    public void onDisplaySymbol(DisplaySymbol display) {
+        displaySymbol = display.displaySymbol;
     }
 }

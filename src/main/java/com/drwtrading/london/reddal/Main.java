@@ -6,7 +6,6 @@ import com.drw.nns.api.NnsFactory;
 import com.drwtrading.esquilatency.NanoClock;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
-import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
@@ -26,6 +25,7 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
+import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
@@ -102,6 +102,7 @@ public class Main {
         public static TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);
         public static TypedChannel<LadderSettings.StoreLadderPref> storeLadderPref = create(LadderSettings.StoreLadderPref.class);
         public static TypedChannel<EquityIdAndSymbol> equityIdAndSymbol = create(EquityIdAndSymbol.class);
+        public static TypedChannel<DisplaySymbol> displaySymbol = create(DisplaySymbol.class);
     }
 
     public static class Fibers {
@@ -188,10 +189,6 @@ public class Main {
             this.fromServer = fromServer;
             this.value = value;
         }
-    }
-
-    public static enum Status {
-        OK, NOT_OK
     }
 
 
@@ -283,7 +280,7 @@ public class Main {
                         Channels.position,
                         Channels.tradingStatus,
                         Channels.ladderPrefsLoaded,
-                        Channels.equityIdAndSymbol);
+                        Channels.displaySymbol);
                 Fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 100, 100, TimeUnit.MILLISECONDS);
             }
         }
@@ -451,6 +448,11 @@ public class Main {
             }
         }
 
+        // Display symbols
+        {
+            Fibers.indy.subscribe(new EquityIdToDisplaySymbolMapper(Channels.displaySymbol), Channels.refData, Channels.equityIdAndSymbol);
+        }
+
         // Desk Position
         {
             if (environment.opxlDeskPositionEnabled()) {
@@ -521,14 +523,5 @@ public class Main {
         new CountDownLatch(1).await();
     }
 
-
-    public static <K, T> Map<K, TypedChannel<T>> channelMap(final Class<T> clazz) {
-        return new MapMaker().makeComputingMap(new Function<K, TypedChannel<T>>() {
-            @Override
-            public TypedChannel<T> apply(K from) {
-                return TypedChannels.create(clazz);
-            }
-        });
-    }
 
 }

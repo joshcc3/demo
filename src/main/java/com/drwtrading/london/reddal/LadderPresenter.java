@@ -4,9 +4,11 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
+import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
+import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
@@ -41,7 +43,6 @@ public class LadderPresenter {
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
     private final Publisher<StatsMsg> statsPublisher;
-    private final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher;
 
     Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
     Multimap<String, LadderView> viewsByUser = HashMultimap.create();
@@ -52,14 +53,12 @@ public class LadderPresenter {
             return new MarketDataForSymbol(from);
         }
     });
-
     Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(new Function<String, WorkingOrdersForSymbol>() {
         @Override
         public WorkingOrdersForSymbol apply(java.lang.String from) {
             return new WorkingOrdersForSymbol(from);
         }
     });
-
     Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(new Function<String, ExtraDataForSymbol>() {
         @Override
         public ExtraDataForSymbol apply(java.lang.String from) {
@@ -67,14 +66,12 @@ public class LadderPresenter {
         }
     });
     Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
-
-    Set<EquityIdAndSymbol> equityIdAndSymbolSet = newFastSet();
+    TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
 
     public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
-        this.storeLadderPrefPublisher = storeLadderPrefPublisher;
         ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(new Function<String, Map<String, LadderPrefsForSymbolUser>>() {
             @Override
             public Map<String, LadderPrefsForSymbolUser> apply(final String symbol) {
@@ -92,7 +89,7 @@ public class LadderPresenter {
     public void onConnected(WebSocketConnected connected) {
         UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         View view = new WebSocketOutputDispatcher<View>(View.class).wrap(uiPipe.evalPublisher());
-        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher);
+        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }
@@ -131,47 +128,37 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(LaserLine laserLine) {
-        ExtraDataForSymbol data = dataBySymbol.get(laserLine.getSymbol());
-        data.onLaserLine(laserLine);
+        dataBySymbol.get(laserLine.getSymbol()).onLaserLine(laserLine);
     }
 
     @Subscribe
     public void on(DeskPosition deskPosition) {
-        ExtraDataForSymbol data = dataBySymbol.get(deskPosition.getSymbol());
-        data.onDeskPosition(deskPosition);
+        dataBySymbol.get(deskPosition.getSymbol()).onDeskPosition(deskPosition);
     }
 
     @Subscribe
     public void on(InfoOnLadder infoOnLadder) {
-        ExtraDataForSymbol data = dataBySymbol.get(infoOnLadder.getSymbol());
-        data.onInfoOnLadder(infoOnLadder);
+        dataBySymbol.get(infoOnLadder.getSymbol()).onInfoOnLadder(infoOnLadder);
     }
 
     @Subscribe
     public void on(LadderText ladderText) {
-        ExtraDataForSymbol data = dataBySymbol.get(ladderText.getSymbol());
-        data.onLadderText(ladderText);
+        dataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
     }
 
     @Subscribe
     public void on(LastTrade lastTrade) {
-        ExtraDataForSymbol data = dataBySymbol.get(lastTrade.getSymbol());
-        data.onLastTrade(lastTrade);
+        dataBySymbol.get(lastTrade.getSymbol()).onLastTrade(lastTrade);
     }
 
     @Subscribe
     public void on(Position position) {
-        ExtraDataForSymbol data = dataBySymbol.get(position.getSymbol());
-        data.onDayPosition(position);
-
+        dataBySymbol.get(position.getSymbol()).onDayPosition(position);
     }
 
     @Subscribe
     public void on(TradingStatusWatchdog.ServerTradingStatus serverTradingStatus) {
-        for (WorkingOrdersForSymbol workingOrdersForSymbol : ordersBySymbol.values()) {
-            workingOrdersForSymbol.onTradingStatus(serverTradingStatus);
-        }
-
+        tradingStatusForAll.on(serverTradingStatus);
     }
 
     @Subscribe
@@ -181,13 +168,8 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(EquityIdAndSymbol equityIdAndSymbol) {
-        if(!equityIdAndSymbol.isPrimary()) {
-            return;
-        }
-        for (MarketDataForSymbol marketDataForSymbol : marketDataBySymbol.values()) {
-            marketDataForSymbol.onEquityIdAndSymbol(equityIdAndSymbol);
-        }
+    public void on(DisplaySymbol displaySymbol) {
+        marketDataBySymbol.get(displaySymbol.marketDataSymbol).onDisplaySymbol(displaySymbol);
     }
 
     public Callback<List<MarketDataEvent>> onMarketData() {
@@ -203,11 +185,6 @@ public class LadderPresenter {
                     } else {
                         MarketDataForSymbol marketDataForSymbol = marketDataBySymbol.get(symbol);
                         marketDataForSymbol.onMarketDataEvent(marketDataEvent);
-                        if(marketDataForSymbol.isin != null) {
-                            for (EquityIdAndSymbol equityIdAndSymbol : equityIdAndSymbolSet) {
-                                marketDataForSymbol.onEquityIdAndSymbol(equityIdAndSymbol);
-                            }
-                        }
                     }
                 }
             }

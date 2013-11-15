@@ -13,6 +13,7 @@ import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPric
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
+import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
@@ -114,6 +115,7 @@ public class LadderView {
     private final LadderOptions ladderOptions;
     private final UiPipe ui;
     private final Publisher<StatsMsg> statsPublisher;
+    private final TradingStatusForAll tradingStatusForAll;
 
     public String symbol;
     private MarketDataForSymbol marketDataForSymbol;
@@ -133,13 +135,14 @@ public class LadderView {
 
     public long lastCenteredTime = 0;
 
-    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher) {
+    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll) {
         this.client = client;
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.ladderOptions = ladderOptions;
         this.ui = ui;
         this.statsPublisher = statsPublisher;
+        this.tradingStatusForAll = tradingStatusForAll;
     }
 
     public void subscribeToSymbol(String symbol, int levels, MarketDataForSymbol marketDataForSymbol, WorkingOrdersForSymbol workingOrdersForSymbol, ExtraDataForSymbol extraDataForSymbol, LadderPrefsForSymbolUser ladderPrefsForSymbolUser) {
@@ -643,11 +646,9 @@ public class LadderView {
     private void onUpdate(String label, Map<String, String> dataArg) {
         String value = dataArg.get("value");
         if (value != null) {
-
             if (Html.INP_QTY.equals(label)) {
                 clickTradingBoxQty = Integer.valueOf(value);
-            }
-            if (persistentPrefs.contains(label)) {
+            } else if (persistentPrefs.contains(label)) {
                 ladderPrefsForSymbolUser.set(label, value);
             } else {
                 throw new IllegalArgumentException("Update for unknown value: " + label + " " + dataArg);
@@ -741,14 +742,14 @@ public class LadderView {
         if (ladderOptions.traders.contains(client.getUserName())) {
             RemoteOrderType remoteOrderType = RemoteOrderType.valueOf(orderType);
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
-            TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = workingOrdersForSymbol.tradingStatusByServer.get(serverName);
-            if (serverTradingStatus != null && serverTradingStatus.tradingStatus == Main.Status.OK) {
+            TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(serverName);
+            if (serverTradingStatus != null && serverTradingStatus.tradingStatus == TradingStatusWatchdog.Status.OK) {
                 RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(
                         serverName, client.getUserName(), orderSeqNo++, new RemoteOrder(
                         symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, ladderOptions.tag));
                 remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
             } else {
-                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", server " + serverName + " ses " + (serverTradingStatus == null ? null : serverTradingStatus.toString())));
+                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", server " + serverName + " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString())));
             }
         }
     }
