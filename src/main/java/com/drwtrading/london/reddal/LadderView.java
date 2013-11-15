@@ -155,7 +155,6 @@ public class LadderView {
     }
 
     private void updateEverything() {
-        checkIfNeedToRecenterAndDoItIfTimeoutElapsed();
         drawBook();
         drawTradedVolumes();
         drawLastTrade();
@@ -167,6 +166,7 @@ public class LadderView {
     }
 
     public void flush() {
+        checkIfNeedToRecenterAndDoItIfTimeoutElapsed();
         updateEverything();
         ui.flush();
     }
@@ -402,7 +402,6 @@ public class LadderView {
         if (!pendingRefDataAndSettle && m != null && m.book != null) {
             ui.txt("symbol", getSymbol());
             for (Long price : levelByPrice.keySet()) {
-
                 if (m.topOfBook != null && m.topOfBook.getBestBid().isExists() && m.topOfBook.getBestBid().getPrice() == price) {
                     bidQty(price, m.topOfBook.getBestBid().getQuantity());
                 } else if (m.bookState != null && m.bookState.getState() == BookState.AUCTION && m.auctionIndicativePrice != null && m.auctionIndicativePrice.isHasIndicativePrice() && m.auctionIndicativePrice.getIndicativePrice() == price) {
@@ -410,7 +409,6 @@ public class LadderView {
                 } else {
                     bidQty(price, m.book.getLevel(price, Side.BID).getQuantity());
                 }
-
                 if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestOffer().getPrice() == price) {
                     offerQty(price, m.topOfBook.getBestOffer().getQuantity());
                 } else if (m.bookState != null && m.bookState.getState() == BookState.AUCTION && m.auctionIndicativePrice != null && m.auctionIndicativePrice.isHasIndicativePrice() && m.auctionIndicativePrice.getIndicativePrice() == price) {

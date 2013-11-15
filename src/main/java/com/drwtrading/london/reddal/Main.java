@@ -506,6 +506,7 @@ public class Main {
             Fibers.logging.subscribe(new JsonChannelLogger(logDir, "position.json", Channels.error), Channels.position);
             Fibers.logging.subscribe(new JsonChannelLogger(logDir, "preferences.json", Channels.error), Channels.ladderPrefsLoaded, Channels.storeLadderPref);
             Fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", Channels.error), Channels.status);
+            Fibers.logging.subscribe(new JsonChannelLogger(logDir, "reference-data.json", Channels.error), Channels.refData);
             Fibers.logging.subscribe(new Object() {
                 @Subscribe
                 public void on(Throwable throwable) {
