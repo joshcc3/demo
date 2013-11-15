@@ -194,4 +194,8 @@ public class Book {
             }
         };
     }
+
+    public void clear() {
+        resetBook();
+    }
 }

@@ -35,7 +35,6 @@ import com.drwtrading.monitoring.stats.StatsPublisher;
 import com.drwtrading.monitoring.stats.Transport;
 import com.drwtrading.monitoring.transport.NullTransport;
 import com.drwtrading.photocols.PhotocolsHandler;
-import com.drwtrading.photocols.easy.monitoring.IdleConnectionCloser;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
 import com.drwtrading.photons.ladder.DeskPosition;
@@ -65,7 +64,7 @@ import static com.drwtrading.jetlang.autosubscribe.TypedChannels.create;
 
 public class Main {
 
-    public static final long TRADING_SERVER_TIMEOUT = 3000L;
+    public static final long SERVER_TIMEOUT = 3000L;
 
     public static TypedChannel<WebSocketControlMessage> createWebPageWithWebSocket(String alias, String name, FiberBuilder fiber, WebApplication webapp) {
         webapp.alias("/" + alias, "/" + name + ".html");
@@ -285,15 +284,19 @@ public class Main {
             for (String mds : environment.getList(Environment.MARKET_DATA)) {
                 final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
                 final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, Fibers.marketData.getFiber(), Main.EXCEPTION_HANDLER);
-                client.reconnectMillis(3000).inboundTimeoutMillis(new IdleConnectionCloser(environment.getStatsPublisher()), 2000).handler(new JetlangChannelHandler<MarketDataEvent, Void>(new Publisher<MarketDataEvent>() {
-                    @Override
-                    public void publish(MarketDataEvent msg) {
-                        Channels.fullBook.publish(msg);
-                        if (msg instanceof InstrumentDefinitionEvent) {
-                            Channels.refData.publish((InstrumentDefinitionEvent) msg);
-                        }
-                    }
-                }));
+                final ProductResetter productResetter = new ProductResetter(Channels.fullBook);
+                client.reconnectMillis(3000)
+                        .handler(new InboundTimeoutWatchdog<MarketDataEvent, Void>(Fibers.marketData.getFiber(), new ConnectionCloser(Channels.status, "Market data: " + mds, productResetter.resetRunnable()), SERVER_TIMEOUT))
+                        .handler(new JetlangChannelHandler<MarketDataEvent, Void>(new Publisher<MarketDataEvent>() {
+                            @Override
+                            public void publish(MarketDataEvent msg) {
+                                Channels.fullBook.publish(msg);
+                                if (msg instanceof InstrumentDefinitionEvent) {
+                                    Channels.refData.publish((InstrumentDefinitionEvent) msg);
+                                    productResetter.on((InstrumentDefinitionEvent) msg);
+                                }
+                            }
+                        }));
                 Fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
@@ -335,7 +338,7 @@ public class Main {
                                 Channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg));
                             }
                         }, Channels.remoteOrderCommandByServer.get(server), Fibers.remoteOrders.getFiber()))
-                        .handler(new InboundTimeoutWatchdog<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(Fibers.remoteOrders.getFiber(), new ConnectionCloser(Channels.status, "Remote order: " + server), TRADING_SERVER_TIMEOUT));
+                        .handler(new InboundTimeoutWatchdog<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(Fibers.remoteOrders.getFiber(), new ConnectionCloser(Channels.status, "Remote order: " + server), SERVER_TIMEOUT));
                 Fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
@@ -362,7 +365,7 @@ public class Main {
                                 Channels.workingOrderEvents.publish(new WorkingOrderEventFromServer(server, msg));
                             }
                         }))
-                        .handler(new InboundTimeoutWatchdog<WorkingOrderEvent, Void>(Fibers.workingOrders.getFiber(), new ConnectionCloser(Channels.status, "Working order: " + server), TRADING_SERVER_TIMEOUT));
+                        .handler(new InboundTimeoutWatchdog<WorkingOrderEvent, Void>(Fibers.workingOrders.getFiber(), new ConnectionCloser(Channels.status, "Working order: " + server), SERVER_TIMEOUT));
                 Fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
@@ -374,7 +377,7 @@ public class Main {
 
         // Working orders and remote commands watchdog
         {
-            TradingStatusWatchdog watchdog = new TradingStatusWatchdog(Channels.tradingStatus, TRADING_SERVER_TIMEOUT, Clock.SYSTEM);
+            TradingStatusWatchdog watchdog = new TradingStatusWatchdog(Channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM);
             Fibers.watchdog.subscribe(watchdog, Channels.workingOrderEvents, Channels.remoteOrderEvents);
             Fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog.checkRunnable(), 500, 500, TimeUnit.MILLISECONDS);
         }

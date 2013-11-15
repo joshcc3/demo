@@ -457,38 +457,30 @@ public class LadderView {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (m != null && m.refData != null && m.settle != null) {
             ui.clear();
-
             ui.txt("symbol", symbol);
-
             pendingRefDataAndSettle = false;
             centerPrice = getCenterPrice(m);
-
-            boolean clickTradingEnabled = ladderOptions.traders.contains(client.getUserName());
-
-            view.draw(levels);
-            view.trading(clickTradingEnabled, ladderOptions.orderTypesLeft, ladderOptions.orderTypesRight);
-
-            for (Map.Entry<String, Integer> entry : Html.BUTTON_QTY.entrySet()) {
-                ui.txt(entry.getKey(), entry.getValue() < 1000 ? entry.getValue() : entry.getValue() / 1000 + "K");
-            }
-
-
-            for (int i = 0; i < levels; i++) {
-                ui.clickable("#" + Html.PRICE + i);
-                ui.clickable("#" + Html.BID + i);
-                ui.clickable("#" + Html.OFFER + i);
-                ui.clickable("#" + Html.ORDER + i);
-            }
-
-            ui.clickable(Html.BUTTONS);
-            ui.scrollable("#" + Html.LADDER);
-
-            ui.clickable("#" + Html.BUY_QTY);
-            ui.clickable("#" + Html.SELL_QTY);
-
             recenterLadderAndDrawPriceLevels();
-            ui.flush();
+            setUpClickTrading();
         }
+    }
+
+    private void setUpClickTrading() {
+        boolean clickTradingEnabled = ladderOptions.traders.contains(client.getUserName());
+        view.trading(clickTradingEnabled, ladderOptions.orderTypesLeft, ladderOptions.orderTypesRight);
+        for (Map.Entry<String, Integer> entry : Html.BUTTON_QTY.entrySet()) {
+            ui.txt(entry.getKey(), entry.getValue() < 1000 ? entry.getValue() : entry.getValue() / 1000 + "K");
+        }
+        for (int i = 0; i < levels; i++) {
+            ui.clickable("#" + Html.PRICE + i);
+            ui.clickable("#" + Html.BID + i);
+            ui.clickable("#" + Html.OFFER + i);
+            ui.clickable("#" + Html.ORDER + i);
+        }
+        ui.clickable(Html.BUTTONS);
+        ui.scrollable("#" + Html.LADDER);
+        ui.clickable("#" + Html.BUY_QTY);
+        ui.clickable("#" + Html.SELL_QTY);
     }
 
     public void checkIfNeedToRecenterAndDoItIfTimeoutElapsed() {

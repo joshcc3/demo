@@ -14,6 +14,7 @@ public class ConnectionCloser implements Notifier {
 
     private final Publisher<StatsMsg> status;
     private final String name;
+    private Runnable runnable;
     Set<PhotocolsConnection> closedConnections = newFastSet();
 
     public ConnectionCloser(Publisher<StatsMsg> status, String name) {
@@ -21,11 +22,20 @@ public class ConnectionCloser implements Notifier {
         this.name = name;
     }
 
+    public ConnectionCloser(Publisher<StatsMsg> status, String name, Runnable runnable) {
+        this.status = status;
+        this.name = name;
+        this.runnable = runnable;
+    }
+
     @Override
     public void onTimeout(PhotocolsConnection connection, Long millisSinceLastMessage) {
         if (closedConnections.add(connection)) {
             connection.close();
-            status.publish(new AdvisoryStat(name, AdvisoryStat.Level.INFO, "Disconnected " + name + ", idle for " + millisSinceLastMessage+"ms"));
+            status.publish(new AdvisoryStat(name, AdvisoryStat.Level.INFO, "Disconnected " + name + ", idle for " + millisSinceLastMessage + "ms"));
+            if (runnable != null) {
+                runnable.run();
+            }
         }
     }
 

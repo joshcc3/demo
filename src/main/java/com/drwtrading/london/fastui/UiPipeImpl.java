@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastList;
+
 public class UiPipeImpl implements UiPipe {
 
     public final Joiner commandJoiner = Joiner.on(COMMAND_SEPARATOR);
@@ -33,7 +35,7 @@ public class UiPipeImpl implements UiPipe {
         }
 
         public void flushPendingIntoCommandList(List<String> commands) {
-            if(pendingValues.size() == 0) {
+            if (pendingValues.size() == 0) {
                 return;
             }
             commands.add(getCommand());
@@ -56,11 +58,44 @@ public class UiPipeImpl implements UiPipe {
         }
 
     }
+    public static class ListBatcher {
+
+        public final List<String> pendingValues = newFastList();
+        private String command;
+
+        public ListBatcher(String command) {
+            this.command = command;
+        }
+
+        public void put(String value) {
+            pendingValues.add(value);
+        }
+
+        public void flushPendingIntoCommandList(List<String> commands) {
+            if (pendingValues.size() == 0) {
+                return;
+            }
+            commands.add(getCommand());
+            pendingValues.clear();
+        }
+
+        public String getCommand() {
+            return cmd(this.command, cmd(pendingValues.toArray()));
+        }
+
+        public void clear() {
+            pendingValues.clear();
+        }
+
+    }
 
     final KeyedBatcher text = new KeyedBatcher(TXT_CMD);
     final KeyedBatcher classes = new KeyedBatcher(CLS_CMD);
     final KeyedBatcher data = new KeyedBatcher(DATA_CMD);
     final KeyedBatcher height = new KeyedBatcher(HEIGHT_CMD);
+
+    final ListBatcher clickable = new ListBatcher(CLICKABLE_CMD);
+    final ListBatcher scrollable = new ListBatcher(SCROLLABLE_CMD);
 
     public UiPipeImpl(Publisher<WebSocketOutboundData> pipe) {
         this.pipe = pipe;
@@ -109,14 +144,12 @@ public class UiPipeImpl implements UiPipe {
 
     @Override
     public void clickable(String id) {
-        flush();
-        send(cmd(CLICKABLE_CMD, id));
+        clickable.put(id);
     }
 
     @Override
     public void scrollable(String id) {
-        flush();
-        send(cmd(SCROLLABLE_CMD, id));
+        scrollable.put(id);
     }
 
     // Buffer interface
@@ -137,6 +170,8 @@ public class UiPipeImpl implements UiPipe {
         data.flushPendingIntoCommandList(commands);
         classes.flushPendingIntoCommandList(commands);
         height.flushPendingIntoCommandList(commands);
+        clickable.flushPendingIntoCommandList(commands);
+        scrollable.flushPendingIntoCommandList(commands);
         if (commands.size() > 0) {
             send(commandJoiner.join(commands));
         }

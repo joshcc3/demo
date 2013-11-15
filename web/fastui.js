@@ -201,7 +201,6 @@ var Handler = function (ws) {
         $(el).unbind().bind(s, function () {
             send('update', el.id, packData(el.id));
         });
-        send('update', el.id, packData(el.id));
     };
 
     self.send = send;

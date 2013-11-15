@@ -84,10 +84,12 @@
         }
 
         var NumLevels = 0;
+
         function subscribe() {
-            var symbols = document.location.hash.substr(1);
+            var symbol = document.location.hash.substr(1);
             NumLevels = calcLevels();
-            handler.send("ladder-subscribe", symbols, NumLevels);
+            draw(NumLevels);
+            handler.send("ladder-subscribe", symbol, NumLevels);
             window.addEventListener("hashchange", function(){window.location.reload();}, false);
         }
 
@@ -99,7 +101,7 @@
 
         $(function () {
             ws = connect();
-            ws.logToConsole = false;
+            ws.logToConsole = true;
             handler = new Handler(ws);
             ws.onmessage = handler.msg;
             subscribe();
