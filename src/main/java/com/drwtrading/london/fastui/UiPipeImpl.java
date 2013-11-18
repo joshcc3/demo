@@ -58,6 +58,7 @@ public class UiPipeImpl implements UiPipe {
         }
 
     }
+
     public static class ListBatcher {
 
         public final List<String> pendingValues = newFastList();
@@ -89,6 +90,34 @@ public class UiPipeImpl implements UiPipe {
 
     }
 
+    public static class StringBatcher {
+
+        public String pendingValue = "";
+        public String value = "";
+        private String command;
+
+        public StringBatcher(String command) {
+            this.command = command;
+        }
+
+        public void put(String value) {
+            pendingValue = value;
+        }
+
+        public void flushPendingIntoCommandList(List<String> commands) {
+            if (!pendingValue.equals(value)) {
+                commands.add(cmd(this.command, pendingValue));
+                value = pendingValue;
+            }
+        }
+
+        public void clear() {
+            pendingValue = "";
+            value = "";
+        }
+
+    }
+
     final KeyedBatcher text = new KeyedBatcher(TXT_CMD);
     final KeyedBatcher classes = new KeyedBatcher(CLS_CMD);
     final KeyedBatcher data = new KeyedBatcher(DATA_CMD);
@@ -96,6 +125,7 @@ public class UiPipeImpl implements UiPipe {
 
     final ListBatcher clickable = new ListBatcher(CLICKABLE_CMD);
     final ListBatcher scrollable = new ListBatcher(SCROLLABLE_CMD);
+    final StringBatcher titleBatcher = new StringBatcher(TITLE_CMD);
 
     public UiPipeImpl(Publisher<WebSocketOutboundData> pipe) {
         this.pipe = pipe;
@@ -152,6 +182,11 @@ public class UiPipeImpl implements UiPipe {
         scrollable.put(id);
     }
 
+    @Override
+    public void title(String title) {
+        titleBatcher.put(title);
+    }
+
     // Buffer interface
 
     @Override
@@ -160,6 +195,9 @@ public class UiPipeImpl implements UiPipe {
         classes.clear();
         data.clear();
         height.clear();
+        clickable.clear();
+        scrollable.clear();
+        titleBatcher.clear();
         send(cmd(CLEAR_CMD));
     }
 
@@ -172,6 +210,7 @@ public class UiPipeImpl implements UiPipe {
         height.flushPendingIntoCommandList(commands);
         clickable.flushPendingIntoCommandList(commands);
         scrollable.flushPendingIntoCommandList(commands);
+        titleBatcher.flushPendingIntoCommandList(commands);
         if (commands.size() > 0) {
             send(commandJoiner.join(commands));
         }

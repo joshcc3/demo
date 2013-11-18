@@ -197,6 +197,10 @@ var Handler = function (ws) {
         }
     };
 
+    self.title = function(args) {
+        window.document.title = args[1];
+    };
+
     self.updateOn = function (el, s) {
         $(el).unbind().bind(s, function () {
             send('update', el.id, packData(el.id));

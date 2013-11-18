@@ -107,6 +107,7 @@ public class LadderView {
         public static final String POSITION = "position";
         public static final String LADDER = "ladder";
         public static final String RECENTERING = "recentering";
+        public static final String SYMBOL = "symbol";
     }
 
     private final WebSocketClient client;
@@ -127,12 +128,11 @@ public class LadderView {
     Map<Long, Integer> levelByPrice = new HashMap<Long, Integer>();
 
     private boolean pendingRefDataAndSettle = true;
+
     private long centerPrice;
     private long topPrice;
     private long bottomPrice;
-
     public int priceShiftIndex = 2;
-
     public long lastCenteredTime = 0;
 
     public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll) {
@@ -169,9 +169,16 @@ public class LadderView {
     }
 
     public void flush() {
-        checkIfNeedToRecenterAndDoItIfTimeoutElapsed();
+        drawLadderIfRefDataHasJustComeIn();
+        recenterIfTimeoutElapsed();
         updateEverything();
         ui.flush();
+    }
+
+    private void drawLadderIfRefDataHasJustComeIn() {
+        if(pendingRefDataAndSettle) {
+            drawLadder();
+        }
     }
 
     // Drawing
@@ -403,7 +410,8 @@ public class LadderView {
     private void drawBook() {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (!pendingRefDataAndSettle && m != null && m.book != null) {
-            ui.txt("symbol", getSymbol());
+            ui.txt(Html.SYMBOL, getSymbol());
+            ui.title(getSymbol());
             for (Long price : levelByPrice.keySet()) {
                 if (m.topOfBook != null && m.topOfBook.getBestBid().isExists() && m.topOfBook.getBestBid().getPrice() == price) {
                     bidQty(price, m.topOfBook.getBestBid().getQuantity());
@@ -459,7 +467,7 @@ public class LadderView {
         ui.clickable("#" + Html.SELL_QTY);
     }
 
-    public void checkIfNeedToRecenterAndDoItIfTimeoutElapsed() {
+    public void recenterIfTimeoutElapsed() {
         MarketDataForSymbol m = marketDataForSymbol;
         if (!pendingRefDataAndSettle && m != null) {
             long now = System.currentTimeMillis();
@@ -468,7 +476,6 @@ public class LadderView {
                 lastCenteredTime = now;
             } else if (now - lastCenteredTime > 5000) {
                 drawLadder();
-                updateEverything();
             }
             ui.cls(Html.LADDER, Html.RECENTERING, lastCenteredTime > 0 && 4000 <= now - lastCenteredTime);
         }
@@ -610,7 +617,7 @@ public class LadderView {
     public static final Map<String, String> defaultPrefs = newFastMap();
 
     static {
-        defaultPrefs.put(Html.INP_RELOAD, "50");
+        defaultPrefs.put(Html.INP_RELOAD, "10000");
         defaultPrefs.put(Html.AUTO_HEDGE_LEFT, "true");
         defaultPrefs.put(Html.AUTO_HEDGE_RIGHT, "true");
         defaultPrefs.put(Html.ORDER_TYPE_LEFT, "HAWK");

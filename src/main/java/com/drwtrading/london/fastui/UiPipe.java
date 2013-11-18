@@ -16,6 +16,7 @@ public interface UiPipe {
     String EVAL_CMD = "eval";
     String CLICKABLE_CMD = "clickable";
     String SCROLLABLE_CMD = "scrollable";
+    String TITLE_CMD = "title";
 
     // Gives a publisher that passes through eval .. useful for passing to the WebSocketViews framework for
     // tasks that are not handled by fastUI
@@ -42,6 +43,9 @@ public interface UiPipe {
 
     // Make scrolling on #id send a 'scroll,[up|down],id,{data}' message down the websocket
     void scrollable(String id);
+
+    // Set the title of the window
+    void title(String title);
 
     // Clear existing data
     void clear();
