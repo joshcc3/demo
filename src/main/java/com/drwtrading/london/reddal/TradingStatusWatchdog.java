@@ -3,6 +3,9 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
+import com.drwtrading.monitoring.stats.StatsPublisher;
+import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
+import com.drwtrading.monitoring.stats.status.StatusStat;
 import org.jetlang.channels.Publisher;
 
 import java.util.Map;
@@ -17,11 +20,13 @@ public class TradingStatusWatchdog {
     private final Map<String, ServerTradingStatus> tradingStatusMap = newFastMap();
     private final long maxAgeMillis;
     private final Clock clock;
+    private final StatsPublisher statsPublisher;
 
-    public TradingStatusWatchdog(final Publisher<ServerTradingStatus> tradingStatusPublisher, final long maxAgeMillis, final Clock clock) {
+    public TradingStatusWatchdog(final Publisher<ServerTradingStatus> tradingStatusPublisher, final long maxAgeMillis, final Clock clock, StatsPublisher statsPublisher) {
         this.tradingStatusPublisher = tradingStatusPublisher;
         this.maxAgeMillis = maxAgeMillis;
         this.clock = clock;
+        this.statsPublisher = statsPublisher;
     }
 
     @Subscribe
@@ -48,6 +53,15 @@ public class TradingStatusWatchdog {
                     ServerTradingStatus serverTradingStatus = new ServerTradingStatus(entry.getKey(), workingStatus, remoteStatus, tradingStatus);
                     if (!serverTradingStatus.equals(tradingStatusMap.put(serverTradingStatus.server, serverTradingStatus))) {
                         tradingStatusPublisher.publish(serverTradingStatus);
+                    }
+                    if(workingStatus == Status.OK) {
+                        statsPublisher.publish(new StatusStat(entry.getKey()+": working order status", StatusStat.State.GREEN, (int) maxAgeMillis));
+                    }
+                    if (remoteStatus == Status.OK) {
+                        statsPublisher.publish(new StatusStat(entry.getKey()+": remote order status", StatusStat.State.GREEN, (int) maxAgeMillis));
+                    }
+                    if (tradingStatus == Status.OK) {
+                        statsPublisher.publish(new StatusStat(entry.getKey()+": trading status", StatusStat.State.GREEN, (int) maxAgeMillis));
                     }
                 }
             }

@@ -401,7 +401,7 @@ public class Main {
 
         // Working orders and remote commands watchdog
         {
-            TradingStatusWatchdog watchdog = new TradingStatusWatchdog(Channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM);
+            TradingStatusWatchdog watchdog = new TradingStatusWatchdog(Channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM, statsPublisher);
             Fibers.watchdog.subscribe(watchdog, Channels.workingOrderEvents, Channels.remoteOrderEvents);
             Fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog.checkRunnable(), 500, 500, TimeUnit.MILLISECONDS);
         }
