@@ -3,6 +3,8 @@ package com.drwtrading.london.fastui;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
+import java.util.Map;
+
 public interface UiPipe {
 
     char DATA_SEPARATOR = '\0';
@@ -52,5 +54,19 @@ public interface UiPipe {
 
     // Flush pending updates
     void flush();
+
+    // Add a handler for inbound events
+    void setHandler(UiEventHandler eventHandler);
+
+    // Inbound event occurred, parse it and pass it out to handlers
+    void onInbound(String data);
+
+    public interface UiEventHandler {
+        public void onClick(String id, Map<String,String> data);
+        public void onDblClick(String id, Map<String,String> data);
+        public void onUpdate(String id, Map<String,String> data);
+        public void onScroll(String direction);
+        public void onIncoming(String[] args);
+    }
 
 }

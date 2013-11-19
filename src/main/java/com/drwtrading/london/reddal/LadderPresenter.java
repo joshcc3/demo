@@ -2,7 +2,6 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
@@ -10,6 +9,7 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
 import com.drwtrading.monitoring.stats.StatsMsg;
@@ -34,9 +34,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
 
 public class LadderPresenter {
 

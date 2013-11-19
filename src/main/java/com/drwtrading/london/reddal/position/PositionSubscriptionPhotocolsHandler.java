@@ -1,7 +1,8 @@
-package com.drwtrading.london.reddal;
+package com.drwtrading.london.reddal.position;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
+import com.drwtrading.london.reddal.Main;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
 import com.drwtrading.photons.mrphil.Position;
@@ -14,7 +15,7 @@ import java.util.UUID;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
 
-class PositionSubscriptionPhotocolsHandler implements PhotocolsHandler<Position, Subscription> {
+public class PositionSubscriptionPhotocolsHandler implements PhotocolsHandler<Position, Subscription> {
     Set<String> allSymbols = newFastSet();
     PhotocolsConnection<Subscription> connection = null;
 

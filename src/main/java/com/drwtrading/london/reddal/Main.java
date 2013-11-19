@@ -28,6 +28,10 @@ import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
+import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
+import com.drwtrading.london.reddal.safety.ProductResetter;
+import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.symbols.EquityIdToDisplaySymbolMapper;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
@@ -180,7 +184,6 @@ public class Main {
         }
     }
 
-
     public static class RemoteOrderEventFromServer extends Struct {
         public final String fromServer;
         public final RemoteOrderManagementEvent value;
@@ -190,7 +193,6 @@ public class Main {
             this.value = value;
         }
     }
-
 
     public static void main(String[] args) {
         try {

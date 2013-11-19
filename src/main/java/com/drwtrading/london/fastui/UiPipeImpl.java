@@ -5,6 +5,7 @@ import com.google.common.base.Joiner;
 import org.jetlang.channels.Publisher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +59,6 @@ public class UiPipeImpl implements UiPipe {
         }
 
     }
-
     public static class ListBatcher {
 
         public final List<String> pendingValues = newFastList();
@@ -89,7 +89,6 @@ public class UiPipeImpl implements UiPipe {
         }
 
     }
-
     public static class StringBatcher {
 
         public String pendingValue = "";
@@ -126,6 +125,8 @@ public class UiPipeImpl implements UiPipe {
     final ListBatcher clickable = new ListBatcher(CLICKABLE_CMD);
     final ListBatcher scrollable = new ListBatcher(SCROLLABLE_CMD);
     final StringBatcher titleBatcher = new StringBatcher(TITLE_CMD);
+
+    UiEventHandler inboundHandler;
 
     public UiPipeImpl(Publisher<WebSocketOutboundData> pipe) {
         this.pipe = pipe;
@@ -216,6 +217,31 @@ public class UiPipeImpl implements UiPipe {
         }
     }
 
+    @Override
+    public void setHandler(UiEventHandler eventHandler) {
+        this.inboundHandler = eventHandler;
+    }
+
+    @Override
+    public void onInbound(String data) {
+        if(inboundHandler == null) {
+            return;
+        }
+        String[] args = data.split("\0");
+        String cmd = args[0];
+        if (cmd.equals("click")) {
+            inboundHandler.onClick(args[1], getDataArg(args));
+        } else if (cmd.equals("scroll")) {
+            inboundHandler.onScroll(args[1]);
+        } else if (cmd.equals("dblclick")) {
+            inboundHandler.onDblClick(args[1], getDataArg(args));
+        } else if (cmd.equals("update")) {
+            inboundHandler.onUpdate(args[1], getDataArg(args));
+        } else {
+            inboundHandler.onIncoming(args);
+        }
+    }
+
     private void send(String cmd) {
         pipe.publish(new WebSocketOutboundData(cmd));
     }
@@ -223,5 +249,18 @@ public class UiPipeImpl implements UiPipe {
     public static String cmd(Object... args) {
         return Joiner.on(DATA_SEPARATOR).join(args);
     }
+
+    private Map<String, String> getDataArg(String[] args) {
+        Map<String, String> data = new HashMap<String, String>();
+        int arg = 2;
+        if (args.length > arg) {
+            String[] unpacked = args[arg].split("\2");
+            for (int i = 0; i < unpacked.length - 1; i += 2) {
+                data.put(unpacked[i], unpacked[i + 1]);
+            }
+        }
+        return data;
+    }
+
 
 }

@@ -3,11 +3,9 @@ package com.drwtrading.london.reddal.data;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
-import com.drwtrading.london.reddal.TradingStatusWatchdog;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
-import java.util.Iterator;
 import java.util.Map;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;

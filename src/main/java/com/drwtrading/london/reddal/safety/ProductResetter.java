@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal;
+package com.drwtrading.london.reddal.safety;
 
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
@@ -9,7 +9,7 @@ import java.util.Set;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
 
-class ProductResetter {
+public class ProductResetter {
     final Set<String> symbols = newFastSet();
     private final Publisher<MarketDataEvent> fullBook;
 

@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal;
+package com.drwtrading.london.reddal.symbols;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
@@ -15,14 +15,14 @@ import java.util.Set;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
 
-class EquityIdToDisplaySymbolMapper {
+public class EquityIdToDisplaySymbolMapper {
 
     Multimap<String, String> marketDataSymbolsByIsin = HashMultimap.create();
     Map<String, String> displaySymbolByIsin = new HashMap<String, String>();
     Set<DisplaySymbol> displaySymbols = newFastSet();
     public final Publisher<DisplaySymbol> displaySymbolPublisher;
 
-    EquityIdToDisplaySymbolMapper(Publisher<DisplaySymbol> displaySymbolPublisher) {
+    public EquityIdToDisplaySymbolMapper(Publisher<DisplaySymbol> displaySymbolPublisher) {
         this.displaySymbolPublisher = displaySymbolPublisher;
     }
 
@@ -51,7 +51,7 @@ class EquityIdToDisplaySymbolMapper {
     }
 
     private void publishIfNew(DisplaySymbol displaySymbol) {
-        if(displaySymbols.add(displaySymbol)) {
+        if (displaySymbols.add(displaySymbol)) {
             displaySymbolPublisher.publish(displaySymbol);
         }
     }

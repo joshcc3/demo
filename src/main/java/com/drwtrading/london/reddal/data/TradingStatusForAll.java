@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.data;
 
-import com.drwtrading.london.reddal.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 
 import java.util.Map;
 
