@@ -64,11 +64,13 @@ public class LadderPresenter {
     });
     Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
+    private final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher;
 
-    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher) {
+    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
+        this.roundtripPublisher = roundtripPublisher;
         ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(new Function<String, Map<String, LadderPrefsForSymbolUser>>() {
             @Override
             public Map<String, LadderPrefsForSymbolUser> apply(final String symbol) {
@@ -86,7 +88,7 @@ public class LadderPresenter {
     public void onConnected(WebSocketConnected connected) {
         UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         View view = new WebSocketOutputDispatcher<View>(View.class).wrap(uiPipe.evalPublisher());
-        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll);
+        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }
@@ -106,13 +108,15 @@ public class LadderPresenter {
         String[] args = data.split("\0");
         String cmd = args[0];
         LadderView view = viewBySocket.get(msg.getOutboundChannel());
-        if (cmd.equals("ladder-subscribe")) {
-            String symbol = args[1];
-            int levels = Integer.parseInt(args[2]);
-            view.subscribeToSymbol(symbol, levels, marketDataBySymbol.get(symbol), ordersBySymbol.get(symbol), dataBySymbol.get(symbol), ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()));
-            viewsBySymbol.put(symbol, view);
-        } else {
-            view.onInbound(args);
+        if (view != null) {
+            if (cmd.equals("ladder-subscribe")) {
+                String symbol = args[1];
+                int levels = Integer.parseInt(args[2]);
+                view.subscribeToSymbol(symbol, levels, marketDataBySymbol.get(symbol), ordersBySymbol.get(symbol), dataBySymbol.get(symbol), ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()));
+                viewsBySymbol.put(symbol, view);
+            } else {
+                view.onInbound(args);
+            }
         }
     }
 
@@ -173,27 +177,46 @@ public class LadderPresenter {
         return new Callback<List<MarketDataEvent>>() {
             @Override
             public void onMessage(List<MarketDataEvent> message) {
-                for (MarketDataEvent marketDataEvent : message) {
-                    String symbol = MarketDataEventUtil.getSymbol(marketDataEvent);
-                    if (symbol == null) {
-                        for (MarketDataForSymbol marketDataForSymbol : marketDataBySymbol.values()) {
-                            marketDataForSymbol.onMarketDataEvent(marketDataEvent);
-                        }
-                    } else {
-                        MarketDataForSymbol marketDataForSymbol = marketDataBySymbol.get(symbol);
-                        marketDataForSymbol.onMarketDataEvent(marketDataEvent);
-                    }
-                }
+                handleMarketDataBatch(message);
             }
         };
+    }
+
+    private void handleMarketDataBatch(List<MarketDataEvent> message) {
+        for (MarketDataEvent marketDataEvent : message) {
+            String symbol = MarketDataEventUtil.getSymbol(marketDataEvent);
+            if (symbol == null) {
+                for (MarketDataForSymbol marketDataForSymbol : marketDataBySymbol.values()) {
+                    marketDataForSymbol.onMarketDataEvent(marketDataEvent);
+                }
+            } else {
+                MarketDataForSymbol marketDataForSymbol = marketDataBySymbol.get(symbol);
+                marketDataForSymbol.onMarketDataEvent(marketDataEvent);
+            }
+        }
     }
 
     public Runnable flushBatchedData() {
         return new Runnable() {
             @Override
             public void run() {
+                flushAllLadders();
+            }
+        };
+    }
+
+    private void flushAllLadders() {
+        for (LadderView ladderView : viewBySocket.values()) {
+            ladderView.flush();
+        }
+    }
+
+    public Runnable sendHeartbeats() {
+        return new Runnable() {
+            @Override
+            public void run() {
                 for (LadderView ladderView : viewBySocket.values()) {
-                    ladderView.flush();
+                    ladderView.sendHeartbeat();
                 }
             }
         };

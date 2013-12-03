@@ -16,6 +16,7 @@ import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.photons.ladder.LadderText;
@@ -35,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
@@ -43,6 +45,7 @@ public class LadderView {
 
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".00");
+
 
     public static class Html {
         public static final String EMPTY = " ";
@@ -118,6 +121,7 @@ public class LadderView {
     private final UiPipe ui;
     private final Publisher<StatsMsg> statsPublisher;
     private final TradingStatusForAll tradingStatusForAll;
+    private final Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher;
 
     public String symbol;
     private MarketDataForSymbol marketDataForSymbol;
@@ -136,7 +140,7 @@ public class LadderView {
     public int priceShiftIndex = 2;
     public long lastCenteredTime = 0;
 
-    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll) {
+    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher) {
         this.client = client;
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
@@ -144,6 +148,7 @@ public class LadderView {
         this.ui = ui;
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
+        this.heartbeatRoundtripPublisher = heartbeatRoundtripPublisher;
     }
 
     public void subscribeToSymbol(String symbol, int levels, MarketDataForSymbol marketDataForSymbol, WorkingOrdersForSymbol workingOrdersForSymbol, ExtraDataForSymbol extraDataForSymbol, LadderPrefsForSymbolUser ladderPrefsForSymbolUser) {
@@ -165,11 +170,13 @@ public class LadderView {
         drawWorkingOrders();
         drawMetaData();
         drawClock();
+        drawClientSpeedState();
         drawPriceLevels(dataForSymbol);
         drawClickTrading();
     }
 
     public void flush() {
+        checkClientSpeed();
         drawLadderIfRefDataHasJustComeIn();
         recenterIfTimeoutElapsed();
         updateEverything();
@@ -177,7 +184,7 @@ public class LadderView {
     }
 
     private void drawLadderIfRefDataHasJustComeIn() {
-        if(pendingRefDataAndSettle) {
+        if (pendingRefDataAndSettle) {
             drawLadder();
         }
     }
@@ -186,6 +193,11 @@ public class LadderView {
 
     private void drawClock() {
         ui.txt(Html.CLOCK, SIMPLE_DATE_FORMAT.format(new Date()));
+    }
+
+    private void drawClientSpeedState() {
+        ui.cls(Html.CLOCK, "slow", clientSpeedState == ClientSpeedState.Slow);
+        ui.cls(Html.CLOCK, "very-slow", clientSpeedState == ClientSpeedState.TooSlow);
     }
 
     private void drawMetaData() {
@@ -296,9 +308,9 @@ public class LadderView {
         if (m.lastTrade == null) {
             return null;
         }
-        long aMlastTradePrice = m.lastTrade.getPrice();
+        long lastTradePrice = m.lastTrade.getPrice();
         long settlementPrice = m.settle.getSettlementPrice();
-        return aMlastTradePrice - settlementPrice;
+        return lastTradePrice - settlementPrice;
     }
 
     private void drawWorkingOrders() {
@@ -582,8 +594,28 @@ public class LadderView {
             onDoubleClick(label, getDataArg(args));
         } else if (cmd.equals("update")) {
             onUpdate(args[1], getDataArg(args));
+        } else if (cmd.equals("heartbeat")) {
+            onHeartbeat(Long.valueOf(args[1]), Long.valueOf(args[2]));
         } else {
             throw new IllegalStateException("Unknown incoming: " + Arrays.asList(args));
+        }
+    }
+
+    public static final AtomicLong heartbeatSeqNo = new AtomicLong(0L);
+
+    public static class HeartbeatRoundtrip extends Struct {
+        public final String userName;
+        public final String symbol;
+        public final long sentTimeMillis;
+        public final long returnTimeMillis;
+        public final long roundtripMillis;
+
+        public HeartbeatRoundtrip(String userName, String symbol, long sentTimeMillis, long returnTimeMillis, long roundtripMillis, long seqNo) {
+            this.userName = userName;
+            this.symbol = symbol;
+            this.sentTimeMillis = sentTimeMillis;
+            this.returnTimeMillis = returnTimeMillis;
+            this.roundtripMillis = roundtripMillis;
         }
     }
 
@@ -748,17 +780,27 @@ public class LadderView {
 
     private void submitOrder(String orderType, boolean autoHedge, long price, com.drwtrading.london.protocols.photon.execution.Side side) {
         if (ladderOptions.traders.contains(client.getUserName())) {
+
+            if (clientSpeedState == ClientSpeedState.TooSlow) {
+                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", client " + client.getUserName() + " is " + clientSpeedState.toString() + " speed: " + getClientSpeedMillis() + "ms"));
+                return;
+            }
+
             RemoteOrderType remoteOrderType = RemoteOrderType.valueOf(orderType);
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
             TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(serverName);
-            if (serverTradingStatus != null && serverTradingStatus.tradingStatus == TradingStatusWatchdog.Status.OK) {
-                RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(
-                        serverName, client.getUserName(), orderSeqNo++, new RemoteOrder(
-                        symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, ladderOptions.tag));
-                remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
-            } else {
+
+            if (serverTradingStatus == null || serverTradingStatus.tradingStatus != TradingStatusWatchdog.Status.OK) {
                 statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", server " + serverName + " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString())));
+                return;
             }
+
+            RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(
+                    serverName, client.getUserName(), orderSeqNo++, new RemoteOrder(
+                    symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, ladderOptions.tag));
+
+            remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
+
         }
     }
 
@@ -775,6 +817,46 @@ public class LadderView {
         if (ladderOptions.traders.contains(client.getUserName())) {
             WorkingOrderUpdate workingOrderUpdate = orderUpdateFromServer.value;
             remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.MANUAL, false, workingOrderUpdate.getTag()))));
+        }
+    }
+
+    // Heartbeats
+
+    public static enum ClientSpeedState {Fine, Slow, TooSlow}
+
+    private Long lastHeartbeatSentMillis = null;
+    private long lastHeartbeatRoundtripMillis = 1000;
+    private ClientSpeedState clientSpeedState = ClientSpeedState.TooSlow;
+
+    public void sendHeartbeat() {
+        if (lastHeartbeatSentMillis == null) {
+            lastHeartbeatSentMillis = System.currentTimeMillis();
+            ui.eval("heartbeat(" + lastHeartbeatSentMillis + "," + heartbeatSeqNo.getAndIncrement() + ")");
+        }
+    }
+
+    private void onHeartbeat(long sentTimeMillis, long seqNo) {
+        long returnTimeMillis = System.currentTimeMillis();
+        if (lastHeartbeatSentMillis == sentTimeMillis) {
+            lastHeartbeatSentMillis = null;
+            lastHeartbeatRoundtripMillis = returnTimeMillis - sentTimeMillis;
+            heartbeatRoundtripPublisher.publish(new HeartbeatRoundtrip(client.getUserName(), symbol, sentTimeMillis, returnTimeMillis, lastHeartbeatRoundtripMillis, seqNo));
+        } else {
+            throw new RuntimeException("Received heartbeat reply " + sentTimeMillis + " which does not match last sent heartbeat " + lastHeartbeatSentMillis);
+        }
+    }
+
+    public long getClientSpeedMillis() {
+        return Math.max(lastHeartbeatSentMillis == null ? 0L : System.currentTimeMillis() - lastHeartbeatSentMillis, lastHeartbeatRoundtripMillis);
+    }
+
+    public void checkClientSpeed() {
+        if (getClientSpeedMillis() > 100) {
+            clientSpeedState = ClientSpeedState.TooSlow;
+        } else if (getClientSpeedMillis() > 50) {
+            clientSpeedState = ClientSpeedState.Slow;
+        } else {
+            clientSpeedState = ClientSpeedState.Fine;
         }
     }
 

@@ -89,6 +89,12 @@ div {
     border-bottom: solid 1px gray;
     z-index: 1;
     padding: 1px;
+    overflow: hidden;
+}
+
+.column:hover {
+    overflow: visible;
+    z-index: 99;
 }
 
 .order {
@@ -409,4 +415,13 @@ traded_down.traded_again {
 
 .HAWK{
     background-color: #75736d;
+}
+
+.slow {
+    background-color: orange;
+}
+
+.very-slow {
+    background-color: darkred !important;
+    color: white;
 }
