@@ -242,7 +242,7 @@ public class UiPipeImpl implements UiPipe {
         }
     }
 
-    private void send(String cmd) {
+    public void send(String cmd) {
         pipe.publish(new WebSocketOutboundData(cmd));
     }
 

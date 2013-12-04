@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.fastui.UiPipe;
+import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
@@ -118,7 +119,7 @@ public class LadderView {
     private final LadderPresenter.View view;
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final LadderOptions ladderOptions;
-    private final UiPipe ui;
+    private final UiPipeImpl ui;
     private final Publisher<StatsMsg> statsPublisher;
     private final TradingStatusForAll tradingStatusForAll;
     private final Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher;
@@ -145,7 +146,7 @@ public class LadderView {
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.ladderOptions = ladderOptions;
-        this.ui = ui;
+        this.ui = (UiPipeImpl) ui;
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
         this.heartbeatRoundtripPublisher = heartbeatRoundtripPublisher;
@@ -831,7 +832,7 @@ public class LadderView {
     public void sendHeartbeat() {
         if (lastHeartbeatSentMillis == null) {
             lastHeartbeatSentMillis = System.currentTimeMillis();
-            ui.eval("heartbeat(" + lastHeartbeatSentMillis + "," + heartbeatSeqNo.getAndIncrement() + ")");
+            ui.send(UiPipeImpl.cmd("heartbeat", lastHeartbeatSentMillis, heartbeatSeqNo.getAndIncrement()));
         }
     }
 
@@ -851,9 +852,9 @@ public class LadderView {
     }
 
     public void checkClientSpeed() {
-        if (getClientSpeedMillis() > 100) {
+        if (getClientSpeedMillis() > 400) {
             clientSpeedState = ClientSpeedState.TooSlow;
-        } else if (getClientSpeedMillis() > 50) {
+        } else if (getClientSpeedMillis() > 250) {
             clientSpeedState = ClientSpeedState.Slow;
         } else {
             clientSpeedState = ClientSpeedState.Fine;

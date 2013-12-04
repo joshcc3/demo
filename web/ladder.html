@@ -101,15 +101,14 @@
             }
         }
 
-        function heartbeat(t, n) {
-            handler.send("heartbeat", t, n);
-        }
-
         $(function () {
             ws = connect();
             ws.logToConsole = false;
             handler = new Handler(ws);
             ws.onmessage = handler.msg;
+            handler.heartbeat = function(args) {
+                handler.send(args[0],args[1],args[2]);
+            }
             subscribe();
             setInterval(resizeIfNecessary, 200);
         });

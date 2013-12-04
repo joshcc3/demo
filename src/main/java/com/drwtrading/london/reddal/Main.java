@@ -345,8 +345,8 @@ public class Main {
                         channels.tradingStatus,
                         channels.ladderPrefsLoaded,
                         channels.displaySymbol);
-                fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 120, 120, TimeUnit.MILLISECONDS);
-                fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 1000, 1000, TimeUnit.MILLISECONDS);
+                fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 100, 100, TimeUnit.MILLISECONDS);
+                fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 500, 500, TimeUnit.MILLISECONDS);
             }
 
         }
