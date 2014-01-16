@@ -425,3 +425,35 @@ traded_down.traded_again {
     background-color: darkred !important;
     color: white;
 }
+
+#buy_offset_up{
+    top: 140px;
+    left: 0px;
+    height: 16px;
+    width: 16px;
+    background-color: #00a9ff;
+}
+
+#buy_offset_down{
+    top: 160px;
+    left: 0px;
+    height: 16px;
+    width: 16px;
+    background-color: #00a9ff;
+}
+
+#sell_offset_up{
+    top: 140px;
+    left: 20px;
+    height: 16px;
+    width: 16px;
+    background-color: #ff9999;
+}
+
+#sell_offset_down{
+    top: 160px;
+    left: 20px;
+    height: 16px;
+    width: 16px;
+    background-color: #ff9999;
+}

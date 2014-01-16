@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.fastui.UiPipeImpl;
+import com.drwtrading.london.photons.reddal.selecta.SelectaEquity;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
@@ -65,12 +66,14 @@ public class LadderPresenter {
     Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher;
+    private final Publisher<OffsetUpdate> offsetUpdatePublisher;
 
-    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher) {
+    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<OffsetUpdate> offsetUpdatePublisher) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
         this.roundtripPublisher = roundtripPublisher;
+        this.offsetUpdatePublisher = offsetUpdatePublisher;
         ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(new Function<String, Map<String, LadderPrefsForSymbolUser>>() {
             @Override
             public Map<String, LadderPrefsForSymbolUser> apply(final String symbol) {
@@ -88,7 +91,7 @@ public class LadderPresenter {
     public void onConnected(WebSocketConnected connected) {
         UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         View view = new WebSocketOutputDispatcher<View>(View.class).wrap(uiPipe.evalPublisher());
-        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher);
+        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher, offsetUpdatePublisher);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }
@@ -173,6 +176,16 @@ public class LadderPresenter {
         marketDataBySymbol.get(displaySymbol.marketDataSymbol).onDisplaySymbol(displaySymbol);
     }
 
+    @Subscribe
+    public void on(SelectaEquity selectaEquity) {
+        final Collection<LadderView> views = viewsBySymbol.get(selectaEquity.getSymbol());
+        if (views != null) {
+            for (LadderView view : views) {
+                view.setupSelecta(selectaEquity);
+            }
+        }
+    }
+
     public Callback<List<MarketDataEvent>> onMarketData() {
         return new Callback<List<MarketDataEvent>>() {
             @Override
@@ -226,5 +239,7 @@ public class LadderPresenter {
         public void draw(int levels);
 
         public void trading(boolean tradingEnabled, Collection<String> orderTypesLeft, Collection<String> orderTypesRight);
+
+        public void selecta(boolean enabled);
     }
 }

@@ -25,6 +25,7 @@ public class Environment {
     public static final String MARKET_DATA = "marketData";
     public static final String WORKING_ORDERS = "workingOrders";
     public static final String REMOTE_COMMANDS = "remoteCommands";
+    public static final String SELECTA = "selecta";
     public static final String METADATA = "metadata";
 
     public boolean opxlDeskPositionEnabled() {
@@ -121,7 +122,10 @@ public class Environment {
         final String nic = config.get(prefix + ".nic");
         return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])), NetworkInterfaces.find(nic));
     }
-
+    public int getPort(String prefix, String server) {
+        prefix = prefix + "." + server;
+        return config.getInt(prefix + ".port");
+    }
     public HostAndNic getHostAndNic(String prefix) throws SocketException {
         final String address = config.get(prefix + ".address");
         final String nic = config.get(prefix + ".nic");

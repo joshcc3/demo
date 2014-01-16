@@ -3,8 +3,6 @@ package com.drwtrading.london.reddal;
 import com.drw.nns.api.MulticastGroup;
 import com.drw.nns.api.NnsApi;
 import com.drw.nns.api.NnsFactory;
-import com.drwtrading.esquilatency.NanoClock;
-import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.config.Config;
@@ -20,6 +18,12 @@ import com.drwtrading.london.monitoring.MonitoringHeartbeat;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.photons.indy.IndyEnvelope;
+import com.drwtrading.london.photons.reddal.selecta.FromReddalToSelectaEnvelope;
+import com.drwtrading.london.photons.reddal.selecta.FromSelectaToReddalEnvelope;
+import com.drwtrading.london.photons.reddal.selecta.Heartbeat;
+import com.drwtrading.london.photons.reddal.selecta.HeartbeatToSelectaReply;
+import com.drwtrading.london.photons.reddal.selecta.SelectaEquity;
+import com.drwtrading.london.photons.reddal.selecta.UpdateOffset;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
@@ -45,6 +49,7 @@ import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.monitoring.transport.LoggingTransport;
 import com.drwtrading.monitoring.transport.NullTransport;
 import com.drwtrading.photocols.PhotocolsHandler;
+import com.drwtrading.photocols.easy.Photocols;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
 import com.drwtrading.photons.ladder.DeskPosition;
@@ -56,7 +61,6 @@ import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
-import org.apache.log4j.helpers.AbsoluteTimeDateFormat;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
@@ -67,10 +71,12 @@ import org.webbitserver.handler.logging.SimpleLogSink;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.drwtrading.jetlang.autosubscribe.TypedChannels.create;
 
@@ -101,6 +107,10 @@ public class Main {
         public final Publisher<RemoteOrderCommandToServer> remoteOrderCommand;
         public final Map<String, TypedChannel<RemoteOrderManagementCommand>> remoteOrderCommandByServer;
         public final TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded;
+        public final TypedChannel<FromReddalToSelectaEnvelope> toSelecta;
+        public final TypedChannel<SelectaEquity> selectaEquity;
+        public final TypedChannel<OffsetUpdate> offsetUpdate;
+        public final TypedChannel<FromSelectaToReddalEnvelope> fromSelecta;
         public final TypedChannel<LadderSettings.StoreLadderPref> storeLadderPref;
         public final TypedChannel<EquityIdAndSymbol> equityIdAndSymbol;
         public final TypedChannel<DisplaySymbol> displaySymbol;
@@ -138,6 +148,10 @@ public class Main {
             displaySymbol = create(DisplaySymbol.class);
             heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
             websocket = create(WebSocketControlMessage.class);
+            toSelecta = create(FromReddalToSelectaEnvelope.class);
+            fromSelecta = create(FromSelectaToReddalEnvelope.class);
+            selectaEquity = create(SelectaEquity.class);
+            offsetUpdate = create(OffsetUpdate.class);
         }
 
         public <T> TypedChannel<T> create(Class<T> clazz) {
@@ -156,6 +170,7 @@ public class Main {
         public final FiberBuilder marketData;
         public final FiberBuilder metaData;
         public final FiberBuilder workingOrders;
+        public final FiberBuilder selecta;
         public final FiberBuilder remoteOrders;
         public final FiberBuilder ladder;
         public final FiberBuilder opxlPosition;
@@ -175,6 +190,7 @@ public class Main {
             marketData = fiberGroup.create("Market data");
             metaData = fiberGroup.create("Metadata");
             workingOrders = fiberGroup.create("Working orders");
+            selecta = fiberGroup.create("Selecta");
             remoteOrders = fiberGroup.create("Remote orders");
             ladder = fiberGroup.create("Ladder");
             opxlPosition = fiberGroup.create("OPXL Position");
@@ -335,7 +351,7 @@ public class Main {
             // Ladder presenter
             {
                 final TypedChannel<WebSocketControlMessage> websocket = createWebPageWithWebSocket("ladder", "ladder", fiber, webapp, channels.websocket);
-                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips);
+                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.offsetUpdate);
                 channels.fullBook.subscribe(fibers.ladder.getFiber(), new BatchSubscriber<MarketDataEvent>(fibers.ladder.getFiber(), presenter.onMarketData(), 10, TimeUnit.MILLISECONDS));
                 fibers.ladder.subscribe(presenter,
                         websocket,
@@ -344,7 +360,8 @@ public class Main {
                         channels.position,
                         channels.tradingStatus,
                         channels.ladderPrefsLoaded,
-                        channels.displaySymbol);
+                        channels.displaySymbol,
+                        channels.selectaEquity);
                 fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 100, 100, TimeUnit.MILLISECONDS);
                 fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 500, 500, TimeUnit.MILLISECONDS);
             }
@@ -437,6 +454,48 @@ public class Main {
                 });
             }
         }
+
+        // Selecta commands
+        {
+            for (final String server : environment.getList(Environment.SELECTA)) {
+                final AtomicInteger outboundSequenceNumber = new AtomicInteger();
+                int port = environment.getPort(Environment.SELECTA, server);
+                final Photocols<FromSelectaToReddalEnvelope, FromReddalToSelectaEnvelope> serverPhotocols = Photocols.server(new InetSocketAddress(port), FromSelectaToReddalEnvelope.class, FromReddalToSelectaEnvelope.class, fibers.selecta.getFiber(), EXCEPTION_HANDLER);
+                serverPhotocols.logFile(new File(logDir, "selecta." + server + ".log"), fibers.logging.getFiber(), true);
+                serverPhotocols.endpoint().add(new PhotocolsStatsPublisher<FromSelectaToReddalEnvelope, FromReddalToSelectaEnvelope>(statsPublisher, environment.getStatsName(), 10));
+                serverPhotocols.endpoint().add(new JetlangChannelHandler<FromSelectaToReddalEnvelope, FromReddalToSelectaEnvelope>(channels.fromSelecta, channels.toSelecta, fibers.selecta.getFiber()));
+                serverPhotocols.endpoint().add(new InboundTimeoutWatchdog<FromSelectaToReddalEnvelope, FromReddalToSelectaEnvelope>(fibers.selecta.getFiber(), new ConnectionCloser(channels.status, "Selecta: " + server), SERVER_TIMEOUT));
+                fibers.selecta.subscribe(new Callback<FromSelectaToReddalEnvelope>() {
+                    @Override
+                    public void onMessage(FromSelectaToReddalEnvelope message) {
+                        if (message.getMessage() instanceof Heartbeat) {
+                            channels.toSelecta.publish(new FromReddalToSelectaEnvelope(outboundSequenceNumber.incrementAndGet(), System.currentTimeMillis(), server, new HeartbeatToSelectaReply(message.getSeqno(), message.getTimestamp())));
+                        }
+                        if (message.getMessage() instanceof SelectaEquity) {
+                            channels.selectaEquity.publish((SelectaEquity) message.getMessage());
+                        }
+                    }
+                }, channels.fromSelecta);
+                fibers.selecta.subscribe(new Callback<OffsetUpdate>() {
+                    @Override
+                    public void onMessage(OffsetUpdate message) {
+                        serverPhotocols.publish(new FromReddalToSelectaEnvelope(outboundSequenceNumber.incrementAndGet(), System.currentTimeMillis(), server, new UpdateOffset(message.symbol, message.equityId, message.side, message.direction)));
+                    }
+                }, channels.offsetUpdate);
+
+                fibers.onStart(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            serverPhotocols.start();
+                        } catch (InterruptedException e) {
+                            channels.error.publish(e);
+                        }
+                    }
+                });
+            }
+        }
+
 
         // Working orders
         {
