@@ -33,6 +33,7 @@ import org.jetlang.core.Callback;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -163,6 +164,22 @@ public class LadderPresenter {
     @Subscribe
     public void on(TradingStatusWatchdog.ServerTradingStatus serverTradingStatus) {
         tradingStatusForAll.on(serverTradingStatus);
+        if (serverTradingStatus.workingOrderStatus == TradingStatusWatchdog.Status.NOT_OK) {
+            for (WorkingOrdersForSymbol ordersForSymbol : ordersBySymbol.values()) {
+                for (Iterator<Main.WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByKey.values().iterator(); iter.hasNext(); ) {
+                    Main.WorkingOrderUpdateFromServer working = iter.next();
+                    if (working.fromServer.equals(serverTradingStatus.server)) {
+                        iter.remove();
+                    }
+                }
+                for (Iterator<Main.WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByPrice.values().iterator(); iter.hasNext(); ) {
+                    Main.WorkingOrderUpdateFromServer working = iter.next();
+                    if (working.fromServer.equals(serverTradingStatus.server)) {
+                        iter.remove();
+                    }
+                }
+            }
+        }
     }
 
     @Subscribe

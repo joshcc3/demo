@@ -4,6 +4,7 @@ import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.selecta.Direction;
 import com.drwtrading.london.photons.reddal.selecta.SelectaEquity;
+import com.drwtrading.london.prices.tickbands.TickBandUtils;
 import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
@@ -538,7 +539,8 @@ public class LadderView {
         if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestBid().isExists()) {
             center = getMidPrice(m);
         }
-        return center;
+        long roundedCenter = TickBandUtils.roundDownToNearestTick(center, m.tickBands);
+        return roundedCenter;
     }
 
     private long getMidPrice(MarketDataForSymbol m) {
