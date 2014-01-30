@@ -136,6 +136,11 @@ public class Environment {
         return new StatsPublisher("", new NullTransport());
     }
 
+    /**
+     * Remote commands server are matched in order.
+     * If the symbol matches the regex AND (no order types are specified OR the order is among the types specified) THEN it matches
+     * @return
+     */
     public RemoteOrderServerResolver getServerResolver() {
 
         final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<String, RemoteOrderMatcher>();
@@ -149,6 +154,11 @@ public class Environment {
             matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypes));
         }
 
+        return getRemoteOrderServerResolver(matchers);
+
+    }
+
+    public static RemoteOrderServerResolver getRemoteOrderServerResolver(final LinkedHashMap<String, RemoteOrderMatcher> matchers) {
         return new RemoteOrderServerResolver() {
             @Override
             public String resolveToServerName(String symbol, RemoteOrderType orderType) {
@@ -160,7 +170,6 @@ public class Environment {
                 throw new IllegalArgumentException("No matching remote order server for " + symbol + " " + orderType);
             }
         };
-
     }
 
     public static interface RemoteOrderServerResolver {
