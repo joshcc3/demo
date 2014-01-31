@@ -472,7 +472,12 @@ tr.result {
 tr.result .symbol {
     white-space: nowrap;
     font-size: 14px;
-    width: 100px;
+    min-width: 100px;
+}
+
+tr.result .display {
+    min-width: 50px;
+    white-space: nowrap;
 }
 tr.result .description {
     font-size: 10px;
@@ -485,8 +490,12 @@ tr.result .description {
     left: 0px;
     position: absolute;
     margin: 0px;
-    width: 400px;
+    width: 100%;
     border: solid 3px dotted black;
+}
+
+#search_results {
+    width: 100%;
 }
 
 tr.result.highlight {
@@ -506,9 +515,9 @@ tr.result.highlight {
     height: 30px;
     font-size: 15px;
     font-family: monospace;
-    width: 400px;
     background-color: #292929;
     color: white;
     border: 1px dotted white;
+    width: 100%;
 
 }

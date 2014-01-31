@@ -20,7 +20,7 @@
             ws.onmessage = eval;
             setInterval(function () {
                 var val = $("#search").val();
-                if (val.length >= 3 && val != search) {
+                if (val != search) {
                     search = val;
                     ws.send(command("search", [search]));
                 }
@@ -46,6 +46,7 @@
 
                     var row = $("#search_results tr.template.row").clone().removeClass("template").addClass('result');
                     row.find('.symbol').text(x.symbol);
+                    row.find('.display').text(x.displaySymbol);
                     row.find('.description').text(x.description);
                     var link = x.link;
                     var symbol = x.symbol;
@@ -74,10 +75,9 @@
     <div id="too_many" class="hidden">(too many results...)</div>
     <table id="search_results">
         <tr class="template row">
-            <td class="symbol">
-            </td>
-            <td class="description">
-            </td>
+            <td class="symbol"></td>
+            <td class="display"></td>
+            <td class="description"></td>
         </tr>
     </table>
 </div>

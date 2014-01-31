@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,16 +41,16 @@ public class IndexPresenter {
     Map<String, DisplaySymbol> symbolToDisplay = newFastMap();
     Map<String, SearchResult> searchResultBySymbol = newFastMap();
 
-    private final int minTermLength = 3;
+    private final int minTermLength = 2;
     private final int maxResults = 100;
-
 
     @Subscribe
     public void on(InstrumentDefinitionEvent instrumentDefinitionEvent) {
         SearchResult searchResult = searchResultFromInstrumentDef(instrumentDefinitionEvent);
-        searchResultBySymbol.put(searchResult.symbol, searchResult);
-        for (String keyword : searchResult.keywords) {
-            suffixTree.put(keyword, searchResult.symbol);
+        if(searchResultBySymbol.put(searchResult.symbol, searchResult) == null) {
+            for (String keyword : searchResult.keywords) {
+                suffixTree.put(keyword, searchResult.symbol);
+            }
         }
     }
 
@@ -60,7 +62,8 @@ public class IndexPresenter {
             SearchResult searchResult = searchResultBySymbol.get(displaySymbol.marketDataSymbol);
             searchResult.keywords.add(displaySymbol.displaySymbol);
             searchResultBySymbol.put(searchResult.symbol, new SearchResult(
-                    showDisplaySymbol(displaySymbol),
+                    searchResult.symbol,
+                    displaySymbol.displaySymbol,
                     searchResult.link,
                     searchResult.description,
                     searchResult.keywords
@@ -111,7 +114,7 @@ public class IndexPresenter {
 
         terms.addAll(Arrays.asList(desc.split(("\\W"))));
 
-        return new SearchResult(symbol, link, description, terms);
+        return new SearchResult(symbol, display != null ? display.displaySymbol : null, link, description, terms);
     }
 
     private String showDisplaySymbol(DisplaySymbol display) {
@@ -156,14 +159,25 @@ public class IndexPresenter {
             }
         }
 
-        displayResult(view, matching);
+        displayResult(view, matching, searchTerms);
 
     }
 
-    private void displayResult(View view, Set<String> matching) {
+    private void displayResult(View view, Set<String> matching, final String searchTerms) {
 
-        ArrayList<String> symbols = new ArrayList<String>(matching);
-        Collections.sort(symbols);
+        LinkedList<String> symbols = new LinkedList<String>(matching);
+        Collections.sort(symbols, new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                return LevenshteinDistance.computeEditDistance(searchTerms, o1) - LevenshteinDistance.computeEditDistance(searchTerms, o2);
+            }
+        });
+
+        if (symbols.remove(searchTerms.toUpperCase())) {
+            symbols.add(0, searchTerms.toUpperCase());
+        } else if (symbols.remove(("SF:"+searchTerms.toUpperCase()))) {
+            symbols.add(0, "SF:"+searchTerms.toUpperCase());
+        }
 
         ArrayList<SearchResult> results = new ArrayList<SearchResult>(Collections2.transform(symbols, new Function<String, SearchResult>() {
             @Override
@@ -188,12 +202,14 @@ public class IndexPresenter {
 
     public static class SearchResult extends Struct {
         public final String symbol;
+        public final String displaySymbol;
         public final String link;
         public final String description;
         public final Collection<String> keywords;
 
-        public SearchResult(String symbol, String link, String description, Collection<String> keywords) {
+        public SearchResult(String symbol, String displaySymbol, String link, String description, Collection<String> keywords) {
             this.symbol = symbol;
+            this.displaySymbol = displaySymbol;
             this.link = link;
             this.description = description;
             this.keywords = keywords;
@@ -237,5 +253,48 @@ public class IndexPresenter {
 
     }
 
+    public static class LevenshteinDistance {
 
+        public static double similarity(String s1, String s2) {
+            if (s1.length() < s2.length()) { // s1 should always be bigger
+                String swap = s1;
+                s1 = s2;
+                s2 = swap;
+            }
+            int bigLen = s1.length();
+            if (bigLen == 0) {
+                return 1.0; /* both strings are zero length */
+            }
+            return (bigLen - computeEditDistance(s1, s2)) / (double) bigLen;
+        }
+
+        public static int computeEditDistance(String s1, String s2) {
+            s1 = s1.toLowerCase();
+            s2 = s2.toLowerCase();
+
+            int[] costs = new int[s2.length() + 1];
+            for (int i = 0; i <= s1.length(); i++) {
+                int lastValue = i;
+                for (int j = 0; j <= s2.length(); j++) {
+                    if (i == 0)
+                        costs[j] = j;
+                    else {
+                        if (j > 0) {
+                            int newValue = costs[j - 1];
+                            if (s1.charAt(i - 1) != s2.charAt(j - 1))
+                                newValue = Math.min(Math.min(newValue, lastValue),
+                                        costs[j]) + 1;
+                            costs[j - 1] = lastValue;
+                            lastValue = newValue;
+                        }
+                    }
+                }
+                if (i > 0)
+                    costs[s2.length()] = lastValue;
+            }
+            return costs[s2.length()];
+        }
+
+
+    }
 }
