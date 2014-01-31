@@ -18,6 +18,7 @@ import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Sets;
 import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
@@ -138,7 +139,7 @@ public class IndexPresenter {
 
         View view = views.get(data.getOutboundChannel());
 
-        ObjectArraySet<String> matching = new ObjectArraySet<String>();
+        Set<String> matching = new ObjectArraySet<String>();
         if (searchTerms.length() > minTermLength) {
             matching.addAll(suffixTree.search(searchTerms));
         }
@@ -149,9 +150,9 @@ public class IndexPresenter {
             }
             Set<String> result = suffixTree.search(term);
             if (matching.isEmpty()) {
-                matching.addAll(result);
+                matching = Sets.union(matching, result);
             } else {
-                matching.retainAll(result);
+                matching = Sets.intersection(matching, result);
             }
         }
 
@@ -159,7 +160,7 @@ public class IndexPresenter {
 
     }
 
-    private void displayResult(View view, ObjectArraySet<String> matching) {
+    private void displayResult(View view, Set<String> matching) {
 
         ArrayList<String> symbols = new ArrayList<String>(matching);
         Collections.sort(symbols);

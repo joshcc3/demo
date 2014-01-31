@@ -373,10 +373,11 @@ public class Main {
             // Index presenter
             {
                 TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("index", "index", fiber, webapp, websocket);
+                createWebPageWithWebSocket("/", "index", fiber, webapp, websocket);
                 IndexPresenter indexPresenter = new IndexPresenter();
                 fiber.subscribe(indexPresenter, websocket, channels.refData, channels.displaySymbol);
             }
+
 
         }
 

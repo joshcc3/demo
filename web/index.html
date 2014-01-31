@@ -15,7 +15,7 @@
         var search;
         var topResult;
         $(function () {
-            ws = connect();
+            ws = connect("ws://" + document.location.host + "/index/ws/");
             ws.logToConsole = false;
             ws.onmessage = eval;
             setInterval(function () {
