@@ -14,7 +14,7 @@ config default
   include google.guava/r06
   include fastutil/6.3
   include photon-runtime-java/1.0.0.81
-  include com.drwtrading.photocols/0.9.4
+  include com.drwtrading.photocols/0.9.7
 
   # JSON
   include drw.london.json/1.0.0.4
@@ -50,14 +50,14 @@ config default
   # MD
   include io.netty-netty/3.2.7.Final
   include drw.frontoffice.book/1.0.0.4
-  include drw.london.market-data-service/279
-  include drw.london.market-data-service/279:eurex_na
-  include drw.london.market-data-service/279:superfeed
-  include drw.london.market-data-service/279:liffe_xdp
-  include drw.london.market-data-service/279:xetra
-  include drw.london.market-data-service/279:logging
+  include drw.london.market-data-service/292
+  include drw.london.market-data-service/292:eurex_na
+  include drw.london.market-data-service/292:superfeed
+  include drw.london.market-data-service/292:liffe_xdp
+  include drw.london.market-data-service/292:xetra
+  include drw.london.market-data-service/292:logging
 
-  include com.drwtrading.london.protocols.photon.marketdata/39
+  include com.drwtrading.london.protocols.photon.marketdata/40
   include com.drwtrading.london.prices/14
   include drw.london.esquilatency/1.0.0.20
 
