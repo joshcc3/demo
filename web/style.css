@@ -457,3 +457,58 @@ traded_down.traded_again {
     width: 16px;
     background-color: #ff9999;
 }
+
+
+
+/* index */
+
+tr.result:nth-child(odd)		{     background-color: #d4d0c7; }
+tr.result:nth-child(even)		{     background-color: #bab6af; }
+tr.result {
+    font-size: 11px;
+    font-family: monospace;
+    color: black;
+}
+tr.result .symbol {
+    white-space: nowrap;
+    font-size: 14px;
+    width: 100px;
+}
+tr.result .description {
+    font-size: 10px;
+    -webkit-user-select: text;
+
+}
+
+#search_results_container {
+    top: 35px;
+    left: 0px;
+    position: absolute;
+    margin: 0px;
+    width: 400px;
+    border: solid 3px dotted black;
+}
+
+tr.result.highlight {
+    background-color: #fdd3bb !important;
+}
+
+#search_box{
+    background-color: #e8e8e8;
+    margin: 0px;
+    width: 400px;
+}
+#search {
+    left: 0px;
+    top: 0px;
+    position: absolute;;
+    margin: 0px;
+    height: 30px;
+    font-size: 15px;
+    font-family: monospace;
+    width: 400px;
+    background-color: #292929;
+    color: white;
+    border: 1px dotted white;
+
+}

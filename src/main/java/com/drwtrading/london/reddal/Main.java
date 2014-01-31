@@ -4,7 +4,9 @@ import com.drw.nns.api.MulticastGroup;
 import com.drw.nns.api.NnsApi;
 import com.drw.nns.api.NnsFactory;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
+import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
+import com.drwtrading.london.IndexPresenter;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
 import com.drwtrading.london.jetlang.ChannelFactory;
@@ -62,6 +64,7 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
 import org.jetlang.channels.BatchSubscriber;
+import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
 import org.jetlang.fibers.Fiber;
@@ -364,6 +367,15 @@ public class Main {
                         channels.selectaEquity);
                 fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 100, 100, TimeUnit.MILLISECONDS);
                 fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 500, 500, TimeUnit.MILLISECONDS);
+            }
+
+
+            // Index presenter
+            {
+                TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("index", "index", fiber, webapp, websocket);
+                IndexPresenter indexPresenter = new IndexPresenter();
+                fiber.subscribe(indexPresenter, websocket, channels.refData, channels.displaySymbol);
             }
 
         }

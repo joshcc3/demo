@@ -143,11 +143,15 @@ public class Environment {
      */
     public RemoteOrderServerResolver getServerResolver() {
 
+        System.out.println("Loading server resolver:");
         final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<String, RemoteOrderMatcher>();
 
         for (String remoteServer : getList(REMOTE_COMMANDS)) {
-            Pattern pattern = Pattern.compile(config.getOrDefault(remoteServer + ".symbolRegex", ".*"));
-            Set<String> orderTypes = ImmutableSet.copyOf(config.getListOrDefault(remoteServer + ".orderTypes", ImmutableList.of("*")));
+            String symbolRegex = config.getOrDefault(REMOTE_COMMANDS +"."+remoteServer + ".symbolRegex", ".*");
+            Pattern pattern = Pattern.compile(symbolRegex);
+            Set<String> orderTypes = ImmutableSet.copyOf(config.getListOrDefault(REMOTE_COMMANDS +"."+remoteServer + ".orderTypes", ImmutableList.of("*")));
+            System.out.println("\t"+remoteServer+": regex '"+symbolRegex+"', order types: " + orderTypes);
+
             if (orderTypes.size() == 1 && orderTypes.contains("*")) {
                 orderTypes = null;
             }

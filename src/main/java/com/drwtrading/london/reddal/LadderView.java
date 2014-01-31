@@ -821,6 +821,9 @@ public class LadderView {
 
             RemoteOrderType remoteOrderType = RemoteOrderType.valueOf(orderType);
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
+
+            System.out.println("Order: " + symbol + " " + remoteOrderType.toString() + " resolved to " + serverName);
+
             TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(serverName);
 
             if (serverTradingStatus == null || serverTradingStatus.tradingStatus != TradingStatusWatchdog.Status.OK) {
