@@ -22,7 +22,6 @@ public class ExtraDataForSymbol {
     public LastTrade lastSell;
     public Position dayPosition;
 
-
     public ExtraDataForSymbol(String symbol) {
         this.symbol = symbol;
         deskPosition = new DeskPosition(symbol, "");

@@ -30,12 +30,14 @@ import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
+import org.jetlang.core.Scheduler;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class LadderPresenter {
 
@@ -68,13 +70,15 @@ public class LadderPresenter {
     TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher;
     private final Publisher<OffsetUpdate> offsetUpdatePublisher;
+    private final Scheduler scheduler;
 
-    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<OffsetUpdate> offsetUpdatePublisher) {
+    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<OffsetUpdate> offsetUpdatePublisher, Scheduler scheduler) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
         this.roundtripPublisher = roundtripPublisher;
         this.offsetUpdatePublisher = offsetUpdatePublisher;
+        this.scheduler = scheduler;
         ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(new Function<String, Map<String, LadderPrefsForSymbolUser>>() {
             @Override
             public Map<String, LadderPrefsForSymbolUser> apply(final String symbol) {
@@ -86,6 +90,7 @@ public class LadderPresenter {
                 });
             }
         });
+
     }
 
     @Subscribe
@@ -147,8 +152,16 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(LadderText ladderText) {
+    public void on(final LadderText ladderText) {
         dataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
+        if(ladderText.getCell().equals("execution")){
+            scheduler.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    dataBySymbol.get(ladderText.getSymbol()).onLadderText(new LadderText(ladderText.getSymbol(), "execution", "", ""));
+                }
+            }, 5000, TimeUnit.MILLISECONDS);
+        }
     }
 
     @Subscribe

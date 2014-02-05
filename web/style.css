@@ -193,6 +193,19 @@ div {
 #text_r1c3 { left: 80px; }
 #text_r1c4 { left: 120px; }
 #text_info { left: 160px; }
+#text_execution { left: 0px; }
+
+.text_cell_execution {
+    position: absolute;
+    background-color: white;
+    color: #008b8b;
+    font-weight: bold;
+    height: 14px;
+    top:-12px;
+    text-align: center;
+    z-index: 3;
+    white-space: nowrap;
+}
 
 .last_buy {
     background-color: #7b97ff !important;

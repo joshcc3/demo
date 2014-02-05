@@ -242,6 +242,7 @@ public class LadderView {
             // Ladder info
             if (dataForSymbol.infoOnLadder != null) {
                 ui.txt(Html.TEXT + "info", dataForSymbol.infoOnLadder.getValue());
+
             }
 
             // Ladder text
@@ -249,6 +250,9 @@ public class LadderView {
                 ui.txt(Html.TEXT + ladderText.getCell(), ladderText.getText());
             }
 
+//            ui.txt(Html.TEXT + "execution", "An Error Message Which is a bit long should go here");
+
+//            ui.cls(Html.TEXT + "execution", Html.HIDDEN, true);
             // Last trade
             for (Map.Entry<Long, Integer> entry : levelByPrice.entrySet()) {
                 ui.cls(priceKey(entry.getKey()), Html.LAST_BUY, d.lastBuy != null && d.lastBuy.getPrice() == entry.getKey());
@@ -492,10 +496,11 @@ public class LadderView {
         ui.clickable("#" + Html.BUY_QTY);
         ui.clickable("#" + Html.SELL_QTY);
     }
+
     public void setupSelecta(SelectaEquity selectaEquity) {
         this.selectaEquity = selectaEquity;
         boolean clickTradingEnabled = ladderOptions.traders.contains(client.getUserName());
-        if(clickTradingEnabled){
+        if (clickTradingEnabled) {
             ui.clickable("#" + Html.BUY_OFFSET_UP);
             ui.clickable("#" + Html.BUY_OFFSET_DOWN);
             ui.clickable("#" + Html.SELL_OFFSET_UP);
@@ -761,13 +766,13 @@ public class LadderView {
                 }
             } else if (label.startsWith(Html.PRICE)) {
                 priceShiftIndex += 1;
-            } else if(label.equals(Html.BUY_OFFSET_UP)){
+            } else if (label.equals(Html.BUY_OFFSET_UP)) {
                 offsetUpdatePublisher.publish(new OffsetUpdate(selectaEquity.getSymbol(), selectaEquity.getEquityId(), com.drwtrading.london.photons.reddal.selecta.Side.BID, Direction.UP));
-            }else if(label.equals(Html.BUY_OFFSET_DOWN)){
+            } else if (label.equals(Html.BUY_OFFSET_DOWN)) {
                 offsetUpdatePublisher.publish(new OffsetUpdate(selectaEquity.getSymbol(), selectaEquity.getEquityId(), com.drwtrading.london.photons.reddal.selecta.Side.BID, Direction.DOWN));
-            }else if(label.equals(Html.SELL_OFFSET_UP)){
+            } else if (label.equals(Html.SELL_OFFSET_UP)) {
                 offsetUpdatePublisher.publish(new OffsetUpdate(selectaEquity.getSymbol(), selectaEquity.getEquityId(), com.drwtrading.london.photons.reddal.selecta.Side.OFFER, Direction.UP));
-            }else if(label.equals(Html.SELL_OFFSET_DOWN)){
+            } else if (label.equals(Html.SELL_OFFSET_DOWN)) {
                 offsetUpdatePublisher.publish(new OffsetUpdate(selectaEquity.getSymbol(), selectaEquity.getEquityId(), com.drwtrading.london.photons.reddal.selecta.Side.OFFER, Direction.DOWN));
             }
         } else if ("right".equals(button)) {

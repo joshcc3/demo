@@ -64,7 +64,6 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
 import org.jetlang.channels.BatchSubscriber;
-import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
 import org.jetlang.fibers.Fiber;
@@ -354,7 +353,7 @@ public class Main {
             // Ladder presenter
             {
                 final TypedChannel<WebSocketControlMessage> websocket = createWebPageWithWebSocket("ladder", "ladder", fiber, webapp, channels.websocket);
-                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.offsetUpdate);
+                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.offsetUpdate, fiber.getFiber());
                 channels.fullBook.subscribe(fibers.ladder.getFiber(), new BatchSubscriber<MarketDataEvent>(fibers.ladder.getFiber(), presenter.onMarketData(), 10, TimeUnit.MILLISECONDS));
                 fibers.ladder.subscribe(presenter,
                         websocket,
