@@ -249,10 +249,6 @@ public class LadderView {
             for (LadderText ladderText : dataForSymbol.ladderTextByPosition.values()) {
                 ui.txt(Html.TEXT + ladderText.getCell(), ladderText.getText());
             }
-
-//            ui.txt(Html.TEXT + "execution", "An Error Message Which is a bit long should go here");
-
-//            ui.cls(Html.TEXT + "execution", Html.HIDDEN, true);
             // Last trade
             for (Map.Entry<Long, Integer> entry : levelByPrice.entrySet()) {
                 ui.cls(priceKey(entry.getKey()), Html.LAST_BUY, d.lastBuy != null && d.lastBuy.getPrice() == entry.getKey());
