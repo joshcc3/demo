@@ -537,6 +537,9 @@ public class LadderView {
         if (m.topOfBook != null && m.topOfBook.getBestBid().isExists()) {
             center = m.topOfBook.getBestBid().getPrice();
         }
+        if (dataForSymbol != null && dataForSymbol.laserLineByName.get("green") != null) {
+            center = dataForSymbol.laserLineByName.get("green").getPrice();
+        }
         if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestBid().isExists()) {
             center = getMidPrice(m);
         }
