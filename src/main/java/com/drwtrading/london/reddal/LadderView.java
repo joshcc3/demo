@@ -2,8 +2,11 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.reddal.selecta.Direction;
-import com.drwtrading.london.photons.reddal.selecta.SelectaEquity;
+import com.drwtrading.london.photons.reddal.Command;
+import com.drwtrading.london.photons.reddal.Direction;
+import com.drwtrading.london.photons.reddal.ReddalCommand;
+import com.drwtrading.london.photons.reddal.ReddalMessage;
+import com.drwtrading.london.photons.reddal.UpdateOffset;
 import com.drwtrading.london.prices.tickbands.TickBandUtils;
 import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
@@ -49,8 +52,6 @@ public class LadderView {
 
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".00");
-    private SelectaEquity selectaEquity;
-
 
     public static class Html {
         public static final String EMPTY = " ";
@@ -123,13 +124,15 @@ public class LadderView {
         public static final String SELL_OFFSET_UP = "sell_offset_up";
         public static final String SELL_OFFSET_DOWN = "sell_offset_down";
         public static final String OFFSET_CONTROL = "offset_control";
+        public static final String START_COMMAND = "start_command";
+        public static final String STOP_COMMAND = "stop_command";
     }
 
     private final WebSocketClient client;
     private final LadderPresenter.View view;
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final LadderOptions ladderOptions;
-    private final Publisher<OffsetUpdate> offsetUpdatePublisher;
+    private final Publisher<ReddalMessage> commandPublisher;
     private final UiPipeImpl ui;
     private final Publisher<StatsMsg> statsPublisher;
     private final TradingStatusForAll tradingStatusForAll;
@@ -152,12 +155,12 @@ public class LadderView {
     public int priceShiftIndex = 2;
     public long lastCenteredTime = 0;
 
-    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, Publisher<OffsetUpdate> offsetUpdatePublisher) {
+    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, Publisher<ReddalMessage> commandPublisher) {
         this.client = client;
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.ladderOptions = ladderOptions;
-        this.offsetUpdatePublisher = offsetUpdatePublisher;
+        this.commandPublisher = commandPublisher;
         this.ui = (UiPipeImpl) ui;
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
@@ -493,8 +496,7 @@ public class LadderView {
         ui.clickable("#" + Html.SELL_QTY);
     }
 
-    public void setupSelecta(SelectaEquity selectaEquity) {
-        this.selectaEquity = selectaEquity;
+    public void setupSelecta() {
         boolean clickTradingEnabled = ladderOptions.traders.contains(client.getUserName());
         if (clickTradingEnabled) {
             ui.clickable("#" + Html.BUY_OFFSET_UP);
@@ -766,13 +768,19 @@ public class LadderView {
             } else if (label.startsWith(Html.PRICE)) {
                 priceShiftIndex += 1;
             } else if (label.equals(Html.BUY_OFFSET_UP)) {
-                offsetUpdatePublisher.publish(new OffsetUpdate(selectaEquity.getSymbol(), selectaEquity.getEquityId(), com.drwtrading.london.photons.reddal.selecta.Side.BID, Direction.UP));
+                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.UP));
             } else if (label.equals(Html.BUY_OFFSET_DOWN)) {
-                offsetUpdatePublisher.publish(new OffsetUpdate(selectaEquity.getSymbol(), selectaEquity.getEquityId(), com.drwtrading.london.photons.reddal.selecta.Side.BID, Direction.DOWN));
+                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.DOWN));
             } else if (label.equals(Html.SELL_OFFSET_UP)) {
-                offsetUpdatePublisher.publish(new OffsetUpdate(selectaEquity.getSymbol(), selectaEquity.getEquityId(), com.drwtrading.london.photons.reddal.selecta.Side.OFFER, Direction.UP));
+                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.UP));
             } else if (label.equals(Html.SELL_OFFSET_DOWN)) {
-                offsetUpdatePublisher.publish(new OffsetUpdate(selectaEquity.getSymbol(), selectaEquity.getEquityId(), com.drwtrading.london.photons.reddal.selecta.Side.OFFER, Direction.DOWN));
+                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.DOWN));
+            } else if (label.equals(Html.START_COMMAND)) {
+                commandPublisher.publish(new Command(ReddalCommand.START, symbol, com.drwtrading.london.photons.reddal.Side.BID));
+                commandPublisher.publish(new Command(ReddalCommand.START, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
+            } else if (label.equals(Html.STOP_COMMAND)) {
+                commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.BID));
+                commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {

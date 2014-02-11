@@ -25,7 +25,6 @@ public class Environment {
     public static final String MARKET_DATA = "marketData";
     public static final String WORKING_ORDERS = "workingOrders";
     public static final String REMOTE_COMMANDS = "remoteCommands";
-    public static final String SELECTA = "selecta";
     public static final String METADATA = "metadata";
 
     public boolean opxlDeskPositionEnabled() {
@@ -57,6 +56,10 @@ public class Environment {
 
     public HostAndNic getIndyHostAndNic() throws SocketException {
         return getHostAndNic("indy");
+    }
+
+    public int getCommandsPort() {
+        return config.getInt("commands.port");
     }
 
     public static class HostAndNic {
