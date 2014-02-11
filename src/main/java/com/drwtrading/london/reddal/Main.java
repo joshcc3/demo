@@ -20,7 +20,7 @@ import com.drwtrading.london.monitoring.MonitoringHeartbeat;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.photons.indy.IndyEnvelope;
-import com.drwtrading.london.photons.reddal.ReddalEnvelope;
+import com.drwtrading.london.photons.reddal.Heartbeat;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
@@ -111,6 +111,7 @@ public class Main {
         private final ChannelFactory channelFactory;
         public final TypedChannel<WebSocketControlMessage> websocket;
         public final TypedChannel<ReddalMessage> reddalCommand;
+        public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
 
         public ReddalChannels(ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
@@ -143,6 +144,7 @@ public class Main {
             heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
             websocket = create(WebSocketControlMessage.class);
             reddalCommand = create(ReddalMessage.class);
+            reddalCommandSymbolAvailable = create(ReddalMessage.class);
         }
 
         public <T> TypedChannel<T> create(Class<T> clazz) {
@@ -351,7 +353,8 @@ public class Main {
                         channels.position,
                         channels.tradingStatus,
                         channels.ladderPrefsLoaded,
-                        channels.displaySymbol);
+                        channels.displaySymbol,
+                        channels.reddalCommandSymbolAvailable);
                 fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 100, 100, TimeUnit.MILLISECONDS);
                 fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 500, 500, TimeUnit.MILLISECONDS);
             }
@@ -457,8 +460,9 @@ public class Main {
 
         // Reddal server
         {
-            final Photocols<Void, ReddalEnvelope> commandServer = Photocols.server(new InetSocketAddress(environment.getCommandsPort()), Void.class, ReddalEnvelope.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
+            final Photocols<ReddalMessage, ReddalMessage> commandServer = Photocols.server(new InetSocketAddress(environment.getCommandsPort()), ReddalMessage.class, ReddalMessage.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
             commandServer.logFile(new File(logDir, "photocols.commands.log"), fibers.logging.getFiber(), true);
+            commandServer.endpoint().add(new JetlangChannelHandler<ReddalMessage, ReddalMessage>(channels.reddalCommandSymbolAvailable, channels.reddalCommand, fibers.metaData.getFiber()));
             fibers.onStart(new Runnable() {
                 @Override
                 public void run() {
@@ -469,6 +473,12 @@ public class Main {
                     }
                 }
             });
+            fibers.metaData.getFiber().scheduleWithFixedDelay(new Runnable() {
+                @Override
+                public void run() {
+                    commandServer.publish(new Heartbeat());
+                }
+            }, 1000, 1000, TimeUnit.MILLISECONDS);
         }
 
         // Working orders

@@ -45,7 +45,7 @@ config default
   include drw.london.eeif-photocols-client/1
   include com.drwtrading.photons.mrphil/1.0.0.4
   include com.drwtrading.london.photons.indy/9
-  include com.drwtrading.london.photons.reddal/0
+  include com.drwtrading.london.photons.reddal/1
 
   # MD
   include io.netty-netty/3.2.7.Final

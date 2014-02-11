@@ -21,6 +21,7 @@ public class ExtraDataForSymbol {
     public LastTrade lastBuy;
     public LastTrade lastSell;
     public Position dayPosition;
+    public boolean symbolAvailable = false;
 
     public ExtraDataForSymbol(String symbol) {
         this.symbol = symbol;
@@ -53,5 +54,9 @@ public class ExtraDataForSymbol {
 
     public void onDayPosition(Position data) {
         this.dayPosition = data;
+    }
+
+    public void setSymbolAvailable() {
+        symbolAvailable = true;
     }
 }

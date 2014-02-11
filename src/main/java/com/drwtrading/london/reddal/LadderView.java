@@ -124,8 +124,10 @@ public class LadderView {
         public static final String SELL_OFFSET_UP = "sell_offset_up";
         public static final String SELL_OFFSET_DOWN = "sell_offset_down";
         public static final String OFFSET_CONTROL = "offset_control";
-        public static final String START_COMMAND = "start_command";
-        public static final String STOP_COMMAND = "stop_command";
+        public static final String START_BUY = "start_buy";
+        public static final String STOP_BUY = "stop_buy";
+        public static final String START_SELL = "start_sell";
+        public static final String STOP_SELL = "stop_sell";
     }
 
     private final WebSocketClient client;
@@ -480,7 +482,9 @@ public class LadderView {
 
     private void setUpClickTrading() {
         boolean clickTradingEnabled = ladderOptions.traders.contains(client.getUserName());
+
         view.trading(clickTradingEnabled, ladderOptions.orderTypesLeft, ladderOptions.orderTypesRight);
+
         for (Map.Entry<String, Integer> entry : Html.BUTTON_QTY.entrySet()) {
             ui.txt(entry.getKey(), entry.getValue() < 1000 ? entry.getValue() : entry.getValue() / 1000 + "K");
         }
@@ -494,17 +498,19 @@ public class LadderView {
         ui.scrollable("#" + Html.LADDER);
         ui.clickable("#" + Html.BUY_QTY);
         ui.clickable("#" + Html.SELL_QTY);
-    }
 
-    public void setupSelecta() {
-        boolean clickTradingEnabled = ladderOptions.traders.contains(client.getUserName());
-        if (clickTradingEnabled) {
-            ui.clickable("#" + Html.BUY_OFFSET_UP);
-            ui.clickable("#" + Html.BUY_OFFSET_DOWN);
-            ui.clickable("#" + Html.SELL_OFFSET_UP);
-            ui.clickable("#" + Html.SELL_OFFSET_DOWN);
-            ui.cls(Html.OFFSET_CONTROL, Html.HIDDEN, false);
-        }
+        ui.clickable("#" + Html.BUY_OFFSET_UP);
+        ui.clickable("#" + Html.BUY_OFFSET_DOWN);
+        ui.clickable("#" + Html.SELL_OFFSET_UP);
+        ui.clickable("#" + Html.SELL_OFFSET_DOWN);
+
+        ui.clickable("#" + Html.START_BUY);
+        ui.clickable("#" + Html.STOP_BUY);
+        ui.clickable("#" + Html.START_SELL);
+        ui.clickable("#" + Html.STOP_SELL);
+
+        ui.cls(Html.OFFSET_CONTROL, Html.HIDDEN, false);
+
     }
 
     public void recenterIfTimeoutElapsed() {
@@ -708,6 +714,10 @@ public class LadderView {
             }
 
         }
+
+        if (dataForSymbol != null) {
+            ui.cls(Html.OFFSET_CONTROL, Html.HIDDEN, !dataForSymbol.symbolAvailable);
+        }
     }
 
     private String getPref(LadderPrefsForSymbolUser l, String id) {
@@ -775,11 +785,13 @@ public class LadderView {
                 commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.UP));
             } else if (label.equals(Html.SELL_OFFSET_DOWN)) {
                 commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.DOWN));
-            } else if (label.equals(Html.START_COMMAND)) {
+            } else if (label.equals(Html.START_BUY)) {
                 commandPublisher.publish(new Command(ReddalCommand.START, symbol, com.drwtrading.london.photons.reddal.Side.BID));
+            } else if (label.equals(Html.START_SELL)) {
                 commandPublisher.publish(new Command(ReddalCommand.START, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
-            } else if (label.equals(Html.STOP_COMMAND)) {
+            } else if (label.equals(Html.STOP_BUY)) {
                 commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.BID));
+            } else if (label.equals(Html.STOP_SELL)) {
                 commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
             }
         } else if ("right".equals(button)) {

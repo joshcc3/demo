@@ -439,39 +439,60 @@ traded_down.traded_again {
     color: white;
 }
 
+
+.offset_button {
+    height: 12px;
+    width: 18px;
+    font-size: 6px;
+
+}
 #buy_offset_up{
     top: 140px;
     left: 0px;
-    height: 16px;
-    width: 16px;
-    background-color: #00a9ff;
+    background-color: #b6f7ff;
 }
 
 #buy_offset_down{
-    top: 160px;
+    top: 155px;
     left: 0px;
-    height: 16px;
-    width: 16px;
-    background-color: #00a9ff;
+    background-color: #b6f7ff;
 }
 
 #sell_offset_up{
     top: 140px;
     left: 20px;
-    height: 16px;
-    width: 16px;
-    background-color: #ff9999;
+    background-color: #ffd5cd;
 }
 
 #sell_offset_down{
-    top: 160px;
+    top: 155px;
     left: 20px;
-    height: 16px;
-    width: 16px;
+    background-color: #ffd5cd;
+}
+
+#start_buy{
+    top: 170px;
+    left: 00px;
+    background-color: #c4ffbe;
+}
+
+#stop_buy{
+    top: 185px;
+    left: 0px;
     background-color: #ff9999;
 }
 
+#start_sell{
+    top: 170px;
+    left: 20px;
+    background-color: #c4ffbe;
+}
 
+#stop_sell{
+    top: 185px;
+    left: 20px;
+    background-color: #ff9999;
+}
 
 /* index */
 
