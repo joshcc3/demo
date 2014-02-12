@@ -247,13 +247,13 @@ public class LadderView {
             // Ladder info
             if (dataForSymbol.infoOnLadder != null) {
                 ui.txt(Html.TEXT + "info", dataForSymbol.infoOnLadder.getValue());
-
             }
 
             // Ladder text
             for (LadderText ladderText : dataForSymbol.ladderTextByPosition.values()) {
                 ui.txt(Html.TEXT + ladderText.getCell(), ladderText.getText());
             }
+
             // Last trade
             for (Map.Entry<Long, Integer> entry : levelByPrice.entrySet()) {
                 ui.cls(priceKey(entry.getKey()), Html.LAST_BUY, d.lastBuy != null && d.lastBuy.getPrice() == entry.getKey());

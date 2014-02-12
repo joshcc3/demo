@@ -171,9 +171,8 @@ div {
 
 #text {
     position: relative;
-    height: 14px;
+    height: 28px;
     border-right: solid 1px gray;
-    border-bottom: solid 1px gray;
     text-wrap: none;
     width: 201px;
 }
@@ -186,6 +185,8 @@ div {
     height: 14px;
     text-align: center;
     padding: 1px;
+    border-bottom: solid 1px gray;
+
 }
 
 #text_r1c1 { left: 0px; }
@@ -194,6 +195,12 @@ div {
 #text_r1c4 { left: 120px; }
 #text_info { left: 160px; }
 #text_execution { left: 0px; }
+
+#text_r2c1 { left: 0px;  top: 14px }
+#text_r2c2 { left: 40px; top: 14px }
+#text_r2c3 { left: 80px; top: 14px }
+#text_r2c4 { left: 120px;top: 14px }
+#text_r2c5 { left: 160px;top: 14px }
 
 .text_cell_execution {
     position: absolute;
