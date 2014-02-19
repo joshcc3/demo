@@ -46,6 +46,7 @@
                 $(el).find("option").remove();
                 orderTypesLeft.forEach(function (orderType) {
                     var option = $("<option value=\"" + orderType + "\">" + orderType + "</option>");
+                    option.addClass(orderType);
                     $(el).append(option);
                 });
             });
@@ -54,6 +55,7 @@
                 $(el).find("option").remove();
                 orderTypesRight.forEach(function (orderType) {
                     var option = $("<option value=\"" + orderType + "\">" + orderType + "</option>");
+                    option.addClass(orderType);
                     $(el).append(option);
                 });
             });

@@ -114,6 +114,31 @@ div {
     color: #f99;;
 }
 
+.order.working_order_type_taker {
+    border-top: solid 1px #00bd00 !important;
+}
+.order.working_order_type_manual {
+    border-left: solid 1px white !important;
+}
+.order.working_order_type_hawk {
+    border-bottom: solid 1px #ffa422 !important;
+}
+.order.working_order_type_mkt_close {
+    border-right: solid 1px #ff04ef !important;
+}
+.MANUAL,.MANUAL:hover{
+    background-color: white;
+}
+.HAWK,.HAWK:hover{
+    background-color: #ffa422;
+}
+.TAKER,.TAKER:hover{
+    background-color: #00bd00;
+}
+.MKT_CLOSE,.MKT_CLOSE:hover{
+    background-color: #ff04ef;
+}
+
 .bid {
     color: white;
     background-color: #0000c6;
@@ -429,13 +454,7 @@ traded_down.traded_again {
     width: 10px;
 }
 
-.MANUAL{
-    background-color: #d4d0c7;
-}
 
-.HAWK{
-    background-color: #75736d;
-}
 
 .slow {
     background-color: orange;

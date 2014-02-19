@@ -13,6 +13,7 @@ import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
+import com.drwtrading.london.protocols.photon.execution.WorkingOrderType;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
@@ -40,6 +41,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -106,6 +108,7 @@ public class LadderView {
         public static final String WORKING_OFFER = "working_offer";
         public static final String BUTTONS = "button";
         public static final String RANDOM_RELOAD = "chk_random_reload";
+        public static final String WORKING_ORDER_TYPE = "working_order_type_";
 
         // Divs
         public static final String DESK_POSITION = "desk_position";
@@ -338,13 +341,18 @@ public class LadderView {
                 int totalQty = 0;
                 String side = "";
                 List<String> keys = new ArrayList<String>();
+                Set<WorkingOrderType> orderTypes = new HashSet<WorkingOrderType>();
                 for (Main.WorkingOrderUpdateFromServer orderFromServer : w.ordersByPrice.get(price)) {
                     WorkingOrderUpdate order = orderFromServer.value;
-                    totalQty += order.getTotalQuantity() - order.getFilledQuantity();
+                    int orderQty = order.getTotalQuantity() - order.getFilledQuantity();
+                    totalQty += orderQty;
                     side = order.getSide().toString().toLowerCase();
                     keys.add(orderFromServer.key());
+                    if (orderQty > 0) {
+                        orderTypes.add(orderFromServer.value.getWorkingOrderType());
+                    }
                 }
-                workingQty(price, totalQty, side);
+                workingQty(price, totalQty, side, orderTypes);
                 ui.data(orderKey(price), "orderKeys", Joiner.on('!').join(keys));
             }
 
@@ -876,9 +884,13 @@ public class LadderView {
     private void cancelOrder(Main.WorkingOrderUpdateFromServer orderUpdateFromServer) {
         if (ladderOptions.traders.contains(client.getUserName())) {
             WorkingOrderUpdate workingOrderUpdate = orderUpdateFromServer.value;
-            RemoteOrder order = new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.valueOf(workingOrderUpdate.getWorkingOrderType().toString()), false, workingOrderUpdate.getTag());
+            RemoteOrder order = new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.valueOf(getOrderType(workingOrderUpdate.getWorkingOrderType())), false, workingOrderUpdate.getTag());
             remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), order)));
         }
+    }
+
+    private String getOrderType(final WorkingOrderType workingOrderType) {
+        return workingOrderType.toString().replace("MARKET", "MKT_CLOSE");
     }
 
     // Heartbeats
@@ -933,11 +945,14 @@ public class LadderView {
         ui.cls(offerKey(price), Html.OFFER_ACTIVE, qty > 0);
     }
 
-    public void workingQty(long price, int qty, String side) {
+    public void workingQty(long price, int qty, String side, Set<WorkingOrderType> orderTypes) {
         ui.txt(orderKey(price), qty > 0 ? qty : Html.EMPTY);
         ui.cls(orderKey(price), Html.WORKING_QTY, qty > 0);
         ui.cls(orderKey(price), Html.WORKING_BID, side.equals("bid"));
         ui.cls(orderKey(price), Html.WORKING_OFFER, side.equals("offer"));
+        for (WorkingOrderType workingOrderType : WorkingOrderType.values()) {
+            ui.cls(orderKey(price), Html.WORKING_ORDER_TYPE + getOrderType(workingOrderType).toLowerCase(), orderTypes.contains(workingOrderType));
+        }
     }
 
     private String laserKey(String name) {
