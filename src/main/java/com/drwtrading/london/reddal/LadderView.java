@@ -851,7 +851,7 @@ public class LadderView {
                 return;
             }
 
-            RemoteOrderType remoteOrderType = RemoteOrderType.valueOf(orderType);
+            RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
 
             System.out.println("Order: " + symbol + " " + remoteOrderType.toString() + " resolved to " + serverName);
@@ -884,9 +884,19 @@ public class LadderView {
     private void cancelOrder(Main.WorkingOrderUpdateFromServer orderUpdateFromServer) {
         if (ladderOptions.traders.contains(client.getUserName())) {
             WorkingOrderUpdate workingOrderUpdate = orderUpdateFromServer.value;
-            RemoteOrder order = new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.valueOf(getOrderType(workingOrderUpdate.getWorkingOrderType())), false, workingOrderUpdate.getTag());
+            String orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
+            RemoteOrder order = new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), getRemoteOrderType(orderType), false, workingOrderUpdate.getTag());
             remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), order)));
         }
+    }
+
+    private RemoteOrderType getRemoteOrderType(String orderType) {
+        for (RemoteOrderType remoteOrderType : RemoteOrderType.values()) {
+            if (remoteOrderType.toString().toUpperCase().equals(orderType.toUpperCase())) {
+                return remoteOrderType;
+            }
+        }
+        return RemoteOrderType.MANUAL;
     }
 
     private String getOrderType(final WorkingOrderType workingOrderType) {

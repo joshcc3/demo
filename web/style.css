@@ -116,15 +116,22 @@ div {
 
 .order.working_order_type_taker {
     border-top: solid 1px #00bd00 !important;
+    background-color: #3c3c3c !important;
 }
 .order.working_order_type_manual {
     border-left: solid 1px white !important;
+    background-color: #3c3c3c !important;
 }
 .order.working_order_type_hawk {
     border-bottom: solid 1px #ffa422 !important;
+    background-color: #3c3c3c !important;
 }
 .order.working_order_type_mkt_close {
     border-right: solid 1px #ff04ef !important;
+    background-color: #3c3c3c !important;
+}
+.order.working_order_type_quote {
+    background-color: gray;
 }
 .MANUAL,.MANUAL:hover{
     background-color: white;
