@@ -876,7 +876,8 @@ public class LadderView {
     private void cancelOrder(Main.WorkingOrderUpdateFromServer orderUpdateFromServer) {
         if (ladderOptions.traders.contains(client.getUserName())) {
             WorkingOrderUpdate workingOrderUpdate = orderUpdateFromServer.value;
-            remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.MANUAL, false, workingOrderUpdate.getTag()))));
+            RemoteOrder order = new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), RemoteOrderType.valueOf(workingOrderUpdate.getWorkingOrderType().toString()), false, workingOrderUpdate.getTag());
+            remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), order)));
         }
     }
 
