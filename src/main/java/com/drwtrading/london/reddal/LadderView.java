@@ -528,10 +528,10 @@ public class LadderView {
             long center = getCenterPrice(m);
             if (center >= bottomPrice && center <= topPrice) {
                 lastCenteredTime = now;
-            } else if (now - lastCenteredTime > 5000) {
+            } else if (now - lastCenteredTime > 20000) {
                 drawLadder();
             }
-            ui.cls(Html.LADDER, Html.RECENTERING, lastCenteredTime > 0 && 4000 <= now - lastCenteredTime);
+            ui.cls(Html.LADDER, Html.RECENTERING, lastCenteredTime > 0 && 19000 <= now - lastCenteredTime);
         }
     }
 
