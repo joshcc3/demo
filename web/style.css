@@ -118,32 +118,54 @@ div {
     border-top: solid 1px #00bd00 !important;
     background-color: #3c3c3c !important;
 }
+
 .order.working_order_type_manual {
     border-left: solid 1px white !important;
     background-color: #3c3c3c !important;
 }
+
 .order.working_order_type_hawk {
     border-bottom: solid 1px #ffa422 !important;
     background-color: #3c3c3c !important;
 }
+
 .order.working_order_type_mkt_close {
     border-right: solid 1px #ff04ef !important;
     background-color: #3c3c3c !important;
 }
+
 .order.working_order_type_quote {
     background-color: gray;
 }
-.MANUAL,.MANUAL:hover{
+
+.order.working_order_type_dark {
+    background-color: #000000 !important;
+    border: dotted 1px white;
+}
+
+.MANUAL, .MANUAL:hover {
     background-color: white;
 }
-.HAWK,.HAWK:hover{
+
+.HAWK, .HAWK:hover {
     background-color: #ffa422;
 }
-.TAKER,.TAKER:hover{
+
+.TAKER, .TAKER:hover {
     background-color: #00bd00;
 }
-.MKT_CLOSE,.MKT_CLOSE:hover{
+
+.MKT_CLOSE, .MKT_CLOSE:hover {
     background-color: #ff04ef;
+}
+
+.IOC, .IOC:hover {
+    background-color: #16ffe1;
+}
+
+.BATS_PEGGED_DARK_BOOK_ONLY, .BATS_PEGGED_DARK_BOOK_ONLY:hover {
+    background-color: black;
+    color: #c5c5c5;
 }
 
 .bid {
@@ -221,18 +243,54 @@ div {
 
 }
 
-#text_r1c1 { left: 0px; }
-#text_r1c2 { left: 40px; }
-#text_r1c3 { left: 80px; }
-#text_r1c4 { left: 120px; }
-#text_info { left: 160px; }
-#text_execution { left: 0px; }
+#text_r1c1 {
+    left: 0px;
+}
 
-#text_r2c1 { left: 0px;  top: 14px }
-#text_r2c2 { left: 40px; top: 14px }
-#text_r2c3 { left: 80px; top: 14px }
-#text_r2c4 { left: 120px;top: 14px }
-#text_r2c5 { left: 160px;top: 14px }
+#text_r1c2 {
+    left: 40px;
+}
+
+#text_r1c3 {
+    left: 80px;
+}
+
+#text_r1c4 {
+    left: 120px;
+}
+
+#text_info {
+    left: 160px;
+}
+
+#text_execution {
+    left: 0px;
+}
+
+#text_r2c1 {
+    left: 0px;
+    top: 14px
+}
+
+#text_r2c2 {
+    left: 40px;
+    top: 14px
+}
+
+#text_r2c3 {
+    left: 80px;
+    top: 14px
+}
+
+#text_r2c4 {
+    left: 120px;
+    top: 14px
+}
+
+#text_r2c5 {
+    left: 160px;
+    top: 14px
+}
 
 .text_cell_execution {
     position: absolute;
@@ -240,7 +298,7 @@ div {
     color: #008b8b;
     font-weight: bold;
     height: 14px;
-    top:-12px;
+    top: -12px;
     text-align: center;
     z-index: 3;
     white-space: nowrap;
@@ -249,6 +307,7 @@ div {
 .last_buy {
     background-color: #7b97ff !important;
 }
+
 .last_sell {
     background-color: #b76c58 !important;
 }
@@ -457,11 +516,10 @@ traded_down.traded_again {
     width: 30px;
     right: 5px;
 }
-#random_reload #chk_random_reload{
+
+#random_reload #chk_random_reload {
     width: 10px;
 }
-
-
 
 .slow {
     background-color: orange;
@@ -472,56 +530,56 @@ traded_down.traded_again {
     color: white;
 }
 
-
 .offset_button {
     height: 12px;
     width: 18px;
     font-size: 6px;
 
 }
-#buy_offset_up{
+
+#buy_offset_up {
     top: 140px;
     left: 0px;
     background-color: #b6f7ff;
 }
 
-#buy_offset_down{
+#buy_offset_down {
     top: 155px;
     left: 0px;
     background-color: #b6f7ff;
 }
 
-#sell_offset_up{
+#sell_offset_up {
     top: 140px;
     left: 20px;
     background-color: #ffd5cd;
 }
 
-#sell_offset_down{
+#sell_offset_down {
     top: 155px;
     left: 20px;
     background-color: #ffd5cd;
 }
 
-#start_buy{
+#start_buy {
     top: 170px;
     left: 00px;
     background-color: #c4ffbe;
 }
 
-#stop_buy{
+#stop_buy {
     top: 185px;
     left: 0px;
     background-color: #ff9999;
 }
 
-#start_sell{
+#start_sell {
     top: 170px;
     left: 20px;
     background-color: #c4ffbe;
 }
 
-#stop_sell{
+#stop_sell {
     top: 185px;
     left: 20px;
     background-color: #ff9999;
@@ -529,13 +587,20 @@ traded_down.traded_again {
 
 /* index */
 
-tr.result:nth-child(odd)		{     background-color: #d4d0c7; }
-tr.result:nth-child(even)		{     background-color: #bab6af; }
+tr.result:nth-child(odd) {
+    background-color: #d4d0c7;
+}
+
+tr.result:nth-child(even) {
+    background-color: #bab6af;
+}
+
 tr.result {
     font-size: 11px;
     font-family: monospace;
     color: black;
 }
+
 tr.result .symbol {
     white-space: nowrap;
     font-size: 14px;
@@ -546,6 +611,7 @@ tr.result .display {
     min-width: 50px;
     white-space: nowrap;
 }
+
 tr.result .description {
     font-size: 10px;
     -webkit-user-select: text;
@@ -569,11 +635,12 @@ tr.result.highlight {
     background-color: #fdd3bb !important;
 }
 
-#search_box{
+#search_box {
     background-color: #e8e8e8;
     margin: 0px;
     width: 400px;
 }
+
 #search {
     left: 0px;
     top: 0px;
