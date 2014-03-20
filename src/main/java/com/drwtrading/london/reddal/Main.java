@@ -56,7 +56,9 @@ import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
+import com.drwtrading.websockets.WebSocketClient;
 import com.drwtrading.websockets.WebSocketControlMessage;
+import com.drwtrading.websockets.WebSocketDisconnected;
 import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
 import org.jetlang.channels.BatchSubscriber;
@@ -70,6 +72,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -156,7 +159,7 @@ public class Main {
     public static class ReddalFibers {
 
         private final JetlangFactory jetlangFactory;
-        private final FiberGroup fiberGroup;
+        public final FiberGroup fiberGroup;
         public final Fiber starter;
         public final FiberBuilder logging;
         public final FiberBuilder ui;
@@ -341,12 +344,42 @@ public class Main {
 
             webapp.webServer().add(new LoggingHandler(new SimpleLogSink(new FileWriter(new File(logDir, "web.log"), true))));
 
-            // Ladder presenter
+            // Websocket signup broker
+            final ArrayList<TypedChannel<WebSocketControlMessage>> websockets;
             {
+                websockets = new ArrayList<TypedChannel<WebSocketControlMessage>>();
+                for (int i = 0; i < 5; i++) {
+                    websockets.add(TypedChannels.create(WebSocketControlMessage.class));
+                }
+
+                final Map<WebSocketClient, TypedChannel<WebSocketControlMessage>> map = new MapMaker().makeComputingMap(new Function<WebSocketClient, TypedChannel<WebSocketControlMessage>>() {
+                    int num = 0;
+                    @Override
+                    public TypedChannel<WebSocketControlMessage> apply(WebSocketClient from) {
+                        System.out.println("Ladder #" + num + " for " + from.toString());
+                        return websockets.get(num++ % websockets.size());
+                    }
+                });
+
                 final TypedChannel<WebSocketControlMessage> websocket = createWebPageWithWebSocket("ladder", "ladder", fiber, webapp, channels.websocket);
+                fibers.ladder.subscribe(new Callback<WebSocketControlMessage>() {
+                    @Override
+                    public void onMessage(WebSocketControlMessage message) {
+                        map.get(message.getClient()).publish(message);
+                        if (message instanceof WebSocketDisconnected) {
+                            map.remove(message.getClient());
+                        }
+                    }
+                }, websocket);
+            }
+
+            // Ladder presenters
+            int num = 0;
+            for (TypedChannel<WebSocketControlMessage> websocket : websockets) {
+                FiberBuilder fiberBuilder = fibers.fiberGroup.create("ladder-" + (++num));
                 LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, fiber.getFiber());
-                channels.fullBook.subscribe(fibers.ladder.getFiber(), new BatchSubscriber<MarketDataEvent>(fibers.ladder.getFiber(), presenter.onMarketData(), 10, TimeUnit.MILLISECONDS));
-                fibers.ladder.subscribe(presenter,
+                channels.fullBook.subscribe(fiberBuilder.getFiber(), new BatchSubscriber<MarketDataEvent>(fiberBuilder.getFiber(), presenter.onMarketData(), 5, TimeUnit.MILLISECONDS));
+                fiberBuilder.subscribe(presenter,
                         websocket,
                         channels.workingOrders,
                         channels.metaData,
@@ -355,10 +388,9 @@ public class Main {
                         channels.ladderPrefsLoaded,
                         channels.displaySymbol,
                         channels.reddalCommandSymbolAvailable);
-                fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 100, 100, TimeUnit.MILLISECONDS);
-                fibers.ladder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 500, 500, TimeUnit.MILLISECONDS);
+                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + num * 50 / websockets.size(), 50, TimeUnit.MILLISECONDS);
+                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + num * 500 / websockets.size(), 500, TimeUnit.MILLISECONDS);
             }
-
 
             // Index presenter
             {
@@ -367,7 +399,6 @@ public class Main {
                 IndexPresenter indexPresenter = new IndexPresenter();
                 fiber.subscribe(indexPresenter, websocket, channels.refData, channels.displaySymbol);
             }
-
 
         }
 
