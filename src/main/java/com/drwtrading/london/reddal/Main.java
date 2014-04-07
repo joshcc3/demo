@@ -85,7 +85,7 @@ public class Main {
     public static final long SERVER_TIMEOUT = 3000L;
     public static final int BATCH_FLUSH_INTERVAL_MS = 110;
     public static final int HEARTBEAT_INTERVAL_MS = 20 * BATCH_FLUSH_INTERVAL_MS;
-    public static final int NUM_DISPLAY_THREADS = 16;
+    public static final int NUM_DISPLAY_THREADS = 8;
 
     public static TypedChannel<WebSocketControlMessage> createWebPageWithWebSocket(String alias, String name, FiberBuilder fiber, WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias("/" + alias, "/" + name + ".html");
