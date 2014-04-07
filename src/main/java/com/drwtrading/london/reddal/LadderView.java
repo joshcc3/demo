@@ -53,7 +53,7 @@ import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
 public class LadderView {
 
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
-    public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".00");
+    public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".0");
 
     public static class Html {
         public static final String EMPTY = " ";
@@ -905,10 +905,19 @@ public class LadderView {
 
     // Heartbeats
 
-    public static enum ClientSpeedState {Fine, Slow, TooSlow}
+    public static enum ClientSpeedState {
+        TooSlow(1000),
+        Slow(500),
+        Fine(0);
+        public final int thresholdMillis;
+
+        ClientSpeedState(final int thresholdMillis) {
+            this.thresholdMillis = thresholdMillis;
+        }
+    }
 
     private Long lastHeartbeatSentMillis = null;
-    private long lastHeartbeatRoundtripMillis = 1000;
+    private long lastHeartbeatRoundtripMillis = 10000;
     private ClientSpeedState clientSpeedState = ClientSpeedState.TooSlow;
 
     public void sendHeartbeat() {
@@ -934,9 +943,9 @@ public class LadderView {
     }
 
     public void checkClientSpeed() {
-        if (getClientSpeedMillis() > 400) {
+        if (getClientSpeedMillis() > ClientSpeedState.TooSlow.thresholdMillis) {
             clientSpeedState = ClientSpeedState.TooSlow;
-        } else if (getClientSpeedMillis() > 250) {
+        } else if (getClientSpeedMillis() > ClientSpeedState.Slow.thresholdMillis) {
             clientSpeedState = ClientSpeedState.Slow;
         } else {
             clientSpeedState = ClientSpeedState.Fine;

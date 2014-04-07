@@ -83,6 +83,9 @@ import static com.drwtrading.jetlang.autosubscribe.TypedChannels.create;
 public class Main {
 
     public static final long SERVER_TIMEOUT = 3000L;
+    public static final int BATCH_FLUSH_INTERVAL_MS = 110;
+    public static final int HEARTBEAT_INTERVAL_MS = 20 * BATCH_FLUSH_INTERVAL_MS;
+    public static final int NUM_DISPLAY_THREADS = 16;
 
     public static TypedChannel<WebSocketControlMessage> createWebPageWithWebSocket(String alias, String name, FiberBuilder fiber, WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias("/" + alias, "/" + name + ".html");
@@ -348,19 +351,18 @@ public class Main {
             final ArrayList<TypedChannel<WebSocketControlMessage>> websockets;
             {
                 websockets = new ArrayList<TypedChannel<WebSocketControlMessage>>();
-                for (int i = 0; i < 5; i++) {
+                for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
                     websockets.add(TypedChannels.create(WebSocketControlMessage.class));
                 }
-
                 final Map<WebSocketClient, TypedChannel<WebSocketControlMessage>> map = new MapMaker().makeComputingMap(new Function<WebSocketClient, TypedChannel<WebSocketControlMessage>>() {
                     int num = 0;
+
                     @Override
                     public TypedChannel<WebSocketControlMessage> apply(WebSocketClient from) {
                         System.out.println("Ladder #" + num + " for " + from.toString());
                         return websockets.get(num++ % websockets.size());
                     }
                 });
-
                 final TypedChannel<WebSocketControlMessage> websocket = createWebPageWithWebSocket("ladder", "ladder", fiber, webapp, channels.websocket);
                 fibers.ladder.subscribe(new Callback<WebSocketControlMessage>() {
                     @Override
@@ -376,7 +378,8 @@ public class Main {
             // Ladder presenters
             int num = 0;
             for (TypedChannel<WebSocketControlMessage> websocket : websockets) {
-                FiberBuilder fiberBuilder = fibers.fiberGroup.create("ladder-" + (++num));
+                num++;
+                FiberBuilder fiberBuilder = fibers.fiberGroup.create("Ladder-" + (num));
                 LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, fiber.getFiber());
                 channels.fullBook.subscribe(fiberBuilder.getFiber(), new BatchSubscriber<MarketDataEvent>(fiberBuilder.getFiber(), presenter.onMarketData(), 5, TimeUnit.MILLISECONDS));
                 fiberBuilder.subscribe(presenter,
@@ -388,8 +391,8 @@ public class Main {
                         channels.ladderPrefsLoaded,
                         channels.displaySymbol,
                         channels.reddalCommandSymbolAvailable);
-                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + num * 50 / websockets.size(), 50, TimeUnit.MILLISECONDS);
-                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + num * 500 / websockets.size(), 500, TimeUnit.MILLISECONDS);
+                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + num * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + num * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
             }
 
             // Index presenter
@@ -543,7 +546,7 @@ public class Main {
         {
             TradingStatusWatchdog watchdog = new TradingStatusWatchdog(channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM, statsPublisher);
             fibers.watchdog.subscribe(watchdog, channels.workingOrderEvents, channels.remoteOrderEvents);
-            fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog.checkRunnable(), 500, 500, TimeUnit.MILLISECONDS);
+            fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog.checkRunnable(), HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
         }
 
         // Mr. Phil position
