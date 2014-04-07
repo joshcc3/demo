@@ -921,8 +921,8 @@ public class LadderView {
     }
 
     private Long lastHeartbeatSentMillis = null;
-    private long lastHeartbeatRoundtripMillis = 10000;
-    private ClientSpeedState clientSpeedState = ClientSpeedState.TooSlow;
+    private long lastHeartbeatRoundtripMillis = 0;
+    private ClientSpeedState clientSpeedState = ClientSpeedState.Fine;
 
     public void sendHeartbeat() {
         if (lastHeartbeatSentMillis == null) {
