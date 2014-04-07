@@ -182,6 +182,8 @@ public class LadderView {
         this.pendingRefDataAndSettle = true;
         drawLadder();
         updateEverything();
+        flush();
+        sendHeartbeat();
     }
 
     private void updateEverything() {
