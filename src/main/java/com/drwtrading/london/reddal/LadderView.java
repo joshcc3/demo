@@ -625,6 +625,7 @@ public class LadderView {
         if (cmd.equals("click")) {
             String label = args[1];
             onClick(label, getDataArg(args));
+            flush();
         } else if (cmd.equals("scroll")) {
             String direction = args[1];
             if (direction.equals("up")) {
@@ -634,11 +635,14 @@ public class LadderView {
             }
             recenterLadderAndDrawPriceLevels();
             updateEverything();
+            flush();
         } else if (cmd.equals("dblclick")) {
             String label = args[1];
             onDoubleClick(label, getDataArg(args));
+            flush();
         } else if (cmd.equals("update")) {
             onUpdate(args[1], getDataArg(args));
+            flush();
         } else if (cmd.equals("heartbeat")) {
             onHeartbeat(Long.valueOf(args[1]), Long.valueOf(args[2]));
         } else {
