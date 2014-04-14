@@ -44,7 +44,7 @@ config default
   include photon-runtime-java/1.0.0.81
   include drw.london.eeif-photocols-client/1
   include com.drwtrading.photons.mrphil/1.0.0.4
-  include com.drwtrading.london.photons.indy/9
+  include com.drwtrading.london.photons.indy/10
   include com.drwtrading.london.photons.reddal/1
 
   # MD
