@@ -85,7 +85,7 @@ public class Main {
     public static final long SERVER_TIMEOUT = 3000L;
     public static final int BATCH_FLUSH_INTERVAL_MS = 110;
     public static final int HEARTBEAT_INTERVAL_MS = 20 * BATCH_FLUSH_INTERVAL_MS;
-    public static final int NUM_DISPLAY_THREADS = 8;
+    public static final int NUM_DISPLAY_THREADS = 4;
 
     public static TypedChannel<WebSocketControlMessage> createWebPageWithWebSocket(String alias, String name, FiberBuilder fiber, WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias("/" + alias, "/" + name + ".html");
@@ -420,12 +420,13 @@ public class Main {
         // Market data
         {
             for (String mds : environment.getList(Environment.MARKET_DATA)) {
+                final FiberBuilder fiber = fibers.fiberGroup.create("Market Data: " + mds);
                 final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
-                final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, fibers.marketData.getFiber(), EXCEPTION_HANDLER);
+                final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, fiber.getFiber(), EXCEPTION_HANDLER);
                 final ProductResetter productResetter = new ProductResetter(channels.fullBook);
                 final ConnectionCloser connectionCloser = new ConnectionCloser(channels.status, "Market data: " + mds, productResetter.resetRunnable());
                 client.reconnectMillis(3000)
-                        .handler(new IdleConnectionTimeoutHandler(connectionCloser, SERVER_TIMEOUT, fibers.marketData.getFiber()))
+                        .handler(new IdleConnectionTimeoutHandler(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
                         .handler(new JetlangChannelHandler<MarketDataEvent, Void>(new Publisher<MarketDataEvent>() {
                             @Override
                             public void publish(MarketDataEvent msg) {
@@ -439,7 +440,7 @@ public class Main {
                 fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
-                        fibers.marketData.execute(new Runnable() {
+                        fiber.execute(new Runnable() {
                             @Override
                             public void run() {
                                 client.start();
