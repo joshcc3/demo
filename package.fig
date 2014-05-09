@@ -30,11 +30,11 @@ config default
   include jquery/1.4.2
   include org.jboss.netty-netty/3.2.7.Final
   include drw.sso.client-java/1.0.0.32
-  include drw.london.server-common/1.0.0.43
-  include drw.simple-webbit-server/28:with-deps
+  include drw.london.server-common/46
+  include drw.simple-webbit-server/29:with-deps
   include org.webbitserver-webbit-rest/0.3.0
   include drw.london.javascript-common/1.0.0.32
-  include drw.london.sounds/17
+  include drw.london.sounds/20
 
   # Monitoring
   include drw.monitoring/1.0.0.54
@@ -50,16 +50,16 @@ config default
   # MD
   include io.netty-netty/3.2.7.Final
   include drw.frontoffice.book/1.0.0.4
-  include drw.london.market-data-service/292
-  include drw.london.market-data-service/292:eurex_na
-  include drw.london.market-data-service/292:superfeed
-  include drw.london.market-data-service/292:liffe_xdp
-  include drw.london.market-data-service/292:xetra
-  include drw.london.market-data-service/292:logging
+  include drw.london.market-data-service/310
+  include drw.london.market-data-service/310:eurex_na
+  include drw.london.market-data-service/310:superfeed
+  include drw.london.market-data-service/310:liffe_xdp
+  include drw.london.market-data-service/310:xetra
+  include drw.london.market-data-service/310:logging
 
   include com.drwtrading.london.protocols.photon.marketdata/40
   include com.drwtrading.london.prices/14
-  include drw.london.esquilatency/1.0.0.20
+  include drw.london.esquilatency/21
 
   include photon-runtime-java/1.0.0.81
   include nns/2.0.0.69
