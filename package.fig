@@ -65,7 +65,7 @@ config default
   include nns/2.0.0.69
 
   # Execution
-  include com.drwtrading.london.protocols.photon.execution/214
+  include com.drwtrading.london.protocols.photon.execution/218
   include com.drwtrading.photons.ladder/1.0.0.37
 
   # Testing
