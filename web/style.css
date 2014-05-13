@@ -144,7 +144,7 @@ div {
 }
 
 .order.working_order_type_hidden {
-    background-color: #000033 !important;
+    background-color: #009 !important;
     border: dotted 1px #000288;
 }
 
@@ -173,8 +173,8 @@ div {
     color: #c5c5c5;
 }
 
-.invisible, .invisible:hover {
-    background-color: #003;
+.HIDDEN, .HIDDEN:hover {
+    background-color: #009;
     color: #c5c5c5;
 }
 
