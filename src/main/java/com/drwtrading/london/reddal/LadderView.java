@@ -74,7 +74,7 @@ public class LadderView {
         public static final String WORKING_QTY = "working_qty";
         public static final String PRICE_KEY = "price";
         public static final String LASER = "laser_";
-        public static final String HIDDEN = "hidden";
+        public static final String HIDDEN = "invisible";
         public static final String TRADED_UP = "traded_up";
         public static final String TRADED_DOWN = "traded_down";
         public static final String TRADED_AGAIN = "traded_again";
