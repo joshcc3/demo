@@ -36,7 +36,7 @@
 
         function trading(clickTrading, orderTypesLeft, orderTypesRight) {
 
-            $("#clicktrading").toggleClass("hidden", !clickTrading);
+            $("#clicktrading").toggleClass("invisible", !clickTrading);
 
             if (!clickTrading) {
                 return;
@@ -123,9 +123,9 @@
     <div class="bid column"></div>
     <div class="price column"></div>
     <div class="offer column"></div>
-    <div class="trade column hidden"></div>
+    <div class="trade column invisible"></div>
     <div class="volume column"></div>
-    <div class="text column hidden"></div>
+    <div class="text column invisible"></div>
 </div>
 <div id="workspace">
     <div id="information">
@@ -153,7 +153,7 @@
         <div id="random_reload">
             RR <input type="checkbox" id="chk_random_reload" checked="checked"/>
         </div>
-        <div id="offset_control" class="hidden">
+        <div id="offset_control" class="invisible">
             <button id="buy_offset_up" class="offset_button">&nbsp;</button>
             <button id="buy_offset_down" class="offset_button">&nbsp;</button>
             <button id="sell_offset_up" class="offset_button">&nbsp;</button>
@@ -167,9 +167,9 @@
     </div>
     <div id="ladder">
         <div id="header">
-            <div id="buy_qty" class="total_qty hidden"></div>
+            <div id="buy_qty" class="total_qty invisible"></div>
             <div id="symbol"></div>
-            <div id="sell_qty" class="total_qty hidden"></div>
+            <div id="sell_qty" class="total_qty invisible"></div>
         </div>
         <div id="text">
             <div id="text_r1c1" class="text_cell"></div>
@@ -185,9 +185,9 @@
             <div id="text_r2c5" class="text_cell"></div>
         </div>
         <div id="rows">
-            <div id="laser_bid" class="laser bid_color hidden"></div>
-            <div id="laser_offer" class="laser offer_color hidden"></div>
-            <div id="laser_green" class="laser green_color hidden"></div>
+            <div id="laser_bid" class="laser bid_color invisible"></div>
+            <div id="laser_offer" class="laser offer_color invisible"></div>
+            <div id="laser_green" class="laser green_color invisible"></div>
         </div>
     </div>
 </div>

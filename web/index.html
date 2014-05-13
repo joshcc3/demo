@@ -39,7 +39,7 @@
         function display(results, toomany) {
             topResult = undefined;
             console.log(results);
-            $("#too_many").toggleClass("hidden",!toomany);
+            $("#too_many").toggleClass("invisible",!toomany);
             if(results) {
                 $(".result").remove();
                 results.forEach(function(x,i) {
@@ -72,7 +72,7 @@
 
 
 <div id="search_results_container">
-    <div id="too_many" class="hidden">(too many results...)</div>
+    <div id="too_many" class="invisible">(too many results...)</div>
     <table id="search_results">
         <tr class="template row">
             <td class="symbol"></td>

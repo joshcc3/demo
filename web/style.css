@@ -3,7 +3,7 @@
     cursor: default;
 }
 
-.hidden {
+.invisible {
     display: none !important;
 }
 
@@ -173,7 +173,7 @@ div {
     color: #c5c5c5;
 }
 
-.HIDDEN, .HIDDEN:hover {
+.invisible, .invisible:hover {
     background-color: #003;
     color: #c5c5c5;
 }
