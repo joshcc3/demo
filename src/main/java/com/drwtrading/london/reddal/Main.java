@@ -86,6 +86,7 @@ public class Main {
     public static final int BATCH_FLUSH_INTERVAL_MS = 110;
     public static final int HEARTBEAT_INTERVAL_MS = 20 * BATCH_FLUSH_INTERVAL_MS;
     public static final int NUM_DISPLAY_THREADS = 4;
+    private static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     public static TypedChannel<WebSocketControlMessage> createWebPageWithWebSocket(String alias, String name, FiberBuilder fiber, WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias("/" + alias, "/" + name + ".html");
@@ -425,7 +426,7 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, fiber.getFiber(), EXCEPTION_HANDLER);
                 final ProductResetter productResetter = new ProductResetter(channels.fullBook);
                 final ConnectionCloser connectionCloser = new ConnectionCloser(channels.status, "Market data: " + mds, productResetter.resetRunnable());
-                client.reconnectMillis(3000)
+                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .handler(new IdleConnectionTimeoutHandler(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
                         .handler(new JetlangChannelHandler<MarketDataEvent, Void>(new Publisher<MarketDataEvent>() {
                             @Override
@@ -456,7 +457,7 @@ public class Main {
             for (String server : environment.getList(Environment.METADATA)) {
                 Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.METADATA, server);
                 final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class, Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
-                client.reconnectMillis(5000)
+                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "metadata." + server + ".log"), fibers.logging.getFiber(), true)
                         .handler(new PhotocolsStatsPublisher<LadderMetadata, Void>(statsPublisher, environment.getStatsName(), 10))
                         .handler(new JetlangChannelHandler<LadderMetadata, Void>(channels.metaData));
@@ -474,7 +475,7 @@ public class Main {
             for (final String server : environment.getList(Environment.REMOTE_COMMANDS)) {
                 Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.REMOTE_COMMANDS, server);
                 final OnHeapBufferPhotocolsNioClient<RemoteOrderManagementEvent, RemoteOrderManagementCommand> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), RemoteOrderManagementEvent.class, RemoteOrderManagementCommand.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
-                client.reconnectMillis(5000)
+                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "remote-commands." + server + ".log"), fibers.logging.getFiber(), true)
                         .handler(new PhotocolsStatsPublisher<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(statsPublisher, environment.getStatsName(), 10))
                         .handler(new JetlangChannelHandler<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(new Publisher<RemoteOrderManagementEvent>() {
@@ -521,7 +522,7 @@ public class Main {
             for (final String server : environment.getList(Environment.WORKING_ORDERS)) {
                 Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.WORKING_ORDERS, server);
                 final OnHeapBufferPhotocolsNioClient<WorkingOrderEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), WorkingOrderEvent.class, Void.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
-                client.reconnectMillis(5000)
+                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "working-orders." + server + ".log"), fibers.logging.getFiber(), true)
                         .handler(new PhotocolsStatsPublisher<WorkingOrderEvent, Void>(statsPublisher, environment.getStatsName(), 10))
                         .handler(new JetlangChannelHandler<WorkingOrderEvent, Void>(new Publisher<WorkingOrderEvent>() {
@@ -557,7 +558,7 @@ public class Main {
                     Position.class, Subscription.class, fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
             PhotocolsHandler<Position, Subscription> positionHandler = new PositionSubscriptionPhotocolsHandler(channels.position);
             fibers.mrPhil.subscribe(positionHandler, channels.refData);
-            client.reconnectMillis(5000)
+            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                     .logFile(new File(logDir, "mr-phil.log"), fibers.logging.getFiber(), true)
                     .handler(positionHandler);
             fibers.onStart(new Runnable() {
@@ -573,7 +574,7 @@ public class Main {
             if (environment.indyEnabled()) {
                 Environment.HostAndNic hostAndNic = environment.getIndyHostAndNic();
                 final OnHeapBufferPhotocolsNioClient<IndyEnvelope, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic, IndyEnvelope.class, Void.class, fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
-                client.reconnectMillis(5000)
+                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "indy.log"), fibers.logging.getFiber(), true)
                         .handler(new JetlangChannelHandler<IndyEnvelope, Void>(new Publisher<IndyEnvelope>() {
                             @Override
