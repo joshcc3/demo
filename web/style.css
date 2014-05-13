@@ -143,6 +143,11 @@ div {
     border: dotted 1px white;
 }
 
+.order.working_order_type_hidden {
+    background-color: #000033 !important;
+    border: dotted 1px #000288;
+}
+
 .MANUAL, .MANUAL:hover {
     background-color: white;
 }
@@ -165,6 +170,11 @@ div {
 
 .BATS_PEGGED_DARK_BOOK_ONLY, .BATS_PEGGED_DARK_BOOK_ONLY:hover {
     background-color: black;
+    color: #c5c5c5;
+}
+
+.HIDDEN, .HIDDEN:hover {
+    background-color: #003;
     color: #c5c5c5;
 }
 
