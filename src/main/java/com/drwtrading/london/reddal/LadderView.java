@@ -335,6 +335,9 @@ public class LadderView {
         if (m.lastTrade == null) {
             return null;
         }
+        if(m.settle == null) {
+            return null;
+        }
         long lastTradePrice = m.lastTrade.getPrice();
         long settlementPrice = m.settle.getSettlementPrice();
         return lastTradePrice - settlementPrice;
@@ -478,7 +481,7 @@ public class LadderView {
 
     private void drawLadder() {
         MarketDataForSymbol m = this.marketDataForSymbol;
-        if (m != null && m.refData != null && m.settle != null) {
+        if (m != null && m.refData != null) {
             ui.clear();
             pendingRefDataAndSettle = false;
             centerPrice = getCenterPrice(m);
@@ -542,8 +545,11 @@ public class LadderView {
     }
 
     private long getCenterPrice(MarketDataForSymbol m) {
-        long center;
-        center = m.settle.getSettlementPrice();
+        long center = 0;
+
+        if(m.settle != null) {
+            center = m.settle.getSettlementPrice();
+        }
         if (m.lastTrade != null) {
             center = m.lastTrade.getPrice();
         }
@@ -588,7 +594,7 @@ public class LadderView {
 
     private void recenterLadderAndDrawPriceLevels() {
         MarketDataForSymbol m = this.marketDataForSymbol;
-        if (m != null && m.refData != null && m.settle != null) {
+        if (m != null && m.refData != null) {
 
             int centerLevel = levels / 2;
             long price = centerPrice;
