@@ -335,7 +335,7 @@ public class LadderView {
         if (m.lastTrade == null) {
             return null;
         }
-        if(m.settle == null) {
+        if (m.settle == null) {
             return null;
         }
         long lastTradePrice = m.lastTrade.getPrice();
@@ -547,7 +547,7 @@ public class LadderView {
     private long getCenterPrice(MarketDataForSymbol m) {
         long center = 0;
 
-        if(m.settle != null) {
+        if (m.settle != null) {
             center = m.settle.getSettlementPrice();
         }
         if (m.lastTrade != null) {
@@ -846,17 +846,17 @@ public class LadderView {
     private void rightClickModify(final Map<String, String> data, final boolean autoHedge) {
         if (workingOrdersForSymbol != null) {
             final long price = Long.valueOf(data.get("price"));
-            if (modifyFromPrice == null && workingOrdersForSymbol.ordersByPrice.containsKey(price)) {
-                modifyFromPrice = price;
-                modifyFromPriceSelectedTime = System.currentTimeMillis();
-            } else {
-                if (workingOrdersForSymbol != null) {
+            if (modifyFromPrice != null) {
+                if (workingOrdersForSymbol != null && modifyFromPrice != price) {
                     for (Main.WorkingOrderUpdateFromServer order : workingOrdersForSymbol.ordersByPrice.get(modifyFromPrice)) {
                         WorkingOrderUpdate workingOrderUpdate = order.value;
                         modifyOrder(autoHedge, price, order, workingOrderUpdate);
                     }
                 }
                 modifyFromPrice = null;
+                modifyFromPriceSelectedTime = 0L;
+            } else if (workingOrdersForSymbol.ordersByPrice.containsKey(price)) {
+                modifyFromPrice = price;
                 modifyFromPriceSelectedTime = System.currentTimeMillis();
             }
         }
