@@ -9,6 +9,7 @@ import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.UpdateOffset;
 import com.drwtrading.london.prices.tickbands.TickBandUtils;
 import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
+import com.drwtrading.london.protocols.photon.execution.RemoteModifyOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
@@ -54,6 +55,7 @@ public class LadderView {
 
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".0");
+    public static final int MODIFY_TIMEOUT_MS = 5000;
 
     public static class Html {
         public static final String EMPTY = " ";
@@ -109,6 +111,7 @@ public class LadderView {
         public static final String BUTTONS = "button";
         public static final String RANDOM_RELOAD = "chk_random_reload";
         public static final String WORKING_ORDER_TYPE = "working_order_type_";
+        public static final String MODIFY_PRICE_SELECTED = "modify_price_selected";
 
         // Divs
         public static final String DESK_POSITION = "desk_position";
@@ -202,6 +205,7 @@ public class LadderView {
         checkClientSpeed();
         drawLadderIfRefDataHasJustComeIn();
         recenterIfTimeoutElapsed();
+        clearModifyPriceIfTimedOut();
         updateEverything();
         ui.flush();
     }
@@ -727,6 +731,10 @@ public class LadderView {
                 ui.cls(Html.ORDER_TYPE_RIGHT, type, type.equals(getPref(l, Html.ORDER_TYPE_RIGHT)));
             }
 
+            for (Long price : levelByPrice.keySet()) {
+                ui.cls(orderKey(price), Html.MODIFY_PRICE_SELECTED, price.equals(modifyFromPrice));
+            }
+
         }
 
         if (dataForSymbol != null) {
@@ -773,6 +781,7 @@ public class LadderView {
     private void onClick(String label, Map<String, String> data) {
         String button = data.get("button");
         LadderPrefsForSymbolUser l = ladderPrefsForSymbolUser;
+        boolean autoHedge = "true".equals(getPref(l, Html.AUTO_HEDGE_LEFT));
         if ("left".equals(button)) {
             if (Html.BUTTON_QTY.containsKey(label)) {
                 clickTradingBoxQty += Html.BUTTON_QTY.get(label);
@@ -780,7 +789,7 @@ public class LadderView {
                 clickTradingBoxQty = 0;
             } else if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
                 if (l != null) {
-                    submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_LEFT), "true".equals(getPref(l, Html.AUTO_HEDGE_LEFT)));
+                    submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_LEFT), autoHedge);
                 }
             } else if (label.startsWith(Html.ORDER)) {
                 long price = Long.valueOf(data.get("price"));
@@ -813,6 +822,8 @@ public class LadderView {
                 if (l != null) {
                     submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_RIGHT), "true".equals(getPref(l, Html.AUTO_HEDGE_RIGHT)));
                 }
+            } else if (label.startsWith(Html.ORDER)) {
+                rightClickModify(data, autoHedge);
             }
         } else if ("middle".equals(button)) {
             if (label.startsWith(Html.PRICE)) {
@@ -821,6 +832,40 @@ public class LadderView {
         }
         updateEverything();
         drawClickTrading();
+    }
+
+    Long modifyFromPrice = null;
+    Long modifyFromPriceSelectedTime = 0L;
+
+    private void rightClickModify(final Map<String, String> data, final boolean autoHedge) {
+        if (workingOrdersForSymbol != null) {
+            final long price = Long.valueOf(data.get("price"));
+            if (modifyFromPrice == null && workingOrdersForSymbol.ordersByPrice.containsKey(price)) {
+                modifyFromPrice = price;
+                modifyFromPriceSelectedTime = System.currentTimeMillis();
+            } else {
+                if (workingOrdersForSymbol != null) {
+                    for (Main.WorkingOrderUpdateFromServer order : workingOrdersForSymbol.ordersByPrice.get(modifyFromPrice)) {
+                        WorkingOrderUpdate workingOrderUpdate = order.value;
+                        modifyOrder(autoHedge, price, order, workingOrderUpdate);
+                    }
+                }
+                modifyFromPrice = null;
+                modifyFromPriceSelectedTime = System.currentTimeMillis();
+            }
+        }
+    }
+
+    private void clearModifyPriceIfTimedOut() {
+        if (modifyFromPrice != null && modifyFromPriceSelectedTime != null && System.currentTimeMillis() > modifyFromPriceSelectedTime + MODIFY_TIMEOUT_MS) {
+            modifyFromPrice = null;
+        }
+    }
+
+    private RemoteOrder getRemoteOrderFromWorkingOrder(final boolean autoHedge, final long price, final WorkingOrderUpdate workingOrderUpdate) {
+        RemoteOrderType remoteOrderType = getRemoteOrderType(workingOrderUpdate.getWorkingOrderType().toString());
+        System.out.println(workingOrderUpdate + "->" + remoteOrderType);
+        return new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), price, workingOrderUpdate.getTotalQuantity(), remoteOrderType, autoHedge, workingOrderUpdate.getTag());
     }
 
     private void submitOrderClick(String label, Map<String, String> data, String orderType, boolean autoHedge) {
@@ -874,6 +919,26 @@ public class LadderView {
                     symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, ladderOptions.tag));
 
             remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
+
+        }
+    }
+
+    private void modifyOrder(final boolean autoHedge, final long price, final Main.WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate) {
+        RemoteModifyOrder remoteModifyOrder = new RemoteModifyOrder(
+                order.fromServer, client.getUserName(), workingOrderUpdate.getChainId(),
+                getRemoteOrderFromWorkingOrder(autoHedge, workingOrderUpdate.getPrice(), workingOrderUpdate),
+                getRemoteOrderFromWorkingOrder(autoHedge, price, workingOrderUpdate)
+        );
+        if (ladderOptions.traders.contains(client.getUserName())) {
+
+            TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(order.fromServer);
+            if (clientSpeedState == ClientSpeedState.TooSlow) {
+                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot modify order , client " + client.getUserName() + " is " + clientSpeedState.toString() + " speed: " + getClientSpeedMillis() + "ms"));
+            } else if (serverTradingStatus == null || serverTradingStatus.tradingStatus != TradingStatusWatchdog.Status.OK) {
+                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot modify order: server " + order.fromServer + " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString())));
+            } else {
+                remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(order.fromServer, remoteModifyOrder));
+            }
 
         }
     }
