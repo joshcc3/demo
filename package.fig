@@ -50,14 +50,14 @@ config default
   # MD
   include io.netty-netty/3.2.7.Final
   include drw.frontoffice.book/1.0.0.4
-  include drw.london.market-data-service/310
-  include drw.london.market-data-service/310:eurex_na
-  include drw.london.market-data-service/310:superfeed
-  include drw.london.market-data-service/310:liffe_xdp
-  include drw.london.market-data-service/310:xetra
-  include drw.london.market-data-service/310:logging
+  include drw.london.market-data-service/314
+  include drw.london.market-data-service/314:eurex_na
+  include drw.london.market-data-service/314:superfeed
+  include drw.london.market-data-service/314:liffe_xdp
+  include drw.london.market-data-service/314:xetra
+  include drw.london.market-data-service/314:logging
 
-  include com.drwtrading.london.protocols.photon.marketdata/40
+  include com.drwtrading.london.protocols.photon.marketdata/41
   include com.drwtrading.london.prices/14
   include drw.london.esquilatency/21
 
@@ -66,7 +66,7 @@ config default
 
   # Execution
   include com.drwtrading.london.protocols.photon.execution/219
-  include com.drwtrading.photons.ladder/1.0.0.37
+  include com.drwtrading.photons.ladder/38
 
   # Testing
   include junit/4.10
