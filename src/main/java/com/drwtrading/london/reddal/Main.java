@@ -35,6 +35,7 @@ import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandle
 import com.drwtrading.london.reddal.safety.ProductResetter;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.symbols.EquityIdToDisplaySymbolMapper;
+import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
@@ -99,6 +100,7 @@ public class Main {
     public static class ReddalChannels {
 
         public final TypedChannel<Throwable> error;
+        public final Publisher<Throwable> errorPublisher;
         public final TypedChannel<MarketDataEvent> fullBook;
         public final TypedChannel<LadderMetadata> metaData;
         public final TypedChannel<Position> position;
@@ -123,6 +125,7 @@ public class Main {
         public ReddalChannels(ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
             error = ERROR_CHANNEL;
+            errorPublisher = new BogusErrorFilteringPublisher(error);
             fullBook = create(MarketDataEvent.class);
             metaData = create(LadderMetadata.class);
             position = create(Position.class);
@@ -289,7 +292,7 @@ public class Main {
         final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER = new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
-                channels.error.publish(e);
+                channels.errorPublisher.publish(e);
             }
         };
 
@@ -326,7 +329,7 @@ public class Main {
         {
             final FiberBuilder fiber = fibers.ui;
             final WebApplication webapp;
-            webapp = new WebApplication(environment.getWebPort(), channels.error);
+            webapp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
             webapp.enableSingleSignOn();
 
             fibers.onStart(new Runnable() {
@@ -505,7 +508,7 @@ public class Main {
                     try {
                         commandServer.start();
                     } catch (InterruptedException e) {
-                        channels.error.publish(e);
+                        channels.errorPublisher.publish(e);
                     }
                 }
             });
@@ -601,7 +604,7 @@ public class Main {
         // Desk Position
         {
             if (environment.opxlDeskPositionEnabled()) {
-                final OpxlPositionSubscriber opxlPositionSubscriber = new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.error, config.get("opxl.deskposition.key"), new Publisher<DeskPosition>() {
+                final OpxlPositionSubscriber opxlPositionSubscriber = new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, config.get("opxl.deskposition.key"), new Publisher<DeskPosition>() {
                     @Override
                     public void publish(DeskPosition msg) {
                         channels.metaData.publish(msg);
@@ -619,7 +622,7 @@ public class Main {
         // Ladder Text
         {
             if (environment.opxlLadderTextEnabled()) {
-                final OpxlLadderTextSubscriber opxlLadderTextSubscriber = new OpxlLadderTextSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.error, config.get("opxl.laddertext.key"), new Publisher<LadderText>() {
+                final OpxlLadderTextSubscriber opxlLadderTextSubscriber = new OpxlLadderTextSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, config.get("opxl.laddertext.key"), new Publisher<LadderText>() {
                     @Override
                     public void publish(LadderText msg) {
                         channels.metaData.publish(msg);
@@ -657,15 +660,15 @@ public class Main {
         // Logging
         {
             fibers.logging.subscribe(new ErrorLogger(new File(logDir, "errors.log")).onThrowableCallback(), channels.error);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "metadata.json", channels.error), channels.metaData);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "remote-order.json", channels.error), channels.workingOrderEvents, channels.remoteOrderEvents);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "trading-status.json", channels.error), channels.tradingStatus);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "position.json", channels.error), channels.position);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "preferences.json", channels.error), channels.ladderPrefsLoaded, channels.storeLadderPref);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", channels.error), channels.status);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "reference-data.json", channels.error), channels.refData);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "heartbeats.json", channels.error), channels.heartbeatRoundTrips);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket.json", channels.error), channels.websocket);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "metadata.json", channels.errorPublisher), channels.metaData);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "remote-order.json", channels.errorPublisher), channels.workingOrderEvents, channels.remoteOrderEvents);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "trading-status.json", channels.errorPublisher), channels.tradingStatus);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "position.json", channels.errorPublisher), channels.position);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "preferences.json", channels.errorPublisher), channels.ladderPrefsLoaded, channels.storeLadderPref);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", channels.errorPublisher), channels.status);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "reference-data.json", channels.errorPublisher), channels.refData);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "heartbeats.json", channels.errorPublisher), channels.heartbeatRoundTrips);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket.json", channels.errorPublisher), channels.websocket);
         }
 
         fibers.start();
