@@ -92,9 +92,9 @@ var Handler = function (ws) {
 
     function getButton(e) {
         var button =
-            e.which == LEFT_CLICK_BUTTON ? "left"
-                : e.which == MIDDLE_CLICK_BUTTON ? "middle"
-                : e.which == RIGHT_CLICK_BUTTON ? "right" : "none";
+                e.which == LEFT_CLICK_BUTTON ? "left"
+            : e.which == MIDDLE_CLICK_BUTTON ? "middle"
+            : e.which == RIGHT_CLICK_BUTTON ? "right" : "none";
         return button;
     }
 
@@ -159,16 +159,16 @@ var Handler = function (ws) {
     };
 
     self.eval = function (args) {
-        for(var i=1; i<args.length; i++) {
+        for (var i = 1; i < args.length; i++) {
             eval(args[i]);
         }
     };
 
     self.clickable = function (args) {
         for (var i = 1; i < args.length; i++) {
-            toggleClass(args[i],'clickable',true);
+            toggleClass(args[i], 'clickable', true);
             $(args[i]).unbind()
-                .bind('dblclick',function(e){
+                .bind('dblclick', function (e) {
                     var event = 'dblclick';
                     var elementId = e.target.id;
                     var button = getButton(e);
@@ -197,7 +197,7 @@ var Handler = function (ws) {
         }
     };
 
-    self.title = function(args) {
+    self.title = function (args) {
         window.document.title = args[1];
     };
 
@@ -209,5 +209,8 @@ var Handler = function (ws) {
 
     self.send = send;
 
+    $(window).unbind('keydown').bind('keydown', function (event) {
+        send('keydown', event.keyCode);
+    });
 
 }

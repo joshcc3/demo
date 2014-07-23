@@ -66,6 +66,7 @@ public interface UiPipe {
         public void onDblClick(String id, Map<String,String> data);
         public void onUpdate(String id, Map<String,String> data);
         public void onScroll(String direction);
+        public void onKeyDown(int keyCode);
         public void onIncoming(String[] args);
     }
 

@@ -5,7 +5,6 @@ import com.google.common.base.Joiner;
 import org.jetlang.channels.Publisher;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +58,7 @@ public class UiPipeImpl implements UiPipe {
         }
 
     }
+
     public static class ListBatcher {
 
         public final List<String> pendingValues = newFastList();
@@ -89,6 +89,7 @@ public class UiPipeImpl implements UiPipe {
         }
 
     }
+
     public static class StringBatcher {
 
         public String pendingValue = "";
@@ -224,7 +225,7 @@ public class UiPipeImpl implements UiPipe {
 
     @Override
     public void onInbound(String data) {
-        if(inboundHandler == null) {
+        if (inboundHandler == null) {
             return;
         }
         String[] args = data.split("\0");
@@ -237,6 +238,8 @@ public class UiPipeImpl implements UiPipe {
             inboundHandler.onDblClick(args[1], getDataArg(args));
         } else if (cmd.equals("update")) {
             inboundHandler.onUpdate(args[1], getDataArg(args));
+        } else if (cmd.equals("keydown")) {
+            inboundHandler.onKeyDown(Integer.parseInt(args[1]));
         } else {
             inboundHandler.onIncoming(args);
         }

@@ -38,7 +38,6 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -51,11 +50,16 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
 
-public class LadderView {
+public class LadderView implements UiPipe.UiEventHandler {
 
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".0");
     public static final int MODIFY_TIMEOUT_MS = 5000;
+    public static final int AUTO_RECENTER_TICKS = 3;
+
+    public static final int RECENTER_TIME_MS = 11000;
+    public static final int RECENTER_WARN_TIME_MS = 9000;
+
 
     public static class Html {
         public static final String EMPTY = " ";
@@ -136,6 +140,10 @@ public class LadderView {
         public static final String STOP_SELL = "stop_sell";
     }
 
+    public static final int PG_UP = 33;
+    public static final int PG_DOWN = 34;
+
+
     private final WebSocketClient client;
     private final LadderPresenter.View view;
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
@@ -173,6 +181,7 @@ public class LadderView {
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
         this.heartbeatRoundtripPublisher = heartbeatRoundtripPublisher;
+        this.ui.setHandler(this);
     }
 
     public void subscribeToSymbol(String symbol, int levels, MarketDataForSymbol marketDataForSymbol, WorkingOrdersForSymbol workingOrdersForSymbol, ExtraDataForSymbol extraDataForSymbol, LadderPrefsForSymbolUser ladderPrefsForSymbolUser) {
@@ -484,10 +493,19 @@ public class LadderView {
         if (m != null && m.refData != null) {
             ui.clear();
             pendingRefDataAndSettle = false;
-            centerPrice = getCenterPrice(m);
+            recenter();
             recenterLadderAndDrawPriceLevels();
             setUpClickTrading();
         }
+    }
+
+    private void recenter() {
+        if (centerPrice == 0) {
+            moveLadderToCenter();
+        } else {
+            moveLadderTowardCenter();
+        }
+        resetLastCenteredTime();
     }
 
     private String getSymbol() {
@@ -533,15 +551,24 @@ public class LadderView {
     public void recenterIfTimeoutElapsed() {
         MarketDataForSymbol m = marketDataForSymbol;
         if (!pendingRefDataAndSettle && m != null) {
-            long now = System.currentTimeMillis();
-            long center = getCenterPrice(m);
-            if (center >= bottomPrice && center <= topPrice) {
-                lastCenteredTime = now;
-            } else if (now - lastCenteredTime > 20000) {
-                drawLadder();
+            if (getCenterPrice(m) >= bottomPrice && getCenterPrice(m) <= topPrice) {
+                resetLastCenteredTime();
+            } else if (System.currentTimeMillis() - lastCenteredTime > RECENTER_TIME_MS) {
+                recenter();
+                recenterLadderAndDrawPriceLevels();
+                updateEverything();
             }
-            ui.cls(Html.LADDER, Html.RECENTERING, lastCenteredTime > 0 && 19000 <= now - lastCenteredTime);
+            ui.cls(Html.LADDER, Html.RECENTERING, lastCenteredTime > 0 && RECENTER_WARN_TIME_MS <= System.currentTimeMillis() - lastCenteredTime);
         }
+    }
+
+    private void moveLadderTowardCenter() {
+        int direction = (int) Math.signum(getCenterPrice(marketDataForSymbol) - centerPrice);
+        centerPrice = getPriceNTicksFrom(centerPrice, AUTO_RECENTER_TICKS * direction);
+    }
+
+    private void resetLastCenteredTime() {
+        lastCenteredTime = System.currentTimeMillis();
     }
 
     private long getCenterPrice(MarketDataForSymbol m) {
@@ -632,35 +659,153 @@ public class LadderView {
 
     // Inbound
 
-    public void onInbound(String[] args) {
-        String cmd = args[0];
-        if (cmd.equals("click")) {
-            String label = args[1];
-            onClick(label, getDataArg(args));
-            flush();
-        } else if (cmd.equals("scroll")) {
-            String direction = args[1];
-            if (direction.equals("up")) {
-                centerPrice = marketDataForSymbol.tickSizeTracker.priceAbove(centerPrice);
-            } else if (direction.equals("down")) {
-                centerPrice = marketDataForSymbol.tickSizeTracker.priceBelow(centerPrice);
+    public void onRawInboundData(final String data) {
+        ui.onInbound(data);
+    }
+
+    @Override
+    public void onUpdate(String label, Map<String, String> dataArg) {
+        String value = dataArg.get("value");
+        if (value != null) {
+            if (Html.INP_QTY.equals(label)) {
+                clickTradingBoxQty = Integer.valueOf(value);
+            } else if (persistentPrefs.contains(label)) {
+                ladderPrefsForSymbolUser.set(label, value);
+            } else {
+                throw new IllegalArgumentException("Update for unknown value: " + label + " " + dataArg);
             }
-            recenterLadderAndDrawPriceLevels();
-            updateEverything();
-            flush();
-        } else if (cmd.equals("dblclick")) {
-            String label = args[1];
-            onDoubleClick(label, getDataArg(args));
-            flush();
-        } else if (cmd.equals("update")) {
-            onUpdate(args[1], getDataArg(args));
-            flush();
-        } else if (cmd.equals("heartbeat")) {
-            onHeartbeat(Long.valueOf(args[1]), Long.valueOf(args[2]));
+        }
+        drawClickTrading();
+        flush();
+
+    }
+
+    @Override
+    public void onScroll(final String direction) {
+        if (direction.equals("up")) {
+            centerPrice = marketDataForSymbol.tickSizeTracker.priceAbove(centerPrice);
+        } else if (direction.equals("down")) {
+            centerPrice = marketDataForSymbol.tickSizeTracker.priceBelow(centerPrice);
         } else {
-            throw new IllegalStateException("Unknown incoming: " + Arrays.asList(args));
+            return;
+        }
+        resetLastCenteredTime();
+        recenterLadderAndDrawPriceLevels();
+        updateEverything();
+        flush();
+    }
+
+
+    @Override
+    public void onKeyDown(final int keyCode) {
+        if (keyCode == PG_UP) {
+            int n = levelByPrice.size() - 1;
+            centerPrice = getPriceNTicksFrom(centerPrice, n);
+        } else if (keyCode == PG_DOWN) {
+            int n = -1 * (levelByPrice.size() - 1);
+            centerPrice = getPriceNTicksFrom(centerPrice, n);
+        } else {
+            return;
+        }
+        resetLastCenteredTime();
+        recenterLadderAndDrawPriceLevels();
+        updateEverything();
+        flush();
+    }
+
+    private long getPriceNTicksFrom(final long price, final int n) {
+        int ticks = Math.abs(n);
+        long ret = price;
+        for (int i = 0; i < ticks; i++) {
+            ret = n > 0 ? marketDataForSymbol.tickSizeTracker.priceAbove(ret) : marketDataForSymbol.tickSizeTracker.priceBelow(ret);
+        }
+        return ret;
+    }
+
+    @Override
+    public void onIncoming(final String[] args) {
+        String cmd = args[0];
+        if (cmd.equals("heartbeat")) {
+            onHeartbeat(Long.valueOf(args[1]), Long.valueOf(args[2]));
         }
     }
+
+
+    @Override
+    public void onDblClick(String label, Map<String, String> dataArg) {
+        if (workingOrdersForSymbol != null) {
+            if (Html.BUY_QTY.equals(label)) {
+                cancelAllForSide(com.drwtrading.london.protocols.photon.execution.Side.BID);
+            } else if (Html.SELL_QTY.equals(label)) {
+                cancelAllForSide(com.drwtrading.london.protocols.photon.execution.Side.OFFER);
+            }
+        }
+        flush();
+    }
+
+    @Override
+    public void onClick(String label, Map<String, String> data) {
+        String button = data.get("button");
+        LadderPrefsForSymbolUser l = ladderPrefsForSymbolUser;
+        boolean autoHedge = "true".equals(getPref(l, Html.AUTO_HEDGE_LEFT));
+        if ("left".equals(button)) {
+            if (Html.BUTTON_QTY.containsKey(label)) {
+                clickTradingBoxQty += Html.BUTTON_QTY.get(label);
+            } else if (Html.BUTTON_CLR.equals(label)) {
+                clickTradingBoxQty = 0;
+            } else if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
+                if (l != null) {
+                    submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_LEFT), autoHedge);
+                }
+            } else if (label.startsWith(Html.ORDER)) {
+                long price = Long.valueOf(data.get("price"));
+                if (label.equals(orderKey(price))) {
+                    cancelWorkingOrders(price, data);
+                } else {
+                    System.out.println("Mismatched label: " + data.get("price") + " " + orderKey(price) + " " + label);
+                }
+            } else if (label.startsWith(Html.PRICE)) {
+                priceShiftIndex += 1;
+            } else if (label.equals(Html.BUY_OFFSET_UP)) {
+                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.UP));
+            } else if (label.equals(Html.BUY_OFFSET_DOWN)) {
+                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.DOWN));
+            } else if (label.equals(Html.SELL_OFFSET_UP)) {
+                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.UP));
+            } else if (label.equals(Html.SELL_OFFSET_DOWN)) {
+                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.DOWN));
+            } else if (label.equals(Html.START_BUY)) {
+                commandPublisher.publish(new Command(ReddalCommand.START, symbol, com.drwtrading.london.photons.reddal.Side.BID));
+            } else if (label.equals(Html.START_SELL)) {
+                commandPublisher.publish(new Command(ReddalCommand.START, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
+            } else if (label.equals(Html.STOP_BUY)) {
+                commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.BID));
+            } else if (label.equals(Html.STOP_SELL)) {
+                commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
+            }
+        } else if ("right".equals(button)) {
+            if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
+                if (l != null) {
+                    submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_RIGHT), "true".equals(getPref(l, Html.AUTO_HEDGE_RIGHT)));
+                }
+            } else if (label.startsWith(Html.ORDER)) {
+                rightClickModify(data, autoHedge);
+            }
+        } else if ("middle".equals(button)) {
+            if (label.startsWith(Html.PRICE)) {
+                moveLadderToCenter();
+                drawLadder();
+            }
+        }
+        updateEverything();
+        drawClickTrading();
+        flush();
+    }
+
+    private void moveLadderToCenter() {
+        centerPrice = getCenterPrice(marketDataForSymbol);
+    }
+
 
     public static final AtomicLong heartbeatSeqNo = new AtomicLong(0L);
 
@@ -752,92 +897,12 @@ public class LadderView {
         return l.get(id, defaultPrefs.get(id));
     }
 
-    private void onUpdate(String label, Map<String, String> dataArg) {
-        String value = dataArg.get("value");
-        if (value != null) {
-            if (Html.INP_QTY.equals(label)) {
-                clickTradingBoxQty = Integer.valueOf(value);
-            } else if (persistentPrefs.contains(label)) {
-                ladderPrefsForSymbolUser.set(label, value);
-            } else {
-                throw new IllegalArgumentException("Update for unknown value: " + label + " " + dataArg);
-            }
-        }
-        drawClickTrading();
-    }
-
-    public void onDoubleClick(String label, Map<String, String> dataArg) {
-        if (workingOrdersForSymbol != null) {
-            if (Html.BUY_QTY.equals(label)) {
-                cancelAllForSide(com.drwtrading.london.protocols.photon.execution.Side.BID);
-            } else if (Html.SELL_QTY.equals(label)) {
-                cancelAllForSide(com.drwtrading.london.protocols.photon.execution.Side.OFFER);
-            }
-        }
-    }
-
     private void cancelAllForSide(com.drwtrading.london.protocols.photon.execution.Side side) {
         for (Main.WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
             if (orderUpdateFromServer.value.getSide() == side) {
                 cancelOrder(orderUpdateFromServer);
             }
         }
-    }
-
-    private void onClick(String label, Map<String, String> data) {
-        String button = data.get("button");
-        LadderPrefsForSymbolUser l = ladderPrefsForSymbolUser;
-        boolean autoHedge = "true".equals(getPref(l, Html.AUTO_HEDGE_LEFT));
-        if ("left".equals(button)) {
-            if (Html.BUTTON_QTY.containsKey(label)) {
-                clickTradingBoxQty += Html.BUTTON_QTY.get(label);
-            } else if (Html.BUTTON_CLR.equals(label)) {
-                clickTradingBoxQty = 0;
-            } else if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
-                if (l != null) {
-                    submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_LEFT), autoHedge);
-                }
-            } else if (label.startsWith(Html.ORDER)) {
-                long price = Long.valueOf(data.get("price"));
-                if (label.equals(orderKey(price))) {
-                    cancelWorkingOrders(price, data);
-                } else {
-                    System.out.println("Mismatched label: " + data.get("price") + " " + orderKey(price) + " " + label);
-                }
-            } else if (label.startsWith(Html.PRICE)) {
-                priceShiftIndex += 1;
-            } else if (label.equals(Html.BUY_OFFSET_UP)) {
-                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.UP));
-            } else if (label.equals(Html.BUY_OFFSET_DOWN)) {
-                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.DOWN));
-            } else if (label.equals(Html.SELL_OFFSET_UP)) {
-                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.UP));
-            } else if (label.equals(Html.SELL_OFFSET_DOWN)) {
-                commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.DOWN));
-            } else if (label.equals(Html.START_BUY)) {
-                commandPublisher.publish(new Command(ReddalCommand.START, symbol, com.drwtrading.london.photons.reddal.Side.BID));
-            } else if (label.equals(Html.START_SELL)) {
-                commandPublisher.publish(new Command(ReddalCommand.START, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
-            } else if (label.equals(Html.STOP_BUY)) {
-                commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.BID));
-            } else if (label.equals(Html.STOP_SELL)) {
-                commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
-            }
-        } else if ("right".equals(button)) {
-            if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
-                if (l != null) {
-                    submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_RIGHT), "true".equals(getPref(l, Html.AUTO_HEDGE_RIGHT)));
-                }
-            } else if (label.startsWith(Html.ORDER)) {
-                rightClickModify(data, autoHedge);
-            }
-        } else if ("middle".equals(button)) {
-            if (label.startsWith(Html.PRICE)) {
-                drawLadder();
-            }
-        }
-        updateEverything();
-        drawClickTrading();
     }
 
     Long modifyFromPrice = null;

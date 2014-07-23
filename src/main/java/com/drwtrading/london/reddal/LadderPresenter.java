@@ -125,7 +125,7 @@ public class LadderPresenter {
                 view.subscribeToSymbol(symbol, levels, marketDataBySymbol.get(symbol), ordersBySymbol.get(symbol), dataBySymbol.get(symbol), ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()));
                 viewsBySymbol.put(symbol, view);
             } else {
-                view.onInbound(args);
+                view.onRawInboundData(data);
             }
         }
     }
