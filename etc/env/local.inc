@@ -1,0 +1,3 @@
+APPNAME=reddal
+REMOTE_USER=dfukdev
+REMOTE_SERVER=localhost

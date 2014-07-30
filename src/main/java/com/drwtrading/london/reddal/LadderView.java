@@ -794,7 +794,9 @@ public class LadderView implements UiPipe.UiEventHandler {
         } else if ("middle".equals(button)) {
             if (label.startsWith(Html.PRICE)) {
                 moveLadderToCenter();
-                drawLadder();
+                resetLastCenteredTime();
+                recenterLadderAndDrawPriceLevels();
+                updateEverything();
             }
         }
         updateEverything();
