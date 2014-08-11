@@ -3,36 +3,12 @@ package com.drwtrading.london.reddal.data;
 import com.drwtrading.frontoffice.book.treemap.TreeMapBookFactory;
 import com.drwtrading.london.prices.PriceFormat;
 import com.drwtrading.london.prices.PriceFormats;
-import com.drwtrading.london.prices.tickbands.TickSizeTracker;
-import com.drwtrading.london.protocols.photon.marketdata.AuctionIndicativePrice;
-import com.drwtrading.london.protocols.photon.marketdata.AuctionIndicativeSurplus;
-import com.drwtrading.london.protocols.photon.marketdata.AuctionTradeUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.BasisTradeUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.BlockTradeUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.BookConsistencyMarker;
-import com.drwtrading.london.protocols.photon.marketdata.BookSnapshot;
-import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
-import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
-import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.protocols.photon.marketdata.MarketStateEvent;
-import com.drwtrading.london.protocols.photon.marketdata.NormalizedBandedDecimalTickStructure;
-import com.drwtrading.london.protocols.photon.marketdata.PriceUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.ProductBookStateEvent;
-import com.drwtrading.london.protocols.photon.marketdata.ProductReset;
-import com.drwtrading.london.protocols.photon.marketdata.RequestForCross;
-import com.drwtrading.london.protocols.photon.marketdata.RequestForQuote;
-import com.drwtrading.london.protocols.photon.marketdata.ServerHeartbeat;
-import com.drwtrading.london.protocols.photon.marketdata.SettlementDataEvent;
-import com.drwtrading.london.protocols.photon.marketdata.TickBand;
-import com.drwtrading.london.protocols.photon.marketdata.TopOfBook;
-import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolume;
-import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
-import com.drwtrading.london.protocols.photon.marketdata.TradeUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.*;
+import com.drwtrading.london.reddal.util.PriceOperations;
+import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,7 +20,6 @@ public class MarketDataForSymbol {
     public TopOfBook topOfBook = null;
     public Book book = null;
     public Map<Long, TotalTradedVolumeByPrice> totalTradedVolumeByPrice = new HashMap<Long, TotalTradedVolumeByPrice>();
-    public TickSizeTracker tickSizeTracker = null;
     public TradeUpdate lastTrade;
     public AuctionIndicativePrice auctionIndicativePrice;
     public AuctionTradeUpdate auctionTradeUpdate;
@@ -56,8 +31,11 @@ public class MarketDataForSymbol {
     public TotalTradedVolume totalTradedVolume;
     public String isin;
     public String displaySymbol;
+    public PriceOperations priceOperations;
 
     public MarketDataEvent.Visitor<Void> visitor = new MarketDataEvent.Visitor<Void>() {
+
+
         @Override
         public Void visitProductReset(ProductReset msg) {
             topOfBook = null;
@@ -123,13 +101,7 @@ public class MarketDataForSymbol {
         public Void visitInstrumentDefinitionEvent(InstrumentDefinitionEvent msg) {
             refData = msg;
             book = new Book(symbol, refData.getPriceStructure().getTickIncrement(), new TreeMapBookFactory());
-            if (refData.getPriceStructure().getTickStructure() instanceof NormalizedBandedDecimalTickStructure) {
-                tickBands = ((NormalizedBandedDecimalTickStructure) refData.getPriceStructure().getTickStructure()).getBands();
-                tickSizeTracker = new TickSizeTracker(tickBands);
-            } else {
-                tickBands = new ObjectArrayList<TickBand>(Arrays.asList(new TickBand(0, refData.getPriceStructure().getTickIncrement())));
-                tickSizeTracker = new TickSizeTracker(tickBands);
-            }
+            priceOperations = PriceUtils.from(msg);
             priceFormat = PriceFormats.from(refData.getPriceStructure().getTickStructure());
 
             if (refData.getInstrumentStructure() instanceof CashOutrightStructure) {

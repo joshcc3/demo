@@ -2,29 +2,15 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.reddal.Command;
-import com.drwtrading.london.photons.reddal.Direction;
-import com.drwtrading.london.photons.reddal.ReddalCommand;
-import com.drwtrading.london.photons.reddal.ReddalMessage;
-import com.drwtrading.london.photons.reddal.UpdateOffset;
+import com.drwtrading.london.photons.reddal.*;
 import com.drwtrading.london.prices.tickbands.TickBandUtils;
-import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteModifyOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
-import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderType;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
+import com.drwtrading.london.protocols.photon.execution.*;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
 import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.MarketDataForSymbol;
-import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.data.*;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
@@ -37,14 +23,7 @@ import org.jetlang.channels.Publisher;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
@@ -294,7 +273,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                     ui.height(laserKey, priceKey(bottomPrice), -0.5);
                 } else {
                     while (price <= topPrice) {
-                        long priceAbove = m.tickSizeTracker.priceAbove(price);
+                        long priceAbove = m.priceOperations.nTicksAway(price, 1, PriceUtils.Direction.Add);
                         if (price <= laserLine.getPrice() && laserLine.getPrice() <= priceAbove && levelByPrice.containsKey(price)) {
                             long fractionalPrice = laserLine.getPrice() - price;
                             double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
@@ -598,25 +577,13 @@ public class LadderView implements UiPipe.UiEventHandler {
         if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestBid().isExists()) {
             center = getMidPrice(m);
         }
-        long roundedCenter = TickBandUtils.roundDownToNearestTick(center, m.tickBands);
+        long roundedCenter = m.priceOperations.tradeablePrice(center, Side.BID);
         return roundedCenter;
     }
 
     private long getMidPrice(MarketDataForSymbol m) {
-        int levels = 0;
-
-        long price = m.topOfBook.getBestBid().getPrice();
-        while (price < m.topOfBook.getBestOffer().getPrice()) {
-            price = m.tickSizeTracker.priceAbove(price);
-            levels++;
-        }
-
-        levels /= 2;
-        price = m.topOfBook.getBestBid().getPrice();
-        for (int i = 0; i < levels; i++) {
-            price = m.tickSizeTracker.priceAbove(price);
-        }
-        return price;
+        long midPrice = m.topOfBook.getBestBid().getPrice() / 2 + m.topOfBook.getBestOffer().getPrice() / 2;
+        return m.priceOperations.tradeablePrice(midPrice, Side.BID);
     }
 
     private void recenterLadderAndDrawPriceLevels() {
@@ -627,7 +594,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             long price = centerPrice;
 
             for (int i = 0; i < centerLevel; i++) {
-                price = m.tickSizeTracker.priceAbove(price);
+                price = getPriceNTicksFrom(price, 1);
                 topPrice = price;
             }
             levelByPrice.clear();
@@ -646,7 +613,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                 ui.data(orderKey(price), Html.PRICE_KEY, price);
 
                 bottomPrice = price;
-                price = m.tickSizeTracker.priceBelow(price);
+                price = getPriceNTicksFrom(price, -1);
             }
 
             drawPriceLevels(dataForSymbol);
@@ -683,9 +650,9 @@ public class LadderView implements UiPipe.UiEventHandler {
     @Override
     public void onScroll(final String direction) {
         if (direction.equals("up")) {
-            centerPrice = marketDataForSymbol.tickSizeTracker.priceAbove(centerPrice);
+            centerPrice = marketDataForSymbol.priceOperations.nTicksAway(centerPrice, 1, PriceUtils.Direction.Add);
         } else if (direction.equals("down")) {
-            centerPrice = marketDataForSymbol.tickSizeTracker.priceBelow(centerPrice);
+            centerPrice = marketDataForSymbol.priceOperations.nTicksAway(centerPrice, 1, PriceUtils.Direction.Subtract);
         } else {
             return;
         }
@@ -714,12 +681,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private long getPriceNTicksFrom(final long price, final int n) {
-        int ticks = Math.abs(n);
-        long ret = price;
-        for (int i = 0; i < ticks; i++) {
-            ret = n > 0 ? marketDataForSymbol.tickSizeTracker.priceAbove(ret) : marketDataForSymbol.tickSizeTracker.priceBelow(ret);
-        }
-        return ret;
+        return marketDataForSymbol.priceOperations.nTicksAway(price, Math.abs(n), n >= 0 ? PriceUtils.Direction.Add : PriceUtils.Direction.Subtract);
     }
 
     @Override
