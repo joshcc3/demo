@@ -51,15 +51,15 @@ config default
   include mockito/1.8.3
   include io.netty-netty/3.2.7.Final
   include drw.frontoffice.book/1.0.0.4
-  include drw.london.market-data-service/320
-  include drw.london.market-data-service/320:eurex_na
-  include drw.london.market-data-service/320:superfeed
-  include drw.london.market-data-service/320:liffe_xdp
-  include drw.london.market-data-service/320:xetra
-  include drw.london.market-data-service/320:logging
+  include drw.london.market-data-service/324
+  include drw.london.market-data-service/324:eurex_na
+  include drw.london.market-data-service/324:superfeed
+  include drw.london.market-data-service/324:liffe_xdp
+  include drw.london.market-data-service/324:xetra
+  include drw.london.market-data-service/324:logging
 
-  include com.drwtrading.london.protocols.photon.marketdata/41
-  include com.drwtrading.london.prices/15
+  include com.drwtrading.london.protocols.photon.marketdata/42
+  include com.drwtrading.london.prices/16
   include drw.london.esquilatency/24
 
   include photon-runtime-java/1.0.0.81
