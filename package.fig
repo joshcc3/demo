@@ -83,6 +83,7 @@ end
 config build
   include :default
   include :scripts
+  add PATH=/site/drw/java/jdk1.7.0_60/bin
 end
 
 config test
