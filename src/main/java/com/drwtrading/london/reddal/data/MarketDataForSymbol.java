@@ -3,11 +3,35 @@ package com.drwtrading.london.reddal.data;
 import com.drwtrading.frontoffice.book.treemap.TreeMapBookFactory;
 import com.drwtrading.london.prices.PriceFormat;
 import com.drwtrading.london.prices.PriceFormats;
-import com.drwtrading.london.protocols.photon.marketdata.*;
+import com.drwtrading.london.protocols.photon.marketdata.AuctionIndicativePrice;
+import com.drwtrading.london.protocols.photon.marketdata.AuctionIndicativeSurplus;
+import com.drwtrading.london.protocols.photon.marketdata.AuctionTradeUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.BasisTradeUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.BlockTradeUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.BookConsistencyMarker;
+import com.drwtrading.london.protocols.photon.marketdata.BookSnapshot;
+import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
+import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
+import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
+import com.drwtrading.london.protocols.photon.marketdata.MarketStateEvent;
+import com.drwtrading.london.protocols.photon.marketdata.NormalizedBandedDecimalTickStructure;
+import com.drwtrading.london.protocols.photon.marketdata.NormalizedDecimalTickStructure;
+import com.drwtrading.london.protocols.photon.marketdata.PriceUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.ProductBookStateEvent;
+import com.drwtrading.london.protocols.photon.marketdata.ProductReset;
+import com.drwtrading.london.protocols.photon.marketdata.RequestForCross;
+import com.drwtrading.london.protocols.photon.marketdata.RequestForQuote;
+import com.drwtrading.london.protocols.photon.marketdata.ServerHeartbeat;
+import com.drwtrading.london.protocols.photon.marketdata.SettlementDataEvent;
+import com.drwtrading.london.protocols.photon.marketdata.TickBand;
+import com.drwtrading.london.protocols.photon.marketdata.TopOfBook;
+import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolume;
+import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
+import com.drwtrading.london.protocols.photon.marketdata.TradeUpdate;
 import com.drwtrading.london.reddal.util.PriceOperations;
 import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
-import it.unimi.dsi.fastutil.objects.ObjectList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +51,6 @@ public class MarketDataForSymbol {
     public SettlementDataEvent settle;
     public PriceFormat priceFormat;
     public TradeTracker tradeTracker = new TradeTracker();
-    public ObjectList<TickBand> tickBands;
     public TotalTradedVolume totalTradedVolume;
     public String isin;
     public String displaySymbol;
@@ -103,10 +126,15 @@ public class MarketDataForSymbol {
             book = new Book(symbol, refData.getPriceStructure().getTickIncrement(), new TreeMapBookFactory());
             priceOperations = PriceUtils.from(msg);
             priceFormat = PriceFormats.from(refData.getPriceStructure().getTickStructure());
-
             if (refData.getInstrumentStructure() instanceof CashOutrightStructure) {
                 CashOutrightStructure cashOutrightStructure = (CashOutrightStructure) refData.getInstrumentStructure();
                 isin = cashOutrightStructure.getIsin();
+            } else if (refData.getPriceStructure().getTickStructure() instanceof NormalizedDecimalTickStructure) {
+                NormalizedBandedDecimalTickStructure bandedDecimalTickStructure = new NormalizedBandedDecimalTickStructure(
+                        (NormalizedDecimalTickStructure) refData.getPriceStructure().getTickStructure(),
+                        new ObjectArrayList<>(new TickBand[]{new TickBand(Long.MIN_VALUE, refData.getPriceStructure().getTickIncrement())})
+                );
+                priceFormat = PriceFormats.from(bandedDecimalTickStructure);
             }
             return null;
         }
