@@ -88,6 +88,7 @@ end
 
 config test
   include :rake
+  add PATH=/site/drw/java/jdk1.7.0_60/bin
 end
 
 config scripts
