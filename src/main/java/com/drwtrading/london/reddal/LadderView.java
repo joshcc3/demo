@@ -504,8 +504,8 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private String getSymbol() {
-        if (marketDataForSymbol != null && marketDataForSymbol.displaySymbol != null && !symbol.contains(marketDataForSymbol.displaySymbol)) {
-            return symbol + " (" + marketDataForSymbol.displaySymbol + ")";
+        if (dataForSymbol != null && dataForSymbol.displaySymbol != null && !symbol.contains(dataForSymbol.displaySymbol)) {
+            return symbol + " (" + dataForSymbol.displaySymbol + ")";
         }
         return symbol;
     }

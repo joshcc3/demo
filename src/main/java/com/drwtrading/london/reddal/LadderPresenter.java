@@ -1,25 +1,16 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.reddal.data.DisplaySymbol;
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.MarketDataForSymbol;
-import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.data.*;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
-import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
 import com.drwtrading.monitoring.stats.StatsMsg;
-import com.drwtrading.photons.ladder.DeskPosition;
-import com.drwtrading.photons.ladder.InfoOnLadder;
-import com.drwtrading.photons.ladder.LadderText;
-import com.drwtrading.photons.ladder.LaserLine;
-import com.drwtrading.photons.ladder.LastTrade;
+import com.drwtrading.photons.ladder.*;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
@@ -29,14 +20,13 @@ import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
+import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
-import org.jetlang.core.Callback;
-import org.jetlang.core.Scheduler;
+import org.jetlang.fibers.Fiber;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -49,12 +39,7 @@ public class LadderPresenter {
     Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
     Multimap<String, LadderView> viewsByUser = HashMultimap.create();
     Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<Publisher<WebSocketOutboundData>, LadderView>();
-    Map<String, MarketDataForSymbol> marketDataBySymbol = new MapMaker().makeComputingMap(new Function<String, MarketDataForSymbol>() {
-        @Override
-        public MarketDataForSymbol apply(String from) {
-            return new MarketDataForSymbol(from);
-        }
-    });
+    Map<Publisher<WebSocketOutboundData>, Runnable> runOnDisonnect = new HashMap<>();
     Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(new Function<String, WorkingOrdersForSymbol>() {
         @Override
         public WorkingOrdersForSymbol apply(java.lang.String from) {
@@ -71,15 +56,19 @@ public class LadderPresenter {
     TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher;
     private final Publisher<ReddalMessage> commandPublisher;
-    private final Scheduler scheduler;
+    private final Fiber fiber;
+    private final TypedChannel<SubscribeToMarketData> subscribeToMarketData;
+    private final TypedChannel<UnsubscribeFromMarketData> unsubscribeFromMarketData;
 
-    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, Scheduler scheduler) {
+    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, Fiber fiber, TypedChannel<SubscribeToMarketData> subscribeToMarketData, TypedChannel<UnsubscribeFromMarketData> unsubscribeFromMarketData) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
         this.roundtripPublisher = roundtripPublisher;
         this.commandPublisher = commandPublisher;
-        this.scheduler = scheduler;
+        this.fiber = fiber;
+        this.subscribeToMarketData = subscribeToMarketData;
+        this.unsubscribeFromMarketData = unsubscribeFromMarketData;
         ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(new Function<String, Map<String, LadderPrefsForSymbolUser>>() {
             @Override
             public Map<String, LadderPrefsForSymbolUser> apply(final String symbol) {
@@ -91,7 +80,6 @@ public class LadderPresenter {
                 });
             }
         });
-
     }
 
     @Subscribe
@@ -109,6 +97,10 @@ public class LadderPresenter {
         if (view != null && view.symbol != null) {
             viewsBySymbol.remove(view.symbol, view);
             viewsByUser.remove(disconnected.getClient().getUserName(), view);
+            Runnable runnable = runOnDisonnect.get(disconnected.getOutboundChannel());
+            if (runnable != null) {
+                runnable.run();
+            }
         }
     }
 
@@ -120,10 +112,30 @@ public class LadderPresenter {
         LadderView view = viewBySocket.get(msg.getOutboundChannel());
         if (view != null) {
             if (cmd.equals("ladder-subscribe")) {
-                String symbol = args[1];
+                final String symbol = args[1];
                 int levels = Integer.parseInt(args[2]);
-                view.subscribeToSymbol(symbol, levels, marketDataBySymbol.get(symbol), ordersBySymbol.get(symbol), dataBySymbol.get(symbol), ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()));
+
+                // Subscribe to channel for this symbol
+                final MemoryChannel<MarketDataEvent> marketDataEventMemoryChannel = new MemoryChannel<>();
+                MarketDataForSymbol marketDataForSymbol = new MarketDataForSymbol(symbol);
+                marketDataEventMemoryChannel.subscribe(fiber, marketDataForSymbol.onMarketDataEventCallback());
+                subscribeToMarketData.publish(new SubscribeToMarketData(symbol, marketDataEventMemoryChannel));
+
+                // Unsubscribe when we disconnect
+                Runnable runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        unsubscribeFromMarketData.publish(new UnsubscribeFromMarketData(symbol, marketDataEventMemoryChannel));
+                    }
+                };
+                Runnable previous = runOnDisonnect.put(msg.getOutboundChannel(), runnable);
+                if (previous != null) {
+                    previous.run();
+                }
+
+                view.subscribeToSymbol(symbol, levels, marketDataForSymbol, ordersBySymbol.get(symbol), dataBySymbol.get(symbol), ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()));
                 viewsBySymbol.put(symbol, view);
+
             } else {
                 view.onRawInboundData(data);
             }
@@ -156,7 +168,7 @@ public class LadderPresenter {
     public void on(final LadderText ladderText) {
         dataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
         if (ladderText.getCell().equals("execution")) {
-            scheduler.schedule(new Runnable() {
+            fiber.schedule(new Runnable() {
                 @Override
                 public void run() {
                     dataBySymbol.get(ladderText.getSymbol()).onLadderText(new LadderText(ladderText.getSymbol(), "execution", "", ""));
@@ -209,30 +221,7 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(DisplaySymbol displaySymbol) {
-        marketDataBySymbol.get(displaySymbol.marketDataSymbol).onDisplaySymbol(displaySymbol);
-    }
-
-    public Callback<List<MarketDataEvent>> onMarketData() {
-        return new Callback<List<MarketDataEvent>>() {
-            @Override
-            public void onMessage(List<MarketDataEvent> message) {
-                handleMarketDataBatch(message);
-            }
-        };
-    }
-
-    private void handleMarketDataBatch(List<MarketDataEvent> message) {
-        for (MarketDataEvent marketDataEvent : message) {
-            String symbol = MarketDataEventUtil.getSymbol(marketDataEvent);
-            if (symbol == null) {
-                for (MarketDataForSymbol marketDataForSymbol : marketDataBySymbol.values()) {
-                    marketDataForSymbol.onMarketDataEvent(marketDataEvent);
-                }
-            } else {
-                MarketDataForSymbol marketDataForSymbol = marketDataBySymbol.get(symbol);
-                marketDataForSymbol.onMarketDataEvent(marketDataEvent);
-            }
-        }
+        dataBySymbol.get(displaySymbol.marketDataSymbol).setDisplaySymbol(displaySymbol);
     }
 
     public Runnable flushBatchedData() {

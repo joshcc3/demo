@@ -14,6 +14,7 @@ import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 
 public class ExtraDataForSymbol {
     public final String symbol;
+    public String displaySymbol;
     public final Map<String, LaserLine> laserLineByName = newFastMap();
     public DeskPosition deskPosition;
     public InfoOnLadder infoOnLadder;
@@ -26,6 +27,7 @@ public class ExtraDataForSymbol {
 
     public ExtraDataForSymbol(String symbol) {
         this.symbol = symbol;
+        this.displaySymbol = symbol;
         deskPosition = new DeskPosition(symbol, "");
     }
 
@@ -59,5 +61,9 @@ public class ExtraDataForSymbol {
 
     public void setSymbolAvailable() {
         symbolAvailable = true;
+    }
+
+    public void setDisplaySymbol(DisplaySymbol displaySymbol) {
+        this.displaySymbol = displaySymbol.displaySymbol;
     }
 }

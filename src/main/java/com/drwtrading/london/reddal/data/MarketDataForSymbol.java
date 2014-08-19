@@ -32,6 +32,7 @@ import com.drwtrading.london.reddal.util.PriceOperations;
 import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import org.jetlang.core.Callback;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,7 +54,6 @@ public class MarketDataForSymbol {
     public TradeTracker tradeTracker = new TradeTracker();
     public TotalTradedVolume totalTradedVolume;
     public String isin;
-    public String displaySymbol;
     public PriceOperations priceOperations;
 
     public MarketDataEvent.Visitor<Void> visitor = new MarketDataEvent.Visitor<Void>() {
@@ -203,7 +203,12 @@ public class MarketDataForSymbol {
         }
     }
 
-    public void onDisplaySymbol(DisplaySymbol display) {
-        displaySymbol = display.displaySymbol;
+    public Callback<MarketDataEvent> onMarketDataEventCallback() {
+        return new Callback<MarketDataEvent>() {
+            @Override
+            public void onMessage(MarketDataEvent message) {
+                onMarketDataEvent(message);
+            }
+        };
     }
 }

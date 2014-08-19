@@ -41,6 +41,7 @@ import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
+import com.drwtrading.marketdata.service.snapshot.publishing.MarketDataEventSnapshottingPublisher;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.StatsPublisher;
 import com.drwtrading.monitoring.stats.Transport;
@@ -62,7 +63,6 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
-import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
 import org.jetlang.fibers.Fiber;
@@ -101,7 +101,6 @@ public class Main {
 
         public final TypedChannel<Throwable> error;
         public final Publisher<Throwable> errorPublisher;
-        public final TypedChannel<MarketDataEvent> fullBook;
         public final TypedChannel<LadderMetadata> metaData;
         public final TypedChannel<Position> position;
         public final TypedChannel<TradingStatusWatchdog.ServerTradingStatus> tradingStatus;
@@ -121,12 +120,13 @@ public class Main {
         public final TypedChannel<WebSocketControlMessage> websocket;
         public final TypedChannel<ReddalMessage> reddalCommand;
         public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
+        public final TypedChannel<SubscribeToMarketData> subscribeToMarketData;
+        public final TypedChannel<UnsubscribeFromMarketData> unsubscribeFromMarketData;
 
         public ReddalChannels(ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
             error = ERROR_CHANNEL;
             errorPublisher = new BogusErrorFilteringPublisher(error);
-            fullBook = create(MarketDataEvent.class);
             metaData = create(LadderMetadata.class);
             position = create(Position.class);
             tradingStatus = create(TradingStatusWatchdog.ServerTradingStatus.class);
@@ -155,6 +155,9 @@ public class Main {
             websocket = create(WebSocketControlMessage.class);
             reddalCommand = create(ReddalMessage.class);
             reddalCommandSymbolAvailable = create(ReddalMessage.class);
+
+            subscribeToMarketData = create(SubscribeToMarketData.class);
+            unsubscribeFromMarketData = create(UnsubscribeFromMarketData.class);
         }
 
         public <T> TypedChannel<T> create(Class<T> clazz) {
@@ -354,7 +357,7 @@ public class Main {
             // Websocket signup broker
             final ArrayList<TypedChannel<WebSocketControlMessage>> websockets;
             {
-                websockets = new ArrayList<TypedChannel<WebSocketControlMessage>>();
+                websockets = new ArrayList<>();
                 for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
                     websockets.add(TypedChannels.create(WebSocketControlMessage.class));
                 }
@@ -384,8 +387,7 @@ public class Main {
             for (TypedChannel<WebSocketControlMessage> websocket : websockets) {
                 num++;
                 FiberBuilder fiberBuilder = fibers.fiberGroup.create("Ladder-" + (num));
-                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, fiber.getFiber());
-                channels.fullBook.subscribe(fiberBuilder.getFiber(), new BatchSubscriber<MarketDataEvent>(fiberBuilder.getFiber(), presenter.onMarketData(), 5, TimeUnit.MILLISECONDS));
+                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, fiber.getFiber(), channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
                 fiberBuilder.subscribe(presenter,
                         websocket,
                         channels.workingOrders,
@@ -423,24 +425,28 @@ public class Main {
 
         // Market data
         {
+
             for (String mds : environment.getList(Environment.MARKET_DATA)) {
+                final MarketDataEventSnapshottingPublisher snapshottingPublisher = new MarketDataEventSnapshottingPublisher();
                 final FiberBuilder fiber = fibers.fiberGroup.create("Market Data: " + mds);
                 final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
                 final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, fiber.getFiber(), EXCEPTION_HANDLER);
-                final ProductResetter productResetter = new ProductResetter(channels.fullBook);
+                final ProductResetter productResetter = new ProductResetter(snapshottingPublisher);
                 final ConnectionCloser connectionCloser = new ConnectionCloser(channels.status, "Market data: " + mds, productResetter.resetRunnable());
+
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .handler(new IdleConnectionTimeoutHandler(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
                         .handler(new JetlangChannelHandler<MarketDataEvent, Void>(new Publisher<MarketDataEvent>() {
                             @Override
                             public void publish(MarketDataEvent msg) {
-                                channels.fullBook.publish(msg);
+                                snapshottingPublisher.publish(msg);
                                 if (msg instanceof InstrumentDefinitionEvent) {
                                     channels.refData.publish((InstrumentDefinitionEvent) msg);
                                     productResetter.on((InstrumentDefinitionEvent) msg);
                                 }
                             }
                         }));
+
                 fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
@@ -452,6 +458,9 @@ public class Main {
                         });
                     }
                 });
+
+                MarketDataSubscriber marketDataSubscriber = new MarketDataSubscriber(snapshottingPublisher);
+                fiber.subscribe(marketDataSubscriber, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
             }
         }
 
