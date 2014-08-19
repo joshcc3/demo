@@ -599,6 +599,26 @@ traded_down.traded_again {
     background-color: #ff9999;
 }
 
+.pricing_button {
+    width: 38px;
+}
+
+.pricing_button.modify_price_selected {
+    background-color: #787878;
+}
+
+#pricing_bps {
+    top: 200px;
+}
+
+#pricing_efp {
+    top: 215px;
+}
+
+#pricing_px {
+    top: 230px;
+}
+
 /* index */
 
 tr.result:nth-child(odd) {

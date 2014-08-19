@@ -112,7 +112,7 @@ public class Environment {
                 getList("trading.orderTypesLeft"),
                 getList("trading.orderTypesRight"),
                 getList("trading.traders"),
-                getList("trading.shiftLaserLines"),
+                config.get("trading.theoLaserLine"),
                 config.get("trading.tag"),
                 getServerResolver(),
                 config.getDouble("trading.randomReloadFraction"));

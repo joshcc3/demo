@@ -2,13 +2,27 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.reddal.*;
-import com.drwtrading.london.prices.tickbands.TickBandUtils;
-import com.drwtrading.london.protocols.photon.execution.*;
+import com.drwtrading.london.photons.reddal.Command;
+import com.drwtrading.london.photons.reddal.Direction;
+import com.drwtrading.london.photons.reddal.ReddalCommand;
+import com.drwtrading.london.photons.reddal.ReddalMessage;
+import com.drwtrading.london.photons.reddal.UpdateOffset;
+import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
+import com.drwtrading.london.protocols.photon.execution.RemoteModifyOrder;
+import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
+import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
+import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
+import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
+import com.drwtrading.london.protocols.photon.execution.WorkingOrderType;
+import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
 import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
-import com.drwtrading.london.reddal.data.*;
+import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
+import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.MarketDataForSymbol;
+import com.drwtrading.london.reddal.data.TradingStatusForAll;
+import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.london.util.Struct;
@@ -23,7 +37,14 @@ import org.jetlang.channels.Publisher;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
@@ -122,6 +143,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final int PG_UP = 33;
     public static final int PG_DOWN = 34;
 
+    public static enum PricingMode {BPS, EFP, RAW}
 
     private final WebSocketClient client;
     private final LadderPresenter.View view;
@@ -147,7 +169,8 @@ public class LadderView implements UiPipe.UiEventHandler {
     private long centerPrice;
     private long topPrice;
     private long bottomPrice;
-    public int priceShiftIndex = 2;
+
+    public PricingMode pricingMode = PricingMode.RAW;
     public long lastCenteredTime = 0;
 
     public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, Publisher<ReddalMessage> commandPublisher) {
@@ -288,6 +311,24 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private void drawPriceLevels(final ExtraDataForSymbol d) {
+
+        LaserLine theo = new LaserLine(symbol, ladderOptions.theoLaserLine, Long.MIN_VALUE, false, "");
+        if (d.laserLineByName.containsKey(ladderOptions.theoLaserLine)) {
+            theo = d.laserLineByName.get(ladderOptions.theoLaserLine);
+        }
+
+        for (Long price : levelByPrice.keySet()) {
+            if (pricingMode == PricingMode.RAW || !theo.isValid()) {
+                drawPrice(marketDataForSymbol, price, priceKey(price));
+            } else if (pricingMode == PricingMode.BPS) {
+                double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
+                ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
+            } else if (pricingMode == PricingMode.EFP) {
+                drawPrice(marketDataForSymbol, price - theo.getPrice(), priceKey(price));
+            }
+        }
+
+
         // Basis points
         if (d != null && ladderOptions.shiftLaserLines.size() > 0) {
             int laserLineIndex = priceShiftIndex % (ladderOptions.shiftLaserLines.size() + 1);
@@ -304,7 +345,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
         if (marketDataForSymbol != null) {
             for (Long price : levelByPrice.keySet()) {
-                drawPrice(marketDataForSymbol, price);
+                drawPrice(marketDataForSymbol, price, priceKey(price));
             }
         }
     }
@@ -620,8 +661,8 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
-    private void drawPrice(MarketDataForSymbol m, long price) {
-        ui.txt(priceKey(price), m.priceFormat.format(price));
+    private void drawPrice(MarketDataForSymbol m, long price, final String key) {
+        ui.txt(key, m.priceFormat.format(price));
     }
 
     // Inbound
