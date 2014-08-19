@@ -2,27 +2,12 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.reddal.Command;
-import com.drwtrading.london.photons.reddal.Direction;
-import com.drwtrading.london.photons.reddal.ReddalCommand;
-import com.drwtrading.london.photons.reddal.ReddalMessage;
-import com.drwtrading.london.photons.reddal.UpdateOffset;
-import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteModifyOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
-import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderType;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
+import com.drwtrading.london.photons.reddal.*;
+import com.drwtrading.london.protocols.photon.execution.*;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
 import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.MarketDataForSymbol;
-import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.data.*;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.london.util.Struct;
@@ -37,14 +22,7 @@ import org.jetlang.channels.Publisher;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
@@ -138,6 +116,12 @@ public class LadderView implements UiPipe.UiEventHandler {
         public static final String STOP_BUY = "stop_buy";
         public static final String START_SELL = "start_sell";
         public static final String STOP_SELL = "stop_sell";
+
+        public static final String PRICING_BPS = "pricing_BPS";
+        public static final String PRICING_RAW = "pricing_RAW";
+        public static final String PRICING_EFP = "pricing_EFP";
+
+        public static final String PRICING = "pricing_";
     }
 
     public static final int PG_UP = 33;
@@ -208,8 +192,15 @@ public class LadderView implements UiPipe.UiEventHandler {
         drawMetaData();
         drawClock();
         drawClientSpeedState();
+        drawPricingButtons();
         drawPriceLevels(dataForSymbol);
         drawClickTrading();
+    }
+
+    private void drawPricingButtons() {
+        for (PricingMode mode : PricingMode.values()) {
+            ui.cls(Html.PRICING + mode.toString(), "active_mode", pricingMode == mode);
+        }
     }
 
     public void flush() {
@@ -328,26 +319,6 @@ public class LadderView implements UiPipe.UiEventHandler {
             }
         }
 
-
-        // Basis points
-        if (d != null && ladderOptions.shiftLaserLines.size() > 0) {
-            int laserLineIndex = priceShiftIndex % (ladderOptions.shiftLaserLines.size() + 1);
-            if (laserLineIndex != ladderOptions.shiftLaserLines.size()) {
-                LaserLine laserLine = d.laserLineByName.get(ladderOptions.shiftLaserLines.get(laserLineIndex));
-                if (laserLine != null && laserLine.isValid() && laserLine.getPrice() > 0) {
-                    for (Long price : levelByPrice.keySet()) {
-                        double points = (10000.0 * (price - laserLine.getPrice())) / laserLine.getPrice();
-                        ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
-                    }
-                    return;
-                }
-            }
-        }
-        if (marketDataForSymbol != null) {
-            for (Long price : levelByPrice.keySet()) {
-                drawPrice(marketDataForSymbol, price, priceKey(price));
-            }
-        }
     }
 
     private void decorateUpDown(final String key, Long value) {
@@ -767,8 +738,6 @@ public class LadderView implements UiPipe.UiEventHandler {
                 } else {
                     System.out.println("Mismatched label: " + data.get("price") + " " + orderKey(price) + " " + label);
                 }
-            } else if (label.startsWith(Html.PRICE)) {
-                priceShiftIndex += 1;
             } else if (label.equals(Html.BUY_OFFSET_UP)) {
                 commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.UP));
             } else if (label.equals(Html.BUY_OFFSET_DOWN)) {
@@ -785,6 +754,12 @@ public class LadderView implements UiPipe.UiEventHandler {
                 commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.BID));
             } else if (label.equals(Html.STOP_SELL)) {
                 commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
+            } else if (label.equals(Html.PRICING_BPS)) {
+                pricingMode = PricingMode.BPS;
+            } else if (label.equals(Html.PRICING_RAW)) {
+                pricingMode = PricingMode.RAW;
+            } else if (label.equals(Html.PRICING_EFP)) {
+                pricingMode = PricingMode.EFP;
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {

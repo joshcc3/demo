@@ -607,16 +607,20 @@ traded_down.traded_again {
     background-color: #787878;
 }
 
-#pricing_bps {
+#pricing_BPS {
     top: 200px;
 }
 
-#pricing_efp {
+#pricing_EFP {
     top: 215px;
 }
 
-#pricing_px {
+#pricing_RAW {
     top: 230px;
+}
+
+.pricing_button.active_mode {
+    border: 1px solid darkgreen;
 }
 
 /* index */
