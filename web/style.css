@@ -601,22 +601,29 @@ traded_down.traded_again {
 
 .pricing_button {
     width: 38px;
+    height: 15px;
+    font-size: 10px;
+    left: 0;
+    position: absolute;
 }
 
 .pricing_button.modify_price_selected {
     background-color: #787878;
 }
 
+#pricing_controls {
+}
+
 #pricing_BPS {
-    top: 200px;
+    top: 260px;
 }
 
 #pricing_EFP {
-    top: 215px;
+    top: 275px;
 }
 
 #pricing_RAW {
-    top: 230px;
+    top: 290px;
 }
 
 .pricing_button.active_mode {

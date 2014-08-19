@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.*;
+import com.drwtrading.london.prices.NormalizedPrice;
 import com.drwtrading.london.protocols.photon.execution.*;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
@@ -20,6 +21,7 @@ import com.google.common.base.Joiner;
 import org.jetlang.channels.Publisher;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -32,6 +34,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".0");
+    public static final DecimalFormat EFP_DECIMAL_FORMAT = new DecimalFormat("0.00");
     public static final int MODIFY_TIMEOUT_MS = 5000;
     public static final int AUTO_RECENTER_TICKS = 3;
 
@@ -315,7 +318,8 @@ public class LadderView implements UiPipe.UiEventHandler {
                 double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
                 ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
             } else if (pricingMode == PricingMode.EFP) {
-                drawPrice(marketDataForSymbol, price - theo.getPrice(), priceKey(price));
+                double efp = marketDataForSymbol.priceFormat.toBigDecimal(new NormalizedPrice(price - theo.getPrice())).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
+                ui.txt(priceKey(price), EFP_DECIMAL_FORMAT.format(efp));
             }
         }
 
