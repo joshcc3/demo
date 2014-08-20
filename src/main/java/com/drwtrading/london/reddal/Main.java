@@ -41,8 +41,10 @@ import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.marketdata.service.snapshot.publishing.MarketDataEventSnapshottingPublisher;
+import com.drwtrading.monitoring.stats.MsgCodec;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.StatsPublisher;
+import com.drwtrading.monitoring.stats.Transport;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.monitoring.transport.LoggingTransport;
 import com.drwtrading.monitoring.transport.MultiplexTransport;
@@ -77,6 +79,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.drwtrading.jetlang.autosubscribe.TypedChannels.create;
 import static com.google.common.collect.Lists.newArrayList;
@@ -287,7 +290,9 @@ public class Main {
         fileTransport.start();
         MulticastGroup statsGroup = nnsApi.multicastGroupFor(environment.getStatsNns());
         final LowTrafficMulticastTransport lowTrafficMulticastTransport = new LowTrafficMulticastTransport(statsGroup.getAddress(), statsGroup.getPort(), environment.getStatsInterface());
-        final StatsPublisher statsPublisher = new StatsPublisher("Reddal Monitoring", new MultiplexTransport(fileTransport, lowTrafficMulticastTransport));
+        final AtomicBoolean multicastEnabled = new AtomicBoolean(false);
+        Transport enableableMulticastTransport = createEnableAbleTransport(lowTrafficMulticastTransport, multicastEnabled);
+        final StatsPublisher statsPublisher = new StatsPublisher("Reddal Monitoring", new MultiplexTransport(fileTransport, enableableMulticastTransport));
 
         final MonitoredJetlangFactory monitoredJetlangFactory = new MonitoredJetlangFactory(statsPublisher, ERROR_CHANNEL);
         final ReddalChannels channels = new ReddalChannels(monitoredJetlangFactory);
@@ -312,7 +317,7 @@ public class Main {
             fibers.stats.getFiber().schedule(new Runnable() {
                 @Override
                 public void run() {
-                    lowTrafficMulticastTransport.start();
+                    multicastEnabled.set(true);
                     statsPublisher.start();
                 }
             }, 10, TimeUnit.SECONDS);
@@ -686,6 +691,27 @@ public class Main {
 
         fibers.start();
         new CountDownLatch(1).await();
+    }
+
+    private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport, final AtomicBoolean multicastEnabled) {
+        return new Transport() {
+                @Override
+                public <T> void publish(final MsgCodec<T> codec, final T msg) {
+                    if (multicastEnabled.get()) {
+                        lowTrafficMulticastTransport.publish(codec, msg);
+                    }
+                }
+
+                @Override
+                public void start() {
+                    lowTrafficMulticastTransport.start();
+                }
+
+                @Override
+                public void stop() {
+                    lowTrafficMulticastTransport.stop();
+                }
+            };
     }
 
 
