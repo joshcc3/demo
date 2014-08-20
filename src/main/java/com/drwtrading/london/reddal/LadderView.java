@@ -305,24 +305,24 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private void drawPriceLevels(final ExtraDataForSymbol d) {
+        if (!pendingRefDataAndSettle) {
+            LaserLine theo = new LaserLine(symbol, ladderOptions.theoLaserLine, Long.MIN_VALUE, false, "");
+            if (d != null && d.laserLineByName.containsKey(ladderOptions.theoLaserLine)) {
+                theo = d.laserLineByName.get(ladderOptions.theoLaserLine);
+            }
 
-        LaserLine theo = new LaserLine(symbol, ladderOptions.theoLaserLine, Long.MIN_VALUE, false, "");
-        if (d != null && d.laserLineByName.containsKey(ladderOptions.theoLaserLine)) {
-            theo = d.laserLineByName.get(ladderOptions.theoLaserLine);
-        }
-
-        for (Long price : levelByPrice.keySet()) {
-            if (pricingMode == PricingMode.BPS) {
-                double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
-                ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
-            } else if (pricingMode == PricingMode.EFP && marketDataForSymbol != null && marketDataForSymbol.priceFormat != null) {
-                double efp = marketDataForSymbol.priceFormat.toBigDecimal(new NormalizedPrice(price - theo.getPrice())).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
-                ui.txt(priceKey(price), EFP_DECIMAL_FORMAT.format(efp));
-            } else {
-                drawPrice(marketDataForSymbol, price, priceKey(price));
+            for (Long price : levelByPrice.keySet()) {
+                if (pricingMode == PricingMode.BPS) {
+                    double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
+                    ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
+                } else if (pricingMode == PricingMode.EFP && marketDataForSymbol != null && marketDataForSymbol.priceFormat != null) {
+                    double efp = marketDataForSymbol.priceFormat.toBigDecimal(new NormalizedPrice(price - theo.getPrice())).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
+                    ui.txt(priceKey(price), EFP_DECIMAL_FORMAT.format(efp));
+                } else {
+                    drawPrice(marketDataForSymbol, price, priceKey(price));
+                }
             }
         }
-
     }
 
     private void decorateUpDown(final String key, Long value) {
@@ -568,33 +568,35 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     private long getCenterPrice(MarketDataForSymbol m) {
         long center = 0;
-
-        if (m.settle != null) {
-            center = m.settle.getSettlementPrice();
+        if (!pendingRefDataAndSettle) {
+            if (m.settle != null) {
+                center = m.settle.getSettlementPrice();
+            }
+            if (m.lastTrade != null) {
+                center = m.lastTrade.getPrice();
+            }
+            if (m.auctionIndicativePrice != null && m.auctionIndicativePrice.isHasIndicativePrice() && m.auctionIndicativePrice.getQuantity() > 0) {
+                center = m.auctionIndicativePrice.getIndicativePrice();
+            }
+            if (m.auctionTradeUpdate != null && m.auctionTradeUpdate.getQuantity() > 0) {
+                center = m.auctionTradeUpdate.getPrice();
+            }
+            if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists()) {
+                center = m.topOfBook.getBestOffer().getPrice();
+            }
+            if (m.topOfBook != null && m.topOfBook.getBestBid().isExists()) {
+                center = m.topOfBook.getBestBid().getPrice();
+            }
+            if (dataForSymbol != null && dataForSymbol.laserLineByName.get("green") != null && dataForSymbol.laserLineByName.get("green").isValid()) {
+                center = dataForSymbol.laserLineByName.get("green").getPrice();
+            }
+            if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestBid().isExists()) {
+                center = getMidPrice(m);
+            }
+            long roundedCenter = m.priceOperations.tradeablePrice(center, Side.BID);
+            return roundedCenter;
         }
-        if (m.lastTrade != null) {
-            center = m.lastTrade.getPrice();
-        }
-        if (m.auctionIndicativePrice != null && m.auctionIndicativePrice.isHasIndicativePrice() && m.auctionIndicativePrice.getQuantity() > 0) {
-            center = m.auctionIndicativePrice.getIndicativePrice();
-        }
-        if (m.auctionTradeUpdate != null && m.auctionTradeUpdate.getQuantity() > 0) {
-            center = m.auctionTradeUpdate.getPrice();
-        }
-        if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists()) {
-            center = m.topOfBook.getBestOffer().getPrice();
-        }
-        if (m.topOfBook != null && m.topOfBook.getBestBid().isExists()) {
-            center = m.topOfBook.getBestBid().getPrice();
-        }
-        if (dataForSymbol != null && dataForSymbol.laserLineByName.get("green") != null && dataForSymbol.laserLineByName.get("green").isValid()) {
-            center = dataForSymbol.laserLineByName.get("green").getPrice();
-        }
-        if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestBid().isExists()) {
-            center = getMidPrice(m);
-        }
-        long roundedCenter = m.priceOperations.tradeablePrice(center, Side.BID);
-        return roundedCenter;
+        return 0;
     }
 
     private long getMidPrice(MarketDataForSymbol m) {
