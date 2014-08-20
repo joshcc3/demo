@@ -74,6 +74,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -387,7 +388,7 @@ public class Main {
             for (TypedChannel<WebSocketControlMessage> websocket : websockets) {
                 num++;
                 FiberBuilder fiberBuilder = fibers.fiberGroup.create("Ladder-" + (num));
-                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, fiber.getFiber(), channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
+                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, fiberBuilder.getFiber(), channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
                 fiberBuilder.subscribe(presenter,
                         websocket,
                         channels.workingOrders,
@@ -631,18 +632,25 @@ public class Main {
         // Ladder Text
         {
             if (environment.opxlLadderTextEnabled()) {
-                final OpxlLadderTextSubscriber opxlLadderTextSubscriber = new OpxlLadderTextSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, config.get("opxl.laddertext.key"), new Publisher<LadderText>() {
-                    @Override
-                    public void publish(LadderText msg) {
-                        channels.metaData.publish(msg);
-                    }
-                });
-                fibers.onStart(new Runnable() {
-                    @Override
-                    public void run() {
-                        fibers.opxlText.execute(opxlLadderTextSubscriber.connectToOpxl());
-                    }
-                });
+
+                Collection<String> keys = environment.getOpxlLadderTextKeys();
+
+                for (String key : keys) {
+                    final OpxlLadderTextSubscriber opxlLadderTextSubscriber = new OpxlLadderTextSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, new Publisher<LadderText>() {
+                        @Override
+                        public void publish(LadderText msg) {
+                            channels.metaData.publish(msg);
+                        }
+                    });
+                    fibers.onStart(new Runnable() {
+                        @Override
+                        public void run() {
+                            fibers.opxlText.execute(opxlLadderTextSubscriber.connectToOpxl());
+                        }
+                    });
+
+                }
+
             }
         }
 

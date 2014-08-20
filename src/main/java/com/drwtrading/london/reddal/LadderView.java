@@ -567,8 +567,8 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private long getCenterPrice(MarketDataForSymbol m) {
-        long center = 0;
         if (!pendingRefDataAndSettle) {
+            long center = 0;
             if (m.settle != null) {
                 center = m.settle.getSettlementPrice();
             }
@@ -587,8 +587,8 @@ public class LadderView implements UiPipe.UiEventHandler {
             if (m.topOfBook != null && m.topOfBook.getBestBid().isExists()) {
                 center = m.topOfBook.getBestBid().getPrice();
             }
-            if (dataForSymbol != null && dataForSymbol.laserLineByName.get("green") != null && dataForSymbol.laserLineByName.get("green").isValid()) {
-                center = dataForSymbol.laserLineByName.get("green").getPrice();
+            if (dataForSymbol != null && dataForSymbol.theoreticalValue != null) {
+                center = dataForSymbol.theoreticalValue;
             }
             if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestBid().isExists()) {
                 center = getMidPrice(m);

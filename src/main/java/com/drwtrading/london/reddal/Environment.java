@@ -13,11 +13,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class Environment {
@@ -60,6 +56,10 @@ public class Environment {
 
     public int getCommandsPort() {
         return config.getInt("commands.port");
+    }
+
+    public Collection<String> getOpxlLadderTextKeys() {
+        return config.getList("opxl.laddertext.keys");
     }
 
     public static class HostAndNic {
