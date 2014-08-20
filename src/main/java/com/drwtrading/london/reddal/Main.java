@@ -348,7 +348,7 @@ public class Main {
                 }
             });
 
-            webapp.webServer().add(new LoggingHandler(new SimpleLogSink(new FileWriter(new File(logDir, "web.log"), true))));
+            webapp.webServer();
             // Index presenter
             {
                 TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
@@ -676,10 +676,8 @@ public class Main {
         // Logging
         {
             fibers.logging.subscribe(new ErrorLogger(new File(logDir, "errors.log")).onThrowableCallback(), channels.error);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "metadata.json", channels.errorPublisher), channels.metaData);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "remote-order.json", channels.errorPublisher), channels.workingOrderEvents, channels.remoteOrderEvents);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "trading-status.json", channels.errorPublisher), channels.tradingStatus);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "position.json", channels.errorPublisher), channels.position);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "preferences.json", channels.errorPublisher), channels.ladderPrefsLoaded, channels.storeLadderPref);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", channels.errorPublisher), channels.stats);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "reference-data.json", channels.errorPublisher), channels.refData);
