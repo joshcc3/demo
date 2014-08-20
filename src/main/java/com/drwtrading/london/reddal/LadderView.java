@@ -307,19 +307,19 @@ public class LadderView implements UiPipe.UiEventHandler {
     private void drawPriceLevels(final ExtraDataForSymbol d) {
 
         LaserLine theo = new LaserLine(symbol, ladderOptions.theoLaserLine, Long.MIN_VALUE, false, "");
-        if (d.laserLineByName.containsKey(ladderOptions.theoLaserLine)) {
+        if (d != null && d.laserLineByName.containsKey(ladderOptions.theoLaserLine)) {
             theo = d.laserLineByName.get(ladderOptions.theoLaserLine);
         }
 
         for (Long price : levelByPrice.keySet()) {
-            if (pricingMode == PricingMode.RAW || !theo.isValid()) {
-                drawPrice(marketDataForSymbol, price, priceKey(price));
-            } else if (pricingMode == PricingMode.BPS) {
+            if (pricingMode == PricingMode.BPS) {
                 double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
                 ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
-            } else if (pricingMode == PricingMode.EFP) {
+            } else if (pricingMode == PricingMode.EFP && marketDataForSymbol != null && marketDataForSymbol.priceFormat != null) {
                 double efp = marketDataForSymbol.priceFormat.toBigDecimal(new NormalizedPrice(price - theo.getPrice())).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
                 ui.txt(priceKey(price), EFP_DECIMAL_FORMAT.format(efp));
+            } else {
+                drawPrice(marketDataForSymbol, price, priceKey(price));
             }
         }
 
