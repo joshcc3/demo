@@ -1,20 +1,20 @@
 package com.drwtrading.london.reddal.util;
 
-import com.drwtrading.london.reddal.util.DoOnceEveryXMillis;
 import com.drwtrading.london.time.Clock;
-import com.drwtrading.monitoring.stats.StatsPublisher;
+import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
+import org.jetlang.channels.Publisher;
 
 public class PhotocolsStatsPublisher<Inbound, Outbound> implements PhotocolsHandler<Inbound, Outbound> {
 
-    private final StatsPublisher statsPublisher;
+    private final Publisher<StatsMsg> statsPublisher;
     private final String statsName;
     private final int secondsValid;
     private final DoOnceEveryXMillis doOnceEveryXMillis;
 
-    public PhotocolsStatsPublisher(StatsPublisher statsPublisher, String statsName, int secondsValid) {
+    public PhotocolsStatsPublisher(Publisher<StatsMsg> statsPublisher, String statsName, int secondsValid) {
         this.statsPublisher = statsPublisher;
         this.statsName = statsName;
         this.secondsValid = secondsValid;

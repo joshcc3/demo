@@ -16,7 +16,6 @@ import com.drwtrading.london.jetlang.stats.MonitoredJetlangFactory;
 import com.drwtrading.london.jetlang.transport.LowTrafficMulticastTransport;
 import com.drwtrading.london.logging.ErrorLogger;
 import com.drwtrading.london.logging.JsonChannelLogger;
-import com.drwtrading.london.monitoring.MonitoringHeartbeat;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.photons.indy.IndyEnvelope;
@@ -44,10 +43,9 @@ import com.drwtrading.london.util.Struct;
 import com.drwtrading.marketdata.service.snapshot.publishing.MarketDataEventSnapshottingPublisher;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.StatsPublisher;
-import com.drwtrading.monitoring.stats.Transport;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.monitoring.transport.LoggingTransport;
-import com.drwtrading.monitoring.transport.NullTransport;
+import com.drwtrading.monitoring.transport.MultiplexTransport;
 import com.drwtrading.photocols.PhotocolsHandler;
 import com.drwtrading.photocols.easy.Photocols;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
@@ -73,14 +71,16 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static com.drwtrading.jetlang.autosubscribe.TypedChannels.create;
+import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Maps.newHashMap;
 
 public class Main {
 
@@ -90,10 +90,9 @@ public class Main {
     public static final int NUM_DISPLAY_THREADS = 4;
     private static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
-    public static TypedChannel<WebSocketControlMessage> createWebPageWithWebSocket(String alias, String name, FiberBuilder fiber, WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
+    public static void createWebPageWithWebSocket(String alias, String name, FiberBuilder fiber, WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias("/" + alias, "/" + name + ".html");
         webapp.createWebSocket("/" + name + "/ws/", websocketChannel, fiber.getFiber());
-        return websocketChannel;
     }
 
     public static final TypedChannel<Throwable> ERROR_CHANNEL = create(Throwable.class);
@@ -108,7 +107,7 @@ public class Main {
         public final TypedChannel<WorkingOrderUpdateFromServer> workingOrders;
         public final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents;
         public final TypedChannel<RemoteOrderEventFromServer> remoteOrderEvents;
-        public final TypedChannel<StatsMsg> status;
+        public final TypedChannel<StatsMsg> stats;
         public final TypedChannel<InstrumentDefinitionEvent> refData;
         public final Publisher<RemoteOrderCommandToServer> remoteOrderCommand;
         public final Map<String, TypedChannel<RemoteOrderManagementCommand>> remoteOrderCommandByServer;
@@ -118,7 +117,6 @@ public class Main {
         public final TypedChannel<DisplaySymbol> displaySymbol;
         public final TypedChannel<LadderView.HeartbeatRoundtrip> heartbeatRoundTrips;
         private final ChannelFactory channelFactory;
-        public final TypedChannel<WebSocketControlMessage> websocket;
         public final TypedChannel<ReddalMessage> reddalCommand;
         public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
         public final TypedChannel<SubscribeToMarketData> subscribeToMarketData;
@@ -134,7 +132,7 @@ public class Main {
             workingOrders = create(WorkingOrderUpdateFromServer.class);
             workingOrderEvents = create(WorkingOrderEventFromServer.class);
             remoteOrderEvents = create(RemoteOrderEventFromServer.class);
-            status = create(StatsMsg.class);
+            stats = create(StatsMsg.class);
             refData = create(InstrumentDefinitionEvent.class);
             remoteOrderCommandByServer = new MapMaker().makeComputingMap(new Function<String, TypedChannel<RemoteOrderManagementCommand>>() {
                 @Override
@@ -153,7 +151,6 @@ public class Main {
             equityIdAndSymbol = create(EquityIdAndSymbol.class);
             displaySymbol = create(DisplaySymbol.class);
             heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
-            websocket = create(WebSocketControlMessage.class);
             reddalCommand = create(ReddalMessage.class);
             reddalCommandSymbolAvailable = create(ReddalMessage.class);
 
@@ -174,18 +171,19 @@ public class Main {
         public final Fiber starter;
         public final FiberBuilder logging;
         public final FiberBuilder ui;
+        public final FiberBuilder stats;
         public final FiberBuilder marketData;
         public final FiberBuilder metaData;
         public final FiberBuilder workingOrders;
         public final FiberBuilder selecta;
         public final FiberBuilder remoteOrders;
-        public final FiberBuilder ladder;
         public final FiberBuilder opxlPosition;
         public final FiberBuilder opxlText;
         public final FiberBuilder mrPhil;
         public final FiberBuilder indy;
         public final FiberBuilder watchdog;
         public final FiberBuilder settings;
+        public final FiberBuilder ladder;
 
         public ReddalFibers(ReddalChannels channels, final MonitoredJetlangFactory factory) throws IOException {
             jetlangFactory = factory;
@@ -194,12 +192,13 @@ public class Main {
             fiberGroup.wrap(starter, "Starter");
             logging = fiberGroup.create("Logging");
             ui = fiberGroup.create("UI");
+            ladder = fiberGroup.create("Ladder");
+            stats = fiberGroup.create("Stats");
             marketData = fiberGroup.create("Market data");
             metaData = fiberGroup.create("Metadata");
             workingOrders = fiberGroup.create("Working orders");
             selecta = fiberGroup.create("Selecta");
             remoteOrders = fiberGroup.create("Remote orders");
-            ladder = fiberGroup.create("Ladder");
             opxlPosition = fiberGroup.create("OPXL Position");
             opxlText = fiberGroup.create("OPXL Text");
             mrPhil = fiberGroup.create("Mr Phil");
@@ -282,16 +281,18 @@ public class Main {
         final Config config = Config.fromFile(new File("./etc", configName + ".properties"));
         final Environment environment = new Environment(config);
         final File logDir = environment.getLogDirectory(configName);
-        final LoggingTransport transport = new LoggingTransport(new File(logDir, "jetlang.log"));
-        final MonitoredJetlangFactory monitoredJetlangFactory = new MonitoredJetlangFactory(new StatsPublisher("Reddal Monitoring", transport), ERROR_CHANNEL);
+
+        NnsApi nnsApi = new NnsFactory().create();
+        final LoggingTransport fileTransport = new LoggingTransport(new File(logDir, "jetlang.log"));
+        fileTransport.start();
+        MulticastGroup statsGroup = nnsApi.multicastGroupFor(environment.getStatsNns());
+        final LowTrafficMulticastTransport lowTrafficMulticastTransport = new LowTrafficMulticastTransport(statsGroup.getAddress(), statsGroup.getPort(), environment.getStatsInterface());
+        final StatsPublisher statsPublisher = new StatsPublisher("Reddal Monitoring", new MultiplexTransport(fileTransport, lowTrafficMulticastTransport));
+
+        final MonitoredJetlangFactory monitoredJetlangFactory = new MonitoredJetlangFactory(statsPublisher, ERROR_CHANNEL);
         final ReddalChannels channels = new ReddalChannels(monitoredJetlangFactory);
         final ReddalFibers fibers = new ReddalFibers(channels, monitoredJetlangFactory);
-        fibers.onStart(new Runnable() {
-            @Override
-            public void run() {
-                transport.start();
-            }
-        });
+
 
         final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER = new Thread.UncaughtExceptionHandler() {
             @Override
@@ -301,37 +302,26 @@ public class Main {
         };
 
         // Monitoring
-        MulticastGroup statsGroup;
-        final StatsPublisher statsPublisher;
         {
-            NnsApi nnsApi = new NnsFactory().create();
-            statsGroup = nnsApi.multicastGroupFor(environment.getStatsNns());
-            Transport statsTransport = new LowTrafficMulticastTransport(statsGroup.getAddress(), statsGroup.getPort(), environment.getStatsInterface());
-            final StatsPublisher localStatusPublisher = new StatsPublisher(environment.getStatsName(), statsTransport);
-            localStatusPublisher.start();
-            fibers.ui.subscribe(new Callback<StatsMsg>() {
+            fibers.stats.subscribe(new Callback<StatsMsg>() {
                 @Override
                 public void onMessage(StatsMsg message) {
-                    localStatusPublisher.publish(message);
+                    statsPublisher.publish(message);
                 }
-            }, channels.status);
-            statsPublisher = new StatsPublisher(configName, new NullTransport()) {
-                public void publish(StatsMsg statsMsg) {
-                    channels.status.publish(statsMsg);
+            }, channels.stats);
+            fibers.stats.getFiber().schedule(new Runnable() {
+                @Override
+                public void run() {
+                    lowTrafficMulticastTransport.start();
+                    statsPublisher.start();
                 }
-            };
+            }, 10, TimeUnit.SECONDS);
         }
 
-        // Dashboard / monitoring heartbeat
-        {
-            MonitoringHeartbeat heartbeat = new MonitoringHeartbeat(statsPublisher);
-            fibers.ui.subscribe(heartbeat, channels.error);
-            heartbeat.start(fibers.ui.getFiber());
-        }
 
         // WebApp
+        Map<String, TypedChannel<WebSocketControlMessage>> websocketsForLogging = newHashMap();
         {
-            final FiberBuilder fiber = fibers.ui;
             final WebApplication webapp;
             webapp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
             webapp.enableSingleSignOn();
@@ -339,7 +329,7 @@ public class Main {
             fibers.onStart(new Runnable() {
                 @Override
                 public void run() {
-                    fiber.execute(new Runnable() {
+                    fibers.ui.execute(new Runnable() {
                         @Override
                         public void run() {
                             try {
@@ -354,41 +344,54 @@ public class Main {
             });
 
             webapp.webServer().add(new LoggingHandler(new SimpleLogSink(new FileWriter(new File(logDir, "web.log"), true))));
+            // Index presenter
+            {
+                TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("/", "index", fibers.ui, webapp, websocket);
+                websocketsForLogging.put("index", websocket);
+                final IndexPresenter indexPresenter = new IndexPresenter();
+                fibers.ui.subscribe(indexPresenter, channels.displaySymbol, channels.refData, websocket);
+            }
 
             // Websocket signup broker
-            final ArrayList<TypedChannel<WebSocketControlMessage>> websockets;
+
+            final TypedChannel<WebSocketControlMessage> ladderWebSocket = create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("ladder", "ladder", fibers.ladder, webapp, ladderWebSocket);
+            websocketsForLogging.put("ladder", ladderWebSocket);
+
+            final List<TypedChannel<WebSocketControlMessage>> websockets = newArrayList();
             {
-                websockets = new ArrayList<>();
-                for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
-                    websockets.add(TypedChannels.create(WebSocketControlMessage.class));
-                }
                 final Map<WebSocketClient, TypedChannel<WebSocketControlMessage>> map = new MapMaker().makeComputingMap(new Function<WebSocketClient, TypedChannel<WebSocketControlMessage>>() {
                     int num = 0;
 
                     @Override
                     public TypedChannel<WebSocketControlMessage> apply(WebSocketClient from) {
                         System.out.println("Ladder #" + num + " for " + from.toString());
-                        return websockets.get(num++ % websockets.size());
+                        return websockets.get(num++ % websockets.size());// round robin the web socket.
                     }
                 });
-                final TypedChannel<WebSocketControlMessage> websocket = createWebPageWithWebSocket("ladder", "ladder", fiber, webapp, channels.websocket);
                 fibers.ladder.subscribe(new Callback<WebSocketControlMessage>() {
                     @Override
                     public void onMessage(WebSocketControlMessage message) {
+
                         map.get(message.getClient()).publish(message);
                         if (message instanceof WebSocketDisconnected) {
                             map.remove(message.getClient());
                         }
+
                     }
-                }, websocket);
+                }, ladderWebSocket);
             }
 
-            // Ladder presenters
-            int num = 0;
-            for (TypedChannel<WebSocketControlMessage> websocket : websockets) {
-                num++;
-                FiberBuilder fiberBuilder = fibers.fiberGroup.create("Ladder-" + (num));
-                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.status, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, fiberBuilder.getFiber(), channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
+            int ladder_fiber_num = 0;
+            for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
+                final TypedChannel<WebSocketControlMessage> websocket = create(WebSocketControlMessage.class);
+                websockets.add(websocket);
+
+                ladder_fiber_num++;
+                final String name = "Ladder-" + (ladder_fiber_num);
+                FiberBuilder fiberBuilder = fibers.fiberGroup.create(name);
+                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, fiberBuilder.getFiber(), channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
                 fiberBuilder.subscribe(presenter,
                         websocket,
                         channels.workingOrders,
@@ -398,18 +401,9 @@ public class Main {
                         channels.ladderPrefsLoaded,
                         channels.displaySymbol,
                         channels.reddalCommandSymbolAvailable);
-                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + num * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
-                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + num * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + ladder_fiber_num * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + ladder_fiber_num * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
             }
-
-            // Index presenter
-            {
-                TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("/", "index", fiber, webapp, websocket);
-                IndexPresenter indexPresenter = new IndexPresenter();
-                fiber.subscribe(indexPresenter, websocket, channels.refData, channels.displaySymbol);
-            }
-
         }
 
         // Settings
@@ -433,7 +427,7 @@ public class Main {
                 final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
                 final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, fiber.getFiber(), EXCEPTION_HANDLER);
                 final ProductResetter productResetter = new ProductResetter(snapshottingPublisher);
-                final ConnectionCloser connectionCloser = new ConnectionCloser(channels.status, "Market data: " + mds, productResetter.resetRunnable());
+                final ConnectionCloser connectionCloser = new ConnectionCloser(channels.stats, "Market data: " + mds, productResetter.resetRunnable());
 
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .handler(new IdleConnectionTimeoutHandler(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
@@ -472,7 +466,7 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class, Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "metadata." + server + ".log"), fibers.logging.getFiber(), true)
-                        .handler(new PhotocolsStatsPublisher<LadderMetadata, Void>(statsPublisher, environment.getStatsName(), 10))
+                        .handler(new PhotocolsStatsPublisher<LadderMetadata, Void>(channels.stats, environment.getStatsName(), 10))
                         .handler(new JetlangChannelHandler<LadderMetadata, Void>(channels.metaData));
                 fibers.onStart(new Runnable() {
                     @Override
@@ -490,14 +484,14 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<RemoteOrderManagementEvent, RemoteOrderManagementCommand> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), RemoteOrderManagementEvent.class, RemoteOrderManagementCommand.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "remote-commands." + server + ".log"), fibers.logging.getFiber(), true)
-                        .handler(new PhotocolsStatsPublisher<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(statsPublisher, environment.getStatsName(), 10))
+                        .handler(new PhotocolsStatsPublisher<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(channels.stats, environment.getStatsName(), 10))
                         .handler(new JetlangChannelHandler<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(new Publisher<RemoteOrderManagementEvent>() {
                             @Override
                             public void publish(RemoteOrderManagementEvent msg) {
                                 channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg));
                             }
                         }, channels.remoteOrderCommandByServer.get(server), fibers.remoteOrders.getFiber()))
-                        .handler(new InboundTimeoutWatchdog<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.status, "Remote order: " + server), SERVER_TIMEOUT));
+                        .handler(new InboundTimeoutWatchdog<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.stats, "Remote order: " + server), SERVER_TIMEOUT));
                 fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
@@ -537,7 +531,7 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<WorkingOrderEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), WorkingOrderEvent.class, Void.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "working-orders." + server + ".log"), fibers.logging.getFiber(), true)
-                        .handler(new PhotocolsStatsPublisher<WorkingOrderEvent, Void>(statsPublisher, environment.getStatsName(), 10))
+                        .handler(new PhotocolsStatsPublisher<WorkingOrderEvent, Void>(channels.stats, environment.getStatsName(), 10))
                         .handler(new JetlangChannelHandler<WorkingOrderEvent, Void>(new Publisher<WorkingOrderEvent>() {
                             @Override
                             public void publish(WorkingOrderEvent msg) {
@@ -547,7 +541,7 @@ public class Main {
                                 channels.workingOrderEvents.publish(new WorkingOrderEventFromServer(server, msg));
                             }
                         }))
-                        .handler(new InboundTimeoutWatchdog<WorkingOrderEvent, Void>(fibers.workingOrders.getFiber(), new ConnectionCloser(channels.status, "Working order: " + server), SERVER_TIMEOUT));
+                        .handler(new InboundTimeoutWatchdog<WorkingOrderEvent, Void>(fibers.workingOrders.getFiber(), new ConnectionCloser(channels.stats, "Working order: " + server), SERVER_TIMEOUT));
                 fibers.onStart(new Runnable() {
                     @Override
                     public void run() {
@@ -559,7 +553,7 @@ public class Main {
 
         // Working orders and remote commands watchdog
         {
-            TradingStatusWatchdog watchdog = new TradingStatusWatchdog(channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM, statsPublisher);
+            TradingStatusWatchdog watchdog = new TradingStatusWatchdog(channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM, channels.stats);
             fibers.watchdog.subscribe(watchdog, channels.workingOrderEvents, channels.remoteOrderEvents);
             fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog.checkRunnable(), HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
         }
@@ -663,7 +657,7 @@ public class Main {
                     message.printStackTrace();
                 }
             });
-            channels.status.subscribe(fibers.logging.getFiber(), new Callback<StatsMsg>() {
+            channels.stats.subscribe(fibers.logging.getFiber(), new Callback<StatsMsg>() {
                 @Override
                 public void onMessage(StatsMsg message) {
                     if (message instanceof AdvisoryStat) {
@@ -682,10 +676,12 @@ public class Main {
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "trading-status.json", channels.errorPublisher), channels.tradingStatus);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "position.json", channels.errorPublisher), channels.position);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "preferences.json", channels.errorPublisher), channels.ladderPrefsLoaded, channels.storeLadderPref);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", channels.errorPublisher), channels.status);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", channels.errorPublisher), channels.stats);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "reference-data.json", channels.errorPublisher), channels.refData);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "heartbeats.json", channels.errorPublisher), channels.heartbeatRoundTrips);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket.json", channels.errorPublisher), channels.websocket);
+            for (String name : websocketsForLogging.keySet()) {
+                fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket" + name + ".json", channels.errorPublisher), websocketsForLogging.get(name));
+            }
         }
 
         fibers.start();

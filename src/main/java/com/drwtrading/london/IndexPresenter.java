@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +48,7 @@ public class IndexPresenter {
     @Subscribe
     public void on(InstrumentDefinitionEvent instrumentDefinitionEvent) {
         SearchResult searchResult = searchResultFromInstrumentDef(instrumentDefinitionEvent);
-        if(searchResultBySymbol.put(searchResult.symbol, searchResult) == null) {
+        if (searchResultBySymbol.put(searchResult.symbol, searchResult) == null) {
             for (String keyword : searchResult.keywords) {
                 suffixTree.put(keyword, searchResult.symbol);
             }
@@ -69,6 +70,7 @@ public class IndexPresenter {
                     searchResult.keywords
             ));
         }
+
     }
 
     private SearchResult searchResultFromInstrumentDef(InstrumentDefinitionEvent instrumentDefinitionEvent) {
@@ -175,8 +177,8 @@ public class IndexPresenter {
 
         if (symbols.remove(searchTerms.toUpperCase())) {
             symbols.add(0, searchTerms.toUpperCase());
-        } else if (symbols.remove(("SF:"+searchTerms.toUpperCase()))) {
-            symbols.add(0, "SF:"+searchTerms.toUpperCase());
+        } else if (symbols.remove(("SF:" + searchTerms.toUpperCase()))) {
+            symbols.add(0, "SF:" + searchTerms.toUpperCase());
         }
 
         ArrayList<SearchResult> results = new ArrayList<SearchResult>(Collections2.transform(symbols, new Function<String, SearchResult>() {
