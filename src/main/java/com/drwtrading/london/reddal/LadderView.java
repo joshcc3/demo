@@ -312,7 +312,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             }
 
             for (Long price : levelByPrice.keySet()) {
-                if (pricingMode == PricingMode.BPS) {
+                if (pricingMode == PricingMode.BPS && theo.isValid()) {
                     double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
                     ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
                 } else if (pricingMode == PricingMode.EFP && marketDataForSymbol != null && marketDataForSymbol.priceFormat != null) {
