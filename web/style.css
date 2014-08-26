@@ -405,6 +405,7 @@ traded_down.traded_again {
     font-size: 9px;
     height: 12px;
     text-align: center;
+    letter-spacing: -2px;
 }
 
 #desk_position {

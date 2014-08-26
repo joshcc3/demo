@@ -274,7 +274,9 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             // Change on day
             Long lastTradeChangeOnDay = getLastTradeChangeOnDay(m);
-            ui.txt(Html.LAST_TRADE_COD, stripPriceZeros(m, lastTradeChangeOnDay));
+            if(lastTradeChangeOnDay != null) {
+                drawPrice(m, lastTradeChangeOnDay, Html.LAST_TRADE_COD);
+            }
             decorateUpDown(Html.LAST_TRADE_COD, lastTradeChangeOnDay);
 
             // Update for laserlines
@@ -337,7 +339,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                 if (pricingMode == PricingMode.BPS && theo.isValid()) {
                     double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
                     ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
-                } else if (pricingMode == PricingMode.EFP && marketDataForSymbol != null && marketDataForSymbol.priceFormat != null) {
+                } else if (pricingMode == PricingMode.EFP && marketDataForSymbol != null && marketDataForSymbol.priceFormat != null && theo.isValid()) {
                     double efp = marketDataForSymbol.priceFormat.toBigDecimal(new NormalizedPrice(price - theo.getPrice())).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
                     ui.txt(priceKey(price), EFP_DECIMAL_FORMAT.format(efp));
                 } else {
