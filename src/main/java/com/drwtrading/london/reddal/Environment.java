@@ -27,6 +27,10 @@ public class Environment {
         return config.getBooleanOrDefault("opxl.deskposition.enabled", false);
     }
 
+    public Collection<String> opxlDeskPositionKeys() {
+        return config.getList("opxl.deskposition.keys");
+    }
+
     public boolean opxlLadderTextEnabled() {
         return config.getBooleanOrDefault("opxl.laddertext.enabled", false);
     }

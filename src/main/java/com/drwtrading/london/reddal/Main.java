@@ -66,11 +66,8 @@ import com.google.common.collect.MapMaker;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
 import org.jetlang.fibers.Fiber;
-import org.webbitserver.handler.logging.LoggingHandler;
-import org.webbitserver.handler.logging.SimpleLogSink;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -388,13 +385,12 @@ public class Main {
                 }, ladderWebSocket);
             }
 
-            int ladder_fiber_num = 0;
+            int ladderFiberNum = 0;
             for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
                 final TypedChannel<WebSocketControlMessage> websocket = create(WebSocketControlMessage.class);
                 websockets.add(websocket);
-
-                ladder_fiber_num++;
-                final String name = "Ladder-" + (ladder_fiber_num);
+                ladderFiberNum++;
+                final String name = "Ladder-" + (ladderFiberNum);
                 FiberBuilder fiberBuilder = fibers.fiberGroup.create(name);
                 LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, fiberBuilder.getFiber(), channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
                 fiberBuilder.subscribe(presenter,
@@ -406,8 +402,8 @@ public class Main {
                         channels.ladderPrefsLoaded,
                         channels.displaySymbol,
                         channels.reddalCommandSymbolAvailable);
-                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + ladder_fiber_num * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
-                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + ladder_fiber_num * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + ladderFiberNum * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + ladderFiberNum * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
             }
         }
 
@@ -613,18 +609,20 @@ public class Main {
         // Desk Position
         {
             if (environment.opxlDeskPositionEnabled()) {
-                final OpxlPositionSubscriber opxlPositionSubscriber = new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, config.get("opxl.deskposition.key"), new Publisher<DeskPosition>() {
-                    @Override
-                    public void publish(DeskPosition msg) {
-                        channels.metaData.publish(msg);
-                    }
-                });
-                fibers.onStart(new Runnable() {
-                    @Override
-                    public void run() {
-                        fibers.opxlPosition.execute(opxlPositionSubscriber.connectToOpxl());
-                    }
-                });
+                for (String key : environment.opxlDeskPositionKeys()) {
+                    final OpxlPositionSubscriber opxlPositionSubscriber = new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, new Publisher<DeskPosition>() {
+                        @Override
+                        public void publish(DeskPosition msg) {
+                            channels.metaData.publish(msg);
+                        }
+                    });
+                    fibers.onStart(new Runnable() {
+                        @Override
+                        public void run() {
+                            fibers.opxlPosition.execute(opxlPositionSubscriber.connectToOpxl());
+                        }
+                    });
+                }
             }
         }
 
@@ -693,23 +691,23 @@ public class Main {
 
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport, final AtomicBoolean multicastEnabled) {
         return new Transport() {
-                @Override
-                public <T> void publish(final MsgCodec<T> codec, final T msg) {
-                    if (multicastEnabled.get()) {
-                        lowTrafficMulticastTransport.publish(codec, msg);
-                    }
+            @Override
+            public <T> void publish(final MsgCodec<T> codec, final T msg) {
+                if (multicastEnabled.get()) {
+                    lowTrafficMulticastTransport.publish(codec, msg);
                 }
+            }
 
-                @Override
-                public void start() {
-                    lowTrafficMulticastTransport.start();
-                }
+            @Override
+            public void start() {
+                lowTrafficMulticastTransport.start();
+            }
 
-                @Override
-                public void stop() {
-                    lowTrafficMulticastTransport.stop();
-                }
-            };
+            @Override
+            public void stop() {
+                lowTrafficMulticastTransport.stop();
+            }
+        };
     }
 
 
