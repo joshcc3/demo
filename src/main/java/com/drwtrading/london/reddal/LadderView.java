@@ -866,7 +866,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final Map<String, String> defaultPrefs = newFastMap();
 
     static {
-        defaultPrefs.put(Html.INP_RELOAD, "10000");
+        defaultPrefs.put(Html.INP_RELOAD, "50");
         defaultPrefs.put(Html.AUTO_HEDGE_LEFT, "true");
         defaultPrefs.put(Html.AUTO_HEDGE_RIGHT, "true");
         defaultPrefs.put(Html.ORDER_TYPE_LEFT, "HAWK");
