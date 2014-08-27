@@ -185,7 +185,7 @@ public class MarketDataForSymbol {
             if (book != null) {
                 // Only DIRECT full book is supported
                 if (e instanceof PriceUpdate) {
-                    if (((PriceUpdate) e).getType() == PriceType.DIRECT) {
+                    if (((PriceUpdate) e).getType() == preferredPriceType) {
                         book.apply(e);
                     }
                 } else if (e instanceof BookSnapshot) {
