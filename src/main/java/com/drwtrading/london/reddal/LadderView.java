@@ -790,6 +790,9 @@ public class LadderView implements UiPipe.UiEventHandler {
                 pricingMode = PricingMode.RAW;
             } else if (label.equals(Html.PRICING_EFP)) {
                 pricingMode = PricingMode.EFP;
+            } else if (label.startsWith(Html.PRICE_KEY)) {
+                PricingMode nextMode = PricingMode.values()[ (pricingMode.ordinal() + 1) % PricingMode.values().length ];
+                pricingMode = nextMode;
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
