@@ -183,15 +183,14 @@ public class MarketDataForSymbol {
         String eventSymbol = MarketDataEventUtil.getSymbol(e);
         if (eventSymbol == null || eventSymbol.equals(symbol)) {
             if (book != null) {
+                // Only DIRECT full book is supported
                 if (e instanceof PriceUpdate) {
-                    if (((PriceUpdate) e).getType() == preferredPriceType) {
+                    if (((PriceUpdate) e).getType() == PriceType.DIRECT) {
                         book.apply(e);
-                    } else {
                     }
                 } else if (e instanceof BookSnapshot) {
                     if (((BookSnapshot) e).getType() == PriceType.DIRECT) {
                         book.apply(e);
-                    } else {
                     }
                 } else {
                     book.apply(e);
