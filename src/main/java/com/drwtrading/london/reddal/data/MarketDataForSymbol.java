@@ -31,6 +31,7 @@ public class MarketDataForSymbol {
     public TotalTradedVolume totalTradedVolume;
     public String isin;
     public PriceOperations priceOperations;
+    public PriceType preferredPriceType = PriceType.RECONSTRUCTED;
 
     public MarketDataEvent.Visitor<Void> visitor = new MarketDataEvent.Visitor<Void>() {
 
@@ -47,12 +48,8 @@ public class MarketDataForSymbol {
 
         @Override
         public Void visitTopOfBook(TopOfBook msg) {
-            if (refData != null) {
-                if (refData.getInstrumentStructure() instanceof CashOutrightStructure && msg.getType() == PriceType.DIRECT) {
-                    topOfBook = msg;
-                } else if (refData.getInstrumentStructure() instanceof FutureOutrightStructure && msg.getType() == PriceType.RECONSTRUCTED) {
-                    topOfBook = msg;
-                }
+            if (msg.getType() == preferredPriceType) {
+                topOfBook = msg;
             }
             return null;
         }
@@ -105,6 +102,13 @@ public class MarketDataForSymbol {
         @Override
         public Void visitInstrumentDefinitionEvent(InstrumentDefinitionEvent msg) {
             refData = msg;
+            if (refData.getExchange().equals("SUPERFEED")) {
+                preferredPriceType = PriceType.RECONSTRUCTED;
+            } else if (refData.getInstrumentStructure() instanceof FutureOutrightStructure || refData.getInstrumentStructure() instanceof FutureStrategyStructure) {
+                preferredPriceType = PriceType.RECONSTRUCTED;
+            } else {
+                preferredPriceType = PriceType.DIRECT;
+            }
             book = new Book(symbol, refData.getPriceStructure().getTickIncrement(), new TreeMapBookFactory());
             priceOperations = PriceUtils.from(msg);
             priceFormat = PriceFormats.from(refData.getPriceStructure().getTickStructure());
@@ -180,8 +184,14 @@ public class MarketDataForSymbol {
         if (eventSymbol == null || eventSymbol.equals(symbol)) {
             if (book != null) {
                 if (e instanceof PriceUpdate) {
-                    if (((PriceUpdate) e).getType() == PriceType.RECONSTRUCTED || ((PriceUpdate) e).getType() == PriceType.DIRECT) {
+                    if (((PriceUpdate) e).getType() == preferredPriceType) {
                         book.apply(e);
+                    } else {
+                    }
+                } else if (e instanceof BookSnapshot) {
+                    if (((BookSnapshot) e).getType() == PriceType.DIRECT) {
+                        book.apply(e);
+                    } else {
                     }
                 } else {
                     book.apply(e);
