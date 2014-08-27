@@ -25,8 +25,7 @@ import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCom
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
-import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
+import com.drwtrading.london.protocols.photon.marketdata.*;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
@@ -70,10 +69,8 @@ import org.jetlang.fibers.Fiber;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Collection;
+import java.util.*;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -85,7 +82,7 @@ import static com.google.common.collect.Maps.newHashMap;
 public class Main {
 
     public static final long SERVER_TIMEOUT = 3000L;
-    public static final int BATCH_FLUSH_INTERVAL_MS = 110;
+    public static final int BATCH_FLUSH_INTERVAL_MS = 70;
     public static final int HEARTBEAT_INTERVAL_MS = 20 * BATCH_FLUSH_INTERVAL_MS;
     public static final int NUM_DISPLAY_THREADS = 4;
     private static final long RECONNECT_INTERVAL_MILLIS = 10000;
@@ -433,13 +430,36 @@ public class Main {
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .handler(new IdleConnectionTimeoutHandler(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
                         .handler(new JetlangChannelHandler<MarketDataEvent, Void>(new Publisher<MarketDataEvent>() {
+                            Map<String, InstrumentDefinitionEvent> refData = new HashMap<>();
+
                             @Override
                             public void publish(MarketDataEvent msg) {
-                                snapshottingPublisher.publish(msg);
+
+                                if (msg instanceof ServerHeartbeat) {
+                                    return;
+                                }
+
                                 if (msg instanceof InstrumentDefinitionEvent) {
                                     channels.refData.publish((InstrumentDefinitionEvent) msg);
                                     productResetter.on((InstrumentDefinitionEvent) msg);
+                                    refData.put(((InstrumentDefinitionEvent) msg).getSymbol(), (InstrumentDefinitionEvent) msg);
                                 }
+
+                                if (msg instanceof BookSnapshot) {
+                                    BookSnapshot snapshot = (BookSnapshot) msg;
+                                    InstrumentDefinitionEvent instrumentDefinitionEvent = refData.get(snapshot.getSymbol());
+                                    if (instrumentDefinitionEvent != null && instrumentDefinitionEvent.getExchange().equals("Eurex")) {
+                                        BookSnapshot reconstructedSnapshot = new BookSnapshot(snapshot.getSymbol(), PriceType.RECONSTRUCTED, snapshot.getSide(), snapshot.getLevels(), snapshot.getSeqNo(), snapshot.getMillis(), snapshot.getNanos(), snapshot.getCorrelationValue());
+                                        snapshottingPublisher.publish(reconstructedSnapshot);
+                                    } else {
+                                        System.out.println(((BookSnapshot) msg).getSymbol() + " has no instrument def " + instrumentDefinitionEvent);
+                                        snapshottingPublisher.publish(snapshot);
+                                    }
+                                } else {
+                                    snapshottingPublisher.publish(msg);
+                                }
+
+
                             }
                         }));
 

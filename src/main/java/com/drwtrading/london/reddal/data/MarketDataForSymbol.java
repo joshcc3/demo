@@ -189,7 +189,7 @@ public class MarketDataForSymbol {
                         book.apply(e);
                     }
                 } else if (e instanceof BookSnapshot) {
-                    if (((BookSnapshot) e).getType() == PriceType.DIRECT) {
+                    if (((BookSnapshot) e).getType() == preferredPriceType) {
                         book.apply(e);
                     }
                 } else {
