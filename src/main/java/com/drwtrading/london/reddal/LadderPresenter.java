@@ -1,16 +1,25 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.reddal.data.*;
+import com.drwtrading.london.reddal.data.DisplaySymbol;
+import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
+import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.MarketDataForSymbol;
+import com.drwtrading.london.reddal.data.TradingStatusForAll;
+import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.util.Struct;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
-import com.drwtrading.photons.ladder.*;
+import com.drwtrading.photons.ladder.DeskPosition;
+import com.drwtrading.photons.ladder.InfoOnLadder;
+import com.drwtrading.photons.ladder.LadderText;
+import com.drwtrading.photons.ladder.LaserLine;
+import com.drwtrading.photons.ladder.LastTrade;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
@@ -54,18 +63,22 @@ public class LadderPresenter {
     });
     Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
+
     private final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher;
     private final Publisher<ReddalMessage> commandPublisher;
-    private final Fiber fiber;
-    private final TypedChannel<SubscribeToMarketData> subscribeToMarketData;
-    private final TypedChannel<UnsubscribeFromMarketData> unsubscribeFromMarketData;
+    private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
+    private final Publisher<SubscribeToMarketData> subscribeToMarketData;
+    private final Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData;
 
-    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, Fiber fiber, TypedChannel<SubscribeToMarketData> subscribeToMarketData, TypedChannel<UnsubscribeFromMarketData> unsubscribeFromMarketData) {
+    private final Fiber fiber;
+
+    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, Publisher<SubscribeToMarketData> subscribeToMarketData, Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData, final Publisher<RecenterLaddersForUser> recenterLaddersForUser, Fiber fiber) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
         this.roundtripPublisher = roundtripPublisher;
         this.commandPublisher = commandPublisher;
+        this.recenterLaddersForUser = recenterLaddersForUser;
         this.fiber = fiber;
         this.subscribeToMarketData = subscribeToMarketData;
         this.unsubscribeFromMarketData = unsubscribeFromMarketData;
@@ -86,7 +99,7 @@ public class LadderPresenter {
     public void onConnected(WebSocketConnected connected) {
         UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         View view = new WebSocketOutputDispatcher<View>(View.class).wrap(uiPipe.evalPublisher());
-        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher, commandPublisher);
+        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }
@@ -224,6 +237,13 @@ public class LadderPresenter {
         dataBySymbol.get(displaySymbol.marketDataSymbol).setDisplaySymbol(displaySymbol);
     }
 
+    @Subscribe
+    public void on(RecenterLaddersForUser recenterLaddersForUser) {
+        for (LadderView ladderView : viewBySocket.values()) {
+            ladderView.recenterLadderForUser(recenterLaddersForUser);
+        }
+    }
+
     public Runnable flushBatchedData() {
         return new Runnable() {
             @Override
@@ -248,6 +268,15 @@ public class LadderPresenter {
                 }
             }
         };
+    }
+
+
+    public static class RecenterLaddersForUser extends Struct {
+        public final String user;
+
+        public RecenterLaddersForUser(final String user) {
+            this.user = user;
+        }
     }
 
     public interface View {

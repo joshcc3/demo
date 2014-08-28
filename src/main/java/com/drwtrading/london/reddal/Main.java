@@ -25,7 +25,11 @@ import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCom
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.*;
+import com.drwtrading.london.protocols.photon.marketdata.BookSnapshot;
+import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
+import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
+import com.drwtrading.london.protocols.photon.marketdata.PriceType;
+import com.drwtrading.london.protocols.photon.marketdata.ServerHeartbeat;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
@@ -69,8 +73,11 @@ import org.jetlang.fibers.Fiber;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -118,6 +125,7 @@ public class Main {
         public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
         public final TypedChannel<SubscribeToMarketData> subscribeToMarketData;
         public final TypedChannel<UnsubscribeFromMarketData> unsubscribeFromMarketData;
+        public final TypedChannel<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
 
         public ReddalChannels(ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
@@ -153,6 +161,7 @@ public class Main {
 
             subscribeToMarketData = create(SubscribeToMarketData.class);
             unsubscribeFromMarketData = create(UnsubscribeFromMarketData.class);
+            recenterLaddersForUser = create(LadderPresenter.RecenterLaddersForUser.class);
         }
 
         public <T> TypedChannel<T> create(Class<T> clazz) {
@@ -389,7 +398,7 @@ public class Main {
                 ladderFiberNum++;
                 final String name = "Ladder-" + (ladderFiberNum);
                 FiberBuilder fiberBuilder = fibers.fiberGroup.create(name);
-                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, fiberBuilder.getFiber(), channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
+                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser, fiberBuilder.getFiber());
                 fiberBuilder.subscribe(presenter,
                         websocket,
                         channels.workingOrders,
@@ -398,7 +407,8 @@ public class Main {
                         channels.tradingStatus,
                         channels.ladderPrefsLoaded,
                         channels.displaySymbol,
-                        channels.reddalCommandSymbolAvailable);
+                        channels.reddalCommandSymbolAvailable,
+                        channels.recenterLaddersForUser);
                 fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + ladderFiberNum * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + ladderFiberNum * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
             }
@@ -452,7 +462,6 @@ public class Main {
                                         BookSnapshot reconstructedSnapshot = new BookSnapshot(snapshot.getSymbol(), PriceType.RECONSTRUCTED, snapshot.getSide(), snapshot.getLevels(), snapshot.getSeqNo(), snapshot.getMillis(), snapshot.getNanos(), snapshot.getCorrelationValue());
                                         snapshottingPublisher.publish(reconstructedSnapshot);
                                     } else {
-                                        System.out.println(((BookSnapshot) msg).getSymbol() + " has no instrument def " + instrumentDefinitionEvent);
                                         snapshottingPublisher.publish(snapshot);
                                     }
                                 } else {

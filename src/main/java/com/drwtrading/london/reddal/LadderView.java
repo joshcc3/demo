@@ -159,6 +159,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final LadderOptions ladderOptions;
     private final Publisher<ReddalMessage> commandPublisher;
+    private final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
     private final UiPipeImpl ui;
     private final Publisher<StatsMsg> statsPublisher;
     private final TradingStatusForAll tradingStatusForAll;
@@ -182,12 +183,13 @@ public class LadderView implements UiPipe.UiEventHandler {
     public PricingMode pricingMode = PricingMode.RAW;
     public long lastCenteredTime = 0;
 
-    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, Publisher<ReddalMessage> commandPublisher) {
+    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser) {
         this.client = client;
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.ladderOptions = ladderOptions;
         this.commandPublisher = commandPublisher;
+        this.recenterLaddersForUser = recenterLaddersForUser;
         this.ui = (UiPipeImpl) ui;
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
@@ -274,7 +276,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             // Change on day
             Long lastTradeChangeOnDay = getLastTradeChangeOnDay(m);
-            if(lastTradeChangeOnDay != null) {
+            if (lastTradeChangeOnDay != null) {
                 drawPrice(m, lastTradeChangeOnDay, Html.LAST_TRADE_COD);
             }
             decorateUpDown(Html.LAST_TRADE_COD, lastTradeChangeOnDay);
@@ -791,7 +793,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             } else if (label.equals(Html.PRICING_EFP)) {
                 pricingMode = PricingMode.EFP;
             } else if (label.startsWith(Html.PRICE_KEY)) {
-                PricingMode nextMode = PricingMode.values()[ (pricingMode.ordinal() + 1) % PricingMode.values().length ];
+                PricingMode nextMode = PricingMode.values()[(pricingMode.ordinal() + 1) % PricingMode.values().length];
                 pricingMode = nextMode;
             }
         } else if ("right".equals(button)) {
@@ -804,15 +806,22 @@ public class LadderView implements UiPipe.UiEventHandler {
             }
         } else if ("middle".equals(button)) {
             if (label.startsWith(Html.PRICE)) {
-                moveLadderToCenter();
-                resetLastCenteredTime();
-                recenterLadderAndDrawPriceLevels();
-                updateEverything();
+                recenterLaddersForUser.publish(new LadderPresenter.RecenterLaddersForUser(client.getUserName()));
             }
         }
         updateEverything();
         drawClickTrading();
         flush();
+    }
+
+    public void recenterLadderForUser(LadderPresenter.RecenterLaddersForUser recenterLaddersForUser) {
+        if (client.getUserName().equals(recenterLaddersForUser.user)) {
+            moveLadderToCenter();
+            resetLastCenteredTime();
+            recenterLadderAndDrawPriceLevels();
+            updateEverything();
+            flush();
+        }
     }
 
     private void moveLadderToCenter() {
@@ -836,18 +845,6 @@ public class LadderView implements UiPipe.UiEventHandler {
             this.returnTimeMillis = returnTimeMillis;
             this.roundtripMillis = roundtripMillis;
         }
-    }
-
-    private Map<String, String> getDataArg(String[] args) {
-        Map<String, String> data = new HashMap<String, String>();
-        int arg = 2;
-        if (args.length > arg) {
-            String[] unpacked = args[arg].split("\2");
-            for (int i = 0; i < unpacked.length - 1; i += 2) {
-                data.put(unpacked[i], unpacked[i + 1]);
-            }
-        }
-        return data;
     }
 
     // Click-trading
