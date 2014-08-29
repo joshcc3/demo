@@ -17,6 +17,7 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderType;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
+import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
 import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
@@ -513,10 +514,21 @@ public class LadderView implements UiPipe.UiEventHandler {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (m != null && m.refData != null) {
             ui.clear();
+            if (pendingRefDataAndSettle) {
+                onRefDataAndSettleFirstAppeared();
+            }
             pendingRefDataAndSettle = false;
             recenter();
             recenterLadderAndDrawPriceLevels();
             setUpClickTrading();
+        }
+    }
+
+    private void onRefDataAndSettleFirstAppeared() {
+        if (marketDataForSymbol.refData.getInstrumentStructure() instanceof CashOutrightStructure) {
+            pricingMode = PricingMode.BPS;
+        } else {
+            pricingMode = PricingMode.EFP;
         }
     }
 
@@ -530,8 +542,8 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private String getSymbol() {
-        if (dataForSymbol != null && dataForSymbol.displaySymbol != null && !symbol.contains(dataForSymbol.displaySymbol)) {
-            return symbol + " (" + dataForSymbol.displaySymbol + ")";
+        if (dataForSymbol != null && dataForSymbol.displaySymbol != null) {
+            return dataForSymbol.displaySymbol;
         }
         return symbol;
     }

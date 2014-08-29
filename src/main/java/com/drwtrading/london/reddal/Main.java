@@ -36,7 +36,7 @@ import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.ProductResetter;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
-import com.drwtrading.london.reddal.symbols.EquityIdToDisplaySymbolMapper;
+import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
@@ -632,7 +632,7 @@ public class Main {
 
         // Display symbols
         {
-            fibers.indy.subscribe(new EquityIdToDisplaySymbolMapper(channels.displaySymbol), channels.refData, channels.equityIdAndSymbol);
+            fibers.indy.subscribe(new DisplaySymbolMapper(channels.displaySymbol), channels.refData, channels.equityIdAndSymbol);
         }
 
         // Desk Position

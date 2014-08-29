@@ -3,26 +3,29 @@ package com.drwtrading.london.reddal.symbols;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
+import com.drwtrading.london.protocols.photon.marketdata.FutureOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
 
-public class EquityIdToDisplaySymbolMapper {
+public class DisplaySymbolMapper {
 
     Multimap<String, String> marketDataSymbolsByIsin = HashMultimap.create();
     Map<String, String> displaySymbolByIsin = new HashMap<String, String>();
     Set<DisplaySymbol> displaySymbols = newFastSet();
     public final Publisher<DisplaySymbol> displaySymbolPublisher;
 
-    public EquityIdToDisplaySymbolMapper(Publisher<DisplaySymbol> displaySymbolPublisher) {
+    public DisplaySymbolMapper(Publisher<DisplaySymbol> displaySymbolPublisher) {
         this.displaySymbolPublisher = displaySymbolPublisher;
     }
 
@@ -33,9 +36,18 @@ public class EquityIdToDisplaySymbolMapper {
             String symbol = instrumentDefinitionEvent.getSymbol();
             marketDataSymbolsByIsin.put(isin, symbol);
             if (displaySymbolByIsin.containsKey(isin)) {
-                DisplaySymbol displaySymbol = new DisplaySymbol(symbol, displaySymbolByIsin.get(isin));
+                String display = displaySymbolByIsin.get(isin);
+                if (!display.contains(symbol)) {
+                    display = symbol + " (" + display + ")";
+                }
+                DisplaySymbol displaySymbol = new DisplaySymbol(symbol, display);
                 publishIfNew(displaySymbol);
             }
+        } else if (instrumentDefinitionEvent.getInstrumentStructure() instanceof FutureOutrightStructure) {
+            String market = instrumentDefinitionEvent.getMarket();
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MMM yy");
+            String expiry = simpleDateFormat.format(new Date(((FutureOutrightStructure) instrumentDefinitionEvent.getInstrumentStructure()).getExpiry().getTimestamp()));
+            publishIfNew(new DisplaySymbol(instrumentDefinitionEvent.getSymbol(), market + " " + expiry));
         }
     }
 
