@@ -320,8 +320,8 @@ public class Main {
             fibers.stats.getFiber().schedule(new Runnable() {
                 @Override
                 public void run() {
-                    multicastEnabled.set(true);
                     statsPublisher.start();
+                    multicastEnabled.set(true);
                 }
             }, 10, TimeUnit.SECONDS);
         }
