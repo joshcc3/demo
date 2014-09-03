@@ -208,6 +208,17 @@ public class LadderPresenter {
     }
 
     @Subscribe
+    public void on(FuturesContractSetGenerator.FuturesContractSet futuresContractSet) {
+        dataBySymbol.get(futuresContractSet.frontMonth).onFuturesContractSet(futuresContractSet);
+        if (futuresContractSet.backMonth != null) {
+            dataBySymbol.get(futuresContractSet.backMonth).onFuturesContractSet(futuresContractSet);
+        }
+        if (futuresContractSet.spread != null) {
+            dataBySymbol.get(futuresContractSet.spread).onFuturesContractSet(futuresContractSet);
+        }
+    }
+
+    @Subscribe
     public void on(Position position) {
         dataBySymbol.get(position.getSymbol()).onDayPosition(position);
     }
@@ -297,5 +308,7 @@ public class LadderPresenter {
         public void trading(boolean tradingEnabled, Collection<String> orderTypesLeft, Collection<String> orderTypesRight);
 
         public void selecta(boolean enabled);
+
+        public void goToSymbol(String symbol);
     }
 }

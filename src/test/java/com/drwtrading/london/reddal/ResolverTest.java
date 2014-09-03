@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal;
 
+import com.drwtrading.london.config.Config;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
@@ -33,5 +34,43 @@ public class ResolverTest {
         assertEquals("euronext", resolver.resolveToServerName("UNA NA", RemoteOrderType.MANUAL));
         assertEquals("euronext", resolver.resolveToServerName("FP FP", RemoteOrderType.MANUAL));
         assertEquals("eurex-fast", resolver.resolveToServerName("FESBU4", RemoteOrderType.MANUAL));
+    }
+
+
+    @Test
+    public void test_prod_equities_resolver() throws Exception {
+
+        Environment environment =new Environment(Config.fromFile("etc/prod-equities.properties"));
+        Environment.RemoteOrderServerResolver resolver = environment.getServerResolver();
+
+        assertEquals("nibbler-chix", resolver.resolveToServerName("FOO IX", RemoteOrderType.HAWK));
+        assertEquals("nibbler-chix", resolver.resolveToServerName("FOO GY IX", RemoteOrderType.HAWK));
+        assertEquals("nibbler-euronext", resolver.resolveToServerName("FOO FP", RemoteOrderType.HAWK));
+        assertEquals("nibbler-euronext", resolver.resolveToServerName("FOO FP", RemoteOrderType.MANUAL));
+        assertEquals("nibbler-baml", resolver.resolveToServerName("FOO FP", RemoteOrderType.MKT_CLOSE));
+        assertEquals("nibbler-xetra", resolver.resolveToServerName("FOO GY", RemoteOrderType.MKT_CLOSE));
+        assertEquals("nibbler-baml", resolver.resolveToServerName("SF:FOO GY", RemoteOrderType.MKT_CLOSE));
+        assertEquals("nibbler-euronext", resolver.resolveToServerName("UNA NA", RemoteOrderType.MANUAL));
+        assertEquals("nibbler-euronext", resolver.resolveToServerName("FP FP", RemoteOrderType.MANUAL));
+
+        assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FESBU4", RemoteOrderType.MANUAL));
+        assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTBU4", RemoteOrderType.HAWK));
+        assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FXXPU4", RemoteOrderType.TAKER));
+        assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTXU4", RemoteOrderType.MANUAL));
+
+        assertEquals("nibbler-eurex", resolver.resolveToServerName("FSTCU4", RemoteOrderType.MANUAL));
+        assertEquals("nibbler-eurex", resolver.resolveToServerName("FSTCU4", RemoteOrderType.HAWK));
+        assertEquals("nibbler-eurex", resolver.resolveToServerName("FSTCU4", RemoteOrderType.TAKER));
+        assertEquals("nibbler-eurex", resolver.resolveToServerName("FSTCU4", RemoteOrderType.MANUAL));
+
+        assertEquals("LITTERBOX1", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.MANUAL));
+        assertEquals("LITTERBOX1", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.HAWK));
+        assertEquals("LITTERBOX1", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.TAKER));
+
+        assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.GTC));
+        assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FSTBU4-FSTBZ4", RemoteOrderType.GTC));
+
+        assertEquals("LITTERBOX1DIV", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.MANUAL));
+        assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.GTC));
     }
 }

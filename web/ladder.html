@@ -103,6 +103,10 @@
             }
         }
 
+        function goToSymbol(symbol) {
+            document.location.hash = "#" + symbol;
+        }
+
         $(function () {
             ws = connect();
             ws.logToConsole = false;

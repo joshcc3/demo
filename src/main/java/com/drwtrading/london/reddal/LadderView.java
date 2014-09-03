@@ -491,6 +491,14 @@ public class LadderView implements UiPipe.UiEventHandler {
         if (!pendingRefDataAndSettle && m != null && m.book != null) {
             ui.txt(Html.SYMBOL, getSymbol());
             ui.title(getSymbol());
+
+            if (dataForSymbol != null && dataForSymbol.futuresContractSet != null) {
+                FuturesContractSetGenerator.FuturesContractSet contracts = dataForSymbol.futuresContractSet;
+                ui.cls(Html.SYMBOL, "spread", symbol.equals(contracts.spread));
+                ui.cls(Html.SYMBOL, "backMonth", symbol.equals(contracts.backMonth));
+
+            }
+
             for (Long price : levelByPrice.keySet()) {
                 if (m.topOfBook != null && m.topOfBook.getBestBid().isExists() && m.topOfBook.getBestBid().getPrice() == price) {
                     bidQty(price, m.topOfBook.getBestBid().getQuantity());
@@ -514,6 +522,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (m != null && m.refData != null) {
             ui.clear();
+            ui.clickable("#" + Html.SYMBOL);
             if (pendingRefDataAndSettle) {
                 onRefDataAndSettleFirstAppeared();
             }
@@ -807,6 +816,15 @@ public class LadderView implements UiPipe.UiEventHandler {
             } else if (label.startsWith(Html.PRICE_KEY)) {
                 PricingMode nextMode = PricingMode.values()[(pricingMode.ordinal() + 1) % PricingMode.values().length];
                 pricingMode = nextMode;
+            } else if (label.startsWith(Html.SYMBOL)) {
+                if (dataForSymbol != null && dataForSymbol.futuresContractSet != null) {
+                    FuturesContractSetGenerator.FuturesContractSet contracts = dataForSymbol.futuresContractSet;
+                    String nextContract = contracts.next(symbol);
+                    if (nextContract != null && !symbol.equals(nextContract)) {
+                        view.goToSymbol(nextContract);
+                        return;
+                    }
+                }
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
@@ -815,6 +833,15 @@ public class LadderView implements UiPipe.UiEventHandler {
                 }
             } else if (label.startsWith(Html.ORDER)) {
                 rightClickModify(data, autoHedge);
+            } else if (label.startsWith(Html.SYMBOL)) {
+                if (dataForSymbol != null && dataForSymbol.futuresContractSet != null) {
+                    FuturesContractSetGenerator.FuturesContractSet contracts = dataForSymbol.futuresContractSet;
+                    String prevContract = contracts.prev(symbol);
+                    if (prevContract != null && !symbol.equals(prevContract)) {
+                        view.goToSymbol(prevContract);
+                        return;
+                    }
+                }
             }
         } else if ("middle".equals(button)) {
             if (label.startsWith(Html.PRICE)) {

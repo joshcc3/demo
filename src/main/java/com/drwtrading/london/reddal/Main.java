@@ -130,6 +130,7 @@ public class Main {
         public final TypedChannel<SubscribeToMarketData> subscribeToMarketData;
         public final TypedChannel<UnsubscribeFromMarketData> unsubscribeFromMarketData;
         public final TypedChannel<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
+        public final TypedChannel<FuturesContractSetGenerator.FuturesContractSet> futuresContractSets;
 
         public ReddalChannels(ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
@@ -166,6 +167,7 @@ public class Main {
             subscribeToMarketData = create(SubscribeToMarketData.class);
             unsubscribeFromMarketData = create(UnsubscribeFromMarketData.class);
             recenterLaddersForUser = create(LadderPresenter.RecenterLaddersForUser.class);
+            futuresContractSets = create(FuturesContractSetGenerator.FuturesContractSet.class);
         }
 
         public <T> TypedChannel<T> create(Class<T> clazz) {
@@ -194,6 +196,7 @@ public class Main {
         public final FiberBuilder watchdog;
         public final FiberBuilder settings;
         public final FiberBuilder ladder;
+        public final FiberBuilder contracts;
 
         public ReddalFibers(ReddalChannels channels, final MonitoredJetlangFactory factory) throws IOException {
             jetlangFactory = factory;
@@ -215,6 +218,7 @@ public class Main {
             indy = fiberGroup.create("Indy");
             watchdog = fiberGroup.create("Watchdog");
             settings = fiberGroup.create("Settings");
+            contracts = fiberGroup.create("Contracts");
         }
 
         public void onStart(Runnable runnable) {
@@ -384,7 +388,8 @@ public class Main {
                             channels.ladderPrefsLoaded,
                             channels.displaySymbol,
                             channels.reddalCommandSymbolAvailable,
-                            channels.recenterLaddersForUser);
+                            channels.recenterLaddersForUser,
+                            channels.futuresContractSets);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 }
@@ -409,6 +414,12 @@ public class Main {
                     fibers.settings.execute(ladderSettings.loadRunnable());
                 }
             });
+        }
+
+        // Futures contracts
+        {
+            FuturesContractSetGenerator futuresContractSetGenerator = new FuturesContractSetGenerator(channels.futuresContractSets);
+            fibers.contracts.subscribe(futuresContractSetGenerator, channels.refData);
         }
 
         // Market data
@@ -737,6 +748,7 @@ public class Main {
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", channels.errorPublisher), channels.stats);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "reference-data.json", channels.errorPublisher), channels.refData);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "heartbeats.json", channels.errorPublisher), channels.heartbeatRoundTrips);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "contracts.json", channels.errorPublisher), channels.futuresContractSets);
             for (String name : websocketsForLogging.keySet()) {
                 fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket" + name + ".json", channels.errorPublisher), websocketsForLogging.get(name));
             }

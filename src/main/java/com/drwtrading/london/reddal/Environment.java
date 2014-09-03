@@ -143,13 +143,13 @@ public class Environment {
     public HostAndNic getHostAndNic(String prefix, String server) throws SocketException {
         prefix = prefix + "." + server;
         final String address = config.get(prefix + ".address");
-        final String nic = config.get(prefix + ".nic");
+        final String nic = config.getOrDefault(prefix + ".nic", "0.0.0.0");
         return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])), NetworkInterfaces.find(nic));
     }
 
     public HostAndNic getHostAndNic(String prefix) throws SocketException {
         final String address = config.get(prefix + ".address");
-        final String nic = config.get(prefix + ".nic");
+        final String nic = config.getOrDefault(prefix + ".nic", "0.0.0.0");
         return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])), NetworkInterfaces.find(nic));
     }
 
