@@ -8,6 +8,7 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.IndexPresenter;
+import com.drwtrading.london.LadderMessageRouter;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
 import com.drwtrading.london.jetlang.ChannelFactory;
@@ -66,9 +67,7 @@ import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
-import com.drwtrading.websockets.WebSocketClient;
 import com.drwtrading.websockets.WebSocketControlMessage;
-import com.drwtrading.websockets.WebSocketDisconnected;
 import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
 import org.jetlang.channels.Publisher;
@@ -357,6 +356,7 @@ public class Main {
             });
 
             webapp.webServer();
+
             // Index presenter
             {
                 TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
@@ -366,56 +366,36 @@ public class Main {
                 fibers.ui.subscribe(indexPresenter, channels.displaySymbol, channels.refData, websocket);
             }
 
-            // Websocket signup broker
-
-            final TypedChannel<WebSocketControlMessage> ladderWebSocket = create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("ladder", "ladder", fibers.ladder, webapp, ladderWebSocket);
-            websocketsForLogging.put("ladder", ladderWebSocket);
-
+            // Ladder presenters
             final List<TypedChannel<WebSocketControlMessage>> websockets = newArrayList();
             {
-                final Map<WebSocketClient, TypedChannel<WebSocketControlMessage>> map = new MapMaker().makeComputingMap(new Function<WebSocketClient, TypedChannel<WebSocketControlMessage>>() {
-                    int num = 0;
-
-                    @Override
-                    public TypedChannel<WebSocketControlMessage> apply(WebSocketClient from) {
-                        System.out.println("Ladder #" + num + " for " + from.toString());
-                        return websockets.get(num++ % websockets.size());// round robin the web socket.
-                    }
-                });
-                fibers.ladder.subscribe(new Callback<WebSocketControlMessage>() {
-                    @Override
-                    public void onMessage(WebSocketControlMessage message) {
-
-                        map.get(message.getClient()).publish(message);
-                        if (message instanceof WebSocketDisconnected) {
-                            map.remove(message.getClient());
-                        }
-
-                    }
-                }, ladderWebSocket);
+                for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
+                    final TypedChannel<WebSocketControlMessage> websocket = create(WebSocketControlMessage.class);
+                    websockets.add(websocket);
+                    final String name = "Ladder-" + (i);
+                    FiberBuilder fiberBuilder = fibers.fiberGroup.create(name);
+                    LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser, fiberBuilder.getFiber());
+                    fiberBuilder.subscribe(presenter,
+                            websocket,
+                            channels.workingOrders,
+                            channels.metaData,
+                            channels.position,
+                            channels.tradingStatus,
+                            channels.ladderPrefsLoaded,
+                            channels.displaySymbol,
+                            channels.reddalCommandSymbolAvailable,
+                            channels.recenterLaddersForUser);
+                    fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                    fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                }
             }
 
-            int ladderFiberNum = 0;
-            for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
-                final TypedChannel<WebSocketControlMessage> websocket = create(WebSocketControlMessage.class);
-                websockets.add(websocket);
-                ladderFiberNum++;
-                final String name = "Ladder-" + (ladderFiberNum);
-                FiberBuilder fiberBuilder = fibers.fiberGroup.create(name);
-                LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser, fiberBuilder.getFiber());
-                fiberBuilder.subscribe(presenter,
-                        websocket,
-                        channels.workingOrders,
-                        channels.metaData,
-                        channels.position,
-                        channels.tradingStatus,
-                        channels.ladderPrefsLoaded,
-                        channels.displaySymbol,
-                        channels.reddalCommandSymbolAvailable,
-                        channels.recenterLaddersForUser);
-                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + ladderFiberNum * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
-                fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + ladderFiberNum * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
+            // Ladder router
+            {
+                final TypedChannel<WebSocketControlMessage> ladderWebSocket = create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("ladder", "ladder", fibers.ladder, webapp, ladderWebSocket);
+                LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(websockets);
+                fibers.ladder.subscribe(ladderMessageRouter, ladderWebSocket);
             }
         }
 
@@ -441,6 +421,7 @@ public class Main {
                 final ProductResetter productResetter = new ProductResetter(snapshottingPublisher);
                 final Publisher<MarketDataEvent> marketDataEventPublisher = new Publisher<MarketDataEvent>() {
                     Map<String, InstrumentDefinitionEvent> refData = new HashMap<>();
+
                     @Override
                     public void publish(MarketDataEvent msg) {
                         if (msg instanceof ServerHeartbeat) {
