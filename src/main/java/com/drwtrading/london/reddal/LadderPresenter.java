@@ -29,6 +29,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
+import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
@@ -41,29 +42,31 @@ import java.util.concurrent.TimeUnit;
 
 public class LadderPresenter {
 
+    public static final int MD_FLUSH_MILLIS = 40;
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
     private final Publisher<StatsMsg> statsPublisher;
 
-    Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
-    Multimap<String, LadderView> viewsByUser = HashMultimap.create();
-    Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<Publisher<WebSocketOutboundData>, LadderView>();
-    Map<Publisher<WebSocketOutboundData>, Runnable> runOnDisonnect = new HashMap<>();
-    Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(new Function<String, WorkingOrdersForSymbol>() {
+    private final Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
+    private final Multimap<String, LadderView> viewsByUser = HashMultimap.create();
+    private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<Publisher<WebSocketOutboundData>, LadderView>();
+    private final Map<String, Runnable> marketDataUnsubscribers = new HashMap<>();
+    private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(new Function<String, WorkingOrdersForSymbol>() {
         @Override
         public WorkingOrdersForSymbol apply(java.lang.String from) {
             return new WorkingOrdersForSymbol(from);
         }
     });
-    Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(new Function<String, ExtraDataForSymbol>() {
+    private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(new Function<String, ExtraDataForSymbol>() {
         @Override
         public ExtraDataForSymbol apply(java.lang.String from) {
             return new ExtraDataForSymbol(from);
         }
     });
-    Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
-    TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
+    private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
+    private final Map<String, MarketDataForSymbol> marketDataForSymbolMap;
 
+    private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher;
     private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
@@ -72,7 +75,7 @@ public class LadderPresenter {
 
     private final Fiber fiber;
 
-    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, Publisher<SubscribeToMarketData> subscribeToMarketData, Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData, final Publisher<RecenterLaddersForUser> recenterLaddersForUser, Fiber fiber) {
+    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<SubscribeToMarketData> subscribeToMarketData, Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData, final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
@@ -93,6 +96,34 @@ public class LadderPresenter {
                 });
             }
         });
+        marketDataForSymbolMap = new MapMaker().makeComputingMap(new Function<String, MarketDataForSymbol>() {
+            @Override
+            public MarketDataForSymbol apply(final String symbol) {
+                return subscribeToMarketDataForSymbol(symbol, fiber);
+            }
+        });
+
+    }
+
+    private MarketDataForSymbol subscribeToMarketDataForSymbol(final String symbol, final Fiber fiber) {
+        // Subscribe to channel for this symbol
+        final MemoryChannel<MarketDataEvent> marketDataEventMemoryChannel = new MemoryChannel<>();
+        MarketDataForSymbol marketDataForSymbol = new MarketDataForSymbol(symbol);
+        marketDataEventMemoryChannel.subscribe(new BatchSubscriber<MarketDataEvent>(fiber, marketDataForSymbol.onMarketDataBatchCallback(), MD_FLUSH_MILLIS, TimeUnit.MILLISECONDS));
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                unsubscribeFromMarketData.publish(new UnsubscribeFromMarketData(symbol, marketDataEventMemoryChannel));
+            }
+        };
+        marketDataUnsubscribers.put(symbol, runnable);
+        subscribeToMarketData.publish(new SubscribeToMarketData(symbol, marketDataEventMemoryChannel));
+        return marketDataForSymbol;
+    }
+
+    private void unsubscribeFromMarketDataForSymbol(final String symbol) {
+        marketDataForSymbolMap.remove(symbol);
+        marketDataUnsubscribers.remove(symbol).run();
     }
 
     @Subscribe
@@ -108,11 +139,11 @@ public class LadderPresenter {
     public void onDisconnected(WebSocketDisconnected disconnected) {
         LadderView view = viewBySocket.remove(disconnected.getOutboundChannel());
         if (view != null && view.symbol != null) {
-            viewsBySymbol.remove(view.symbol, view);
+            String symbol = view.symbol;
+            viewsBySymbol.remove(symbol, view);
             viewsByUser.remove(disconnected.getClient().getUserName(), view);
-            Runnable runnable = runOnDisonnect.get(disconnected.getOutboundChannel());
-            if (runnable != null) {
-                runnable.run();
+            if (viewsBySymbol.get(symbol).size() == 0) {
+                unsubscribeFromMarketDataForSymbol(symbol);
             }
         }
     }
@@ -127,28 +158,9 @@ public class LadderPresenter {
             if (cmd.equals("ladder-subscribe")) {
                 final String symbol = args[1];
                 int levels = Integer.parseInt(args[2]);
-
-                // Subscribe to channel for this symbol
-                final MemoryChannel<MarketDataEvent> marketDataEventMemoryChannel = new MemoryChannel<>();
-                MarketDataForSymbol marketDataForSymbol = new MarketDataForSymbol(symbol);
-                marketDataEventMemoryChannel.subscribe(fiber, marketDataForSymbol.onMarketDataEventCallback());
-                subscribeToMarketData.publish(new SubscribeToMarketData(symbol, marketDataEventMemoryChannel));
-
-                // Unsubscribe when we disconnect
-                Runnable runnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        unsubscribeFromMarketData.publish(new UnsubscribeFromMarketData(symbol, marketDataEventMemoryChannel));
-                    }
-                };
-                Runnable previous = runOnDisonnect.put(msg.getOutboundChannel(), runnable);
-                if (previous != null) {
-                    previous.run();
-                }
-
+                MarketDataForSymbol marketDataForSymbol = marketDataForSymbolMap.get(symbol);
                 view.subscribeToSymbol(symbol, levels, marketDataForSymbol, ordersBySymbol.get(symbol), dataBySymbol.get(symbol), ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()));
                 viewsBySymbol.put(symbol, view);
-
             } else {
                 view.onRawInboundData(data);
             }

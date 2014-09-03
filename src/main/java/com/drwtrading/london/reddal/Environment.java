@@ -3,8 +3,11 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
+import com.drwtrading.marketdata.service.common.TraderMarket;
 import com.drwtrading.monitoring.stats.StatsPublisher;
 import com.drwtrading.monitoring.transport.NullTransport;
+import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -13,10 +16,20 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Collection;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class Environment {
+
+    public static enum Exchange {
+        EUREX,
+        REMOTE
+    }
 
     public static final String MARKET_DATA = "marketData";
     public static final String WORKING_ORDERS = "workingOrders";
@@ -64,6 +77,10 @@ public class Environment {
 
     public Collection<String> getOpxlLadderTextKeys() {
         return config.getList("opxl.laddertext.keys");
+    }
+
+    public Exchange getMarketDataExchange(final String mds) {
+        return Exchange.valueOf(config.getOrDefault(MARKET_DATA + "." + mds + ".exchange", "REMOTE"));
     }
 
     public static class HostAndNic {
@@ -129,23 +146,31 @@ public class Environment {
         final String nic = config.get(prefix + ".nic");
         return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])), NetworkInterfaces.find(nic));
     }
-    public int getPort(String prefix, String server) {
-        prefix = prefix + "." + server;
-        return config.getInt(prefix + ".port");
-    }
+
     public HostAndNic getHostAndNic(String prefix) throws SocketException {
         final String address = config.get(prefix + ".address");
         final String nic = config.get(prefix + ".nic");
         return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])), NetworkInterfaces.find(nic));
     }
 
-    public StatsPublisher getStatsPublisher() {
-        return new StatsPublisher("", new NullTransport());
+    public Collection<TraderMarket> getMarkets(final String mds) {
+        return Collections2.transform(config.getList(MARKET_DATA + "." + mds + ".markets"), new Function<String, TraderMarket>() {
+            @Override
+            public TraderMarket apply(final String from) {
+                return new TraderMarket(from);
+            }
+        });
     }
+
+    public String getEurexInterface(final String mds) throws SocketException {
+        return NetworkInterfaces.find(config.get(MARKET_DATA + "." + mds + ".interface"));
+    }
+
 
     /**
      * Remote commands server are matched in order.
      * If the symbol matches the regex AND (no order types are specified OR the order is among the types specified) THEN it matches
+     *
      * @return
      */
     public RemoteOrderServerResolver getServerResolver() {
@@ -154,10 +179,10 @@ public class Environment {
         final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<String, RemoteOrderMatcher>();
 
         for (String remoteServer : getList(REMOTE_COMMANDS)) {
-            String symbolRegex = config.getOrDefault(REMOTE_COMMANDS +"."+remoteServer + ".symbolRegex", ".*");
+            String symbolRegex = config.getOrDefault(REMOTE_COMMANDS + "." + remoteServer + ".symbolRegex", ".*");
             Pattern pattern = Pattern.compile(symbolRegex);
-            Set<String> orderTypes = ImmutableSet.copyOf(config.getListOrDefault(REMOTE_COMMANDS +"."+remoteServer + ".orderTypes", ImmutableList.of("*")));
-            System.out.println("\t"+remoteServer+": regex '"+symbolRegex+"', order types: " + orderTypes);
+            Set<String> orderTypes = ImmutableSet.copyOf(config.getListOrDefault(REMOTE_COMMANDS + "." + remoteServer + ".orderTypes", ImmutableList.of("*")));
+            System.out.println("\t" + remoteServer + ": regex '" + symbolRegex + "', order types: " + orderTypes);
 
             if (orderTypes.size() == 1 && orderTypes.contains("*")) {
                 orderTypes = null;

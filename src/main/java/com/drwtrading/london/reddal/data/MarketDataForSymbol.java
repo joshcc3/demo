@@ -3,7 +3,34 @@ package com.drwtrading.london.reddal.data;
 import com.drwtrading.frontoffice.book.treemap.TreeMapBookFactory;
 import com.drwtrading.london.prices.PriceFormat;
 import com.drwtrading.london.prices.PriceFormats;
-import com.drwtrading.london.protocols.photon.marketdata.*;
+import com.drwtrading.london.protocols.photon.marketdata.AuctionIndicativePrice;
+import com.drwtrading.london.protocols.photon.marketdata.AuctionIndicativeSurplus;
+import com.drwtrading.london.protocols.photon.marketdata.AuctionTradeUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.BasisTradeUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.BlockTradeUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.BookConsistencyMarker;
+import com.drwtrading.london.protocols.photon.marketdata.BookSnapshot;
+import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
+import com.drwtrading.london.protocols.photon.marketdata.FutureOutrightStructure;
+import com.drwtrading.london.protocols.photon.marketdata.FutureStrategyStructure;
+import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
+import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
+import com.drwtrading.london.protocols.photon.marketdata.MarketStateEvent;
+import com.drwtrading.london.protocols.photon.marketdata.NormalizedBandedDecimalTickStructure;
+import com.drwtrading.london.protocols.photon.marketdata.NormalizedDecimalTickStructure;
+import com.drwtrading.london.protocols.photon.marketdata.PriceType;
+import com.drwtrading.london.protocols.photon.marketdata.PriceUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.ProductBookStateEvent;
+import com.drwtrading.london.protocols.photon.marketdata.ProductReset;
+import com.drwtrading.london.protocols.photon.marketdata.RequestForCross;
+import com.drwtrading.london.protocols.photon.marketdata.RequestForQuote;
+import com.drwtrading.london.protocols.photon.marketdata.ServerHeartbeat;
+import com.drwtrading.london.protocols.photon.marketdata.SettlementDataEvent;
+import com.drwtrading.london.protocols.photon.marketdata.TickBand;
+import com.drwtrading.london.protocols.photon.marketdata.TopOfBook;
+import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolume;
+import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
+import com.drwtrading.london.protocols.photon.marketdata.TradeUpdate;
 import com.drwtrading.london.reddal.util.PriceOperations;
 import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
@@ -11,6 +38,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetlang.core.Callback;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MarketDataForSymbol {
@@ -200,11 +228,13 @@ public class MarketDataForSymbol {
         }
     }
 
-    public Callback<MarketDataEvent> onMarketDataEventCallback() {
-        return new Callback<MarketDataEvent>() {
+    public Callback<List<MarketDataEvent>> onMarketDataBatchCallback() {
+        return new Callback<List<MarketDataEvent>>() {
             @Override
-            public void onMessage(MarketDataEvent message) {
-                onMarketDataEvent(message);
+            public void onMessage(final List<MarketDataEvent> message) {
+                for (MarketDataEvent marketDataEvent : message) {
+                    onMarketDataEvent(marketDataEvent);
+                }
             }
         };
     }

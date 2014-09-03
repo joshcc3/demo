@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal;
 
+import com.drw.eurex.gen.transport.StreamEnv;
 import com.drw.nns.api.MulticastGroup;
 import com.drw.nns.api.NnsApi;
 import com.drw.nns.api.NnsFactory;
@@ -43,6 +44,10 @@ import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
+import com.drwtrading.marketdata.service.common.KeyedPublisher;
+import com.drwtrading.marketdata.service.common.TraderMarket;
+import com.drwtrading.marketdata.service.eurex_na.EasyEurexNaMDS;
+import com.drwtrading.marketdata.service.eurex_na.monitors.StatsPublisherErrorMonitor;
 import com.drwtrading.marketdata.service.snapshot.publishing.MarketDataEventSnapshottingPublisher;
 import com.drwtrading.monitoring.stats.MsgCodec;
 import com.drwtrading.monitoring.stats.StatsMsg;
@@ -89,7 +94,7 @@ import static com.google.common.collect.Maps.newHashMap;
 public class Main {
 
     public static final long SERVER_TIMEOUT = 3000L;
-    public static final int BATCH_FLUSH_INTERVAL_MS = 70;
+    public static final int BATCH_FLUSH_INTERVAL_MS = 105;
     public static final int HEARTBEAT_INTERVAL_MS = 20 * BATCH_FLUSH_INTERVAL_MS;
     public static final int NUM_DISPLAY_THREADS = 4;
     private static final long RECONNECT_INTERVAL_MILLIS = 10000;
@@ -430,63 +435,105 @@ public class Main {
         {
 
             for (String mds : environment.getList(Environment.MARKET_DATA)) {
+
                 final MarketDataEventSnapshottingPublisher snapshottingPublisher = new MarketDataEventSnapshottingPublisher();
                 final FiberBuilder fiber = fibers.fiberGroup.create("Market Data: " + mds);
-                final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
-                final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, fiber.getFiber(), EXCEPTION_HANDLER);
                 final ProductResetter productResetter = new ProductResetter(snapshottingPublisher);
-                final ConnectionCloser connectionCloser = new ConnectionCloser(channels.stats, "Market data: " + mds, productResetter.resetRunnable());
-
-                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
-                        .handler(new IdleConnectionTimeoutHandler(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
-                        .handler(new JetlangChannelHandler<MarketDataEvent, Void>(new Publisher<MarketDataEvent>() {
-                            Map<String, InstrumentDefinitionEvent> refData = new HashMap<>();
-
-                            @Override
-                            public void publish(MarketDataEvent msg) {
-
-                                if (msg instanceof ServerHeartbeat) {
-                                    return;
-                                }
-
-                                if (msg instanceof InstrumentDefinitionEvent) {
-                                    channels.refData.publish((InstrumentDefinitionEvent) msg);
-                                    productResetter.on((InstrumentDefinitionEvent) msg);
-                                    refData.put(((InstrumentDefinitionEvent) msg).getSymbol(), (InstrumentDefinitionEvent) msg);
-                                }
-
-                                if (msg instanceof BookSnapshot) {
-                                    BookSnapshot snapshot = (BookSnapshot) msg;
-                                    InstrumentDefinitionEvent instrumentDefinitionEvent = refData.get(snapshot.getSymbol());
-                                    if (instrumentDefinitionEvent != null && instrumentDefinitionEvent.getExchange().equals("Eurex")) {
-                                        BookSnapshot reconstructedSnapshot = new BookSnapshot(snapshot.getSymbol(), PriceType.RECONSTRUCTED, snapshot.getSide(), snapshot.getLevels(), snapshot.getSeqNo(), snapshot.getMillis(), snapshot.getNanos(), snapshot.getCorrelationValue());
-                                        snapshottingPublisher.publish(reconstructedSnapshot);
-                                    } else {
-                                        snapshottingPublisher.publish(snapshot);
-                                    }
-                                } else {
-                                    snapshottingPublisher.publish(msg);
-                                }
-
-
-                            }
-                        }));
-
-                fibers.onStart(new Runnable() {
+                final Publisher<MarketDataEvent> marketDataEventPublisher = new Publisher<MarketDataEvent>() {
+                    Map<String, InstrumentDefinitionEvent> refData = new HashMap<>();
                     @Override
-                    public void run() {
-                        fiber.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                client.start();
+                    public void publish(MarketDataEvent msg) {
+                        if (msg instanceof ServerHeartbeat) {
+                            return;
+                        }
+                        if (msg instanceof InstrumentDefinitionEvent) {
+                            channels.refData.publish((InstrumentDefinitionEvent) msg);
+                            productResetter.on((InstrumentDefinitionEvent) msg);
+                            refData.put(((InstrumentDefinitionEvent) msg).getSymbol(), (InstrumentDefinitionEvent) msg);
+                        }
+                        if (msg instanceof BookSnapshot) {
+                            BookSnapshot snapshot = (BookSnapshot) msg;
+                            InstrumentDefinitionEvent instrumentDefinitionEvent = refData.get(snapshot.getSymbol());
+                            if (instrumentDefinitionEvent != null && instrumentDefinitionEvent.getExchange().equals("Eurex")) {
+                                BookSnapshot reconstructedSnapshot = new BookSnapshot(snapshot.getSymbol(), PriceType.RECONSTRUCTED, snapshot.getSide(), snapshot.getLevels(), snapshot.getSeqNo(), snapshot.getMillis(), snapshot.getNanos(), snapshot.getCorrelationValue());
+                                snapshottingPublisher.publish(reconstructedSnapshot);
+                            } else {
+                                snapshottingPublisher.publish(snapshot);
                             }
-                        });
+                        } else {
+                            snapshottingPublisher.publish(msg);
+                        }
                     }
-                });
-
+                };
                 MarketDataSubscriber marketDataSubscriber = new MarketDataSubscriber(snapshottingPublisher);
                 fiber.subscribe(marketDataSubscriber, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
+
+                if (environment.getMarketDataExchange(mds) == Environment.Exchange.EUREX) {
+
+                    KeyedPublisher<TraderMarket, MarketDataEvent> keyedPublisher = new KeyedPublisher<TraderMarket, MarketDataEvent>() {
+                        @Override
+                        public void publish(final TraderMarket key, final MarketDataEvent value) {
+                            marketDataEventPublisher.publish(value);
+                        }
+                    };
+
+                    final EasyEurexNaMDS easyEurexNaMDS = new EasyEurexNaMDS(
+                            environment.getMarkets(mds),
+                            keyedPublisher, keyedPublisher, keyedPublisher,
+                            statsPublisher,
+                            channels.error,
+                            StreamEnv.prod,
+                            environment.getEurexInterface(mds),
+                            new StatsPublisherErrorMonitor(statsPublisher),
+                            logDir
+                    );
+
+                    fibers.onStart(new Runnable() {
+                        @Override
+                        public void run() {
+                            fiber.execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        easyEurexNaMDS.start();
+                                    } catch (IOException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                } else {
+                    final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
+                    final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, fiber.getFiber(), EXCEPTION_HANDLER);
+                    final ConnectionCloser connectionCloser = new ConnectionCloser(channels.stats, "Market data: " + mds, productResetter.resetRunnable());
+
+                    client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
+                            .handler(new IdleConnectionTimeoutHandler(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
+                            .handler(new JetlangChannelHandler<MarketDataEvent, Void>(marketDataEventPublisher));
+
+                    fibers.onStart(new Runnable() {
+                        @Override
+                        public void run() {
+                            fiber.execute(new Runnable() {
+                                @Override
+                                public void run() {
+                                    client.start();
+                                }
+                            });
+                        }
+                    });
+
+
+                }
             }
+        }
+
+
+        {
+
+
         }
 
         // Meta data
