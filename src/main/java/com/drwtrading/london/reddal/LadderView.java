@@ -64,6 +64,8 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final int RECENTER_TIME_MS = 11000;
     public static final int RECENTER_WARN_TIME_MS = 9000;
     public static final int BIG_NUMBER_THRESHOLD = 99999;
+    // Click-trading
+    public final Map<String, Integer> buttonQty = new HashMap<String, Integer>();
 
 
     public static class Html {
@@ -95,17 +97,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         public static final String LAST_SELL = "last_sell";
         public static final String BLANK = " ";
 
-        // Click-trading
-        public static final Map<String, Integer> BUTTON_QTY = new HashMap<String, Integer>();
 
-        static {
-            BUTTON_QTY.put("btn_qty_1", 1);
-            BUTTON_QTY.put("btn_qty_2", 10);
-            BUTTON_QTY.put("btn_qty_3", 100);
-            BUTTON_QTY.put("btn_qty_4", 1000);
-            BUTTON_QTY.put("btn_qty_5", 5000);
-            BUTTON_QTY.put("btn_qty_6", 10000);
-        }
 
         public static final String BUTTON_CLR = "btn_clear";
         public static final String INP_RELOAD = "inp_reload";
@@ -208,7 +200,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         this.levels = levels;
         this.ladderPrefsForSymbolUser = ladderPrefsForSymbolUser;
         this.pendingRefDataAndSettle = true;
-        drawLadder();
+        tryToDrawLadder();
         updateEverything();
         flush();
         sendHeartbeat();
@@ -244,7 +236,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     private void drawLadderIfRefDataHasJustComeIn() {
         if (pendingRefDataAndSettle) {
-            drawLadder();
+            tryToDrawLadder();
         }
     }
 
@@ -527,7 +519,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
-    private void drawLadder() {
+    private void tryToDrawLadder() {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (m != null && m.refData != null) {
             ui.clear();
@@ -568,10 +560,10 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     private void setUpClickTrading() {
         boolean clickTradingEnabled = ladderOptions.traders.contains(client.getUserName());
-
+        setupButtons();
         view.trading(clickTradingEnabled, ladderOptions.orderTypesLeft, ladderOptions.orderTypesRight);
 
-        for (Map.Entry<String, Integer> entry : Html.BUTTON_QTY.entrySet()) {
+        for (Map.Entry<String, Integer> entry : buttonQty.entrySet()) {
             ui.txt(entry.getKey(), entry.getValue() < 1000 ? entry.getValue() : entry.getValue() / 1000 + "K");
         }
         for (int i = 0; i < levels; i++) {
@@ -597,6 +589,24 @@ public class LadderView implements UiPipe.UiEventHandler {
 
         ui.cls(Html.OFFSET_CONTROL, Html.HIDDEN, false);
 
+    }
+
+    private void setupButtons() {
+        if(marketDataForSymbol.refData.getInstrumentStructure() instanceof CashOutrightStructure) {
+            buttonQty.put("btn_qty_1", 1);
+            buttonQty.put("btn_qty_2", 10);
+            buttonQty.put("btn_qty_3", 100);
+            buttonQty.put("btn_qty_4", 1000);
+            buttonQty.put("btn_qty_5", 5000);
+            buttonQty.put("btn_qty_6", 10000);
+        } else {
+            buttonQty.put("btn_qty_1", 1);
+            buttonQty.put("btn_qty_2", 5);
+            buttonQty.put("btn_qty_3", 10);
+            buttonQty.put("btn_qty_4", 25);
+            buttonQty.put("btn_qty_5", 50);
+            buttonQty.put("btn_qty_6", 100);
+        }
     }
 
     public void recenterIfTimeoutElapsed() {
@@ -785,8 +795,8 @@ public class LadderView implements UiPipe.UiEventHandler {
         LadderPrefsForSymbolUser l = ladderPrefsForSymbolUser;
         boolean autoHedge = "true".equals(getPref(l, Html.AUTO_HEDGE_LEFT));
         if ("left".equals(button)) {
-            if (Html.BUTTON_QTY.containsKey(label)) {
-                clickTradingBoxQty += Html.BUTTON_QTY.get(label);
+            if (buttonQty.containsKey(label)) {
+                clickTradingBoxQty += buttonQty.get(label);
             } else if (Html.BUTTON_CLR.equals(label)) {
                 clickTradingBoxQty = 0;
             } else if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
