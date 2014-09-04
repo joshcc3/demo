@@ -45,6 +45,7 @@ import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
+import com.drwtrading.marketdata.service.accumulators.TotalTradedVolumeAccumulator;
 import com.drwtrading.marketdata.service.common.KeyedPublisher;
 import com.drwtrading.marketdata.service.common.TraderMarket;
 import com.drwtrading.marketdata.service.eurex_na.EasyEurexNaMDS;
@@ -462,10 +463,11 @@ public class Main {
 
                 if (environment.getMarketDataExchange(mds) == Environment.Exchange.EUREX) {
 
+                    final TotalTradedVolumeAccumulator totalTradedVolumeAccumulator = new TotalTradedVolumeAccumulator(marketDataEventPublisher);
                     KeyedPublisher<TraderMarket, MarketDataEvent> keyedPublisher = new KeyedPublisher<TraderMarket, MarketDataEvent>() {
                         @Override
                         public void publish(final TraderMarket key, final MarketDataEvent value) {
-                            marketDataEventPublisher.publish(value);
+                            totalTradedVolumeAccumulator.publish(value);
                         }
                     };
 
