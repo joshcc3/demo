@@ -480,7 +480,7 @@ public class Main {
                             environment.getEurexInterface(mds),
                             new StatsPublisherErrorMonitor(statsPublisher),
                             logDir
-                    );
+                    ).withImpliedTopOfBooks(keyedPublisher, true);
 
                     fibers.onStart(new Runnable() {
                         @Override
@@ -522,12 +522,6 @@ public class Main {
 
                 }
             }
-        }
-
-
-        {
-
-
         }
 
         // Meta data

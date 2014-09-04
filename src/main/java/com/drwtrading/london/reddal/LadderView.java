@@ -502,6 +502,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             for (Long price : levelByPrice.keySet()) {
                 if (m.topOfBook != null && m.topOfBook.getBestBid().isExists() && m.topOfBook.getBestBid().getPrice() == price) {
                     bidQty(price, m.topOfBook.getBestBid().getQuantity());
+
                 } else if (m.bookState != null && m.bookState.getState() == BookState.AUCTION && m.auctionIndicativePrice != null && m.auctionIndicativePrice.isHasIndicativePrice() && m.auctionIndicativePrice.getIndicativePrice() == price) {
                     bidQty(price, m.auctionIndicativePrice.getQuantity());
                 } else {
@@ -514,6 +515,12 @@ public class LadderView implements UiPipe.UiEventHandler {
                 } else {
                     offerQty(price, m.book.getLevel(price, Side.OFFER).getQuantity());
                 }
+
+                if(m.impliedTopOfBook != null) {
+                    ui.cls(bidKey(price), "impliedBid", m.impliedTopOfBook.getBestBid().isExists() && m.impliedTopOfBook.getBestBid().getPrice() == price);
+                    ui.cls(offerKey(price), "impliedOffer", m.impliedTopOfBook.getBestOffer().isExists() && m.impliedTopOfBook.getBestOffer().getPrice() == price);
+                }
+
             }
         }
     }

@@ -60,6 +60,8 @@ public class MarketDataForSymbol {
     public String isin;
     public PriceOperations priceOperations;
     public PriceType preferredPriceType = PriceType.RECONSTRUCTED;
+    public TopOfBook impliedTopOfBook;
+
 
     public MarketDataEvent.Visitor<Void> visitor = new MarketDataEvent.Visitor<Void>() {
 
@@ -78,6 +80,9 @@ public class MarketDataForSymbol {
         public Void visitTopOfBook(TopOfBook msg) {
             if (msg.getType() == preferredPriceType) {
                 topOfBook = msg;
+            } else if (msg.getType() == PriceType.IMPLIED) {
+                impliedTopOfBook = msg;
+
             }
             return null;
         }

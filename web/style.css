@@ -18,7 +18,6 @@ body {
     font-family: verdana, tahoma, arial, serif;
 }
 
-
 #symbol.spread {
     background-color: #bad4b1;
 }
@@ -63,10 +62,13 @@ div {
     background-color: #0000c6;
 }
 
+
+
 #sell_qty {
     right: 0px;
     background-color: #ac0000;
 }
+
 
 #symbol {
     position: relative;
@@ -143,7 +145,6 @@ div {
     background-color: #3c3c3c !important;
 }
 
-
 .order.working_order_type_gtc {
     border: solid 1px #ffa7db !important;
     background-color: #3c3c3c !important;
@@ -213,6 +214,14 @@ div {
 
 .bid.bid_active {
     background-color: #0032ff;
+}
+
+.bid.bid_active.impliedBid {
+    background-color: #6668ff;
+}
+
+.offer.offer_active.impliedOffer {
+    background-color: #d0638d;
 }
 
 .price {
