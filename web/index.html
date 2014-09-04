@@ -14,10 +14,10 @@
         var ws;
         var search;
         var topResult;
+        ws = connect("ws://" + document.location.host + "/index/ws/");
+        ws.logToConsole = false;
+        ws.onmessage = function(x){  eval(x); };
         $(function () {
-            ws = connect("ws://" + document.location.host + "/index/ws/");
-            ws.logToConsole = false;
-            ws.onmessage = eval;
             setInterval(function () {
                 var val = $("#search").val();
                 if (val != search) {
