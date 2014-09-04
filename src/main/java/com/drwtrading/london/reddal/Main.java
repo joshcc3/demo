@@ -303,7 +303,7 @@ public class Main {
         final LowTrafficMulticastTransport lowTrafficMulticastTransport = new LowTrafficMulticastTransport(statsGroup.getAddress(), statsGroup.getPort(), environment.getStatsInterface());
         final AtomicBoolean multicastEnabled = new AtomicBoolean(false);
         Transport enableableMulticastTransport = createEnableAbleTransport(lowTrafficMulticastTransport, multicastEnabled);
-        final StatsPublisher statsPublisher = new StatsPublisher("Reddal Monitoring", new MultiplexTransport(fileTransport, enableableMulticastTransport));
+        final StatsPublisher statsPublisher = new StatsPublisher(environment.getStatsName(), new MultiplexTransport(fileTransport, enableableMulticastTransport));
 
         final MonitoredJetlangFactory monitoredJetlangFactory = new MonitoredJetlangFactory(statsPublisher, ERROR_CHANNEL);
         final ReddalChannels channels = new ReddalChannels(monitoredJetlangFactory);
