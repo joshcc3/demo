@@ -224,6 +224,10 @@ div {
     background-color: #d0638d;
 }
 
+.big_number {
+    font-size: smaller;
+}
+
 .price {
     background-color: #999;
     color: white;

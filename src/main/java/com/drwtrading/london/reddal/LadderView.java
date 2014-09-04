@@ -63,6 +63,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     public static final int RECENTER_TIME_MS = 11000;
     public static final int RECENTER_WARN_TIME_MS = 9000;
+    public static final int BIG_NUMBER_THRESHOLD = 99999;
 
 
     public static class Html {
@@ -148,6 +149,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         public static final String PRICING_EFP = "pricing_EFP";
 
         public static final String PRICING = "pricing_";
+        public static final String BIG_NUMBER = "big_number";
     }
 
     public static final int PG_UP = 33;
@@ -1155,16 +1157,20 @@ public class LadderView implements UiPipe.UiEventHandler {
     public void bidQty(long price, int qty) {
         ui.txt(bidKey(price), qty > 0 ? qty : Html.EMPTY);
         ui.cls(bidKey(price), Html.BID_ACTIVE, qty > 0);
+        ui.cls(bidKey(price), Html.BIG_NUMBER, qty > BIG_NUMBER_THRESHOLD);
     }
 
     public void offerQty(long price, int qty) {
         ui.txt(offerKey(price), qty > 0 ? qty : Html.EMPTY);
         ui.cls(offerKey(price), Html.OFFER_ACTIVE, qty > 0);
+        ui.cls(offerKey(price), Html.BIG_NUMBER, qty > BIG_NUMBER_THRESHOLD);
+
     }
 
     public void workingQty(long price, int qty, String side, Set<WorkingOrderType> orderTypes) {
         ui.txt(orderKey(price), qty > 0 ? qty : Html.EMPTY);
         ui.cls(orderKey(price), Html.WORKING_QTY, qty > 0);
+        ui.cls(orderKey(price), Html.BIG_NUMBER, qty > BIG_NUMBER_THRESHOLD);
         ui.cls(orderKey(price), Html.WORKING_BID, side.equals("bid"));
         ui.cls(orderKey(price), Html.WORKING_OFFER, side.equals("offer"));
         for (WorkingOrderType workingOrderType : WorkingOrderType.values()) {
