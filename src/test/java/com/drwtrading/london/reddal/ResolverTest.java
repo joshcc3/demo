@@ -53,6 +53,16 @@ public class ResolverTest {
         assertEquals("nibbler-euronext", resolver.resolveToServerName("UNA NA", RemoteOrderType.MANUAL));
         assertEquals("nibbler-euronext", resolver.resolveToServerName("FP FP", RemoteOrderType.MANUAL));
 
+    }
+
+
+    @Test
+    public void test_prod_futures_resolver() throws Exception {
+
+        Environment environment =new Environment(Config.fromFile("etc/prod-futures.properties"));
+        Environment.RemoteOrderServerResolver resolver = environment.getServerResolver();
+
+
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FESBU4", RemoteOrderType.MANUAL));
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTBU4", RemoteOrderType.HAWK));
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FXXPU4", RemoteOrderType.TAKER));
@@ -73,4 +83,10 @@ public class ResolverTest {
         assertEquals("LITTERBOX1DIV", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.MANUAL));
         assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.GTC));
     }
+
+
+
+
 }
+
+
