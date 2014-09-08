@@ -30,7 +30,10 @@ public class WorkingOrdersForSymbol {
                 previous = ordersByKey.put(workingOrderUpdateFromServer.key(), workingOrderUpdateFromServer);
                 ordersByPrice.put(workingOrderUpdate.getPrice(), workingOrderUpdateFromServer);
             }
-            if (previous != null) {
+
+            // Need the .equals() because HashMultimap doesn't store duplicates, so we would delete the only
+            // copy of this working order otherwise.
+            if (!workingOrderUpdateFromServer.equals(previous)) {
                 ordersByPrice.remove(previous.value.getPrice(), previous);
             }
         }
