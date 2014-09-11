@@ -44,19 +44,19 @@ config default
   include photon-runtime-java/1.0.0.81
   include drw.london.eeif-photocols-client/1
   include com.drwtrading.photons.mrphil/1.0.0.4
-  include com.drwtrading.london.photons.indy/10
+  include com.drwtrading.london.photons.indy/11
   include com.drwtrading.london.photons.reddal/1
 
   # MD
   include mockito/1.8.3
   include io.netty-netty/3.2.7.Final
   include drw.frontoffice.book/1.0.0.4
-  include drw.london.market-data-service/324
-  include drw.london.market-data-service/324:eurex_na
-  include drw.london.market-data-service/324:superfeed
-  include drw.london.market-data-service/324:liffe_xdp
-  include drw.london.market-data-service/324:xetra
-  include drw.london.market-data-service/324:logging
+  include drw.london.market-data-service/327
+  include drw.london.market-data-service/327:eurex_na
+  include drw.london.market-data-service/327:superfeed
+  include drw.london.market-data-service/327:liffe_xdp
+  include drw.london.market-data-service/327:xetra
+  include drw.london.market-data-service/327:logging
 
   include com.drwtrading.london.protocols.photon.marketdata/42
   include com.drwtrading.london.prices/16
