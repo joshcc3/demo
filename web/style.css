@@ -531,7 +531,7 @@ div {
 }
 
 #inp_reload {
-    top: 80px;
+    top: 96px;
     width: 40px;
     height: 16px;
 }
@@ -546,22 +546,22 @@ div {
 }
 
 #order_type_left {
-    top: 96px;
+    top: 112px;
 }
 
 #chk_auto_hedge_left {
-    top: 96px;
+    top: 112px;
     height: 16px;
     left: 30px;
     width: 10px;
 }
 
 #order_type_right {
-    top: 112px;
+    top: 128px;
 }
 
 #chk_auto_hedge_right {
-    top: 112px;
+    top: 128px;
     height: 16px;
     left: 30px;
     width: 10px;
@@ -569,7 +569,7 @@ div {
 
 #random_reload {
     color: black;
-    top: 128px;
+    top: 144px;
     width: 30px;
     right: 5px;
 }
@@ -595,49 +595,49 @@ div {
 }
 
 #buy_offset_up {
-    top: 140px;
+    top: 156px;
     left: 0px;
     background-color: #b6f7ff;
 }
 
 #buy_offset_down {
-    top: 155px;
+    top: 172px;
     left: 0px;
     background-color: #b6f7ff;
 }
 
 #sell_offset_up {
-    top: 140px;
+    top: 156px;
     left: 20px;
     background-color: #ffd5cd;
 }
 
 #sell_offset_down {
-    top: 155px;
+    top: 171px;
     left: 20px;
     background-color: #ffd5cd;
 }
 
 #start_buy {
-    top: 170px;
+    top: 186px;
     left: 00px;
     background-color: #c4ffbe;
 }
 
 #stop_buy {
-    top: 185px;
+    top: 201px;
     left: 0px;
     background-color: #ff9999;
 }
 
 #start_sell {
-    top: 170px;
+    top: 186px;
     left: 20px;
     background-color: #c4ffbe;
 }
 
 #stop_sell {
-    top: 185px;
+    top: 201px;
     left: 20px;
     background-color: #ff9999;
 }
@@ -658,15 +658,15 @@ div {
 }
 
 #pricing_BPS {
-    top: 260px;
+    top: 276px;
 }
 
 #pricing_EFP {
-    top: 275px;
+    top: 291px;
 }
 
 #pricing_RAW {
-    top: 290px;
+    top: 306px;
 }
 
 .pricing_button.active_mode {
