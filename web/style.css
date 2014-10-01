@@ -484,9 +484,19 @@ div {
     text-align: center;
 }
 
+#working_order_tags {
+
+	-webkit-appearance: none;
+	width: 40px;
+	height: 16px;
+	background: #5970B2;
+	color: #FFF;
+}
+
 #inp_qty {
-    width: 40px;
-    height: 16px;
+	width: 40px;
+    top: 16px;
+	height: 16px;
 }
 
 #clicktrading .quantity_button {
@@ -503,21 +513,21 @@ div {
 }
 
 #clicktrading .quantity_button.row_1 {
-    top: 16px;
-}
-
-#clicktrading .quantity_button.row_2 {
     top: 32px;
 }
 
-#clicktrading .quantity_button.row_3 {
+#clicktrading .quantity_button.row_2 {
     top: 48px;
+}
+
+#clicktrading .quantity_button.row_3 {
+    top: 64px;
 }
 
 #btn_clear {
     width: 40px;
     height: 16px;
-    top: 64px;
+    top: 80px;
 }
 
 #inp_reload {

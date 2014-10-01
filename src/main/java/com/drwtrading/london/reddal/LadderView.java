@@ -101,6 +101,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
         public static final String BUTTON_CLR = "btn_clear";
         public static final String INP_RELOAD = "inp_reload";
+        public static final String WORKING_ORDER_TAG = "working_order_tags";
         public static final String INP_QTY = "inp_qty";
 
         public static final String ORDER_TYPE_LEFT = "order_type_left";
@@ -913,6 +914,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final Set<String> persistentPrefs = newFastSet();
 
     static {
+        persistentPrefs.add(Html.WORKING_ORDER_TAG);
         persistentPrefs.add(Html.INP_RELOAD);
         persistentPrefs.add(Html.AUTO_HEDGE_LEFT);
         persistentPrefs.add(Html.AUTO_HEDGE_RIGHT);
@@ -924,6 +926,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final Map<String, String> defaultPrefs = newFastMap();
 
     static {
+        defaultPrefs.put(Html.WORKING_ORDER_TAG, "CHAD");
         defaultPrefs.put(Html.INP_RELOAD, "50");
         defaultPrefs.put(Html.AUTO_HEDGE_LEFT, "true");
         defaultPrefs.put(Html.AUTO_HEDGE_RIGHT, "true");
@@ -1008,19 +1011,25 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private void submitOrderClick(String label, Map<String, String> data, String orderType, boolean autoHedge) {
+
         long price = Long.valueOf(data.get("price"));
+
         com.drwtrading.london.protocols.photon.execution.Side side = label.equals(bidKey(price))
                 ? com.drwtrading.london.protocols.photon.execution.Side.BID
                 : label.equals(offerKey(price))
                 ? com.drwtrading.london.protocols.photon.execution.Side.OFFER
                 : null;
 
+        final String tag = data.get(Html.WORKING_ORDER_TAG);
+
         if (side == null) {
             throw new IllegalArgumentException("Price " + price + " did not match key " + label);
+        } else if (null == tag) {
+            throw new IllegalArgumentException("No tag provided.");
         }
 
         if (orderType != null && clickTradingBoxQty > 0) {
-            submitOrder(orderType, autoHedge, price, side);
+            submitOrder(orderType, autoHedge, price, side, tag);
         }
 
         boolean randomReload = "true".equals(getPref(ladderPrefsForSymbolUser, Html.RANDOM_RELOAD));
@@ -1033,7 +1042,9 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
-    private void submitOrder(String orderType, boolean autoHedge, long price, com.drwtrading.london.protocols.photon.execution.Side side) {
+    private void submitOrder(String orderType, boolean autoHedge, long price, com.drwtrading.london.protocols.photon.execution.Side side,
+            final String tag) {
+
         if (ladderOptions.traders.contains(client.getUserName())) {
 
             if (clientSpeedState == ClientSpeedState.TooSlow) {
@@ -1055,7 +1066,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(
                     serverName, client.getUserName(), orderSeqNo++, new RemoteOrder(
-                    symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, ladderOptions.tag));
+                    symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, tag));
 
             remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
 

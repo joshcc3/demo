@@ -86,6 +86,8 @@ var Handler = function (ws) {
         } else {
             data.push(elem.innerText);
         }
+		data.push("working_order_tags");
+		data.push($("#working_order_tags").val());
         return data.join(DATA_SEPARATOR);
     }
 

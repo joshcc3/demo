@@ -4,8 +4,6 @@ import com.drwtrading.london.config.Config;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.drwtrading.marketdata.service.common.TraderMarket;
-import com.drwtrading.monitoring.stats.StatsPublisher;
-import com.drwtrading.monitoring.transport.NullTransport;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
@@ -134,7 +132,6 @@ public class Environment {
                 getList("trading.orderTypesRight"),
                 getList("trading.traders"),
                 config.get("trading.theoLaserLine"),
-                config.get("trading.tag"),
                 getServerResolver(),
                 config.getDouble("trading.randomReloadFraction"));
     }
