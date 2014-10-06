@@ -136,8 +136,8 @@ div {
 }
 
 .order.working_order_type_hawk {
-    border-bottom: solid 1px #ffa422 !important;
-    background-color: #3c3c3c !important;
+    border-bottom: solid 3px #ffa422 !important;
+    background-color: gray !important;
 }
 
 .order.working_order_type_mkt_close {
