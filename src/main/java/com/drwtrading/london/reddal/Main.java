@@ -74,6 +74,10 @@ import com.google.common.collect.MapMaker;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
 import org.jetlang.fibers.Fiber;
+import org.webbitserver.HttpControl;
+import org.webbitserver.HttpHandler;
+import org.webbitserver.HttpRequest;
+import org.webbitserver.HttpResponse;
 
 import java.io.File;
 import java.io.IOException;
@@ -403,6 +407,36 @@ public class Main {
                 LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(websockets);
                 fibers.ladder.subscribe(ladderMessageRouter, ladderWebSocket);
             }
+
+            // Workspace
+            {
+                final TypedChannel<WebSocketControlMessage> workspaceSocket = create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("workspace", "workspace", fibers.ui, webapp, workspaceSocket);
+
+                final LadderWorkspace ladderWorkspace = new LadderWorkspace();
+                fibers.ui.subscribe(ladderWorkspace, workspaceSocket);
+                webapp.addHandler("/open", new HttpHandler() {
+                    @Override
+                    public void handleHttpRequest(final HttpRequest request, final HttpResponse response, final HttpControl control) throws Exception {
+                        if (request.method().equals("GET")) {
+                            String user = (String) request.data("user");
+                            String symbol = request.queryParam("symbol");
+                            response.status(200);
+                            if (symbol == null) {
+                                response.content("fail");
+                            } else if (user == null) {
+                                response.content(webapp.getBaseUri() + "ladder#" + symbol);
+                            } else if (ladderWorkspace.openLadderForUser(user, symbol)) {
+                                response.content("success");
+                            } else {
+                                response.content(webapp.getBaseUri() + "ladder#" + symbol);
+                            }
+                            response.end();
+                        }
+                    }
+                });
+            }
+
         }
 
         // Settings

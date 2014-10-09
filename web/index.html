@@ -9,6 +9,7 @@
     <script src="js/sound-player.js"></script>
     <script src="js/sounds.js"></script>
     <script src="cell-functions.js"></script>
+    <script src="launcher.js"></script>
     <script src="popup.js"></script>
     <script type="text/javascript">
         var ws;
@@ -51,7 +52,7 @@
                     var link = x.link;
                     var symbol = x.symbol;
                     row.find('.symbol').bind('click', function(){
-                        window.open(link, symbol, "dialog=yes,width=300,height=600");
+                        launchLadder(x.symbol);
                     });
                     row.toggleClass('highlight', i==0);
                     $("#search_results").append(row);

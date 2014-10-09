@@ -1,0 +1,158 @@
+<html>
+<head>
+    <title>workspace</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <style>
+        div.ladder {
+            float: left;
+            border: 1px solid #d4d0c7;
+            margin: 1px;;
+        }
+
+        div.ladder:hover {
+            border: 1px solid yellow;
+        }
+
+        iframe {
+            border: none;
+        }
+    </style>
+    <script src="js/jquery-1.4.2.js"></script>
+    <script src="js/websocket.js"></script>
+    <script src="js/websocket-ui.js"></script>
+    <script src="js/sound-files.js"></script>
+    <script src="js/sound-player.js"></script>
+    <script src="js/sounds.js"></script>
+    <script src="cell-functions.js"></script>
+    <script src="popup.js"></script>
+    <script>
+
+        var ws;
+        var search;
+        var topResult;
+
+        var ladderWidth = 245;
+        var ladderHeight = 332;
+
+        ws = connect("ws://" + document.location.host + "/workspace/ws/");
+        ws.logToConsole = false;
+        ws.onmessage = function (x) {
+            eval(x);
+        };
+
+        var ladders = {};
+        var lastRows = 0;
+        var lastCols = 0;
+        var numBoxes = lastRows * lastCols;
+
+        var lastSymbols = [];
+
+        $(function () {
+
+            setInterval(function () {
+
+                // Compute number of rows and columns
+                var height = $(window).height();
+                var width = $(window).width();
+
+                var rows = parseInt(height / ladderHeight);
+                var cols = parseInt(width / ladderWidth);
+
+                if (rows != lastRows || cols != lastCols) {
+                    lastRows = rows;
+                    lastCols = cols;
+                    numBoxes = lastRows * lastCols;
+
+                    doLayout();
+                    doLadders();
+                    return;
+                }
+
+
+            }, 250);
+
+        });
+
+        function setFrame(ladder, symbol) {
+            $(ladder).find('.frame').attr('src', '/ladder#' + symbol);
+            $(ladder).attr('id', symbolId(symbol));
+        }
+
+        function doLayout() {
+            var template = $('.ladder.template').clone().removeClass('template');
+            template.width(ladderWidth);
+            template.height(ladderHeight);
+
+            var existing = $('.ladder:not(.template)');
+
+            if (existing.size() < numBoxes) {
+                for (var i = 0; i < numBoxes - existing.size(); i++) {
+                    $('#workspace').append(template.clone());
+                }
+            } else if (existing.size() > numBoxes) {
+                for (var i = numBoxes; i < existing.size(); i++) {
+                    $(existing[i]).remove();
+                }
+            }
+        }
+
+        function doLadders() {
+
+            if (document.location.hash != "") {
+                var symbols = document.location.hash.substr(1).split(",");
+                if (JSON.stringify(symbols) != JSON.stringify(lastSymbols)) {
+                    lastSymbols = symbols;
+                    if (lastSymbols.length > numBoxes) {
+                        lastSymbols = lastSymbols.slice(0, numBoxes);
+                        document.location.hash = "#" + lastSymbols.join(",");
+                    }
+                }
+            }
+
+            lastSymbols.reverse();
+
+            for (var i = 0; i < lastSymbols.length; i++) {
+                addSymbol(lastSymbols[i]);
+            }
+
+            lastSymbols.reverse();
+        }
+
+        function addSymbol(symbol) {
+
+            var last = undefined;
+
+            if (lastSymbols.indexOf(symbol) != -1) {
+                lastSymbols.splice(lastSymbols.indexOf(symbol), 1);
+                last = $('#' + symbolId(symbol))[0];
+            }
+
+            lastSymbols.unshift(symbol);
+
+            if(last == undefined) {
+                last = $($('.ladder:not(.template)').last()[0]);
+            }
+
+            document.location.hash = "#" + lastSymbols.join(",");
+            setFrame(last, symbol);
+            last.remove();
+            $('#workspace').prepend(last);
+        }
+
+        function symbolId(symbol) {
+            return symbol.replace(/\W/g, '_');
+        }
+
+
+    </script>
+</head>
+<body>
+
+<div id="workspace">
+    <div class="template ladder">
+        <iframe class="frame" width="100%" height="100%"></iframe>
+    </div>
+</div>
+
+</body>
+</html>
