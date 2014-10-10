@@ -16,13 +16,13 @@ public class LadderWorkspace {
     @Subscribe
     public void on(WebSocketConnected webSocketConnected) {
         View view = views.register(webSocketConnected);
-        clientByUsername.put(webSocketConnected.getClient().getUserName(), view);
+        clientByUsername.put(webSocketConnected.getClient().getHost(), view);
     }
 
     @Subscribe
     public void on(WebSocketDisconnected webSocketDisconnected) {
         View view = views.unregister(webSocketDisconnected);
-        clientByUsername.remove(webSocketDisconnected.getClient().getUserName(), view);
+        clientByUsername.remove(webSocketDisconnected.getClient().getHost(), view);
     }
 
     @Subscribe
@@ -32,6 +32,7 @@ public class LadderWorkspace {
 
 
     public boolean openLadderForUser(String user, String symbol) {
+
         if (clientByUsername.containsKey(user)) {
             clientByUsername.get(user).iterator().next().addSymbol(symbol);
             return true;

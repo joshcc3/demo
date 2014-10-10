@@ -73,8 +73,13 @@
 
         });
 
+        function getUrl(symbol) {
+            var port = parseInt(document.location.port);
+            var host = document.location.hostname;
+            return 'http://'+host+':'+(port-1)+'/ladder#' + symbol;
+        }
         function setFrame(ladder, symbol) {
-            $(ladder).find('.frame').attr('src', '/ladder#' + symbol);
+            $(ladder).find('.frame').attr('src', getUrl(symbol));
             $(ladder).attr('id', symbolId(symbol));
         }
 

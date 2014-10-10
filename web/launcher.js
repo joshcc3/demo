@@ -12,6 +12,7 @@ function launchLadder(symbol) {
     var ladderHost;
 
     if (symbol.match(/^(ES|RP|RF).*/) && symbol.length == 4) {
+
         ladderHost = "sup-aurdfas01:9004";
         openLink(ladderHost, symbol);
     } else if (symbol.match(/^(MPSI|JFCE|KFTI|Z|FBXF|XZ|ER|SS).*/)) {

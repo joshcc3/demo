@@ -408,6 +408,36 @@ public class Main {
                 fibers.ladder.subscribe(ladderMessageRouter, ladderWebSocket);
             }
 
+
+
+        }
+
+
+        // Non SSO-protected webapp to allow AJAX requests
+        {
+
+            final WebApplication webapp;
+            webapp = new WebApplication(environment.getWebPort() + 1, channels.errorPublisher);
+
+            fibers.onStart(new Runnable() {
+                @Override
+                public void run() {
+                    fibers.ui.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                webapp.serveStaticContent("web");
+                                webapp.start();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    });
+                }
+            });
+
+            webapp.webServer();
+
             // Workspace
             {
                 final TypedChannel<WebSocketControlMessage> workspaceSocket = create(WebSocketControlMessage.class);
@@ -419,18 +449,29 @@ public class Main {
                     @Override
                     public void handleHttpRequest(final HttpRequest request, final HttpResponse response, final HttpControl control) throws Exception {
                         if (request.method().equals("GET")) {
-                            String user = (String) request.data("user");
+                            String user = request.remoteAddress().toString().split(":")[0].substring(1);
                             String symbol = request.queryParam("symbol");
+                            String content;
+
                             response.status(200);
+
                             if (symbol == null) {
-                                response.content("fail");
-                            } else if (user == null) {
-                                response.content(webapp.getBaseUri() + "ladder#" + symbol);
-                            } else if (ladderWorkspace.openLadderForUser(user, symbol)) {
-                                response.content("success");
+                                content = "fail";
+                            } else if (user == null || !ladderWorkspace.openLadderForUser(user, symbol)) {
+                                content = webapp.getBaseUri().split(":")[0] + environment.getWebPort() + "/ladder#" + symbol;
                             } else {
-                                response.content(webapp.getBaseUri() + "ladder#" + symbol);
+                                content = "success";
                             }
+
+                            String reply;
+
+                            if(request.queryParamKeys().contains("callback")) {
+                                reply = request.queryParam("callback") + "(\"" + content + "\")";
+                            } else {
+                                reply = content;
+                            }
+
+                            response.content(reply);
                             response.end();
                         }
                     }
