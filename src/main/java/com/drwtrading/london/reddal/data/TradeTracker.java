@@ -11,7 +11,7 @@ public class TradeTracker {
     public boolean lastTradedDown = false;
 
     public void onTradeUpdate(TradeUpdate tradeUpdate) {
-        if (lastTrade != null && lastTrade.getPrice() == tradeUpdate.getPrice() && lastTrade.getAggressorSide().equals(tradeUpdate.getAggressorSide())) {
+        if (lastTrade != null && lastTrade.getPrice() == tradeUpdate.getPrice()) {
             quantityTraded += tradeUpdate.getQuantityTraded();
             tradedOnSameLevel = true;
         } else {
