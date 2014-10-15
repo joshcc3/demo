@@ -37,10 +37,7 @@ public class DisplaySymbolMapper {
             marketDataSymbolsByIsin.put(isin, symbol);
             if (displaySymbolByIsin.containsKey(isin)) {
                 String display = displaySymbolByIsin.get(isin);
-                if (!display.contains(symbol)) {
-                    display = symbol + " (" + display + ")";
-                }
-                DisplaySymbol displaySymbol = new DisplaySymbol(symbol, display);
+                DisplaySymbol displaySymbol = new DisplaySymbol(symbol, makeDisplaySymbol(symbol, display));
                 publishIfNew(displaySymbol);
             }
         } else if (instrumentDefinitionEvent.getInstrumentStructure() instanceof FutureOutrightStructure) {
@@ -51,12 +48,19 @@ public class DisplaySymbolMapper {
         }
     }
 
+    private String makeDisplaySymbol(String symbol, String display) {
+        if (!display.contains(symbol)) {
+            display = display + " (" + symbol + ")";
+        }
+        return display;
+    }
+
     @Subscribe
     public void on(EquityIdAndSymbol equityIdAndSymbol) {
         if (equityIdAndSymbol.isPrimary()) {
             displaySymbolByIsin.put(equityIdAndSymbol.getEquityId().getIsin(), equityIdAndSymbol.getSymbol());
             for (String marketDataSymbol : marketDataSymbolsByIsin.get(equityIdAndSymbol.getEquityId().getIsin())) {
-                DisplaySymbol displaySymbol = new DisplaySymbol(marketDataSymbol, equityIdAndSymbol.getSymbol());
+                DisplaySymbol displaySymbol = new DisplaySymbol(marketDataSymbol, makeDisplaySymbol(marketDataSymbol, equityIdAndSymbol.getSymbol()));
                 publishIfNew(displaySymbol);
             }
         }

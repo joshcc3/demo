@@ -353,10 +353,6 @@ public class LadderView implements UiPipe.UiEventHandler {
         ui.cls(key, Html.NEGATIVE, value < 0);
     }
 
-    private String stripPriceZeros(MarketDataForSymbol m, Long price) {
-        return price == null ? "" : m.priceFormat.toBigDecimal(m.priceFormat.protocolsPriceToNormalized(price)).stripTrailingZeros().toPlainString();
-    }
-
     private Long getLastTradeChangeOnDay(MarketDataForSymbol m) {
         if (m.lastTrade == null) {
             return null;
