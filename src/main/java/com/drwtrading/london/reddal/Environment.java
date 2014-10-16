@@ -1,9 +1,12 @@
 package com.drwtrading.london.reddal;
 
+import com.drw.xetra.ebs14.mds.XetraStream;
+import com.drw.xetra.ebs14.mds.XetraTypes;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.drwtrading.marketdata.service.common.TraderMarket;
+import com.drwtrading.marketdata.service.xetra14.mds.XetraStreamPair;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
@@ -14,18 +17,15 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class Environment {
 
+
     public static enum Exchange {
         EUREX,
+        XETRA,
         REMOTE
     }
 
@@ -113,6 +113,16 @@ public class Environment {
         return config.getInt("web.port");
     }
 
+    public File getXetraReferenceDataFile(String marketDataName) {
+        File file = getFile(MARKET_DATA + "." + marketDataName + ".referenceDataFile");
+        file.getParentFile().mkdirs();
+        return file;
+    }
+
+    private File getFile(String key) {
+        return new File(config.get(key).replace("{date}", new SimpleDateFormat("yyyy-MM-dd").format(new Date())));
+    }
+
     public File getLogDirectory(String configName) throws IOException {
         File baseLogDir = new File(config.get("logDir"));
         String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
@@ -121,6 +131,21 @@ public class Environment {
         return logDir;
     }
 
+
+    public Collection<XetraStreamPair> getXetraReferenceDataStreams(String marketDataName) {
+        marketDataName = MARKET_DATA + "." + marketDataName;
+        List<String> xetraRefDataStreams = config.getList(marketDataName + ".refDataStreams");
+        List<XetraStreamPair> xetraStreamPairs = new ArrayList<XetraStreamPair>();
+        for (String xetraRefDataStream : xetraRefDataStreams) {
+            String prefix = marketDataName + ".refData." + xetraRefDataStream;
+            XetraStreamPair streamPair = new XetraStreamPair(
+                    new XetraStream(XetraTypes.StreamType.ReferenceData, XetraStream.XetraStreamServiceType.A, config.get(prefix + ".addressA"), config.getInt(prefix + ".port"), null, null),
+                    new XetraStream(XetraTypes.StreamType.ReferenceData, XetraStream.XetraStreamServiceType.B, config.get(prefix + ".addressB"), config.getInt(prefix + ".port"), null, null)
+            );
+            xetraStreamPairs.add(streamPair);
+        }
+        return xetraStreamPairs;
+    }
 
     public List<String> getList(final String prefix) {
         return ImmutableList.copyOf(config.getListOrEmpty(prefix));
@@ -159,7 +184,12 @@ public class Environment {
         });
     }
 
-    public String getEurexInterface(final String mds) throws SocketException {
+    public Set<String> getXetraMarkets(String mds) {
+        return new HashSet<String>(config.getList(MARKET_DATA + "." + mds + ".markets"));
+    }
+
+
+    public String getMarketDataInterface(final String mds) throws SocketException {
         return NetworkInterfaces.find(config.get(MARKET_DATA + "." + mds + ".interface"));
     }
 

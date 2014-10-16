@@ -4,6 +4,7 @@ import com.drw.eurex.gen.transport.StreamEnv;
 import com.drw.nns.api.MulticastGroup;
 import com.drw.nns.api.NnsApi;
 import com.drw.nns.api.NnsFactory;
+import com.drwtrading.esquilatency.BatchedChainEventRecorder;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
@@ -27,11 +28,7 @@ import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCom
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.BookSnapshot;
-import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
-import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.protocols.photon.marketdata.PriceType;
-import com.drwtrading.london.protocols.photon.marketdata.ServerHeartbeat;
+import com.drwtrading.london.protocols.photon.marketdata.*;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
@@ -43,6 +40,8 @@ import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
+import com.drwtrading.london.selectable.ErrorHandler;
+import com.drwtrading.london.selectable.SelectorWrapper;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.marketdata.service.accumulators.TotalTradedVolumeAccumulator;
@@ -51,6 +50,9 @@ import com.drwtrading.marketdata.service.common.TraderMarket;
 import com.drwtrading.marketdata.service.eurex_na.EasyEurexNaMDS;
 import com.drwtrading.marketdata.service.eurex_na.monitors.StatsPublisherErrorMonitor;
 import com.drwtrading.marketdata.service.snapshot.publishing.MarketDataEventSnapshottingPublisher;
+import com.drwtrading.marketdata.service.xetra14.Xetra14Main;
+import com.drwtrading.marketdata.service.xetra14.mds.XetraMarketDataService;
+import com.drwtrading.marketdata.service.xetra14.mds.XetraPacketDroppedEvent;
 import com.drwtrading.monitoring.stats.MsgCodec;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.StatsPublisher;
@@ -82,11 +84,9 @@ import org.webbitserver.HttpResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Collection;
+import java.nio.channels.Selector;
+import java.util.*;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -409,7 +409,6 @@ public class Main {
             }
 
 
-
         }
 
 
@@ -465,7 +464,7 @@ public class Main {
 
                             String reply;
 
-                            if(request.queryParamKeys().contains("callback")) {
+                            if (request.queryParamKeys().contains("callback")) {
                                 reply = request.queryParam("callback") + "(\"" + content + "\")";
                             } else {
                                 reply = content;
@@ -552,7 +551,7 @@ public class Main {
                             statsPublisher,
                             channels.error,
                             StreamEnv.prod,
-                            environment.getEurexInterface(mds),
+                            environment.getMarketDataInterface(mds),
                             new StatsPublisherErrorMonitor(statsPublisher),
                             logDir
                     ).withImpliedTopOfBooks(keyedPublisher, true);
@@ -570,6 +569,53 @@ public class Main {
                                     }
                                 }
                             });
+                        }
+                    });
+                } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.XETRA) {
+
+                    final TotalTradedVolumeAccumulator totalTradedVolumeAccumulator = new TotalTradedVolumeAccumulator(marketDataEventPublisher);
+                    KeyedPublisher<String, MarketDataEvent> keyedPublisher = new KeyedPublisher<String, MarketDataEvent>() {
+                        @Override
+                        public void publish(final String key, final MarketDataEvent value) {
+                            totalTradedVolumeAccumulator.publish(value);
+                        }
+                    };
+
+                    SelectorWrapper selectorWrapper = new SelectorWrapper(Selector.open(), new ErrorHandler() {
+                        @Override
+                        public void onError(Throwable throwable) {
+                            ERROR_CHANNEL.publish(throwable);
+                        }
+                    });
+                    selectorWrapper.setBlocking(true);
+
+                    final XetraMarketDataService xetraMarketDataService = new XetraMarketDataService(
+                            Xetra14Main.find(environment.getMarketDataInterface(mds)),
+                            environment.getXetraMarkets(mds),
+                            keyedPublisher, keyedPublisher, keyedPublisher,
+                            environment.getXetraReferenceDataFile(mds),
+                            environment.getXetraReferenceDataStreams(mds),
+                            null, null, new Callback<XetraPacketDroppedEvent>() {
+                        @Override
+                        public void onMessage(XetraPacketDroppedEvent message) {
+                            try {
+                                System.out.println("Xetra dropped a packet: ");
+                                message.toJson(System.out);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            statsPublisher.publish(new AdvisoryStat("Reddal/Xetra", AdvisoryStat.Level.WARNING, "Dropped a packet."));
+                        }
+                    }, ERROR_CHANNEL, selectorWrapper, BatchedChainEventRecorder.nullRecorder());
+
+                    fibers.onStart(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                xetraMarketDataService.start();
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     });
 
