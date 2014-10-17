@@ -120,7 +120,7 @@ public class IndexPresenter {
     }
 
     private String showDisplaySymbol(DisplaySymbol display) {
-        return display.displaySymbol + " (" + display.marketDataSymbol + ")";
+        return display.displaySymbol;
     }
 
 

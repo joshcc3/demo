@@ -39,7 +39,7 @@ public class Environment {
     }
 
     public Collection<String> opxlDeskPositionKeys() {
-        return config.getList("opxl.deskposition.keys");
+        return config.getListOrEmpty("opxl.deskposition.keys");
     }
 
     public boolean opxlLadderTextEnabled() {
@@ -74,7 +74,7 @@ public class Environment {
     }
 
     public Collection<String> getOpxlLadderTextKeys() {
-        return config.getList("opxl.laddertext.keys");
+        return config.getListOrEmpty("opxl.laddertext.keys");
     }
 
     public Exchange getMarketDataExchange(final String mds) {
