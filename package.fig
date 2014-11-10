@@ -30,7 +30,7 @@ config default
   include jquery/1.4.2
   include org.jboss.netty-netty/3.2.7.Final
   include drw.sso.client-java/1.0.0.32
-  include drw.london.server-common/46
+  include drw.london.server-common/50
   include drw.simple-webbit-server/29:with-deps
   include org.webbitserver-webbit-rest/0.3.0
   include drw.london.javascript-common/1.0.0.32
@@ -50,15 +50,15 @@ config default
   include mockito/1.8.3
   include io.netty-netty/3.2.7.Final
   include drw.frontoffice.book/1.0.0.4
-  include drw.london.market-data-service/392
-  include drw.london.market-data-service/392:eurex_na
-  include drw.london.market-data-service/392:superfeed
-  include drw.london.market-data-service/392:liffe_xdp
-  include drw.london.market-data-service/392:xetra
-  include drw.london.market-data-service/392:logging
+  include drw.london.market-data-service/397
+  include drw.london.market-data-service/397:eurex_na
+  include drw.london.market-data-service/397:superfeed
+  include drw.london.market-data-service/397:liffe_xdp
+  include drw.london.market-data-service/397:xetra
+  include drw.london.market-data-service/397:logging
 
   include com.drwtrading.london.protocols.photon.marketdata/42
-  include com.drwtrading.london.prices/16
+  include com.drwtrading.london.prices/18
   include drw.london.esquilatency/24
 
   include nns/2.0.0.69
