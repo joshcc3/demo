@@ -82,6 +82,9 @@ public class ResolverTest {
 
         assertEquals("LITTERBOX1DIV", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.MANUAL));
         assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.GTC));
+
+        assertEquals("LITTERBOX1DIV", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.MANUAL));
+        assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.GTC));
     }
 
 

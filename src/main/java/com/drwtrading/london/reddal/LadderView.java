@@ -1051,6 +1051,11 @@ public class LadderView implements UiPipe.UiEventHandler {
             RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
 
+            if(serverName == null) {
+                statsPublisher.publish(new AdvisoryStat("Click-Trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", no valid server found."));
+                return;
+            }
+
             System.out.println("Order: " + symbol + " " + remoteOrderType.toString() + " resolved to " + serverName);
 
             TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(serverName);

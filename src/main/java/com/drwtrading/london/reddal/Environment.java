@@ -210,15 +210,12 @@ public class Environment {
             Pattern pattern = Pattern.compile(symbolRegex);
             Set<String> orderTypes = ImmutableSet.copyOf(config.getListOrDefault(REMOTE_COMMANDS + "." + remoteServer + ".orderTypes", ImmutableList.of("*")));
             System.out.println("\t" + remoteServer + ": regex '" + symbolRegex + "', order types: " + orderTypes);
-
             if (orderTypes.size() == 1 && orderTypes.contains("*")) {
                 orderTypes = null;
             }
             matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypes));
         }
-
         return getRemoteOrderServerResolver(matchers);
-
     }
 
     public static RemoteOrderServerResolver getRemoteOrderServerResolver(final LinkedHashMap<String, RemoteOrderMatcher> matchers) {
@@ -230,7 +227,7 @@ public class Environment {
                         return entry.getKey();
                     }
                 }
-                throw new IllegalArgumentException("No matching remote order server for " + symbol + " " + orderType);
+                return null;
             }
         };
     }
