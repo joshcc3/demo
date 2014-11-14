@@ -62,6 +62,10 @@ public class ResolverTest {
         Environment environment =new Environment(Config.fromFile("etc/prod-futures.properties"));
         Environment.RemoteOrderServerResolver resolver = environment.getServerResolver();
 
+        assertEquals("nibbler-ice", resolver.resolveToServerName("ERZ4", RemoteOrderType.MANUAL));
+        assertEquals("nibbler-ice", resolver.resolveToServerName("ERZ4", RemoteOrderType.GTC));
+        assertEquals("nibbler-ice", resolver.resolveToServerName("ZZ4", RemoteOrderType.MANUAL));
+        assertEquals("nibbler-ice", resolver.resolveToServerName("ZZ4", RemoteOrderType.GTC));
 
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FESBU4", RemoteOrderType.MANUAL));
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTBU4", RemoteOrderType.HAWK));
