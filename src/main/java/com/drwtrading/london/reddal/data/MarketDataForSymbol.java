@@ -200,28 +200,13 @@ public class MarketDataForSymbol {
         String eventSymbol = MarketDataEventUtil.getSymbol(e);
         if (eventSymbol == null || eventSymbol.equals(symbol)) {
             if (book != null) {
-                // Only DIRECT full book is supported
                 if (e instanceof PriceUpdate) {
                     if (((PriceUpdate) e).getType() == preferredPriceType) {
                         book.apply(e);
-                    } else {
-                        System.out.println(refData.getExchange()+ " " + ((PriceUpdate) e) .getSymbol() + " " + ((PriceUpdate) e).getType());
-                        if (refData.getExchange().equals("Eurex")) {
-                            preferredPriceType = PriceType.RECONSTRUCTED;
-                            preferredBookSnapshotType = PriceType.RECONSTRUCTED;
-                            preferredTopOfBookPriceType = PriceType.RECONSTRUCTED;
-                        }
                     }
                 } else if (e instanceof BookSnapshot) {
                     if (((BookSnapshot) e).getType() == preferredBookSnapshotType) {
                         book.apply(e);
-                    } else {
-                        System.out.println(((BookSnapshot) e).getSymbol() + " " + ((BookSnapshot) e).getType());
-                        if (refData.getExchange().equals("Eurex")) {
-                            preferredPriceType = PriceType.RECONSTRUCTED;
-                            preferredBookSnapshotType = PriceType.RECONSTRUCTED;
-                            preferredTopOfBookPriceType = PriceType.RECONSTRUCTED;
-                        }
                     }
                 } else {
                     book.apply(e);
