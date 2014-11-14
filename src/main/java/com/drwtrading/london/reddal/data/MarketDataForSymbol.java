@@ -111,7 +111,7 @@ public class MarketDataForSymbol {
         @Override
         public Void visitInstrumentDefinitionEvent(InstrumentDefinitionEvent msg) {
             refData = msg;
-            if (refData.getExchange().equals("SUPERFEED")) {
+            if (refData.getExchange().equals("SUPERFEED") || refData.getExchange().equals("Eurex")) {
                 preferredPriceType = PriceType.RECONSTRUCTED;
                 preferredBookSnapshotType = PriceType.RECONSTRUCTED;
                 preferredTopOfBookPriceType = PriceType.RECONSTRUCTED;
@@ -204,10 +204,24 @@ public class MarketDataForSymbol {
                 if (e instanceof PriceUpdate) {
                     if (((PriceUpdate) e).getType() == preferredPriceType) {
                         book.apply(e);
+                    } else {
+                        System.out.println(refData.getExchange()+ " " + ((PriceUpdate) e) .getSymbol() + " " + ((PriceUpdate) e).getType());
+                        if (refData.getExchange().equals("Eurex")) {
+                            preferredPriceType = PriceType.RECONSTRUCTED;
+                            preferredBookSnapshotType = PriceType.RECONSTRUCTED;
+                            preferredTopOfBookPriceType = PriceType.RECONSTRUCTED;
+                        }
                     }
                 } else if (e instanceof BookSnapshot) {
                     if (((BookSnapshot) e).getType() == preferredBookSnapshotType) {
                         book.apply(e);
+                    } else {
+                        System.out.println(((BookSnapshot) e).getSymbol() + " " + ((BookSnapshot) e).getType());
+                        if (refData.getExchange().equals("Eurex")) {
+                            preferredPriceType = PriceType.RECONSTRUCTED;
+                            preferredBookSnapshotType = PriceType.RECONSTRUCTED;
+                            preferredTopOfBookPriceType = PriceType.RECONSTRUCTED;
+                        }
                     }
                 } else {
                     book.apply(e);
