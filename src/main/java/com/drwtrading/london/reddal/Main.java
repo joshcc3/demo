@@ -345,6 +345,7 @@ public class Main {
         {
             final WebApplication webapp;
             webapp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
+            System.out.println("http://localhost:" + environment.getWebPort());
             webapp.enableSingleSignOn();
 
             fibers.onStart(new Runnable() {

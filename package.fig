@@ -9,7 +9,8 @@ retrieve JS_SOUND_FILES->web/js
 retrieve WAV_SOUND_FILES->web/sounds
 
 config default
-
+  include :rake
+  include :scripts
   # Libraries and containers
   include google.guava/r06
   include fastutil/6.3
@@ -80,19 +81,20 @@ end
 
 config build
   include :default
-  include :scripts
   add PATH=/site/drw/java/jdk1.7.0_60/bin
 end
 
 config test
-  include :rake
+  include :default
   add PATH=/site/drw/java/jdk1.7.0_60/bin
 end
 
 config scripts
   include drw.london.admin-scripts/1.0.4.19
+  add PATH=/site/drw/java/jdk1.7.0_60/bin
 end
 
 config rake
   include drw.london.rake/1.0.1.9
+  add PATH=/site/drw/java/jdk1.7.0_60/bin
 end
