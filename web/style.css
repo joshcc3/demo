@@ -140,6 +140,11 @@ div {
     background-color: gray !important;
 }
 
+.order.working_order_type_hedger {
+    border-bottom: solid 3px #5884ff !important;
+    background-color: gray !important;
+}
+
 .order.working_order_type_mkt_close {
     border-right: solid 1px #ff04ef !important;
     background-color: #3c3c3c !important;
