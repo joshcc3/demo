@@ -40,11 +40,11 @@ task :test => [JAR, TESTS_JAR] do |task|
 end
 
 file JAR => FileList['src/main/java/**/*.java'] do |task|
-  build_java_jar :src=>task.prerequisites, :dest=>task.name, :fig_config=>'build'
+  build_java_jar :src=>task.prerequisites, :dest=>task.name, :fig_config=>'build', :repo_info => 'none'
 end
 
 file TESTS_JAR => FileList[TEST_DIR  + '/**/*.java', JAR] do |task|
-  build_java_jar :src=>task.prerequisites, :dest=>task.name, :classpath => [JAR], :fig_config=>'test'
+  build_java_jar :src=>task.prerequisites, :dest=>task.name, :classpath => [JAR], :fig_config=>'test', :repo_info => 'none'
 end
 
 file TARBALL => FileList['bin/**/*', 'lib/**/*', 'web/**/*', 'etc/**/*', JAR] do
