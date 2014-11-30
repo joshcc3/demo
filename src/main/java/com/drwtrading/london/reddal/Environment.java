@@ -1,12 +1,12 @@
 package com.drwtrading.london.reddal;
 
-import com.drw.xetra.ebs14.mds.XetraStream;
-import com.drw.xetra.ebs14.mds.XetraTypes;
+import com.drw.xetra.ebs.mds.XetraStream;
+import com.drw.xetra.ebs.mds.XetraTypes;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.drwtrading.marketdata.service.common.TraderMarket;
-import com.drwtrading.marketdata.service.xetra14.mds.XetraStreamPair;
+import com.drwtrading.marketdata.service.xetra.mds.XetraStreamPair;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;

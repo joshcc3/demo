@@ -50,9 +50,9 @@ import com.drwtrading.marketdata.service.common.TraderMarket;
 import com.drwtrading.marketdata.service.eurex_na.EasyEurexNaMDS;
 import com.drwtrading.marketdata.service.eurex_na.monitors.StatsPublisherErrorMonitor;
 import com.drwtrading.marketdata.service.snapshot.publishing.MarketDataEventSnapshottingPublisher;
-import com.drwtrading.marketdata.service.xetra14.Xetra14Main;
-import com.drwtrading.marketdata.service.xetra14.mds.XetraMarketDataService;
-import com.drwtrading.marketdata.service.xetra14.mds.XetraPacketDroppedEvent;
+import com.drwtrading.marketdata.service.xetra.XetraMain;
+import com.drwtrading.marketdata.service.xetra.mds.XetraMarketDataService;
+import com.drwtrading.marketdata.service.xetra.mds.XetraPacketDroppedEvent;
 import com.drwtrading.monitoring.stats.MsgCodec;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.StatsPublisher;
@@ -602,7 +602,7 @@ public class Main {
                     selectorWrapper.setBlocking(true);
 
                     final XetraMarketDataService xetraMarketDataService = new XetraMarketDataService(
-                            Xetra14Main.find(environment.getMarketDataInterface(mds)),
+                            XetraMain.find(environment.getMarketDataInterface(mds)),
                             environment.getXetraMarkets(mds),
                             keyedPublisher, keyedPublisher, keyedPublisher,
                             environment.getXetraReferenceDataFile(mds),
