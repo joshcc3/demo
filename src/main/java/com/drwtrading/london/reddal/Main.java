@@ -136,6 +136,7 @@ public class Main {
         public final TypedChannel<UnsubscribeFromMarketData> unsubscribeFromMarketData;
         public final TypedChannel<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
         public final TypedChannel<FuturesContractSetGenerator.FuturesContractSet> futuresContractSets;
+        public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
 
         public ReddalChannels(ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
@@ -168,11 +169,11 @@ public class Main {
             heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
             reddalCommand = create(ReddalMessage.class);
             reddalCommandSymbolAvailable = create(ReddalMessage.class);
-
             subscribeToMarketData = create(SubscribeToMarketData.class);
             unsubscribeFromMarketData = create(UnsubscribeFromMarketData.class);
             recenterLaddersForUser = create(LadderPresenter.RecenterLaddersForUser.class);
             futuresContractSets = create(FuturesContractSetGenerator.FuturesContractSet.class);
+            singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
         }
 
         public <T> TypedChannel<T> create(Class<T> clazz) {
@@ -245,7 +246,7 @@ public class Main {
         }
 
         public String key() {
-            return fromServer + ":" + value.getChainId();
+            return fromServer + "_" + value.getChainId();
         }
     }
 
@@ -376,6 +377,15 @@ public class Main {
                 fibers.ui.subscribe(indexPresenter, channels.displaySymbol, channels.refData, websocket);
             }
 
+            // Orders presenter
+            {
+                TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("orders", "orders", fibers.ui, webapp, websocket);
+                websocketsForLogging.put("orders", websocket);
+                final OrdersPresenter ordersPresenter = new OrdersPresenter(channels.singleOrderCommand);
+                fibers.ui.subscribe(ordersPresenter, channels.workingOrders, websocket);
+            }
+
             // Ladder presenters
             final List<TypedChannel<WebSocketControlMessage>> websockets = newArrayList();
             {
@@ -395,7 +405,8 @@ public class Main {
                             channels.displaySymbol,
                             channels.reddalCommandSymbolAvailable,
                             channels.recenterLaddersForUser,
-                            channels.futuresContractSets);
+                            channels.futuresContractSets,
+                            channels.singleOrderCommand);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 }
@@ -867,6 +878,7 @@ public class Main {
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "reference-data.json", channels.errorPublisher), channels.refData);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "heartbeats.json", channels.errorPublisher), channels.heartbeatRoundTrips);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "contracts.json", channels.errorPublisher), channels.futuresContractSets);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "single-order.json", channels.errorPublisher), channels.singleOrderCommand);
             for (String name : websocketsForLogging.keySet()) {
                 fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket" + name + ".json", channels.errorPublisher), websocketsForLogging.get(name));
             }

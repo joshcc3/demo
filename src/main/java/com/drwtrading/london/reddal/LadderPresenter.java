@@ -267,6 +267,16 @@ public class LadderPresenter {
         }
     }
 
+    @Subscribe
+    public void onSingleOrderCommand(OrdersPresenter.SingleOrderCommand singleOrderCommand) {
+        for (LadderView view : viewsByUser.get(singleOrderCommand.getUsername())) {
+            if(view.symbol.equals(singleOrderCommand.getSymbol())) {
+                view.onSingleOrderCommand(singleOrderCommand);
+                return;
+            }
+        }
+    }
+
     public Runnable flushBatchedData() {
         return new Runnable() {
             @Override
@@ -310,5 +320,7 @@ public class LadderPresenter {
         public void selecta(boolean enabled);
 
         public void goToSymbol(String symbol);
+
+        public void popUp(String url, String name, int width, int height);
     }
 }

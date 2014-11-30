@@ -1,0 +1,189 @@
+<html>
+<head>
+    <title>ladder</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="js/jquery-1.4.2.js"></script>
+    <script src="js/websocket.js"></script>
+    <script src="js/websocket-ui.js"></script>
+    <script src="js/sound-files.js"></script>
+    <script src="js/sound-player.js"></script>
+    <script src="js/sounds.js"></script>
+    <script src="cell-functions.js"></script>
+    <style>
+        body {
+            margin: 0px;
+            padding: 0px;
+            border: solid 2px black;
+        }
+
+        #orders {
+            border-collapse: collapse;
+            width: 250px;
+            font-size: 12px;
+            margin: 0px;
+            padding:  0px;;
+        }
+
+        #orders th {
+            color:  black;
+            font-size:  11px;
+            font-weight: normal;
+        }
+
+        #orders td {
+            border-bottom: dotted gray 1px;
+            white-space: nowrap;
+        }
+
+        #orders td.qtyBox {
+            background-color: #ffffff;
+            color: #1f1f1f;
+            font-size: 12px;
+            height: 16px;
+            border: solid 1px gray;
+            text-align: center;
+        }
+
+        span.remainingQty {
+            width:  100%;
+        }
+
+        #orders td.qtyBox.edited {
+            background-color: #ffd77d;
+            border: dotted 1px #ccc400;
+        }
+
+        tr.order.BID {
+            background-color: #babdff;
+            color: #000022;
+        }
+
+        tr.order.BID:hover {
+            background-color: #928dc4 !important;
+        }
+
+        tr.order.OFFER {
+            background-color: #ff9999;
+            color: #220000;
+        }
+
+        tr.order.OFFER:hover {
+            background-color: #b8839e !important;
+        }
+
+        tr button.go {
+            width: 14px;
+            height: 14px;
+            padding: 0px;
+        }
+
+        tr button.cancel {
+            width: 14px;
+            height: 14px;
+            padding: 0px;
+            color: black;
+        }
+
+    </style>
+    <script>
+
+        $(function () {
+            ws = connect();
+            ws.logToConsole = true;
+            ws.onmessage = function (x) {
+                eval(x)
+            };
+            var hash = document.location.hash.substr(1);
+            var symbol = hash.split(",")[0];
+            var price = hash.split(",")[1];
+            ws.send(command('subscribe', [symbol, price]));
+            setInterval(highlightChangedQty, 250);
+        });
+
+        function getRow(chainId) {
+            var orders = $("#orders");
+            var row;
+            if (orders.find('#' + chainId).size() > 0) {
+                row = orders.find('#' + chainId);
+            } else {
+                row = orders.find('.template').clone().removeClass('template');
+                orders.append(row);
+            }
+            return row;
+        }
+
+        function getKey(fromServer, order) {
+            return fromServer + "_" + order.chainId;
+        }
+        function orders(os) {
+
+            if(os.length == 0) {
+                window.close();
+            }
+
+            $("#orders").find("tr:not(.template,.header)").toggleClass("hidden", true);
+            $(os).each(function (i, x) {
+                var order = x.value;
+                var key = getKey(x.fromServer, order);
+                var row = getRow(key);
+                row.addClass('order');
+                row.toggleClass('BID', order.side == 'BID');
+                row.toggleClass('OFFER', order.side == 'OFFER');
+                row.find('.remainingQty').text(order.totalQuantity - order.filledQuantity);
+                row.find('.qtyBox').data('qty', order.totalQuantity - order.filledQuantity);
+                row.find('.type').text(order.workingOrderType);
+                row.find('.tag').text(order.tag);
+                row.attr('id', key);
+                row.toggleClass('hidden', order.workingOrderState == 'DEAD');
+                row.find('.go').unbind().bind('click', function(){
+                    fixQuantity(row);
+                    ws.send(command('modifyQuantity', [order.symbol, key,  parseInt(row.find('.remainingQty').text())]));
+                });
+                row.find('.cancel').unbind().bind('click', function() {
+                    ws.send(command('cancelOrder', [order.symbol, key]));
+                });
+            })
+        }
+
+        function fixQuantity(x) {
+            var remainingQty = x.find('.remainingQty').text();
+            var fixed = remainingQty.replace(/[^0-9]/g, "");
+            x.find('.remainingQty').text(fixed);
+        }
+
+        function highlightChangedQty() {
+            var boxes = $('#orders').find("tr:not(.template,.header)").find(".qtyBox");
+            boxes.each(function (i, x) {
+                x = $(x);
+                x.toggleClass('edited', x.data('qty') != x.find('.remainingQty').text());
+            });
+        }
+
+    </script>
+</head>
+<body>
+<div class="content">
+    <table id="orders">
+        <tr class="header">
+            <th>qty</th>
+            <th></th>
+            <th>type</th>
+            <th>tag</th>
+            <th></th>
+        </tr>
+        <tr class="template">
+            <td class="qtyBox"><span contenteditable="true" class="remainingQty"></span></td>
+            <td>
+                <button class="go"></button>
+            </td>
+            <td class="type"></td>
+            <td class="tag"></td>
+            <td>
+                <button class="cancel">X</button>
+            </td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>

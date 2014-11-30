@@ -2,29 +2,14 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.reddal.Command;
-import com.drwtrading.london.photons.reddal.Direction;
-import com.drwtrading.london.photons.reddal.ReddalCommand;
-import com.drwtrading.london.photons.reddal.ReddalMessage;
-import com.drwtrading.london.photons.reddal.UpdateOffset;
+import com.drwtrading.london.photons.reddal.*;
 import com.drwtrading.london.prices.NormalizedPrice;
-import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteModifyOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
-import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderType;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
+import com.drwtrading.london.protocols.photon.execution.*;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
 import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.MarketDataForSymbol;
-import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.data.*;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.london.util.Struct;
@@ -40,14 +25,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
@@ -96,7 +74,6 @@ public class LadderView implements UiPipe.UiEventHandler {
         public static final String LAST_BUY = "last_buy";
         public static final String LAST_SELL = "last_sell";
         public static final String BLANK = " ";
-
 
 
         public static final String BUTTON_CLR = "btn_clear";
@@ -507,7 +484,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                     offerQty(price, m.book.getLevel(price, Side.OFFER).getQuantity());
                 }
 
-                if(m.impliedTopOfBook != null) {
+                if (m.impliedTopOfBook != null) {
                     ui.cls(bidKey(price), "impliedBid", m.impliedTopOfBook.getBestBid().isExists() && m.impliedTopOfBook.getBestBid().getPrice() == price);
                     ui.cls(offerKey(price), "impliedOffer", m.impliedTopOfBook.getBestOffer().isExists() && m.impliedTopOfBook.getBestOffer().getPrice() == price);
                 }
@@ -589,7 +566,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private void setupButtons() {
-        if(marketDataForSymbol.refData.getInstrumentStructure() instanceof CashOutrightStructure) {
+        if (marketDataForSymbol.refData.getInstrumentStructure() instanceof CashOutrightStructure) {
             buttonQty.put("btn_qty_1", 1);
             buttonQty.put("btn_qty_2", 10);
             buttonQty.put("btn_qty_3", 100);
@@ -790,7 +767,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public void onClick(String label, Map<String, String> data) {
         String button = data.get("button");
         LadderPrefsForSymbolUser l = ladderPrefsForSymbolUser;
-        boolean autoHedge = "true".equals(getPref(l, Html.AUTO_HEDGE_LEFT));
+        boolean autoHedge = shouldAutoHedge();
         if ("left".equals(button)) {
             if (buttonQty.containsKey(label)) {
                 clickTradingBoxQty += buttonQty.get(label);
@@ -862,11 +839,26 @@ public class LadderView implements UiPipe.UiEventHandler {
         } else if ("middle".equals(button)) {
             if (label.startsWith(Html.PRICE)) {
                 recenterLaddersForUser.publish(new LadderPresenter.RecenterLaddersForUser(client.getUserName()));
+            } else if (label.startsWith(Html.ORDER)) {
+                String price = data.get("price");
+                String url = String.format("/orders#%s,%s",symbol, price);
+                Collection<Main.WorkingOrderUpdateFromServer> orders = workingOrdersForSymbol.ordersByPrice.get(Long.valueOf(price));
+                if(orders.size() > 0) {
+                    view.popUp(url, "orders", 270, 20 * (1 + orders.size()));
+                }
             }
         }
         updateEverything();
         drawClickTrading();
         flush();
+    }
+
+    private boolean shouldAutoHedge() {
+        if (ladderPrefsForSymbolUser != null) {
+            return "true".equals(getPref(ladderPrefsForSymbolUser, Html.AUTO_HEDGE_LEFT));
+        } else {
+            return false;
+        }
     }
 
     public void recenterLadderForUser(LadderPresenter.RecenterLaddersForUser recenterLaddersForUser) {
@@ -982,7 +974,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                 if (workingOrdersForSymbol != null && modifyFromPrice != price) {
                     for (Main.WorkingOrderUpdateFromServer order : workingOrdersForSymbol.ordersByPrice.get(modifyFromPrice)) {
                         WorkingOrderUpdate workingOrderUpdate = order.value;
-                        modifyOrder(autoHedge, price, order, workingOrderUpdate);
+                        modifyOrder(autoHedge, price, order, workingOrderUpdate, workingOrderUpdate.getTotalQuantity());
                     }
                 }
                 modifyFromPrice = null;
@@ -1000,10 +992,9 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
-    private RemoteOrder getRemoteOrderFromWorkingOrder(final boolean autoHedge, final long price, final WorkingOrderUpdate workingOrderUpdate) {
+    public static RemoteOrder getRemoteOrderFromWorkingOrder(final boolean autoHedge, final long price, final WorkingOrderUpdate workingOrderUpdate, int totalQuantity) {
         RemoteOrderType remoteOrderType = getRemoteOrderType(workingOrderUpdate.getWorkingOrderType().toString());
-        System.out.println(workingOrderUpdate + "->" + remoteOrderType);
-        return new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), price, workingOrderUpdate.getTotalQuantity(), remoteOrderType, autoHedge, workingOrderUpdate.getTag());
+        return new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), price, totalQuantity, remoteOrderType, autoHedge, workingOrderUpdate.getTag());
     }
 
     private void submitOrderClick(String label, Map<String, String> data, String orderType, boolean autoHedge) {
@@ -1039,7 +1030,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private void submitOrder(String orderType, boolean autoHedge, long price, com.drwtrading.london.protocols.photon.execution.Side side,
-            final String tag) {
+                             final String tag) {
 
         if (ladderOptions.traders.contains(client.getUserName())) {
 
@@ -1051,7 +1042,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
 
-            if(serverName == null) {
+            if (serverName == null) {
                 statsPublisher.publish(new AdvisoryStat("Click-Trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", no valid server found."));
                 return;
             }
@@ -1074,11 +1065,11 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
-    private void modifyOrder(final boolean autoHedge, final long price, final Main.WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate) {
+    private void modifyOrder(final boolean autoHedge, final long price, final Main.WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, int totalQuantity) {
         RemoteModifyOrder remoteModifyOrder = new RemoteModifyOrder(
                 order.fromServer, client.getUserName(), workingOrderUpdate.getChainId(),
-                getRemoteOrderFromWorkingOrder(autoHedge, workingOrderUpdate.getPrice(), workingOrderUpdate),
-                getRemoteOrderFromWorkingOrder(autoHedge, price, workingOrderUpdate)
+                getRemoteOrderFromWorkingOrder(autoHedge, workingOrderUpdate.getPrice(), workingOrderUpdate, workingOrderUpdate.getTotalQuantity()),
+                getRemoteOrderFromWorkingOrder(autoHedge, price, workingOrderUpdate, totalQuantity)
         );
         if (ladderOptions.traders.contains(client.getUserName())) {
 
@@ -1112,7 +1103,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
-    private RemoteOrderType getRemoteOrderType(String orderType) {
+    public static RemoteOrderType getRemoteOrderType(String orderType) {
         for (RemoteOrderType remoteOrderType : RemoteOrderType.values()) {
             if (remoteOrderType.toString().toUpperCase().equals(orderType.toUpperCase())) {
                 return remoteOrderType;
@@ -1121,9 +1112,25 @@ public class LadderView implements UiPipe.UiEventHandler {
         return RemoteOrderType.MANUAL;
     }
 
-    private String getOrderType(final WorkingOrderType workingOrderType) {
+    public static String getOrderType(final WorkingOrderType workingOrderType) {
         return workingOrderType.toString().replace("MARKET", "MKT_CLOSE");
     }
+
+
+    public void onSingleOrderCommand(OrdersPresenter.SingleOrderCommand singleOrderCommand) {
+        Main.WorkingOrderUpdateFromServer orderUpdateFromServer = workingOrdersForSymbol.ordersByKey.get(singleOrderCommand.getOrderKey());
+        if (orderUpdateFromServer == null) {
+            statsPublisher.publish(new AdvisoryStat("Reddal", AdvisoryStat.Level.WARNING, "Could not find order for command: " + singleOrderCommand.toString()));
+            return;
+        }
+        if (singleOrderCommand instanceof OrdersPresenter.CancelOrder) {
+            cancelOrder(orderUpdateFromServer);
+        } else if (singleOrderCommand instanceof OrdersPresenter.ModifyOrderQuantity) {
+            int totalQuantity = orderUpdateFromServer.value.getFilledQuantity() + ((OrdersPresenter.ModifyOrderQuantity) singleOrderCommand).newRemainingQuantity;
+            modifyOrder(shouldAutoHedge(), orderUpdateFromServer.value.getPrice(), orderUpdateFromServer, orderUpdateFromServer.value, totalQuantity);
+        }
+    }
+
 
     // Heartbeats
 
