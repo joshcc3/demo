@@ -4,8 +4,10 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
@@ -13,8 +15,9 @@ import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 public class WorkingOrdersForSymbol {
 
     public final String symbol;
-    public final Map<String, Main.WorkingOrderUpdateFromServer> ordersByKey = newFastMap();
-    public final Multimap<Long, Main.WorkingOrderUpdateFromServer> ordersByPrice = HashMultimap.create();
+
+    public final Map<String, Main.WorkingOrderUpdateFromServer> ordersByKey = new LinkedHashMap<>();
+    public final Multimap<Long, Main.WorkingOrderUpdateFromServer> ordersByPrice = LinkedHashMultimap.create();
 
     public WorkingOrdersForSymbol(String symbol) {
         this.symbol = symbol;
