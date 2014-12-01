@@ -238,7 +238,11 @@ public class LadderView implements UiPipe.UiEventHandler {
             // Desk position
             if (d.deskPosition != null && d.deskPosition.getPosition() != null && !d.deskPosition.getPosition().equals("")) {
                 ui.txt(Html.DESK_POSITION, d.deskPosition.getPosition());
-                decorateUpDown(Html.DESK_POSITION, new BigDecimal(d.deskPosition.getPosition()).longValue());
+                try {
+                    decorateUpDown(Html.DESK_POSITION, new BigDecimal(d.deskPosition.getPosition()).longValue());
+                } catch (NumberFormatException exception) {
+                    exception.printStackTrace();
+                }
             }
 
             // Day position
