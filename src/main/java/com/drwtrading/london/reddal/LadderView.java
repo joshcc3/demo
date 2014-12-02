@@ -616,6 +616,14 @@ public class LadderView implements UiPipe.UiEventHandler {
             if (m.settle != null) {
                 center = m.settle.getSettlementPrice();
             }
+            if (workingOrdersForSymbol != null && !workingOrdersForSymbol.ordersByKey.isEmpty()) {
+                long n = workingOrdersForSymbol.ordersByKey.size();
+                long avgPrice = 0L;
+                for (Main.WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
+                    avgPrice += (orderUpdateFromServer.value.getPrice() / n);
+                }
+                center = avgPrice;
+            }
             if (m.lastTrade != null) {
                 center = m.lastTrade.getPrice();
             }
@@ -845,9 +853,9 @@ public class LadderView implements UiPipe.UiEventHandler {
                 recenterLaddersForUser.publish(new LadderPresenter.RecenterLaddersForUser(client.getUserName()));
             } else if (label.startsWith(Html.ORDER)) {
                 String price = data.get("price");
-                String url = String.format("/orders#%s,%s",symbol, price);
+                String url = String.format("/orders#%s,%s", symbol, price);
                 Collection<Main.WorkingOrderUpdateFromServer> orders = workingOrdersForSymbol.ordersByPrice.get(Long.valueOf(price));
-                if(orders.size() > 0) {
+                if (orders.size() > 0) {
                     view.popUp(url, "orders", 270, 20 * (1 + orders.size()));
                 }
             }
