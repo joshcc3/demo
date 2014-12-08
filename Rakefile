@@ -21,7 +21,7 @@ load "rake/pkg.rake"
 
 task :default => :dist
 
-task :dist => [:test, TARBALL] do
+task :dist => [:clobber, :test, TARBALL] do
   puts '===================================================================='
   puts "Distributable archive  : #{TARBALL}"
   puts "To run server          : rake run"
