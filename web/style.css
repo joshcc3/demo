@@ -145,6 +145,12 @@ div {
     background-color: gray !important;
 }
 
+
+.order.working_order_type_ticktaker {
+    border: dotted 3px #ff0006 !important;
+    background-color: gray !important;
+}
+
 .order.working_order_type_mkt_close {
     border-right: solid 1px #ff04ef !important;
     background-color: #3c3c3c !important;
@@ -184,6 +190,12 @@ div {
 .TAKER, .TAKER:hover {
     background-color: #00bd00;
 }
+
+
+.TICKTAKER, .TICKTAKER:hover {
+    background-color: #bd000a;
+}
+
 
 .MKT_CLOSE, .MKT_CLOSE:hover {
     background-color: #ff04ef;
