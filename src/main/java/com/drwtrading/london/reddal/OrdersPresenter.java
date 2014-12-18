@@ -36,14 +36,15 @@ public class OrdersPresenter {
         this.singleOrderCommandPublisher = singleOrderCommandPublisher;
     }
 
-
-
-
     @Subscribe
-    public void on(Main.WorkingOrderUpdateFromServer update) {
-        WorkingOrdersForSymbol orders = this.orders.get(update.value.getSymbol());
-        orders.onWorkingOrderUpdate(update);
-        update();
+    public void on(final Main.WorkingOrderUpdateFromServer update) {
+
+        final String symbol = update.value.getSymbol();
+        WorkingOrdersForSymbol orders = this.orders.get(symbol);
+        final Main.WorkingOrderUpdateFromServer prevUpdate = orders.onWorkingOrderUpdate(update);
+        final long newPrice = update.value.getPrice();
+        final long prevPrice = null == prevUpdate ? update.value.getPrice() : prevUpdate.value.getPrice();
+        update(symbol, newPrice, prevPrice);
     }
 
     private SymbolPrice getSymbolPrice(WorkingOrderUpdate workingOrderUpdate) {
@@ -60,7 +61,7 @@ public class OrdersPresenter {
         View view = views.unregister(disconnected);
         for (Iterator<Map.Entry<SymbolPrice, View>> it = subscribed.entries().iterator(); it.hasNext(); ) {
             Map.Entry<SymbolPrice, View> next = it.next();
-            if (next.equals(view)) {
+            if (next.getValue().equals(view)) {
                 it.remove();
             }
         }
@@ -72,18 +73,17 @@ public class OrdersPresenter {
     }
 
     @FromWebSocketView
-    public void subscribe(String symbol, String price, WebSocketInboundData data) {
+    public void subscribe(String symbol, String priceStr, WebSocketInboundData data) {
         View view = views.get(data.getOutboundChannel());
-        SymbolPrice symbolPrice = new SymbolPrice(symbol, Long.valueOf(price));
+        final long price = Long.valueOf(priceStr);
+        SymbolPrice symbolPrice = new SymbolPrice(symbol, price);
         subscribed.put(symbolPrice, view);
-        update();
+        update(symbol, price, price);
     }
 
     @FromWebSocketView
     public void modifyQuantity(String symbol, String key, int newRemainingQty, WebSocketClient client) {
-        singleOrderCommandPublisher.publish(new ModifyOrderQuantity(
-                symbol, key, client.getUserName(), newRemainingQty
-        ));
+        singleOrderCommandPublisher.publish(new ModifyOrderQuantity(symbol, key, client.getUserName(), newRemainingQty));
     }
 
     @FromWebSocketView
@@ -91,18 +91,30 @@ public class OrdersPresenter {
         singleOrderCommandPublisher.publish(new CancelOrder(symbol, key, client.getUserName()));
     }
 
-    private void update() {
-        for (Map.Entry<SymbolPrice, View> entry : subscribed.entries()) {
-            SymbolPrice symbolPrice = entry.getKey();
-            entry.getValue().orders(this.orders.get(symbolPrice.symbol).ordersByPrice.get(symbolPrice.price));
+    private void update(final String symbol, final long newPrice, final long prevPrice) {
+
+        final WorkingOrdersForSymbol workingOrders = this.orders.get(symbol);
+
+        for (final Map.Entry<SymbolPrice, View> entry : subscribed.entries()) {
+
+            final SymbolPrice symbolPrice = entry.getKey();
+            final long price = symbolPrice.price;
+
+            if (symbol.equals(symbolPrice.symbol) && (newPrice == price || prevPrice == price)) {
+
+                final Collection<Main.WorkingOrderUpdateFromServer> orders = workingOrders.ordersByPrice.get(price);
+                entry.getValue().orders(orders);
+            }
         }
     }
 
     public static interface View {
+
         void orders(Collection<Main.WorkingOrderUpdateFromServer> workingOrderUpdates);
     }
 
     public static class SymbolPrice extends Struct {
+
         public final String symbol;
         public final long price;
 
@@ -113,12 +125,16 @@ public class OrdersPresenter {
     }
 
     public static interface SingleOrderCommand {
+
         public String getSymbol();
+
         public String getOrderKey();
+
         public String getUsername();
     }
 
     public static class ModifyOrderQuantity extends Struct implements SingleOrderCommand {
+
         public final String symbol;
 
         public final String orderKey;
@@ -132,21 +148,24 @@ public class OrdersPresenter {
             this.newRemainingQuantity = newRemainingQuantity;
         }
 
+        @Override
         public String getSymbol() {
             return symbol;
         }
 
+        @Override
         public String getOrderKey() {
             return orderKey;
         }
 
+        @Override
         public String getUsername() {
             return username;
         }
     }
 
-
     public static class CancelOrder extends Struct implements SingleOrderCommand {
+
         public final String symbol;
         public final String orderKey;
         public final String username;
@@ -157,14 +176,17 @@ public class OrdersPresenter {
             this.username = username;
         }
 
+        @Override
         public String getSymbol() {
             return symbol;
         }
 
+        @Override
         public String getOrderKey() {
             return orderKey;
         }
 
+        @Override
         public String getUsername() {
             return username;
         }

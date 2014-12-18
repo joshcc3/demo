@@ -3,14 +3,11 @@ package com.drwtrading.london.reddal.data;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 
 public class WorkingOrdersForSymbol {
 
@@ -23,7 +20,7 @@ public class WorkingOrdersForSymbol {
         this.symbol = symbol;
     }
 
-    public void onWorkingOrderUpdate(Main.WorkingOrderUpdateFromServer workingOrderUpdateFromServer) {
+    public Main.WorkingOrderUpdateFromServer onWorkingOrderUpdate(Main.WorkingOrderUpdateFromServer workingOrderUpdateFromServer) {
         WorkingOrderUpdate workingOrderUpdate = workingOrderUpdateFromServer.value;
         if (workingOrderUpdate.getSymbol().equals(symbol)) {
             Main.WorkingOrderUpdateFromServer previous;
@@ -39,7 +36,9 @@ public class WorkingOrdersForSymbol {
             if (previous != null && !workingOrderUpdateFromServer.equals(previous) ) {
                 ordersByPrice.remove(previous.value.getPrice(), previous);
             }
+            return previous;
+        } else {
+            return null;
         }
     }
-
 }
