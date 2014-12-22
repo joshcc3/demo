@@ -208,13 +208,13 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(FuturesContractSetGenerator.FuturesContractSet futuresContractSet) {
-        dataBySymbol.get(futuresContractSet.frontMonth).onFuturesContractSet(futuresContractSet);
-        if (futuresContractSet.backMonth != null) {
-            dataBySymbol.get(futuresContractSet.backMonth).onFuturesContractSet(futuresContractSet);
+    public void on(SpreadContractSet spreadContractSet) {
+        dataBySymbol.get(spreadContractSet.front).onFuturesContractSet(spreadContractSet);
+        if (spreadContractSet.back != null) {
+            dataBySymbol.get(spreadContractSet.back).onFuturesContractSet(spreadContractSet);
         }
-        if (futuresContractSet.spread != null) {
-            dataBySymbol.get(futuresContractSet.spread).onFuturesContractSet(futuresContractSet);
+        if (spreadContractSet.spread != null) {
+            dataBySymbol.get(spreadContractSet.spread).onFuturesContractSet(spreadContractSet);
         }
     }
 

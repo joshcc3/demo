@@ -13,7 +13,6 @@ import org.jetlang.channels.Publisher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -34,11 +33,11 @@ public class FuturesContractSetGenerator {
     });
 
 
-    Map<String, FuturesContractSet> setByFrontMonth = new HashMap<>();
+    Map<String, SpreadContractSet> setByFrontMonth = new HashMap<>();
 
-    final Publisher<FuturesContractSet> publisher;
+    final Publisher<SpreadContractSet> publisher;
 
-    public FuturesContractSetGenerator(final Publisher<FuturesContractSet> publisher) {
+    public FuturesContractSetGenerator(final Publisher<SpreadContractSet> publisher) {
         this.publisher = publisher;
     }
 
@@ -61,18 +60,18 @@ public class FuturesContractSetGenerator {
     }
 
     private void publishContractSet(final String market) {
-        FuturesContractSet contractSet = updateMarket(market);
-        if (contractSet != null && !contractSet.equals(setByFrontMonth.put(contractSet.frontMonth, contractSet))) {
-            publisher.publish(contractSet);
+        SpreadContractSet spreadContractSet = updateMarket(market);
+        if (spreadContractSet != null && !spreadContractSet.equals(setByFrontMonth.put(spreadContractSet.front, spreadContractSet))) {
+            publisher.publish(spreadContractSet);
         }
     }
 
-    private FuturesContractSet updateMarket(final String market) {
+    private SpreadContractSet updateMarket(final String market) {
         TreeMap<Long, InstrumentDefinitionEvent> outrights = marketToOutrightsByExpiry.get(market);
         if (outrights.size() == 0) {
             return null;
         } else if (outrights.size() == 1) {
-            return new FuturesContractSet(outrights.firstEntry().getValue().getSymbol(), null, null);
+            return new SpreadContractSet(outrights.firstEntry().getValue().getSymbol(), null, null);
         } else if (outrights.size() > 1) {
             ArrayList<Map.Entry<Long, InstrumentDefinitionEvent>> values = new ArrayList<>(outrights.entrySet());
             Map.Entry<Long, InstrumentDefinitionEvent> front = values.get(0);
@@ -80,54 +79,12 @@ public class FuturesContractSetGenerator {
             HashMap<SpreadExpiries, InstrumentDefinitionEvent> spreads = marketToSpreads.get(market);
             InstrumentDefinitionEvent spread = spreads.get(new SpreadExpiries(front.getKey(), back.getKey()));
             if (spread != null) {
-                return new FuturesContractSet(front.getValue().getSymbol(), back.getValue().getSymbol(), spread.getSymbol());
+                return new SpreadContractSet(front.getValue().getSymbol(), back.getValue().getSymbol(), spread.getSymbol());
             } else {
-                return new FuturesContractSet(front.getValue().getSymbol(), back.getValue().getSymbol(), null);
+                return new SpreadContractSet(front.getValue().getSymbol(), back.getValue().getSymbol(), null);
             }
         }
         return null;
-    }
-
-
-    public static class FuturesContractSet extends Struct {
-        public final String frontMonth;
-        public final String backMonth;
-        public final String spread;
-        private final List<String> contractList = new ArrayList<>();
-
-        public FuturesContractSet(final String frontMonth, final String backMonth, final String spread) {
-            this.frontMonth = frontMonth;
-            this.backMonth = backMonth;
-            this.spread = spread;
-            contractList.add(frontMonth);
-            if (backMonth != null) {
-                contractList.add(backMonth);
-            }
-            if (spread != null) {
-                contractList.add(spread);
-            }
-        }
-
-        public String next(String from) {
-            return offset(from, 1);
-        }
-
-        public String prev(String from) {
-            return offset(from, -1);
-        }
-
-        private String offset(final String from, final int offset) {
-            int index = contractList.indexOf(from);
-            if (index < 0) {
-                return from;
-            } else {
-                return contractList.get(remainder(index + offset, contractList.size()));
-            }
-        }
-
-        private int remainder(final int a, final int n) {
-            return ((a % n) + n) % n;
-        }
     }
 
 

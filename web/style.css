@@ -22,7 +22,7 @@ body {
     background-color: #bad4b1;
 }
 
-#symbol.backMonth {
+#symbol.back {
     background-color: #d4d09b;
 }
 
@@ -62,13 +62,10 @@ div {
     background-color: #0000c6;
 }
 
-
-
 #sell_qty {
     right: 0px;
     background-color: #ac0000;
 }
-
 
 #symbol {
     position: relative;
@@ -145,7 +142,6 @@ div {
     background-color: gray !important;
 }
 
-
 .order.working_order_type_ticktaker {
     border: dotted 3px #ff0006 !important;
     background-color: gray !important;
@@ -191,11 +187,9 @@ div {
     background-color: #00bd00;
 }
 
-
 .TICKTAKER, .TICKTAKER:hover {
     background-color: #bd000a;
 }
-
 
 .MKT_CLOSE, .MKT_CLOSE:hover {
     background-color: #ff04ef;
@@ -503,17 +497,17 @@ div {
 
 #working_order_tags {
 
-	-webkit-appearance: none;
-	width: 40px;
-	height: 16px;
-	background: #5970B2;
-	color: #FFF;
+    -webkit-appearance: none;
+    width: 40px;
+    height: 16px;
+    background: #5970B2;
+    color: #FFF;
 }
 
 #inp_qty {
-	width: 40px;
+    width: 40px;
     top: 16px;
-	height: 16px;
+    height: 16px;
 }
 
 #clicktrading .quantity_button {
@@ -760,7 +754,6 @@ tr.result.highlight {
     width: 100%;
 
 }
-
 
 .hidden {
     display: none !important;

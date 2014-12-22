@@ -464,11 +464,10 @@ public class LadderView implements UiPipe.UiEventHandler {
             ui.txt(Html.SYMBOL, getSymbol());
             ui.title(getSymbol());
 
-            if (dataForSymbol != null && dataForSymbol.futuresContractSet != null) {
-                FuturesContractSetGenerator.FuturesContractSet contracts = dataForSymbol.futuresContractSet;
+            if (dataForSymbol != null && dataForSymbol.spreadContractSet != null) {
+                SpreadContractSet contracts = dataForSymbol.spreadContractSet;
                 ui.cls(Html.SYMBOL, "spread", symbol.equals(contracts.spread));
-                ui.cls(Html.SYMBOL, "backMonth", symbol.equals(contracts.backMonth));
-
+                ui.cls(Html.SYMBOL, "back", symbol.equals(contracts.back));
             }
 
             for (Long price : levelByPrice.keySet()) {
@@ -822,8 +821,8 @@ public class LadderView implements UiPipe.UiEventHandler {
                 PricingMode nextMode = PricingMode.values()[(pricingMode.ordinal() + 1) % PricingMode.values().length];
                 pricingMode = nextMode;
             } else if (label.startsWith(Html.SYMBOL)) {
-                if (dataForSymbol != null && dataForSymbol.futuresContractSet != null) {
-                    FuturesContractSetGenerator.FuturesContractSet contracts = dataForSymbol.futuresContractSet;
+                if (dataForSymbol != null && dataForSymbol.spreadContractSet != null) {
+                    SpreadContractSet contracts = dataForSymbol.spreadContractSet;
                     String nextContract = contracts.next(symbol);
                     if (nextContract != null && !symbol.equals(nextContract)) {
                         view.goToSymbol(nextContract);
@@ -839,8 +838,8 @@ public class LadderView implements UiPipe.UiEventHandler {
             } else if (label.startsWith(Html.ORDER)) {
                 rightClickModify(data, autoHedge);
             } else if (label.startsWith(Html.SYMBOL)) {
-                if (dataForSymbol != null && dataForSymbol.futuresContractSet != null) {
-                    FuturesContractSetGenerator.FuturesContractSet contracts = dataForSymbol.futuresContractSet;
+                if (dataForSymbol != null && dataForSymbol.spreadContractSet != null) {
+                    SpreadContractSet contracts = dataForSymbol.spreadContractSet;
                     String prevContract = contracts.prev(symbol);
                     if (prevContract != null && !symbol.equals(prevContract)) {
                         view.goToSymbol(prevContract);

@@ -135,7 +135,7 @@ public class Main {
         public final TypedChannel<SubscribeToMarketData> subscribeToMarketData;
         public final TypedChannel<UnsubscribeFromMarketData> unsubscribeFromMarketData;
         public final TypedChannel<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
-        public final TypedChannel<FuturesContractSetGenerator.FuturesContractSet> futuresContractSets;
+        public final TypedChannel<SpreadContractSet> contractSets;
         public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
 
         public ReddalChannels(ChannelFactory channelFactory) {
@@ -172,7 +172,7 @@ public class Main {
             subscribeToMarketData = create(SubscribeToMarketData.class);
             unsubscribeFromMarketData = create(UnsubscribeFromMarketData.class);
             recenterLaddersForUser = create(LadderPresenter.RecenterLaddersForUser.class);
-            futuresContractSets = create(FuturesContractSetGenerator.FuturesContractSet.class);
+            contractSets = create(SpreadContractSet.class);
             singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
         }
 
@@ -405,7 +405,7 @@ public class Main {
                             channels.displaySymbol,
                             channels.reddalCommandSymbolAvailable,
                             channels.recenterLaddersForUser,
-                            channels.futuresContractSets,
+                            channels.contractSets,
                             channels.singleOrderCommand);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
@@ -503,10 +503,13 @@ public class Main {
             });
         }
 
-        // Futures contracts
+        // Contract sets
         {
-            FuturesContractSetGenerator futuresContractSetGenerator = new FuturesContractSetGenerator(channels.futuresContractSets);
+            FuturesContractSetGenerator futuresContractSetGenerator = new FuturesContractSetGenerator(channels.contractSets);
             fibers.contracts.subscribe(futuresContractSetGenerator, channels.refData);
+
+            SyntheticSpreadContractSetGenerator generator = new SyntheticSpreadContractSetGenerator(channels.contractSets);
+            fibers.contracts.subscribe(generator, channels.refData);
         }
 
         // Market data
@@ -877,7 +880,7 @@ public class Main {
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", channels.errorPublisher), channels.stats);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "reference-data.json", channels.errorPublisher), channels.refData);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "heartbeats.json", channels.errorPublisher), channels.heartbeatRoundTrips);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "contracts.json", channels.errorPublisher), channels.futuresContractSets);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "contracts.json", channels.errorPublisher), channels.contractSets);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "single-order.json", channels.errorPublisher), channels.singleOrderCommand);
             for (String name : websocketsForLogging.keySet()) {
                 fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket" + name + ".json", channels.errorPublisher), websocketsForLogging.get(name));

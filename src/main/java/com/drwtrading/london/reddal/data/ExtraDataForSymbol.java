@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.data;
 
-import com.drwtrading.london.reddal.FuturesContractSetGenerator;
+import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.photons.ladder.DeskPosition;
 import com.drwtrading.photons.ladder.InfoOnLadder;
 import com.drwtrading.photons.ladder.LadderText;
@@ -25,7 +25,7 @@ public class ExtraDataForSymbol {
     public LastTrade lastSell;
     public Position dayPosition;
     public boolean symbolAvailable = false;
-    public FuturesContractSetGenerator.FuturesContractSet futuresContractSet;
+    public SpreadContractSet spreadContractSet;
 
     public ExtraDataForSymbol(String symbol) {
         this.symbol = symbol;
@@ -69,7 +69,7 @@ public class ExtraDataForSymbol {
         this.displaySymbol = displaySymbol.displaySymbol;
     }
 
-    public void onFuturesContractSet(final FuturesContractSetGenerator.FuturesContractSet futuresContractSet) {
-        this.futuresContractSet = futuresContractSet;
+    public void onFuturesContractSet(final SpreadContractSet spreadContractSet) {
+        this.spreadContractSet = spreadContractSet;
     }
 }
