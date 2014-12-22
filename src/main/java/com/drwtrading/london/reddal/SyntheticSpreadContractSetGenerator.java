@@ -15,7 +15,10 @@ public class SyntheticSpreadContractSetGenerator {
 
     @Subscribe
     public void on(InstrumentDefinitionEvent def) {
-        String symbol = def.getSymbol();
+        handleSymbol(def.getSymbol());
+    }
+
+    public void handleSymbol(String symbol) {
         if (symbol.length() > SPREAD_PREFIX.length() && symbol.startsWith(SPREAD_PREFIX)) {
             String substring = symbol.substring(SPREAD_PREFIX.length());
             String[] split = substring.split("-");
@@ -23,6 +26,7 @@ public class SyntheticSpreadContractSetGenerator {
                 String front = split[0];
                 String back = split[1];
                 SpreadContractSet contractSet = new SpreadContractSet(front, back, symbol);
+                spreadContractSetPublisher.publish(contractSet);
             }
         }
     }
