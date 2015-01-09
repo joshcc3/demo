@@ -121,7 +121,7 @@
                 window.close();
             }
 
-            $("#orders").find("tr:not(.template,.header)").toggleClass("hidden", true);
+            $("#orders").find("tr:not(.template,.header)").toggleClass("invisible", true);
             $(os).each(function (i, x) {
                 var order = x.value;
                 var key = getKey(x.fromServer, order);
@@ -134,7 +134,7 @@
                 row.find('.type').text(order.workingOrderType);
                 row.find('.tag').text(order.tag);
                 row.attr('id', key);
-                row.toggleClass('hidden', order.workingOrderState == 'DEAD');
+                row.toggleClass('invisible', order.workingOrderState == 'DEAD');
                 row.find('.go').unbind().bind('click', function(){
                     fixQuantity(row);
                     ws.send(command('modifyQuantity', [order.symbol, key,  parseInt(row.find('.remainingQty').text())]));

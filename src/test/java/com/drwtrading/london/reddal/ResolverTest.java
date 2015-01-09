@@ -52,6 +52,9 @@ public class ResolverTest {
         assertEquals("nibbler-baml", resolver.resolveToServerName("SF:FOO GY", RemoteOrderType.MKT_CLOSE));
         assertEquals("nibbler-euronext", resolver.resolveToServerName("UNA NA", RemoteOrderType.MANUAL));
         assertEquals("nibbler-euronext", resolver.resolveToServerName("FP FP", RemoteOrderType.MANUAL));
+        assertEquals("nibbler-baml", resolver.resolveToServerName("SF:SAN SQ", RemoteOrderType.MANUAL));
+
+
 
     }
 

@@ -29,6 +29,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
+import drw.london.json.Jsonable;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
@@ -72,10 +73,11 @@ public class LadderPresenter {
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<SubscribeToMarketData> subscribeToMarketData;
     private final Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData;
+    private final Publisher<Jsonable> trace;
 
     private final Fiber fiber;
 
-    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<SubscribeToMarketData> subscribeToMarketData, Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData, final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber) {
+    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<SubscribeToMarketData> subscribeToMarketData, Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData, final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, Publisher<Jsonable> trace) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
@@ -85,6 +87,7 @@ public class LadderPresenter {
         this.fiber = fiber;
         this.subscribeToMarketData = subscribeToMarketData;
         this.unsubscribeFromMarketData = unsubscribeFromMarketData;
+        this.trace = trace;
         ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(new Function<String, Map<String, LadderPrefsForSymbolUser>>() {
             @Override
             public Map<String, LadderPrefsForSymbolUser> apply(final String symbol) {
@@ -130,7 +133,7 @@ public class LadderPresenter {
     public void onConnected(WebSocketConnected connected) {
         UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         View view = new WebSocketOutputDispatcher<View>(View.class).wrap(uiPipe.evalPublisher());
-        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser);
+        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser, trace);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }

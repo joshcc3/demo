@@ -19,6 +19,7 @@ import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketClient;
 import com.google.common.base.Joiner;
+import drw.london.json.Jsonable;
 import org.jetlang.channels.Publisher;
 
 import java.math.BigDecimal;
@@ -133,6 +134,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     private final LadderOptions ladderOptions;
     private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
+    private final Publisher<Jsonable> trace;
     private final UiPipeImpl ui;
     private final Publisher<StatsMsg> statsPublisher;
     private final TradingStatusForAll tradingStatusForAll;
@@ -156,13 +158,14 @@ public class LadderView implements UiPipe.UiEventHandler {
     public PricingMode pricingMode = PricingMode.RAW;
     public long lastCenteredTime = 0;
 
-    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser) {
+    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser, Publisher<Jsonable> trace) {
         this.client = client;
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.ladderOptions = ladderOptions;
         this.commandPublisher = commandPublisher;
         this.recenterLaddersForUser = recenterLaddersForUser;
+        this.trace = trace;
         this.ui = (UiPipeImpl) ui;
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
@@ -1040,8 +1043,41 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
+
+    public static class CommandTrace extends Struct {
+        public final String command;
+        public final String user;
+        public final String symbol;
+        public final String orderType;
+        public final boolean autoHedge;
+        public final long price;
+        public final String side;
+        public final String tag;
+        public final int quantity;
+        public final int chainId;
+
+        public CommandTrace(String command, String user, String symbol, String orderType, boolean autoHedge, long price, String side, String tag, int quantity, int chainId) {
+            this.command = command;
+            this.user = user;
+            this.symbol = symbol;
+            this.orderType = orderType;
+            this.autoHedge = autoHedge;
+            this.price = price;
+            this.side = side;
+            this.tag = tag;
+            this.quantity = quantity;
+            this.chainId = chainId;
+        }
+    }
+
+
     private void submitOrder(String orderType, boolean autoHedge, long price, com.drwtrading.london.protocols.photon.execution.Side side,
                              final String tag) {
+
+
+        int sequenceNumber = orderSeqNo++;
+
+        trace.publish(new CommandTrace("submit", client.getUserName(), symbol, orderType, autoHedge, price, side.toString(), tag, clickTradingBoxQty, sequenceNumber));
 
         if (ladderOptions.traders.contains(client.getUserName())) {
 
@@ -1068,7 +1104,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             }
 
             RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(
-                    serverName, client.getUserName(), orderSeqNo++, new RemoteOrder(
+                    serverName, client.getUserName(), sequenceNumber, new RemoteOrder(
                     symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, tag));
 
             remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
@@ -1082,6 +1118,9 @@ public class LadderView implements UiPipe.UiEventHandler {
                 getRemoteOrderFromWorkingOrder(autoHedge, workingOrderUpdate.getPrice(), workingOrderUpdate, workingOrderUpdate.getTotalQuantity()),
                 getRemoteOrderFromWorkingOrder(autoHedge, price, workingOrderUpdate, totalQuantity)
         );
+
+        trace.publish(new CommandTrace("modify", client.getUserName(), symbol, order.value.getWorkingOrderType().toString(), autoHedge, price, order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
+
         if (ladderOptions.traders.contains(client.getUserName())) {
 
             TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(order.fromServer);
@@ -1105,12 +1144,13 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
-    private void cancelOrder(Main.WorkingOrderUpdateFromServer orderUpdateFromServer) {
+    private void cancelOrder(Main.WorkingOrderUpdateFromServer order) {
+        trace.publish(new CommandTrace("cancel", client.getUserName(), symbol, order.value.getWorkingOrderType().toString(), false, order.value.getPrice(), order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
         if (ladderOptions.traders.contains(client.getUserName())) {
-            WorkingOrderUpdate workingOrderUpdate = orderUpdateFromServer.value;
+            WorkingOrderUpdate workingOrderUpdate = order.value;
             String orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
-            RemoteOrder order = new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), getRemoteOrderType(orderType), false, workingOrderUpdate.getTag());
-            remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(orderUpdateFromServer.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), order)));
+            RemoteOrder remoteOrder = new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), getRemoteOrderType(orderType), false, workingOrderUpdate.getTag());
+            remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(order.fromServer, new RemoteCancelOrder(workingOrderUpdate.getServerName(), client.getUserName(), workingOrderUpdate.getChainId(), remoteOrder)));
         }
     }
 

@@ -73,6 +73,7 @@ import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
+import drw.london.json.Jsonable;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
 import org.jetlang.fibers.Fiber;
@@ -137,6 +138,7 @@ public class Main {
         public final TypedChannel<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
         public final TypedChannel<SpreadContractSet> contractSets;
         public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
+        public final TypedChannel<Jsonable> trace;
 
         public ReddalChannels(ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
@@ -174,6 +176,7 @@ public class Main {
             recenterLaddersForUser = create(LadderPresenter.RecenterLaddersForUser.class);
             contractSets = create(SpreadContractSet.class);
             singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
+            trace = create(Jsonable.class);
         }
 
         public <T> TypedChannel<T> create(Class<T> clazz) {
@@ -394,7 +397,7 @@ public class Main {
                     websockets.add(websocket);
                     final String name = "Ladder-" + (i);
                     FiberBuilder fiberBuilder = fibers.fiberGroup.create(name);
-                    LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser, fiberBuilder.getFiber());
+                    LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace);
                     fiberBuilder.subscribe(presenter,
                             websocket,
                             channels.workingOrders,
@@ -882,6 +885,7 @@ public class Main {
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "heartbeats.json", channels.errorPublisher), channels.heartbeatRoundTrips);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "contracts.json", channels.errorPublisher), channels.contractSets);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "single-order.json", channels.errorPublisher), channels.singleOrderCommand);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir, "trace.json", channels.errorPublisher), channels.trace);
             for (String name : websocketsForLogging.keySet()) {
                 fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket" + name + ".json", channels.errorPublisher), websocketsForLogging.get(name));
             }
