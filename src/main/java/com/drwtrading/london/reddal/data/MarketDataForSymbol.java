@@ -24,6 +24,7 @@ public class MarketDataForSymbol {
     public Map<Long, TotalTradedVolumeByPrice> totalTradedVolumeByPrice = new HashMap<Long, TotalTradedVolumeByPrice>();
     public TradeUpdate lastTrade;
     public AuctionIndicativePrice auctionIndicativePrice;
+    public AuctionIndicativeSurplus auctionIndicativeSurplus;
     public AuctionTradeUpdate auctionTradeUpdate;
     public ProductBookStateEvent bookState;
     public SettlementDataEvent settle;
@@ -47,6 +48,7 @@ public class MarketDataForSymbol {
         public Void visitProductReset(ProductReset msg) {
             topOfBook = null;
             auctionIndicativePrice = null;
+            auctionIndicativeSurplus = null;
             auctionTradeUpdate = null;
             bookState = null;
             book.clear();
@@ -156,6 +158,10 @@ public class MarketDataForSymbol {
         @Override
         public Void visitProductBookStateEvent(ProductBookStateEvent msg) {
             bookState = msg;
+            if(bookState .getState() !=BookState.AUCTION){
+                auctionIndicativeSurplus = null;
+                auctionIndicativePrice = null;
+            }
             return null;
         }
 
@@ -177,6 +183,7 @@ public class MarketDataForSymbol {
 
         @Override
         public Void visitAuctionIndicativeSurplus(AuctionIndicativeSurplus msg) {
+            auctionIndicativeSurplus = msg;
             return null;
         }
 

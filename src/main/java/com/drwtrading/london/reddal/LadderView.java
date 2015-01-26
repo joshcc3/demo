@@ -121,6 +121,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
         public static final String PRICING = "pricing_";
         public static final String BIG_NUMBER = "big_number";
+        public static final String BOOK_STATE = "symbol";
     }
 
     public static final int PG_UP = 33;
@@ -464,7 +465,20 @@ public class LadderView implements UiPipe.UiEventHandler {
     private void drawBook() {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (!pendingRefDataAndSettle && m != null && m.book != null) {
-            ui.txt(Html.SYMBOL, getSymbol());
+            if (m.bookState == null) {
+                ui.txt(Html.SYMBOL, getSymbol() + " - NO BOOK STATE");
+                ui.cls(Html.BOOK_STATE, "AUCTION", false);
+                ui.cls(Html.BOOK_STATE, "NO_BOOK_STATE", true);
+            } else if (m.bookState.getState().equals(BookState.AUCTION)) {
+                ui.txt(Html.SYMBOL, getSymbol() + " - AUCTION");
+                ui.cls(Html.BOOK_STATE, "AUCTION", true);
+                ui.cls(Html.BOOK_STATE, "NO_BOOK_STATE", false);
+
+            } else {
+                ui.txt(Html.SYMBOL, getSymbol());
+                ui.cls(Html.BOOK_STATE, "AUCTION", false);
+                ui.cls(Html.BOOK_STATE, "NO_BOOK_STATE", false);
+            }
             ui.title(getSymbol());
 
             if (dataForSymbol != null && dataForSymbol.spreadContractSet != null) {
@@ -478,14 +492,22 @@ public class LadderView implements UiPipe.UiEventHandler {
                     bidQty(price, m.topOfBook.getBestBid().getQuantity());
 
                 } else if (m.bookState != null && m.bookState.getState() == BookState.AUCTION && m.auctionIndicativePrice != null && m.auctionIndicativePrice.isHasIndicativePrice() && m.auctionIndicativePrice.getIndicativePrice() == price) {
-                    bidQty(price, m.auctionIndicativePrice.getQuantity());
+                    if (m.auctionIndicativeSurplus != null && m.auctionIndicativeSurplus.getSurplusSide() == Side.BID) {
+                        bidQty(price, m.auctionIndicativePrice.getQuantity() + m.auctionIndicativeSurplus.getSurplusQuantity());
+                    } else {
+                        bidQty(price, m.auctionIndicativePrice.getQuantity());
+                    }
                 } else {
                     bidQty(price, m.book.getLevel(price, Side.BID).getQuantity());
                 }
                 if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestOffer().getPrice() == price) {
                     offerQty(price, m.topOfBook.getBestOffer().getQuantity());
                 } else if (m.bookState != null && m.bookState.getState() == BookState.AUCTION && m.auctionIndicativePrice != null && m.auctionIndicativePrice.isHasIndicativePrice() && m.auctionIndicativePrice.getIndicativePrice() == price) {
-                    offerQty(price, m.auctionIndicativePrice.getQuantity());
+                    if (m.auctionIndicativeSurplus != null && m.auctionIndicativeSurplus.getSurplusSide() == Side.OFFER) {
+                        offerQty(price, m.auctionIndicativePrice.getQuantity() + m.auctionIndicativeSurplus.getSurplusQuantity());
+                    } else {
+                        offerQty(price, m.auctionIndicativePrice.getQuantity());
+                    }
                 } else {
                     offerQty(price, m.book.getLevel(price, Side.OFFER).getQuantity());
                 }

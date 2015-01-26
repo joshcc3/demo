@@ -754,3 +754,9 @@ tr.result.highlight {
     width: 100%;
 
 }
+.AUCTION{
+    background-color: AQUA;
+}
+.NO_BOOK_STATE{
+    background-color: RED;
+}
