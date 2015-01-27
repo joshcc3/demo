@@ -4,7 +4,9 @@ import com.drw.eurex.gen.transport.StreamEnv;
 import com.drw.nns.api.MulticastGroup;
 import com.drw.nns.api.NnsApi;
 import com.drw.nns.api.NnsFactory;
+import com.drw.xetra.ebs.messages.XetraMessage;
 import com.drwtrading.esquilatency.BatchedChainEventRecorder;
+import com.drwtrading.jetlang.NoOpPublisher;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
@@ -610,21 +612,29 @@ public class Main {
                     final XetraMarketDataService xetraMarketDataService = new XetraMarketDataService(
                             XetraMain.find(environment.getMarketDataInterface(mds)),
                             environment.getXetraMarkets(mds),
-                            keyedPublisher, keyedPublisher, keyedPublisher,
+                            keyedPublisher,
+                            keyedPublisher,
+                            keyedPublisher,
                             environment.getXetraReferenceDataFile(mds),
                             environment.getXetraReferenceDataStreams(mds),
-                            null, null, new Callback<XetraPacketDroppedEvent>() {
-                        @Override
-                        public void onMessage(XetraPacketDroppedEvent message) {
-                            try {
-                                System.out.println("Xetra dropped a packet: ");
-                                message.toJson(System.out);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            statsPublisher.publish(new AdvisoryStat("Reddal/Xetra", AdvisoryStat.Level.WARNING, "Dropped a packet."));
-                        }
-                    }, ERROR_CHANNEL, selectorWrapper, BatchedChainEventRecorder.nullRecorder());
+                            null,
+                            null,
+                            new Callback<XetraPacketDroppedEvent>() {
+                                @Override
+                                public void onMessage(XetraPacketDroppedEvent message) {
+                                    try {
+                                        System.out.println("Xetra dropped a packet: ");
+                                        message.toJson(System.out);
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    statsPublisher.publish(new AdvisoryStat("Reddal/Xetra", AdvisoryStat.Level.WARNING, "Dropped a packet."));
+                                }
+                            },
+                            ERROR_CHANNEL,
+                            selectorWrapper,
+                            BatchedChainEventRecorder.nullRecorder(),
+                            new NoOpPublisher<XetraMessage>());
 
                     fibers.onStart(new Runnable() {
                         @Override
