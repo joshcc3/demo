@@ -52,6 +52,7 @@ import com.drwtrading.marketdata.service.common.TraderMarket;
 import com.drwtrading.marketdata.service.eurex_na.EasyEurexNaMDS;
 import com.drwtrading.marketdata.service.eurex_na.monitors.StatsPublisherErrorMonitor;
 import com.drwtrading.marketdata.service.snapshot.publishing.MarketDataEventSnapshottingPublisher;
+import com.drwtrading.marketdata.service.util.EasyNetworkInterfaces;
 import com.drwtrading.marketdata.service.xetra.XetraMain;
 import com.drwtrading.marketdata.service.xetra.mds.XetraMarketDataService;
 import com.drwtrading.marketdata.service.xetra.mds.XetraPacketDroppedEvent;
@@ -699,7 +700,7 @@ public class Main {
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "remote-commands." + server + ".log"), fibers.logging.getFiber(), true)
                         .handler(new PhotocolsStatsPublisher<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(channels.stats, environment.getStatsName(), 10))
-                        .handler(new JetlangChannelHandler<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(new Publisher<RemoteOrderManagementEvent>() {
+                        .handler(new JetlangChannelHandler<>(new Publisher<RemoteOrderManagementEvent>() {
                             @Override
                             public void publish(RemoteOrderManagementEvent msg) {
                                 channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg));

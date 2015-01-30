@@ -47,6 +47,8 @@ public class LadderView implements UiPipe.UiEventHandler {
     public final Map<String, Integer> buttonQty = new HashMap<String, Integer>();
 
 
+
+
     public static class Html {
         public static final String EMPTY = " ";
 
@@ -896,6 +898,17 @@ public class LadderView implements UiPipe.UiEventHandler {
             return false;
         }
     }
+
+    public void recenterLadderForUser(CenterToPrice centerToPrice) {
+        if (client.getUserName().equals(centerToPrice.getUsername()) && symbol.equals(centerToPrice.getSymbol())) {
+            centerPrice = centerToPrice.getPrice();
+            resetLastCenteredTime();
+            recenterLadderAndDrawPriceLevels();
+            updateEverything();
+            flush();
+        }
+    }
+
 
     public void recenterLadderForUser(LadderPresenter.RecenterLaddersForUser recenterLaddersForUser) {
         if (client.getUserName().equals(recenterLaddersForUser.user)) {

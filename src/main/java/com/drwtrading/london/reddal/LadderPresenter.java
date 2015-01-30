@@ -2,8 +2,7 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.reddal.ReddalMessage;
-import com.drwtrading.london.photons.reddal.SymbolAvailable;
+import com.drwtrading.london.photons.reddal.*;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
@@ -253,6 +252,12 @@ public class LadderPresenter {
         ladderPrefsForUserBySymbol.get(pref.symbol).get(pref.user).on(ladderPrefLoaded);
     }
 
+   @Subscribe
+   public void on(CenterToPrice centerToPrice){
+       for (LadderView ladderView : viewBySocket.values()) {
+           ladderView.recenterLadderForUser(centerToPrice);
+       }
+   }
     @Subscribe
     public void on(SymbolAvailable symbolAvailable) {
         dataBySymbol.get(symbolAvailable.getSymbol()).setSymbolAvailable();
