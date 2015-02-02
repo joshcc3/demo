@@ -50,17 +50,9 @@ config default
   # MD
   include mockito/1.8.3
   include io.netty-netty/3.2.7.Final
-  include drw.frontoffice.book/1.0.0.4
-  include drw.london.market-data-service/406-java7
-  include drw.london.market-data-service/406-java7:eurex_na
-  include drw.london.market-data-service/406-java7:superfeed
-  include drw.london.market-data-service/406-java7:liffe_xdp
-  include drw.london.market-data-service/406-java7:xetra
-  include drw.london.market-data-service/406-java7:logging
-
-  include com.drwtrading.london.protocols.photon.marketdata/42
-  include com.drwtrading.london.prices/18
   include drw.london.esquilatency/24
+
+  include drw.london.eeif-md/7
 
   include nns/2.0.0.69
 

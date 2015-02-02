@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.marketdata.service.snapshot.publishing.SnapshottingPublisher;
+import com.drwtrading.eeif.md.publishing.SnapshottingPublisher;
 import org.jetlang.channels.MemoryChannel;
 import org.jetlang.core.Disposable;
 

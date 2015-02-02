@@ -2,13 +2,10 @@ package com.drwtrading.london.reddal;
 
 import com.drw.xetra.ebs.mds.XetraStream;
 import com.drw.xetra.ebs.mds.XetraTypes;
+import com.drwtrading.eeif.md.xetra.XetraStreamPair;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
-import com.drwtrading.marketdata.service.common.TraderMarket;
-import com.drwtrading.marketdata.service.xetra.mds.XetraStreamPair;
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -175,13 +172,8 @@ public class Environment {
         return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])), NetworkInterfaces.find(nic));
     }
 
-    public Collection<TraderMarket> getMarkets(final String mds) {
-        return Collections2.transform(config.getList(MARKET_DATA + "." + mds + ".markets"), new Function<String, TraderMarket>() {
-            @Override
-            public TraderMarket apply(final String from) {
-                return new TraderMarket(from);
-            }
-        });
+    public Collection<String> getMarkets(final String mds) {
+        return config.getList(MARKET_DATA + "." + mds + ".markets");
     }
 
     public Set<String> getXetraMarkets(String mds) {

@@ -1,12 +1,12 @@
 package com.drwtrading.london.reddal.data;
 
+import com.drwtrading.eeif.md.utils.MarketDataEventUtil;
 import com.drwtrading.frontoffice.book.treemap.TreeMapBookFactory;
 import com.drwtrading.london.prices.PriceFormat;
 import com.drwtrading.london.prices.PriceFormats;
 import com.drwtrading.london.protocols.photon.marketdata.*;
 import com.drwtrading.london.reddal.util.PriceOperations;
 import com.drwtrading.london.reddal.util.PriceUtils;
-import com.drwtrading.marketdata.service.util.MarketDataEventUtil;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetlang.core.Callback;
 

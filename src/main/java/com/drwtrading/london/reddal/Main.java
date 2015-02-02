@@ -5,6 +5,13 @@ import com.drw.nns.api.MulticastGroup;
 import com.drw.nns.api.NnsApi;
 import com.drw.nns.api.NnsFactory;
 import com.drw.xetra.ebs.messages.XetraMessage;
+import com.drwtrading.eeif.md.eurex.EasyEurexNaMDS;
+import com.drwtrading.eeif.md.eurex.monitors.StatsPublisherErrorMonitor;
+import com.drwtrading.eeif.md.publishing.MarketDataEventSnapshottingPublisher;
+import com.drwtrading.eeif.md.utils.NetworkInterfaceFinder;
+import com.drwtrading.eeif.md.utils.TotalTradedVolumeAccumulator;
+import com.drwtrading.eeif.md.xetra.XetraMarketDataService;
+import com.drwtrading.eeif.md.xetra.XetraPacketDroppedEvent;
 import com.drwtrading.esquilatency.BatchedChainEventRecorder;
 import com.drwtrading.jetlang.NoOpPublisher;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
@@ -46,16 +53,6 @@ import com.drwtrading.london.selectable.ErrorHandler;
 import com.drwtrading.london.selectable.SelectorWrapper;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
-import com.drwtrading.marketdata.service.accumulators.TotalTradedVolumeAccumulator;
-import com.drwtrading.marketdata.service.common.KeyedPublisher;
-import com.drwtrading.marketdata.service.common.TraderMarket;
-import com.drwtrading.marketdata.service.eurex_na.EasyEurexNaMDS;
-import com.drwtrading.marketdata.service.eurex_na.monitors.StatsPublisherErrorMonitor;
-import com.drwtrading.marketdata.service.snapshot.publishing.MarketDataEventSnapshottingPublisher;
-import com.drwtrading.marketdata.service.util.EasyNetworkInterfaces;
-import com.drwtrading.marketdata.service.xetra.XetraMain;
-import com.drwtrading.marketdata.service.xetra.mds.XetraMarketDataService;
-import com.drwtrading.marketdata.service.xetra.mds.XetraPacketDroppedEvent;
 import com.drwtrading.monitoring.stats.MsgCodec;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.StatsPublisher;
@@ -559,23 +556,18 @@ public class Main {
                 if (environment.getMarketDataExchange(mds) == Environment.Exchange.EUREX) {
 
                     final TotalTradedVolumeAccumulator totalTradedVolumeAccumulator = new TotalTradedVolumeAccumulator(marketDataEventPublisher);
-                    KeyedPublisher<TraderMarket, MarketDataEvent> keyedPublisher = new KeyedPublisher<TraderMarket, MarketDataEvent>() {
-                        @Override
-                        public void publish(final TraderMarket key, final MarketDataEvent value) {
-                            totalTradedVolumeAccumulator.publish(value);
-                        }
-                    };
+
 
                     final EasyEurexNaMDS easyEurexNaMDS = new EasyEurexNaMDS(
                             environment.getMarkets(mds),
-                            keyedPublisher, keyedPublisher, keyedPublisher,
+                            totalTradedVolumeAccumulator, totalTradedVolumeAccumulator, totalTradedVolumeAccumulator,
                             statsPublisher,
                             channels.error,
                             StreamEnv.prod,
                             environment.getMarketDataInterface(mds),
                             new StatsPublisherErrorMonitor(statsPublisher),
                             logDir
-                    ).withImpliedTopOfBooks(keyedPublisher, true);
+                    ).withImpliedTopOfBooks(totalTradedVolumeAccumulator, true);
 
                     fibers.onStart(new Runnable() {
                         @Override
@@ -595,12 +587,7 @@ public class Main {
                 } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.XETRA) {
 
                     final TotalTradedVolumeAccumulator totalTradedVolumeAccumulator = new TotalTradedVolumeAccumulator(marketDataEventPublisher);
-                    KeyedPublisher<String, MarketDataEvent> keyedPublisher = new KeyedPublisher<String, MarketDataEvent>() {
-                        @Override
-                        public void publish(final String key, final MarketDataEvent value) {
-                            totalTradedVolumeAccumulator.publish(value);
-                        }
-                    };
+
 
                     SelectorWrapper selectorWrapper = new SelectorWrapper(Selector.open(), new ErrorHandler() {
                         @Override
@@ -611,11 +598,9 @@ public class Main {
                     selectorWrapper.setBlocking(true);
 
                     final XetraMarketDataService xetraMarketDataService = new XetraMarketDataService(
-                            XetraMain.find(environment.getMarketDataInterface(mds)),
+                            NetworkInterfaceFinder.find(environment.getMarketDataInterface(mds)),
                             environment.getXetraMarkets(mds),
-                            keyedPublisher,
-                            keyedPublisher,
-                            keyedPublisher,
+                            marketDataEventPublisher,
                             environment.getXetraReferenceDataFile(mds),
                             environment.getXetraReferenceDataStreams(mds),
                             null,
