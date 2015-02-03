@@ -34,7 +34,7 @@ config default
   include drw.london.server-common/50
   include drw.simple-webbit-server/29:with-deps
   include org.webbitserver-webbit-rest/0.3.0
-  include drw.london.javascript-common/1.0.0.32
+  include drw.london.javascript-common/33
   include drw.london.sounds/20
 
   # Monitoring
@@ -52,7 +52,7 @@ config default
   include io.netty-netty/3.2.7.Final
   include drw.london.esquilatency/24
 
-  include drw.london.eeif-md/7
+  include drw.london.eeif-md/9
 
   include nns/2.0.0.69
 
