@@ -49,7 +49,7 @@ public class LadderPresenter {
 
     private final Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
     private final Multimap<String, LadderView> viewsByUser = HashMultimap.create();
-    private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<Publisher<WebSocketOutboundData>, LadderView>();
+    private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<>();
     private final Map<String, Runnable> marketDataUnsubscribers = new HashMap<>();
     private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(new Function<String, WorkingOrdersForSymbol>() {
         @Override
@@ -111,7 +111,7 @@ public class LadderPresenter {
         // Subscribe to channel for this symbol
         final MemoryChannel<MarketDataEvent> marketDataEventMemoryChannel = new MemoryChannel<>();
         MarketDataForSymbol marketDataForSymbol = new MarketDataForSymbol(symbol);
-        marketDataEventMemoryChannel.subscribe(new BatchSubscriber<MarketDataEvent>(fiber, marketDataForSymbol.onMarketDataBatchCallback(), MD_FLUSH_MILLIS, TimeUnit.MILLISECONDS));
+        marketDataEventMemoryChannel.subscribe(new BatchSubscriber<>(fiber, marketDataForSymbol.onMarketDataBatchCallback(), MD_FLUSH_MILLIS, TimeUnit.MILLISECONDS));
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
@@ -131,7 +131,7 @@ public class LadderPresenter {
     @Subscribe
     public void onConnected(WebSocketConnected connected) {
         UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
-        View view = new WebSocketOutputDispatcher<View>(View.class).wrap(uiPipe.evalPublisher());
+        View view = new WebSocketOutputDispatcher<>(View.class).wrap(uiPipe.evalPublisher());
         LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser, trace);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);

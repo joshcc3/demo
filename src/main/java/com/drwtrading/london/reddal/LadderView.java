@@ -44,10 +44,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final int RECENTER_WARN_TIME_MS = 9000;
     public static final int BIG_NUMBER_THRESHOLD = 99999;
     // Click-trading
-    public final Map<String, Integer> buttonQty = new HashMap<String, Integer>();
-
-
-
+    public final Map<String, Integer> buttonQty = new HashMap<>();
 
     public static class Html {
         public static final String EMPTY = " ";
@@ -150,7 +147,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     private int levels;
     private LadderPrefsForSymbolUser ladderPrefsForSymbolUser;
 
-    Map<Long, Integer> levelByPrice = new HashMap<Long, Integer>();
+    Map<Long, Integer> levelByPrice = new HashMap<>();
 
     private boolean pendingRefDataAndSettle = true;
 
@@ -242,7 +239,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             drawLaserLines(d, m);
 
             // Desk position
-            if (d.deskPosition != null && d.deskPosition.getPosition() != null && !d.deskPosition.getPosition().equals("")) {
+            if (d.deskPosition != null && d.deskPosition.getPosition() != null && !"".equals(d.deskPosition.getPosition())) {
                 ui.txt(Html.DESK_POSITION, d.deskPosition.getPosition());
                 try {
                     decorateUpDown(Html.DESK_POSITION, new BigDecimal(d.deskPosition.getPosition()).longValue());
@@ -358,8 +355,8 @@ public class LadderView implements UiPipe.UiEventHandler {
             for (Long price : levelByPrice.keySet()) {
                 int totalQty = 0;
                 String side = "";
-                List<String> keys = new ArrayList<String>();
-                Set<WorkingOrderType> orderTypes = new HashSet<WorkingOrderType>();
+                List<String> keys = new ArrayList<>();
+                Set<WorkingOrderType> orderTypes = new HashSet<>();
                 for (Main.WorkingOrderUpdateFromServer orderFromServer : w.ordersByPrice.get(price)) {
                     WorkingOrderUpdate order = orderFromServer.value;
                     int orderQty = order.getTotalQuantity() - order.getFilledQuantity();
@@ -454,9 +451,9 @@ public class LadderView implements UiPipe.UiEventHandler {
             }
 
             if (quantityTraded > 1000000) {
-                ui.txt(Html.TOTAL_TRADED_VOLUME, BASIS_POINT_DECIMAL_FORMAT.format(1.0 / 1000000 * quantityTraded) + "M");
+                ui.txt(Html.TOTAL_TRADED_VOLUME, BASIS_POINT_DECIMAL_FORMAT.format(1.0 / 1000000 * quantityTraded) + 'M');
             } else if (quantityTraded > 1000) {
-                ui.txt(Html.TOTAL_TRADED_VOLUME, BASIS_POINT_DECIMAL_FORMAT.format(1.0 / 1000 * quantityTraded) + "K");
+                ui.txt(Html.TOTAL_TRADED_VOLUME, BASIS_POINT_DECIMAL_FORMAT.format(1.0 / 1000 * quantityTraded) + 'K');
             } else {
                 ui.txt(Html.TOTAL_TRADED_VOLUME, quantityTraded);
             }
@@ -527,7 +524,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (m != null && m.refData != null) {
             ui.clear();
-            ui.clickable("#" + Html.SYMBOL);
+            ui.clickable('#' + Html.SYMBOL);
             if (pendingRefDataAndSettle) {
                 onRefDataAndSettleFirstAppeared();
             }
@@ -571,25 +568,25 @@ public class LadderView implements UiPipe.UiEventHandler {
             ui.txt(entry.getKey(), entry.getValue() < 1000 ? entry.getValue() : entry.getValue() / 1000 + "K");
         }
         for (int i = 0; i < levels; i++) {
-            ui.clickable("#" + Html.PRICE + i);
-            ui.clickable("#" + Html.BID + i);
-            ui.clickable("#" + Html.OFFER + i);
-            ui.clickable("#" + Html.ORDER + i);
+            ui.clickable('#' + Html.PRICE + i);
+            ui.clickable('#' + Html.BID + i);
+            ui.clickable('#' + Html.OFFER + i);
+            ui.clickable('#' + Html.ORDER + i);
         }
         ui.clickable(Html.BUTTONS);
-        ui.scrollable("#" + Html.LADDER);
-        ui.clickable("#" + Html.BUY_QTY);
-        ui.clickable("#" + Html.SELL_QTY);
+        ui.scrollable('#' + Html.LADDER);
+        ui.clickable('#' + Html.BUY_QTY);
+        ui.clickable('#' + Html.SELL_QTY);
 
-        ui.clickable("#" + Html.BUY_OFFSET_UP);
-        ui.clickable("#" + Html.BUY_OFFSET_DOWN);
-        ui.clickable("#" + Html.SELL_OFFSET_UP);
-        ui.clickable("#" + Html.SELL_OFFSET_DOWN);
+        ui.clickable('#' + Html.BUY_OFFSET_UP);
+        ui.clickable('#' + Html.BUY_OFFSET_DOWN);
+        ui.clickable('#' + Html.SELL_OFFSET_UP);
+        ui.clickable('#' + Html.SELL_OFFSET_DOWN);
 
-        ui.clickable("#" + Html.START_BUY);
-        ui.clickable("#" + Html.STOP_BUY);
-        ui.clickable("#" + Html.START_SELL);
-        ui.clickable("#" + Html.STOP_SELL);
+        ui.clickable('#' + Html.START_BUY);
+        ui.clickable('#' + Html.STOP_BUY);
+        ui.clickable('#' + Html.START_SELL);
+        ui.clickable('#' + Html.STOP_SELL);
 
         ui.cls(Html.OFFSET_CONTROL, Html.HIDDEN, false);
 
@@ -671,8 +668,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists() && m.topOfBook.getBestBid().isExists()) {
                 center = getMidPrice(m);
             }
-            long roundedCenter = m.priceOperations.tradeablePrice(center, Side.BID);
-            return roundedCenter;
+            return m.priceOperations.tradeablePrice(center, Side.BID);
         }
         return 0;
     }
@@ -735,7 +731,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             } else if (persistentPrefs.contains(label)) {
                 ladderPrefsForSymbolUser.set(label, value);
             } else {
-                throw new IllegalArgumentException("Update for unknown value: " + label + " " + dataArg);
+                throw new IllegalArgumentException("Update for unknown value: " + label + ' ' + dataArg);
             }
         }
         drawClickTrading();
@@ -745,9 +741,9 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     @Override
     public void onScroll(final String direction) {
-        if (direction.equals("up")) {
+        if ("up".equals(direction)) {
             centerPrice = marketDataForSymbol.priceOperations.nTicksAway(centerPrice, 1, PriceUtils.Direction.Add);
-        } else if (direction.equals("down")) {
+        } else if ("down".equals(direction)) {
             centerPrice = marketDataForSymbol.priceOperations.nTicksAway(centerPrice, 1, PriceUtils.Direction.Subtract);
         } else {
             return;
@@ -783,7 +779,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     @Override
     public void onIncoming(final String[] args) {
         String cmd = args[0];
-        if (cmd.equals("heartbeat")) {
+        if ("heartbeat".equals(cmd)) {
             onHeartbeat(Long.valueOf(args[1]), Long.valueOf(args[2]));
         }
     }
@@ -820,7 +816,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                 if (label.equals(orderKey(price))) {
                     cancelWorkingOrders(price, data);
                 } else {
-                    System.out.println("Mismatched label: " + data.get("price") + " " + orderKey(price) + " " + label);
+                    System.out.println("Mismatched label: " + data.get("price") + ' ' + orderKey(price) + ' ' + label);
                 }
             } else if (label.equals(Html.BUY_OFFSET_UP)) {
                 commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.UP));
@@ -845,8 +841,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             } else if (label.equals(Html.PRICING_EFP)) {
                 pricingMode = PricingMode.EFP;
             } else if (label.startsWith(Html.PRICE_KEY)) {
-                PricingMode nextMode = PricingMode.values()[(pricingMode.ordinal() + 1) % PricingMode.values().length];
-                pricingMode = nextMode;
+                pricingMode = PricingMode.values()[(pricingMode.ordinal() + 1) % PricingMode.values().length];
             } else if (label.startsWith(Html.SYMBOL)) {
                 if (dataForSymbol != null && dataForSymbol.spreadContractSet != null) {
                     SpreadContractSet contracts = dataForSymbol.spreadContractSet;
@@ -1117,7 +1112,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         if (ladderOptions.traders.contains(client.getUserName())) {
 
             if (clientSpeedState == ClientSpeedState.TooSlow) {
-                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", client " + client.getUserName() + " is " + clientSpeedState.toString() + " speed: " + getClientSpeedMillis() + "ms"));
+                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", client " + client.getUserName() + " is " + clientSpeedState.toString() + " speed: " + getClientSpeedMillis() + "ms"));
                 return;
             }
 
@@ -1125,16 +1120,16 @@ public class LadderView implements UiPipe.UiEventHandler {
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
 
             if (serverName == null) {
-                statsPublisher.publish(new AdvisoryStat("Click-Trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", no valid server found."));
+                statsPublisher.publish(new AdvisoryStat("Click-Trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", no valid server found."));
                 return;
             }
 
-            System.out.println("Order: " + symbol + " " + remoteOrderType.toString() + " resolved to " + serverName);
+            System.out.println("Order: " + symbol + ' ' + remoteOrderType.toString() + " resolved to " + serverName);
 
             TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(serverName);
 
             if (serverTradingStatus == null || serverTradingStatus.tradingStatus != TradingStatusWatchdog.Status.OK) {
-                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", server " + serverName + " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString())));
+                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", server " + serverName + " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString())));
                 return;
             }
 
@@ -1286,8 +1281,8 @@ public class LadderView implements UiPipe.UiEventHandler {
         ui.txt(orderKey(price), qty > 0 ? qty : Html.EMPTY);
         ui.cls(orderKey(price), Html.WORKING_QTY, qty > 0);
         ui.cls(orderKey(price), Html.BIG_NUMBER, qty > BIG_NUMBER_THRESHOLD);
-        ui.cls(orderKey(price), Html.WORKING_BID, side.equals("bid"));
-        ui.cls(orderKey(price), Html.WORKING_OFFER, side.equals("offer"));
+        ui.cls(orderKey(price), Html.WORKING_BID, "bid".equals(side));
+        ui.cls(orderKey(price), Html.WORKING_OFFER, "offer".equals(side));
         for (WorkingOrderType workingOrderType : WorkingOrderType.values()) {
             ui.cls(orderKey(price), Html.WORKING_ORDER_TYPE + getOrderType(workingOrderType).toLowerCase(), orderTypes.contains(workingOrderType));
         }

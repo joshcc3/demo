@@ -105,8 +105,8 @@ public class Main {
     private static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     public static void createWebPageWithWebSocket(String alias, String name, FiberBuilder fiber, WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
-        webapp.alias("/" + alias, "/" + name + ".html");
-        webapp.createWebSocket("/" + name + "/ws/", websocketChannel, fiber.getFiber());
+        webapp.alias('/' + alias, '/' + name + ".html");
+        webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
     }
 
     public static final TypedChannel<Throwable> ERROR_CHANNEL = create(Throwable.class);
@@ -249,7 +249,7 @@ public class Main {
         }
 
         public String key() {
-            return fromServer + "_" + value.getChainId();
+            return fromServer + '_' + value.getChainId();
         }
     }
 
@@ -462,7 +462,7 @@ public class Main {
                 webapp.addHandler("/open", new HttpHandler() {
                     @Override
                     public void handleHttpRequest(final HttpRequest request, final HttpResponse response, final HttpControl control) throws Exception {
-                        if (request.method().equals("GET")) {
+                        if ("GET".equals(request.method())) {
                             String user = request.remoteAddress().toString().split(":")[0].substring(1);
                             String symbol = request.queryParam("symbol");
                             String content;
@@ -471,7 +471,7 @@ public class Main {
 
                             if (symbol == null) {
                                 content = "fail";
-                            } else if (user == null || !ladderWorkspace.openLadderForUser(user, symbol)) {
+                            } else if (!ladderWorkspace.openLadderForUser(user, symbol)) {
                                 content = webapp.getBaseUri().split(":")[0] + environment.getWebPort() + "/ladder#" + symbol;
                             } else {
                                 content = "success";
@@ -539,7 +539,7 @@ public class Main {
                         if (msg instanceof BookSnapshot) {
                             BookSnapshot snapshot = (BookSnapshot) msg;
                             InstrumentDefinitionEvent instrumentDefinitionEvent = refData.get(snapshot.getSymbol());
-                            if (instrumentDefinitionEvent != null && instrumentDefinitionEvent.getExchange().equals("Eurex")) {
+                            if (instrumentDefinitionEvent != null && "Eurex".equals(instrumentDefinitionEvent.getExchange())) {
                                 BookSnapshot reconstructedSnapshot = new BookSnapshot(snapshot.getSymbol(), PriceType.RECONSTRUCTED, snapshot.getSide(), snapshot.getLevels(), snapshot.getSeqNo(), snapshot.getMillis(), snapshot.getNanos(), snapshot.getCorrelationValue());
                                 snapshottingPublisher.publish(reconstructedSnapshot);
                             } else {
@@ -588,7 +588,6 @@ public class Main {
 
                     final TotalTradedVolumeAccumulator totalTradedVolumeAccumulator = new TotalTradedVolumeAccumulator(marketDataEventPublisher);
 
-
                     SelectorWrapper selectorWrapper = new SelectorWrapper(Selector.open(), new ErrorHandler() {
                         @Override
                         public void onError(Throwable throwable) {
@@ -600,7 +599,7 @@ public class Main {
                     final XetraMarketDataService xetraMarketDataService = new XetraMarketDataService(
                             NetworkInterfaceFinder.find(environment.getMarketDataInterface(mds)),
                             environment.getXetraMarkets(mds),
-                            marketDataEventPublisher,
+                            totalTradedVolumeAccumulator,
                             environment.getXetraReferenceDataFile(mds),
                             environment.getXetraReferenceDataStreams(mds),
                             null,
@@ -705,7 +704,7 @@ public class Main {
         {
             final Photocols<ReddalMessage, ReddalMessage> commandServer = Photocols.server(new InetSocketAddress(environment.getCommandsPort()), ReddalMessage.class, ReddalMessage.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
             commandServer.logFile(new File(logDir, "photocols.commands.log"), fibers.logging.getFiber(), true);
-            commandServer.endpoint().add(new JetlangChannelHandler<ReddalMessage, ReddalMessage>(channels.reddalCommandSymbolAvailable, channels.reddalCommand, fibers.metaData.getFiber()));
+            commandServer.endpoint().add(new JetlangChannelHandler<>(channels.reddalCommandSymbolAvailable, channels.reddalCommand, fibers.metaData.getFiber()));
             fibers.onStart(new Runnable() {
                 @Override
                 public void run() {
@@ -883,7 +882,8 @@ public class Main {
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "single-order.json", channels.errorPublisher), channels.singleOrderCommand);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "trace.json", channels.errorPublisher), channels.trace);
             for (String name : websocketsForLogging.keySet()) {
-                fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket" + name + ".json", channels.errorPublisher), websocketsForLogging.get(name));
+                fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket" + name + ".json", channels.errorPublisher), websocketsForLogging.get(
+                        name));
             }
         }
 
