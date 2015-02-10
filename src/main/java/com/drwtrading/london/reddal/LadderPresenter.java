@@ -200,14 +200,10 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(final LadderText ladderText) {
-        dataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
-        if (ladderText.getCell().equals("execution")) {
-            fiber.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    dataBySymbol.get(ladderText.getSymbol()).onLadderText(new LadderText(ladderText.getSymbol(), "execution", "", ""));
-                }
-            }, 5000, TimeUnit.MILLISECONDS);
+        if ("execution".equals(ladderText.getCell())) {
+            on(new LadderClickTradingIssue(ladderText.getSymbol(), ladderText.getText()));
+        }else {
+            dataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
         }
     }
 
