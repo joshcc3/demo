@@ -760,3 +760,10 @@ tr.result.highlight {
 .NO_BOOK_STATE{
     background-color: RED;
 }
+#click_trading_issues{
+    background-color: #ff7300;
+    position: absolute;
+    bottom:0;
+    left:0;
+    z-index: 10;
+}

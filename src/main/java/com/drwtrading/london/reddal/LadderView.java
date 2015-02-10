@@ -44,7 +44,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final int RECENTER_WARN_TIME_MS = 9000;
     public static final int BIG_NUMBER_THRESHOLD = 99999;
     // Click-trading
-    public final Map<String, Integer> buttonQty = new HashMap<>();
+    public final Map<String, Integer> buttonQty = new HashMap<String, Integer>();
 
     public static class Html {
         public static final String EMPTY = " ";
@@ -93,6 +93,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         public static final String MODIFY_PRICE_SELECTED = "modify_price_selected";
 
         // Divs
+        public static final String CLICK_TRADING_ISSUES = "click_trading_issues";
         public static final String DESK_POSITION = "desk_position";
         public static final String TOTAL_TRADED_VOLUME = "total_traded_volume";
         public static final String LAST_TRADE_COD = "last_trade_cod";
@@ -135,6 +136,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
+    private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
     private final UiPipeImpl ui;
     private final Publisher<StatsMsg> statsPublisher;
     private final TradingStatusForAll tradingStatusForAll;
@@ -158,7 +160,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public PricingMode pricingMode = PricingMode.RAW;
     public long lastCenteredTime = 0;
 
-    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser, Publisher<Jsonable> trace) {
+    public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser, Publisher<Jsonable> trace, Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher) {
         this.client = client;
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
@@ -166,6 +168,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         this.commandPublisher = commandPublisher;
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.trace = trace;
+        this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.ui = (UiPipeImpl) ui;
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
@@ -221,10 +224,14 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
-    // Drawing
-
     private void drawClock() {
         ui.txt(Html.CLOCK, SIMPLE_DATE_FORMAT.format(new Date()));
+    }
+
+    // Drawing
+    public void clickTradingIssue(LadderClickTradingIssue ladderClickTradingIssue) {
+        ui.txt(Html.CLICK_TRADING_ISSUES, ladderClickTradingIssue.issue);
+
     }
 
     private void drawClientSpeedState() {
@@ -809,7 +816,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                 clickTradingBoxQty = 0;
             } else if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
                 if (l != null) {
-                    submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_LEFT), autoHedge);
+                    submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_LEFT), autoHedge, ladderClickTradingIssuePublisher);
                 }
             } else if (label.startsWith(Html.ORDER)) {
                 long price = Long.valueOf(data.get("price"));
@@ -855,7 +862,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         } else if ("right".equals(button)) {
             if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
                 if (l != null) {
-                    submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_RIGHT), "true".equals(getPref(l, Html.AUTO_HEDGE_RIGHT)));
+                    submitOrderClick(label, data, getPref(l, Html.ORDER_TYPE_RIGHT), "true".equals(getPref(l, Html.AUTO_HEDGE_RIGHT)), ladderClickTradingIssuePublisher);
                 }
             } else if (label.startsWith(Html.ORDER)) {
                 rightClickModify(data, autoHedge);
@@ -1041,7 +1048,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         return new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), price, totalQuantity, remoteOrderType, autoHedge, workingOrderUpdate.getTag());
     }
 
-    private void submitOrderClick(String label, Map<String, String> data, String orderType, boolean autoHedge) {
+    private void submitOrderClick(String label, Map<String, String> data, String orderType, boolean autoHedge, Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher) {
 
         long price = Long.valueOf(data.get("price"));
 
@@ -1060,7 +1067,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
 
         if (orderType != null && clickTradingBoxQty > 0) {
-            submitOrder(orderType, autoHedge, price, side, tag);
+            submitOrder(orderType, autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
         }
 
         boolean randomReload = "true".equals(getPref(ladderPrefsForSymbolUser, Html.RANDOM_RELOAD));
@@ -1102,7 +1109,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
 
     private void submitOrder(String orderType, boolean autoHedge, long price, com.drwtrading.london.protocols.photon.execution.Side side,
-                             final String tag) {
+                             final String tag, Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
 
 
         int sequenceNumber = orderSeqNo++;
@@ -1112,7 +1119,9 @@ public class LadderView implements UiPipe.UiEventHandler {
         if (ladderOptions.traders.contains(client.getUserName())) {
 
             if (clientSpeedState == ClientSpeedState.TooSlow) {
-                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", client " + client.getUserName() + " is " + clientSpeedState.toString() + " speed: " + getClientSpeedMillis() + "ms"));
+                String message = "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", client " + client.getUserName() + " is " + clientSpeedState.toString() + " speed: " + getClientSpeedMillis() + "ms";
+                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, message));
+                ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
                 return;
             }
 
@@ -1120,7 +1129,9 @@ public class LadderView implements UiPipe.UiEventHandler {
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
 
             if (serverName == null) {
-                statsPublisher.publish(new AdvisoryStat("Click-Trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", no valid server found."));
+                String message = "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", no valid server found.";
+                statsPublisher.publish(new AdvisoryStat("Click-Trading", AdvisoryStat.Level.WARNING, message));
+                ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
                 return;
             }
 
@@ -1129,7 +1140,9 @@ public class LadderView implements UiPipe.UiEventHandler {
             TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(serverName);
 
             if (serverTradingStatus == null || serverTradingStatus.tradingStatus != TradingStatusWatchdog.Status.OK) {
-                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", server " + serverName + " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString())));
+                String message = "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", server " + serverName + " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString());
+                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, message));
+                ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
                 return;
             }
 

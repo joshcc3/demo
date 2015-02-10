@@ -2,23 +2,16 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.reddal.*;
+import com.drwtrading.london.photons.reddal.CenterToPrice;
+import com.drwtrading.london.photons.reddal.ReddalMessage;
+import com.drwtrading.london.photons.reddal.SymbolAvailable;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.reddal.data.DisplaySymbol;
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.MarketDataForSymbol;
-import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.data.*;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
-import com.drwtrading.photons.ladder.DeskPosition;
-import com.drwtrading.photons.ladder.InfoOnLadder;
-import com.drwtrading.photons.ladder.LadderText;
-import com.drwtrading.photons.ladder.LaserLine;
-import com.drwtrading.photons.ladder.LastTrade;
+import com.drwtrading.photons.ladder.*;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
@@ -75,8 +68,9 @@ public class LadderPresenter {
     private final Publisher<Jsonable> trace;
 
     private final Fiber fiber;
+    private Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
 
-    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<SubscribeToMarketData> subscribeToMarketData, Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData, final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, Publisher<Jsonable> trace) {
+    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<SubscribeToMarketData> subscribeToMarketData, Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData, final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, Publisher<Jsonable> trace, Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
@@ -87,6 +81,7 @@ public class LadderPresenter {
         this.subscribeToMarketData = subscribeToMarketData;
         this.unsubscribeFromMarketData = unsubscribeFromMarketData;
         this.trace = trace;
+        this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(new Function<String, Map<String, LadderPrefsForSymbolUser>>() {
             @Override
             public Map<String, LadderPrefsForSymbolUser> apply(final String symbol) {
@@ -131,8 +126,8 @@ public class LadderPresenter {
     @Subscribe
     public void onConnected(WebSocketConnected connected) {
         UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
-        View view = new WebSocketOutputDispatcher<>(View.class).wrap(uiPipe.evalPublisher());
-        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser, trace);
+        View view = new WebSocketOutputDispatcher<View>(View.class).wrap(uiPipe.evalPublisher());
+        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser, trace, ladderClickTradingIssuePublisher);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }
@@ -169,8 +164,20 @@ public class LadderPresenter {
         }
     }
 
-    // Data
+    @Subscribe
+    public void on(final LadderClickTradingIssue ladderClickTradingIssue){
+        Collection<LadderView> views = viewsBySymbol.get(ladderClickTradingIssue.symbol);
+        for (final LadderView view : views) {
+            view.clickTradingIssue(ladderClickTradingIssue);
+            fiber.schedule(new Runnable() {
+                @Override
+                public void run() {
+                    view.clickTradingIssue(new LadderClickTradingIssue(ladderClickTradingIssue.symbol, ""));
+                }
+            }, 2000, TimeUnit.MILLISECONDS);
+        }
 
+    }
     @Subscribe
     public void on(Main.WorkingOrderUpdateFromServer workingOrderUpdate) {
         ordersBySymbol.get(workingOrderUpdate.value.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
@@ -252,12 +259,13 @@ public class LadderPresenter {
         ladderPrefsForUserBySymbol.get(pref.symbol).get(pref.user).on(ladderPrefLoaded);
     }
 
-   @Subscribe
-   public void on(CenterToPrice centerToPrice){
-       for (LadderView ladderView : viewBySocket.values()) {
-           ladderView.recenterLadderForUser(centerToPrice);
-       }
-   }
+    @Subscribe
+    public void on(CenterToPrice centerToPrice) {
+        for (LadderView ladderView : viewBySocket.values()) {
+            ladderView.recenterLadderForUser(centerToPrice);
+        }
+    }
+
     @Subscribe
     public void on(SymbolAvailable symbolAvailable) {
         dataBySymbol.get(symbolAvailable.getSymbol()).setSymbolAvailable();
@@ -278,7 +286,7 @@ public class LadderPresenter {
     @Subscribe
     public void onSingleOrderCommand(OrdersPresenter.SingleOrderCommand singleOrderCommand) {
         for (LadderView view : viewsByUser.get(singleOrderCommand.getUsername())) {
-            if(view.symbol.equals(singleOrderCommand.getSymbol())) {
+            if (view.symbol.equals(singleOrderCommand.getSymbol())) {
                 view.onSingleOrderCommand(singleOrderCommand);
                 return;
             }

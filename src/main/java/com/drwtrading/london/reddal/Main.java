@@ -139,6 +139,7 @@ public class Main {
         public final TypedChannel<SpreadContractSet> contractSets;
         public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
         public final TypedChannel<Jsonable> trace;
+        public final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
 
         public ReddalChannels(ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
@@ -177,6 +178,7 @@ public class Main {
             contractSets = create(SpreadContractSet.class);
             singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
             trace = create(Jsonable.class);
+            ladderClickTradingIssues = create(LadderClickTradingIssue.class);
         }
 
         public <T> TypedChannel<T> create(Class<T> clazz) {
@@ -397,7 +399,7 @@ public class Main {
                     websockets.add(websocket);
                     final String name = "Ladder-" + (i);
                     FiberBuilder fiberBuilder = fibers.fiberGroup.create(name);
-                    LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace);
+                    LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.ladderClickTradingIssues);
                     fiberBuilder.subscribe(presenter,
                             websocket,
                             channels.workingOrders,
@@ -409,7 +411,8 @@ public class Main {
                             channels.reddalCommandSymbolAvailable,
                             channels.recenterLaddersForUser,
                             channels.contractSets,
-                            channels.singleOrderCommand);
+                            channels.singleOrderCommand,
+                            channels.ladderClickTradingIssues);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 }
