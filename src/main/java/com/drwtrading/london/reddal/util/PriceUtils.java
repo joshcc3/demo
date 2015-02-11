@@ -115,7 +115,7 @@ public class PriceUtils implements PriceOperations {
             } else if (priceStructure.getTickStructure() instanceof NormalizedDecimalTickStructure) {
                 return roundConservativelyForNormalizedDecimalTickStructure(PriceFormats.from(priceStructure.getTickStructure()).toBigDecimal(new NormalizedPrice(nonTradeablePrice)), side, priceStructure);
             } else {
-                throw new IllegalArgumentException("Handle this other type of instrument definition" + priceStructure.getClass());
+                throw new IllegalArgumentException("Handle this other type of instrument definition" + priceStructure.getTickStructure().typeEnum());
             }
         }
 
