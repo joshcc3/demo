@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
@@ -154,9 +155,18 @@ public class LadderPresenter {
         if (view != null) {
             if (cmd.equals("ladder-subscribe")) {
                 final String symbol = args[1];
-                int levels = Integer.parseInt(args[2]);
+                final int levels = Integer.parseInt(args[2]);
                 MarketDataForSymbol marketDataForSymbol = marketDataForSymbolMap.get(symbol);
-                view.subscribeToSymbol(symbol, levels, marketDataForSymbol, ordersBySymbol.get(symbol), dataBySymbol.get(symbol), ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()));
+                view.subscribeToSymbol(symbol, levels, marketDataForSymbol, ordersBySymbol.get(symbol), dataBySymbol.get(symbol),
+                        ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()));
+                if (3 < args.length) {
+                    try {
+                        final long price = (long) (Constants.NORMALISING_FACTOR * Double.parseDouble(args[3]));
+                        view.setCenterPrice(price);
+                    } catch (final NumberFormatException nfe) {
+                        // Ignore price request.
+                    }
+                }
                 viewsBySymbol.put(symbol, view);
             } else {
                 view.onRawInboundData(data);

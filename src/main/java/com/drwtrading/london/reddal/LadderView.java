@@ -903,14 +903,17 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     public void recenterLadderForUser(CenterToPrice centerToPrice) {
         if (client.getUserName().equals(centerToPrice.getUsername()) && symbol.equals(centerToPrice.getSymbol())) {
-            centerPrice = centerToPrice.getPrice();
-            resetLastCenteredTime();
-            recenterLadderAndDrawPriceLevels();
-            updateEverything();
-            flush();
+            setCenterPrice(centerToPrice.getPrice());
         }
     }
 
+    public void setCenterPrice(final long price) {
+        centerPrice = price;
+        resetLastCenteredTime();
+        recenterLadderAndDrawPriceLevels();
+        updateEverything();
+        flush();
+    }
 
     public void recenterLadderForUser(LadderPresenter.RecenterLaddersForUser recenterLaddersForUser) {
         if (client.getUserName().equals(recenterLaddersForUser.user)) {
