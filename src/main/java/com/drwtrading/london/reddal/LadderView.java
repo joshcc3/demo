@@ -5,6 +5,7 @@ import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.*;
 import com.drwtrading.london.prices.NormalizedPrice;
 import com.drwtrading.london.protocols.photon.execution.*;
+import com.drwtrading.london.protocols.photon.marketdata.BestPrice;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
@@ -126,6 +127,8 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     public static final int PG_UP = 33;
     public static final int PG_DOWN = 34;
+    public static final int END_KEY = 35;
+    public static final int HOME_KEY = 36;
 
     public static enum PricingMode {BPS, EFP, RAW}
 
@@ -535,6 +538,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             if (pendingRefDataAndSettle) {
                 onRefDataAndSettleFirstAppeared();
             }
+            centerPrice = this.marketDataForSymbol.priceOperations.tradeablePrice(centerPrice, Side.BID);
             pendingRefDataAndSettle = false;
             recenter();
             recenterLadderAndDrawPriceLevels();
@@ -770,6 +774,20 @@ public class LadderView implements UiPipe.UiEventHandler {
         } else if (keyCode == PG_DOWN) {
             int n = -1 * (levelByPrice.size() - 1);
             centerPrice = getPriceNTicksFrom(centerPrice, n);
+        } else if (keyCode == HOME_KEY) {
+            if (null != marketDataForSymbol.book) {
+                final BestPrice ask = marketDataForSymbol.book.getTopOfBook().getBestOffer();
+                if (ask.isExists()) {
+                    centerPrice = ask.getPrice();
+                }
+            }
+        } else if (keyCode == END_KEY) {
+            if (null != marketDataForSymbol.book) {
+                final BestPrice bid = marketDataForSymbol.book.getTopOfBook().getBestBid();
+                if (bid.isExists()) {
+                    centerPrice = bid.getPrice();
+                }
+            }
         } else {
             return;
         }
