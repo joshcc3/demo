@@ -1,13 +1,22 @@
 package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.reddal.LadderSettings;
+import com.drwtrading.london.reddal.LadderView;
 import org.jetlang.channels.Publisher;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 
 public class LadderPrefsForSymbolUser {
+
+
+    public static final Set<LadderSettings.LadderPref> globalDefaults = new HashSet<>();
+    static {
+        globalDefaults.add(new LadderSettings.LadderPref("*", "*", LadderView.Html.WORKING_ORDER_TAG, "CHAD"));
+    }
 
     public final String symbol;
     public final String user;
@@ -22,6 +31,9 @@ public class LadderPrefsForSymbolUser {
         this.symbol = symbol;
         this.user = user;
         this.storeLadderPrefPublisher = storeLadderPrefPublisher;
+        for (LadderSettings.LadderPref globalDefault : globalDefaults) {
+            on(new LadderSettings.LadderPrefLoaded(globalDefault));
+        }
     }
 
     public void on(LadderSettings.LadderPrefLoaded ladderPrefLoaded) {

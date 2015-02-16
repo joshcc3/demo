@@ -7,12 +7,13 @@ import org.jetlang.channels.Publisher;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class LadderSettings {
 
     private final Publisher<LadderPrefLoaded> ladderPrefLoadedPublisher;
-
     public static class LadderPref extends Struct {
 
         public final String user;
@@ -47,6 +48,7 @@ public class LadderSettings {
 
     public static class StoreLadderPref extends Struct {
         public final LadderPref pref;
+
         public StoreLadderPref(LadderPref pref) {
             this.pref = pref;
         }

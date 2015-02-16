@@ -89,7 +89,8 @@ public class LadderPresenter {
                 return new MapMaker().makeComputingMap(new Function<String, LadderPrefsForSymbolUser>() {
                     @Override
                     public LadderPrefsForSymbolUser apply(String user) {
-                        return new LadderPrefsForSymbolUser(symbol, user, storeLadderPrefPublisher);
+                        LadderPrefsForSymbolUser prefs = new LadderPrefsForSymbolUser(symbol, user, storeLadderPrefPublisher);
+                        return prefs;
                     }
                 });
             }
@@ -184,7 +185,7 @@ public class LadderPresenter {
                 public void run() {
                     view.clickTradingIssue(new LadderClickTradingIssue(ladderClickTradingIssue.symbol, ""));
                 }
-            }, 2000, TimeUnit.MILLISECONDS);
+            }, 5000, TimeUnit.MILLISECONDS);
         }
 
     }

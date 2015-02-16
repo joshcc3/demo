@@ -20,6 +20,8 @@ import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketClient;
 import com.google.common.base.Joiner;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Publisher;
 
@@ -573,7 +575,10 @@ public class LadderView implements UiPipe.UiEventHandler {
     private void setUpClickTrading() {
         boolean clickTradingEnabled = ladderOptions.traders.contains(client.getUserName());
         setupButtons();
-        view.trading(clickTradingEnabled, ladderOptions.orderTypesLeft, ladderOptions.orderTypesRight);
+
+        view.trading(clickTradingEnabled,
+                filterUsableOrderTypes(ladderOptions.orderTypesLeft),
+                filterUsableOrderTypes(ladderOptions.orderTypesRight));
 
         for (Map.Entry<String, Integer> entry : buttonQty.entrySet()) {
             ui.txt(entry.getKey(), entry.getValue() < 1000 ? entry.getValue() : entry.getValue() / 1000 + "K");
@@ -601,6 +606,15 @@ public class LadderView implements UiPipe.UiEventHandler {
 
         ui.cls(Html.OFFSET_CONTROL, Html.HIDDEN, false);
 
+    }
+
+    private Collection<String> filterUsableOrderTypes(Collection<String> types) {
+        return Collections2.filter(types, new Predicate<String>() {
+            @Override
+            public boolean apply(String input) {
+                return ladderOptions.serverResolver.resolveToServerName(symbol, getRemoteOrderType(input)) != null;
+            }
+        });
     }
 
     private void setupButtons() {
@@ -1079,7 +1093,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                 ? com.drwtrading.london.protocols.photon.execution.Side.OFFER
                 : null;
 
-        final String tag = data.get(Html.WORKING_ORDER_TAG);
+        final String tag = ladderPrefsForSymbolUser.get(Html.WORKING_ORDER_TAG);
 
         if (side == null) {
             throw new IllegalArgumentException("Price " + price + " did not match key " + label);
@@ -1150,7 +1164,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
 
             if (serverName == null) {
-                String message = "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", no valid server found.";
+                String message = "Cannot submit order " + orderType + " " + side + " " + clickTradingBoxQty + " for " + symbol + ", no valid server found.";
                 statsPublisher.publish(new AdvisoryStat("Click-Trading", AdvisoryStat.Level.WARNING, message));
                 ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
                 return;
