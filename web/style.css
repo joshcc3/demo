@@ -757,9 +757,10 @@ tr.result.highlight {
 .AUCTION{
     background-color: AQUA;
 }
+
 .NO_BOOK_STATE{
-    background-color: RED;
 }
+
 #click_trading_issues{
     background-color: #ff7300;
     position: absolute;

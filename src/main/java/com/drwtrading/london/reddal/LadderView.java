@@ -477,14 +477,13 @@ public class LadderView implements UiPipe.UiEventHandler {
         MarketDataForSymbol m = this.marketDataForSymbol;
         if (!pendingRefDataAndSettle && m != null && m.book != null) {
             if (m.bookState == null) {
-                ui.txt(Html.SYMBOL, getSymbol() + " - NBS");
+                ui.txt(Html.SYMBOL, getSymbol() + " - ?");
                 ui.cls(Html.BOOK_STATE, "AUCTION", false);
                 ui.cls(Html.BOOK_STATE, "NO_BOOK_STATE", true);
             } else if (m.bookState.getState().equals(BookState.AUCTION)) {
-                ui.txt(Html.SYMBOL, getSymbol() + " - AUCTION");
+                ui.txt(Html.SYMBOL, getSymbol() + " - AUC");
                 ui.cls(Html.BOOK_STATE, "AUCTION", true);
                 ui.cls(Html.BOOK_STATE, "NO_BOOK_STATE", false);
-
             } else {
                 ui.txt(Html.SYMBOL, getSymbol());
                 ui.cls(Html.BOOK_STATE, "AUCTION", false);

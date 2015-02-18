@@ -117,6 +117,10 @@ public class MarketDataForSymbol {
                 preferredPriceType = PriceType.RECONSTRUCTED;
                 preferredBookSnapshotType = PriceType.RECONSTRUCTED;
                 preferredTopOfBookPriceType = PriceType.RECONSTRUCTED;
+            } else if (refData.getExchange().equalsIgnoreCase("CME")) {
+                preferredPriceType = PriceType.DIRECT;
+                preferredBookSnapshotType = PriceType.DIRECT;
+                preferredTopOfBookPriceType = PriceType.DIRECT;
             } else if (refData.getExchangeInstrumentDefinitionDetails() instanceof IceInstrumentDefinition) {
                 preferredPriceType = PriceType.DIRECT;
                 preferredBookSnapshotType = PriceType.DIRECT;
