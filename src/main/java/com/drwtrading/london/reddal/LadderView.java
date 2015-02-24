@@ -941,7 +941,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public void setCenterPrice(final long price) {
         centerPrice = price;
         resetLastCenteredTime();
-        recenterLadderAndDrawPriceLevels();
+        tryToDrawLadder();
         updateEverything();
         flush();
     }
