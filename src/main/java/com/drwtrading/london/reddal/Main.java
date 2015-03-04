@@ -73,6 +73,7 @@ import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
+import com.sun.jndi.toolkit.url.Uri;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
@@ -470,12 +471,18 @@ public class Main {
                             String symbol = request.queryParam("symbol");
                             String content;
 
+                            System.out.println("request = " + request);
+                            System.out.println("webapp.getBaseUri() = " + webapp.getBaseUri());
+
                             response.status(200);
+
+                            String webhost = new Uri(webapp.getBaseUri()).getHost();
 
                             if (symbol == null) {
                                 content = "fail";
                             } else if (!ladderWorkspace.openLadderForUser(user, symbol)) {
-                                content = webapp.getBaseUri().split(":")[0] + environment.getWebPort() + "/ladder#" + symbol;
+                                content = webhost + ":" + environment.getWebPort() + "/ladder#" + symbol;
+                                System.out.println(content);
                             } else {
                                 content = "success";
                             }

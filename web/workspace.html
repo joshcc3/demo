@@ -16,6 +16,26 @@
         iframe {
             border: none;
         }
+
+        #lock {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            width: 4px;
+            height: 4px;
+            background-color: green;
+        }
+
+        #lock:hover {
+            width: 14px;
+            height: 14px;
+            border: 1px solid yellow;
+        }
+
+        #lock.locked {
+            background-color: red;
+        }
+
     </style>
     <script src="js/jquery-1.4.2.js"></script>
     <script src="js/websocket.js"></script>
@@ -28,8 +48,6 @@
     <script>
 
         var ws;
-        var search;
-        var topResult;
 
         var ladderWidth = 245;
         var ladderHeight = 332;
@@ -40,14 +58,21 @@
             eval(x);
         };
 
-        var ladders = {};
-        var lastRows = 0;
-        var lastCols = 0;
-        var numBoxes = lastRows * lastCols;
+        var LastRows = 0;
+        var LastCols = 0;
+        var NumBoxes = LastRows * LastCols;
 
-        var lastSymbols = [];
+        var Frames = [];
+        var Ladders = {};
+        var Locked = false;
 
         $(function () {
+
+            var parameters = parseHashcode();
+
+            if (parameters.locking) {
+                lock();
+            }
 
             setInterval(function () {
 
@@ -58,10 +83,10 @@
                 var rows = parseInt(height / ladderHeight);
                 var cols = parseInt(width / ladderWidth);
 
-                if (rows != lastRows || cols != lastCols) {
-                    lastRows = rows;
-                    lastCols = cols;
-                    numBoxes = lastRows * lastCols;
+                if (rows != LastRows || cols != LastCols) {
+                    LastRows = rows;
+                    LastCols = cols;
+                    NumBoxes = LastRows * LastCols;
 
                     doLayout();
                     doLadders();
@@ -71,77 +96,143 @@
 
             }, 250);
 
+            $("#lock").click(function () {
+                if (Locked) {
+                    unlock();
+                } else {
+                    lock();
+                }
+                refreshHashCode();
+            });
+
+            window.onhashchange = function () {
+                doLadders();
+            }
+
         });
 
-        function getUrl(symbol) {
-            var port = parseInt(document.location.port);
-            var host = document.location.hostname;
-            return 'http://'+host+':'+(port-1)+'/ladder#' + symbol;
-        }
-        function setFrame(ladder, symbol) {
-            $(ladder).find('.frame').attr('src', getUrl(symbol));
-            $(ladder).attr('id', symbolId(symbol));
+        function refreshHashCode() {
+            var params = parseHashcode();
+            document.location.hash = generateHashcode(params.symbols);
         }
 
         function doLayout() {
+
             var template = $('.ladder.template').clone().removeClass('template');
             template.width(ladderWidth);
             template.height(ladderHeight);
 
             var existing = $('.ladder:not(.template)');
+            var numExisting = existing.size();
 
-            if (existing.size() < numBoxes) {
-                for (var i = 0; i < numBoxes - existing.size(); i++) {
-                    $('#workspace').append(template.clone());
-                }
-            } else if (existing.size() > numBoxes) {
-                for (var i = numBoxes; i < existing.size(); i++) {
-                    $(existing[i]).remove();
-                }
+            if (numExisting > NumBoxes) {
+                var spliced = Frames.splice(NumBoxes);
+                spliced.forEach(function (frame) {
+                    frame.remove();
+                });
             }
+
+            for (var i = numExisting; i < NumBoxes; i++) {
+                var frame = template.clone();
+                $('#workspace').append(frame);
+                Frames.push(frame);
+            }
+
         }
 
         function doLadders() {
-
-            if (document.location.hash != "") {
-                var symbols = document.location.hash.substr(1).split(",");
-                if (JSON.stringify(symbols) != JSON.stringify(lastSymbols)) {
-                    lastSymbols = symbols;
-                    if (lastSymbols.length > numBoxes) {
-                        lastSymbols = lastSymbols.slice(0, numBoxes);
-                        document.location.hash = "#" + lastSymbols.join(",");
-                    }
-                }
+            var parameters = parseHashcode();
+            var symbols = parameters.symbols;
+            console.log(symbols);
+            for (var i = 0; i < Math.min(symbols.length, Frames.length); i++) {
+                setFrame(Frames[i], symbols[i]);
             }
+        }
 
-            lastSymbols.reverse();
-
-            for (var i = 0; i < lastSymbols.length; i++) {
-                addSymbol(lastSymbols[i]);
+        function moveFrameToFront(index) {
+            if (index == 0) {
+                return;
             }
-
-            lastSymbols.reverse();
+            if (index < Frames.length) {
+                var el = Frames[index];
+                Frames.splice(index, 1);
+                Frames.unshift(el);
+                el.detach();
+                $("#workspace").prepend(el);
+            }
         }
 
         function addSymbol(symbol) {
-
-            var last = undefined;
-
-            if (lastSymbols.indexOf(symbol) != -1) {
-                lastSymbols.splice(lastSymbols.indexOf(symbol), 1);
-                last = $('#' + symbolId(symbol))[0];
+            var parameters = parseHashcode();
+            var symbols = parameters.symbols;
+            if (symbols.indexOf(symbol) != -1) {
+                // Move the symbol to the front and move its frame
+                var index = symbols.indexOf(symbol);
+                moveFrameToFront(index, Frames);
+                symbols.splice(index, 1);
+                symbols.unshift(symbol);
+            } else {
+                // Add the symbol to the front
+                symbols.unshift(symbol);
+                // Roll the last frame around to the front
+                moveFrameToFront(Frames.length - 1, Frames);
             }
+            document.location.hash = generateHashcode(symbols);
+            doLadders();
+        }
 
-            lastSymbols.unshift(symbol);
+        function lock() {
+            Locked = true;
+            ws.send(command("lock", []));
+            $("#lock").toggleClass("locked", Locked);
+        }
 
-            if(last == undefined) {
-                last = $($('.ladder:not(.template)').last()[0]);
+
+        function unlock() {
+            Locked = false;
+            ws.send(command("unlock", []));
+            $("#lock").toggleClass("locked", Locked);
+        }
+
+        // -- utilities
+
+        function parseHashcode() {
+            var hash = document.location.hash.substr(1);
+            var symbols, locking;
+            if (hash.indexOf("!") == -1) {
+                symbols = hash.split(",");
+                locking = false;
+            } else {
+                symbols = hash.replace(/!/g,"").split(",");
+                locking = true;
             }
+            if (symbols.length == 1 && symbols[0] == "") {
+                symbols = [];
+            }
+            return {symbols: symbols, locking: locking};
+        }
 
-            document.location.hash = "#" + lastSymbols.join(",");
-            setFrame(last, symbol);
-            last.remove();
-            $('#workspace').prepend(last);
+
+        function generateHashcode(symbols) {
+            var symbols = symbols.join(",");
+            if (Locked) {
+                return symbols + "!";
+            } else {
+                return symbols;
+            }
+        }
+
+        function getUrl(symbol) {
+            var port = parseInt(document.location.port);
+            var host = document.location.hostname;
+            return 'http://' + host + ':' + (port - 1) + '/ladder#' + symbol;
+        }
+
+        function setFrame(ladder, symbol) {
+            if ($(ladder).attr('id') != symbolId(symbol)) {
+                $(ladder).find('.frame').attr('src', getUrl(symbol));
+                $(ladder).attr('id', symbolId(symbol));
+            }
         }
 
         function symbolId(symbol) {
@@ -152,6 +243,8 @@
     </script>
 </head>
 <body>
+
+<div id="lock"></div>
 
 <div id="workspace">
     <div class="template ladder">
