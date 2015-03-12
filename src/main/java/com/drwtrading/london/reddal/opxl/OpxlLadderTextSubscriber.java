@@ -56,16 +56,22 @@ public class OpxlLadderTextSubscriber {
                         String color = data[3].toString();
                         if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(cell)) {
                             if ("laser".equals(cell)) {
-                                try {
-                                    publisher.publish(new LaserLine(symbol, "green", new BigDecimal(value).movePointRight(9).longValue(), true, "EEIF"));
-                                } catch (final NumberFormatException e) {
-                                    latch.doOnce(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            errorPublisher.publish(new RuntimeException("Could not format: " + value + " for " + symbol + " " + cell));
-                                            e.printStackTrace();
-                                        }
-                                    });
+
+                                if (value.trim().equals("")) {
+                                    publisher.publish(new LaserLine(symbol, "green", 0, false, "EEIF"));
+                                } else {
+                                    try {
+                                        publisher.publish(new LaserLine(symbol, "green", new BigDecimal(value).movePointRight(9).longValue(), true, "EEIF"));
+                                    } catch (final NumberFormatException e) {
+                                        publisher.publish(new LaserLine(symbol, "green", 0, false, "EEIF"));
+                                        latch.doOnce(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                errorPublisher.publish(new RuntimeException("Could not format: " + value + " for " + symbol + " " + cell));
+                                                e.printStackTrace();
+                                            }
+                                        });
+                                    }
                                 }
                             } else if (!validCells.contains(cell)) {
                                 latch.doOnce(new Runnable() {
