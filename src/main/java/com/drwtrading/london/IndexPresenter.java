@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
@@ -67,7 +66,7 @@ public class IndexPresenter {
                     displaySymbol.displaySymbol,
                     searchResult.link,
                     searchResult.description,
-                    searchResult.keywords
+                    searchResult.exchange, searchResult.keywords
             ));
         }
 
@@ -116,7 +115,7 @@ public class IndexPresenter {
 
         terms.addAll(Arrays.asList(desc.split(("\\W"))));
 
-        return new SearchResult(symbol, display != null ? display.displaySymbol : null, link, description, terms);
+        return new SearchResult(symbol, display != null ? display.displaySymbol : null, link, description, instrumentDefinitionEvent.getExchange(), terms);
     }
 
     private String showDisplaySymbol(DisplaySymbol display) {
@@ -207,13 +206,15 @@ public class IndexPresenter {
         public final String displaySymbol;
         public final String link;
         public final String description;
+        public final String exchange;
         public final Collection<String> keywords;
 
-        public SearchResult(String symbol, String displaySymbol, String link, String description, Collection<String> keywords) {
+        public SearchResult(String symbol, String displaySymbol, String link, String description, String exchange, Collection<String> keywords) {
             this.symbol = symbol;
             this.displaySymbol = displaySymbol;
             this.link = link;
             this.description = description;
+            this.exchange = exchange;
             this.keywords = keywords;
         }
     }

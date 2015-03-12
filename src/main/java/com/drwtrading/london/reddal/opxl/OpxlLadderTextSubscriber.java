@@ -1,20 +1,23 @@
 package com.drwtrading.london.reddal.opxl;
 
 import com.drwtrading.london.reddal.util.DoOnce;
+import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.ladder.LadderText;
+import com.drwtrading.photons.ladder.LaserLine;
 import com.google.common.base.Strings;
 import drw.opxl.OpxlCallbacks;
 import drw.opxl.OpxlClient;
 import drw.opxl.OpxlData;
 import org.jetlang.channels.Publisher;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
 
 public class OpxlLadderTextSubscriber {
     private final Publisher<Throwable> errorPublisher;
-    private final Publisher<LadderText> positionPublisher;
+    private final Publisher<LadderMetadata> publisher;
     private OpxlClient opxlClient;
     public final DoOnce latch = new DoOnce();
 
@@ -35,9 +38,9 @@ public class OpxlLadderTextSubscriber {
             "r3c4",
             "r3c5");
 
-    public OpxlLadderTextSubscriber(String opxlHost, int opxlPort, Publisher<Throwable> errorPublisher, String forexKey, Publisher<LadderText> positionPublisher) {
+    public OpxlLadderTextSubscriber(String opxlHost, int opxlPort, Publisher<Throwable> errorPublisher, String forexKey, Publisher<LadderMetadata> publisher) {
         this.errorPublisher = errorPublisher;
-        this.positionPublisher = positionPublisher;
+        this.publisher = publisher;
         this.opxlClient = new OpxlClient(opxlHost, opxlPort, newHashSet(forexKey), onData());
     }
 
@@ -47,12 +50,24 @@ public class OpxlLadderTextSubscriber {
             public void on(OpxlData opxlData) {
                 try {
                     for (Object[] data : opxlData.getData()) {
-                        String symbol = data[0].toString();
+                        final String symbol = data[0].toString();
                         final String cell = data[1].toString();
-                        String value = data[2].toString();
+                        final String value = data[2].toString();
                         String color = data[3].toString();
                         if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(cell)) {
-                            if (!validCells.contains(cell)) {
+                            if ("laser".equals(cell)) {
+                                try {
+                                    publisher.publish(new LaserLine(symbol, "green", new BigDecimal(value).movePointRight(9).longValue(), true, "EEIF"));
+                                } catch (final NumberFormatException e) {
+                                    latch.doOnce(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            errorPublisher.publish(new RuntimeException("Could not format: " + value + " for " + symbol + " " + cell));
+                                            e.printStackTrace();
+                                        }
+                                    });
+                                }
+                            } else if (!validCells.contains(cell)) {
                                 latch.doOnce(new Runnable() {
                                     @Override
                                     public void run() {
@@ -60,7 +75,7 @@ public class OpxlLadderTextSubscriber {
                                     }
                                 });
                             } else {
-                                positionPublisher.publish(new LadderText(symbol, cell, value.substring(0, Math.min(value.length(), 4)), color));
+                                publisher.publish(new LadderText(symbol, cell, value.substring(0, Math.min(value.length(), 4)), color));
                                 latch.reset();
                             }
                         }

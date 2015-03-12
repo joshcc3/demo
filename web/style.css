@@ -717,6 +717,11 @@ tr.result .description {
 
 }
 
+tr.result .worm{
+    width: 20px;
+    font-size: 10px;
+}
+
 #search_results_container {
     top: 35px;
     left: 0px;

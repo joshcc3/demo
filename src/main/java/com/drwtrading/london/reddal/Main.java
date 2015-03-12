@@ -841,12 +841,7 @@ public class Main {
                 Collection<String> keys = environment.getOpxlLadderTextKeys();
 
                 for (String key : keys) {
-                    final OpxlLadderTextSubscriber opxlLadderTextSubscriber = new OpxlLadderTextSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, new Publisher<LadderText>() {
-                        @Override
-                        public void publish(LadderText msg) {
-                            channels.metaData.publish(msg);
-                        }
-                    });
+                    final OpxlLadderTextSubscriber opxlLadderTextSubscriber = new OpxlLadderTextSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, channels.metaData);
                     fibers.onStart(new Runnable() {
                         @Override
                         public void run() {

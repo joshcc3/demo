@@ -59,10 +59,44 @@
                     if(i == 0) {
                         topResult = x;
                     }
+                    row.find('.worm').bind('click', function() {
+                        webwormLink([{symbol:x.symbol,exchange:x.exchange}]);
+                    });
                     console.log(i,x);
                 })
             }
         }
+
+        function webwormLink(symbols, date) {
+
+            var d = date || new Date();
+
+            var symbolTemplate = "(exchange:{{EXCHANGE}},name:{{SYMBOL}})";
+            var linkTemplate = "http://grid:18222/?date:%27{{DATE}}%27,symbols:!({{SYMBOLS}})";
+
+            var symbolList = symbols.map(function(s) {
+                var symbol = s.symbol;
+                var exchange = s.exchange.toUpperCase();
+                var parts = symbol.split(" ");
+                if(parts.length == 2) {
+                    symbol = parts[0];
+
+                }
+                return symbolTemplate
+                        .split("{{EXCHANGE}}").join(exchange)
+                        .split("{{SYMBOL}}").join(symbol);
+            }).join(",");
+
+            var link = linkTemplate
+                    .split("{{SYMBOLS}}").join(symbolList)
+                    .split("{{DATE}}").join(d.toISOString().split("T")[0]);
+
+            console.log(link);
+            popUp(link,  undefined, 1400, 1000);
+
+        }
+
+
     </script>
 </head>
 <body>
@@ -79,6 +113,7 @@
             <td class="symbol"></td>
             <td class="display"></td>
             <td class="description"></td>
+            <td class="worm"> worm </td>
         </tr>
     </table>
 </div>
