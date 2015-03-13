@@ -89,6 +89,10 @@ public class LadderWorkspace {
             }
         }
 
+        if (symbol.contains(";")) {
+            symbol = symbol.split(";")[0];
+        }
+
         if (setsByHost.containsKey(user) && contractSets.containsKey(symbol)) {
             SpreadContractSet contractSet = contractSets.get(symbol);
             ArrayDeque<View> viewsList = new ArrayDeque<>(setsByHost.get(user));
