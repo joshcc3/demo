@@ -55,15 +55,25 @@ public class OpxlLadderTextSubscriber {
                         final String value = data[2].toString();
                         String color = data[3].toString();
                         if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(cell)) {
-                            if ("laser".equals(cell)) {
+                            if (cell.startsWith("laser")) {
 
-                                if (value.trim().equals("")) {
-                                    publisher.publish(new LaserLine(symbol, "green", 0, false, "EEIF"));
+                                String laserColor;
+                                if ("bid".equals(color)) {
+                                    laserColor = "bid";
+                                } else if ("offer".equals(color)) {
+                                    laserColor = "offer";
+                                } else {
+                                    laserColor = "green";
+                                }
+
+
+                                if ("".equals(value.trim())) {
+                                    publisher.publish(new LaserLine(symbol, laserColor, 0, false, "EEIF"));
                                 } else {
                                     try {
-                                        publisher.publish(new LaserLine(symbol, "green", new BigDecimal(value).movePointRight(9).longValue(), true, "EEIF"));
+                                        publisher.publish(new LaserLine(symbol, laserColor, new BigDecimal(value).movePointRight(9).longValue(), true, "EEIF"));
                                     } catch (final NumberFormatException e) {
-                                        publisher.publish(new LaserLine(symbol, "green", 0, false, "EEIF"));
+                                        publisher.publish(new LaserLine(symbol, "laserColor", 0, false, "EEIF"));
                                         latch.doOnce(new Runnable() {
                                             @Override
                                             public void run() {
