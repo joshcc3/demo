@@ -17,23 +17,31 @@
             border: none;
         }
 
-        #lock {
+        #options {
             position: absolute;
             left: 0px;
             top: 0px;
             width: 4px;
             height: 4px;
+            border:  1px solid green;
+            overflow: hidden;
             background-color: green;
         }
 
-        #lock:hover {
-            width: 14px;
-            height: 14px;
+        #options:hover {
+            width: 50px;
+            height: 25px;
             border: 1px solid yellow;
         }
 
-        #lock.locked {
+        button.enabled {
             background-color: red;
+        }
+
+        button {
+            width: 20px;
+            height: 20px;
+            font-size: 8px;
         }
 
     </style>
@@ -65,13 +73,17 @@
         var Frames = [];
         var Ladders = {};
         var Locked = false;
+        var Sets = false;
 
         $(function () {
 
             var parameters = parseHashcode();
 
             if (parameters.locking) {
-                lock();
+                Locked = true;
+                ws.send(command("lock", []));
+                $("#lock").toggleClass("locked", Locked);
+                refreshHashCode();
             }
 
             setInterval(function () {
@@ -97,12 +109,11 @@
             }, 250);
 
             $("#lock").click(function () {
-                if (Locked) {
-                    unlock();
-                } else {
-                    lock();
-                }
-                refreshHashCode();
+                toggleLock();
+            });
+
+            $("#sets").click(function () {
+                toggleSets();
             });
 
             window.onhashchange = function () {
@@ -181,45 +192,43 @@
             doLadders();
         }
 
-        function lock() {
-            Locked = true;
-            ws.send(command("lock", []));
-            $("#lock").toggleClass("locked", Locked);
+
+        function toggleLock() {
+            Locked = !Locked;
+            ws.send(command(Locked ? "lock" : "unlock", []));
+            $("#lock").toggleClass("enabled", Locked);
+            refreshHashCode();
         }
 
 
-        function unlock() {
-            Locked = false;
-            ws.send(command("unlock", []));
-            $("#lock").toggleClass("locked", Locked);
+        function toggleSets() {
+            Sets = !Sets;
+            ws.send(command(Sets ? "setify" : "unsetify", []));
+            $("#sets").toggleClass("enabled", Sets);
+            refreshHashCode();
         }
+
 
         // -- utilities
 
         function parseHashcode() {
             var hash = document.location.hash.substr(1);
-            var symbols, locking;
-            if (hash.indexOf("!") == -1) {
-                symbols = hash.split(",");
-                locking = false;
-            } else {
-                symbols = hash.replace(/!/g,"").split(",");
-                locking = true;
-            }
+            var symbols, locking, sets;
+            locking = hash.indexOf("!") != -1;
+            sets = hash.indexOf("*") != -1;
+            symbols = hash.split("!").join("").split("*").join("").split(",");
             if (symbols.length == 1 && symbols[0] == "") {
                 symbols = [];
             }
-            return {symbols: symbols, locking: locking};
+            return {symbols: symbols, locking: locking, sets: sets};
         }
 
 
         function generateHashcode(symbols) {
-            var symbols = symbols.join(",");
-            if (Locked) {
-                return symbols + "!";
-            } else {
-                return symbols;
-            }
+            console.log(symbols);
+            return symbols.join(",")
+                    + (Locked ? "!" : "")
+                    + (Sets ? "*" : "");
         }
 
         function getUrl(symbol) {
@@ -244,7 +253,10 @@
 </head>
 <body>
 
-<div id="lock"></div>
+<div id="options">
+    <button id="lock">L</button>
+    <button id="sets">S</button>
+</div>
 
 <div id="workspace">
     <div class="template ladder">

@@ -462,7 +462,7 @@ public class Main {
                 createWebPageWithWebSocket("workspace", "workspace", fibers.ui, webapp, workspaceSocket);
 
                 final LadderWorkspace ladderWorkspace = new LadderWorkspace();
-                fibers.ui.subscribe(ladderWorkspace, workspaceSocket);
+                fibers.ui.subscribe(ladderWorkspace, workspaceSocket, channels.contractSets);
                 webapp.addHandler("/open", new HttpHandler() {
                     @Override
                     public void handleHttpRequest(final HttpRequest request, final HttpResponse response, final HttpControl control) throws Exception {
