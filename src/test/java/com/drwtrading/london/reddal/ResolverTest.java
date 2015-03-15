@@ -76,11 +76,12 @@ public class ResolverTest {
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FXXPU4", RemoteOrderType.TAKER));
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTXU4", RemoteOrderType.MANUAL));
 
-        assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTCU4", RemoteOrderType.MANUAL));
-        assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTCU4", RemoteOrderType.HAWK));
-        assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTCU4", RemoteOrderType.TAKER));
+        assertEquals("nibbler-eurex-2", resolver.resolveToServerName("FSTCU4", RemoteOrderType.MANUAL));
+        assertEquals("nibbler-eurex-2", resolver.resolveToServerName("FSTCU4", RemoteOrderType.HAWK));
+        assertEquals("nibbler-eurex-2", resolver.resolveToServerName("FSTCU4", RemoteOrderType.TAKER));
 
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.MANUAL));
+
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTBZ4-FSTBH5", RemoteOrderType.MANUAL));
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.HAWK));
         assertEquals("nibbler-eurex-fast", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.TAKER));
