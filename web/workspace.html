@@ -23,7 +23,7 @@
             top: 0px;
             width: 4px;
             height: 4px;
-            border:  1px solid green;
+            border: 1px solid green;
             overflow: hidden;
             background-color: green;
         }
@@ -79,11 +79,13 @@
 
             var parameters = parseHashcode();
 
+
             if (parameters.locking) {
-                Locked = true;
-                ws.send(command("lock", []));
-                $("#lock").toggleClass("locked", Locked);
-                refreshHashCode();
+                toggleLock();
+            }
+
+            if (parameters.sets) {
+                toggleSets();
             }
 
             setInterval(function () {
