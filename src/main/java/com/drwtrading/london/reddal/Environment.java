@@ -158,7 +158,6 @@ public class Environment {
                 config.getDouble("trading.randomReloadFraction"));
     }
 
-
     public HostAndNic getHostAndNic(String prefix, String server) throws SocketException {
         prefix = prefix + "." + server;
         final String address = config.get(prefix + ".address");

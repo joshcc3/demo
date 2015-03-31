@@ -1,4 +1,4 @@
-package com.drwtrading.london;
+package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.protocols.photon.marketdata.BatsInstrumentDefinition;

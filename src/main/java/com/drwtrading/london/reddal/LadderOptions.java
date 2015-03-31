@@ -12,7 +12,7 @@ public class LadderOptions {
     public final double randomReloadFraction;
 
     public LadderOptions(Collection<String> orderTypesLeft, Collection<String> orderTypesRight, Collection<String> traders,
-            String theoLaserLine, Environment.RemoteOrderServerResolver serverResolver, double randomReloadFraction) {
+                         String theoLaserLine, Environment.RemoteOrderServerResolver serverResolver, double randomReloadFraction) {
         this.orderTypesLeft = orderTypesLeft;
         this.orderTypesRight = orderTypesRight;
         this.traders = traders;

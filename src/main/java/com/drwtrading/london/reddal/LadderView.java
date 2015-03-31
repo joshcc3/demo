@@ -5,13 +5,11 @@ import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.*;
 import com.drwtrading.london.prices.NormalizedPrice;
 import com.drwtrading.london.protocols.photon.execution.*;
-import com.drwtrading.london.protocols.photon.marketdata.BestPrice;
-import com.drwtrading.london.protocols.photon.marketdata.BookState;
-import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
+import com.drwtrading.london.protocols.photon.marketdata.*;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
-import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
 import com.drwtrading.london.reddal.data.*;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.StatsMsg;
@@ -30,6 +28,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
@@ -157,12 +156,13 @@ public class LadderView implements UiPipe.UiEventHandler {
     Map<Long, Integer> levelByPrice = new HashMap<>();
 
     private boolean pendingRefDataAndSettle = true;
+    private boolean isCashEquity = false;
 
     private long centerPrice;
     private long topPrice;
     private long bottomPrice;
 
-    public PricingMode pricingMode = PricingMode.RAW;
+    public EnumSwitcher<PricingMode> pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.allOf(PricingMode.class));
     public long lastCenteredTime = 0;
 
     public LadderView(WebSocketClient client, UiPipe ui, LadderPresenter.View view, Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, TradingStatusForAll tradingStatusForAll, Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser, Publisher<Jsonable> trace, Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher) {
@@ -209,8 +209,9 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private void drawPricingButtons() {
-        for (PricingMode mode : PricingMode.values()) {
-            ui.cls(Html.PRICING + mode.toString(), "active_mode", pricingMode == mode);
+        for (PricingMode mode : pricingMode.getUniverse()) {
+            ui.cls(Html.PRICING + mode.toString(), "invisible", !pricingMode.isValidChoice(mode));
+            ui.cls(Html.PRICING + mode.toString(), "active_mode", pricingMode.get() == mode);
         }
     }
 
@@ -330,10 +331,14 @@ public class LadderView implements UiPipe.UiEventHandler {
             }
 
             for (Long price : levelByPrice.keySet()) {
-                if (pricingMode == PricingMode.BPS && theo.isValid()) {
+                if (pricingMode.get() == PricingMode.BPS && theo.isValid()) {
                     double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
                     ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
-                } else if (pricingMode == PricingMode.EFP && marketDataForSymbol != null && marketDataForSymbol.priceFormat != null && theo.isValid()) {
+                } else if (pricingMode.get() == PricingMode.BPS && !theo.isValid() && isCashEquity && hasBestBid()) {
+                    long basePrice = marketDataForSymbol.topOfBook.getBestBid().getPrice();
+                    double points = (10000.0 * (price - basePrice)) / basePrice;
+                    ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
+                } else if (pricingMode.get() == PricingMode.EFP && marketDataForSymbol != null && marketDataForSymbol.priceFormat != null && theo.isValid()) {
                     double efp = marketDataForSymbol.priceFormat.toBigDecimal(new NormalizedPrice(price - theo.getPrice())).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
                     ui.txt(priceKey(price), EFP_DECIMAL_FORMAT.format(efp));
                 } else {
@@ -341,6 +346,10 @@ public class LadderView implements UiPipe.UiEventHandler {
                 }
             }
         }
+    }
+
+    private boolean hasBestBid() {
+        return marketDataForSymbol != null && marketDataForSymbol.topOfBook != null && marketDataForSymbol.topOfBook.getBestBid().isExists();
     }
 
     private void decorateUpDown(final String key, Long value) {
@@ -549,9 +558,12 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     private void onRefDataAndSettleFirstAppeared() {
         if (marketDataForSymbol.refData.getInstrumentStructure() instanceof CashOutrightStructure) {
-            pricingMode = PricingMode.BPS;
+            isCashEquity = true;
+            pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.of(PricingMode.BPS, PricingMode.RAW));
+            pricingMode.set(PricingMode.BPS);
         } else {
-            pricingMode = PricingMode.EFP;
+            pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.of(PricingMode.EFP, PricingMode.RAW));
+            pricingMode.set(PricingMode.EFP);
         }
     }
 
@@ -873,13 +885,13 @@ public class LadderView implements UiPipe.UiEventHandler {
             } else if (label.equals(Html.STOP_SELL)) {
                 commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
             } else if (label.equals(Html.PRICING_BPS)) {
-                pricingMode = PricingMode.BPS;
+                pricingMode.set(PricingMode.BPS);
             } else if (label.equals(Html.PRICING_RAW)) {
-                pricingMode = PricingMode.RAW;
+                pricingMode.set(PricingMode.RAW);
             } else if (label.equals(Html.PRICING_EFP)) {
-                pricingMode = PricingMode.EFP;
+                pricingMode.set(PricingMode.EFP);
             } else if (label.startsWith(Html.PRICE_KEY)) {
-                pricingMode = PricingMode.values()[(pricingMode.ordinal() + 1) % PricingMode.values().length];
+                pricingMode.next();
             } else if (label.startsWith(Html.SYMBOL)) {
                 if (dataForSymbol != null && dataForSymbol.spreadContractSet != null) {
                     SpreadContractSet contracts = dataForSymbol.spreadContractSet;
