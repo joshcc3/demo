@@ -10,6 +10,7 @@ import com.drwtrading.london.protocols.photon.marketdata.Side;
 import com.drwtrading.london.reddal.data.*;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
+import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.StatsMsg;
@@ -179,6 +180,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         this.tradingStatusForAll = tradingStatusForAll;
         this.heartbeatRoundtripPublisher = heartbeatRoundtripPublisher;
         this.ui.setHandler(this);
+        initDefaultPrefs();
     }
 
     public void subscribeToSymbol(String symbol, int levels, MarketDataForSymbol marketDataForSymbol, WorkingOrdersForSymbol workingOrdersForSymbol, ExtraDataForSymbol extraDataForSymbol, LadderPrefsForSymbolUser ladderPrefsForSymbolUser) {
@@ -556,11 +558,20 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
+
+    final double DEFAULT_EQUITY_NOTIONAL_EUR = 100000.0;
+
     private void onRefDataAndSettleFirstAppeared() {
         if (marketDataForSymbol.refData.getInstrumentStructure() instanceof CashOutrightStructure) {
             isCashEquity = true;
             pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.of(PricingMode.BPS, PricingMode.RAW));
             pricingMode.set(PricingMode.BPS);
+            if (marketDataForSymbol.settle != null) {
+                long settlePrice = marketDataForSymbol.settle.getSettlementPrice();
+                int quantity = (int) Mathematics.toQuantityFromNotionalInSafetyCurrency(DEFAULT_EQUITY_NOTIONAL_EUR, settlePrice, marketDataForSymbol.refData);
+                quantity = Math.max(50, quantity);
+                defaultPrefs.put(Html.INP_RELOAD, "" + quantity);
+            }
         } else {
             pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.of(PricingMode.EFP, PricingMode.RAW));
             pricingMode.set(PricingMode.EFP);
@@ -762,6 +773,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public void onUpdate(String label, Map<String, String> dataArg) {
         String value = dataArg.get("value");
         if (value != null) {
+            value = value.trim();
             if (Html.INP_QTY.equals(label)) {
                 clickTradingBoxQty = Integer.valueOf(value);
             } else if (persistentPrefs.contains(label)) {
@@ -1008,9 +1020,9 @@ public class LadderView implements UiPipe.UiEventHandler {
         persistentPrefs.add(Html.RANDOM_RELOAD);
     }
 
-    public static final Map<String, String> defaultPrefs = newFastMap();
+    public final Map<String, String> defaultPrefs = newFastMap();
 
-    static {
+    private void initDefaultPrefs() {
         defaultPrefs.put(Html.WORKING_ORDER_TAG, "CHAD");
         defaultPrefs.put(Html.INP_RELOAD, "50");
         defaultPrefs.put(Html.AUTO_HEDGE_LEFT, "true");
