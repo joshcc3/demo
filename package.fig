@@ -32,7 +32,7 @@ config default
   include org.jboss.netty-netty/3.2.7.Final
   include drw.sso.client-java/1.0.0.32
   include drw.london.server-common/50
-  include drw.simple-webbit-server/29:with-deps
+  include drw.simple-webbit-server/33:with-deps
   include org.webbitserver-webbit-rest/0.3.0
   include drw.london.javascript-common/33
   include drw.london.sounds/20
