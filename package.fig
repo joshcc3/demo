@@ -52,7 +52,7 @@ config default
   include io.netty-netty/3.2.7.Final
   include drw.london.esquilatency/24
 
-  include drw.london.eeif-md/14
+  include drw.london.eeif-md/17
 
   include nns/2.0.0.69
 
