@@ -7,6 +7,8 @@ import com.drw.nns.api.NnsFactory;
 import com.drw.xetra.ebs.messages.XetraMessage;
 import com.drwtrading.eeif.md.eurex.EasyEurexNaMDS;
 import com.drwtrading.eeif.md.eurex.monitors.StatsPublisherErrorMonitor;
+import com.drwtrading.eeif.md.euronext_cash.EuronextMarketDataService;
+import com.drwtrading.eeif.md.euronext_cash.EuronextXdpStream;
 import com.drwtrading.eeif.md.publishing.MarketDataEventSnapshottingPublisher;
 import com.drwtrading.eeif.md.utils.NetworkInterfaceFinder;
 import com.drwtrading.eeif.md.utils.TotalTradedVolumeAccumulator;
@@ -19,6 +21,7 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
+import com.drwtrading.london.euronext.xdp.messages.ReferenceData;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
 import com.drwtrading.london.jetlang.JetlangFactory;
@@ -72,6 +75,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
 import com.sun.jndi.toolkit.url.Uri;
 import drw.london.json.Jsonable;
+import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
 import org.jetlang.fibers.Fiber;
@@ -638,6 +642,33 @@ public class Main {
                             }
                         }
                     });
+                } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.EURONEXT) {
+
+                    String prefix = Environment.MARKET_DATA + "." + mds;
+
+                    final EuronextMarketDataService marketDataService =
+                            new EuronextMarketDataService(NetworkInterfaceFinder.find(config.get(prefix + ".nic")), marketDataEventPublisher,
+                                    ERROR_CHANNEL, new SelectorWrapper(Selector.open(), new ErrorHandler() {
+                                @Override
+                                public void onError(Throwable throwable) {
+                                    ERROR_CHANNEL.publish(throwable);
+                                }
+                            }), EuronextXdpStream.Configuration.valueOf(config.get(prefix + ".environment")),
+                                    new InetSocketAddress(config.get(prefix + ".refreshAddr"), config.getInt(prefix + ".refreshPort")),
+                                    config.get(prefix + ".sourceId"), new NoOpPublisher<ReferenceData>(),
+                                    new ObjectArraySet<String>(config.get(prefix + ".mics").split(",")), null, null);
+
+                    fibers.fiberGroup.create("Euronext Cash Runner").execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                marketDataService.startSync();
+                            } catch (IOException e) {
+                                ERROR_CHANNEL.publish(e);
+                            }
+                        }
+                    });
+
 
                 } else {
                     final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);

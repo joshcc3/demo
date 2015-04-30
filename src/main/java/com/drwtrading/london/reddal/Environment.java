@@ -23,6 +23,7 @@ public class Environment {
     public static enum Exchange {
         EUREX,
         XETRA,
+        EURONEXT,
         REMOTE
     }
 
