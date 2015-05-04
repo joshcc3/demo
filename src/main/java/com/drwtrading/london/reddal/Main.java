@@ -471,10 +471,6 @@ public class Main {
                             String user = request.remoteAddress().toString().split(":")[0].substring(1);
                             String symbol = request.queryParam("symbol");
                             String content;
-
-                            System.out.println("request = " + request);
-                            System.out.println("webapp.getBaseUri() = " + webapp.getBaseUri());
-
                             response.status(200);
 
                             String webhost = new Uri(webapp.getBaseUri()).getHost();
