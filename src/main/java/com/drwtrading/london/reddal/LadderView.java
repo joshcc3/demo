@@ -2,12 +2,31 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.reddal.*;
+import com.drwtrading.london.photons.reddal.CenterToPrice;
+import com.drwtrading.london.photons.reddal.Command;
+import com.drwtrading.london.photons.reddal.Direction;
+import com.drwtrading.london.photons.reddal.ReddalCommand;
+import com.drwtrading.london.photons.reddal.ReddalMessage;
+import com.drwtrading.london.photons.reddal.UpdateOffset;
 import com.drwtrading.london.prices.NormalizedPrice;
-import com.drwtrading.london.protocols.photon.execution.*;
-import com.drwtrading.london.protocols.photon.marketdata.*;
+import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
+import com.drwtrading.london.protocols.photon.execution.RemoteModifyOrder;
+import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
+import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
+import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
+import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
+import com.drwtrading.london.protocols.photon.execution.WorkingOrderType;
+import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
+import com.drwtrading.london.protocols.photon.marketdata.BestPrice;
+import com.drwtrading.london.protocols.photon.marketdata.BookState;
+import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
-import com.drwtrading.london.reddal.data.*;
+import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
+import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
+import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.MarketDataForSymbol;
+import com.drwtrading.london.reddal.data.TradingStatusForAll;
+import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
@@ -28,8 +47,16 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
@@ -347,6 +374,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                     drawPrice(marketDataForSymbol, price, priceKey(price));
                 }
             }
+
         }
     }
 
@@ -457,6 +485,8 @@ public class LadderView implements UiPipe.UiEventHandler {
                     ui.cls(priceKey(price), Html.PRICE_TRADED, false);
                 }
             }
+
+            ui.txt(Html.VOLUME + "0", marketDataForSymbol.refData.getPriceStructure().getCurrency().toString());
 
             for (Long price : levelByPrice.keySet()) {
                 boolean withinTradedRange = minTradedPrice != null && maxTradedPrice != null && price >= minTradedPrice && price <= maxTradedPrice;
