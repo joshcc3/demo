@@ -487,6 +487,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             }
 
             ui.txt(Html.VOLUME + "0", marketDataForSymbol.refData.getPriceStructure().getCurrency().toString());
+            ui.cls(Html.VOLUME + "0", "currency", true);
 
             for (Long price : levelByPrice.keySet()) {
                 boolean withinTradedRange = minTradedPrice != null && maxTradedPrice != null && price >= minTradedPrice && price <= maxTradedPrice;
