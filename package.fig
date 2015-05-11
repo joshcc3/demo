@@ -50,9 +50,9 @@ config default
   # MD
   include mockito/1.8.3
   include io.netty-netty/3.2.7.Final
-  include drw.london.esquilatency/24
+  include drw.london.esquilatency/26
 
-  include drw.london.eeif-md/17
+  include drw.london.eeif-md/23
 
   include nns/2.0.0.69
 
@@ -69,24 +69,23 @@ config default
 
   # OPXL
   include drw.opxl/1.5.1
+  add PATH=/site/drw/java/jdk1.8.0_05/bin
 end
 
 config build
   include :default
-  add PATH=/site/drw/java/jdk1.7.0_60/bin
+  add PATH=/site/drw/java/jdk1.8.0_05/bin
 end
 
 config test
   include :default
-  add PATH=/site/drw/java/jdk1.7.0_60/bin
+  add PATH=/site/drw/java/jdk1.8.0_05/bin
 end
 
 config scripts
-  include drw.london.admin-scripts/1.0.4.19
-  add PATH=/site/drw/java/jdk1.7.0_60/bin
+  include drw.london.admin-scripts/22
 end
 
 config rake
   include drw.london.rake/1.0.1.9
-  add PATH=/site/drw/java/jdk1.7.0_60/bin
 end
