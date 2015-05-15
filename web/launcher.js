@@ -51,3 +51,9 @@ function httpGet(theUrl) {
         return false;
     }
 }
+
+function launchBasket(symbol) {
+    var basketHost = "http://prod-bop.eeif.drw:8113/ladders#";
+    popUp(basketHost+symbol,  "BASKET: " + symbol,  770, 360);
+}
+

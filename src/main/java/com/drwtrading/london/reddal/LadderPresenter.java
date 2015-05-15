@@ -7,12 +7,21 @@ import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.reddal.data.*;
+import com.drwtrading.london.reddal.data.DisplaySymbol;
+import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
+import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.MarketDataForSymbol;
+import com.drwtrading.london.reddal.data.TradingStatusForAll;
+import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
-import com.drwtrading.photons.ladder.*;
+import com.drwtrading.photons.ladder.DeskPosition;
+import com.drwtrading.photons.ladder.InfoOnLadder;
+import com.drwtrading.photons.ladder.LadderText;
+import com.drwtrading.photons.ladder.LaserLine;
+import com.drwtrading.photons.ladder.LastTrade;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
@@ -176,7 +185,7 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(final LadderClickTradingIssue ladderClickTradingIssue){
+    public void on(final LadderClickTradingIssue ladderClickTradingIssue) {
         Collection<LadderView> views = viewsBySymbol.get(ladderClickTradingIssue.symbol);
         for (final LadderView view : views) {
             view.clickTradingIssue(ladderClickTradingIssue);
@@ -189,6 +198,7 @@ public class LadderPresenter {
         }
 
     }
+
     @Subscribe
     public void on(Main.WorkingOrderUpdateFromServer workingOrderUpdate) {
         ordersBySymbol.get(workingOrderUpdate.value.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
@@ -213,7 +223,7 @@ public class LadderPresenter {
     public void on(final LadderText ladderText) {
         if ("execution".equals(ladderText.getCell())) {
             on(new LadderClickTradingIssue(ladderText.getSymbol(), ladderText.getText()));
-        }else {
+        } else {
             dataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
         }
     }
@@ -345,5 +355,7 @@ public class LadderPresenter {
         public void goToSymbol(String symbol);
 
         public void popUp(String url, String name, int width, int height);
+
+        public void launchBasket(String symbol);
     }
 }

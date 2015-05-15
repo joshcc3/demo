@@ -20,6 +20,7 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.BestPrice;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
+import com.drwtrading.london.protocols.photon.marketdata.FutureOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
 import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
@@ -585,7 +586,16 @@ public class LadderView implements UiPipe.UiEventHandler {
             pendingRefDataAndSettle = false;
             recenter();
             recenterLadderAndDrawPriceLevels();
+            setUpBasketLink();
             setUpClickTrading();
+        }
+    }
+
+    private void setUpBasketLink() {
+        if (marketDataForSymbol.refData != null && marketDataForSymbol.refData.getInstrumentStructure() instanceof FutureOutrightStructure) {
+            for (Integer level : levelByPrice.values()) {
+                ui.clickable("#" + Html.VOLUME + level);
+            }
         }
     }
 
@@ -944,6 +954,8 @@ public class LadderView implements UiPipe.UiEventHandler {
                         return;
                     }
                 }
+            } else if (label.startsWith(Html.VOLUME)) {
+                view.launchBasket(symbol);
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
