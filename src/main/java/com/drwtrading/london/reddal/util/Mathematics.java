@@ -129,6 +129,8 @@ public class Mathematics {
         exchangeRates.put(Currency.NOK, 0.118807);
         exchangeRates.put(Currency.SEK, 0.112606);
         exchangeRates.put(Currency.USD, 0.7332);
+        exchangeRates.put(Currency.USD, 0.7332);
+        exchangeRates.put(Currency.RUB, 0.018);
     }
 
     private static void initializeTickValues() {

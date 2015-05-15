@@ -79,10 +79,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
 import org.jetlang.fibers.Fiber;
-import org.webbitserver.HttpControl;
-import org.webbitserver.HttpHandler;
-import org.webbitserver.HttpRequest;
-import org.webbitserver.HttpResponse;
 
 import java.io.File;
 import java.io.IOException;
@@ -373,8 +369,6 @@ public class Main {
                 }
             });
 
-            webapp.webServer();
-
             // Index presenter
             {
                 TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
@@ -464,39 +458,7 @@ public class Main {
 
                 final LadderWorkspace ladderWorkspace = new LadderWorkspace();
                 fibers.ui.subscribe(ladderWorkspace, workspaceSocket, channels.contractSets);
-                webapp.addHandler("/open", new HttpHandler() {
-                    @Override
-                    public void handleHttpRequest(final HttpRequest request, final HttpResponse response, final HttpControl control) throws Exception {
-                        if ("GET".equals(request.method())) {
-                            String user = request.remoteAddress().toString().split(":")[0].substring(1);
-                            String symbol = request.queryParam("symbol");
-                            String content;
-                            response.status(200);
-
-                            String webhost = new Uri(webapp.getBaseUri()).getHost();
-
-                            if (symbol == null) {
-                                content = "fail";
-                            } else if (!ladderWorkspace.openLadderForUser(user, symbol)) {
-                                content = webhost + ":" + environment.getWebPort() + "/ladder#" + symbol;
-                                System.out.println(content);
-                            } else {
-                                content = "success";
-                            }
-
-                            String reply;
-
-                            if (request.queryParamKeys().contains("callback")) {
-                                reply = request.queryParam("callback") + "(\"" + content + "\")";
-                            } else {
-                                reply = content;
-                            }
-
-                            response.content(reply);
-                            response.end();
-                        }
-                    }
-                });
+                webapp.addHandler("/open", new WorkspaceRequestHandler(ladderWorkspace, new Uri(webapp.getBaseUri()).getHost(), environment.getWebPort()));
             }
 
         }
