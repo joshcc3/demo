@@ -592,7 +592,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private void setUpBasketLink() {
-        if (marketDataForSymbol.refData != null && marketDataForSymbol.refData.getInstrumentStructure() instanceof FutureOutrightStructure) {
+        if (marketDataForSymbol.refData != null) {
             for (Integer level : levelByPrice.values()) {
                 ui.clickable("#" + Html.VOLUME + level);
             }
