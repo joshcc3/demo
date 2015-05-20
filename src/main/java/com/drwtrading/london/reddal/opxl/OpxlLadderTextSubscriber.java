@@ -16,6 +16,7 @@ import java.util.Set;
 import static com.google.common.collect.Sets.newHashSet;
 
 public class OpxlLadderTextSubscriber {
+    public static final int MAX_LENGTH_OF_TEXT = 6;
     private final Publisher<Throwable> errorPublisher;
     private final Publisher<LadderMetadata> publisher;
     private OpxlClient opxlClient;
@@ -91,7 +92,7 @@ public class OpxlLadderTextSubscriber {
                                     }
                                 });
                             } else {
-                                publisher.publish(new LadderText(symbol, cell, value.substring(0, Math.min(value.length(), 4)), color));
+                                publisher.publish(new LadderText(symbol, cell, value.substring(0, Math.min(value.length(), MAX_LENGTH_OF_TEXT)), color));
                                 latch.reset();
                             }
                         }
