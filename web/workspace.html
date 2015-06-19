@@ -124,6 +124,15 @@
 
         });
 
+        function sendReplace(from, to) {
+            ws.send(command("replace",[from, to]));
+        }
+
+        function replace(from, to) {
+            document.location.hash = document.location.hash.split(from).join(to);
+        }
+
+
         function refreshHashCode() {
             var params = parseHashcode();
             document.location.hash = generateHashcode(params.symbols);

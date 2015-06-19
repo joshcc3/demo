@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
@@ -8,16 +9,23 @@ import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import org.jetlang.channels.Publisher;
 
 import java.util.*;
 
 public class LadderWorkspace {
 
+    private final Publisher<ReplaceCommand> replaceCommand;
     WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
     Multimap<String, View> workspacesByHost = ArrayListMultimap.create();
     Multimap<String, View> setsByHost = ArrayListMultimap.create();
     Set<View> lockedViews = new HashSet<>();
     Map<String, SpreadContractSet> contractSets = new HashMap<>();
+
+    public LadderWorkspace(Publisher<ReplaceCommand> replaceCommand) {
+
+        this.replaceCommand = replaceCommand;
+    }
 
     @Subscribe
     public void on(WebSocketConnected webSocketConnected) {
@@ -73,6 +81,15 @@ public class LadderWorkspace {
         lockedViews.remove(view);
     }
 
+    @FromWebSocketView
+    public void replace(String from, String to, WebSocketInboundData data) {
+        for (View view : workspacesByHost.values()) {
+            view.replace(from, to);
+        }
+        ReplaceCommand command = new ReplaceCommand(data.getClient().getUserName(), from, to);
+        replaceCommand.publish(command);
+    }
+
     public boolean openLadderForUser(String user, String symbol) {
 
         boolean openedSomething = false;
@@ -114,6 +131,7 @@ public class LadderWorkspace {
 
     public static interface View {
         public void addSymbol(String symbol);
+        public void replace(String from, String to);
     }
 
 }

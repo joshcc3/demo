@@ -310,6 +310,13 @@ public class LadderPresenter {
         }
     }
 
+    @Subscribe
+    public void onReplaceCommand(ReplaceCommand replaceCommand) {
+        for (LadderView ladderView : viewBySocket.values()) {
+            ladderView.replaceSymbol(replaceCommand);
+        }
+    }
+
     public Runnable flushBatchedData() {
         return new Runnable() {
             @Override

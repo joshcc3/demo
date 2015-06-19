@@ -137,6 +137,7 @@ public class Main {
         public final TypedChannel<SpreadContractSet> contractSets;
         public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
         public final TypedChannel<Jsonable> trace;
+        public final TypedChannel<ReplaceCommand> replaceCommand;
         public final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
 
         public ReddalChannels(ChannelFactory channelFactory) {
@@ -177,6 +178,7 @@ public class Main {
             singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
             trace = create(Jsonable.class);
             ladderClickTradingIssues = create(LadderClickTradingIssue.class);
+            replaceCommand = create(ReplaceCommand.class);
         }
 
         public <T> TypedChannel<T> create(Class<T> clazz) {
@@ -408,7 +410,8 @@ public class Main {
                             channels.recenterLaddersForUser,
                             channels.contractSets,
                             channels.singleOrderCommand,
-                            channels.ladderClickTradingIssues);
+                            channels.ladderClickTradingIssues,
+                            channels.replaceCommand);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 }
@@ -456,7 +459,7 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> workspaceSocket = create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("workspace", "workspace", fibers.ui, webapp, workspaceSocket);
 
-                final LadderWorkspace ladderWorkspace = new LadderWorkspace();
+                final LadderWorkspace ladderWorkspace = new LadderWorkspace(channels.replaceCommand);
                 fibers.ui.subscribe(ladderWorkspace, workspaceSocket, channels.contractSets);
                 webapp.addHandler("/open", new WorkspaceRequestHandler(ladderWorkspace, new Uri(webapp.getBaseUri()).getHost(), environment.getWebPort()));
             }

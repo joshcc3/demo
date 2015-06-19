@@ -20,7 +20,6 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.BestPrice;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
-import com.drwtrading.london.protocols.photon.marketdata.FutureOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
 import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
@@ -76,6 +75,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final int BIG_NUMBER_THRESHOLD = 99999;
     // Click-trading
     public final Map<String, Integer> buttonQty = new HashMap<String, Integer>();
+
 
     public static class Html {
         public static final String EMPTY = " ";
@@ -209,6 +209,13 @@ public class LadderView implements UiPipe.UiEventHandler {
         this.heartbeatRoundtripPublisher = heartbeatRoundtripPublisher;
         this.ui.setHandler(this);
         initDefaultPrefs();
+    }
+
+    public void replaceSymbol(ReplaceCommand replaceCommand) {
+        if (view != null) {
+            System.out.println("Replacing: " + symbol + " -> " + symbol.replace(replaceCommand.from, replaceCommand.to));
+            view.goToSymbol(symbol.replace(replaceCommand.from, replaceCommand.to));
+        }
     }
 
     public void subscribeToSymbol(String symbol, int levels, MarketDataForSymbol marketDataForSymbol, WorkingOrdersForSymbol workingOrdersForSymbol, ExtraDataForSymbol extraDataForSymbol, LadderPrefsForSymbolUser ladderPrefsForSymbolUser) {
