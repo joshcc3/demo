@@ -13,7 +13,7 @@ config default
   include :scripts
   # Libraries and containers
   include google.guava/r06
-  include fastutil/6.3
+  include fastutil/6.6.1
   include photon-runtime-java/1.0.0.82
   include com.drwtrading.photocols/0.9.7
 
@@ -52,7 +52,7 @@ config default
   include io.netty-netty/3.2.7.Final
   include drw.london.esquilatency/26
 
-  include drw.london.eeif-md/23
+  include drw.london.eeif-md/28
 
   include nns/2.0.0.69
 
@@ -69,17 +69,16 @@ config default
 
   # OPXL
   include drw.opxl/1.5.1
+
   add PATH=/site/drw/java/jdk1.8.0_05/bin
 end
 
 config build
   include :default
-  add PATH=/site/drw/java/jdk1.8.0_05/bin
 end
 
 config test
   include :default
-  add PATH=/site/drw/java/jdk1.8.0_05/bin
 end
 
 config scripts

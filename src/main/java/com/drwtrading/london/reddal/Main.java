@@ -38,7 +38,11 @@ import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCom
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.*;
+import com.drwtrading.london.protocols.photon.marketdata.BookSnapshot;
+import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
+import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
+import com.drwtrading.london.protocols.photon.marketdata.PriceType;
+import com.drwtrading.london.protocols.photon.marketdata.ServerHeartbeat;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
@@ -84,8 +88,13 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.Selector;
-import java.util.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -209,7 +218,7 @@ public class Main {
         public final FiberBuilder ladder;
         public final FiberBuilder contracts;
 
-        public ReddalFibers(ReddalChannels channels, final MonitoredJetlangFactory factory) throws IOException {
+        public ReddalFibers(ReddalChannels channels, final MonitoredJetlangFactory factory)  {
             jetlangFactory = factory;
             fiberGroup = new FiberGroup(jetlangFactory, "Fibers", channels.error);
             starter = jetlangFactory.createFiber("Starter");
@@ -303,7 +312,8 @@ public class Main {
         final String configName = args[0];
 
         System.out.println("Starting with configuration: " + configName);
-        final Config config = Config.fromFile(new File("./etc", configName + ".properties"));
+        final Path configFile = Paths.get("./etc", configName + ".properties");
+        final Config config = Config.fromFile(configFile.toFile());
         final Environment environment = new Environment(config);
         final File logDir = environment.getLogDirectory(configName);
 

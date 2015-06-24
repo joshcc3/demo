@@ -195,7 +195,7 @@ public class Environment {
     public RemoteOrderServerResolver getServerResolver() {
 
         System.out.println("Loading server resolver:");
-        final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<String, RemoteOrderMatcher>();
+        final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<>();
 
         for (String remoteServer : getList(REMOTE_COMMANDS)) {
             String symbolRegex = config.getOrDefault(REMOTE_COMMANDS + "." + remoteServer + ".symbolRegex", ".*");
