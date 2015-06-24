@@ -504,12 +504,8 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             int quantityTraded = 0;
 
-            if (m.totalTradedVolume != null) {
-                quantityTraded = m.totalTradedVolume.getQuantityTraded();
-            } else {
-                for (TotalTradedVolumeByPrice totalTradedVolumeByPrice : m.totalTradedVolumeByPrice.values()) {
-                    quantityTraded += totalTradedVolumeByPrice.getQuantityTraded();
-                }
+            for (TotalTradedVolumeByPrice totalTradedVolumeByPrice : m.totalTradedVolumeByPrice.values()) {
+                quantityTraded += totalTradedVolumeByPrice.getQuantityTraded();
             }
 
             if (quantityTraded > 1000000) {
