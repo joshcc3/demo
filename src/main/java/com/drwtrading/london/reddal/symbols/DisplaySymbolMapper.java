@@ -21,7 +21,7 @@ import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
 public class DisplaySymbolMapper {
 
     Multimap<String, String> marketDataSymbolsByIsin = HashMultimap.create();
-    Map<String, String> displaySymbolByIsin = new HashMap<String, String>();
+    Map<String, String> displaySymbolByIsin = new HashMap<>();
     Set<DisplaySymbol> displaySymbols = newFastSet();
     public final Publisher<DisplaySymbol> displaySymbolPublisher;
 

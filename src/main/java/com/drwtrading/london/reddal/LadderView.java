@@ -20,6 +20,7 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.BestPrice;
 import com.drwtrading.london.protocols.photon.marketdata.BookState;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
+import com.drwtrading.london.protocols.photon.marketdata.ForexPairStructure;
 import com.drwtrading.london.protocols.photon.marketdata.Side;
 import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
@@ -185,7 +186,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     Map<Long, Integer> levelByPrice = new HashMap<>();
 
     private boolean pendingRefDataAndSettle = true;
-    private boolean isCashEquity = false;
+    private boolean isCashEquityOrFX = false;
 
     private long centerPrice;
     private long topPrice;
@@ -371,7 +372,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                 if (pricingMode.get() == PricingMode.BPS && theo.isValid()) {
                     double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
                     ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
-                } else if (pricingMode.get() == PricingMode.BPS && !theo.isValid() && isCashEquity && hasBestBid()) {
+                } else if (pricingMode.get() == PricingMode.BPS && !theo.isValid() && isCashEquityOrFX && hasBestBid()) {
                     long basePrice = marketDataForSymbol.topOfBook.getBestBid().getPrice();
                     double points = (10000.0 * (price - basePrice)) / basePrice;
                     ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
@@ -607,7 +608,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     private void onRefDataAndSettleFirstAppeared() {
         if (marketDataForSymbol.refData.getInstrumentStructure() instanceof CashOutrightStructure) {
-            isCashEquity = true;
+            isCashEquityOrFX = true;
             pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.of(PricingMode.BPS, PricingMode.RAW));
             pricingMode.set(PricingMode.BPS);
             if (marketDataForSymbol.settle != null) {
@@ -616,6 +617,11 @@ public class LadderView implements UiPipe.UiEventHandler {
                 quantity = Math.max(50, quantity);
                 defaultPrefs.put(Html.INP_RELOAD, "" + quantity);
             }
+        } else if (marketDataForSymbol.refData.getInstrumentStructure() instanceof ForexPairStructure) {
+            isCashEquityOrFX = true;
+            pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.of(PricingMode.BPS, PricingMode.RAW));
+            pricingMode.set(PricingMode.BPS);
+            defaultPrefs.put(Html.INP_RELOAD, "1000000");
         } else {
             pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.of(PricingMode.EFP, PricingMode.RAW));
             pricingMode.set(PricingMode.EFP);

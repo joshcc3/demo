@@ -4,6 +4,7 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.protocols.photon.marketdata.BatsInstrumentDefinition;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.ExchangeInstrumentDefinitionDetails;
+import com.drwtrading.london.protocols.photon.marketdata.ForexPairStructure;
 import com.drwtrading.london.protocols.photon.marketdata.FutureLegStructure;
 import com.drwtrading.london.protocols.photon.marketdata.FutureStrategyStructure;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
