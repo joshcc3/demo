@@ -69,7 +69,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".0");
     public static final DecimalFormat EFP_DECIMAL_FORMAT = new DecimalFormat("0.00");
-    public static final DecimalFormat FX_DECIMAL_FORMAT = new DecimalFormat("0.00000");
+    public static final DecimalFormat FX_DECIMAL_FORMAT = new DecimalFormat("0.00");
     public static final int MODIFY_TIMEOUT_MS = 5000;
     public static final int AUTO_RECENTER_TICKS = 3;
 
