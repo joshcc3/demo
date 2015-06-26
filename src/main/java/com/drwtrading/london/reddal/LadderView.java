@@ -41,6 +41,7 @@ import com.drwtrading.websockets.WebSocketClient;
 import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableSet;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Publisher;
 
@@ -68,6 +69,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".0");
     public static final DecimalFormat EFP_DECIMAL_FORMAT = new DecimalFormat("0.00");
+    public static final DecimalFormat FX_DECIMAL_FORMAT = new DecimalFormat("0.00000");
     public static final int MODIFY_TIMEOUT_MS = 5000;
     public static final int AUTO_RECENTER_TICKS = 3;
 
@@ -361,6 +363,8 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
+    static final ImmutableSet<String> invertedMarkets = ImmutableSet.of("6R");
+
     private void drawPriceLevels(final ExtraDataForSymbol d) {
         if (!pendingRefDataAndSettle) {
             LaserLine theo = new LaserLine(symbol, ladderOptions.theoLaserLine, Long.MIN_VALUE, false, "");
@@ -379,6 +383,9 @@ public class LadderView implements UiPipe.UiEventHandler {
                 } else if (pricingMode.get() == PricingMode.EFP && marketDataForSymbol != null && marketDataForSymbol.priceFormat != null && theo.isValid()) {
                     double efp = marketDataForSymbol.priceFormat.toBigDecimal(new NormalizedPrice(price - theo.getPrice())).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
                     ui.txt(priceKey(price), EFP_DECIMAL_FORMAT.format(efp));
+                } else if (marketDataForSymbol != null && invertedMarkets.contains(marketDataForSymbol.refData.getMarket())) {
+                    double invertedPrice = 1.0 / marketDataForSymbol.priceFormat.toBigDecimal(new NormalizedPrice(price)).setScale(8, RoundingMode.HALF_EVEN).doubleValue();
+                    ui.txt(priceKey(price), FX_DECIMAL_FORMAT.format(invertedPrice));
                 } else {
                     drawPrice(marketDataForSymbol, price, priceKey(price));
                 }
