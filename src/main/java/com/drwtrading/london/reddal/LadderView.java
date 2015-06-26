@@ -383,7 +383,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                 } else if (pricingMode.get() == PricingMode.EFP && marketDataForSymbol != null && marketDataForSymbol.priceFormat != null && theo.isValid()) {
                     double efp = marketDataForSymbol.priceFormat.toBigDecimal(new NormalizedPrice(price - theo.getPrice())).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
                     ui.txt(priceKey(price), EFP_DECIMAL_FORMAT.format(efp));
-                } else if (marketDataForSymbol != null && invertedMarkets.contains(marketDataForSymbol.refData.getMarket())) {
+                } else if (pricingMode.get() == PricingMode.EFP && marketDataForSymbol != null && invertedMarkets.contains(marketDataForSymbol.refData.getMarket())) {
                     double invertedPrice = 1.0 / marketDataForSymbol.priceFormat.toBigDecimal(new NormalizedPrice(price)).setScale(8, RoundingMode.HALF_EVEN).doubleValue();
                     ui.txt(priceKey(price), FX_DECIMAL_FORMAT.format(invertedPrice));
                 } else {
