@@ -1346,8 +1346,8 @@ public class LadderView implements UiPipe.UiEventHandler {
     // Heartbeats
 
     public static enum ClientSpeedState {
-        TooSlow(1000),
-        Slow(500),
+        TooSlow(10000),
+        Slow(5000),
         Fine(0);
         public final int thresholdMillis;
 
