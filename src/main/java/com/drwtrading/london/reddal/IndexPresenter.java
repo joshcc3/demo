@@ -5,6 +5,7 @@ import com.drwtrading.london.protocols.photon.marketdata.BatsInstrumentDefinitio
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.ExchangeInstrumentDefinitionDetails;
 import com.drwtrading.london.protocols.photon.marketdata.FutureLegStructure;
+import com.drwtrading.london.protocols.photon.marketdata.FutureOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.FutureStrategyStructure;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentStructure;
@@ -40,12 +41,14 @@ public class IndexPresenter {
     WebSocketViews<View> views = WebSocketViews.create(View.class, this);
     Map<String, DisplaySymbol> symbolToDisplay = newFastMap();
     Map<String, SearchResult> searchResultBySymbol = newFastMap();
+    Map<String, InstrumentDefinitionEvent> instrumentDefinitionEventMap = newFastMap();
 
     private final int minTermLength = 2;
     private final int maxResults = 100;
 
     @Subscribe
     public void on(InstrumentDefinitionEvent instrumentDefinitionEvent) {
+        instrumentDefinitionEventMap.put(instrumentDefinitionEvent.getSymbol(), instrumentDefinitionEvent);
         SearchResult searchResult = searchResultFromInstrumentDef(instrumentDefinitionEvent);
         if (searchResultBySymbol.put(searchResult.symbol, searchResult) == null) {
             for (String keyword : searchResult.keywords) {
@@ -169,13 +172,17 @@ public class IndexPresenter {
     }
 
     private void displayResult(View view, Set<String> matching, final String searchTerms) {
-
-        LinkedList<String> symbols = new LinkedList<String>(matching);
+        ArrayList<String> symbols = new ArrayList<>(matching);
         Collections.sort(symbols, new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {
                 int distance = LevenshteinDistance.computeEditDistance(searchTerms, o1) - LevenshteinDistance.computeEditDistance(searchTerms, o2);
                 if (distance == 0) {
+                    long exp1 = getExpiry(instrumentDefinitionEventMap.get(o1));
+                    long exp2 = getExpiry(instrumentDefinitionEventMap.get(o2));
+                    if(exp1 != 0 && exp2 != 0 && exp1 - exp2 != 0) {
+                        return (exp1 - exp2) < 0 ? -1 : 1;
+                    }
                     return o1.compareToIgnoreCase(o2);
                 }
                 return distance;
@@ -206,6 +213,21 @@ public class IndexPresenter {
 
     public static interface View {
         void display(Collection<SearchResult> results, boolean tooMany);
+    }
+
+    private long getExpiry(InstrumentDefinitionEvent e1) {
+        long exp1 = 0;
+        if(e1 == null) {
+            return 0;
+        }
+        if(e1.getInstrumentStructure() instanceof FutureOutrightStructure) {
+            exp1 = ((FutureOutrightStructure) e1.getInstrumentStructure()).getExpiry().getTimestamp();
+        } else  if (e1.getInstrumentStructure() instanceof FutureStrategyStructure) {
+            exp1 = ((FutureStrategyStructure) e1.getInstrumentStructure()).getLegs().get(0).getExpiry().getTimestamp();
+        } else {
+            exp1 = 0;
+        }
+        return exp1;
     }
 
 
@@ -280,6 +302,12 @@ public class IndexPresenter {
         }
 
         public static int computeEditDistance(String s1, String s2) {
+            if (s1.length() < s2.length()) { // s1 should always be bigger
+                String swap = s1;
+                s1 = s2;
+                s2 = swap;
+            }
+
             s1 = s1.toLowerCase();
             s2 = s2.toLowerCase();
 
