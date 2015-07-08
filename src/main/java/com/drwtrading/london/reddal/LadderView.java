@@ -715,12 +715,12 @@ public class LadderView implements UiPipe.UiEventHandler {
             buttonQty.put("btn_qty_5", 5000);
             buttonQty.put("btn_qty_6", 10000);
         } else if (marketDataForSymbol.refData.getInstrumentStructure() instanceof ForexPairStructure) {
-            buttonQty.put("btn_qty_1", 10000);
-            buttonQty.put("btn_qty_2", 25000);
-            buttonQty.put("btn_qty_3", 50000);
-            buttonQty.put("btn_qty_4", 100000);
-            buttonQty.put("btn_qty_5", 500000);
-            buttonQty.put("btn_qty_6", 1000000);
+            buttonQty.put("btn_qty_1", 100000);
+            buttonQty.put("btn_qty_2", 200000);
+            buttonQty.put("btn_qty_3", 500000);
+            buttonQty.put("btn_qty_4", 1000000);
+            buttonQty.put("btn_qty_5", 2500000);
+            buttonQty.put("btn_qty_6", 5000000);
         } else {
             buttonQty.put("btn_qty_1", 1);
             buttonQty.put("btn_qty_2", 5);
