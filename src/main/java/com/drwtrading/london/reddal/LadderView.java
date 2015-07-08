@@ -68,6 +68,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".0");
+    public static final DecimalFormat MILLIONS_QTY_FORMAT = new DecimalFormat(".0");
     public static final DecimalFormat EFP_DECIMAL_FORMAT = new DecimalFormat("0.00");
     public static final DecimalFormat FX_DECIMAL_FORMAT = new DecimalFormat("0.00");
     public static final int MODIFY_TIMEOUT_MS = 5000;
@@ -660,7 +661,16 @@ public class LadderView implements UiPipe.UiEventHandler {
                 filterUsableOrderTypes(ladderOptions.orderTypesRight));
 
         for (Map.Entry<String, Integer> entry : buttonQty.entrySet()) {
-            ui.txt(entry.getKey(), entry.getValue() < 1000 ? entry.getValue() : entry.getValue() / 1000 + "K");
+            String display;
+            if(entry.getValue() < 1000) {
+                display = entry.getValue() + "";
+            } else if (entry.getValue() < 100000) {
+                display = entry.getValue() / 1000 + "K";
+            } else {
+                display = MILLIONS_QTY_FORMAT.format((double) entry.getValue() / 1000000) + "M";
+
+            }
+            ui.txt(entry.getKey(), display);
         }
         for (int i = 0; i < levels; i++) {
             ui.clickable('#' + Html.PRICE + i);
@@ -704,6 +714,13 @@ public class LadderView implements UiPipe.UiEventHandler {
             buttonQty.put("btn_qty_4", 1000);
             buttonQty.put("btn_qty_5", 5000);
             buttonQty.put("btn_qty_6", 10000);
+        } else if (marketDataForSymbol.refData.getInstrumentStructure() instanceof ForexPairStructure) {
+            buttonQty.put("btn_qty_1", 10000);
+            buttonQty.put("btn_qty_2", 25000);
+            buttonQty.put("btn_qty_3", 50000);
+            buttonQty.put("btn_qty_4", 100000);
+            buttonQty.put("btn_qty_5", 500000);
+            buttonQty.put("btn_qty_6", 1000000);
         } else {
             buttonQty.put("btn_qty_1", 1);
             buttonQty.put("btn_qty_2", 5);
