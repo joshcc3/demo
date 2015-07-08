@@ -4,7 +4,6 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.protocols.photon.marketdata.BatsInstrumentDefinition;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.ExchangeInstrumentDefinitionDetails;
-import com.drwtrading.london.protocols.photon.marketdata.ForexPairStructure;
 import com.drwtrading.london.protocols.photon.marketdata.FutureLegStructure;
 import com.drwtrading.london.protocols.photon.marketdata.FutureStrategyStructure;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
@@ -105,8 +104,8 @@ public class IndexPresenter {
 
         terms.add(symbol);
 
-        if(instrumentDefinitionEvent.getInstrumentStructure().typeEnum() == InstrumentStructure.Type.FOREX_PAIR_STRUCTURE) {
-            terms.add(symbol.replace("/",""));
+        if (instrumentDefinitionEvent.getInstrumentStructure().typeEnum() == InstrumentStructure.Type.FOREX_PAIR_STRUCTURE) {
+            terms.add(symbol.replace("/", ""));
         }
 
         DisplaySymbol display = symbolToDisplay.get(symbol);
@@ -175,7 +174,11 @@ public class IndexPresenter {
         Collections.sort(symbols, new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {
-                return LevenshteinDistance.computeEditDistance(searchTerms, o1) - LevenshteinDistance.computeEditDistance(searchTerms, o2);
+                int distance = LevenshteinDistance.computeEditDistance(searchTerms, o1) - LevenshteinDistance.computeEditDistance(searchTerms, o2);
+                if (distance == 0) {
+                    return o1.compareToIgnoreCase(o2);
+                }
+                return distance;
             }
         });
 
