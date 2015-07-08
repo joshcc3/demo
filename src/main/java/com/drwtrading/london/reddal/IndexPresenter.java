@@ -105,6 +105,10 @@ public class IndexPresenter {
 
         terms.add(symbol);
 
+        if(instrumentDefinitionEvent.getInstrumentStructure().typeEnum() == InstrumentStructure.Type.FOREX_PAIR_STRUCTURE) {
+            terms.add(symbol.replace("/",""));
+        }
+
         DisplaySymbol display = symbolToDisplay.get(symbol);
         if (display != null) {
             symbol = showDisplaySymbol(display);
