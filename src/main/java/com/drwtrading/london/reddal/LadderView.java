@@ -298,7 +298,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                 try {
                     decorateUpDown(Html.DESK_POSITION, new BigDecimal(d.deskPosition.getPosition()).longValue());
                 } catch (NumberFormatException exception) {
-                    exception.printStackTrace();
+//                    exception.printStackTrace();
                 }
             }
 
