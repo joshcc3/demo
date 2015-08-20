@@ -111,7 +111,7 @@ public class Main {
     public static final int NUM_DISPLAY_THREADS = 4;
     private static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
-    public static void createWebPageWithWebSocket(String alias, String name, FiberBuilder fiber, WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
+    public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber, final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
         webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
     }
@@ -148,8 +148,9 @@ public class Main {
         public final TypedChannel<Jsonable> trace;
         public final TypedChannel<ReplaceCommand> replaceCommand;
         public final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
+        public final TypedChannel<UserCycleRequest> userCycleContractPublisher;
 
-        public ReddalChannels(ChannelFactory channelFactory) {
+        public ReddalChannels(final ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
             error = ERROR_CHANNEL;
             errorPublisher = new BogusErrorFilteringPublisher(error);
@@ -161,15 +162,16 @@ public class Main {
             remoteOrderEvents = create(RemoteOrderEventFromServer.class);
             stats = create(StatsMsg.class);
             refData = create(InstrumentDefinitionEvent.class);
-            remoteOrderCommandByServer = new MapMaker().makeComputingMap(new Function<String, TypedChannel<RemoteOrderManagementCommand>>() {
-                @Override
-                public TypedChannel<RemoteOrderManagementCommand> apply(String from) {
-                    return create(RemoteOrderManagementCommand.class);
-                }
-            });
+            remoteOrderCommandByServer = new MapMaker().makeComputingMap(
+                    new Function<String, TypedChannel<RemoteOrderManagementCommand>>() {
+                        @Override
+                        public TypedChannel<RemoteOrderManagementCommand> apply(final String from) {
+                            return create(RemoteOrderManagementCommand.class);
+                        }
+                    });
             remoteOrderCommand = new Publisher<RemoteOrderCommandToServer>() {
                 @Override
-                public void publish(RemoteOrderCommandToServer msg) {
+                public void publish(final RemoteOrderCommandToServer msg) {
                     remoteOrderCommandByServer.get(msg.toServer).publish(msg.value);
                 }
             };
@@ -187,10 +189,11 @@ public class Main {
             singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
             trace = create(Jsonable.class);
             ladderClickTradingIssues = create(LadderClickTradingIssue.class);
+            userCycleContractPublisher = create(UserCycleRequest.class);
             replaceCommand = create(ReplaceCommand.class);
         }
 
-        public <T> TypedChannel<T> create(Class<T> clazz) {
+        public <T> TypedChannel<T> create(final Class<T> clazz) {
             return channelFactory.createChannel(clazz, clazz.getSimpleName());
         }
 
@@ -218,7 +221,7 @@ public class Main {
         public final FiberBuilder ladder;
         public final FiberBuilder contracts;
 
-        public ReddalFibers(ReddalChannels channels, final MonitoredJetlangFactory factory)  {
+        public ReddalFibers(final ReddalChannels channels, final MonitoredJetlangFactory factory)  {
             jetlangFactory = factory;
             fiberGroup = new FiberGroup(jetlangFactory, "Fibers", channels.error);
             starter = jetlangFactory.createFiber("Starter");
@@ -241,7 +244,7 @@ public class Main {
             contracts = fiberGroup.create("Contracts");
         }
 
-        public void onStart(Runnable runnable) {
+        public void onStart(final Runnable runnable) {
             starter.execute(runnable);
         }
 
@@ -254,7 +257,7 @@ public class Main {
         public final String fromServer;
         public final WorkingOrderUpdate value;
 
-        public WorkingOrderUpdateFromServer(String fromServer, WorkingOrderUpdate value) {
+        public WorkingOrderUpdateFromServer(final String fromServer, final WorkingOrderUpdate value) {
             this.fromServer = fromServer;
             this.value = value;
         }
@@ -268,7 +271,7 @@ public class Main {
         public final String fromServer;
         public final WorkingOrderEvent value;
 
-        public WorkingOrderEventFromServer(String fromServer, WorkingOrderEvent value) {
+        public WorkingOrderEventFromServer(final String fromServer, final WorkingOrderEvent value) {
             this.fromServer = fromServer;
             this.value = value;
         }
@@ -278,7 +281,7 @@ public class Main {
         public final String toServer;
         public final RemoteOrderManagementCommand value;
 
-        public RemoteOrderCommandToServer(String toServer, RemoteOrderManagementCommand value) {
+        public RemoteOrderCommandToServer(final String toServer, final RemoteOrderManagementCommand value) {
             this.toServer = toServer;
             this.value = value;
         }
@@ -288,21 +291,21 @@ public class Main {
         public final String fromServer;
         public final RemoteOrderManagementEvent value;
 
-        public RemoteOrderEventFromServer(String fromServer, RemoteOrderManagementEvent value) {
+        public RemoteOrderEventFromServer(final String fromServer, final RemoteOrderManagementEvent value) {
             this.fromServer = fromServer;
             this.value = value;
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         try {
             start(args);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void start(String[] args) throws IOException, InterruptedException {
+    private static void start(final String[] args) throws IOException, InterruptedException {
         if (args.length == 0) {
             System.out.println("Configuration name required as argument.");
             System.exit(-1);
@@ -317,13 +320,13 @@ public class Main {
         final Environment environment = new Environment(config);
         final File logDir = environment.getLogDirectory(configName);
 
-        NnsApi nnsApi = new NnsFactory().create();
+        final NnsApi nnsApi = new NnsFactory().create();
         final LoggingTransport fileTransport = new LoggingTransport(new File(logDir, "jetlang.log"));
         fileTransport.start();
-        MulticastGroup statsGroup = nnsApi.multicastGroupFor(environment.getStatsNns());
+        final MulticastGroup statsGroup = nnsApi.multicastGroupFor(environment.getStatsNns());
         final LowTrafficMulticastTransport lowTrafficMulticastTransport = new LowTrafficMulticastTransport(statsGroup.getAddress(), statsGroup.getPort(), environment.getStatsInterface());
         final AtomicBoolean multicastEnabled = new AtomicBoolean(false);
-        Transport enableableMulticastTransport = createEnableAbleTransport(lowTrafficMulticastTransport, multicastEnabled);
+        final Transport enableableMulticastTransport = createEnableAbleTransport(lowTrafficMulticastTransport, multicastEnabled);
         final StatsPublisher statsPublisher = new StatsPublisher(environment.getStatsName(), new MultiplexTransport(fileTransport, enableableMulticastTransport));
 
         final MonitoredJetlangFactory monitoredJetlangFactory = new MonitoredJetlangFactory(statsPublisher, ERROR_CHANNEL);
@@ -333,7 +336,7 @@ public class Main {
 
         final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER = new Thread.UncaughtExceptionHandler() {
             @Override
-            public void uncaughtException(Thread t, Throwable e) {
+            public void uncaughtException(final Thread t, final Throwable e) {
                 channels.errorPublisher.publish(e);
             }
         };
@@ -342,7 +345,7 @@ public class Main {
         {
             fibers.stats.subscribe(new Callback<StatsMsg>() {
                 @Override
-                public void onMessage(StatsMsg message) {
+                public void onMessage(final StatsMsg message) {
                     statsPublisher.publish(message);
                 }
             }, channels.stats);
@@ -357,7 +360,7 @@ public class Main {
 
 
         // WebApp
-        Map<String, TypedChannel<WebSocketControlMessage>> websocketsForLogging = newHashMap();
+        final Map<String, TypedChannel<WebSocketControlMessage>> websocketsForLogging = newHashMap();
         {
             final WebApplication webapp;
             webapp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
@@ -373,7 +376,7 @@ public class Main {
                             try {
                                 webapp.serveStaticContent("web");
                                 webapp.start();
-                            } catch (Exception e) {
+                            } catch (final Exception e) {
                                 throw new RuntimeException(e);
                             }
                         }
@@ -383,7 +386,7 @@ public class Main {
 
             // Index presenter
             {
-                TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
+                final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("/", "index", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("index", websocket);
                 final IndexPresenter indexPresenter = new IndexPresenter();
@@ -392,7 +395,7 @@ public class Main {
 
             // Orders presenter
             {
-                TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
+                final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("orders", "orders", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("orders", websocket);
                 final OrdersPresenter ordersPresenter = new OrdersPresenter(channels.singleOrderCommand);
@@ -406,8 +409,13 @@ public class Main {
                     final TypedChannel<WebSocketControlMessage> websocket = create(WebSocketControlMessage.class);
                     websockets.add(websocket);
                     final String name = "Ladder-" + (i);
-                    FiberBuilder fiberBuilder = fibers.fiberGroup.create(name);
-                    LadderPresenter presenter = new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.ladderClickTradingIssues);
+                    final FiberBuilder fiberBuilder = fibers.fiberGroup.create(name);
+                    final LadderPresenter presenter =
+                            new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats,
+                                    channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
+                                    channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser,
+                                    fiberBuilder.getFiber(), channels.trace, channels.ladderClickTradingIssues,
+                                    channels.userCycleContractPublisher);
                     fiberBuilder.subscribe(presenter,
                             websocket,
                             channels.workingOrders,
@@ -421,7 +429,8 @@ public class Main {
                             channels.contractSets,
                             channels.singleOrderCommand,
                             channels.ladderClickTradingIssues,
-                            channels.replaceCommand);
+                            channels.replaceCommand,
+                            channels.userCycleContractPublisher);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 }
@@ -431,7 +440,7 @@ public class Main {
             {
                 final TypedChannel<WebSocketControlMessage> ladderWebSocket = create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("ladder", "ladder", fibers.ladder, webapp, ladderWebSocket);
-                LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(websockets);
+                final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(websockets);
                 fibers.ladder.subscribe(ladderMessageRouter, ladderWebSocket);
             }
 
@@ -454,7 +463,7 @@ public class Main {
                             try {
                                 webapp.serveStaticContent("web");
                                 webapp.start();
-                            } catch (Exception e) {
+                            } catch (final Exception e) {
                                 throw new RuntimeException(e);
                             }
                         }
@@ -490,17 +499,17 @@ public class Main {
 
         // Contract sets
         {
-            FuturesContractSetGenerator futuresContractSetGenerator = new FuturesContractSetGenerator(channels.contractSets);
+            final FuturesContractSetGenerator futuresContractSetGenerator = new FuturesContractSetGenerator(channels.contractSets);
             fibers.contracts.subscribe(futuresContractSetGenerator, channels.refData);
 
-            SyntheticSpreadContractSetGenerator generator = new SyntheticSpreadContractSetGenerator(channels.contractSets);
+            final SyntheticSpreadContractSetGenerator generator = new SyntheticSpreadContractSetGenerator(channels.contractSets);
             fibers.contracts.subscribe(generator, channels.refData);
         }
 
         // Market data
         {
 
-            for (String mds : environment.getList(Environment.MARKET_DATA)) {
+            for (final String mds : environment.getList(Environment.MARKET_DATA)) {
 
                 final MarketDataEventSnapshottingPublisher snapshottingPublisher = new MarketDataEventSnapshottingPublisher();
                 final FiberBuilder fiber = fibers.fiberGroup.create("Market Data: " + mds);
@@ -509,7 +518,7 @@ public class Main {
                     Map<String, InstrumentDefinitionEvent> refData = new HashMap<>();
 
                     @Override
-                    public void publish(MarketDataEvent msg) {
+                    public void publish(final MarketDataEvent msg) {
                         if (msg instanceof ServerHeartbeat) {
                             return;
                         }
@@ -519,10 +528,10 @@ public class Main {
                             refData.put(((InstrumentDefinitionEvent) msg).getSymbol(), (InstrumentDefinitionEvent) msg);
                         }
                         if (msg instanceof BookSnapshot) {
-                            BookSnapshot snapshot = (BookSnapshot) msg;
-                            InstrumentDefinitionEvent instrumentDefinitionEvent = refData.get(snapshot.getSymbol());
+                            final BookSnapshot snapshot = (BookSnapshot) msg;
+                            final InstrumentDefinitionEvent instrumentDefinitionEvent = refData.get(snapshot.getSymbol());
                             if (instrumentDefinitionEvent != null && "Eurex".equals(instrumentDefinitionEvent.getExchange())) {
-                                BookSnapshot reconstructedSnapshot = new BookSnapshot(snapshot.getSymbol(), PriceType.RECONSTRUCTED, snapshot.getSide(), snapshot.getLevels(), snapshot.getSeqNo(), snapshot.getMillis(), snapshot.getNanos(), snapshot.getCorrelationValue());
+                                final BookSnapshot reconstructedSnapshot = new BookSnapshot(snapshot.getSymbol(), PriceType.RECONSTRUCTED, snapshot.getSide(), snapshot.getLevels(), snapshot.getSeqNo(), snapshot.getMillis(), snapshot.getNanos(), snapshot.getCorrelationValue());
                                 snapshottingPublisher.publish(reconstructedSnapshot);
                             } else {
                                 snapshottingPublisher.publish(snapshot);
@@ -532,7 +541,7 @@ public class Main {
                         }
                     }
                 };
-                MarketDataSubscriber marketDataSubscriber = new MarketDataSubscriber(snapshottingPublisher);
+                final MarketDataSubscriber marketDataSubscriber = new MarketDataSubscriber(snapshottingPublisher);
                 fiber.subscribe(marketDataSubscriber, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
 
                 if (environment.getMarketDataExchange(mds) == Environment.Exchange.EUREX) {
@@ -559,7 +568,7 @@ public class Main {
                                 public void run() {
                                     try {
                                         easyEurexNaMDS.start();
-                                    } catch (IOException e) {
+                                    } catch (final IOException e) {
                                         throw new RuntimeException(e);
                                     }
                                 }
@@ -570,9 +579,9 @@ public class Main {
 
                     final TotalTradedVolumeAccumulator totalTradedVolumeAccumulator = new TotalTradedVolumeAccumulator(marketDataEventPublisher);
 
-                    SelectorWrapper selectorWrapper = new SelectorWrapper(Selector.open(), new ErrorHandler() {
+                    final SelectorWrapper selectorWrapper = new SelectorWrapper(Selector.open(), new ErrorHandler() {
                         @Override
-                        public void onError(Throwable throwable) {
+                        public void onError(final Throwable throwable) {
                             ERROR_CHANNEL.publish(throwable);
                         }
                     });
@@ -588,11 +597,11 @@ public class Main {
                             null,
                             new Callback<XetraPacketDroppedEvent>() {
                                 @Override
-                                public void onMessage(XetraPacketDroppedEvent message) {
+                                public void onMessage(final XetraPacketDroppedEvent message) {
                                     try {
                                         System.out.println("Xetra dropped a packet: ");
                                         message.toJson(System.out);
-                                    } catch (IOException e) {
+                                    } catch (final IOException e) {
                                         e.printStackTrace();
                                     }
                                     statsPublisher.publish(new AdvisoryStat("Reddal/Xetra", AdvisoryStat.Level.WARNING, "Dropped a packet."));
@@ -608,20 +617,20 @@ public class Main {
                         public void run() {
                             try {
                                 xetraMarketDataService.start();
-                            } catch (IOException e) {
+                            } catch (final IOException e) {
                                 throw new RuntimeException(e);
                             }
                         }
                     });
                 } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.EURONEXT) {
 
-                    String prefix = Environment.MARKET_DATA + "." + mds;
+                    final String prefix = Environment.MARKET_DATA + "." + mds;
 
                     final EuronextMarketDataService marketDataService =
                             new EuronextMarketDataService(NetworkInterfaceFinder.find(config.get(prefix + ".nic")), marketDataEventPublisher,
                                     ERROR_CHANNEL, new SelectorWrapper(Selector.open(), new ErrorHandler() {
                                 @Override
-                                public void onError(Throwable throwable) {
+                                public void onError(final Throwable throwable) {
                                     ERROR_CHANNEL.publish(throwable);
                                 }
                             }), EuronextXdpStream.Configuration.valueOf(config.get(prefix + ".environment")),
@@ -634,7 +643,7 @@ public class Main {
                         public void run() {
                             try {
                                 marketDataService.startSync();
-                            } catch (IOException e) {
+                            } catch (final IOException e) {
                                 ERROR_CHANNEL.publish(e);
                             }
                         }
@@ -669,8 +678,8 @@ public class Main {
 
         // Meta data
         {
-            for (String server : environment.getList(Environment.METADATA)) {
-                Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.METADATA, server);
+            for (final String server : environment.getList(Environment.METADATA)) {
+                final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.METADATA, server);
                 final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class, Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "metadata." + server + ".log"), fibers.logging.getFiber(), true)
@@ -688,14 +697,14 @@ public class Main {
         // Remote commands
         {
             for (final String server : environment.getList(Environment.REMOTE_COMMANDS)) {
-                Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.REMOTE_COMMANDS, server);
+                final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.REMOTE_COMMANDS, server);
                 final OnHeapBufferPhotocolsNioClient<RemoteOrderManagementEvent, RemoteOrderManagementCommand> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), RemoteOrderManagementEvent.class, RemoteOrderManagementCommand.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "remote-commands." + server + ".log"), fibers.logging.getFiber(), true)
                         .handler(new PhotocolsStatsPublisher<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(channels.stats, environment.getStatsName(), 10))
                         .handler(new JetlangChannelHandler<>(new Publisher<RemoteOrderManagementEvent>() {
                             @Override
-                            public void publish(RemoteOrderManagementEvent msg) {
+                            public void publish(final RemoteOrderManagementEvent msg) {
                                 channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg));
                             }
                         }, channels.remoteOrderCommandByServer.get(server), fibers.remoteOrders.getFiber()))
@@ -719,7 +728,7 @@ public class Main {
                 public void run() {
                     try {
                         commandServer.start();
-                    } catch (InterruptedException e) {
+                    } catch (final InterruptedException e) {
                         channels.errorPublisher.publish(e);
                     }
                 }
@@ -735,14 +744,14 @@ public class Main {
         // Working orders
         {
             for (final String server : environment.getList(Environment.WORKING_ORDERS)) {
-                Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.WORKING_ORDERS, server);
+                final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.WORKING_ORDERS, server);
                 final OnHeapBufferPhotocolsNioClient<WorkingOrderEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), WorkingOrderEvent.class, Void.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "working-orders." + server + ".log"), fibers.logging.getFiber(), true)
                         .handler(new PhotocolsStatsPublisher<WorkingOrderEvent, Void>(channels.stats, environment.getStatsName(), 10))
                         .handler(new JetlangChannelHandler<WorkingOrderEvent, Void>(new Publisher<WorkingOrderEvent>() {
                             @Override
-                            public void publish(WorkingOrderEvent msg) {
+                            public void publish(final WorkingOrderEvent msg) {
                                 if (msg instanceof WorkingOrderUpdate) {
                                     channels.workingOrders.publish(new WorkingOrderUpdateFromServer(server, (WorkingOrderUpdate) msg));
                                 }
@@ -761,17 +770,17 @@ public class Main {
 
         // Working orders and remote commands watchdog
         {
-            TradingStatusWatchdog watchdog = new TradingStatusWatchdog(channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM, channels.stats);
+            final TradingStatusWatchdog watchdog = new TradingStatusWatchdog(channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM, channels.stats);
             fibers.watchdog.subscribe(watchdog, channels.workingOrderEvents, channels.remoteOrderEvents);
             fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog.checkRunnable(), HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
         }
 
         // Mr. Phil position
         {
-            Environment.HostAndNic hostAndNic = environment.getMrPhilHostAndNic();
+            final Environment.HostAndNic hostAndNic = environment.getMrPhilHostAndNic();
             final OnHeapBufferPhotocolsNioClient<Position, Subscription> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic,
                     Position.class, Subscription.class, fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
-            PhotocolsHandler<Position, Subscription> positionHandler = new PositionSubscriptionPhotocolsHandler(channels.position);
+            final PhotocolsHandler<Position, Subscription> positionHandler = new PositionSubscriptionPhotocolsHandler(channels.position);
             fibers.mrPhil.subscribe(positionHandler, channels.refData);
             client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                     .logFile(new File(logDir, "mr-phil.log"), fibers.logging.getFiber(), true)
@@ -787,13 +796,13 @@ public class Main {
         // Indy
         {
             if (environment.indyEnabled()) {
-                Environment.HostAndNic hostAndNic = environment.getIndyHostAndNic();
+                final Environment.HostAndNic hostAndNic = environment.getIndyHostAndNic();
                 final OnHeapBufferPhotocolsNioClient<IndyEnvelope, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic, IndyEnvelope.class, Void.class, fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "indy.log"), fibers.logging.getFiber(), true)
                         .handler(new JetlangChannelHandler<IndyEnvelope, Void>(new Publisher<IndyEnvelope>() {
                             @Override
-                            public void publish(IndyEnvelope msg) {
+                            public void publish(final IndyEnvelope msg) {
                                 if (msg.getMessage() instanceof EquityIdAndSymbol) {
                                     channels.equityIdAndSymbol.publish((EquityIdAndSymbol) msg.getMessage());
                                 }
@@ -816,10 +825,10 @@ public class Main {
         // Desk Position
         {
             if (environment.opxlDeskPositionEnabled()) {
-                for (String key : environment.opxlDeskPositionKeys()) {
+                for (final String key : environment.opxlDeskPositionKeys()) {
                     final OpxlPositionSubscriber opxlPositionSubscriber = new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, new Publisher<DeskPosition>() {
                         @Override
-                        public void publish(DeskPosition msg) {
+                        public void publish(final DeskPosition msg) {
                             channels.metaData.publish(msg);
                         }
                     });
@@ -837,9 +846,9 @@ public class Main {
         {
             if (environment.opxlLadderTextEnabled()) {
 
-                Collection<String> keys = environment.getOpxlLadderTextKeys();
+                final Collection<String> keys = environment.getOpxlLadderTextKeys();
 
-                for (String key : keys) {
+                for (final String key : keys) {
                     final OpxlLadderTextSubscriber opxlLadderTextSubscriber = new OpxlLadderTextSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, channels.metaData);
                     fibers.onStart(new Runnable() {
                         @Override
@@ -857,14 +866,14 @@ public class Main {
         {
             channels.error.subscribe(fibers.logging.getFiber(), new Callback<Throwable>() {
                 @Override
-                public void onMessage(Throwable message) {
+                public void onMessage(final Throwable message) {
                     System.out.println(new Date().toString());
                     message.printStackTrace();
                 }
             });
             channels.stats.subscribe(fibers.logging.getFiber(), new Callback<StatsMsg>() {
                 @Override
-                public void onMessage(StatsMsg message) {
+                public void onMessage(final StatsMsg message) {
                     if (message instanceof AdvisoryStat) {
                         System.out.println(new Date().toString());
                         System.out.println(message.toString());
@@ -885,7 +894,7 @@ public class Main {
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "contracts.json", channels.errorPublisher), channels.contractSets);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "single-order.json", channels.errorPublisher), channels.singleOrderCommand);
             fibers.logging.subscribe(new JsonChannelLogger(logDir, "trace.json", channels.errorPublisher), channels.trace);
-            for (String name : websocketsForLogging.keySet()) {
+            for (final String name : websocketsForLogging.keySet()) {
                 fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket" + name + ".json", channels.errorPublisher), websocketsForLogging.get(
                         name));
             }

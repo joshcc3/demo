@@ -56,13 +56,13 @@ public class LadderPresenter {
     private final Map<String, Runnable> marketDataUnsubscribers = new HashMap<>();
     private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(new Function<String, WorkingOrdersForSymbol>() {
         @Override
-        public WorkingOrdersForSymbol apply(java.lang.String from) {
+        public WorkingOrdersForSymbol apply(final java.lang.String from) {
             return new WorkingOrdersForSymbol(from);
         }
     });
     private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(new Function<String, ExtraDataForSymbol>() {
         @Override
-        public ExtraDataForSymbol apply(java.lang.String from) {
+        public ExtraDataForSymbol apply(final java.lang.String from) {
             return new ExtraDataForSymbol(from);
         }
     });
@@ -79,8 +79,14 @@ public class LadderPresenter {
 
     private final Fiber fiber;
     private Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
+    private final Publisher<UserCycleRequest> userCycleContractPublisher;
 
-    public LadderPresenter(Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, LadderOptions ladderOptions, Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher, Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, Publisher<ReddalMessage> commandPublisher, final Publisher<SubscribeToMarketData> subscribeToMarketData, Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData, final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, Publisher<Jsonable> trace, Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher) {
+    public LadderPresenter(final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
+            final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+            final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<SubscribeToMarketData> subscribeToMarketData, final Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData,
+            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
@@ -92,13 +98,14 @@ public class LadderPresenter {
         this.unsubscribeFromMarketData = unsubscribeFromMarketData;
         this.trace = trace;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
+        this.userCycleContractPublisher = userCycleContractPublisher;
         ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(new Function<String, Map<String, LadderPrefsForSymbolUser>>() {
             @Override
             public Map<String, LadderPrefsForSymbolUser> apply(final String symbol) {
                 return new MapMaker().makeComputingMap(new Function<String, LadderPrefsForSymbolUser>() {
                     @Override
-                    public LadderPrefsForSymbolUser apply(String user) {
-                        LadderPrefsForSymbolUser prefs = new LadderPrefsForSymbolUser(symbol, user, storeLadderPrefPublisher);
+                    public LadderPrefsForSymbolUser apply(final String user) {
+                        final LadderPrefsForSymbolUser prefs = new LadderPrefsForSymbolUser(symbol, user, storeLadderPrefPublisher);
                         return prefs;
                     }
                 });
@@ -116,9 +123,9 @@ public class LadderPresenter {
     private MarketDataForSymbol subscribeToMarketDataForSymbol(final String symbol, final Fiber fiber) {
         // Subscribe to channel for this symbol
         final MemoryChannel<MarketDataEvent> marketDataEventMemoryChannel = new MemoryChannel<>();
-        MarketDataForSymbol marketDataForSymbol = new MarketDataForSymbol(symbol);
+        final MarketDataForSymbol marketDataForSymbol = new MarketDataForSymbol(symbol);
         marketDataEventMemoryChannel.subscribe(new BatchSubscriber<>(fiber, marketDataForSymbol.onMarketDataBatchCallback(), MD_FLUSH_MILLIS, TimeUnit.MILLISECONDS));
-        Runnable runnable = new Runnable() {
+        final Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 unsubscribeFromMarketData.publish(new UnsubscribeFromMarketData(symbol, marketDataEventMemoryChannel));
@@ -135,21 +142,26 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void onConnected(WebSocketConnected connected) {
-        UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
-        View view = new WebSocketOutputDispatcher<View>(View.class).wrap(uiPipe.evalPublisher());
-        LadderView ladderView = new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher, tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser, trace, ladderClickTradingIssuePublisher);
+    public void onConnected(final WebSocketConnected connected) {
+        final UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
+        final View view = new WebSocketOutputDispatcher<>(View.class).wrap(uiPipe.evalPublisher());
+        final LadderView ladderView =
+                new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher,
+                        tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser, trace,
+                        ladderClickTradingIssuePublisher, userCycleContractPublisher);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
-        viewsByUser.put(connected.getClient().getUserName(), ladderView);
+        final String user = connected.getClient().getUserName();
+        viewsByUser.put( connected.getClient().getUserName(), ladderView);
     }
 
     @Subscribe
-    public void onDisconnected(WebSocketDisconnected disconnected) {
-        LadderView view = viewBySocket.remove(disconnected.getOutboundChannel());
+    public void onDisconnected(final WebSocketDisconnected disconnected) {
+        final LadderView view = viewBySocket.remove(disconnected.getOutboundChannel());
         if (view != null && view.symbol != null) {
-            String symbol = view.symbol;
+            final String symbol = view.symbol;
             viewsBySymbol.remove(symbol, view);
-            viewsByUser.remove(disconnected.getClient().getUserName(), view);
+            final String user = disconnected.getClient().getUserName();
+            viewsByUser.remove(user, view);
             if (viewsBySymbol.get(symbol).size() == 0) {
                 unsubscribeFromMarketDataForSymbol(symbol);
             }
@@ -157,16 +169,16 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void onMessage(WebSocketInboundData msg) {
-        String data = msg.getData();
-        String[] args = data.split("\0");
-        String cmd = args[0];
-        LadderView view = viewBySocket.get(msg.getOutboundChannel());
+    public void onMessage(final WebSocketInboundData msg) {
+        final String data = msg.getData();
+        final String[] args = data.split("\0");
+        final String cmd = args[0];
+        final LadderView view = viewBySocket.get(msg.getOutboundChannel());
         if (view != null) {
             if (cmd.equals("ladder-subscribe")) {
                 final String symbol = args[1];
                 final int levels = Integer.parseInt(args[2]);
-                MarketDataForSymbol marketDataForSymbol = marketDataForSymbolMap.get(symbol);
+                final MarketDataForSymbol marketDataForSymbol = marketDataForSymbolMap.get(symbol);
                 view.subscribeToSymbol(symbol, levels, marketDataForSymbol, ordersBySymbol.get(symbol), dataBySymbol.get(symbol),
                         ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()));
                 if (3 < args.length) {
@@ -186,7 +198,7 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(final LadderClickTradingIssue ladderClickTradingIssue) {
-        Collection<LadderView> views = viewsBySymbol.get(ladderClickTradingIssue.symbol);
+        final Collection<LadderView> views = viewsBySymbol.get(ladderClickTradingIssue.symbol);
         for (final LadderView view : views) {
             view.clickTradingIssue(ladderClickTradingIssue);
             fiber.schedule(new Runnable() {
@@ -200,22 +212,22 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(Main.WorkingOrderUpdateFromServer workingOrderUpdate) {
+    public void on(final Main.WorkingOrderUpdateFromServer workingOrderUpdate) {
         ordersBySymbol.get(workingOrderUpdate.value.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
     }
 
     @Subscribe
-    public void on(LaserLine laserLine) {
+    public void on(final LaserLine laserLine) {
         dataBySymbol.get(laserLine.getSymbol()).onLaserLine(laserLine);
     }
 
     @Subscribe
-    public void on(DeskPosition deskPosition) {
+    public void on(final DeskPosition deskPosition) {
         dataBySymbol.get(deskPosition.getSymbol()).onDeskPosition(deskPosition);
     }
 
     @Subscribe
-    public void on(InfoOnLadder infoOnLadder) {
+    public void on(final InfoOnLadder infoOnLadder) {
         dataBySymbol.get(infoOnLadder.getSymbol()).onInfoOnLadder(infoOnLadder);
     }
 
@@ -229,12 +241,12 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(LastTrade lastTrade) {
+    public void on(final LastTrade lastTrade) {
         dataBySymbol.get(lastTrade.getSymbol()).onLastTrade(lastTrade);
     }
 
     @Subscribe
-    public void on(SpreadContractSet spreadContractSet) {
+    public void on(final SpreadContractSet spreadContractSet) {
         dataBySymbol.get(spreadContractSet.front).onFuturesContractSet(spreadContractSet);
         if (spreadContractSet.back != null) {
             dataBySymbol.get(spreadContractSet.back).onFuturesContractSet(spreadContractSet);
@@ -245,23 +257,23 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(Position position) {
+    public void on(final Position position) {
         dataBySymbol.get(position.getSymbol()).onDayPosition(position);
     }
 
     @Subscribe
-    public void on(TradingStatusWatchdog.ServerTradingStatus serverTradingStatus) {
+    public void on(final TradingStatusWatchdog.ServerTradingStatus serverTradingStatus) {
         tradingStatusForAll.on(serverTradingStatus);
         if (serverTradingStatus.workingOrderStatus == TradingStatusWatchdog.Status.NOT_OK) {
-            for (WorkingOrdersForSymbol ordersForSymbol : ordersBySymbol.values()) {
-                for (Iterator<Main.WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByKey.values().iterator(); iter.hasNext(); ) {
-                    Main.WorkingOrderUpdateFromServer working = iter.next();
+            for (final WorkingOrdersForSymbol ordersForSymbol : ordersBySymbol.values()) {
+                for (final Iterator<Main.WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByKey.values().iterator(); iter.hasNext(); ) {
+                    final Main.WorkingOrderUpdateFromServer working = iter.next();
                     if (working.fromServer.equals(serverTradingStatus.server)) {
                         iter.remove();
                     }
                 }
-                for (Iterator<Main.WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByPrice.values().iterator(); iter.hasNext(); ) {
-                    Main.WorkingOrderUpdateFromServer working = iter.next();
+                for (final Iterator<Main.WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByPrice.values().iterator(); iter.hasNext(); ) {
+                    final Main.WorkingOrderUpdateFromServer working = iter.next();
                     if (working.fromServer.equals(serverTradingStatus.server)) {
                         iter.remove();
                     }
@@ -271,38 +283,38 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(LadderSettings.LadderPrefLoaded ladderPrefLoaded) {
-        LadderSettings.LadderPref pref = ladderPrefLoaded.pref;
+    public void on(final LadderSettings.LadderPrefLoaded ladderPrefLoaded) {
+        final LadderSettings.LadderPref pref = ladderPrefLoaded.pref;
         ladderPrefsForUserBySymbol.get(pref.symbol).get(pref.user).on(ladderPrefLoaded);
     }
 
     @Subscribe
-    public void on(CenterToPrice centerToPrice) {
-        for (LadderView ladderView : viewBySocket.values()) {
+    public void on(final CenterToPrice centerToPrice) {
+        for (final LadderView ladderView : viewBySocket.values()) {
             ladderView.recenterLadderForUser(centerToPrice);
         }
     }
 
     @Subscribe
-    public void on(SymbolAvailable symbolAvailable) {
+    public void on(final SymbolAvailable symbolAvailable) {
         dataBySymbol.get(symbolAvailable.getSymbol()).setSymbolAvailable();
     }
 
     @Subscribe
-    public void on(DisplaySymbol displaySymbol) {
+    public void on(final DisplaySymbol displaySymbol) {
         dataBySymbol.get(displaySymbol.marketDataSymbol).setDisplaySymbol(displaySymbol);
     }
 
     @Subscribe
-    public void on(RecenterLaddersForUser recenterLaddersForUser) {
-        for (LadderView ladderView : viewBySocket.values()) {
+    public void on(final RecenterLaddersForUser recenterLaddersForUser) {
+        for (final LadderView ladderView : viewBySocket.values()) {
             ladderView.recenterLadderForUser(recenterLaddersForUser);
         }
     }
 
     @Subscribe
-    public void onSingleOrderCommand(OrdersPresenter.SingleOrderCommand singleOrderCommand) {
-        for (LadderView view : viewsByUser.get(singleOrderCommand.getUsername())) {
+    public void onSingleOrderCommand(final OrdersPresenter.SingleOrderCommand singleOrderCommand) {
+        for (final LadderView view : viewsByUser.get(singleOrderCommand.getUsername())) {
             if (view.symbol.equals(singleOrderCommand.getSymbol())) {
                 view.onSingleOrderCommand(singleOrderCommand);
                 return;
@@ -311,10 +323,15 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void onReplaceCommand(ReplaceCommand replaceCommand) {
-        for (LadderView ladderView : viewBySocket.values()) {
+    public void onReplaceCommand(final ReplaceCommand replaceCommand) {
+        for (final LadderView ladderView : viewBySocket.values()) {
             ladderView.replaceSymbol(replaceCommand);
         }
+    }
+
+    @Subscribe
+    public void on(final UserCycleRequest request) {
+        viewsByUser.get(request.username).forEach(LadderView::nextContract);
     }
 
     public Runnable flushBatchedData() {
@@ -327,7 +344,7 @@ public class LadderPresenter {
     }
 
     private void flushAllLadders() {
-        for (LadderView ladderView : viewBySocket.values()) {
+        for (final LadderView ladderView : viewBySocket.values()) {
             ladderView.flush();
         }
     }
@@ -336,7 +353,7 @@ public class LadderPresenter {
         return new Runnable() {
             @Override
             public void run() {
-                for (LadderView ladderView : viewBySocket.values()) {
+                for (final LadderView ladderView : viewBySocket.values()) {
                     ladderView.sendHeartbeat();
                 }
             }
