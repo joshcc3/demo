@@ -3,19 +3,21 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.reddal.util.TinyStringDb;
 import com.drwtrading.london.util.Struct;
+import com.google.common.base.Joiner;
 import org.jetlang.channels.Publisher;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public class LadderSettings {
 
+
     private final Publisher<LadderPrefLoaded> ladderPrefLoadedPublisher;
+
     public static class LadderPref extends Struct {
 
+        public static final String SEPARATOR = "<>";
         public final String user;
         public final String symbol;
         public final String id;
@@ -29,12 +31,12 @@ public class LadderSettings {
         }
 
         public static LadderPref from(String key, String value) {
-            String[] split = key.split("\\.");
+            String[] split = key.split(SEPARATOR);
             return new LadderPref(split[0], split[1], split[2], value);
         }
 
         public String key() {
-            return user + "." + symbol + "." + id;
+            return Joiner.on(SEPARATOR).join(user, symbol, id);
         }
     }
 
