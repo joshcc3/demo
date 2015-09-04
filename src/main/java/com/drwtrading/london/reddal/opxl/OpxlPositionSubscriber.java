@@ -39,7 +39,7 @@ public class OpxlPositionSubscriber {
                             String symbol = data[1].toString();
                             String position = data[2].toString();
                             if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(position)) {
-                                positionPublisher.publish(new DeskPosition(symbol, position));
+                                positionPublisher.publish(new DeskPosition(symbol.toUpperCase(), position));
                             }
                         }
 
