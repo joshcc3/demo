@@ -18,6 +18,7 @@ import org.jetlang.channels.Publisher;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class OrdersPresenter {
@@ -36,8 +37,12 @@ public class OrdersPresenter {
         this.singleOrderCommandPublisher = singleOrderCommandPublisher;
     }
 
-    @Subscribe
-    public void on(final Main.WorkingOrderUpdateFromServer update) {
+
+    public void onWorkingOrderBatch(List<Main.WorkingOrderUpdateFromServer> batch) {
+        batch.forEach(this::onWorkingOrder);
+    }
+
+    public void onWorkingOrder(final Main.WorkingOrderUpdateFromServer update) {
 
         final String symbol = update.value.getSymbol();
         WorkingOrdersForSymbol orders = this.orders.get(symbol);
@@ -45,10 +50,6 @@ public class OrdersPresenter {
         final long newPrice = update.value.getPrice();
         final long prevPrice = null == prevUpdate ? update.value.getPrice() : prevUpdate.value.getPrice();
         update(symbol, newPrice, prevPrice);
-    }
-
-    private SymbolPrice getSymbolPrice(WorkingOrderUpdate workingOrderUpdate) {
-        return new SymbolPrice(workingOrderUpdate.getSymbol(), workingOrderUpdate.getPrice());
     }
 
     @Subscribe

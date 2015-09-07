@@ -5,10 +5,14 @@ import com.drwtrading.london.prices.PriceFormats;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
+import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
+import com.drwtrading.monitoring.stats.StatsMsg;
+import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
+import org.jetlang.channels.Publisher;
 import org.jetlang.core.Scheduler;
 
 import java.util.HashMap;
@@ -19,25 +23,16 @@ import java.util.concurrent.TimeUnit;
 public class WorkingOrdersPresenter {
 
     private final WebSocketViews<WorkingOrderView> views = WebSocketViews.create(WorkingOrderView.class, this);
-    Map<String, Main.WorkingOrderUpdateFromServer> workingOrders = new HashMap<>();
-    Map<String, Main.WorkingOrderUpdateFromServer> dirty = new HashMap<>();
-    Map<String, InstrumentDefinitionEvent> defs = new HashMap<>();
+    private final Map<String, Main.WorkingOrderUpdateFromServer> workingOrders = new HashMap<>();
+    private final Map<String, Main.WorkingOrderUpdateFromServer> dirty = new HashMap<>();
+    private final Map<String, InstrumentDefinitionEvent> defs = new HashMap<>();
+    private final Publisher<StatsMsg> statsMsgPublisher;
+    private final Publisher<OrdersPresenter.SingleOrderCommand> commands;
 
-    public WorkingOrdersPresenter(Scheduler scheduler) {
+    public WorkingOrdersPresenter(Scheduler scheduler, Publisher<StatsMsg> statsMsgPublisher, Publisher<OrdersPresenter.SingleOrderCommand> commands) {
+        this.statsMsgPublisher = statsMsgPublisher;
+        this.commands = commands;
         scheduler.scheduleWithFixedDelay(this::repaint, 100, 250, TimeUnit.MILLISECONDS);
-    }
-
-    public Runnable repaint() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                // Can we always just repaint stuff here? Will we ever get the case where something has been removed and is now dead?
-                for (Main.WorkingOrderUpdateFromServer workingOrderUpdate : dirty.values()) {
-                    publishWorkingOrderUpdate(views.all(), workingOrderUpdate);
-                }
-                dirty.clear();
-            }
-        };
     }
 
     @Subscribe
@@ -46,16 +41,7 @@ public class WorkingOrdersPresenter {
     }
 
     public void onWorkingOrderBatch(List<Main.WorkingOrderUpdateFromServer> batch) {
-        batch.forEach(this::on);
-    }
-
-    public void on(Main.WorkingOrderUpdateFromServer order) {
-        if (order.value.getWorkingOrderState() == WorkingOrderState.DEAD) {
-            workingOrders.remove(order.key());
-        } else {
-            workingOrders.put(order.key(), order);
-        }
-        dirty.put(order.key(), order);
+        batch.forEach(this::onWorkingOrder);
     }
 
     @Subscribe
@@ -74,6 +60,58 @@ public class WorkingOrdersPresenter {
     @Subscribe
     public void onMessage(WebSocketInboundData msg) {
         views.invoke(msg);
+    }
+
+    // --------------
+
+    @FromWebSocketView
+    public void cancelOrder(String key, WebSocketInboundData data) {
+        String user = data.getClient().getUserName();
+        Main.WorkingOrderUpdateFromServer order = workingOrders.get(key);
+        if (null == order) {
+            statsMsgPublisher.publish(new AdvisoryStat("Reddal Working Orders", AdvisoryStat.Level.INFO, "Tried to cancel non-existent order [" + key + "]"));
+        } else {
+            commands.publish(new OrdersPresenter.CancelOrder(order.value.getSymbol(), order.key(), user));
+        }
+    }
+
+    @FromWebSocketView
+    public void cancelAll(WebSocketInboundData data) {
+        String user = data.getClient().getUserName();
+        workingOrders.values().stream()
+                .forEach(order -> {
+                    commands.publish(new OrdersPresenter.CancelOrder(order.value.getSymbol(), order.key(), user));
+                });
+    }
+
+    @FromWebSocketView
+    public void cancelNonGTC(WebSocketInboundData data) {
+        String user = data.getClient().getUserName();
+        workingOrders.values().stream()
+                .filter(order -> !(order.fromServer.toUpperCase().contains("GTC") ||
+                        order.value.getTag().toUpperCase().contains("GTC") ||
+                        order.value.getWorkingOrderType().name().toUpperCase().contains("GTC")))
+                .forEach(order -> {
+                    commands.publish(new OrdersPresenter.CancelOrder(order.value.getSymbol(), order.key(), user));
+                });
+    }
+
+    // -----------------
+
+    private void repaint() {
+        for (Main.WorkingOrderUpdateFromServer workingOrderUpdate : dirty.values()) {
+            publishWorkingOrderUpdate(views.all(), workingOrderUpdate);
+        }
+        dirty.clear();
+    }
+
+    private void onWorkingOrder(Main.WorkingOrderUpdateFromServer order) {
+        if (order.value.getWorkingOrderState() == WorkingOrderState.DEAD) {
+            workingOrders.remove(order.key());
+        } else {
+            workingOrders.put(order.key(), order);
+        }
+        dirty.put(order.key(), order);
     }
 
     private void publishWorkingOrderUpdate(WorkingOrderView view, Main.WorkingOrderUpdateFromServer order) {

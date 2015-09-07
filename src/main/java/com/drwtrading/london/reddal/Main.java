@@ -80,6 +80,7 @@ import com.google.common.collect.MapMaker;
 import com.sun.jndi.toolkit.url.Uri;
 import drw.london.json.Jsonable;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
+import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Callback;
 import org.jetlang.fibers.Fiber;
@@ -399,7 +400,17 @@ public class Main {
                 createWebPageWithWebSocket("orders", "orders", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("orders", websocket);
                 final OrdersPresenter ordersPresenter = new OrdersPresenter(channels.singleOrderCommand);
-                fibers.ui.subscribe(ordersPresenter, channels.workingOrders, websocket);
+                fibers.ui.subscribe(ordersPresenter, websocket);
+                channels.workingOrders.subscribe(new BatchSubscriber<>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
+            }
+
+            // Working orders screen
+            {
+                TypedChannel<WebSocketControlMessage> ws = create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
+                WorkingOrdersPresenter presenter = new WorkingOrdersPresenter(fibers.ui.getFiber(), channels.stats, channels.singleOrderCommand);
+                fibers.ui.subscribe(presenter, channels.refData, ws);
+                channels.workingOrders.subscribe(new BatchSubscriber<>(fibers.ui.getFiber(), presenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
             }
 
             // Ladder presenters
@@ -445,6 +456,7 @@ public class Main {
             }
 
 
+
         }
 
 
@@ -482,6 +494,7 @@ public class Main {
                 fibers.ui.subscribe(ladderWorkspace, workspaceSocket, channels.contractSets);
                 webapp.addHandler("/open", new WorkspaceRequestHandler(ladderWorkspace, new Uri(webapp.getBaseUri()).getHost(), environment.getWebPort()));
             }
+
 
         }
 
