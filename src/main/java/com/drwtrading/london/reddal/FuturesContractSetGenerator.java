@@ -8,15 +8,19 @@ import com.drwtrading.london.protocols.photon.marketdata.FutureStrategyType;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.util.Struct;
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapMaker;
 import org.jetlang.channels.Publisher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 public class FuturesContractSetGenerator {
+
+    final Set<String> excludedMarkets = ImmutableSet.of("FEXD");
 
     Map<String, TreeMap<Long, InstrumentDefinitionEvent>> marketToOutrightsByExpiry = new MapMaker().makeComputingMap(new Function<String, TreeMap<Long, InstrumentDefinitionEvent>>() {
         @Override
@@ -60,9 +64,11 @@ public class FuturesContractSetGenerator {
     }
 
     private void publishContractSet(final String market) {
-        SpreadContractSet spreadContractSet = updateMarket(market);
-        if (spreadContractSet != null && !spreadContractSet.equals(setByFrontMonth.put(spreadContractSet.front, spreadContractSet))) {
-            publisher.publish(spreadContractSet);
+        if(!excludedMarkets.contains(market)) {
+            SpreadContractSet spreadContractSet = updateMarket(market);
+            if (spreadContractSet != null && !spreadContractSet.equals(setByFrontMonth.put(spreadContractSet.front, spreadContractSet))) {
+                publisher.publish(spreadContractSet);
+            }
         }
     }
 

@@ -1,0 +1,106 @@
+<html>
+<head>
+    <title>ladder</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="js/jquery-1.4.2.js"></script>
+    <script src="js/websocket.js"></script>
+    <script src="js/websocket-ui.js"></script>
+    <script src="js/sound-files.js"></script>
+    <script src="js/sound-player.js"></script>
+    <script src="js/sounds.js"></script>
+    <script src="cell-functions.js"></script>
+    <style>
+        body {
+            margin: 0px;
+            padding: 0px;
+            border: solid 2px black;
+        }
+    </style>
+    <script>
+
+        $(function () {
+            ws = connect();
+            ws.logToConsole = true;
+            ws.onmessage = function (x) {
+                eval(x)
+            };
+        });
+
+        Rows = {};
+
+        function updateWorkingOrder(key,
+                                    instrument,
+                                    side,
+                                    price,
+                                    filledQuantity,
+                                    quantity,
+                                    state,
+                                    orderAlgoType,
+                                    tag,
+                                    server,
+                                    isDead) {
+
+            var row = Rows[key];
+
+            if (isDead && row) {
+                delete Rows[key];
+                row.remove();
+                return;
+            }
+
+            if (!row) {
+                row = $("#orders tr.template").clone().removeClass("template");
+                Rows[key] = row;
+                $("table#orders").append(row);
+            }
+
+            row.find("key").text(key);
+            row.find("instrument").text(instrument);
+            row.find("side").text(side);
+            row.find("price").text(price);
+            row.find("filledQuantity").text(filledQuantity);
+            row.find("quantity").text(quantity);
+            row.find("state").text(state);
+            row.find("orderAlgoType").text(orderAlgoType);
+            row.find("tag").text(tag);
+            row.find("server").text(server);
+            row.find("isDead").text(isDead);
+
+        }
+
+    </script>
+</head>
+<body>
+<div class="content">
+    <table id="orders">
+        <tr class="header">
+            <th>key</th>
+            <th>instrument</th>
+            <th>side</th>
+            <th>price</th>
+            <th>filledQuantity</th>
+            <th>quantity</th>
+            <th>state</th>
+            <th>orderAlgoType</th>
+            <th>tag</th>
+            <th>server</th>
+            <th>isDead</th>
+        </tr>
+        <tr class="template">
+            <td class="key"></td>
+            <td class="instrument"></td>
+            <td class="side"></td>
+            <td class="price"></td>
+            <td class="filledQuantity"></td>
+            <td class="quantity"></td>
+            <td class="state"></td>
+            <td class="orderAlgoType"></td>
+            <td class="tag"></td>
+            <td class="server"></td>
+            <td class="isDead"></td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>
