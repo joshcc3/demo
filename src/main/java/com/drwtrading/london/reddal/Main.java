@@ -408,7 +408,7 @@ public class Main {
             {
                 TypedChannel<WebSocketControlMessage> ws = create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
-                WorkingOrdersPresenter presenter = new WorkingOrdersPresenter(fibers.ui.getFiber(), channels.stats, channels.singleOrderCommand);
+                WorkingOrdersPresenter presenter = new WorkingOrdersPresenter(fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand);
                 fibers.ui.subscribe(presenter, channels.refData, ws);
                 channels.workingOrders.subscribe(new BatchSubscriber<>(fibers.ui.getFiber(), presenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
             }

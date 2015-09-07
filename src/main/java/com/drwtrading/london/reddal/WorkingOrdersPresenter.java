@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.prices.PriceFormats;
+import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
@@ -27,9 +28,9 @@ public class WorkingOrdersPresenter {
     private final Map<String, Main.WorkingOrderUpdateFromServer> dirty = new HashMap<>();
     private final Map<String, InstrumentDefinitionEvent> defs = new HashMap<>();
     private final Publisher<StatsMsg> statsMsgPublisher;
-    private final Publisher<OrdersPresenter.SingleOrderCommand> commands;
+    private final Publisher<Main.RemoteOrderCommandToServer> commands;
 
-    public WorkingOrdersPresenter(Scheduler scheduler, Publisher<StatsMsg> statsMsgPublisher, Publisher<OrdersPresenter.SingleOrderCommand> commands) {
+    public WorkingOrdersPresenter(Scheduler scheduler, Publisher<StatsMsg> statsMsgPublisher, Publisher<Main.RemoteOrderCommandToServer> commands) {
         this.statsMsgPublisher = statsMsgPublisher;
         this.commands = commands;
         scheduler.scheduleWithFixedDelay(this::repaint, 100, 250, TimeUnit.MILLISECONDS);
@@ -71,7 +72,7 @@ public class WorkingOrdersPresenter {
         if (null == order) {
             statsMsgPublisher.publish(new AdvisoryStat("Reddal Working Orders", AdvisoryStat.Level.INFO, "Tried to cancel non-existent order [" + key + "]"));
         } else {
-            commands.publish(new OrdersPresenter.CancelOrder(order.value.getSymbol(), order.key(), user));
+            cancel(user, order);
         }
     }
 
@@ -80,7 +81,7 @@ public class WorkingOrdersPresenter {
         String user = data.getClient().getUserName();
         workingOrders.values().stream()
                 .forEach(order -> {
-                    commands.publish(new OrdersPresenter.CancelOrder(order.value.getSymbol(), order.key(), user));
+                    cancel(user, order);
                 });
     }
 
@@ -92,11 +93,22 @@ public class WorkingOrdersPresenter {
                         order.value.getTag().toUpperCase().contains("GTC") ||
                         order.value.getWorkingOrderType().name().toUpperCase().contains("GTC")))
                 .forEach(order -> {
-                    commands.publish(new OrdersPresenter.CancelOrder(order.value.getSymbol(), order.key(), user));
+                    cancel(user, order);
                 });
     }
 
     // -----------------
+
+    private void cancel(String user, Main.WorkingOrderUpdateFromServer order) {
+        commands.publish(new Main.RemoteOrderCommandToServer(order.fromServer,
+                new RemoteCancelOrder(order.fromServer, user, order.value.getChainId(),
+                        LadderView.getRemoteOrderFromWorkingOrder(
+                                false,
+                                order.value.getPrice(),
+                                order.value,
+                                order.value.getTotalQuantity()
+                        ))));
+    }
 
     private void repaint() {
         for (Main.WorkingOrderUpdateFromServer workingOrderUpdate : dirty.values()) {
