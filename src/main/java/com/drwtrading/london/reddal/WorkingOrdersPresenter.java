@@ -20,9 +20,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 public class WorkingOrdersPresenter {
 
+    public static final Predicate<Main.WorkingOrderUpdateFromServer> WORKING_ORDER_FILTER = WorkingOrdersPresenter::workingOrderFilter;
+    public static final Predicate<Main.WorkingOrderUpdateFromServer> NON_GTC_FILTER = WorkingOrdersPresenter::nonGTCFilter;
     private final WebSocketViews<WorkingOrderView> views = WebSocketViews.create(WorkingOrderView.class, this);
     private final Map<String, Main.WorkingOrderUpdateFromServer> workingOrders = new HashMap<>();
     private final Map<String, Main.WorkingOrderUpdateFromServer> dirty = new HashMap<>();
@@ -42,7 +45,9 @@ public class WorkingOrdersPresenter {
     }
 
     public void onWorkingOrderBatch(List<Main.WorkingOrderUpdateFromServer> batch) {
-        batch.forEach(this::onWorkingOrder);
+        batch.stream()
+                .filter(WORKING_ORDER_FILTER)
+                .forEach(this::onWorkingOrder);
     }
 
     @Subscribe
@@ -89,15 +94,23 @@ public class WorkingOrdersPresenter {
     public void cancelNonGTC(WebSocketInboundData data) {
         String user = data.getClient().getUserName();
         workingOrders.values().stream()
-                .filter(order -> !(order.fromServer.toUpperCase().contains("GTC") ||
-                        order.value.getTag().toUpperCase().contains("GTC") ||
-                        order.value.getWorkingOrderType().name().toUpperCase().contains("GTC")))
+                .filter(NON_GTC_FILTER)
                 .forEach(order -> {
                     cancel(user, order);
                 });
     }
 
     // -----------------
+
+    public static boolean workingOrderFilter(Main.WorkingOrderUpdateFromServer order) {
+        return !order.fromServer.equals("synthetic");
+    }
+
+    public static boolean nonGTCFilter(Main.WorkingOrderUpdateFromServer order) {
+        return !(order.fromServer.toUpperCase().contains("GTC") ||
+                order.value.getTag().toUpperCase().contains("GTC") ||
+                order.value.getWorkingOrderType().name().toUpperCase().contains("GTC"));
+    }
 
     private void cancel(String user, Main.WorkingOrderUpdateFromServer order) {
         commands.publish(new Main.RemoteOrderCommandToServer(order.fromServer,
