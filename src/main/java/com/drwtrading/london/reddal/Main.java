@@ -107,7 +107,7 @@ import static com.google.common.collect.Maps.newHashMap;
 public class Main {
 
     public static final long SERVER_TIMEOUT = 3000L;
-    public static final int BATCH_FLUSH_INTERVAL_MS = 105;
+    public static final int BATCH_FLUSH_INTERVAL_MS = 40;
     public static final int HEARTBEAT_INTERVAL_MS = 20 * BATCH_FLUSH_INTERVAL_MS;
     public static final int NUM_DISPLAY_THREADS = 4;
     private static final long RECONNECT_INTERVAL_MILLIS = 10000;
