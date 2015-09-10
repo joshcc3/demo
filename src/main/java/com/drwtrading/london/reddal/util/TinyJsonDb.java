@@ -16,10 +16,12 @@ import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TinyJsonDb implements TinyDb<JSONObject> {
 
@@ -59,12 +61,7 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
     }
 
     public final File dataFile;
-    public final Map<String, List<JsonFileDbEntry>> objectById = new MapMaker().makeComputingMap(new Function<String, List<JsonFileDbEntry>>() {
-        @Override
-        public List<JsonFileDbEntry> apply(String from) {
-            return new ArrayList<JsonFileDbEntry>();
-        }
-    });
+    public final Map<String, JsonFileDbEntry> objectById = new HashMap<>();
     public final PrintWriter printWriter;
     public boolean isLoaded = false;
     public boolean isClosed = false;
@@ -140,8 +137,6 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
             throw new RuntimeException("Db is closed.");
         }
 
-        JSONObject old = get(id);
-
         // Prepare object
         JsonFileDbEntry entry = new JsonFileDbEntry(id, System.currentTimeMillis(), value);
 
@@ -160,25 +155,21 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
             updateLastUpdated();
         }
 
-//        return old;
     }
 
     private void store(JsonFileDbEntry value) {
-        objectById.get(value.id).add(value);
+        objectById.put(value.id, value);
     }
 
     public JSONObject get(String id) {
-        List<JsonFileDbEntry> objects = objectById.get(id);
-        return objects.size() == 0 ? null : objects.get(objects.size() - 1).value;
+        JsonFileDbEntry jsonFileDbEntry = objectById.get(id);
+        return jsonFileDbEntry != null ? jsonFileDbEntry.value : null;
     }
 
     public List<JSONObject> getAll(String id) {
-        return new ArrayList<JSONObject>(Collections2.transform(objectById.get(id), new Function<JsonFileDbEntry, JSONObject>() {
-            @Override
-            public JSONObject apply(JsonFileDbEntry from) {
-                return from.value;
-            }
-        }));
+        List<JSONObject> collect = objectById.values().stream()
+                .map(jsonFileDbEntry -> jsonFileDbEntry.value).collect(Collectors.toList());
+        return collect;
     }
 
     public Set<Map.Entry<String, JSONObject>> entries() {

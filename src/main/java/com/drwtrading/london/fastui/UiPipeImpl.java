@@ -152,7 +152,7 @@ public class UiPipeImpl implements UiPipe {
     // Toggles class cssClass on element #key
     @Override
     public void cls(String key, String cssClass, boolean enabled) {
-        classes.put(cmd(key, cssClass), enabled ? "true" : "false");
+        classes.put(key + DATA_SEPARATOR + cssClass, enabled ? "true" : "false");
     }
 
     // Sets text of element #key to value

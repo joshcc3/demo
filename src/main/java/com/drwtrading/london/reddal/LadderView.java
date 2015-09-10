@@ -438,6 +438,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     private void drawWorkingOrders() {
         final WorkingOrdersForSymbol w = this.workingOrdersForSymbol;
         if (!pendingRefDataAndSettle && w != null) {
+
             for (final Long price : levelByPrice.keySet()) {
                 int totalQty = 0;
                 String side = "";
@@ -1398,7 +1399,10 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     public static String getOrderType(final WorkingOrderType workingOrderType) {
-        return workingOrderType.toString().replace("MARKET", "MKT_CLOSE");
+        if(workingOrderType == WorkingOrderType.MARKET) {
+            return "MKT_CLOSE";
+        }
+        return workingOrderType.name();
     }
 
     public void onSingleOrderCommand(final OrdersPresenter.SingleOrderCommand singleOrderCommand) {
