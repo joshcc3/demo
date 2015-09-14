@@ -12,17 +12,17 @@ import java.util.Map;
 public class WorkingOrdersForSymbol {
 
     public final String symbol;
-
     public final Map<String, Main.WorkingOrderUpdateFromServer> ordersByKey = new LinkedHashMap<>();
     public final Multimap<Long, Main.WorkingOrderUpdateFromServer> ordersByPrice = LinkedHashMultimap.create();
-
     public WorkingOrdersForSymbol(String symbol) {
         this.symbol = symbol;
     }
+    int seqNo = 0;
 
     public Main.WorkingOrderUpdateFromServer onWorkingOrderUpdate(Main.WorkingOrderUpdateFromServer workingOrderUpdateFromServer) {
         WorkingOrderUpdate workingOrderUpdate = workingOrderUpdateFromServer.value;
         if (workingOrderUpdate.getSymbol().equals(symbol)) {
+            seqNo++;
             Main.WorkingOrderUpdateFromServer previous;
             if (workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
                 previous = ordersByKey.remove(workingOrderUpdateFromServer.key());
@@ -30,7 +30,6 @@ public class WorkingOrdersForSymbol {
                 previous = ordersByKey.put(workingOrderUpdateFromServer.key(), workingOrderUpdateFromServer);
                 ordersByPrice.put(workingOrderUpdate.getPrice(), workingOrderUpdateFromServer);
             }
-
             // Need the .equals() because HashMultimap doesn't store duplicates, so we would delete the only
             // copy of this working order otherwise.
             if (previous != null && !workingOrderUpdateFromServer.equals(previous) ) {
@@ -40,5 +39,9 @@ public class WorkingOrdersForSymbol {
         } else {
             return null;
         }
+    }
+
+    public int getSeqNo() {
+        return seqNo;
     }
 }
