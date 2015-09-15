@@ -17,12 +17,10 @@ public class WorkingOrdersForSymbol {
     public WorkingOrdersForSymbol(String symbol) {
         this.symbol = symbol;
     }
-    int seqNo = 0;
 
     public Main.WorkingOrderUpdateFromServer onWorkingOrderUpdate(Main.WorkingOrderUpdateFromServer workingOrderUpdateFromServer) {
         WorkingOrderUpdate workingOrderUpdate = workingOrderUpdateFromServer.value;
         if (workingOrderUpdate.getSymbol().equals(symbol)) {
-            seqNo++;
             Main.WorkingOrderUpdateFromServer previous;
             if (workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
                 previous = ordersByKey.remove(workingOrderUpdateFromServer.key());
@@ -41,7 +39,4 @@ public class WorkingOrdersForSymbol {
         }
     }
 
-    public int getSeqNo() {
-        return seqNo;
-    }
 }

@@ -443,9 +443,6 @@ public class LadderView implements UiPipe.UiEventHandler {
         final WorkingOrdersForSymbol w = this.workingOrdersForSymbol;
         if (!pendingRefDataAndSettle && w != null) {
 
-            if (lastWorkingOrderSeqNo == w.getSeqNo()) {
-                return;
-            }
 
             for (final Long price : levelByPrice.keySet()) {
                 int totalQty = 0;
@@ -485,8 +482,6 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             ui.cls(Html.SELL_QTY, Html.HIDDEN, sellQty == 0);
             ui.txt(Html.SELL_QTY, sellQty);
-
-            lastWorkingOrderSeqNo = w.getSeqNo();
         }
     }
 
