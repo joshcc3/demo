@@ -788,6 +788,12 @@ public class LadderView implements UiPipe.UiEventHandler {
             if (m.settle != null) {
                 center = m.settle.getSettlementPrice();
             }
+            if (m.lastTrade != null) {
+                center = m.lastTrade.getPrice();
+            }
+            if (m.auctionTradeUpdate != null && m.auctionTradeUpdate.getQuantity() > 0) {
+                center = m.auctionTradeUpdate.getPrice();
+            }
             if (workingOrdersForSymbol != null && !workingOrdersForSymbol.ordersByKey.isEmpty()) {
                 final long n = workingOrdersForSymbol.ordersByKey.size();
                 long avgPrice = 0L;
@@ -796,15 +802,9 @@ public class LadderView implements UiPipe.UiEventHandler {
                 }
                 center = avgPrice;
             }
-            if (m.lastTrade != null) {
-                center = m.lastTrade.getPrice();
-            }
             if (m.auctionIndicativePrice != null && m.auctionIndicativePrice.isHasIndicativePrice() &&
                     m.auctionIndicativePrice.getQuantity() > 0) {
                 center = m.auctionIndicativePrice.getIndicativePrice();
-            }
-            if (m.auctionTradeUpdate != null && m.auctionTradeUpdate.getQuantity() > 0) {
-                center = m.auctionTradeUpdate.getPrice();
             }
             if (m.topOfBook != null && m.topOfBook.getBestOffer().isExists()) {
                 center = m.topOfBook.getBestOffer().getPrice();
