@@ -307,9 +307,10 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             // Desk position
             if (d.deskPosition != null && d.deskPosition.getPosition() != null && !"".equals(d.deskPosition.getPosition())) {
-                ui.txt(Html.DESK_POSITION, d.deskPosition.getPosition());
                 try {
-                    decorateUpDown(Html.DESK_POSITION, new BigDecimal(d.deskPosition.getPosition()).longValue());
+                    BigDecimal decimal = new BigDecimal(d.deskPosition.getPosition());
+                    ui.txt(Html.DESK_POSITION, decimal.intValue());
+                    decorateUpDown(Html.DESK_POSITION, decimal.longValue());
                 } catch (NumberFormatException exception) {
 //                    exception.printStackTrace();
                 }
@@ -689,14 +690,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
         for (Map.Entry<String, Integer> entry : buttonQty.entrySet()) {
             String display;
-            if (entry.getValue() < 1000) {
-                display = entry.getValue() + "";
-            } else if (entry.getValue() < 100000) {
-                display = entry.getValue() / 1000 + "K";
-            } else {
-                display = MILLIONS_QTY_FORMAT.format((double) entry.getValue() / 1000000) + "M";
-
-            }
+            display = formatQty(entry.getValue());
             ui.txt(entry.getKey(), display);
         }
         for (int i = 0; i < levels; i++) {
@@ -722,6 +716,19 @@ public class LadderView implements UiPipe.UiEventHandler {
 
         ui.cls(Html.OFFSET_CONTROL, Html.HIDDEN, false);
 
+    }
+
+    private String formatQty(Integer qty) {
+        String display;
+        if (qty < 1000) {
+            display = qty + "";
+        } else if (qty < 100000) {
+            display = qty / 1000 + "K";
+        } else {
+            display = MILLIONS_QTY_FORMAT.format((double) qty / 1000000) + "M";
+
+        }
+        return display;
     }
 
     private Collection<String> filterUsableOrderTypes(final Collection<String> types) {
