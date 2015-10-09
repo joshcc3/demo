@@ -309,7 +309,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             if (d.deskPosition != null && d.deskPosition.getPosition() != null && !"".equals(d.deskPosition.getPosition())) {
                 try {
                     BigDecimal decimal = new BigDecimal(d.deskPosition.getPosition());
-                    ui.txt(Html.DESK_POSITION, decimal.intValue());
+                    ui.txt(Html.DESK_POSITION,formatQty(decimal.intValue()));
                     decorateUpDown(Html.DESK_POSITION, decimal.longValue());
                 } catch (NumberFormatException exception) {
 //                    exception.printStackTrace();
