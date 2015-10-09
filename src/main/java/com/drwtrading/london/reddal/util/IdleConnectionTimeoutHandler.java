@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.util;
 
-import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
 import org.jetlang.core.Scheduler;
@@ -11,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 
-public class IdleConnectionTimeoutHandler implements PhotocolsHandler<MarketDataEvent, Void> {
+public class IdleConnectionTimeoutHandler<Inbound, Outbound> implements PhotocolsHandler<Inbound, Outbound> {
 
     private final ConnectionCloser connectionCloser;
     private final Map<PhotocolsConnection, Long> lastTimestamp = newFastMap();
@@ -25,7 +24,7 @@ public class IdleConnectionTimeoutHandler implements PhotocolsHandler<MarketData
     }
 
     @Override
-    public PhotocolsConnection<Void> onOpen(PhotocolsConnection<Void> connection) {
+    public PhotocolsConnection<Outbound> onOpen(PhotocolsConnection<Outbound> connection) {
         lastTimestamp.put(connection, System.currentTimeMillis());
         System.out.println("Open: " + connection.getRemoteAddress().toString());
         return connection;
@@ -36,13 +35,13 @@ public class IdleConnectionTimeoutHandler implements PhotocolsHandler<MarketData
     }
 
     @Override
-    public void onClose(PhotocolsConnection<Void> connection) {
+    public void onClose(PhotocolsConnection<Outbound> connection) {
         Long remove = lastTimestamp.remove(connection);
         connectionCloser.onTimeout(connection, remove == null ? timeoutMillis : System.currentTimeMillis() - remove);
     }
 
     @Override
-    public void onMessage(PhotocolsConnection<Void> connection, MarketDataEvent message) {
+    public void onMessage(PhotocolsConnection<Outbound> connection, Inbound message) {
         lastTimestamp.put(connection, System.currentTimeMillis());
     }
 

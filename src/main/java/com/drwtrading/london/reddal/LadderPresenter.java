@@ -1,6 +1,9 @@
 package com.drwtrading.london.reddal;
 
+import com.drwtrading.eeif.md.remote.SubscribeMarketData;
+import com.drwtrading.eeif.md.remote.UnsubscribeMarketData;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
@@ -73,8 +76,8 @@ public class LadderPresenter {
     private final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher;
     private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
-    private final Publisher<SubscribeToMarketData> subscribeToMarketData;
-    private final Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData;
+    private final Publisher<SubscribeMarketData> subscribeToMarketData;
+    private final Publisher<UnsubscribeMarketData> unsubscribeFromMarketData;
     private final Publisher<Jsonable> trace;
 
     private final Fiber fiber;
@@ -84,7 +87,7 @@ public class LadderPresenter {
     public LadderPresenter(final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
             final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<SubscribeToMarketData> subscribeToMarketData, final Publisher<UnsubscribeFromMarketData> unsubscribeFromMarketData,
+            final Publisher<SubscribeMarketData> subscribeToMarketData, final Publisher<UnsubscribeMarketData> unsubscribeFromMarketData,
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
@@ -128,11 +131,11 @@ public class LadderPresenter {
         final Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                unsubscribeFromMarketData.publish(new UnsubscribeFromMarketData(symbol, marketDataEventMemoryChannel));
+                unsubscribeFromMarketData.publish(new UnsubscribeMarketData(symbol, marketDataEventMemoryChannel));
             }
         };
         marketDataUnsubscribers.put(symbol, runnable);
-        subscribeToMarketData.publish(new SubscribeToMarketData(symbol, marketDataEventMemoryChannel));
+        subscribeToMarketData.publish(new SubscribeMarketData(symbol, marketDataEventMemoryChannel));
         return marketDataForSymbol;
     }
 

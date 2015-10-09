@@ -24,7 +24,7 @@ public class Environment {
         EUREX,
         XETRA,
         EURONEXT,
-        REMOTE
+        FILTERED, REMOTE
     }
 
     public static final String MARKET_DATA = "marketData";

@@ -4,16 +4,20 @@ import com.drw.eurex.gen.transport.StreamEnv;
 import com.drw.nns.api.MulticastGroup;
 import com.drw.nns.api.NnsApi;
 import com.drw.nns.api.NnsFactory;
-import com.drw.xetra.ebs.messages.XetraMessage;
 import com.drwtrading.eeif.md.eurex.EasyEurexNaMDS;
 import com.drwtrading.eeif.md.eurex.monitors.StatsPublisherErrorMonitor;
+import com.drwtrading.eeif.md.euronext_cash.EuronextComponents;
 import com.drwtrading.eeif.md.euronext_cash.EuronextMarketDataService;
 import com.drwtrading.eeif.md.euronext_cash.EuronextXdpStream;
 import com.drwtrading.eeif.md.publishing.MarketDataEventSnapshottingPublisher;
+import com.drwtrading.eeif.md.remote.MarketDataSubscriberImpl;
+import com.drwtrading.eeif.md.remote.RemoteFilteredClient;
+import com.drwtrading.eeif.md.remote.SubscribeMarketData;
+import com.drwtrading.eeif.md.remote.UnsubscribeMarketData;
 import com.drwtrading.eeif.md.utils.NetworkInterfaceFinder;
 import com.drwtrading.eeif.md.utils.TotalTradedVolumeAccumulator;
+import com.drwtrading.eeif.md.xetra.XetraComponents;
 import com.drwtrading.eeif.md.xetra.XetraMarketDataService;
-import com.drwtrading.eeif.md.xetra.XetraPacketDroppedEvent;
 import com.drwtrading.esquilatency.BatchedChainEventRecorder;
 import com.drwtrading.jetlang.NoOpPublisher;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
@@ -21,7 +25,9 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
-import com.drwtrading.london.euronext.xdp.messages.ReferenceData;
+import com.drwtrading.london.eeif.utils.io.SelectIO;
+import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
+import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
 import com.drwtrading.london.jetlang.JetlangFactory;
@@ -32,17 +38,15 @@ import com.drwtrading.london.logging.JsonChannelLogger;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.photons.indy.IndyEnvelope;
+import com.drwtrading.london.photons.mdreq.MdRequest;
 import com.drwtrading.london.photons.reddal.Heartbeat;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.BookSnapshot;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.protocols.photon.marketdata.PriceType;
-import com.drwtrading.london.protocols.photon.marketdata.ServerHeartbeat;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
@@ -54,8 +58,6 @@ import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
-import com.drwtrading.london.selectable.ErrorHandler;
-import com.drwtrading.london.selectable.SelectorWrapper;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.MsgCodec;
@@ -69,31 +71,27 @@ import com.drwtrading.photocols.PhotocolsHandler;
 import com.drwtrading.photocols.easy.Photocols;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
-import com.drwtrading.photons.ladder.DeskPosition;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
-import com.google.common.base.Function;
 import com.google.common.collect.MapMaker;
 import com.sun.jndi.toolkit.url.Uri;
 import drw.london.json.Jsonable;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Publisher;
-import org.jetlang.core.Callback;
 import org.jetlang.fibers.Fiber;
+import org.joda.time.DateTime;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.Selector;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -141,8 +139,8 @@ public class Main {
         private final ChannelFactory channelFactory;
         public final TypedChannel<ReddalMessage> reddalCommand;
         public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
-        public final TypedChannel<SubscribeToMarketData> subscribeToMarketData;
-        public final TypedChannel<UnsubscribeFromMarketData> unsubscribeFromMarketData;
+        public final TypedChannel<SubscribeMarketData> subscribeToMarketData;
+        public final TypedChannel<UnsubscribeMarketData> unsubscribeFromMarketData;
         public final TypedChannel<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
         public final TypedChannel<SpreadContractSet> contractSets;
         public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
@@ -164,18 +162,8 @@ public class Main {
             stats = create(StatsMsg.class);
             refData = create(InstrumentDefinitionEvent.class);
             remoteOrderCommandByServer = new MapMaker().makeComputingMap(
-                    new Function<String, TypedChannel<RemoteOrderManagementCommand>>() {
-                        @Override
-                        public TypedChannel<RemoteOrderManagementCommand> apply(final String from) {
-                            return create(RemoteOrderManagementCommand.class);
-                        }
-                    });
-            remoteOrderCommand = new Publisher<RemoteOrderCommandToServer>() {
-                @Override
-                public void publish(final RemoteOrderCommandToServer msg) {
-                    remoteOrderCommandByServer.get(msg.toServer).publish(msg.value);
-                }
-            };
+                    from -> create(RemoteOrderManagementCommand.class));
+            remoteOrderCommand = msg -> remoteOrderCommandByServer.get(msg.toServer).publish(msg.value);
             ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);
             storeLadderPref = create(LadderSettings.StoreLadderPref.class);
             equityIdAndSymbol = create(EquityIdAndSymbol.class);
@@ -183,8 +171,8 @@ public class Main {
             heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
             reddalCommand = create(ReddalMessage.class);
             reddalCommandSymbolAvailable = create(ReddalMessage.class);
-            subscribeToMarketData = create(SubscribeToMarketData.class);
-            unsubscribeFromMarketData = create(UnsubscribeFromMarketData.class);
+            subscribeToMarketData = create(SubscribeMarketData.class);
+            unsubscribeFromMarketData = create(UnsubscribeMarketData.class);
             recenterLaddersForUser = create(LadderPresenter.RecenterLaddersForUser.class);
             contractSets = create(SpreadContractSet.class);
             singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
@@ -222,7 +210,7 @@ public class Main {
         public final FiberBuilder ladder;
         public final FiberBuilder contracts;
 
-        public ReddalFibers(final ReddalChannels channels, final MonitoredJetlangFactory factory)  {
+        public ReddalFibers(final ReddalChannels channels, final MonitoredJetlangFactory factory) {
             jetlangFactory = factory;
             fiberGroup = new FiberGroup(jetlangFactory, "Fibers", channels.error);
             starter = jetlangFactory.createFiber("Starter");
@@ -335,27 +323,16 @@ public class Main {
         final ReddalFibers fibers = new ReddalFibers(channels, monitoredJetlangFactory);
 
 
-        final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER = new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(final Thread t, final Throwable e) {
-                channels.errorPublisher.publish(e);
-            }
-        };
+        final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER = (t, e) -> channels.errorPublisher.publish(e);
 
         // Monitoring
         {
-            fibers.stats.subscribe(new Callback<StatsMsg>() {
-                @Override
-                public void onMessage(final StatsMsg message) {
-                    statsPublisher.publish(message);
-                }
+            fibers.stats.subscribe(message -> {
+                statsPublisher.publish(message);
             }, channels.stats);
-            fibers.stats.getFiber().schedule(new Runnable() {
-                @Override
-                public void run() {
-                    statsPublisher.start();
-                    multicastEnabled.set(true);
-                }
+            fibers.stats.getFiber().schedule(() -> {
+                statsPublisher.start();
+                multicastEnabled.set(true);
             }, 10, TimeUnit.SECONDS);
         }
 
@@ -368,22 +345,14 @@ public class Main {
             System.out.println("http://localhost:" + environment.getWebPort());
             webapp.enableSingleSignOn();
 
-            fibers.onStart(new Runnable() {
-                @Override
-                public void run() {
-                    fibers.ui.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                webapp.serveStaticContent("web");
-                                webapp.start();
-                            } catch (final Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    });
+            fibers.onStart(() -> fibers.ui.execute(() -> {
+                try {
+                    webapp.serveStaticContent("web");
+                    webapp.start();
+                } catch (final Exception e) {
+                    throw new RuntimeException(e);
                 }
-            });
+            }));
 
             // Index presenter
             {
@@ -456,7 +425,6 @@ public class Main {
             }
 
 
-
         }
 
 
@@ -466,22 +434,14 @@ public class Main {
             final WebApplication webapp;
             webapp = new WebApplication(environment.getWebPort() + 1, channels.errorPublisher);
 
-            fibers.onStart(new Runnable() {
-                @Override
-                public void run() {
-                    fibers.ui.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                webapp.serveStaticContent("web");
-                                webapp.start();
-                            } catch (final Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    });
+            fibers.onStart(() -> fibers.ui.execute(() -> {
+                try {
+                    webapp.serveStaticContent("web");
+                    webapp.start();
+                } catch (final Exception e) {
+                    throw new RuntimeException(e);
                 }
-            });
+            }));
 
             webapp.webServer();
 
@@ -502,12 +462,7 @@ public class Main {
         {
             final LadderSettings ladderSettings = new LadderSettings(environment.getSettingsFile(), channels.ladderPrefsLoaded);
             fibers.settings.subscribe(ladderSettings, channels.storeLadderPref);
-            fibers.onStart(new Runnable() {
-                @Override
-                public void run() {
-                    fibers.settings.execute(ladderSettings.loadRunnable());
-                }
-            });
+            fibers.onStart(() -> fibers.settings.execute(ladderSettings.loadRunnable()));
         }
 
         // Contract sets
@@ -522,40 +477,48 @@ public class Main {
         // Market data
         {
 
+
+            IErrorLogger errorLog = new IErrorLogger() {
+                @Override
+                public boolean isDebugEnabled() {
+                    return true;
+                }
+
+                @Override
+                public void debug(String msg) {
+                    System.out.println(new DateTime() + "\tDBG: " + msg);
+                }
+
+                @Override
+                public void debug(String msg, Throwable t) {
+                    debug(msg);
+                    t.printStackTrace();
+                }
+
+                @Override
+                public void error(String msg) {
+                    statsPublisher.publish(new AdvisoryStat("Reddal", AdvisoryStat.Level.WARNING, msg));
+                }
+
+                @Override
+                public void error(String msg, Throwable t) {
+                    error(msg);
+                    channels.error.publish(t);
+                }
+            };
+
+
             for (final String mds : environment.getList(Environment.MARKET_DATA)) {
+
+
+                System.out.println(mds + " connecting to: " + environment.getMarketDataExchange(mds));
 
                 final MarketDataEventSnapshottingPublisher snapshottingPublisher = new MarketDataEventSnapshottingPublisher();
                 final FiberBuilder fiber = fibers.fiberGroup.create("Market Data: " + mds);
                 final ProductResetter productResetter = new ProductResetter(snapshottingPublisher);
-                final Publisher<MarketDataEvent> marketDataEventPublisher = new Publisher<MarketDataEvent>() {
-                    Map<String, InstrumentDefinitionEvent> refData = new HashMap<>();
-
-                    @Override
-                    public void publish(final MarketDataEvent msg) {
-                        if (msg instanceof ServerHeartbeat) {
-                            return;
-                        }
-                        if (msg instanceof InstrumentDefinitionEvent) {
-                            channels.refData.publish((InstrumentDefinitionEvent) msg);
-                            productResetter.on((InstrumentDefinitionEvent) msg);
-                            refData.put(((InstrumentDefinitionEvent) msg).getSymbol(), (InstrumentDefinitionEvent) msg);
-                        }
-                        if (msg instanceof BookSnapshot) {
-                            final BookSnapshot snapshot = (BookSnapshot) msg;
-                            final InstrumentDefinitionEvent instrumentDefinitionEvent = refData.get(snapshot.getSymbol());
-                            if (instrumentDefinitionEvent != null && "Eurex".equals(instrumentDefinitionEvent.getExchange())) {
-                                final BookSnapshot reconstructedSnapshot = new BookSnapshot(snapshot.getSymbol(), PriceType.RECONSTRUCTED, snapshot.getSide(), snapshot.getLevels(), snapshot.getSeqNo(), snapshot.getMillis(), snapshot.getNanos(), snapshot.getCorrelationValue());
-                                snapshottingPublisher.publish(reconstructedSnapshot);
-                            } else {
-                                snapshottingPublisher.publish(snapshot);
-                            }
-                        } else {
-                            snapshottingPublisher.publish(msg);
-                        }
-                    }
-                };
-                final MarketDataSubscriber marketDataSubscriber = new MarketDataSubscriber(snapshottingPublisher);
+                final MarketDataSubscriberImpl marketDataSubscriber = new MarketDataSubscriberImpl(channels.refData);
                 fiber.subscribe(marketDataSubscriber, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
+                Publisher<MarketDataEvent> marketDataEventPublisher = marketDataSubscriber;
 
                 if (environment.getMarketDataExchange(mds) == Environment.Exchange.EUREX) {
 
@@ -573,34 +536,21 @@ public class Main {
                             logDir
                     ).withImpliedTopOfBooks(totalTradedVolumeAccumulator, true);
 
-                    fibers.onStart(new Runnable() {
-                        @Override
-                        public void run() {
-                            fiber.execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        easyEurexNaMDS.start();
-                                    } catch (final IOException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                }
-                            });
+                    fibers.onStart(() -> fiber.execute(() -> {
+                        try {
+                            easyEurexNaMDS.start();
+                        } catch (final IOException e) {
+                            throw new RuntimeException(e);
                         }
-                    });
+                    }));
                 } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.XETRA) {
 
                     final TotalTradedVolumeAccumulator totalTradedVolumeAccumulator = new TotalTradedVolumeAccumulator(marketDataEventPublisher);
 
-                    final SelectorWrapper selectorWrapper = new SelectorWrapper(Selector.open(), new ErrorHandler() {
-                        @Override
-                        public void onError(final Throwable throwable) {
-                            ERROR_CHANNEL.publish(throwable);
-                        }
-                    });
-                    selectorWrapper.setBlocking(true);
-
+                    SelectIO selectIO = new SelectIO(errorLog);
                     final XetraMarketDataService xetraMarketDataService = new XetraMarketDataService(
+                            selectIO,
+                            new ResourceMonitor<>("Xetra", XetraComponents.class, errorLog, true),
                             NetworkInterfaceFinder.find(environment.getMarketDataInterface(mds)),
                             environment.getXetraMarkets(mds),
                             totalTradedVolumeAccumulator,
@@ -608,83 +558,79 @@ public class Main {
                             environment.getXetraReferenceDataStreams(mds),
                             null,
                             null,
-                            new Callback<XetraPacketDroppedEvent>() {
-                                @Override
-                                public void onMessage(final XetraPacketDroppedEvent message) {
-                                    try {
-                                        System.out.println("Xetra dropped a packet: ");
-                                        message.toJson(System.out);
-                                    } catch (final IOException e) {
-                                        e.printStackTrace();
-                                    }
-                                    statsPublisher.publish(new AdvisoryStat("Reddal/Xetra", AdvisoryStat.Level.WARNING, "Dropped a packet."));
+                            message -> {
+                                try {
+                                    System.out.println("Xetra dropped a packet: ");
+                                    message.toJson(System.out);
+                                } catch (final IOException e) {
+                                    channels.error.publish(e);
                                 }
+                                statsPublisher.publish(new AdvisoryStat("Reddal/Xetra", AdvisoryStat.Level.WARNING, "Dropped a packet."));
                             },
                             ERROR_CHANNEL,
-                            selectorWrapper,
                             BatchedChainEventRecorder.nullRecorder(),
-                            new NoOpPublisher<XetraMessage>());
+                            new NoOpPublisher<>());
 
-                    fibers.onStart(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                xetraMarketDataService.start();
-                            } catch (final IOException e) {
-                                throw new RuntimeException(e);
-                            }
+                    selectIO.execute(() -> {
+                        try {
+                            xetraMarketDataService.initialise();
+                        } catch (IOException e) {
+                            channels.error.publish(e);
                         }
                     });
+
+                    fibers.onStart(() -> {
+                        try {
+                            selectIO.start("Xetra MD");
+                        } catch (final IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+
                 } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.EURONEXT) {
 
                     final String prefix = Environment.MARKET_DATA + "." + mds;
+                    SelectIO selectIO = new SelectIO(errorLog);
 
                     final EuronextMarketDataService marketDataService =
-                            new EuronextMarketDataService(NetworkInterfaceFinder.find(config.get(prefix + ".nic")), marketDataEventPublisher,
-                                    ERROR_CHANNEL, new SelectorWrapper(Selector.open(), new ErrorHandler() {
-                                @Override
-                                public void onError(final Throwable throwable) {
-                                    ERROR_CHANNEL.publish(throwable);
-                                }
-                            }), EuronextXdpStream.Configuration.valueOf(config.get(prefix + ".environment")),
+                            new EuronextMarketDataService(selectIO,
+                                    new ResourceMonitor<EuronextComponents>("Euronext", EuronextComponents.class, errorLog, true),
+                                    NetworkInterfaceFinder.find(config.get(prefix + ".nic")),
+                                    marketDataEventPublisher,
+                                    EuronextXdpStream.Configuration.valueOf(config.get(prefix + ".environment")),
                                     new InetSocketAddress(config.get(prefix + ".refreshAddr"), config.getInt(prefix + ".refreshPort")),
-                                    config.get(prefix + ".sourceId"), new NoOpPublisher<ReferenceData>(),
-                                    new ObjectArraySet<String>(config.get(prefix + ".mics").split(",")), null, null);
+                                    config.get(prefix + ".sourceId"), new NoOpPublisher<>(),
+                                    new ObjectArraySet<>(config.get(prefix + ".mics").split(",")),
+                                    null,
+                                    null);
 
-                    fibers.fiberGroup.create("Euronext Cash Runner").execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                marketDataService.startSync();
-                            } catch (final IOException e) {
-                                ERROR_CHANNEL.publish(e);
-                            }
+                    fibers.fiberGroup.create("Euronext Cash Runner").execute(() -> {
+                        try {
+                            marketDataService.startSync();
+                        } catch (final IOException e) {
+                            ERROR_CHANNEL.publish(e);
                         }
                     });
 
 
-                } else {
+                } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.REMOTE) {
                     final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
                     final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, fiber.getFiber(), EXCEPTION_HANDLER);
                     final ConnectionCloser connectionCloser = new ConnectionCloser(channels.stats, "Market data: " + mds, productResetter.resetRunnable());
-
                     client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
-                            .handler(new IdleConnectionTimeoutHandler(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
-                            .handler(new JetlangChannelHandler<MarketDataEvent, Void>(marketDataEventPublisher));
-
-                    fibers.onStart(new Runnable() {
-                        @Override
-                        public void run() {
-                            fiber.execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    client.start();
-                                }
-                            });
-                        }
-                    });
-
-
+                            .handler(new IdleConnectionTimeoutHandler<>(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
+                            .handler(new JetlangChannelHandler<>(marketDataEventPublisher));
+                    fibers.onStart(() -> fiber.execute(() -> client.start()));
+                } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.FILTERED) {
+                    RemoteFilteredClient filteredClient = new RemoteFilteredClient(channels.refData);
+                    fiber.subscribe(filteredClient, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
+                    final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
+                    final OnHeapBufferPhotocolsNioClient<MarketDataEvent, MdRequest> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, MdRequest.class, fiber.getFiber(), EXCEPTION_HANDLER);
+                    final ConnectionCloser connectionCloser = new ConnectionCloser(channels.stats, "Market data: " + mds, productResetter.resetRunnable());
+                    client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
+                            .handler(new IdleConnectionTimeoutHandler<>(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()));
+                    client.handler(filteredClient);
+                    fibers.onStart(() -> fiber.execute(() -> client.start()));
                 }
             }
         }
@@ -696,14 +642,9 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class, Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "metadata." + server + ".log"), fibers.logging.getFiber(), true)
-                        .handler(new PhotocolsStatsPublisher<LadderMetadata, Void>(channels.stats, environment.getStatsName(), 10))
-                        .handler(new JetlangChannelHandler<LadderMetadata, Void>(channels.metaData));
-                fibers.onStart(new Runnable() {
-                    @Override
-                    public void run() {
-                        client.start();
-                    }
-                });
+                        .handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10))
+                        .handler(new JetlangChannelHandler<>(channels.metaData));
+                fibers.onStart(() -> client.start());
             }
         }
 
@@ -714,20 +655,10 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<RemoteOrderManagementEvent, RemoteOrderManagementCommand> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), RemoteOrderManagementEvent.class, RemoteOrderManagementCommand.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "remote-commands." + server + ".log"), fibers.logging.getFiber(), true)
-                        .handler(new PhotocolsStatsPublisher<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(channels.stats, environment.getStatsName(), 10))
-                        .handler(new JetlangChannelHandler<>(new Publisher<RemoteOrderManagementEvent>() {
-                            @Override
-                            public void publish(final RemoteOrderManagementEvent msg) {
-                                channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg));
-                            }
-                        }, channels.remoteOrderCommandByServer.get(server), fibers.remoteOrders.getFiber()))
-                        .handler(new InboundTimeoutWatchdog<RemoteOrderManagementEvent, RemoteOrderManagementCommand>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.stats, "Remote order: " + server), SERVER_TIMEOUT));
-                fibers.onStart(new Runnable() {
-                    @Override
-                    public void run() {
-                        client.start();
-                    }
-                });
+                        .handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10))
+                        .handler(new JetlangChannelHandler<>(msg -> channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg)), channels.remoteOrderCommandByServer.get(server), fibers.remoteOrders.getFiber()))
+                        .handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.stats, "Remote order: " + server), SERVER_TIMEOUT));
+                fibers.onStart(() -> client.start());
             }
         }
 
@@ -736,22 +667,14 @@ public class Main {
             final Photocols<ReddalMessage, ReddalMessage> commandServer = Photocols.server(new InetSocketAddress(environment.getCommandsPort()), ReddalMessage.class, ReddalMessage.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
             commandServer.logFile(new File(logDir, "photocols.commands.log"), fibers.logging.getFiber(), true);
             commandServer.endpoint().add(new JetlangChannelHandler<>(channels.reddalCommandSymbolAvailable, channels.reddalCommand, fibers.metaData.getFiber()));
-            fibers.onStart(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        commandServer.start();
-                    } catch (final InterruptedException e) {
-                        channels.errorPublisher.publish(e);
-                    }
+            fibers.onStart(() -> {
+                try {
+                    commandServer.start();
+                } catch (final InterruptedException e) {
+                    channels.errorPublisher.publish(e);
                 }
             });
-            fibers.metaData.getFiber().scheduleWithFixedDelay(new Runnable() {
-                @Override
-                public void run() {
-                    commandServer.publish(new Heartbeat());
-                }
-            }, 1000, 1000, TimeUnit.MILLISECONDS);
+            fibers.metaData.getFiber().scheduleWithFixedDelay(() -> commandServer.publish(new Heartbeat()), 1000, 1000, TimeUnit.MILLISECONDS);
         }
 
         // Working orders
@@ -761,23 +684,15 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<WorkingOrderEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), WorkingOrderEvent.class, Void.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "working-orders." + server + ".log"), fibers.logging.getFiber(), true)
-                        .handler(new PhotocolsStatsPublisher<WorkingOrderEvent, Void>(channels.stats, environment.getStatsName(), 10))
-                        .handler(new JetlangChannelHandler<WorkingOrderEvent, Void>(new Publisher<WorkingOrderEvent>() {
-                            @Override
-                            public void publish(final WorkingOrderEvent msg) {
-                                if (msg instanceof WorkingOrderUpdate) {
-                                    channels.workingOrders.publish(new WorkingOrderUpdateFromServer(server, (WorkingOrderUpdate) msg));
-                                }
-                                channels.workingOrderEvents.publish(new WorkingOrderEventFromServer(server, msg));
+                        .handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10))
+                        .handler(new JetlangChannelHandler<>(msg -> {
+                            if (msg instanceof WorkingOrderUpdate) {
+                                channels.workingOrders.publish(new WorkingOrderUpdateFromServer(server, (WorkingOrderUpdate) msg));
                             }
+                            channels.workingOrderEvents.publish(new WorkingOrderEventFromServer(server, msg));
                         }))
-                        .handler(new InboundTimeoutWatchdog<WorkingOrderEvent, Void>(fibers.workingOrders.getFiber(), new ConnectionCloser(channels.stats, "Working order: " + server), SERVER_TIMEOUT));
-                fibers.onStart(new Runnable() {
-                    @Override
-                    public void run() {
-                        client.start();
-                    }
-                });
+                        .handler(new InboundTimeoutWatchdog<>(fibers.workingOrders.getFiber(), new ConnectionCloser(channels.stats, "Working order: " + server), SERVER_TIMEOUT));
+                fibers.onStart(() -> client.start());
             }
         }
 
@@ -798,12 +713,7 @@ public class Main {
             client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                     .logFile(new File(logDir, "mr-phil.log"), fibers.logging.getFiber(), true)
                     .handler(positionHandler);
-            fibers.onStart(new Runnable() {
-                @Override
-                public void run() {
-                    client.start();
-                }
-            });
+            fibers.onStart(() -> client.start());
         }
 
         // Indy
@@ -813,20 +723,12 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<IndyEnvelope, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic, IndyEnvelope.class, Void.class, fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
                 client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                         .logFile(new File(logDir, "indy.log"), fibers.logging.getFiber(), true)
-                        .handler(new JetlangChannelHandler<IndyEnvelope, Void>(new Publisher<IndyEnvelope>() {
-                            @Override
-                            public void publish(final IndyEnvelope msg) {
-                                if (msg.getMessage() instanceof EquityIdAndSymbol) {
-                                    channels.equityIdAndSymbol.publish((EquityIdAndSymbol) msg.getMessage());
-                                }
+                        .handler(new JetlangChannelHandler<>(msg -> {
+                            if (msg.getMessage() instanceof EquityIdAndSymbol) {
+                                channels.equityIdAndSymbol.publish((EquityIdAndSymbol) msg.getMessage());
                             }
                         }));
-                fibers.onStart(new Runnable() {
-                    @Override
-                    public void run() {
-                        client.start();
-                    }
-                });
+                fibers.onStart(() -> client.start());
             }
         }
 
@@ -839,18 +741,8 @@ public class Main {
         {
             if (environment.opxlDeskPositionEnabled()) {
                 for (final String key : environment.opxlDeskPositionKeys()) {
-                    final OpxlPositionSubscriber opxlPositionSubscriber = new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, new Publisher<DeskPosition>() {
-                        @Override
-                        public void publish(final DeskPosition msg) {
-                            channels.metaData.publish(msg);
-                        }
-                    });
-                    fibers.onStart(new Runnable() {
-                        @Override
-                        public void run() {
-                            fibers.opxlPosition.execute(opxlPositionSubscriber.connectToOpxl());
-                        }
-                    });
+                    final OpxlPositionSubscriber opxlPositionSubscriber = new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, msg -> channels.metaData.publish(msg));
+                    fibers.onStart(() -> fibers.opxlPosition.execute(opxlPositionSubscriber.connectToOpxl()));
                 }
             }
         }
@@ -863,12 +755,7 @@ public class Main {
 
                 for (final String key : keys) {
                     final OpxlLadderTextSubscriber opxlLadderTextSubscriber = new OpxlLadderTextSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, channels.metaData);
-                    fibers.onStart(new Runnable() {
-                        @Override
-                        public void run() {
-                            fibers.opxlText.execute(opxlLadderTextSubscriber.connectToOpxl());
-                        }
-                    });
+                    fibers.onStart(() -> fibers.opxlText.execute(opxlLadderTextSubscriber.connectToOpxl()));
 
                 }
 
@@ -877,20 +764,14 @@ public class Main {
 
         // Error souting
         {
-            channels.error.subscribe(fibers.logging.getFiber(), new Callback<Throwable>() {
-                @Override
-                public void onMessage(final Throwable message) {
-                    System.out.println(new Date().toString());
-                    message.printStackTrace();
-                }
+            channels.error.subscribe(fibers.logging.getFiber(), message -> {
+                System.out.println(new Date().toString());
+                message.printStackTrace();
             });
-            channels.stats.subscribe(fibers.logging.getFiber(), new Callback<StatsMsg>() {
-                @Override
-                public void onMessage(final StatsMsg message) {
-                    if (message instanceof AdvisoryStat) {
-                        System.out.println(new Date().toString());
-                        System.out.println(message.toString());
-                    }
+            channels.stats.subscribe(fibers.logging.getFiber(), message -> {
+                if (message instanceof AdvisoryStat) {
+                    System.out.println(new Date().toString());
+                    System.out.println(message.toString());
                 }
             });
         }
