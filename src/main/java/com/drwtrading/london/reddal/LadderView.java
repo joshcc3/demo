@@ -69,7 +69,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".0");
     public static final DecimalFormat MILLIONS_QTY_FORMAT = new DecimalFormat(".0");
-    public static final DecimalFormat THOUSANDS_QTY_FORMAT = new DecimalFormat(".0");
+    public static final DecimalFormat POSITION_FMT = new DecimalFormat("0.0");
     public static final DecimalFormat EFP_DECIMAL_FORMAT = new DecimalFormat("0.00");
     public static final DecimalFormat FX_DECIMAL_FORMAT = new DecimalFormat("0.00");
     public static final int MODIFY_TIMEOUT_MS = 5000;
@@ -318,7 +318,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             // Day position
             if (d.dayPosition != null) {
-                ui.txt(Html.POSITION, d.dayPosition.getNet());
+                ui.txt(Html.POSITION, formatPosition(d.dayPosition.getNet()));
                 decorateUpDown(Html.POSITION, d.dayPosition.getNet());
             }
 
@@ -718,12 +718,13 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     private String formatPosition(double qty) {
         String display;
-        if (qty < 1000) {
+        double absQty = Math.abs(qty);
+        if (absQty < 10000) {
             display = ((int) qty) + "";
-        } else if (qty < 100000) {
-            display = THOUSANDS_QTY_FORMAT.format(qty / 1000.0) + "K";
+        } else if (absQty < 1000000) {
+            display = POSITION_FMT.format(qty / 1000.0) + "K";
         } else {
-            display = MILLIONS_QTY_FORMAT.format(qty / 1000000) + "M";
+            display = POSITION_FMT.format(qty / 1000000.0) + "M";
         }
         return display;
     }
