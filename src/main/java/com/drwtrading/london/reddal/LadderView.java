@@ -42,7 +42,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.MapMaker;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Publisher;
 
@@ -70,6 +69,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = new DecimalFormat(".0");
     public static final DecimalFormat MILLIONS_QTY_FORMAT = new DecimalFormat(".0");
+    public static final DecimalFormat THOUSANDS_QTY_FORMAT = new DecimalFormat(".0");
     public static final DecimalFormat EFP_DECIMAL_FORMAT = new DecimalFormat("0.00");
     public static final DecimalFormat FX_DECIMAL_FORMAT = new DecimalFormat("0.00");
     public static final int MODIFY_TIMEOUT_MS = 5000;
@@ -309,7 +309,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             if (d.deskPosition != null && d.deskPosition.getPosition() != null && !"".equals(d.deskPosition.getPosition())) {
                 try {
                     BigDecimal decimal = new BigDecimal(d.deskPosition.getPosition());
-                    ui.txt(Html.DESK_POSITION,formatQty(decimal.intValue()));
+                    ui.txt(Html.DESK_POSITION, formatPosition(decimal.doubleValue()));
                     decorateUpDown(Html.DESK_POSITION, decimal.longValue());
                 } catch (NumberFormatException exception) {
 //                    exception.printStackTrace();
@@ -437,8 +437,6 @@ public class LadderView implements UiPipe.UiEventHandler {
         return lastTradePrice - settlementPrice;
     }
 
-
-    int lastWorkingOrderSeqNo = -1;
 
     private void drawWorkingOrders() {
         final WorkingOrdersForSymbol w = this.workingOrdersForSymbol;
@@ -717,6 +715,19 @@ public class LadderView implements UiPipe.UiEventHandler {
         ui.cls(Html.OFFSET_CONTROL, Html.HIDDEN, false);
 
     }
+
+    private String formatPosition(double qty) {
+        String display;
+        if (qty < 1000) {
+            display = ((int) qty) + "";
+        } else if (qty < 100000) {
+            display = THOUSANDS_QTY_FORMAT.format(qty / 1000.0) + "K";
+        } else {
+            display = MILLIONS_QTY_FORMAT.format(qty / 1000000) + "M";
+        }
+        return display;
+    }
+
 
     private String formatQty(Integer qty) {
         String display;
