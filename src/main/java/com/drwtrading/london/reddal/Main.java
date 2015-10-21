@@ -38,6 +38,7 @@ import com.drwtrading.london.logging.JsonChannelLogger;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.photons.indy.IndyEnvelope;
+import com.drwtrading.london.photons.mdreq.FeedType;
 import com.drwtrading.london.photons.mdreq.MdRequest;
 import com.drwtrading.london.photons.reddal.Heartbeat;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
@@ -622,7 +623,7 @@ public class Main {
                             .handler(new JetlangChannelHandler<>(marketDataEventPublisher));
                     fibers.onStart(() -> fiber.execute(() -> client.start()));
                 } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.FILTERED) {
-                    RemoteFilteredClient filteredClient = new RemoteFilteredClient(channels.refData);
+                    RemoteFilteredClient filteredClient = new RemoteFilteredClient(channels.refData, FeedType.FULL_BOOK);
                     fiber.subscribe(filteredClient, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
                     final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
                     final OnHeapBufferPhotocolsNioClient<MarketDataEvent, MdRequest> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, MdRequest.class, fiber.getFiber(), EXCEPTION_HANDLER);
