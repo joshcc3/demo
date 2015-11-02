@@ -197,6 +197,7 @@ public class LadderPresenter {
                 view.onRawInboundData(data);
             }
         }
+        trace.publish(new LadderView.InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
     }
 
     @Subscribe

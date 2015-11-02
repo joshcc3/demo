@@ -253,7 +253,7 @@ public class UiPipeImpl implements UiPipe {
         return Joiner.on(DATA_SEPARATOR).join(args);
     }
 
-    private Map<String, String> getDataArg(String[] args) {
+    public static Map<String, String> getDataArg(String[] args) {
         Map<String, String> data = new HashMap<String, String>();
         int arg = 2;
         if (args.length > arg) {

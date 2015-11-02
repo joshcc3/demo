@@ -1279,6 +1279,20 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
+    public static class InboundDataTrace extends Struct {
+        public final String remote;
+        public final String user;
+        public final String[] inbound;
+        public final Map<String, String> dataArg;
+
+        public InboundDataTrace(String remote, String user, String[] inbound, Map<String, String> dataArg) {
+            this.remote = remote;
+            this.user = user;
+            this.inbound = inbound;
+            this.dataArg = dataArg;
+        }
+    }
+
     public static class CommandTrace extends Struct {
 
         public final String command;
