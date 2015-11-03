@@ -46,6 +46,7 @@ import drw.london.json.Jsonable;
 import org.jetlang.channels.Publisher;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -71,13 +72,14 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final DecimalFormat MILLIONS_QTY_FORMAT = new DecimalFormat(".0");
     public static final DecimalFormat POSITION_FMT = new DecimalFormat("0.0");
     public static final DecimalFormat EFP_DECIMAL_FORMAT = new DecimalFormat("0.00");
-    public static final DecimalFormat FX_DECIMAL_FORMAT = new DecimalFormat("0.00");
+    public static final DecimalFormat FX_DECIMAL_FORMAT = new DecimalFormat(".0");
     public static final int MODIFY_TIMEOUT_MS = 5000;
     public static final int AUTO_RECENTER_TICKS = 3;
 
     public static final int RECENTER_TIME_MS = 11000;
     public static final int RECENTER_WARN_TIME_MS = 9000;
     public static final int BIG_NUMBER_THRESHOLD = 99999;
+    public static final int REALLY_BIG_NUMBER_THRESHOLD = 100000;
     // Click-trading
     public final Map<String, Integer> buttonQty = new HashMap<>();
 
@@ -496,7 +498,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                     ui.cls(tradeKey(price), Html.TRADED_DOWN, false);
                     ui.cls(tradeKey(price), Html.TRADED_AGAIN, false);
                 } else {
-                    ui.txt(tradeKey(price), m.tradeTracker.quantityTraded);
+                    ui.txt(tradeKey(price), formatMktQty(m.tradeTracker.quantityTraded));
                     ui.cls(tradeKey(price), Html.HIDDEN, false);
                     ui.cls(volumeKey(price), Html.HIDDEN, true);
                     ui.cls(tradeKey(price), Html.TRADED_UP, m.tradeTracker.lastTradedUp);
@@ -517,7 +519,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             for (final Long price : levelByPrice.keySet()) {
                 final TotalTradedVolumeByPrice volumeByPrice = m.totalTradedVolumeByPrice.get(price);
                 if (volumeByPrice != null) {
-                    ui.txt(volumeKey(price), volumeByPrice.getQuantityTraded());
+                    ui.txt(volumeKey(price), formatMktQty(volumeByPrice.getQuantityTraded()));
                     ui.cls(priceKey(price), Html.PRICE_TRADED, volumeByPrice.getQuantityTraded() > 0);
                 } else {
                     ui.txt(volumeKey(price), Html.EMPTY);
@@ -688,7 +690,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
         for (Map.Entry<String, Integer> entry : buttonQty.entrySet()) {
             String display;
-            display = formatQty(entry.getValue());
+            display = formatClickQty(entry.getValue());
             ui.txt(entry.getKey(), display);
         }
         for (int i = 0; i < levels; i++) {
@@ -730,7 +732,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
 
-    private String formatQty(Integer qty) {
+    private String formatClickQty(Integer qty) {
         String display;
         if (qty < 1000) {
             display = qty + "";
@@ -1515,22 +1517,36 @@ public class LadderView implements UiPipe.UiEventHandler {
     // Update helpers
 
     public void bidQty(final long price, final int qty) {
-        ui.txt(bidKey(price), qty > 0 ? qty : Html.EMPTY);
+        ui.txt(bidKey(price), formatMktQty(qty));
         ui.cls(bidKey(price), Html.BID_ACTIVE, qty > 0);
-        ui.cls(bidKey(price), Html.BIG_NUMBER, qty > BIG_NUMBER_THRESHOLD);
+        styleBigNumber(bidKey(price), qty);
+    }
+
+    private void styleBigNumber(String key, int qty) {
+        ui.cls(key, Html.BIG_NUMBER, qty > BIG_NUMBER_THRESHOLD && qty < REALLY_BIG_NUMBER_THRESHOLD);
     }
 
     public void offerQty(final long price, final int qty) {
-        ui.txt(offerKey(price), qty > 0 ? qty : Html.EMPTY);
+        ui.txt(offerKey(price), formatMktQty(qty));
         ui.cls(offerKey(price), Html.OFFER_ACTIVE, qty > 0);
-        ui.cls(offerKey(price), Html.BIG_NUMBER, qty > BIG_NUMBER_THRESHOLD);
+        styleBigNumber(offerKey(price), qty);
+    }
 
+    public String formatMktQty(int qty) {
+        if (qty <= 0) {
+            return Html.EMPTY;
+        }
+        if (qty > REALLY_BIG_NUMBER_THRESHOLD) {
+            double d = (double) qty / 1000000;
+            return new BigDecimal(d).round(new MathContext(2)).toString() + "M";
+        }
+        return Integer.toString(qty);
     }
 
     public void workingQty(final long price, final int qty, final String side, final Set<WorkingOrderType> orderTypes) {
-        ui.txt(orderKey(price), qty > 0 ? qty : Html.EMPTY);
+        ui.txt(orderKey(price), formatMktQty(qty));
         ui.cls(orderKey(price), Html.WORKING_QTY, qty > 0);
-        ui.cls(orderKey(price), Html.BIG_NUMBER, qty > BIG_NUMBER_THRESHOLD);
+        styleBigNumber(orderKey(price), qty);
         ui.cls(orderKey(price), Html.WORKING_BID, "bid".equals(side));
         ui.cls(orderKey(price), Html.WORKING_OFFER, "offer".equals(side));
         for (final WorkingOrderType workingOrderType : WorkingOrderType.values()) {
