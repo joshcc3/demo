@@ -1536,7 +1536,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         if (qty <= 0) {
             return Html.EMPTY;
         }
-        if (qty > REALLY_BIG_NUMBER_THRESHOLD) {
+        if (qty >= REALLY_BIG_NUMBER_THRESHOLD) {
             double d = (double) qty / 1000000;
             return new BigDecimal(d).round(new MathContext(2)).toString() + "M";
         }
