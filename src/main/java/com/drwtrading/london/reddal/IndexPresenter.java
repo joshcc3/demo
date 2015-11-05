@@ -30,8 +30,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 
@@ -173,20 +175,17 @@ public class IndexPresenter {
 
     private void displayResult(View view, Set<String> matching, final String searchTerms) {
         ArrayList<String> symbols = new ArrayList<>(matching);
-        Collections.sort(symbols, new Comparator<String>() {
-            @Override
-            public int compare(String o1, String o2) {
-                int distance = LevenshteinDistance.computeEditDistance(searchTerms, o1) - LevenshteinDistance.computeEditDistance(searchTerms, o2);
-                if (distance == 0) {
-                    long exp1 = getExpiry(instrumentDefinitionEventMap.get(o1));
-                    long exp2 = getExpiry(instrumentDefinitionEventMap.get(o2));
-                    if(exp1 != 0 && exp2 != 0 && exp1 - exp2 != 0) {
-                        return (exp1 - exp2) < 0 ? -1 : 1;
-                    }
-                    return o1.compareToIgnoreCase(o2);
+        Collections.sort(symbols, (o1, o2) -> {
+            int distance = LevenshteinDistance.computeEditDistance(searchTerms, o1) - LevenshteinDistance.computeEditDistance(searchTerms, o2);
+            if (distance == 0) {
+                long exp1 = getExpiry(instrumentDefinitionEventMap.get(o1));
+                long exp2 = getExpiry(instrumentDefinitionEventMap.get(o2));
+                if(exp1 != 0 && exp2 != 0 && exp1 - exp2 != 0) {
+                    return (exp1 - exp2) < 0 ? -1 : 1;
                 }
-                return distance;
+                return o1.compareToIgnoreCase(o2);
             }
+            return distance;
         });
 
         if (symbols.remove(searchTerms.toUpperCase())) {
@@ -195,12 +194,20 @@ public class IndexPresenter {
             symbols.add(0, "SF:" + searchTerms.toUpperCase());
         }
 
-        ArrayList<SearchResult> results = new ArrayList<SearchResult>(Collections2.transform(symbols, new Function<String, SearchResult>() {
-            @Override
-            public SearchResult apply(String from) {
-                return searchResultBySymbol.get(from);
-            }
-        }));
+        List<InstrumentDefinitionEvent> defs = symbols.stream()
+                .filter(s -> s.replaceAll("SF:","").split(" ")[0].toUpperCase().startsWith(searchTerms.trim().toUpperCase()))
+                .map(s -> instrumentDefinitionEventMap.get(s))
+                .filter(d -> d != null)
+                .filter(d -> d.getExchangeInstrumentDefinitionDetails().typeEnum() != ExchangeInstrumentDefinitionDetails.Type.BATS_INSTRUMENT_DEFINITION)
+                .collect(Collectors.toList());
+
+        if (!defs.isEmpty()) {
+            symbols.add(0, defs.get(0).getSymbol());
+        }
+
+        List<SearchResult> results = symbols.stream().distinct()
+                .map(from -> searchResultBySymbol.get(from))
+                .collect(Collectors.toList());
 
         if (results.size() < maxResults) {
             view.display(results, false);
