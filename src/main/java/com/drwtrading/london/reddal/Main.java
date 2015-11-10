@@ -28,7 +28,6 @@ import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClien
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
-import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
 import com.drwtrading.london.jetlang.JetlangFactory;
@@ -50,8 +49,6 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
-import com.drwtrading.london.reddal.eeifoe.EeifOrderCommand;
-import com.drwtrading.london.reddal.eeifoe.OrderEntryClient;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
@@ -148,7 +145,6 @@ public class Main {
         public final TypedChannel<UnsubscribeMarketData> unsubscribeFromMarketData;
         public final TypedChannel<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
         public final TypedChannel<SpreadContractSet> contractSets;
-        public final TypedChannel<EeifOrderCommand> eeifOrderCommands;
         public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
         public final TypedChannel<Jsonable> trace;
         public final TypedChannel<ReplaceCommand> replaceCommand;
@@ -186,7 +182,6 @@ public class Main {
             ladderClickTradingIssues = create(LadderClickTradingIssue.class);
             userCycleContractPublisher = create(UserCycleRequest.class);
             replaceCommand = create(ReplaceCommand.class);
-            eeifOrderCommands = create(EeifOrderCommand.class);
         }
 
         public <T> TypedChannel<T> create(final Class<T> clazz) {
@@ -400,7 +395,7 @@ public class Main {
                                     channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
                                     channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser,
                                     fiberBuilder.getFiber(), channels.trace, channels.ladderClickTradingIssues,
-                                    channels.userCycleContractPublisher, channels.eeifOrderCommands);
+                                    channels.userCycleContractPublisher);
                     fiberBuilder.subscribe(presenter,
                             websocket,
                             channels.workingOrders,
@@ -667,24 +662,6 @@ public class Main {
             }
         }
 
-        // EEIF OE commands
-        {
-            String thisInstance = environment.getEeifOeInstance();
-            if (null != thisInstance) {
-                for (final String server : environment.getList(Environment.EEIF_OE)) {
-                    System.out.println("\tOrder entry: " + thisInstance + "<->" + server);
-                    final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.EEIF_OE, server);
-                    OrderEntryClient client = new OrderEntryClient(
-                            thisInstance, server, fibers.remoteOrders.getFiber(), hostAndNic.host, logDir, new SystemClock()
-                    );
-                    channels.eeifOrderCommands.subscribe(fibers.remoteOrders.getFiber(), (cmd) -> {
-                        if (cmd.getServer().equals(server)) {
-                            cmd.accept(client);
-                        }
-                    });
-                }
-            }
-        }
 
         // Reddal server
         {

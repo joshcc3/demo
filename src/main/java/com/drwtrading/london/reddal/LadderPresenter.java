@@ -15,7 +15,6 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.eeifoe.EeifOrderCommand;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
@@ -72,15 +71,13 @@ public class LadderPresenter {
     private final Fiber fiber;
     private Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
-    private final Publisher<EeifOrderCommand> eeifOrderCommands;
 
     public LadderPresenter(final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
                            final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
                            final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, final Publisher<ReddalMessage> commandPublisher,
                            final Publisher<SubscribeMarketData> subscribeToMarketData, final Publisher<UnsubscribeMarketData> unsubscribeFromMarketData,
                            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
-                           final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher,
-                           final Publisher<EeifOrderCommand> eeifOrderCommands) {
+                           final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
@@ -93,7 +90,6 @@ public class LadderPresenter {
         this.trace = trace;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
-        this.eeifOrderCommands = eeifOrderCommands;
         ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(symbol -> new MapMaker().makeComputingMap(user -> new LadderPrefsForSymbolUser(symbol, user, storeLadderPrefPublisher)));
         marketDataForSymbolMap = new MapMaker().makeComputingMap(symbol -> subscribeToMarketDataForSymbol(symbol, fiber));
     }
@@ -123,7 +119,7 @@ public class LadderPresenter {
         final LadderView ladderView =
                 new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher,
                         tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser, trace,
-                        ladderClickTradingIssuePublisher, userCycleContractPublisher, eeifOrderCommands);
+                        ladderClickTradingIssuePublisher, userCycleContractPublisher);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }

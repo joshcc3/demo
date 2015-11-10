@@ -29,7 +29,6 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.eeifoe.EeifOrderCommand;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
@@ -182,7 +181,6 @@ public class LadderView implements UiPipe.UiEventHandler {
     private final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
-    private final Publisher<EeifOrderCommand> eeifOrderCommands;
     private final UiPipeImpl ui;
     private final Publisher<StatsMsg> statsPublisher;
     private final TradingStatusForAll tradingStatusForAll;
@@ -213,8 +211,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                       final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
                       final Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, final Publisher<ReddalMessage> commandPublisher,
                       final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher,
-                      final Publisher<EeifOrderCommand> eeifOrderCommands) {
+                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher) {
         this.client = client;
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
@@ -223,7 +220,6 @@ public class LadderView implements UiPipe.UiEventHandler {
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.trace = trace;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
-        this.eeifOrderCommands = eeifOrderCommands;
         this.ui = (UiPipeImpl) ui;
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
