@@ -935,15 +935,15 @@ public class LadderView implements UiPipe.UiEventHandler {
             final int n = -1 * (levelByPrice.size() - 1);
             centerPrice = getPriceNTicksFrom(centerPrice, n);
         } else if (keyCode == HOME_KEY) {
-            if (null != marketDataForSymbol.book) {
-                final BestPrice ask = marketDataForSymbol.book.getTopOfBook().getBestOffer();
+            if (null != marketDataForSymbol.topOfBook) {
+                final BestPrice ask = marketDataForSymbol.topOfBook.getBestOffer();
                 if (ask.isExists()) {
                     centerPrice = ask.getPrice();
                 }
             }
         } else if (keyCode == END_KEY) {
-            if (null != marketDataForSymbol.book) {
-                final BestPrice bid = marketDataForSymbol.book.getTopOfBook().getBestBid();
+            if (null != marketDataForSymbol.topOfBook) {
+                final BestPrice bid = marketDataForSymbol.topOfBook.getBestBid();
                 if (bid.isExists()) {
                     centerPrice = bid.getPrice();
                 }
