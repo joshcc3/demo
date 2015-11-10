@@ -672,17 +672,19 @@ public class Main {
         // EEIF OE commands
         {
             String thisInstance = environment.getEeifOeInstance();
-            for (final String server : environment.getList(Environment.EEIF_OE)) {
-                System.out.println("\tOrder entry: " + thisInstance + "<->" + server);
-                final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.EEIF_OE, server);
-                OrderEntryClient client = new OrderEntryClient(
-                        thisInstance, server, fibers.remoteOrders.getFiber(), hostAndNic.host, logDir, new SystemClock()
-                );
-                channels.eeifOrderCommands.subscribe(fibers.remoteOrders.getFiber(), (cmd) -> {
-                    if (cmd.getServer().equals(server)) {
-                        cmd.accept(client);
-                    }
-                });
+            if (null != thisInstance) {
+                for (final String server : environment.getList(Environment.EEIF_OE)) {
+                    System.out.println("\tOrder entry: " + thisInstance + "<->" + server);
+                    final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.EEIF_OE, server);
+                    OrderEntryClient client = new OrderEntryClient(
+                            thisInstance, server, fibers.remoteOrders.getFiber(), hostAndNic.host, logDir, new SystemClock()
+                    );
+                    channels.eeifOrderCommands.subscribe(fibers.remoteOrders.getFiber(), (cmd) -> {
+                        if (cmd.getServer().equals(server)) {
+                            cmd.accept(client);
+                        }
+                    });
+                }
             }
         }
 

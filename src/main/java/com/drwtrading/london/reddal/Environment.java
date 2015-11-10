@@ -90,7 +90,7 @@ public class Environment {
     }
 
     public String getEeifOeInstance() {
-        return config.get("eeifoe.instance");
+        return config.getOrNull("eeifoe.instance");
     }
 
 

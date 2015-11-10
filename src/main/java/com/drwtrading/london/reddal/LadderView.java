@@ -29,10 +29,7 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.eeifoe.EeifOrder;
 import com.drwtrading.london.reddal.eeifoe.EeifOrderCommand;
-import com.drwtrading.london.reddal.eeifoe.OrderEntryClient;
-import com.drwtrading.london.reddal.eeifoe.SubmitEeifOrder;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
@@ -55,7 +52,6 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -66,7 +62,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
@@ -1349,11 +1344,6 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
-    static final Set<String> EEIF_ORDER_TYPES = ImmutableSet.copyOf(
-            Arrays.asList(OrderEntryClient.EeifOrderType.values()).stream()
-                    .map(Enum::name).collect(Collectors.toSet())
-    );
-
     private void submitOrder(final String orderType, final boolean autoHedge, final long price, final com.drwtrading.london.protocols.photon.execution.Side side,
                              final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
 
@@ -1374,21 +1364,6 @@ public class LadderView implements UiPipe.UiEventHandler {
             }
 
             final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, orderType);
-
-            if (EEIF_ORDER_TYPES.contains(orderType)) {
-                eeifOrderCommands.publish(new SubmitEeifOrder(new EeifOrder(
-                        sequenceNumber,
-                        symbol,
-                        side,
-                        price,
-                        clickTradingBoxQty,
-                        client.getUserName(),
-                        tag,
-                        OrderEntryClient.EeifOrderType.valueOf(orderType),
-                        serverName
-                )));
-                return;
-            }
 
             final RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
 
