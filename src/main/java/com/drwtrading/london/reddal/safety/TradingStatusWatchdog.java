@@ -39,33 +39,28 @@ public class TradingStatusWatchdog {
         lastRemoteOrderEventFromServer.put(managementServerHeartbeat.fromServer, clock.now());
     }
 
-    public Runnable checkRunnable() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                long now = clock.now();
-                for (Map.Entry<String, Long> entry : lastWorkingOrderEventFromServer.entrySet()) {
-                    Long workingOrderTime = entry.getValue();
-                    Long remoteOrderTime = lastRemoteOrderEventFromServer.get(entry.getKey());
-                    Status workingStatus = workingOrderTime != null && now - workingOrderTime < maxAgeMillis ? Status.OK : Status.NOT_OK;
-                    Status remoteStatus = remoteOrderTime != null && now - remoteOrderTime < maxAgeMillis ? Status.OK : Status.NOT_OK;
-                    Status tradingStatus = workingStatus == Status.OK && remoteStatus == Status.OK ? Status.OK : Status.NOT_OK;
-                    ServerTradingStatus serverTradingStatus = new ServerTradingStatus(entry.getKey(), workingStatus, remoteStatus, tradingStatus);
-                    if (!serverTradingStatus.equals(tradingStatusMap.put(serverTradingStatus.server, serverTradingStatus))) {
-                        tradingStatusPublisher.publish(serverTradingStatus);
-                    }
-                    if (workingStatus == Status.OK) {
-                        statsPublisher.publish(new StatusStat(entry.getKey() + ": working order status", StatusStat.State.GREEN, (int) maxAgeMillis));
-                    }
-                    if (remoteStatus == Status.OK) {
-                        statsPublisher.publish(new StatusStat(entry.getKey() + ": remote order status", StatusStat.State.GREEN, (int) maxAgeMillis));
-                    }
-                    if (tradingStatus == Status.OK) {
-                        statsPublisher.publish(new StatusStat(entry.getKey() + ": trading status", StatusStat.State.GREEN, (int) maxAgeMillis));
-                    }
-                }
+    public void checkHeartbeats() {
+        long now = clock.now();
+        for (Map.Entry<String, Long> entry : lastWorkingOrderEventFromServer.entrySet()) {
+            Long workingOrderTime = entry.getValue();
+            Long remoteOrderTime = lastRemoteOrderEventFromServer.get(entry.getKey());
+            Status workingStatus = workingOrderTime != null && now - workingOrderTime < maxAgeMillis ? Status.OK : Status.NOT_OK;
+            Status remoteStatus = remoteOrderTime != null && now - remoteOrderTime < maxAgeMillis ? Status.OK : Status.NOT_OK;
+            Status tradingStatus = workingStatus == Status.OK && remoteStatus == Status.OK ? Status.OK : Status.NOT_OK;
+            ServerTradingStatus serverTradingStatus = new ServerTradingStatus(entry.getKey(), workingStatus, remoteStatus, tradingStatus);
+            if (!serverTradingStatus.equals(tradingStatusMap.put(serverTradingStatus.server, serverTradingStatus))) {
+                tradingStatusPublisher.publish(serverTradingStatus);
             }
-        };
+            if (workingStatus == Status.OK) {
+                statsPublisher.publish(new StatusStat(entry.getKey() + ": working order status", StatusStat.State.GREEN, (int) maxAgeMillis));
+            }
+            if (remoteStatus == Status.OK) {
+                statsPublisher.publish(new StatusStat(entry.getKey() + ": remote order status", StatusStat.State.GREEN, (int) maxAgeMillis));
+            }
+            if (tradingStatus == Status.OK) {
+                statsPublisher.publish(new StatusStat(entry.getKey() + ": trading status", StatusStat.State.GREEN, (int) maxAgeMillis));
+            }
+        }
     }
 
     public static enum Status {

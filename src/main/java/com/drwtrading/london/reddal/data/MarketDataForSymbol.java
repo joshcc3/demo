@@ -227,14 +227,9 @@ public class MarketDataForSymbol {
         }
     }
 
-    public Callback<List<MarketDataEvent>> onMarketDataBatchCallback() {
-        return new Callback<List<MarketDataEvent>>() {
-            @Override
-            public void onMessage(final List<MarketDataEvent> message) {
-                for (MarketDataEvent marketDataEvent : message) {
-                    onMarketDataEvent(marketDataEvent);
-                }
-            }
-        };
+    public void onMarketDataBatch(List<MarketDataEvent> message) {
+        for (MarketDataEvent marketDataEvent : message) {
+            onMarketDataEvent(marketDataEvent);
+        }
     }
 }

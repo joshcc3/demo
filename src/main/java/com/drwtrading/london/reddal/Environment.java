@@ -19,7 +19,6 @@ import java.util.regex.Pattern;
 
 public class Environment {
 
-
     public static enum Exchange {
         EUREX,
         XETRA,
@@ -30,6 +29,7 @@ public class Environment {
     public static final String MARKET_DATA = "marketData";
     public static final String WORKING_ORDERS = "workingOrders";
     public static final String REMOTE_COMMANDS = "remoteCommands";
+    public static final String EEIF_OE = "eeifoe";
     public static final String METADATA = "metadata";
 
     public boolean opxlDeskPositionEnabled() {
@@ -88,6 +88,11 @@ public class Environment {
             this.nic = nic;
         }
     }
+
+    public String getEeifOeInstance() {
+        return config.get("eeifoe.instance");
+    }
+
 
     private final Config config;
 
@@ -211,21 +216,21 @@ public class Environment {
     }
 
     public static RemoteOrderServerResolver getRemoteOrderServerResolver(final LinkedHashMap<String, RemoteOrderMatcher> matchers) {
-        return new RemoteOrderServerResolver() {
-            @Override
-            public String resolveToServerName(String symbol, RemoteOrderType orderType) {
-                for (Map.Entry<String, RemoteOrderMatcher> entry : matchers.entrySet()) {
-                    if (entry.getValue().matches(symbol, orderType)) {
-                        return entry.getKey();
-                    }
+        return (symbol, orderType) -> {
+            for (Map.Entry<String, RemoteOrderMatcher> entry : matchers.entrySet()) {
+                if (entry.getValue().matches(symbol, orderType)) {
+                    return entry.getKey();
                 }
-                return null;
             }
+            return null;
         };
     }
 
     public static interface RemoteOrderServerResolver {
-        public String resolveToServerName(String symbol, RemoteOrderType orderType);
+        public String resolveToServerName(String symbol, String orderType);
+        default String resolveToServerName(String symbol, RemoteOrderType remoteOrderType) {
+            return resolveToServerName(symbol, remoteOrderType.name());
+        }
     }
 
     public static class RemoteOrderMatcher {
@@ -237,8 +242,8 @@ public class Environment {
             this.orderTypes = orderTypes;
         }
 
-        public boolean matches(String symbol, RemoteOrderType remoteOrderType) {
-            return symbolPattern.matcher(symbol).find() && (orderTypes == null || orderTypes.contains(remoteOrderType.toString()));
+        public boolean matches(String symbol, String orderType) {
+            return symbolPattern.matcher(symbol).find() && (orderTypes == null || orderTypes.contains(orderType));
         }
     }
 

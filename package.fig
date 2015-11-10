@@ -16,6 +16,7 @@ config default
   include fastutil/6.6.1
   include photon-runtime-java/1.0.0.82
   include com.drwtrading.photocols/0.9.7
+  include org.hdrhistogram/2.1.4
 
   # JSON
   include drw.london.json/1.0.0.4
@@ -46,6 +47,7 @@ config default
   include com.drwtrading.photons.mrphil/1.0.0.4
   include com.drwtrading.london.photons.indy/11
   include com.drwtrading.london.photons.reddal/2
+  include com.drwtrading.london.photons.eeifoe/3
 
   # MD
   include mockito/1.8.3

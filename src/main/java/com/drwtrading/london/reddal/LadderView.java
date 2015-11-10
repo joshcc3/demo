@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal;
 
+import com.drwtrading.london.eeif.utils.collections.SlidingWindow;
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
@@ -28,6 +29,10 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.eeifoe.EeifOrder;
+import com.drwtrading.london.reddal.eeifoe.EeifOrderCommand;
+import com.drwtrading.london.reddal.eeifoe.OrderEntryClient;
+import com.drwtrading.london.reddal.eeifoe.SubmitEeifOrder;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
@@ -39,7 +44,6 @@ import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketClient;
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import drw.london.json.Jsonable;
@@ -51,6 +55,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -61,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
@@ -165,8 +171,9 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final int PG_DOWN = 34;
     public static final int END_KEY = 35;
     public static final int HOME_KEY = 36;
+    public static final int MAX_FLUSH_PER_SEC = 100;
 
-    public static enum PricingMode {
+    public enum PricingMode {
         BPS,
         EFP,
         RAW
@@ -180,12 +187,13 @@ public class LadderView implements UiPipe.UiEventHandler {
     private final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
+    private final Publisher<EeifOrderCommand> eeifOrderCommands;
     private final UiPipeImpl ui;
     private final Publisher<StatsMsg> statsPublisher;
     private final TradingStatusForAll tradingStatusForAll;
     private final Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
-
+    private final SlidingWindow flushWindow = new SlidingWindow(20, 50);
     public String symbol;
     private MarketDataForSymbol marketDataForSymbol;
     private WorkingOrdersForSymbol workingOrdersForSymbol;
@@ -210,7 +218,8 @@ public class LadderView implements UiPipe.UiEventHandler {
                       final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
                       final Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, final Publisher<ReddalMessage> commandPublisher,
                       final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher) {
+                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher,
+                      final Publisher<EeifOrderCommand> eeifOrderCommands) {
         this.client = client;
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
@@ -219,6 +228,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.trace = trace;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
+        this.eeifOrderCommands = eeifOrderCommands;
         this.ui = (UiPipeImpl) ui;
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
@@ -271,13 +281,34 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
+    public void fastMdFlush() {
+        drawBook();
+        drawTradedVolumes();
+        drawLastTrade();
+        throttleFlush();
+    }
+
+    public void fastInputFlush() {
+        drawClickTrading();
+        throttleFlush();
+    }
+
     public void flush() {
         checkClientSpeed();
         drawLadderIfRefDataHasJustComeIn();
         recenterIfTimeoutElapsed();
         clearModifyPriceIfTimedOut();
         updateEverything();
-        ui.flush();
+        throttleFlush();
+    }
+
+
+    public void throttleFlush() {
+        long now = System.currentTimeMillis();
+        if (flushWindow.put(now, 0) < MAX_FLUSH_PER_SEC) {
+            flushWindow.put(now, 1);
+            ui.flush();
+        }
     }
 
     private void drawLadderIfRefDataHasJustComeIn() {
@@ -746,12 +777,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private Collection<String> filterUsableOrderTypes(final Collection<String> types) {
-        return Collections2.filter(types, new Predicate<String>() {
-            @Override
-            public boolean apply(final String input) {
-                return ladderOptions.serverResolver.resolveToServerName(symbol, getRemoteOrderType(input)) != null;
-            }
-        });
+        return Collections2.filter(types, input -> ladderOptions.serverResolver.resolveToServerName(symbol, input) != null);
     }
 
     private void setupButtons() {
@@ -1323,6 +1349,11 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
+    static final Set<String> EEIF_ORDER_TYPES = ImmutableSet.copyOf(
+            Arrays.asList(OrderEntryClient.EeifOrderType.values()).stream()
+                    .map(Enum::name).collect(Collectors.toSet())
+    );
+
     private void submitOrder(final String orderType, final boolean autoHedge, final long price, final com.drwtrading.london.protocols.photon.execution.Side side,
                              final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
 
@@ -1342,8 +1373,24 @@ public class LadderView implements UiPipe.UiEventHandler {
                 return;
             }
 
+            final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, orderType);
+
+            if (EEIF_ORDER_TYPES.contains(orderType)) {
+                eeifOrderCommands.publish(new SubmitEeifOrder(new EeifOrder(
+                        sequenceNumber,
+                        symbol,
+                        side,
+                        price,
+                        clickTradingBoxQty,
+                        client.getUserName(),
+                        tag,
+                        OrderEntryClient.EeifOrderType.valueOf(orderType),
+                        serverName
+                )));
+                return;
+            }
+
             final RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
-            final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType);
 
             if (serverName == null) {
                 final String message = "Cannot submit order " + orderType + " " + side + " " + clickTradingBoxQty + " for " + symbol +

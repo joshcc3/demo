@@ -28,6 +28,7 @@ import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClien
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
+import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
 import com.drwtrading.london.jetlang.JetlangFactory;
@@ -49,6 +50,8 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
+import com.drwtrading.london.reddal.eeifoe.EeifOrderCommand;
+import com.drwtrading.london.reddal.eeifoe.OrderEntryClient;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
@@ -106,10 +109,10 @@ import static com.google.common.collect.Maps.newHashMap;
 public class Main {
 
     public static final long SERVER_TIMEOUT = 3000L;
-    public static final int BATCH_FLUSH_INTERVAL_MS = 85;
+    public static final int BATCH_FLUSH_INTERVAL_MS = 200;
     public static final int HEARTBEAT_INTERVAL_MS = 20 * BATCH_FLUSH_INTERVAL_MS;
-    public static final int NUM_DISPLAY_THREADS = 4;
-    private static final long RECONNECT_INTERVAL_MILLIS = 10000;
+    public static final int NUM_DISPLAY_THREADS = 8;
+    public static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber, final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
@@ -145,6 +148,7 @@ public class Main {
         public final TypedChannel<UnsubscribeMarketData> unsubscribeFromMarketData;
         public final TypedChannel<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
         public final TypedChannel<SpreadContractSet> contractSets;
+        public final TypedChannel<EeifOrderCommand> eeifOrderCommands;
         public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
         public final TypedChannel<Jsonable> trace;
         public final TypedChannel<ReplaceCommand> replaceCommand;
@@ -182,6 +186,7 @@ public class Main {
             ladderClickTradingIssues = create(LadderClickTradingIssue.class);
             userCycleContractPublisher = create(UserCycleRequest.class);
             replaceCommand = create(ReplaceCommand.class);
+            eeifOrderCommands = create(EeifOrderCommand.class);
         }
 
         public <T> TypedChannel<T> create(final Class<T> clazz) {
@@ -397,7 +402,7 @@ public class Main {
                                     channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
                                     channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser,
                                     fiberBuilder.getFiber(), channels.trace, channels.ladderClickTradingIssues,
-                                    channels.userCycleContractPublisher);
+                                    channels.userCycleContractPublisher, channels.eeifOrderCommands);
                     fiberBuilder.subscribe(presenter,
                             websocket,
                             channels.workingOrders,
@@ -413,8 +418,8 @@ public class Main {
                             channels.ladderClickTradingIssues,
                             channels.replaceCommand,
                             channels.userCycleContractPublisher);
-                    fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.flushBatchedData(), 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
-                    fiberBuilder.getFiber().scheduleWithFixedDelay(presenter.sendHeartbeats(), 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                    fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::flushAllLadders, 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                    fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::sendAllHeartbeats, 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 }
             }
 
@@ -664,6 +669,23 @@ public class Main {
             }
         }
 
+        // EEIF OE commands
+        {
+            String thisInstance = environment.getEeifOeInstance();
+            for (final String server : environment.getList(Environment.EEIF_OE)) {
+                System.out.println("\tOrder entry: " + thisInstance + "<->" + server);
+                final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.EEIF_OE, server);
+                OrderEntryClient client = new OrderEntryClient(
+                        thisInstance, server, fibers.remoteOrders.getFiber(), hostAndNic.host, logDir, new SystemClock()
+                );
+                channels.eeifOrderCommands.subscribe(fibers.remoteOrders.getFiber(), (cmd) -> {
+                    if (cmd.getServer().equals(server)) {
+                        cmd.accept(client);
+                    }
+                });
+            }
+        }
+
         // Reddal server
         {
             final Photocols<ReddalMessage, ReddalMessage> commandServer = Photocols.server(new InetSocketAddress(environment.getCommandsPort()), ReddalMessage.class, ReddalMessage.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
@@ -702,7 +724,7 @@ public class Main {
         {
             final TradingStatusWatchdog watchdog = new TradingStatusWatchdog(channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM, channels.stats);
             fibers.watchdog.subscribe(watchdog, channels.workingOrderEvents, channels.remoteOrderEvents);
-            fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog.checkRunnable(), HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
+            fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog::checkHeartbeats, HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
         }
 
         // Mr. Phil position

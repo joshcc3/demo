@@ -3,7 +3,6 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.eeif.md.remote.SubscribeMarketData;
 import com.drwtrading.eeif.md.remote.UnsubscribeMarketData;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
@@ -16,6 +15,7 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.eeifoe.EeifOrderCommand;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
@@ -30,7 +30,6 @@ import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
-import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
@@ -48,27 +47,17 @@ import java.util.concurrent.TimeUnit;
 
 public class LadderPresenter {
 
-    public static final int MD_FLUSH_MILLIS = 40;
+
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
     private final Publisher<StatsMsg> statsPublisher;
 
+    private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<>();
     private final Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
     private final Multimap<String, LadderView> viewsByUser = HashMultimap.create();
-    private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<>();
     private final Map<String, Runnable> marketDataUnsubscribers = new HashMap<>();
-    private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(new Function<String, WorkingOrdersForSymbol>() {
-        @Override
-        public WorkingOrdersForSymbol apply(final java.lang.String from) {
-            return new WorkingOrdersForSymbol(from);
-        }
-    });
-    private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(new Function<String, ExtraDataForSymbol>() {
-        @Override
-        public ExtraDataForSymbol apply(final java.lang.String from) {
-            return new ExtraDataForSymbol(from);
-        }
-    });
+    private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
+    private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(ExtraDataForSymbol::new);
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     private final Map<String, MarketDataForSymbol> marketDataForSymbolMap;
 
@@ -83,13 +72,15 @@ public class LadderPresenter {
     private final Fiber fiber;
     private Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
+    private final Publisher<EeifOrderCommand> eeifOrderCommands;
 
     public LadderPresenter(final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-            final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
-            final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<SubscribeMarketData> subscribeToMarketData, final Publisher<UnsubscribeMarketData> unsubscribeFromMarketData,
-            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher) {
+                           final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+                           final Publisher<LadderView.HeartbeatRoundtrip> roundtripPublisher, final Publisher<ReddalMessage> commandPublisher,
+                           final Publisher<SubscribeMarketData> subscribeToMarketData, final Publisher<UnsubscribeMarketData> unsubscribeFromMarketData,
+                           final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
+                           final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher,
+                           final Publisher<EeifOrderCommand> eeifOrderCommands) {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
@@ -102,39 +93,20 @@ public class LadderPresenter {
         this.trace = trace;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
-        ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(new Function<String, Map<String, LadderPrefsForSymbolUser>>() {
-            @Override
-            public Map<String, LadderPrefsForSymbolUser> apply(final String symbol) {
-                return new MapMaker().makeComputingMap(new Function<String, LadderPrefsForSymbolUser>() {
-                    @Override
-                    public LadderPrefsForSymbolUser apply(final String user) {
-                        final LadderPrefsForSymbolUser prefs = new LadderPrefsForSymbolUser(symbol, user, storeLadderPrefPublisher);
-                        return prefs;
-                    }
-                });
-            }
-        });
-        marketDataForSymbolMap = new MapMaker().makeComputingMap(new Function<String, MarketDataForSymbol>() {
-            @Override
-            public MarketDataForSymbol apply(final String symbol) {
-                return subscribeToMarketDataForSymbol(symbol, fiber);
-            }
-        });
-
+        this.eeifOrderCommands = eeifOrderCommands;
+        ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(symbol -> new MapMaker().makeComputingMap(user -> new LadderPrefsForSymbolUser(symbol, user, storeLadderPrefPublisher)));
+        marketDataForSymbolMap = new MapMaker().makeComputingMap(symbol -> subscribeToMarketDataForSymbol(symbol, fiber));
     }
 
     private MarketDataForSymbol subscribeToMarketDataForSymbol(final String symbol, final Fiber fiber) {
         // Subscribe to channel for this symbol
         final MemoryChannel<MarketDataEvent> marketDataEventMemoryChannel = new MemoryChannel<>();
         final MarketDataForSymbol marketDataForSymbol = new MarketDataForSymbol(symbol);
-        marketDataEventMemoryChannel.subscribe(new BatchSubscriber<>(fiber, marketDataForSymbol.onMarketDataBatchCallback(), MD_FLUSH_MILLIS, TimeUnit.MILLISECONDS));
-        final Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                unsubscribeFromMarketData.publish(new UnsubscribeMarketData(symbol, marketDataEventMemoryChannel));
-            }
-        };
-        marketDataUnsubscribers.put(symbol, runnable);
+        marketDataEventMemoryChannel.subscribe(new BatchSubscriber<>(fiber, (message) -> {
+            marketDataForSymbol.onMarketDataBatch(message);
+            fastFlushSymbol(symbol);
+        }, 0, TimeUnit.MILLISECONDS));
+        marketDataUnsubscribers.put(symbol, () -> unsubscribeFromMarketData.publish(new UnsubscribeMarketData(symbol, marketDataEventMemoryChannel)));
         subscribeToMarketData.publish(new SubscribeMarketData(symbol, marketDataEventMemoryChannel));
         return marketDataForSymbol;
     }
@@ -151,10 +123,9 @@ public class LadderPresenter {
         final LadderView ladderView =
                 new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher,
                         tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser, trace,
-                        ladderClickTradingIssuePublisher, userCycleContractPublisher);
+                        ladderClickTradingIssuePublisher, userCycleContractPublisher, eeifOrderCommands);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
-        final String user = connected.getClient().getUserName();
-        viewsByUser.put( connected.getClient().getUserName(), ladderView);
+        viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }
 
     @Subscribe
@@ -195,6 +166,7 @@ public class LadderPresenter {
                 viewsBySymbol.put(symbol, view);
             } else {
                 view.onRawInboundData(data);
+                view.fastInputFlush();
             }
         }
         trace.publish(new LadderView.InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
@@ -205,12 +177,7 @@ public class LadderPresenter {
         final Collection<LadderView> views = viewsBySymbol.get(ladderClickTradingIssue.symbol);
         for (final LadderView view : views) {
             view.clickTradingIssue(ladderClickTradingIssue);
-            fiber.schedule(new Runnable() {
-                @Override
-                public void run() {
-                    view.clickTradingIssue(new LadderClickTradingIssue(ladderClickTradingIssue.symbol, ""));
-                }
-            }, 5000, TimeUnit.MILLISECONDS);
+            fiber.schedule(() -> view.clickTradingIssue(new LadderClickTradingIssue(ladderClickTradingIssue.symbol, "")), 5000, TimeUnit.MILLISECONDS);
         }
 
     }
@@ -317,7 +284,7 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void onSingleOrderCommand(final OrdersPresenter.SingleOrderCommand singleOrderCommand) {
+    public void on(final OrdersPresenter.SingleOrderCommand singleOrderCommand) {
         for (final LadderView view : viewsByUser.get(singleOrderCommand.getUsername())) {
             if (view.symbol.equals(singleOrderCommand.getSymbol())) {
                 view.onSingleOrderCommand(singleOrderCommand);
@@ -327,7 +294,7 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void onReplaceCommand(final ReplaceCommand replaceCommand) {
+    public void on(final ReplaceCommand replaceCommand) {
         for (final LadderView ladderView : viewBySocket.values()) {
             ladderView.replaceSymbol(replaceCommand);
         }
@@ -338,32 +305,24 @@ public class LadderPresenter {
         viewsByUser.get(request.username).forEach(LadderView::nextContract);
     }
 
-    public Runnable flushBatchedData() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                flushAllLadders();
-            }
-        };
-    }
-
-    private void flushAllLadders() {
+    public void flushAllLadders() {
         for (final LadderView ladderView : viewBySocket.values()) {
             ladderView.flush();
         }
     }
 
-    public Runnable sendHeartbeats() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                for (final LadderView ladderView : viewBySocket.values()) {
-                    ladderView.sendHeartbeat();
-                }
-            }
-        };
+
+    public void fastFlushSymbol(String symbol) {
+        for (final LadderView ladderView : viewsBySymbol.get(symbol)) {
+            ladderView.fastMdFlush();
+        }
     }
 
+    public void sendAllHeartbeats() {
+        for (final LadderView ladderView : viewBySocket.values()) {
+            ladderView.sendHeartbeat();
+        }
+    }
 
     public static class RecenterLaddersForUser extends Struct {
         public final String user;
@@ -374,16 +333,16 @@ public class LadderPresenter {
     }
 
     public interface View {
-        public void draw(int levels);
+        void draw(int levels);
 
-        public void trading(boolean tradingEnabled, Collection<String> orderTypesLeft, Collection<String> orderTypesRight);
+        void trading(boolean tradingEnabled, Collection<String> orderTypesLeft, Collection<String> orderTypesRight);
 
-        public void selecta(boolean enabled);
+        void selecta(boolean enabled);
 
-        public void goToSymbol(String symbol);
+        void goToSymbol(String symbol);
 
-        public void popUp(String url, String name, int width, int height);
+        void popUp(String url, String name, int width, int height);
 
-        public void launchBasket(String symbol);
+        void launchBasket(String symbol);
     }
 }
