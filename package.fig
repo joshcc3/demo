@@ -47,7 +47,7 @@ config default
   include com.drwtrading.photons.mrphil/1.0.0.4
   include com.drwtrading.london.photons.indy/11
   include com.drwtrading.london.photons.reddal/2
-  include com.drwtrading.london.photons.eeifoe/3
+  include com.drwtrading.london.photons.eeifoe/4
 
   # MD
   include mockito/1.8.3
