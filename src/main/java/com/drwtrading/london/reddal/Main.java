@@ -334,9 +334,7 @@ public class Main {
 
         // Monitoring
         {
-            fibers.stats.subscribe(message -> {
-                statsPublisher.publish(message);
-            }, channels.stats);
+            fibers.stats.subscribe(statsPublisher::publish, channels.stats);
             fibers.stats.getFiber().schedule(() -> {
                 statsPublisher.start();
                 multicastEnabled.set(true);
@@ -601,7 +599,7 @@ public class Main {
 
                     final EuronextMarketDataService marketDataService =
                             new EuronextMarketDataService(selectIO,
-                                    new ResourceMonitor<EuronextComponents>("Euronext", EuronextComponents.class, errorLog, true),
+                                    new ResourceMonitor<>("Euronext", EuronextComponents.class, errorLog, true),
                                     NetworkInterfaceFinder.find(config.get(prefix + ".nic")),
                                     marketDataEventPublisher,
                                     EuronextXdpStream.Configuration.valueOf(config.get(prefix + ".environment")),
@@ -627,7 +625,7 @@ public class Main {
                     client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                             .handler(new IdleConnectionTimeoutHandler<>(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
                             .handler(new JetlangChannelHandler<>(marketDataEventPublisher));
-                    fibers.onStart(() -> fiber.execute(() -> client.start()));
+                    fibers.onStart(() -> fiber.execute(client::start));
                 } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.FILTERED) {
                     RemoteFilteredClient filteredClient = new RemoteFilteredClient(channels.refData, FeedType.FULL_BOOK);
                     fiber.subscribe(filteredClient, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
@@ -637,7 +635,7 @@ public class Main {
                     client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                             .handler(new IdleConnectionTimeoutHandler<>(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()));
                     client.handler(filteredClient);
-                    fibers.onStart(() -> fiber.execute(() -> client.start()));
+                    fibers.onStart(() -> fiber.execute(client::start));
                 }
             }
         }
@@ -651,7 +649,7 @@ public class Main {
                         .logFile(new File(logDir, "metadata." + server + ".log"), fibers.logging.getFiber(), true)
                         .handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10))
                         .handler(new JetlangChannelHandler<>(channels.metaData));
-                fibers.onStart(() -> client.start());
+                fibers.onStart(client::start);
             }
         }
 
@@ -665,7 +663,7 @@ public class Main {
                         .handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10))
                         .handler(new JetlangChannelHandler<>(msg -> channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg)), channels.remoteOrderCommandByServer.get(server), fibers.remoteOrders.getFiber()))
                         .handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.stats, "Remote order: " + server), SERVER_TIMEOUT));
-                fibers.onStart(() -> client.start());
+                fibers.onStart(client::start);
             }
         }
 
@@ -718,7 +716,7 @@ public class Main {
                             channels.workingOrderEvents.publish(new WorkingOrderEventFromServer(server, msg));
                         }))
                         .handler(new InboundTimeoutWatchdog<>(fibers.workingOrders.getFiber(), new ConnectionCloser(channels.stats, "Working order: " + server), SERVER_TIMEOUT));
-                fibers.onStart(() -> client.start());
+                fibers.onStart(client::start);
             }
         }
 
@@ -739,7 +737,7 @@ public class Main {
             client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                     .logFile(new File(logDir, "mr-phil.log"), fibers.logging.getFiber(), true)
                     .handler(positionHandler);
-            fibers.onStart(() -> client.start());
+            fibers.onStart(client::start);
         }
 
         // Indy
@@ -754,7 +752,7 @@ public class Main {
                                 channels.equityIdAndSymbol.publish((EquityIdAndSymbol) msg.getMessage());
                             }
                         }));
-                fibers.onStart(() -> client.start());
+                fibers.onStart(client::start);
             }
         }
 
@@ -767,7 +765,7 @@ public class Main {
         {
             if (environment.opxlDeskPositionEnabled()) {
                 for (final String key : environment.opxlDeskPositionKeys()) {
-                    final OpxlPositionSubscriber opxlPositionSubscriber = new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, msg -> channels.metaData.publish(msg));
+                    final OpxlPositionSubscriber opxlPositionSubscriber = new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key, channels.metaData::publish);
                     fibers.onStart(() -> fibers.opxlPosition.execute(opxlPositionSubscriber.connectToOpxl()));
                 }
             }
