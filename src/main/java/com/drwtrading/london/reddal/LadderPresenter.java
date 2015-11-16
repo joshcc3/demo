@@ -5,6 +5,7 @@ import com.drwtrading.eeif.md.remote.UnsubscribeMarketData;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.fastui.UiPipeImpl;
+import com.drwtrading.london.photons.eeifoe.OrderEntryCommand;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
@@ -58,6 +59,7 @@ public class LadderPresenter {
     private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
     private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(ExtraDataForSymbol::new);
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
+    private final Map<OrderEntryClient.SymbolOrder, Publisher<OrderEntryCommand>> orderEntryMap = new HashMap<>();
     private final Map<String, MarketDataForSymbol> marketDataForSymbolMap;
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
@@ -119,7 +121,7 @@ public class LadderPresenter {
         final LadderView ladderView =
                 new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher,
                         tradingStatusForAll, roundtripPublisher, commandPublisher, recenterLaddersForUser, trace,
-                        ladderClickTradingIssuePublisher, userCycleContractPublisher);
+                        ladderClickTradingIssuePublisher, userCycleContractPublisher, orderEntryMap);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }
@@ -299,6 +301,13 @@ public class LadderPresenter {
     @Subscribe
     public void on(final UserCycleRequest request) {
         viewsByUser.get(request.username).forEach(LadderView::nextContract);
+    }
+
+
+
+    @Subscribe
+    public void on(OrderEntryClient.SymbolOrderChannel symbolOrderChannel) {
+        orderEntryMap.put(symbolOrderChannel.symbolOrder, symbolOrderChannel.publisher);
     }
 
     public void flushAllLadders() {

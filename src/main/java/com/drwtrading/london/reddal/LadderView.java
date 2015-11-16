@@ -3,6 +3,15 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.london.eeif.utils.collections.SlidingWindow;
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
+import com.drwtrading.london.photons.eeifoe.BookParameters;
+import com.drwtrading.london.photons.eeifoe.ManagedOrder;
+import com.drwtrading.london.photons.eeifoe.OrderEntryCommand;
+import com.drwtrading.london.photons.eeifoe.OrderSide;
+import com.drwtrading.london.photons.eeifoe.PegPriceToTheoOnSubmit;
+import com.drwtrading.london.photons.eeifoe.QuotingParameters;
+import com.drwtrading.london.photons.eeifoe.Submit;
+import com.drwtrading.london.photons.eeifoe.TakingParameters;
+import com.drwtrading.london.photons.eeifoe.TheoPrice;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.Command;
 import com.drwtrading.london.photons.reddal.Direction;
@@ -51,6 +60,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -61,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
@@ -181,6 +192,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     private final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
+    private final Map<OrderEntryClient.SymbolOrder, Publisher<OrderEntryCommand>> orderEntryMap;
     private final UiPipeImpl ui;
     private final Publisher<StatsMsg> statsPublisher;
     private final TradingStatusForAll tradingStatusForAll;
@@ -211,7 +223,7 @@ public class LadderView implements UiPipe.UiEventHandler {
                       final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
                       final Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, final Publisher<ReddalMessage> commandPublisher,
                       final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher) {
+                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher, Map<OrderEntryClient.SymbolOrder, Publisher<OrderEntryCommand>> orderEntryMap) {
         this.client = client;
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
@@ -220,6 +232,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.trace = trace;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
+        this.orderEntryMap = orderEntryMap;
         this.ui = (UiPipeImpl) ui;
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
@@ -678,7 +691,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             }
         } else if (marketDataForSymbol.refData.getInstrumentStructure() instanceof ForexPairStructure) {
             isCashEquityOrFX = true;
-            pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.of(PricingMode.BPS, PricingMode.RAW));
+            pricingMode = new EnumSwitcher<PricingMode>(PricingMode.class, EnumSet.of(PricingMode.BPS, PricingMode.RAW));
             pricingMode.set(PricingMode.BPS);
             defaultPrefs.put(Html.INP_RELOAD, "1000000");
         } else {
@@ -707,7 +720,8 @@ public class LadderView implements UiPipe.UiEventHandler {
         final boolean clickTradingEnabled = ladderOptions.traders.contains(client.getUserName());
         setupButtons();
 
-        view.trading(clickTradingEnabled, filterUsableOrderTypes(ladderOptions.orderTypesLeft),
+        view.trading(clickTradingEnabled,
+                filterUsableOrderTypes(ladderOptions.orderTypesLeft),
                 filterUsableOrderTypes(ladderOptions.orderTypesRight));
 
         for (Map.Entry<String, Integer> entry : buttonQty.entrySet()) {
@@ -768,7 +782,12 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private Collection<String> filterUsableOrderTypes(final Collection<String> types) {
-        return Collections2.filter(types, input -> ladderOptions.serverResolver.resolveToServerName(symbol, input) != null);
+        List<String> collect = types.stream().filter(input -> {
+            boolean oldOrderType = ladderOptions.serverResolver.resolveToServerName(symbol, input) != null;
+            boolean newOrderType = orderEntryMap.containsKey(new OrderEntryClient.SymbolOrder(symbol, com.drwtrading.london.photons.eeifoe.RemoteOrderType.MANAGED)) && managedOrderTypes.contains(input);
+            return oldOrderType || newOrderType;
+        }).collect(Collectors.toList());
+        return collect;
     }
 
     private void setupButtons() {
@@ -1267,6 +1286,39 @@ public class LadderView implements UiPipe.UiEventHandler {
                 autoHedge, workingOrderUpdate.getTag());
     }
 
+
+
+
+    private static enum ManagedOrderType {
+        NEW_HAWK {
+            @Override
+            public ManagedOrder getOrder(long price, int qty) {
+                return new ManagedOrder(
+                        new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
+                        new BookParameters(true, true, false, true, true),
+                        new TakingParameters(false, 0, 0, 0),
+                        new QuotingParameters(true, 0, 0, 1, 0, 0, qty, 1, 0, 4)
+                );
+            }
+        },
+        NEW_TAKER {
+            @Override
+            public ManagedOrder getOrder(long price, int qty) {
+                return new ManagedOrder(
+                        new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
+                        new BookParameters(true, true, false, true, true),
+                        new TakingParameters(true, 0, 100, 20),
+                        new QuotingParameters(false, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                );
+            }
+        };
+
+        public abstract ManagedOrder getOrder(final long price, final int qty);
+    }
+
+    private final Set<String> managedOrderTypes = Arrays.asList(ManagedOrderType.values()).stream().map(Enum::toString).collect(Collectors.toSet());
+    private final Set<String> oldOrderTypes = Arrays.asList(RemoteOrderType.values()).stream().map(Enum::toString).collect(Collectors.toSet());
+
     private void submitOrderClick(final String label, final Map<String, String> data, final String orderType, final boolean autoHedge,
                                   final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher) {
 
@@ -1284,8 +1336,16 @@ public class LadderView implements UiPipe.UiEventHandler {
             throw new IllegalArgumentException("No tag provided.");
         }
 
+
         if (orderType != null && clickTradingBoxQty > 0) {
-            submitOrder(orderType, autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
+            if(managedOrderTypes.contains(orderType)) {
+                submitManagedOrder(orderType,  autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
+            } else if (oldOrderTypes.contains(orderType)) {
+                submitOrder(orderType, autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
+            } else {
+                clickTradingIssue(new LadderClickTradingIssue(symbol, "Unknown order type: " + orderType));
+                return;
+            }
         }
 
         final boolean randomReload = "true".equals(getPref(ladderPrefsForSymbolUser, Html.RANDOM_RELOAD));
@@ -1295,6 +1355,26 @@ public class LadderView implements UiPipe.UiEventHandler {
             clickTradingBoxQty = Math.max(0, reloadBoxQty - (int) (Math.random() * ladderOptions.randomReloadFraction * reloadBoxQty));
         } else {
             clickTradingBoxQty = Math.max(0, reloadBoxQty);
+        }
+    }
+
+    private void submitManagedOrder(String orderType, boolean autoHedge, long price, com.drwtrading.london.protocols.photon.execution.Side side, String tag, Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher) {
+        OrderEntryClient.SymbolOrder symbolOrder = new OrderEntryClient.SymbolOrder(symbol, com.drwtrading.london.photons.eeifoe.RemoteOrderType.MANAGED);
+        OrderEntryClient.SymbolOrder symbolOrder2 = new OrderEntryClient.SymbolOrder(symbol, com.drwtrading.london.photons.eeifoe.RemoteOrderType.MANAGED);
+        Publisher<OrderEntryCommand> publisher = orderEntryMap.get(symbolOrder);
+        System.out.println("symbolOrder = " + symbolOrder);
+        System.out.println("symbolOrder = " + symbolOrder.equals(symbolOrder2));
+        System.out.println("orderEntryMap = " + orderEntryMap);
+        if (null != publisher) {
+            com.drwtrading.london.photons.eeifoe.RemoteOrder remoteOrder = new com.drwtrading.london.photons.eeifoe.RemoteOrder(
+                    symbol, side == com.drwtrading.london.protocols.photon.execution.Side.BID ? OrderSide.BUY : OrderSide.SELL, price, clickTradingBoxQty,
+                    autoHedge, tag, client.getUserName(), com.drwtrading.london.photons.eeifoe.RemoteOrderType.MANAGED,
+                    ManagedOrderType.valueOf(orderType).getOrder(price, clickTradingBoxQty)
+            );
+            Submit submit = new Submit(remoteOrder);
+            publisher.publish(submit);
+        } else {
+            clickTradingIssue(new LadderClickTradingIssue(symbol, "Cannot find server to send order type " + orderType + " for symbol " + symbol));
         }
     }
 

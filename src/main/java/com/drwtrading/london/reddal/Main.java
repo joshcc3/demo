@@ -28,6 +28,7 @@ import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClien
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
+import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
 import com.drwtrading.london.jetlang.JetlangFactory;
@@ -36,6 +37,9 @@ import com.drwtrading.london.jetlang.transport.LowTrafficMulticastTransport;
 import com.drwtrading.london.logging.ErrorLogger;
 import com.drwtrading.london.logging.JsonChannelLogger;
 import com.drwtrading.london.network.NetworkInterfaces;
+import com.drwtrading.london.photons.eeifoe.OrderEntryCommandMsg;
+import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
+import com.drwtrading.london.photons.eeifoe.OrderUpdateEventMsg;
 import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.photons.indy.IndyEnvelope;
 import com.drwtrading.london.photons.mdreq.FeedType;
@@ -150,6 +154,8 @@ public class Main {
         public final TypedChannel<ReplaceCommand> replaceCommand;
         public final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
         public final TypedChannel<UserCycleRequest> userCycleContractPublisher;
+        public final TypedChannel<OrderUpdateEventMsg> orderUpdateEvent;
+        public final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
 
         public ReddalChannels(final ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
@@ -182,6 +188,8 @@ public class Main {
             ladderClickTradingIssues = create(LadderClickTradingIssue.class);
             userCycleContractPublisher = create(UserCycleRequest.class);
             replaceCommand = create(ReplaceCommand.class);
+            orderUpdateEvent = create(OrderUpdateEventMsg.class);
+            orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
         }
 
         public <T> TypedChannel<T> create(final Class<T> clazz) {
@@ -386,6 +394,8 @@ public class Main {
             final List<TypedChannel<WebSocketControlMessage>> websockets = newArrayList();
             {
                 for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
+
+
                     final TypedChannel<WebSocketControlMessage> websocket = create(WebSocketControlMessage.class);
                     websockets.add(websocket);
                     final String name = "Ladder-" + (i);
@@ -410,10 +420,14 @@ public class Main {
                             channels.singleOrderCommand,
                             channels.ladderClickTradingIssues,
                             channels.replaceCommand,
-                            channels.userCycleContractPublisher);
+                            channels.userCycleContractPublisher,
+                            channels.orderEntrySymbols);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::flushAllLadders, 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::sendAllHeartbeats, 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 }
+
+
+
             }
 
             // Ladder router
@@ -632,6 +646,36 @@ public class Main {
                     client.handler(filteredClient);
                     fibers.onStart(() -> fiber.execute(client::start));
                 }
+            }
+        }
+
+
+        // EEIF-OE
+        {
+            List<String> oeList = environment.getList(Environment.EEIF_OE);
+            for (String server : oeList) {
+                OrderEntryClient client = new OrderEntryClient(environment.getEeifOeInstance(), new SystemClock(), server, fibers.remoteOrders.getFiber(), channels.orderEntrySymbols);
+                Environment.HostAndNic command = environment.getHostAndNic(Environment.EEIF_OE + ".command", server);
+                OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient = OnHeapBufferPhotocolsNioClient.client(
+                        command.host, command.nic, OrderEntryReplyMsg.class, OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
+                cmdClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
+                        .logFile(new File(logDir, "order-entry." + server + ".log"), fibers.logging.getFiber(), true)
+                        .handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10))
+                        .handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.stats, server + " OE Commands"), SERVER_TIMEOUT))
+                        .handler(client);
+                fibers.remoteOrders.execute(cmdClient::start);
+                System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
+
+                Environment.HostAndNic update = environment.getHostAndNic(Environment.EEIF_OE + ".update", server);
+                OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient = OnHeapBufferPhotocolsNioClient.client(
+                        update.host, update.nic, OrderUpdateEventMsg.class, Void.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
+                updateClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
+                        .logFile(new File(logDir, "order-update." + server + ".log"), fibers.logging.getFiber(), true)
+                        .handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10))
+                        .handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT))
+                        .handler(new JetlangChannelHandler<>(channels.orderUpdateEvent));
+                fibers.remoteOrders.execute(updateClient::start);
+                System.out.println("EEIF-OE: " + server + "\tUpdate: " + update.host);
             }
         }
 
