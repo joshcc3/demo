@@ -4,6 +4,7 @@ import com.drwtrading.london.eeif.utils.collections.SlidingWindow;
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.eeifoe.BookParameters;
+import com.drwtrading.london.photons.eeifoe.Cancel;
 import com.drwtrading.london.photons.eeifoe.ManagedOrder;
 import com.drwtrading.london.photons.eeifoe.OrderEntryCommand;
 import com.drwtrading.london.photons.eeifoe.OrderSide;
@@ -38,10 +39,14 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
+import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.util.PriceUtils;
+import com.drwtrading.london.reddal.util.UpdateFromServer;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
@@ -49,7 +54,6 @@ import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketClient;
 import com.google.common.base.Joiner;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Publisher;
@@ -91,6 +95,8 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final int RECENTER_WARN_TIME_MS = 9000;
     public static final int BIG_NUMBER_THRESHOLD = 99999;
     public static final int REALLY_BIG_NUMBER_THRESHOLD = 100000;
+    public static final String BID_LOWERCASE = "bid";
+    public static final String OFFER_LOWERCASE = "offer";
     // Click-trading
     public final Map<String, Integer> buttonQty = new HashMap<>();
 
@@ -139,6 +145,9 @@ public class LadderView implements UiPipe.UiEventHandler {
         public static final String RANDOM_RELOAD = "chk_random_reload";
         public static final String WORKING_ORDER_TYPE = "working_order_type_";
         public static final String MODIFY_PRICE_SELECTED = "modify_price_selected";
+
+        public static final String EEIF_ORDER_TYPE = "eeif_order_type_";
+
 
         // Divs
         public static final String CLICK_TRADING_ISSUES = "click_trading_issues";
@@ -193,6 +202,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     private final Publisher<Jsonable> trace;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
     private final Map<OrderEntryClient.SymbolOrder, Publisher<OrderEntryCommand>> orderEntryMap;
+    private final Publisher<OrderEntryCommandToServer> eeifCommandToServer;
     private final UiPipeImpl ui;
     private final Publisher<StatsMsg> statsPublisher;
     private final TradingStatusForAll tradingStatusForAll;
@@ -205,6 +215,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     private ExtraDataForSymbol dataForSymbol;
     private int levels;
     private LadderPrefsForSymbolUser ladderPrefsForSymbolUser;
+    private OrderUpdatesForSymbol orderUpdatesForSymbol;
 
     Map<Long, Integer> levelByPrice = new HashMap<>();
 
@@ -223,7 +234,8 @@ public class LadderView implements UiPipe.UiEventHandler {
                       final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
                       final Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher, final Publisher<ReddalMessage> commandPublisher,
                       final Publisher<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher, Map<OrderEntryClient.SymbolOrder, Publisher<OrderEntryCommand>> orderEntryMap) {
+                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher, final Publisher<UserCycleRequest> userCycleContractPublisher,
+                      Map<OrderEntryClient.SymbolOrder, Publisher<OrderEntryCommand>> orderEntryMap, Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
         this.client = client;
         this.view = view;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
@@ -233,6 +245,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         this.trace = trace;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.orderEntryMap = orderEntryMap;
+        this.eeifCommandToServer = orderEntryCommandToServerPublisher;
         this.ui = (UiPipeImpl) ui;
         this.statsPublisher = statsPublisher;
         this.tradingStatusForAll = tradingStatusForAll;
@@ -251,13 +264,14 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     public void subscribeToSymbol(final String symbol, final int levels, final MarketDataForSymbol marketDataForSymbol,
                                   final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
-                                  final LadderPrefsForSymbolUser ladderPrefsForSymbolUser) {
+                                  final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, OrderUpdatesForSymbol orderUpdatesForSymbol) {
         this.symbol = symbol;
         this.marketDataForSymbol = marketDataForSymbol;
         this.workingOrdersForSymbol = workingOrdersForSymbol;
         this.dataForSymbol = extraDataForSymbol;
         this.levels = levels;
         this.ladderPrefsForSymbolUser = ladderPrefsForSymbolUser;
+        this.orderUpdatesForSymbol = orderUpdatesForSymbol;
         this.pendingRefDataAndSettle = true;
         tryToDrawLadder();
         updateEverything();
@@ -477,7 +491,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     private void drawWorkingOrders() {
         final WorkingOrdersForSymbol w = this.workingOrdersForSymbol;
-        if (!pendingRefDataAndSettle && w != null) {
+        if (!pendingRefDataAndSettle && w != null && orderUpdatesForSymbol != null) {
 
 
             for (final Long price : levelByPrice.keySet()) {
@@ -495,8 +509,20 @@ public class LadderView implements UiPipe.UiEventHandler {
                         orderTypes.add(orderFromServer.value.getWorkingOrderType());
                     }
                 }
-                workingQty(price, totalQty, side, orderTypes);
+
+                final Set<com.drwtrading.london.photons.eeifoe.RemoteOrderType> eeifTypes = new HashSet<>();
+                final List<String> eeifKeys = new ArrayList<>();
+                for (UpdateFromServer update : orderUpdatesForSymbol.updatesByPrice.get(price).values()) {
+                    totalQty += update.update.getRemainingQty();
+                    side = update.update.getOrder().getSide() == OrderSide.BUY ? BID_LOWERCASE : OFFER_LOWERCASE;
+                    keys.add(update.key());
+                    eeifTypes.add(update.update.getOrder().getOrderType());
+                    eeifKeys.add(update.key());
+                }
+
+                workingQty(price, totalQty, side, orderTypes, eeifTypes);
                 ui.data(orderKey(price), "orderKeys", Joiner.on('!').join(keys));
+                ui.data(orderKey(price), "eeifKeys", Joiner.on('!').join(eeifKeys));
             }
 
             int buyQty = 0;
@@ -691,7 +717,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             }
         } else if (marketDataForSymbol.refData.getInstrumentStructure() instanceof ForexPairStructure) {
             isCashEquityOrFX = true;
-            pricingMode = new EnumSwitcher<PricingMode>(PricingMode.class, EnumSet.of(PricingMode.BPS, PricingMode.RAW));
+            pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.of(PricingMode.BPS, PricingMode.RAW));
             pricingMode.set(PricingMode.BPS);
             defaultPrefs.put(Html.INP_RELOAD, "1000000");
         } else {
@@ -1287,8 +1313,6 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
 
-
-
     private static enum ManagedOrderType {
         NEW_HAWK {
             @Override
@@ -1322,49 +1346,55 @@ public class LadderView implements UiPipe.UiEventHandler {
     private void submitOrderClick(final String label, final Map<String, String> data, final String orderType, final boolean autoHedge,
                                   final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher) {
 
-        final long price = Long.valueOf(data.get("price"));
-
-        final com.drwtrading.london.protocols.photon.execution.Side side =
-                label.equals(bidKey(price)) ? com.drwtrading.london.protocols.photon.execution.Side.BID :
-                        label.equals(offerKey(price)) ? com.drwtrading.london.protocols.photon.execution.Side.OFFER : null;
-
-        final String tag = ladderPrefsForSymbolUser.get(Html.WORKING_ORDER_TAG);
-
-        if (side == null) {
-            throw new IllegalArgumentException("Price " + price + " did not match key " + label);
-        } else if (null == tag) {
-            throw new IllegalArgumentException("No tag provided.");
-        }
+        if (ladderOptions.traders.contains(client.getUserName())) {
 
 
-        if (orderType != null && clickTradingBoxQty > 0) {
-            if(managedOrderTypes.contains(orderType)) {
-                submitManagedOrder(orderType,  autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
-            } else if (oldOrderTypes.contains(orderType)) {
-                submitOrder(orderType, autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
-            } else {
-                clickTradingIssue(new LadderClickTradingIssue(symbol, "Unknown order type: " + orderType));
-                return;
+            final long price = Long.valueOf(data.get("price"));
+
+            final com.drwtrading.london.protocols.photon.execution.Side side =
+                    label.equals(bidKey(price)) ? com.drwtrading.london.protocols.photon.execution.Side.BID :
+                            label.equals(offerKey(price)) ? com.drwtrading.london.protocols.photon.execution.Side.OFFER : null;
+
+            final String tag = ladderPrefsForSymbolUser.get(Html.WORKING_ORDER_TAG);
+
+            if (side == null) {
+                throw new IllegalArgumentException("Price " + price + " did not match key " + label);
+            } else if (null == tag) {
+                throw new IllegalArgumentException("No tag provided.");
             }
-        }
 
-        final boolean randomReload = "true".equals(getPref(ladderPrefsForSymbolUser, Html.RANDOM_RELOAD));
-        final int reloadBoxQty = Integer.valueOf(getPref(ladderPrefsForSymbolUser, Html.INP_RELOAD));
 
-        if (randomReload) {
-            clickTradingBoxQty = Math.max(0, reloadBoxQty - (int) (Math.random() * ladderOptions.randomReloadFraction * reloadBoxQty));
-        } else {
-            clickTradingBoxQty = Math.max(0, reloadBoxQty);
+            if (orderType != null && clickTradingBoxQty > 0) {
+                if (managedOrderTypes.contains(orderType)) {
+                    submitManagedOrder(orderType, autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
+                } else if (oldOrderTypes.contains(orderType)) {
+                    submitOrder(orderType, autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
+                } else {
+                    clickTradingIssue(new LadderClickTradingIssue(symbol, "Unknown order type: " + orderType));
+                    return;
+                }
+            }
+
+            final boolean randomReload = "true".equals(getPref(ladderPrefsForSymbolUser, Html.RANDOM_RELOAD));
+            final int reloadBoxQty = Integer.valueOf(getPref(ladderPrefsForSymbolUser, Html.INP_RELOAD));
+
+            if (randomReload) {
+                clickTradingBoxQty = Math.max(0, reloadBoxQty - (int) (Math.random() * ladderOptions.randomReloadFraction * reloadBoxQty));
+            } else {
+                clickTradingBoxQty = Math.max(0, reloadBoxQty);
+            }
+
+
         }
     }
 
     private void submitManagedOrder(String orderType, boolean autoHedge, long price, com.drwtrading.london.protocols.photon.execution.Side side, String tag, Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher) {
+
+        trace.publish(new CommandTrace("submitManaged", client.getUserName(), symbol, orderType, autoHedge, price, side.toString(), tag,
+                clickTradingBoxQty, orderSeqNo++));
+
         OrderEntryClient.SymbolOrder symbolOrder = new OrderEntryClient.SymbolOrder(symbol, com.drwtrading.london.photons.eeifoe.RemoteOrderType.MANAGED);
-        OrderEntryClient.SymbolOrder symbolOrder2 = new OrderEntryClient.SymbolOrder(symbol, com.drwtrading.london.photons.eeifoe.RemoteOrderType.MANAGED);
         Publisher<OrderEntryCommand> publisher = orderEntryMap.get(symbolOrder);
-        System.out.println("symbolOrder = " + symbolOrder);
-        System.out.println("symbolOrder = " + symbolOrder.equals(symbolOrder2));
-        System.out.println("orderEntryMap = " + orderEntryMap);
         if (null != publisher) {
             com.drwtrading.london.photons.eeifoe.RemoteOrder remoteOrder = new com.drwtrading.london.photons.eeifoe.RemoteOrder(
                     symbol, side == com.drwtrading.london.protocols.photon.execution.Side.BID ? OrderSide.BUY : OrderSide.SELL, price, clickTradingBoxQty,
@@ -1428,47 +1458,44 @@ public class LadderView implements UiPipe.UiEventHandler {
         trace.publish(new CommandTrace("submit", client.getUserName(), symbol, orderType, autoHedge, price, side.toString(), tag,
                 clickTradingBoxQty, sequenceNumber));
 
-        if (ladderOptions.traders.contains(client.getUserName())) {
-
-            if (clientSpeedState == ClientSpeedState.TooSlow) {
-                final String message =
-                        "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", client " + client.getUserName() +
-                                " is " + clientSpeedState.toString() + " speed: " + getClientSpeedMillis() + "ms";
-                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, message));
-                ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
-                return;
-            }
-
-            final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, orderType);
-
-            final RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
-
-            if (serverName == null) {
-                final String message = "Cannot submit order " + orderType + " " + side + " " + clickTradingBoxQty + " for " + symbol +
-                        ", no valid server found.";
-                statsPublisher.publish(new AdvisoryStat("Click-Trading", AdvisoryStat.Level.WARNING, message));
-                ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
-                return;
-            }
-
-            System.out.println("Order: " + symbol + ' ' + remoteOrderType.toString() + " resolved to " + serverName);
-
-            final TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(serverName);
-
-            if (serverTradingStatus == null || serverTradingStatus.tradingStatus != TradingStatusWatchdog.Status.OK) {
-                final String message = "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", server " + serverName +
-                        " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString());
-                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, message));
-                ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
-                return;
-            }
-
-            final RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(serverName, client.getUserName(), sequenceNumber,
-                    new RemoteOrder(symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, tag));
-
-            remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
-
+        if (clientSpeedState == ClientSpeedState.TooSlow) {
+            final String message =
+                    "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", client " + client.getUserName() +
+                            " is " + clientSpeedState.toString() + " speed: " + getClientSpeedMillis() + "ms";
+            statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, message));
+            ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
+            return;
         }
+
+        final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, orderType);
+
+        final RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
+
+        if (serverName == null) {
+            final String message = "Cannot submit order " + orderType + " " + side + " " + clickTradingBoxQty + " for " + symbol +
+                    ", no valid server found.";
+            statsPublisher.publish(new AdvisoryStat("Click-Trading", AdvisoryStat.Level.WARNING, message));
+            ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
+            return;
+        }
+
+        System.out.println("Order: " + symbol + ' ' + remoteOrderType.toString() + " resolved to " + serverName);
+
+        final TradingStatusWatchdog.ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(serverName);
+
+        if (serverTradingStatus == null || serverTradingStatus.tradingStatus != TradingStatusWatchdog.Status.OK) {
+            final String message = "Cannot submit order " + side + " " + clickTradingBoxQty + " for " + symbol + ", server " + serverName +
+                    " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString());
+            statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, message));
+            ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
+            return;
+        }
+
+        final RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(serverName, client.getUserName(), sequenceNumber,
+                new RemoteOrder(symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, tag));
+
+        remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
+
     }
 
     private void modifyOrder(final boolean autoHedge, final long price, final Main.WorkingOrderUpdateFromServer order,
@@ -1507,6 +1534,23 @@ public class LadderView implements UiPipe.UiEventHandler {
             for (final Main.WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByPrice.get(price)) {
                 cancelOrder(orderUpdateFromServer);
             }
+        }
+        if (orderUpdatesForSymbol != null) {
+            for (UpdateFromServer updateFromServer : orderUpdatesForSymbol.updatesByPrice.get(price).values()) {
+                cancelManagedOrder(updateFromServer);
+            }
+        }
+    }
+
+    private void cancelManagedOrder(UpdateFromServer updateFromServer) {
+        com.drwtrading.london.photons.eeifoe.RemoteOrder order = updateFromServer.update.getOrder();
+        trace.publish(new CommandTrace("cancelManaged", client.getUserName(), symbol, order.getOrderType().name(), false,
+                updateFromServer.update.getIndicativePrice(), order.getSide().name(), order.getTag(), clickTradingBoxQty,
+                updateFromServer.update.getSystemOrderId()));
+        if (ladderOptions.traders.contains(client.getUserName())) {
+            OrderEntryCommandToServer commandToServer = new OrderEntryCommandToServer(updateFromServer.server,
+                    new Cancel(updateFromServer.update.getSystemOrderId(), updateFromServer.update.getOrder()));
+            eeifCommandToServer.publish(commandToServer);
         }
     }
 
@@ -1641,15 +1685,18 @@ public class LadderView implements UiPipe.UiEventHandler {
         return Integer.toString(qty);
     }
 
-    public void workingQty(final long price, final int qty, final String side, final Set<WorkingOrderType> orderTypes) {
+    public void workingQty(final long price, final int qty, final String side, final Set<WorkingOrderType> orderTypes, Set<com.drwtrading.london.photons.eeifoe.RemoteOrderType> eeifTypes) {
         ui.txt(orderKey(price), formatMktQty(qty));
         ui.cls(orderKey(price), Html.WORKING_QTY, qty > 0);
         styleBigNumber(orderKey(price), qty);
-        ui.cls(orderKey(price), Html.WORKING_BID, "bid".equals(side));
-        ui.cls(orderKey(price), Html.WORKING_OFFER, "offer".equals(side));
+        ui.cls(orderKey(price), Html.WORKING_BID, BID_LOWERCASE.equals(side));
+        ui.cls(orderKey(price), Html.WORKING_OFFER, OFFER_LOWERCASE.equals(side));
         for (final WorkingOrderType workingOrderType : WorkingOrderType.values()) {
             ui.cls(orderKey(price), Html.WORKING_ORDER_TYPE + getOrderType(workingOrderType).toLowerCase(),
                     orderTypes.contains(workingOrderType));
+        }
+        for (com.drwtrading.london.photons.eeifoe.RemoteOrderType eeifType : com.drwtrading.london.photons.eeifoe.RemoteOrderType.values()) {
+            ui.cls(orderKey(price), Html.EEIF_ORDER_TYPE + eeifType.name().toLowerCase(), eeifTypes.contains(eeifType));
         }
     }
 

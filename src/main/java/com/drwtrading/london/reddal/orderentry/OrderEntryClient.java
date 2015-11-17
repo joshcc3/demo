@@ -1,7 +1,17 @@
-package com.drwtrading.london.reddal;
+package com.drwtrading.london.reddal.orderentry;
 
+import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.time.IClock;
-import com.drwtrading.london.photons.eeifoe.*;
+import com.drwtrading.london.photons.eeifoe.Ack;
+import com.drwtrading.london.photons.eeifoe.AvailableSymbol;
+import com.drwtrading.london.photons.eeifoe.ClientHeartbeat;
+import com.drwtrading.london.photons.eeifoe.OrderEntryCommand;
+import com.drwtrading.london.photons.eeifoe.OrderEntryCommandMsg;
+import com.drwtrading.london.photons.eeifoe.OrderEntryReply;
+import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
+import com.drwtrading.london.photons.eeifoe.Reject;
+import com.drwtrading.london.photons.eeifoe.RemoteOrderType;
+import com.drwtrading.london.photons.eeifoe.ServerHeartbeat;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
 import com.google.common.base.Preconditions;
@@ -44,6 +54,13 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
             return true;
         }
         return false;
+    }
+
+    @Subscribe
+    public void on(OrderEntryCommandToServer cmd) {
+        if (serverInstance.equals(cmd.server)) {
+            send(cmd.command);
+        }
     }
 
     @Override

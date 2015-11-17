@@ -39,7 +39,9 @@ import com.drwtrading.london.logging.JsonChannelLogger;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.photons.eeifoe.OrderEntryCommandMsg;
 import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
+import com.drwtrading.london.photons.eeifoe.OrderUpdateEvent;
 import com.drwtrading.london.photons.eeifoe.OrderUpdateEventMsg;
+import com.drwtrading.london.photons.eeifoe.Update;
 import com.drwtrading.london.photons.indy.EquityIdAndSymbol;
 import com.drwtrading.london.photons.indy.IndyEnvelope;
 import com.drwtrading.london.photons.mdreq.FeedType;
@@ -55,6 +57,8 @@ import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
+import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
+import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.ProductResetter;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
@@ -63,6 +67,7 @@ import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
+import com.drwtrading.london.reddal.util.UpdateFromServer;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.MsgCodec;
@@ -154,7 +159,8 @@ public class Main {
         public final TypedChannel<ReplaceCommand> replaceCommand;
         public final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
         public final TypedChannel<UserCycleRequest> userCycleContractPublisher;
-        public final TypedChannel<OrderUpdateEventMsg> orderUpdateEvent;
+        public final TypedChannel<UpdateFromServer> orderUpdateEvent;
+        public final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
         public final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
 
         public ReddalChannels(final ChannelFactory channelFactory) {
@@ -188,8 +194,9 @@ public class Main {
             ladderClickTradingIssues = create(LadderClickTradingIssue.class);
             userCycleContractPublisher = create(UserCycleRequest.class);
             replaceCommand = create(ReplaceCommand.class);
-            orderUpdateEvent = create(OrderUpdateEventMsg.class);
+            orderUpdateEvent = create(UpdateFromServer.class);
             orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
+            orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
         }
 
         public <T> TypedChannel<T> create(final Class<T> clazz) {
@@ -405,7 +412,7 @@ public class Main {
                                     channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
                                     channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser,
                                     fiberBuilder.getFiber(), channels.trace, channels.ladderClickTradingIssues,
-                                    channels.userCycleContractPublisher);
+                                    channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
                     fiberBuilder.subscribe(presenter,
                             websocket,
                             channels.workingOrders,
@@ -421,11 +428,11 @@ public class Main {
                             channels.ladderClickTradingIssues,
                             channels.replaceCommand,
                             channels.userCycleContractPublisher,
-                            channels.orderEntrySymbols);
+                            channels.orderEntrySymbols,
+                            channels.orderUpdateEvent);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::flushAllLadders, 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::sendAllHeartbeats, 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 }
-
 
 
             }
@@ -663,6 +670,7 @@ public class Main {
                         .handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10))
                         .handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.stats, server + " OE Commands"), SERVER_TIMEOUT))
                         .handler(client);
+                fibers.remoteOrders.subscribe(channels.orderEntryCommandToServer);
                 fibers.remoteOrders.execute(cmdClient::start);
                 System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
 
@@ -673,7 +681,12 @@ public class Main {
                         .logFile(new File(logDir, "order-update." + server + ".log"), fibers.logging.getFiber(), true)
                         .handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10))
                         .handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT))
-                        .handler(new JetlangChannelHandler<>(channels.orderUpdateEvent));
+                        .handler(new JetlangChannelHandler<>(evt -> {
+                            if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
+                                Update msg = (Update) evt.getMsg();
+                                channels.orderUpdateEvent.publish(new UpdateFromServer(evt.getFromInstance(), msg));
+                            }
+                        }));
                 fibers.remoteOrders.execute(updateClient::start);
                 System.out.println("EEIF-OE: " + server + "\tUpdate: " + update.host);
             }
