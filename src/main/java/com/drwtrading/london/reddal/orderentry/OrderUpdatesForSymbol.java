@@ -20,10 +20,9 @@ public class OrderUpdatesForSymbol {
 
     public void onUpdate(UpdateFromServer update) {
         if (update.update.getOrder().getSymbol().equals(symbol)) {
-            if (update.update.isDead()) {
-                updatesByKey.remove(update.key());
-                updatesByPrice.values().forEach(map -> map.remove(update.key()));
-            } else {
+            updatesByKey.remove(update.key());
+            updatesByPrice.values().forEach(map -> map.remove(update.key()));
+            if (!update.update.isDead()) {
                 updatesByKey.put(update.key(), update);
                 updatesByPrice.get(update.update.getIndicativePrice()).put(update.key(), update);
             }

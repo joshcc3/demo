@@ -516,7 +516,7 @@ public class Main {
         {
             List<String> oeList = environment.getList(Environment.EEIF_OE);
             for (String server : oeList) {
-                OrderEntryClient client = new OrderEntryClient(environment.getEeifOeInstance(), new SystemClock(), server, fibers.remoteOrders.getFiber(), channels.orderEntrySymbols);
+                OrderEntryClient client = new OrderEntryClient(environment.getEeifOeInstance(), new SystemClock(), server, fibers.remoteOrders.getFiber(), channels.orderEntrySymbols, channels.ladderClickTradingIssues);
                 Environment.HostAndNic command = environment.getHostAndNic(Environment.EEIF_OE + ".command", server);
                 OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient = OnHeapBufferPhotocolsNioClient.client(
                         command.host, command.nic, OrderEntryReplyMsg.class, OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
@@ -525,7 +525,7 @@ public class Main {
                         .handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10))
                         .handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.stats, server + " OE Commands"), SERVER_TIMEOUT))
                         .handler(client);
-                fibers.remoteOrders.subscribe(channels.orderEntryCommandToServer);
+                fibers.remoteOrders.subscribe(client, channels.orderEntryCommandToServer);
                 fibers.remoteOrders.execute(cmdClient::start);
                 System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
 

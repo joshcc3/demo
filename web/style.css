@@ -122,6 +122,24 @@ div {
     color: #f99;;
 }
 
+.order.eeif_order_type_managed {
+    border: solid 2px #ffbaa2 !important;
+    background-color: #757575 !important;
+}
+
+.order.working_order_type_hidden_ticktaker {
+    background-color: #b4b0a9;
+}
+
+.order.working_order_type_hidden_ticktaker.working_qty.working_bid {
+    color: #34357f;;
+}
+
+.order.working_order_type_hidden_ticktaker.working_qty.working_offer {
+    color: #8c2629;;
+}
+
+
 .order.working_order_type_taker {
     border-top: solid 1px #00bd00 !important;
     background-color: #3c3c3c !important;
@@ -129,7 +147,7 @@ div {
 
 .order.working_order_type_manual {
     border-left: solid 1px white !important;
-    background-color: #3c3c3c !important;
+    background-color: #3c3c3c  !important;
 }
 
 .order.working_order_type_hawk {
@@ -210,6 +228,10 @@ div {
 
 .MARKET, .MARKET:hover {
     background-color: #fffb00;
+}
+
+.JAM, .JAM:hover {
+    background-color: #ffbaa2 !important;
 }
 
 .BATS_PEGGED_DARK_BOOK_ONLY, .BATS_PEGGED_DARK_BOOK_ONLY:hover {

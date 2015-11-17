@@ -496,29 +496,39 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             for (final Long price : levelByPrice.keySet()) {
                 int totalQty = 0;
+                int hiddenTickTakerQty = 0;
                 String side = "";
                 final List<String> keys = new ArrayList<>();
                 final Set<WorkingOrderType> orderTypes = new HashSet<>();
                 for (final Main.WorkingOrderUpdateFromServer orderFromServer : w.ordersByPrice.get(price)) {
                     final WorkingOrderUpdate order = orderFromServer.value;
                     final int orderQty = order.getTotalQuantity() - order.getFilledQuantity();
-                    totalQty += orderQty;
                     side = order.getSide().toString().toLowerCase();
                     keys.add(orderFromServer.key());
                     if (orderQty > 0) {
                         orderTypes.add(orderFromServer.value.getWorkingOrderType());
                     }
+                    if (order.getWorkingOrderType() == WorkingOrderType.HIDDEN_TICKTAKER) {
+                        hiddenTickTakerQty += orderQty;
+                    } else {
+                        totalQty += orderQty;
+                    }
                 }
 
                 final Set<com.drwtrading.london.photons.eeifoe.RemoteOrderType> eeifTypes = new HashSet<>();
                 final List<String> eeifKeys = new ArrayList<>();
+
+
+                int managedOrderQty = 0;
                 for (UpdateFromServer update : orderUpdatesForSymbol.updatesByPrice.get(price).values()) {
-                    totalQty += update.update.getRemainingQty();
+                    managedOrderQty += update.update.getRemainingQty();
                     side = update.update.getOrder().getSide() == OrderSide.BUY ? BID_LOWERCASE : OFFER_LOWERCASE;
                     keys.add(update.key());
                     eeifTypes.add(update.update.getOrder().getOrderType());
                     eeifKeys.add(update.key());
                 }
+
+                totalQty += Math.max(managedOrderQty, hiddenTickTakerQty);
 
                 workingQty(price, totalQty, side, orderTypes, eeifTypes);
                 ui.data(orderKey(price), "orderKeys", Joiner.on('!').join(keys));
@@ -527,6 +537,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             int buyQty = 0;
             int sellQty = 0;
+
 
             for (final Main.WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByKey.values()) {
                 if (orderUpdateFromServer.value.getWorkingOrderState() != WorkingOrderState.DEAD) {
@@ -1274,6 +1285,21 @@ public class LadderView implements UiPipe.UiEventHandler {
                 cancelOrder(orderUpdateFromServer);
             }
         }
+        orderUpdatesForSymbol.updatesByKey.values().stream().forEach(update -> {
+            if (convertSide(update.update.getOrder().getSide()) == side) {
+                cancelManagedOrder(update);
+            }
+        });
+    }
+
+    private com.drwtrading.london.protocols.photon.execution.Side convertSide(OrderSide s1) {
+        com.drwtrading.london.protocols.photon.execution.Side s;
+        if (s1 == OrderSide.BUY) {
+            s = com.drwtrading.london.protocols.photon.execution.Side.BID;
+        } else {
+            s = com.drwtrading.london.protocols.photon.execution.Side.OFFER;
+        }
+        return s;
     }
 
     Long modifyFromPrice = null;
@@ -1335,6 +1361,15 @@ public class LadderView implements UiPipe.UiEventHandler {
                         new QuotingParameters(false, 0, 0, 0, 0, 0, 0, 0, 0, 0)
                 );
             }
+        },
+        JAM {
+            @Override
+            public ManagedOrder getOrder(long price, int qty) {
+                return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
+                        new BookParameters(true, true, false, true, true),
+                        new TakingParameters(true, 0, 100, 20),
+                        new QuotingParameters(true, 1, 1, 1, 0, 0, qty, 1, 0, 4));
+            }
         };
 
         public abstract ManagedOrder getOrder(final long price, final int qty);
@@ -1366,7 +1401,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             if (orderType != null && clickTradingBoxQty > 0) {
                 if (managedOrderTypes.contains(orderType)) {
-                    submitManagedOrder(orderType, autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
+                    submitManagedOrder(orderType, autoHedge, price, side, tag);
                 } else if (oldOrderTypes.contains(orderType)) {
                     submitOrder(orderType, autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
                 } else {
@@ -1388,13 +1423,15 @@ public class LadderView implements UiPipe.UiEventHandler {
         }
     }
 
-    private void submitManagedOrder(String orderType, boolean autoHedge, long price, com.drwtrading.london.protocols.photon.execution.Side side, String tag, Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher) {
+    private void submitManagedOrder(String orderType, boolean autoHedge, long price,
+                                    com.drwtrading.london.protocols.photon.execution.Side side, String tag) {
 
         trace.publish(new CommandTrace("submitManaged", client.getUserName(), symbol, orderType, autoHedge, price, side.toString(), tag,
                 clickTradingBoxQty, orderSeqNo++));
 
         OrderEntryClient.SymbolOrder symbolOrder = new OrderEntryClient.SymbolOrder(symbol, com.drwtrading.london.photons.eeifoe.RemoteOrderType.MANAGED);
         Publisher<OrderEntryCommand> publisher = orderEntryMap.get(symbolOrder);
+
         if (null != publisher) {
             com.drwtrading.london.photons.eeifoe.RemoteOrder remoteOrder = new com.drwtrading.london.photons.eeifoe.RemoteOrder(
                     symbol, side == com.drwtrading.london.protocols.photon.execution.Side.BID ? OrderSide.BUY : OrderSide.SELL, price, clickTradingBoxQty,
@@ -1548,9 +1585,8 @@ public class LadderView implements UiPipe.UiEventHandler {
                 updateFromServer.update.getIndicativePrice(), order.getSide().name(), order.getTag(), clickTradingBoxQty,
                 updateFromServer.update.getSystemOrderId()));
         if (ladderOptions.traders.contains(client.getUserName())) {
-            OrderEntryCommandToServer commandToServer = new OrderEntryCommandToServer(updateFromServer.server,
-                    new Cancel(updateFromServer.update.getSystemOrderId(), updateFromServer.update.getOrder()));
-            eeifCommandToServer.publish(commandToServer);
+            eeifCommandToServer.publish(new OrderEntryCommandToServer(updateFromServer.server,
+                    new Cancel(updateFromServer.update.getSystemOrderId(), updateFromServer.update.getOrder())));
         }
     }
 
@@ -1691,9 +1727,12 @@ public class LadderView implements UiPipe.UiEventHandler {
         styleBigNumber(orderKey(price), qty);
         ui.cls(orderKey(price), Html.WORKING_BID, BID_LOWERCASE.equals(side));
         ui.cls(orderKey(price), Html.WORKING_OFFER, OFFER_LOWERCASE.equals(side));
-        for (final WorkingOrderType workingOrderType : WorkingOrderType.values()) {
-            ui.cls(orderKey(price), Html.WORKING_ORDER_TYPE + getOrderType(workingOrderType).toLowerCase(),
-                    orderTypes.contains(workingOrderType));
+
+        if (eeifTypes.isEmpty()) {
+            for (final WorkingOrderType workingOrderType : WorkingOrderType.values()) {
+                ui.cls(orderKey(price), Html.WORKING_ORDER_TYPE + getOrderType(workingOrderType).toLowerCase(),
+                        orderTypes.contains(workingOrderType));
+            }
         }
         for (com.drwtrading.london.photons.eeifoe.RemoteOrderType eeifType : com.drwtrading.london.photons.eeifoe.RemoteOrderType.values()) {
             ui.cls(orderKey(price), Html.EEIF_ORDER_TYPE + eeifType.name().toLowerCase(), eeifTypes.contains(eeifType));

@@ -4,6 +4,7 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.photons.eeifoe.Ack;
 import com.drwtrading.london.photons.eeifoe.AvailableSymbol;
+import com.drwtrading.london.photons.eeifoe.Cancel;
 import com.drwtrading.london.photons.eeifoe.ClientHeartbeat;
 import com.drwtrading.london.photons.eeifoe.OrderEntryCommand;
 import com.drwtrading.london.photons.eeifoe.OrderEntryCommandMsg;
@@ -12,6 +13,9 @@ import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
 import com.drwtrading.london.photons.eeifoe.Reject;
 import com.drwtrading.london.photons.eeifoe.RemoteOrderType;
 import com.drwtrading.london.photons.eeifoe.ServerHeartbeat;
+import com.drwtrading.london.photons.eeifoe.Submit;
+import com.drwtrading.london.reddal.LadderClickTradingIssue;
+import com.drwtrading.london.util.Struct;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
 import com.google.common.base.Preconditions;
@@ -20,6 +24,8 @@ import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, OrderEntryCommandMsg>, OrderEntryReply.Visitor<Void> {
@@ -30,17 +36,21 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     private final String serverInstance;
     private final Fiber fiber;
     private final Publisher<SymbolOrderChannel> publisher;
+    private final Publisher<LadderClickTradingIssue> ladderClickTradingIssues;
 
     private PhotocolsConnection<OrderEntryCommandMsg> connection;
     private int seqNo = 0;
     private int incomingSeqNo = -1;
 
-    public OrderEntryClient(String thisInstance, IClock clock, String serverInstance, Fiber fiber, Publisher<SymbolOrderChannel> publisher) {
+    private Map<Integer, String> seqNoToSymbol = new HashMap<>();
+
+    public OrderEntryClient(String thisInstance, IClock clock, String serverInstance, Fiber fiber, Publisher<SymbolOrderChannel> publisher, Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
         this.thisInstance = thisInstance;
         this.clock = clock;
         this.serverInstance = serverInstance;
         this.fiber = fiber;
         this.publisher = publisher;
+        this.ladderClickTradingIssues = ladderClickTradingIssues;
         fiber.scheduleWithFixedDelay(this::sendHeartbeat, 1, 1, TimeUnit.SECONDS);
     }
 
@@ -50,7 +60,13 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
 
     private boolean send(OrderEntryCommand command) {
         if (null != connection) {
-            connection.send(new OrderEntryCommandMsg(thisInstance, serverInstance, clock.nowMilliUTC(), seqNo++, command));
+            int cmdSeqNo = seqNo++;
+            connection.send(new OrderEntryCommandMsg(thisInstance, serverInstance, clock.nowMilliUTC(), cmdSeqNo, command));
+            if (command instanceof Submit) {
+                seqNoToSymbol.put(cmdSeqNo, ((Submit) command).getOrder().getSymbol());
+            } else if (command instanceof Cancel) {
+                seqNoToSymbol.put(cmdSeqNo, ((Cancel) command).getOrder().getSymbol());
+            }
             return true;
         }
         return false;
@@ -102,19 +118,21 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
             publisher.publish(new SymbolOrderChannel(key, channel));
             channel.subscribe(fiber, this::send);
         });
-        System.out.println("availableSymbol = " + availableSymbol);
         return null;
     }
 
     @Override
     public Void visitAck(Ack msg) {
-        System.out.println("ACK " + msg);
+        seqNoToSymbol.remove(msg.getAckSeqNo());
         return null;
     }
 
     @Override
     public Void visitReject(Reject msg) {
-        System.out.println("REJ " + msg);
+        String symbol = seqNoToSymbol.remove(msg.getRejSeqNo());
+        if (null != symbol) {
+            ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, msg.getMessage()));
+        }
         return null;
     }
 
@@ -123,43 +141,13 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
         return null;
     }
 
-    public static class SymbolOrder {
+    public static class SymbolOrder extends Struct {
         public final String symbol;
         public final RemoteOrderType orderType;
 
         public SymbolOrder(String symbol, RemoteOrderType orderType) {
             this.symbol = symbol;
             this.orderType = orderType;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            if (!super.equals(o)) return false;
-
-            SymbolOrder that = (SymbolOrder) o;
-
-            if (symbol != null ? !symbol.equals(that.symbol) : that.symbol != null) return false;
-            return orderType == that.orderType;
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = super.hashCode();
-            result = 31 * result + (symbol != null ? symbol.hashCode() : 0);
-            result = 31 * result + (orderType != null ? orderType.hashCode() : 0);
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuffer sb = new StringBuffer("SymbolOrder{");
-            sb.append("symbol='").append(symbol).append('\'');
-            sb.append(", orderType=").append(orderType);
-            sb.append('}');
-            return sb.toString();
         }
     }
 
