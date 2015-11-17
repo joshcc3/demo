@@ -1,33 +1,19 @@
 package com.drwtrading.london.reddal;
 
-import com.drw.eurex.gen.transport.StreamEnv;
 import com.drw.nns.api.MulticastGroup;
 import com.drw.nns.api.NnsApi;
 import com.drw.nns.api.NnsFactory;
-import com.drwtrading.eeif.md.eurex.EasyEurexNaMDS;
-import com.drwtrading.eeif.md.eurex.monitors.StatsPublisherErrorMonitor;
-import com.drwtrading.eeif.md.euronext_cash.EuronextComponents;
-import com.drwtrading.eeif.md.euronext_cash.EuronextMarketDataService;
-import com.drwtrading.eeif.md.euronext_cash.EuronextXdpStream;
 import com.drwtrading.eeif.md.publishing.MarketDataEventSnapshottingPublisher;
 import com.drwtrading.eeif.md.remote.MarketDataSubscriberImpl;
 import com.drwtrading.eeif.md.remote.RemoteFilteredClient;
 import com.drwtrading.eeif.md.remote.SubscribeMarketData;
 import com.drwtrading.eeif.md.remote.UnsubscribeMarketData;
-import com.drwtrading.eeif.md.utils.NetworkInterfaceFinder;
-import com.drwtrading.eeif.md.utils.TotalTradedVolumeAccumulator;
-import com.drwtrading.eeif.md.xetra.XetraComponents;
-import com.drwtrading.eeif.md.xetra.XetraMarketDataService;
-import com.drwtrading.esquilatency.BatchedChainEventRecorder;
-import com.drwtrading.jetlang.NoOpPublisher;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
-import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
-import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
@@ -89,7 +75,6 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.collect.MapMaker;
 import com.sun.jndi.toolkit.url.Uri;
 import drw.london.json.Jsonable;
-import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
@@ -497,150 +482,20 @@ public class Main {
 
         // Market data
         {
-
-
-            IErrorLogger errorLog = new IErrorLogger() {
-                @Override
-                public boolean isDebugEnabled() {
-                    return true;
-                }
-
-                @Override
-                public void debug(String msg) {
-                    System.out.println(new DateTime() + "\tDBG: " + msg);
-                }
-
-                @Override
-                public void debug(String msg, Throwable t) {
-                    debug(msg);
-                    t.printStackTrace();
-                }
-
-                @Override
-                public void error(String msg) {
-                    statsPublisher.publish(new AdvisoryStat("Reddal", AdvisoryStat.Level.WARNING, msg));
-                }
-
-                @Override
-                public void error(String msg, Throwable t) {
-                    error(msg);
-                    channels.error.publish(t);
-                }
-            };
-
-
             for (final String mds : environment.getList(Environment.MARKET_DATA)) {
-
-
                 System.out.println(mds + " connecting to: " + environment.getMarketDataExchange(mds));
-
                 final MarketDataEventSnapshottingPublisher snapshottingPublisher = new MarketDataEventSnapshottingPublisher();
                 final FiberBuilder fiber = fibers.fiberGroup.create("Market Data: " + mds);
                 final ProductResetter productResetter = new ProductResetter(snapshottingPublisher);
                 final MarketDataSubscriberImpl marketDataSubscriber = new MarketDataSubscriberImpl(channels.refData);
                 fiber.subscribe(marketDataSubscriber, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
-                Publisher<MarketDataEvent> marketDataEventPublisher = marketDataSubscriber;
-
-                if (environment.getMarketDataExchange(mds) == Environment.Exchange.EUREX) {
-
-                    final TotalTradedVolumeAccumulator totalTradedVolumeAccumulator = new TotalTradedVolumeAccumulator(marketDataEventPublisher);
-
-
-                    final EasyEurexNaMDS easyEurexNaMDS = new EasyEurexNaMDS(
-                            environment.getMarkets(mds),
-                            totalTradedVolumeAccumulator, totalTradedVolumeAccumulator, totalTradedVolumeAccumulator,
-                            statsPublisher,
-                            channels.error,
-                            StreamEnv.prod,
-                            environment.getMarketDataInterface(mds),
-                            new StatsPublisherErrorMonitor(statsPublisher),
-                            logDir
-                    ).withImpliedTopOfBooks(totalTradedVolumeAccumulator, true);
-
-                    fibers.onStart(() -> fiber.execute(() -> {
-                        try {
-                            easyEurexNaMDS.start();
-                        } catch (final IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }));
-                } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.XETRA) {
-
-                    final TotalTradedVolumeAccumulator totalTradedVolumeAccumulator = new TotalTradedVolumeAccumulator(marketDataEventPublisher);
-
-                    SelectIO selectIO = new SelectIO(errorLog);
-                    final XetraMarketDataService xetraMarketDataService = new XetraMarketDataService(
-                            selectIO,
-                            new ResourceMonitor<>("Xetra", XetraComponents.class, errorLog, true),
-                            NetworkInterfaceFinder.find(environment.getMarketDataInterface(mds)),
-                            environment.getXetraMarkets(mds),
-                            totalTradedVolumeAccumulator,
-                            environment.getXetraReferenceDataFile(mds),
-                            environment.getXetraReferenceDataStreams(mds),
-                            null,
-                            null,
-                            message -> {
-                                try {
-                                    System.out.println("Xetra dropped a packet: ");
-                                    message.toJson(System.out);
-                                } catch (final IOException e) {
-                                    channels.error.publish(e);
-                                }
-                                statsPublisher.publish(new AdvisoryStat("Reddal/Xetra", AdvisoryStat.Level.WARNING, "Dropped a packet."));
-                            },
-                            ERROR_CHANNEL,
-                            BatchedChainEventRecorder.nullRecorder(),
-                            new NoOpPublisher<>());
-
-                    selectIO.execute(() -> {
-                        try {
-                            xetraMarketDataService.initialise();
-                        } catch (IOException e) {
-                            channels.error.publish(e);
-                        }
-                    });
-
-                    fibers.onStart(() -> {
-                        try {
-                            selectIO.start("Xetra MD");
-                        } catch (final IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-
-                } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.EURONEXT) {
-
-                    final String prefix = Environment.MARKET_DATA + "." + mds;
-                    SelectIO selectIO = new SelectIO(errorLog);
-
-                    final EuronextMarketDataService marketDataService =
-                            new EuronextMarketDataService(selectIO,
-                                    new ResourceMonitor<>("Euronext", EuronextComponents.class, errorLog, true),
-                                    NetworkInterfaceFinder.find(config.get(prefix + ".nic")),
-                                    marketDataEventPublisher,
-                                    EuronextXdpStream.Configuration.valueOf(config.get(prefix + ".environment")),
-                                    new InetSocketAddress(config.get(prefix + ".refreshAddr"), config.getInt(prefix + ".refreshPort")),
-                                    config.get(prefix + ".sourceId"), new NoOpPublisher<>(),
-                                    new ObjectArraySet<>(config.get(prefix + ".mics").split(",")),
-                                    null,
-                                    null);
-
-                    fibers.fiberGroup.create("Euronext Cash Runner").execute(() -> {
-                        try {
-                            marketDataService.startSync();
-                        } catch (final IOException e) {
-                            ERROR_CHANNEL.publish(e);
-                        }
-                    });
-
-
-                } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.REMOTE) {
+                if (environment.getMarketDataExchange(mds) == Environment.Exchange.REMOTE) {
                     final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
                     final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), MarketDataEvent.class, Void.class, fiber.getFiber(), EXCEPTION_HANDLER);
                     final ConnectionCloser connectionCloser = new ConnectionCloser(channels.stats, "Market data: " + mds, productResetter.resetRunnable());
                     client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
                             .handler(new IdleConnectionTimeoutHandler<>(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()))
-                            .handler(new JetlangChannelHandler<>(marketDataEventPublisher));
+                            .handler(new JetlangChannelHandler<>(marketDataSubscriber));
                     fibers.onStart(() -> fiber.execute(client::start));
                 } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.FILTERED) {
                     RemoteFilteredClient filteredClient = new RemoteFilteredClient(channels.refData, FeedType.FULL_BOOK);
