@@ -185,7 +185,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final int PG_DOWN = 34;
     public static final int END_KEY = 35;
     public static final int HOME_KEY = 36;
-    public static final int MAX_FLUSH_PER_SEC = 100;
+    public static final int MAX_FLUSH_PER_SEC = 10;
 
     public enum PricingMode {
         BPS,
@@ -208,7 +208,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     private final TradingStatusForAll tradingStatusForAll;
     private final Publisher<HeartbeatRoundtrip> heartbeatRoundtripPublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
-    private final SlidingWindow flushWindow = new SlidingWindow(20, 50);
+    private final SlidingWindow flushWindow = new SlidingWindow(10, 100);
     public String symbol;
     private MarketDataForSymbol marketDataForSymbol;
     private WorkingOrdersForSymbol workingOrdersForSymbol;
@@ -300,15 +300,19 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     public void fastMdFlush() {
-        drawBook();
-        drawTradedVolumes();
-        drawLastTrade();
-        throttleFlush();
+        long now = System.currentTimeMillis();
+        if (flushWindow.put(now, 0) < MAX_FLUSH_PER_SEC) {
+            flushWindow.put(now, 1);
+            drawBook();
+            drawTradedVolumes();
+            drawLastTrade();
+            ui.flush();
+        }
     }
 
     public void fastInputFlush() {
         drawClickTrading();
-        throttleFlush();
+        ui.flush();
     }
 
     public void flush() {
@@ -317,17 +321,9 @@ public class LadderView implements UiPipe.UiEventHandler {
         recenterIfTimeoutElapsed();
         clearModifyPriceIfTimedOut();
         updateEverything();
-        throttleFlush();
+        ui.flush();
     }
 
-
-    public void throttleFlush() {
-        long now = System.currentTimeMillis();
-        if (flushWindow.put(now, 0) < MAX_FLUSH_PER_SEC) {
-            flushWindow.put(now, 1);
-            ui.flush();
-        }
-    }
 
     private void drawLadderIfRefDataHasJustComeIn() {
         if (pendingRefDataAndSettle) {
