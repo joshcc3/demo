@@ -100,9 +100,9 @@ import static com.google.common.collect.Maps.newHashMap;
 public class Main {
 
     public static final long SERVER_TIMEOUT = 3000L;
-    public static final int BATCH_FLUSH_INTERVAL_MS = 200;
-    public static final int HEARTBEAT_INTERVAL_MS = 20 * BATCH_FLUSH_INTERVAL_MS;
-    public static final int NUM_DISPLAY_THREADS = 8;
+    public static final int BATCH_FLUSH_INTERVAL_MS = 1000 / 12;
+    public static final int HEARTBEAT_INTERVAL_MS = 3000;
+    public static final int NUM_DISPLAY_THREADS = 12;
     public static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber, final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {

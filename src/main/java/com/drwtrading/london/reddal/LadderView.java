@@ -185,7 +185,6 @@ public class LadderView implements UiPipe.UiEventHandler {
     public static final int PG_DOWN = 34;
     public static final int END_KEY = 35;
     public static final int HOME_KEY = 36;
-    public static final int MAX_FLUSH_PER_SEC = 10;
 
     public enum PricingMode {
         BPS,
@@ -300,14 +299,6 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     public void fastMdFlush() {
-        long now = System.currentTimeMillis();
-        if (flushWindow.put(now, 0) < MAX_FLUSH_PER_SEC) {
-            flushWindow.put(now, 1);
-            drawBook();
-            drawTradedVolumes();
-            drawLastTrade();
-            ui.flush();
-        }
     }
 
     public void fastInputFlush() {
