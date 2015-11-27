@@ -3,16 +3,10 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.london.eeif.utils.collections.SlidingWindow;
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.eeifoe.BookParameters;
 import com.drwtrading.london.photons.eeifoe.Cancel;
-import com.drwtrading.london.photons.eeifoe.ManagedOrder;
 import com.drwtrading.london.photons.eeifoe.OrderEntryCommand;
 import com.drwtrading.london.photons.eeifoe.OrderSide;
-import com.drwtrading.london.photons.eeifoe.PegPriceToTheoOnSubmit;
-import com.drwtrading.london.photons.eeifoe.QuotingParameters;
 import com.drwtrading.london.photons.eeifoe.Submit;
-import com.drwtrading.london.photons.eeifoe.TakingParameters;
-import com.drwtrading.london.photons.eeifoe.TheoPrice;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.Command;
 import com.drwtrading.london.photons.reddal.Direction;
@@ -39,6 +33,7 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.orderentry.ManagedOrderType;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
@@ -1325,42 +1320,6 @@ public class LadderView implements UiPipe.UiEventHandler {
                 autoHedge, workingOrderUpdate.getTag());
     }
 
-
-    private static enum ManagedOrderType {
-        NEW_HAWK {
-            @Override
-            public ManagedOrder getOrder(long price, int qty) {
-                return new ManagedOrder(
-                        new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
-                        new BookParameters(true, true, false, true, true),
-                        new TakingParameters(false, 0, 0, 0),
-                        new QuotingParameters(true, 0, 0, 1, 0, 0, qty, 1, 0, 4)
-                );
-            }
-        },
-        NEW_TAKER {
-            @Override
-            public ManagedOrder getOrder(long price, int qty) {
-                return new ManagedOrder(
-                        new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
-                        new BookParameters(true, true, false, true, true),
-                        new TakingParameters(true, 0, 100, 20),
-                        new QuotingParameters(false, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-                );
-            }
-        },
-        JAM {
-            @Override
-            public ManagedOrder getOrder(long price, int qty) {
-                return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
-                        new BookParameters(true, true, false, true, true),
-                        new TakingParameters(true, 0, 100, 20),
-                        new QuotingParameters(true, 1, 1, 1, 0, 0, qty, 1, 0, 4));
-            }
-        };
-
-        public abstract ManagedOrder getOrder(final long price, final int qty);
-    }
 
     private final Set<String> managedOrderTypes = Arrays.asList(ManagedOrderType.values()).stream().map(Enum::toString).collect(Collectors.toSet());
     private final Set<String> oldOrderTypes = Arrays.asList(RemoteOrderType.values()).stream().map(Enum::toString).collect(Collectors.toSet());
