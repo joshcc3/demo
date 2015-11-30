@@ -139,7 +139,6 @@ div {
     color: #8c2629;;
 }
 
-
 .order.working_order_type_taker {
     border-top: solid 1px #00bd00 !important;
     background-color: #3c3c3c !important;
@@ -160,10 +159,16 @@ div {
     background-color: gray !important;
 }
 
+.order.working_order_type_sprinter {
+    border: dotted 3px #ff0006 !important;
+    background-color: gray !important;
+}
+
 .order.working_order_type_ticktaker {
     border: dotted 3px #ff0006 !important;
     background-color: gray !important;
 }
+
 
 .order.working_order_type_mkt_close {
     border-right: solid 1px #ff04ef !important;
@@ -208,6 +213,10 @@ div {
 
 .TAKER, .TAKER:hover {
     background-color: #00bd00;
+}
+
+.SPRINTER, .SPRINTER:hover {
+    background-color: #bd000a;
 }
 
 .TICKTAKER, .TICKTAKER:hover {

@@ -41,7 +41,7 @@ import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.util.PriceUtils;
-import com.drwtrading.london.reddal.util.UpdateFromServer;
+import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
@@ -520,17 +520,41 @@ public class LadderView implements UiPipe.UiEventHandler {
             int buyQty = 0;
             int sellQty = 0;
 
+            int buyHiddenTTQty = 0;
+            int sellHiddenTTQty = 0;
+
+            int buyManagedQty = 0;
+            int sellManagedQty = 0;
 
             for (final Main.WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByKey.values()) {
                 if (orderUpdateFromServer.value.getWorkingOrderState() != WorkingOrderState.DEAD) {
                     final int remainingQty = orderUpdateFromServer.value.getTotalQuantity() - orderUpdateFromServer.value.getFilledQuantity();
                     if (orderUpdateFromServer.value.getSide() == com.drwtrading.london.protocols.photon.execution.Side.BID) {
-                        buyQty += remainingQty;
+                        if (orderUpdateFromServer.value.getWorkingOrderType() == WorkingOrderType.HIDDEN_TICKTAKER) {
+                            buyHiddenTTQty += remainingQty;
+                        } else {
+                            buyQty += remainingQty;
+                        }
                     } else if (orderUpdateFromServer.value.getSide() == com.drwtrading.london.protocols.photon.execution.Side.OFFER) {
-                        sellQty += remainingQty;
+                        if (orderUpdateFromServer.value.getWorkingOrderType() == WorkingOrderType.HIDDEN_TICKTAKER) {
+                            sellHiddenTTQty += remainingQty;
+                        } else {
+                            sellQty += remainingQty;
+                        }
                     }
                 }
             }
+
+            for (UpdateFromServer updateFromServer : orderUpdatesForSymbol.updatesByKey.values()) {
+                if (updateFromServer.update.getOrder().getSide() == OrderSide.BUY) {
+                    buyManagedQty += updateFromServer.update.getRemainingQty();
+                } else if (updateFromServer.update.getOrder().getSide() == OrderSide.SELL) {
+                    sellManagedQty += updateFromServer.update.getRemainingQty();
+                }
+            }
+
+            buyQty += Math.max(buyHiddenTTQty, buyManagedQty);
+            sellQty += Math.max(sellHiddenTTQty, sellManagedQty);
 
             ui.cls(Html.BUY_QTY, Html.HIDDEN, buyQty == 0);
             ui.txt(Html.BUY_QTY, buyQty);

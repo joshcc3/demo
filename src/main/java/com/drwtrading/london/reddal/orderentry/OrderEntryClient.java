@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.orderentry;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.photons.eeifoe.Ack;
 import com.drwtrading.london.photons.eeifoe.AvailableSymbol;

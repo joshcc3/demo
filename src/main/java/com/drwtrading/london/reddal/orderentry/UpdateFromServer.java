@@ -1,9 +1,9 @@
-package com.drwtrading.london.reddal.util;
+package com.drwtrading.london.reddal.orderentry;
 
 import com.drwtrading.london.photons.eeifoe.Update;
 import com.drwtrading.london.util.Struct;
 
-public class UpdateFromServer extends Struct {
+public class UpdateFromServer extends Struct implements OrderEntryFromServer {
     public final String server;
     public final Update update;
 

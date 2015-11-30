@@ -19,8 +19,9 @@ import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
-import com.drwtrading.london.reddal.util.UpdateFromServer;
+import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
@@ -319,6 +320,13 @@ public class LadderPresenter {
     @Subscribe
     public void on(UpdateFromServer update) {
         eeifOrdersBySymbol.get(update.getSymbol()).onUpdate(update);
+    }
+
+    @Subscribe
+    public void on(ServerDisconnected disconnected) {
+        eeifOrdersBySymbol.forEach((s, orderUpdatesForSymbol) -> {
+            orderUpdatesForSymbol.onDisconnected(disconnected);
+        });
     }
 
     public void flushAllLadders() {

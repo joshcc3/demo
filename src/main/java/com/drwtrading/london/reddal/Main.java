@@ -13,7 +13,7 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
-import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
@@ -45,6 +45,9 @@ import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderentry.OrderEntryFromServer;
+import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
+import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.ProductResetter;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
@@ -53,7 +56,6 @@ import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
-import com.drwtrading.london.reddal.util.UpdateFromServer;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.MsgCodec;
@@ -63,8 +65,10 @@ import com.drwtrading.monitoring.stats.Transport;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.monitoring.transport.LoggingTransport;
 import com.drwtrading.monitoring.transport.MultiplexTransport;
+import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
 import com.drwtrading.photocols.easy.Photocols;
+import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
 import com.drwtrading.photons.ladder.LadderMetadata;
@@ -78,7 +82,6 @@ import drw.london.json.Jsonable;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
-import org.joda.time.DateTime;
 
 import java.io.File;
 import java.io.IOException;
@@ -144,7 +147,7 @@ public class Main {
         public final TypedChannel<ReplaceCommand> replaceCommand;
         public final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
         public final TypedChannel<UserCycleRequest> userCycleContractPublisher;
-        public final TypedChannel<UpdateFromServer> orderUpdateEvent;
+        public final TypedChannel<OrderEntryFromServer> orderEntryFromServer;
         public final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
         public final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
 
@@ -179,7 +182,7 @@ public class Main {
             ladderClickTradingIssues = create(LadderClickTradingIssue.class);
             userCycleContractPublisher = create(UserCycleRequest.class);
             replaceCommand = create(ReplaceCommand.class);
-            orderUpdateEvent = create(UpdateFromServer.class);
+            orderEntryFromServer = create(OrderEntryFromServer.class);
             orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
             orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
         }
@@ -414,7 +417,7 @@ public class Main {
                             channels.replaceCommand,
                             channels.userCycleContractPublisher,
                             channels.orderEntrySymbols,
-                            channels.orderUpdateEvent);
+                            channels.orderEntryFromServer);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::flushAllLadders, 10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::sendAllHeartbeats, 10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 }
@@ -536,12 +539,24 @@ public class Main {
                         .logFile(new File(logDir, "order-update." + server + ".log"), fibers.logging.getFiber(), true)
                         .handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10))
                         .handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(), new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT))
-                        .handler(new JetlangChannelHandler<>(evt -> {
-                            if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
-                                Update msg = (Update) evt.getMsg();
-                                channels.orderUpdateEvent.publish(new UpdateFromServer(evt.getFromInstance(), msg));
+                        .handler(new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(
+                                Constants::NO_OP,
+                                channels.orderEntryFromServer,
+                                evt -> {
+                                    if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
+                                        Update msg = (Update) evt.getMsg();
+                                        channels.orderEntryFromServer.publish(new UpdateFromServer(evt.getFromInstance(), msg));
+                                    }
+                                }) {
+                            @Override
+                            protected Void connected(PhotocolsConnection<Void> connection) {
+                                return null;
                             }
-                        }));
+                            @Override
+                            protected OrderEntryFromServer disconnected(PhotocolsConnection<Void> connection) {
+                                return new ServerDisconnected(server);
+                            }
+                        });
                 fibers.remoteOrders.execute(updateClient::start);
                 System.out.println("EEIF-OE: " + server + "\tUpdate: " + update.host);
             }

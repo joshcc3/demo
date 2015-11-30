@@ -1,9 +1,9 @@
 package com.drwtrading.london.reddal.orderentry;
 
-import com.drwtrading.london.reddal.util.UpdateFromServer;
 import com.google.common.collect.MapMaker;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class OrderUpdatesForSymbol {
@@ -28,4 +28,23 @@ public class OrderUpdatesForSymbol {
             }
         }
     }
+
+    public void onDisconnected(ServerDisconnected disconnected) {
+        for (Iterator<UpdateFromServer> iterator = updatesByKey.values().iterator(); iterator.hasNext(); ) {
+            UpdateFromServer fromServer = iterator.next();
+            if (fromServer.server.equals(disconnected.server)) {
+                iterator.remove();
+            }
+        }
+        updatesByPrice.forEach((aLong, map) -> {
+            for (Iterator<UpdateFromServer> iterator = map.values().iterator(); iterator.hasNext(); ) {
+                UpdateFromServer fromServer = iterator.next();
+                if (fromServer.server.equals(disconnected.server)) {
+                    iterator.remove();
+                }
+            }
+        });
+    }
+
+
 }
