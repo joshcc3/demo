@@ -13,7 +13,7 @@ public enum ManagedOrderType {
         public ManagedOrder getOrder(long price, int qty) {
             return new ManagedOrder(
                     new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
-                    new BookParameters(true, true, false, true, true),
+                    Constants.BOOK_PARAMETERS,
                     new TakingParameters(false, 0, 0, 0),
                     new QuotingParameters(true, 0, 0, 1, 0, 0, qty, 1, 0, 4)
             );
@@ -24,30 +24,55 @@ public enum ManagedOrderType {
         public ManagedOrder getOrder(long price, int qty) {
             return new ManagedOrder(
                     new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
-                    new BookParameters(true, true, false, true, true),
-                    new TakingParameters(true, 0, 100, 20),
+                    Constants.BOOK_PARAMETERS,
+                    Constants.TAKING_PARAMETERS,
                     new QuotingParameters(false, 0, 0, 0, 0, 0, 0, 0, 0, 0)
             );
         }
     },
-    JAM {
+    HAM {
         @Override
         public ManagedOrder getOrder(long price, int qty) {
             return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
-                    new BookParameters(true, true, false, true, true),
-                    new TakingParameters(true, 0, 100, 20),
+                    Constants.BOOK_PARAMETERS,
+                    Constants.TAKING_PARAMETERS,
                     new QuotingParameters(true, 1, 1, 1, 0, 0, qty, 1, 0, 4));
         }
     },
-    JAMON {
+    HAMON {
         @Override
         public ManagedOrder getOrder(long price, int qty) {
             return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
-                    new BookParameters(true, true, false, true, true),
-                    new TakingParameters(true, 0, 100, 20),
+                    Constants.BOOK_PARAMETERS,
+                    Constants.TAKING_PARAMETERS,
                     new QuotingParameters(true, 1, 0, 1, 0, 0, qty, 1, 0, 4));
         }
-    };
+    },
+    HAM3 {
+        @Override
+        public ManagedOrder getOrder(long price, int qty) {
+            return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
+                    Constants.BOOK_PARAMETERS,
+                    Constants.TAKING_PARAMETERS,
+                    new QuotingParameters(true, 1, 1, 1, 0, 0, qty / 3, 3, 0, 4));
+        }
+    },
+    HAMON3 {
+        @Override
+        public ManagedOrder getOrder(long price, int qty) {
+            return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
+                    Constants.BOOK_PARAMETERS,
+                    Constants.TAKING_PARAMETERS,
+                    new QuotingParameters(true, 1, 0, 1, 0, 0, qty / 3, 3, 0, 4));
+        }
+    },
+    ;
+
 
     public abstract ManagedOrder getOrder(final long price, final int qty);
+
+    private static class Constants {
+        public static final BookParameters BOOK_PARAMETERS = new BookParameters(true, true, false, true, true);
+        public static final TakingParameters TAKING_PARAMETERS = new TakingParameters(true, 0, 100, 20);
+    }
 }
