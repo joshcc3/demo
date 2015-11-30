@@ -53,7 +53,7 @@ public enum ManagedOrderType {
         public ManagedOrder getOrder(long price, int qty) {
             return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
                     Constants.BOOK_PARAMETERS,
-                    Constants.TAKING_PARAMETERS,
+                    Constants.NO_TAKING_PARAMETERS,
                     new QuotingParameters(true, 1, 1, 1, 0, 0, qty / 3, 3, 0, 4));
         }
     },
@@ -62,7 +62,7 @@ public enum ManagedOrderType {
         public ManagedOrder getOrder(long price, int qty) {
             return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
                     Constants.BOOK_PARAMETERS,
-                    Constants.TAKING_PARAMETERS,
+                    Constants.NO_TAKING_PARAMETERS,
                     new QuotingParameters(true, 1, 0, 1, 0, 0, qty / 3, 3, 0, 4));
         }
     },
@@ -74,5 +74,6 @@ public enum ManagedOrderType {
     private static class Constants {
         public static final BookParameters BOOK_PARAMETERS = new BookParameters(true, true, false, true, true);
         public static final TakingParameters TAKING_PARAMETERS = new TakingParameters(true, 0, 100, 20);
+        public static final TakingParameters NO_TAKING_PARAMETERS = new TakingParameters(false, 0, 0, 0);
     }
 }
