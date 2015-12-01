@@ -21,7 +21,7 @@ public class MarketDataForSymbol {
     public InstrumentDefinitionEvent refData = null;
     public TopOfBook topOfBook = null;
     public Book book = null;
-    public Map<Long, TotalTradedVolumeByPrice> totalTradedVolumeByPrice = new HashMap<Long, TotalTradedVolumeByPrice>();
+    public Map<Long, TotalTradedVolumeByPrice> totalTradedVolumeByPrice = new HashMap<>();
     public TradeUpdate lastTrade;
     public AuctionIndicativePrice auctionIndicativePrice;
     public AuctionIndicativeSurplus auctionIndicativeSurplus;
