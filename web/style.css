@@ -239,7 +239,8 @@ div {
     background-color: #fffb00;
 }
 
-.HAM, .HAM:hover, .HAMON, .HAMON:hover {
+.HAM, .HAM:hover, .HAMON, .HAMON:hover, .HAM3, .HAMON3, .TRON, .TRON3,
+    .HAM3:hover, .HAMON3:hover, .TRON:hover, .TRON3:hover {
     background-color: #ffbaa2 !important;
 }
 

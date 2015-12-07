@@ -8,35 +8,14 @@ import com.drwtrading.london.photons.eeifoe.TakingParameters;
 import com.drwtrading.london.photons.eeifoe.TheoPrice;
 
 public enum ManagedOrderType {
-    NEW_HAWK {
-        @Override
-        public ManagedOrder getOrder(long price, int qty) {
-            return new ManagedOrder(
-                    new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
-                    Constants.BOOK_PARAMETERS,
-                    new TakingParameters(false, 0, 0, 0),
-                    new QuotingParameters(true, 0, 0, 1, 0, 0, qty, 1, 0, 4)
-            );
-        }
-    },
-    NEW_TAKER {
-        @Override
-        public ManagedOrder getOrder(long price, int qty) {
-            return new ManagedOrder(
-                    new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
-                    Constants.BOOK_PARAMETERS,
-                    Constants.TAKING_PARAMETERS,
-                    new QuotingParameters(false, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-            );
-        }
-    },
+
     HAM {
         @Override
         public ManagedOrder getOrder(long price, int qty) {
             return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
                     Constants.BOOK_PARAMETERS,
-                    Constants.TAKING_PARAMETERS,
-                    new QuotingParameters(true, 1, 1, 1, 0, 0, qty, 1, 0, 4));
+                    Constants.NO_TAKING_PARAMETERS,
+                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4));
         }
     },
     HAMON {
@@ -44,8 +23,8 @@ public enum ManagedOrderType {
         public ManagedOrder getOrder(long price, int qty) {
             return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
                     Constants.BOOK_PARAMETERS,
-                    Constants.TAKING_PARAMETERS,
-                    new QuotingParameters(true, 1, 0, 1, 0, 0, qty, 1, 0, 4));
+                    Constants.NO_TAKING_PARAMETERS,
+                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4));
         }
     },
     HAM3 {
@@ -54,7 +33,7 @@ public enum ManagedOrderType {
             return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
                     Constants.BOOK_PARAMETERS,
                     Constants.NO_TAKING_PARAMETERS,
-                    new QuotingParameters(true, 1, 1, 1, 0, 0, qty / 3, 3, 0, 4));
+                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty / 3, 3, 0, 4));
         }
     },
     HAMON3 {
@@ -63,9 +42,28 @@ public enum ManagedOrderType {
             return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
                     Constants.BOOK_PARAMETERS,
                     Constants.NO_TAKING_PARAMETERS,
-                    new QuotingParameters(true, 1, 0, 1, 0, 0, qty / 3, 3, 0, 4));
+                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty / 3, 3, 0, 4));
         }
     },
+    TRON {
+        @Override
+        public ManagedOrder getOrder(long price, int qty) {
+            return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
+                    Constants.BOOK_PARAMETERS,
+                    Constants.TAKING_PARAMETERS,
+                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4));
+        }
+    },
+    TRON3 {
+        @Override
+        public ManagedOrder getOrder(long price, int qty) {
+            return new ManagedOrder(new TheoPrice(101, 5, 10, "PRICER", new PegPriceToTheoOnSubmit(price)),
+                    Constants.BOOK_PARAMETERS,
+                    Constants.TAKING_PARAMETERS,
+                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty / 3, 3, 0, 4));
+        }
+    },
+
     ;
 
 
@@ -75,5 +73,7 @@ public enum ManagedOrderType {
         public static final BookParameters BOOK_PARAMETERS = new BookParameters(true, true, false, true, true);
         public static final TakingParameters TAKING_PARAMETERS = new TakingParameters(true, 0, 100, 20);
         public static final TakingParameters NO_TAKING_PARAMETERS = new TakingParameters(false, 0, 0, 0);
+        public static final int NO_BETTERMENT = 0;
+        public static final int BETTER_BY_ONE = 1;
     }
 }
