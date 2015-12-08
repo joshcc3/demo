@@ -4,6 +4,7 @@ import com.drwtrading.london.eeif.utils.collections.SlidingWindow;
 import com.drwtrading.london.fastui.UiPipe;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.eeifoe.Cancel;
+import com.drwtrading.london.photons.eeifoe.ManagedOrder;
 import com.drwtrading.london.photons.eeifoe.OrderEntryCommand;
 import com.drwtrading.london.photons.eeifoe.OrderSide;
 import com.drwtrading.london.photons.eeifoe.Submit;
@@ -37,11 +38,11 @@ import com.drwtrading.london.reddal.orderentry.ManagedOrderType;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.util.PriceUtils;
-import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
@@ -1396,17 +1397,23 @@ public class LadderView implements UiPipe.UiEventHandler {
     private void submitManagedOrder(final String orderType, final boolean autoHedge, final long price,
                                     final com.drwtrading.london.protocols.photon.execution.Side side, final String tag) {
 
+        int tradingBoxQty = this.clickTradingBoxQty;
         trace.publish(new CommandTrace("submitManaged", client.getUserName(), symbol, orderType, autoHedge, price, side.toString(), tag,
-                clickTradingBoxQty, orderSeqNo++));
+                tradingBoxQty, orderSeqNo++));
 
         final OrderEntryClient.SymbolOrder symbolOrder = new OrderEntryClient.SymbolOrder(symbol, com.drwtrading.london.photons.eeifoe.RemoteOrderType.MANAGED);
         final Publisher<OrderEntryCommand> publisher = orderEntryMap.get(symbolOrder);
 
         if (null != publisher) {
+            final ManagedOrderType managedOrderType = ManagedOrderType.valueOf(orderType);
+            tradingBoxQty = managedOrderType.getQty(tradingBoxQty);
+            if (tradingBoxQty == 0) {
+                tradingBoxQty = clickTradingBoxQty;
+            }
             final com.drwtrading.london.photons.eeifoe.RemoteOrder remoteOrder = new com.drwtrading.london.photons.eeifoe.RemoteOrder(
-                    symbol, side == com.drwtrading.london.protocols.photon.execution.Side.BID ? OrderSide.BUY : OrderSide.SELL, price, clickTradingBoxQty,
+                    symbol, side == com.drwtrading.london.protocols.photon.execution.Side.BID ? OrderSide.BUY : OrderSide.SELL, price, tradingBoxQty,
                     autoHedge, tag, client.getUserName(), com.drwtrading.london.photons.eeifoe.RemoteOrderType.MANAGED,
-                    ManagedOrderType.valueOf(orderType).getOrder(price, clickTradingBoxQty)
+                    managedOrderType.getOrder(price, tradingBoxQty)
             );
             final Submit submit = new Submit(remoteOrder);
             publisher.publish(submit);
