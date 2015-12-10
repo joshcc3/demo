@@ -5,7 +5,9 @@ import org.webbitserver.HttpHandler;
 import org.webbitserver.HttpRequest;
 import org.webbitserver.HttpResponse;
 
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
+import java.net.SocketAddress;
 
 public class WorkspaceRequestHandler implements HttpHandler {
     private final LadderWorkspace ladderWorkspace;
@@ -21,7 +23,14 @@ public class WorkspaceRequestHandler implements HttpHandler {
     @Override
     public void handleHttpRequest(final HttpRequest request, final HttpResponse response, final HttpControl control) throws Exception {
         if ("GET".equals(request.method())) {
-            String user = request.remoteAddress().toString().split(":")[0].substring(1);
+            final String user;
+            if (request.remoteAddress() instanceof InetSocketAddress) {
+                InetSocketAddress socketAddress = (InetSocketAddress) request.remoteAddress();
+                user = socketAddress.getAddress().getHostAddress();
+            } else {
+                String addrString = request.remoteAddress().toString();
+                user = addrString.substring(addrString.lastIndexOf(':'));
+            }
             String symbol = request.queryParam("symbol");
             String content;
             response.status(200);

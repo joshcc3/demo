@@ -12,6 +12,8 @@ import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class LadderWorkspace {
 
@@ -110,17 +112,25 @@ public class LadderWorkspace {
             symbol = symbol.split(";")[0];
         }
 
-        if (setsByHost.containsKey(user) && contractSets.containsKey(symbol)) {
-            SpreadContractSet contractSet = contractSets.get(symbol);
-            ArrayDeque<View> viewsList = new ArrayDeque<>(setsByHost.get(user));
-            View view;
-            while ((view = viewsList.pollLast()) != null) {
-                if (!lockedViews.contains(view)) {
-                    view.addSymbol(contractSet.spread);
-                    view.addSymbol(contractSet.back);
-                    view.addSymbol(contractSet.front);
-                    openedSomething = true;
-                    break;
+        if (setsByHost.containsKey(user)) {
+            final String finalSymbol = symbol;
+            List<String> symbols = contractSets.values().stream()
+                    .filter(set -> set.spread.contains(finalSymbol))
+                    .flatMap(set -> Stream.of(set.front, set.back, set.spread))
+                    .filter(s -> !s.equals(finalSymbol))
+                    .distinct()
+                    .collect(Collectors.toList());
+            Collections.reverse(symbols);
+            if (!symbols.isEmpty()) {
+                ArrayDeque<View> viewsList = new ArrayDeque<>(setsByHost.get(user));
+                View view;
+                while ((view = viewsList.pollLast()) != null) {
+                    if (!lockedViews.contains(view)) {
+                        symbols.forEach(view::addSymbol);
+                        view.addSymbol(finalSymbol);
+                        openedSomething = true;
+                        break;
+                    }
                 }
             }
         }
