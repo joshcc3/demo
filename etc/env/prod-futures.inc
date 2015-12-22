@@ -1,3 +1,3 @@
 APPNAME=reddal
 REMOTE_USER=prodappadmin
-REMOTE_SERVER=sup-ldneeif02
+REMOTE_SERVER=ln1x-supeeif02

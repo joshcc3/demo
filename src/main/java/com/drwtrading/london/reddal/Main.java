@@ -645,19 +645,18 @@ public class Main {
         }
 
         // Indy
-        {
-            if (environment.indyEnabled()) {
-                final Environment.HostAndNic hostAndNic = environment.getIndyHostAndNic();
-                final OnHeapBufferPhotocolsNioClient<IndyEnvelope, Void> client = OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic, IndyEnvelope.class, Void.class, fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
-                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
-                        .logFile(new File(logDir, "indy.log"), fibers.logging.getFiber(), true)
-                        .handler(new JetlangChannelHandler<>(msg -> {
-                            if (msg.getMessage() instanceof EquityIdAndSymbol) {
-                                channels.equityIdAndSymbol.publish((EquityIdAndSymbol) msg.getMessage());
-                            }
-                        }));
-                fibers.onStart(client::start);
-            }
+        if (environment.indyEnabled()) {
+            final Environment.HostAndNic hostAndNic = environment.getIndyHostAndNic();
+            final OnHeapBufferPhotocolsNioClient<IndyEnvelope, Void> client =
+                    OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic, IndyEnvelope.class, Void.class,
+                            fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
+            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(new File(logDir, "indy.log"), fibers.logging.getFiber(),
+                    true).handler(new JetlangChannelHandler<>(msg -> {
+                if (msg.getMessage() instanceof EquityIdAndSymbol) {
+                    channels.equityIdAndSymbol.publish((EquityIdAndSymbol) msg.getMessage());
+                }
+            }));
+            fibers.onStart(client::start);
         }
 
         // Display symbols
