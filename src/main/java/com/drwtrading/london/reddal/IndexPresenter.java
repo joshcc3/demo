@@ -39,7 +39,7 @@ import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 
 public class IndexPresenter {
 
-    SuffixTree<String> suffixTree = new SuffixTree<String>();
+    SuffixTree<String> suffixTree = new SuffixTree<>();
     WebSocketViews<View> views = WebSocketViews.create(View.class, this);
     Map<String, DisplaySymbol> symbolToDisplay = newFastMap();
     Map<String, SearchResult> searchResultBySymbol = newFastMap();
@@ -49,22 +49,23 @@ public class IndexPresenter {
     private final int maxResults = 100;
 
     @Subscribe
-    public void on(InstrumentDefinitionEvent instrumentDefinitionEvent) {
+    public void on(final InstrumentDefinitionEvent instrumentDefinitionEvent) {
         instrumentDefinitionEventMap.put(instrumentDefinitionEvent.getSymbol(), instrumentDefinitionEvent);
-        SearchResult searchResult = searchResultFromInstrumentDef(instrumentDefinitionEvent);
+        final SearchResult searchResult = searchResultFromInstrumentDef(instrumentDefinitionEvent);
         if (searchResultBySymbol.put(searchResult.symbol, searchResult) == null) {
-            for (String keyword : searchResult.keywords) {
+            for (final String keyword : searchResult.keywords) {
                 suffixTree.put(keyword, searchResult.symbol);
             }
         }
     }
 
     @Subscribe
-    public void on(DisplaySymbol displaySymbol) {
+    public void on(final DisplaySymbol displaySymbol) {
+
         symbolToDisplay.put(displaySymbol.marketDataSymbol, displaySymbol);
         suffixTree.put(displaySymbol.displaySymbol, displaySymbol.marketDataSymbol);
         if (searchResultBySymbol.containsKey(displaySymbol.marketDataSymbol)) {
-            SearchResult searchResult = searchResultBySymbol.get(displaySymbol.marketDataSymbol);
+            final SearchResult searchResult = searchResultBySymbol.get(displaySymbol.marketDataSymbol);
             searchResult.keywords.add(displaySymbol.displaySymbol);
             searchResultBySymbol.put(searchResult.symbol, new SearchResult(
                     searchResult.symbol,
@@ -77,13 +78,13 @@ public class IndexPresenter {
 
     }
 
-    private SearchResult searchResultFromInstrumentDef(InstrumentDefinitionEvent instrumentDefinitionEvent) {
+    private SearchResult searchResultFromInstrumentDef(final InstrumentDefinitionEvent instrumentDefinitionEvent) {
 
         String symbol = instrumentDefinitionEvent.getSymbol();
-        String link = "/ladder#" + symbol;
+        final String link = "/ladder#" + symbol;
 
         String company = "";
-        ExchangeInstrumentDefinitionDetails details = instrumentDefinitionEvent.getExchangeInstrumentDefinitionDetails();
+        final ExchangeInstrumentDefinitionDetails details = instrumentDefinitionEvent.getExchangeInstrumentDefinitionDetails();
         if (details instanceof BatsInstrumentDefinition) {
             company = ((BatsInstrumentDefinition) details).getCompanyName();
         } else if (details instanceof XetraInstrumentDefinition) {
@@ -91,21 +92,21 @@ public class IndexPresenter {
         }
 
         String desc = "";
-        InstrumentStructure structure = instrumentDefinitionEvent.getInstrumentStructure();
+        final InstrumentStructure structure = instrumentDefinitionEvent.getInstrumentStructure();
         if (structure instanceof CashOutrightStructure) {
             desc = ((CashOutrightStructure) structure).getIsin() + "." + instrumentDefinitionEvent.getPriceStructure().getCurrency().toString() + "." + ((CashOutrightStructure) structure).getMic();
         } else if (structure instanceof FutureStrategyStructure) {
-            for (FutureLegStructure futureLegStructure : ((FutureStrategyStructure) structure).getLegs()) {
+            for (final FutureLegStructure futureLegStructure : ((FutureStrategyStructure) structure).getLegs()) {
                 desc = desc + futureLegStructure.getPosition() + "x" + futureLegStructure.getSymbol();
             }
         }
 
-        String description =
+        final String description =
                 instrumentDefinitionEvent.getPriceStructure().getCurrency().toString() + " "
                         + instrumentDefinitionEvent.getExchange() + " "
                         + company + " " + desc;
 
-        ArrayList<String> terms = new ArrayList<String>();
+        final ArrayList<String> terms = new ArrayList<String>();
 
         terms.add(symbol);
 
@@ -113,7 +114,7 @@ public class IndexPresenter {
             terms.add(symbol.replace("/", ""));
         }
 
-        DisplaySymbol display = symbolToDisplay.get(symbol);
+        final DisplaySymbol display = symbolToDisplay.get(symbol);
         if (display != null) {
             symbol = showDisplaySymbol(display);
             terms.add(display.displaySymbol);
@@ -127,41 +128,41 @@ public class IndexPresenter {
         return new SearchResult(symbol, display != null ? display.displaySymbol : null, link, description, instrumentDefinitionEvent.getExchange(), terms);
     }
 
-    private String showDisplaySymbol(DisplaySymbol display) {
+    private String showDisplaySymbol(final DisplaySymbol display) {
         return display.displaySymbol;
     }
 
 
     @Subscribe
-    public void on(WebSocketConnected connected) {
+    public void on(final WebSocketConnected connected) {
         views.register(connected);
     }
 
     @Subscribe
-    public void on(WebSocketDisconnected disconnected) {
+    public void on(final WebSocketDisconnected disconnected) {
         views.unregister(disconnected);
     }
 
     @Subscribe
-    public void on(WebSocketInboundData inboundData) {
+    public void on(final WebSocketInboundData inboundData) {
         views.invoke(inboundData);
     }
 
     @FromWebSocketView
-    public void search(String searchTerms, WebSocketInboundData data) {
+    public void search(final String searchTerms, final WebSocketInboundData data) {
 
-        View view = views.get(data.getOutboundChannel());
+        final View view = views.get(data.getOutboundChannel());
 
         Set<String> matching = new ObjectArraySet<String>();
         if (searchTerms.length() > minTermLength) {
             matching.addAll(suffixTree.search(searchTerms));
         }
 
-        for (String term : searchTerms.split("\\W")) {
+        for (final String term : searchTerms.split("\\W")) {
             if (term.length() < minTermLength) {
                 continue;
             }
-            Set<String> result = suffixTree.search(term);
+            final Set<String> result = suffixTree.search(term);
             if (matching.isEmpty()) {
                 matching = Sets.union(matching, result);
             } else {
@@ -173,13 +174,13 @@ public class IndexPresenter {
 
     }
 
-    private void displayResult(View view, Set<String> matching, final String searchTerms) {
-        ArrayList<String> symbols = new ArrayList<>(matching);
+    private void displayResult(final View view, final Set<String> matching, final String searchTerms) {
+        final ArrayList<String> symbols = new ArrayList<>(matching);
         Collections.sort(symbols, (o1, o2) -> {
-            int distance = LevenshteinDistance.computeEditDistance(searchTerms, o1) - LevenshteinDistance.computeEditDistance(searchTerms, o2);
+            final int distance = LevenshteinDistance.computeEditDistance(searchTerms, o1) - LevenshteinDistance.computeEditDistance(searchTerms, o2);
             if (distance == 0) {
-                long exp1 = getExpiry(instrumentDefinitionEventMap.get(o1));
-                long exp2 = getExpiry(instrumentDefinitionEventMap.get(o2));
+                final long exp1 = getExpiry(instrumentDefinitionEventMap.get(o1));
+                final long exp2 = getExpiry(instrumentDefinitionEventMap.get(o2));
                 if(exp1 != 0 && exp2 != 0 && exp1 - exp2 != 0) {
                     return (exp1 - exp2) < 0 ? -1 : 1;
                 }
@@ -194,7 +195,7 @@ public class IndexPresenter {
             symbols.add(0, "SF:" + searchTerms.toUpperCase());
         }
 
-        List<InstrumentDefinitionEvent> defs = symbols.stream()
+        final List<InstrumentDefinitionEvent> defs = symbols.stream()
                 .filter(s -> s.replaceAll("SF:","").split(" ")[0].toUpperCase().startsWith(searchTerms.trim().toUpperCase()))
                 .map(s -> instrumentDefinitionEventMap.get(s))
                 .filter(d -> d != null)
@@ -205,7 +206,7 @@ public class IndexPresenter {
             symbols.add(0, defs.get(0).getSymbol());
         }
 
-        List<SearchResult> results = symbols.stream().distinct()
+        final List<SearchResult> results = symbols.stream().distinct()
                 .map(from -> searchResultBySymbol.get(from))
                 .collect(Collectors.toList());
 
@@ -222,7 +223,7 @@ public class IndexPresenter {
         void display(Collection<SearchResult> results, boolean tooMany);
     }
 
-    private long getExpiry(InstrumentDefinitionEvent e1) {
+    private long getExpiry(final InstrumentDefinitionEvent e1) {
         long exp1 = 0;
         if(e1 == null) {
             return 0;
@@ -246,7 +247,7 @@ public class IndexPresenter {
         public final String exchange;
         public final Collection<String> keywords;
 
-        public SearchResult(String symbol, String displaySymbol, String link, String description, String exchange, Collection<String> keywords) {
+        public SearchResult(final String symbol, final String displaySymbol, final String link, final String description, final String exchange, final Collection<String> keywords) {
             this.symbol = symbol;
             this.displaySymbol = displaySymbol;
             this.link = link;
@@ -261,21 +262,21 @@ public class IndexPresenter {
 
         public final Object2ObjectAVLTreeMap<String, Set<T>> suffixTree = new Object2ObjectAVLTreeMap<String, Set<T>>();
 
-        public void put(String key, T value) {
+        public void put(String key, final T value) {
             key = normalize(key);
             for (int i = 0; i < key.length(); i++) {
                 insert(key.substring(i), value);
             }
         }
 
-        private String normalize(String key) {
+        private String normalize(final String key) {
             return key.toUpperCase().replace("\\W", "");
         }
 
         public Set<T> search(String search) {
             search = normalize(search);
-            ObjectArraySet<T> results = new ObjectArraySet<T>();
-            for (Object2ObjectMap.Entry<String, Set<T>> entry : suffixTree.tailMap(search).object2ObjectEntrySet()) {
+            final ObjectArraySet<T> results = new ObjectArraySet<T>();
+            for (final Object2ObjectMap.Entry<String, Set<T>> entry : suffixTree.tailMap(search).object2ObjectEntrySet()) {
                 if (!entry.getKey().startsWith(search)) {
                     break;
                 }
@@ -284,7 +285,7 @@ public class IndexPresenter {
             return results;
         }
 
-        private void insert(String substring, T value) {
+        private void insert(final String substring, final T value) {
             if (!suffixTree.containsKey(substring)) {
                 suffixTree.put(substring, new ObjectArraySet<T>());
             }
@@ -297,11 +298,11 @@ public class IndexPresenter {
 
         public static double similarity(String s1, String s2) {
             if (s1.length() < s2.length()) { // s1 should always be bigger
-                String swap = s1;
+                final String swap = s1;
                 s1 = s2;
                 s2 = swap;
             }
-            int bigLen = s1.length();
+            final int bigLen = s1.length();
             if (bigLen == 0) {
                 return 1.0; /* both strings are zero length */
             }
@@ -310,7 +311,7 @@ public class IndexPresenter {
 
         public static int computeEditDistance(String s1, String s2) {
             if (s1.length() < s2.length()) { // s1 should always be bigger
-                String swap = s1;
+                final String swap = s1;
                 s1 = s2;
                 s2 = swap;
             }
@@ -318,7 +319,7 @@ public class IndexPresenter {
             s1 = s1.toLowerCase();
             s2 = s2.toLowerCase();
 
-            int[] costs = new int[s2.length() + 1];
+            final int[] costs = new int[s2.length() + 1];
             for (int i = 0; i <= s1.length(); i++) {
                 int lastValue = i;
                 for (int j = 0; j <= s2.length(); j++) {
