@@ -93,16 +93,16 @@ public class ResolverTest {
         assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.HAWK));
         assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.TAKER));
 
-        assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.GTC));
-        assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FSTBU4-FSTBZ4", RemoteOrderType.GTC));
-        assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FSTBU4-FSTBZ4", RemoteOrderType.TICKTAKER));
+        assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.GTC));
+        assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FSTBU4-FSTBZ4", RemoteOrderType.GTC));
+        assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FSTBU4-FSTBZ4", RemoteOrderType.QUICKDRAW));
 
 
         assertEquals("LITTERBOX1DIV", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.MANUAL));
-        assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.GTC));
+        assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.GTC));
 
         assertEquals("LITTERBOX1DIV", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.MANUAL));
-        assertEquals("LITTERBOX1GTC", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.GTC));
+        assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.GTC));
     }
 
 
