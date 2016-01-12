@@ -1,37 +1,111 @@
+var IN_DEV = false;
+
 function openLink(ladderHost, symbol) {
+    var priceSplitPos = symbol.indexOf(';');
+    var rawSymbol;
+    if (0 < priceSplitPos) {
+        rawSymbol = symbol.substr(0, priceSplitPos);
+    } else {
+        rawSymbol = symbol;
+    }
     var link = 'http://' + ladderHost + '/ladder#' + symbol;
-    window.open(link, symbol, "dialog=yes,width=250,height=315");
+    window.open(link, rawSymbol, "dialog=yes,width=262,height=325");
 }
+
+function launchLadderAtPrice(symbol,price) {
+    launchLadder(symbol+";"+price);
+}
+
 function launchLadder(symbol) {
 
     symbol = symbol.toUpperCase();
 
     var equitiesHost = "prod-equities-ladder.eeif.drw:9044";
+    var equitiesWorkspace = "prod-equities-ladder.eeif.drw:9045";
+
     var futuresHost = "prod-futures-ladder.eeif.drw:9044";
-//    var futuresHost = "localhost:8812";
+    var futuresWorkspace = "prod-futures-ladder.eeif.drw:9045";
+
+    var devHost = "localhost:9044";
+    var devWorkspace = "localhost:9045";
+
     var ladderHost;
+    var workspaceHost;
 
-    if (symbol.match(/^(ES|RP|RF).*/) && symbol.length == 4) {
-
-        ladderHost = "sup-aurdfas01:9004";
-        openLink(ladderHost, symbol);
-    } else if (symbol.match(/^(MPSI|JFCE|KFTI|Z|FBXF|XZ|ER|SS).*/)) {
-        ladderHost = "sup-ldndf04:9004";
-        openLink(ladderHost, symbol);
-    } else if (symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9]$/)) {
+    if (IN_DEV) {
+        ladderHost = devHost;
+        workspaceHost = devWorkspace;
+    } else if (symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9](;.*)?$/)) {
         ladderHost = futuresHost;
+        workspaceHost = futuresWorkspace;
     } else {
         ladderHost = equitiesHost;
+        workspaceHost = equitiesWorkspace;
     }
 
-    $.get('http://' + ladderHost + "/open?symbol=" + symbol, null, function (result) {
-        console.log(result);
-        if (result != "success" && result != "fail") {
-            window.open(result, symbol, "dialog=yes,width=250,height=315")
-        }
+    $.ajax({
+        success:function(d,s,x){
+            if (d != "success") {
+                openLink(ladderHost, symbol);
+            }
+        },
+        error:function(e){
+            console.log('error',e)
+        },
+        url:"http://"+workspaceHost+"/open?symbol="+symbol,
+        dataType:"jsonp",
+        crossDomain:true
     });
 
 }
+
+function launchBasket(symbol) {
+    var basketHost = "http://prod-bop.eeif.drw:8113";
+    $.ajax({
+        success: function(d,s,x) {
+            if (d != "success") {
+                window.open(basketHost+"/ladders#" + symbol, "Basket " + symbol, "dialog=yes,width=800,height=470");
+            }
+        },
+        error: function(e) {
+            console.log('error', e);
+        },
+        url: basketHost + "/open?basket=" + symbol,
+        dataType: "jsonp",
+        crossDomain: true
+    });
+}
+
+function webwormLink(symbols, date) {
+
+    var d = date || new Date();
+
+    var symbolTemplate = "(exchange:{{EXCHANGE}},name:{{SYMBOL}})";
+    var linkTemplate = "http://grid:18222/?date:%27{{DATE}}%27,symbols:!({{SYMBOLS}})";
+
+    var symbolList = symbols.map(function(s) {
+        var symbol = s.symbol;
+        var exchange = s.exchange.toUpperCase();
+        var parts = symbol.split(" ");
+
+        if (parts.length == 2) {
+            symbol = parts[0];
+        }
+
+        return symbolTemplate
+            .split("{{EXCHANGE}}").join(exchange)
+            .split("{{SYMBOL}}").join(symbol);
+    }).join(",");
+
+    var link = linkTemplate
+        .split("{{SYMBOLS}}").join(symbolList)
+        .split("{{DATE}}").join(d.toISOString().split("T")[0]);
+
+    console.log(link);
+    popUp(link,  undefined, 1400, 1000);
+
+}
+
 
 function popUp(url, name, width, height) {
     var windowHandle = window.open(url, name, 'dialog=yes,width=' + width + ',height=' + height);
@@ -40,20 +114,3 @@ function popUp(url, name, width, height) {
     windowHandle.focus();
     return false;
 }
-
-function httpGet(theUrl) {
-    var xmlHttp = new XMLHttpRequest();
-    xmlHttp.open("GET", theUrl, true);
-    xmlHttp.send(null);
-    if (xmlHttp.status == 200) {
-        return xmlHttp.responseText;
-    } else {
-        return false;
-    }
-}
-
-function launchBasket(symbol) {
-    var basketHost = "http://prod-bop.eeif.drw:8113/ladders#";
-    popUp(basketHost+symbol,  "BASKET: " + symbol,  770, 360);
-}
-
