@@ -164,7 +164,7 @@ div {
     background-color: gray !important;
 }
 
-.order.working_order_type_ticktaker {
+.order.working_order_type_quickdraw {
     border: dotted 3px #ff0006 !important;
     background-color: gray !important;
 }
@@ -215,11 +215,7 @@ div {
     background-color: #00bd00;
 }
 
-.SPRINTER, .SPRINTER:hover {
-    background-color: #bd000a;
-}
-
-.TICKTAKER, .TICKTAKER:hover {
+.QUICKDRAW, .QUICKDRAW:hover {
     background-color: #bd000a;
 }
 
