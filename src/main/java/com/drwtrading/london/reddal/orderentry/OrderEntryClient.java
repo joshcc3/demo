@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.orderentry;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.photons.eeifoe.Ack;
 import com.drwtrading.london.photons.eeifoe.AvailableSymbol;
@@ -12,7 +11,6 @@ import com.drwtrading.london.photons.eeifoe.OrderEntryCommandMsg;
 import com.drwtrading.london.photons.eeifoe.OrderEntryReply;
 import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
 import com.drwtrading.london.photons.eeifoe.Reject;
-import com.drwtrading.london.photons.eeifoe.RemoteOrderType;
 import com.drwtrading.london.photons.eeifoe.ServerHeartbeat;
 import com.drwtrading.london.photons.eeifoe.Submit;
 import com.drwtrading.london.reddal.LadderClickTradingIssue;
@@ -20,7 +18,6 @@ import com.drwtrading.london.util.Struct;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.HashMultimap;
 import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
@@ -31,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, OrderEntryCommandMsg>, OrderEntryReply.Visitor<Void> {
 
-    private final HashMultimap<SymbolOrder, AvailableSymbol> tradableMap = HashMultimap.create();
     private final String thisInstance;
     private final IClock clock;
     private final String serverInstance;
@@ -92,7 +88,6 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
         this.connection = null;
         incomingSeqNo = -1;
         seqNo = 0;
-        tradableMap.clear();
     }
 
     @Override
@@ -112,13 +107,9 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
 
     @Override
     public Void visitAvailableSymbol(AvailableSymbol availableSymbol) {
-        availableSymbol.getOrderTypes().forEach(remoteOrderType -> {
-            SymbolOrder key = new SymbolOrder(availableSymbol.getSymbol(), remoteOrderType);
-            tradableMap.put(key, availableSymbol);
-            MemoryChannel<OrderEntryCommand> channel = new MemoryChannel<>();
-            publisher.publish(new SymbolOrderChannel(key, channel));
-            channel.subscribe(fiber, this::send);
-        });
+        MemoryChannel<OrderEntryCommand> channel = new MemoryChannel<>();
+        publisher.publish(new SymbolOrderChannel(availableSymbol.getSymbol(), channel));
+        channel.subscribe(fiber, this::send);
         return null;
     }
 
@@ -144,49 +135,19 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
 
     public static class SymbolOrder extends Struct {
         public final String symbol;
-        public final RemoteOrderType orderType;
 
-        public SymbolOrder(String symbol, RemoteOrderType orderType) {
+        public SymbolOrder(String symbol) {
             this.symbol = symbol;
-            this.orderType = orderType;
         }
     }
 
-    public static class SymbolOrderChannel {
-        public final SymbolOrder symbolOrder;
+    public static class SymbolOrderChannel extends Struct {
+        public final String symbol;
         public final Publisher<OrderEntryCommand> publisher;
 
-        public SymbolOrderChannel(SymbolOrder symbolOrder, Publisher<OrderEntryCommand> publisher) {
-            this.symbolOrder = symbolOrder;
+        public SymbolOrderChannel(String symbol, Publisher<OrderEntryCommand> publisher) {
+            this.symbol = symbol;
             this.publisher = publisher;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            SymbolOrderChannel that = (SymbolOrderChannel) o;
-
-            if (symbolOrder != null ? !symbolOrder.equals(that.symbolOrder) : that.symbolOrder != null) return false;
-            return !(publisher != null ? !publisher.equals(that.publisher) : that.publisher != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = symbolOrder != null ? symbolOrder.hashCode() : 0;
-            result = 31 * result + (publisher != null ? publisher.hashCode() : 0);
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            final StringBuffer sb = new StringBuffer("SymbolOrderChannel{");
-            sb.append("symbolOrder=").append(symbolOrder);
-            sb.append(", publisher=").append(publisher);
-            sb.append('}');
-            return sb.toString();
         }
     }
 
