@@ -22,9 +22,12 @@ import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, OrderEntryCommandMsg>, OrderEntryReply.Visitor<Void> {
 
@@ -108,7 +111,11 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     @Override
     public Void visitAvailableSymbol(AvailableSymbol availableSymbol) {
         MemoryChannel<OrderEntryCommand> channel = new MemoryChannel<>();
-        publisher.publish(new SymbolOrderChannel(availableSymbol.getSymbol(), channel));
+        Set<ManagedOrderType> orderTypes = Arrays.asList(ManagedOrderType.values())
+                .stream()
+                .filter(managedOrderType -> availableSymbol.isLeanAllowed() || !managedOrderType.requiresLean())
+                .collect(Collectors.toSet());
+        publisher.publish(new SymbolOrderChannel(availableSymbol.getSymbol(), channel, orderTypes));
         channel.subscribe(fiber, this::send);
         return null;
     }
@@ -144,10 +151,12 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     public static class SymbolOrderChannel extends Struct {
         public final String symbol;
         public final Publisher<OrderEntryCommand> publisher;
+        public final Set<ManagedOrderType> supportedTypes;
 
-        public SymbolOrderChannel(String symbol, Publisher<OrderEntryCommand> publisher) {
+        public SymbolOrderChannel(String symbol, Publisher<OrderEntryCommand> publisher, Set<ManagedOrderType> supportedTypes) {
             this.symbol = symbol;
             this.publisher = publisher;
+            this.supportedTypes = supportedTypes;
         }
     }
 

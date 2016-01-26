@@ -19,6 +19,11 @@ public enum ManagedOrderType {
                     Constants.NO_TAKING,
                     new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false));
         }
+
+        @Override
+        public boolean requiresLean() {
+            return true;
+        }
     },
     HAM3 {
         @Override
@@ -37,6 +42,11 @@ public enum ManagedOrderType {
         public int getQty(int qty) {
             return divisible(qty, Constants.THREE);
         }
+
+        @Override
+        public boolean requiresLean() {
+            return true;
+        }
     },
 
     // Quote better by 0, no taking
@@ -48,6 +58,11 @@ public enum ManagedOrderType {
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
                     Constants.NO_TAKING,
                     new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false));
+        }
+
+        @Override
+        public boolean requiresLean() {
+            return true;
         }
     },
     HAMON3 {
@@ -67,6 +82,11 @@ public enum ManagedOrderType {
         public int getQty(final int qty) {
             return divisible(qty, Constants.THREE);
         }
+
+        @Override
+        public boolean requiresLean() {
+            return true;
+        }
     },
 
     // Quote better by 1, take better than quote by one
@@ -78,6 +98,11 @@ public enum ManagedOrderType {
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
                     Constants.TAKE_BETTER_BY_ONE,
                     new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false));
+        }
+
+        @Override
+        public boolean requiresLean() {
+            return true;
         }
     },
     TRON3 {
@@ -94,6 +119,11 @@ public enum ManagedOrderType {
         }
 
         @Override
+        public boolean requiresLean() {
+            return true;
+        }
+
+        @Override
         public int getQty(int qty) {
             return divisible(qty, Constants.THREE);
         }
@@ -105,6 +135,7 @@ public enum ManagedOrderType {
 
 
     public abstract OrderParameters getOrder(final long price, final int qty);
+    public abstract boolean requiresLean();
 
     public int getQty(final int qty) {
         return qty;

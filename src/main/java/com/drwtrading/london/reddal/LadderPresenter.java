@@ -5,7 +5,6 @@ import com.drwtrading.eeif.md.remote.UnsubscribeMarketData;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.fastui.UiPipeImpl;
-import com.drwtrading.london.photons.eeifoe.OrderEntryCommand;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
@@ -65,7 +64,7 @@ public class LadderPresenter {
     private final Map<String, OrderUpdatesForSymbol> eeifOrdersBySymbol = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
     private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(ExtraDataForSymbol::new);
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
-    private final Map<String, Publisher<OrderEntryCommand>> orderEntryMap = new HashMap<>();
+    private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap = new HashMap<>();
     private final Map<String, MarketDataForSymbol> marketDataForSymbolMap;
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
@@ -313,7 +312,7 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(OrderEntryClient.SymbolOrderChannel symbolOrderChannel) {
-        orderEntryMap.put(symbolOrderChannel.symbol, symbolOrderChannel.publisher);
+        orderEntryMap.put(symbolOrderChannel.symbol, symbolOrderChannel);
     }
 
 
