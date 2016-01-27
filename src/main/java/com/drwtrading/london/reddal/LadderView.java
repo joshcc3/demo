@@ -1402,7 +1402,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         final OrderEntryClient.SymbolOrderChannel symbolOrderChannel = orderEntryMap.get(symbol);
         if (null != symbolOrderChannel) {
             final ManagedOrderType managedOrderType = ManagedOrderType.valueOf(orderType);
-            if (symbolOrderChannel.supportedTypes.contains(managedOrderType)) {
+            if (!symbolOrderChannel.supportedTypes.contains(managedOrderType)) {
                 clickTradingIssue(new LadderClickTradingIssue(symbol, "Does not support order type " + orderType + " for symbol " + symbol));
                 return;
             }
