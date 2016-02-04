@@ -119,6 +119,10 @@
             document.location.hash = "#" + symbol;
         }
 
+        function goToUrl(url) {
+            window.location.href = url;
+        }
+
         $(function () {
             ws = connect();
             ws.logToConsole = false;

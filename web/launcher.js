@@ -16,10 +16,7 @@ function launchLadderAtPrice(symbol,price) {
     launchLadder(symbol+";"+price);
 }
 
-function launchLadder(symbol) {
-
-    symbol = symbol.toUpperCase();
-
+function getLadderHosts(symbol) {
     var equitiesHost = "prod-equities-ladder.eeif.drw:9044";
     var equitiesWorkspace = "prod-equities-ladder.eeif.drw:9045";
 
@@ -42,17 +39,26 @@ function launchLadder(symbol) {
         ladderHost = equitiesHost;
         workspaceHost = equitiesWorkspace;
     }
+    return {ladderHost: ladderHost, workspaceHost: workspaceHost};
+}
 
+function getLadderUrl(symbol) {
+    return getLadderHosts(symbol).ladderHost + "/ladder#" + symbol;
+}
+
+function launchLadder(symbol) {
+    symbol = symbol.toUpperCase();
+    var hosts = getLadderHosts(symbol);
     $.ajax({
         success:function(d,s,x){
             if (d != "success") {
-                openLink(ladderHost, symbol);
+                openLink(hosts.ladderHost, symbol);
             }
         },
         error:function(e){
             console.log('error',e)
         },
-        url:"http://"+workspaceHost+"/open?symbol="+symbol,
+        url:"http://"+hosts.workspaceHost+"/open?symbol="+symbol,
         dataType:"jsonp",
         crossDomain:true
     });

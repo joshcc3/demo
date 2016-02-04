@@ -364,6 +364,8 @@ public class LadderPresenter {
 
         void goToSymbol(String symbol);
 
+        void goToUrl(String url);
+
         void popUp(String url, String name, int width, int height);
 
         void launchBasket(String symbol);

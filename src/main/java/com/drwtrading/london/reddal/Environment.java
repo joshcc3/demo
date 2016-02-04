@@ -161,7 +161,8 @@ public class Environment {
                 getList("trading.traders"),
                 config.get("trading.theoLaserLine"),
                 getServerResolver(),
-                config.getDouble("trading.randomReloadFraction"));
+                config.getDouble("trading.randomReloadFraction"),
+                config.getOrNull("trading.basketUrl"));
     }
 
     public HostAndNic getHostAndNic(String prefix, String server) throws SocketException {

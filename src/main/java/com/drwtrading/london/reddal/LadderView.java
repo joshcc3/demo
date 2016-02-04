@@ -1122,15 +1122,8 @@ public class LadderView implements UiPipe.UiEventHandler {
                 }
             } else if (label.startsWith(Html.ORDER)) {
                 rightClickModify(data, autoHedge);
-            } else if (label.startsWith(Html.SYMBOL)) {
-                if (dataForSymbol != null && dataForSymbol.spreadContractSet != null) {
-                    final SpreadContractSet contracts = dataForSymbol.spreadContractSet;
-                    final String prevContract = contracts.prev(symbol);
-                    if (prevContract != null && !symbol.equals(prevContract)) {
-                        view.goToSymbol(prevContract);
-                        return;
-                    }
-                }
+            } else if (label.startsWith(Html.SYMBOL) && null != ladderOptions.basketUrl) {
+                view.goToUrl(ladderOptions.basketUrl + "#" + symbol);
             }
         } else if ("middle".equals(button)) {
             if (label.startsWith(Html.PRICE)) {

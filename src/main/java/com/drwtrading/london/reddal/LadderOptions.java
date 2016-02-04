@@ -10,14 +10,16 @@ public class LadderOptions {
     public final String theoLaserLine;
     public final Environment.RemoteOrderServerResolver serverResolver;
     public final double randomReloadFraction;
+    public final String basketUrl;
 
     public LadderOptions(Collection<String> orderTypesLeft, Collection<String> orderTypesRight, Collection<String> traders,
-                         String theoLaserLine, Environment.RemoteOrderServerResolver serverResolver, double randomReloadFraction) {
+                         String theoLaserLine, Environment.RemoteOrderServerResolver serverResolver, double randomReloadFraction, String basketUrl) {
         this.orderTypesLeft = orderTypesLeft;
         this.orderTypesRight = orderTypesRight;
         this.traders = traders;
         this.theoLaserLine = theoLaserLine;
         this.serverResolver = serverResolver;
         this.randomReloadFraction = randomReloadFraction;
+        this.basketUrl = basketUrl;
     }
 }
