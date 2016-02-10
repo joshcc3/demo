@@ -191,12 +191,10 @@ public class IndexPresenter {
 
         if (symbols.remove(searchTerms.toUpperCase())) {
             symbols.add(0, searchTerms.toUpperCase());
-        } else if (symbols.remove(("SF:" + searchTerms.toUpperCase()))) {
-            symbols.add(0, "SF:" + searchTerms.toUpperCase());
         }
 
         final List<InstrumentDefinitionEvent> defs = symbols.stream()
-                .filter(s -> s.replaceAll("SF:","").split(" ")[0].toUpperCase().startsWith(searchTerms.trim().toUpperCase()))
+                .filter(s -> s.split(" ")[0].toUpperCase().startsWith(searchTerms.trim().toUpperCase()))
                 .map(s -> instrumentDefinitionEventMap.get(s))
                 .filter(d -> d != null)
                 .filter(d -> d.getExchangeInstrumentDefinitionDetails().typeEnum() != ExchangeInstrumentDefinitionDetails.Type.BATS_INSTRUMENT_DEFINITION)

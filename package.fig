@@ -43,7 +43,7 @@ config default
 
 		# Photons
 		include log4j/1.2.16 # For protocols
-		include drw.london.eeif-photocols-client/35
+		include drw.london.eeif-photocols-client/38
 		include com.drwtrading.photons.mrphil/1.0.0.4
 		include com.drwtrading.london.photons.reddal/2
 		include com.drwtrading.london.photons.eeifoe/10
@@ -53,7 +53,7 @@ config default
 		include io.netty-netty/3.2.7.Final
 		include drw.london.esquilatency/26
 
-		include drw.london.eeif-md/71
+		include drw.london.eeif-md/74
 
 		include nns/2.0.0.69
 
@@ -83,7 +83,7 @@ config test
 end
 
 config scripts
-		include drw.london.admin-scripts/22
+		include drw.london.admin-scripts/24
 end
 
 config rake

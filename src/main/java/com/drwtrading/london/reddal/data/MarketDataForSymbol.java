@@ -113,11 +113,11 @@ public class MarketDataForSymbol {
         @Override
         public Void visitInstrumentDefinitionEvent(InstrumentDefinitionEvent msg) {
             refData = msg;
-            if (refData.getExchange().equals("SUPERFEED") || refData.getExchange().equals("Eurex")) {
+            if ("Eurex".equals(refData.getExchange())) {
                 preferredPriceType = PriceType.RECONSTRUCTED;
                 preferredBookSnapshotType = PriceType.RECONSTRUCTED;
                 preferredTopOfBookPriceType = PriceType.RECONSTRUCTED;
-            } else if (refData.getExchange().equalsIgnoreCase("CME")) {
+            } else if ("CME".equalsIgnoreCase(refData.getExchange())) {
                 preferredPriceType = PriceType.DIRECT;
                 preferredBookSnapshotType = PriceType.DIRECT;
                 preferredTopOfBookPriceType = PriceType.DIRECT;

@@ -15,9 +15,9 @@ public class ResolverTest {
     @Test
     public void test_resolver() throws Exception {
         LinkedHashMap<String, Environment.RemoteOrderMatcher> matchers = new LinkedHashMap<String, Environment.RemoteOrderMatcher>();
-        matchers.put("chix", new Environment.RemoteOrderMatcher(Pattern.compile("^[^:]* IX$"), ImmutableSet.of("HAWK", "MANUAL")));
-        matchers.put("xetra", new Environment.RemoteOrderMatcher(Pattern.compile("^[^:]* GY$"), ImmutableSet.of("HAWK", "MANUAL", "MKT_CLOSE")));
-        matchers.put("euronext", new Environment.RemoteOrderMatcher(Pattern.compile("^[^:]* (FP|BB|PL|NA)$"), ImmutableSet.of("HAWK", "MANUAL")));
+        matchers.put("chix", new Environment.RemoteOrderMatcher(Pattern.compile(" IX$"), ImmutableSet.of("HAWK", "MANUAL")));
+        matchers.put("xetra", new Environment.RemoteOrderMatcher(Pattern.compile(" GY$"), ImmutableSet.of("HAWK", "MANUAL", "MKT_CLOSE")));
+        matchers.put("euronext", new Environment.RemoteOrderMatcher(Pattern.compile(" (FP|BB|PL|NA)$"), ImmutableSet.of("HAWK", "MANUAL")));
         matchers.put("eurex-fast", new Environment.RemoteOrderMatcher(Pattern.compile("^(FESB|FSTB|FXXP|FSTX)(H|M|U|Z)(1|2|3|4|5|6|7|8|9|0)$"), ImmutableSet.of("HAWK", "MANUAL")));
         matchers.put("baml", new Environment.RemoteOrderMatcher(Pattern.compile(".*"), ImmutableSet.of("HAWK", "MANUAL", "MKT_CLOSE")));
 
@@ -27,13 +27,12 @@ public class ResolverTest {
         assertEquals("chix", resolver.resolveToServerName("FOO GY IX", RemoteOrderType.HAWK));
         assertEquals("euronext", resolver.resolveToServerName("FOO FP", RemoteOrderType.HAWK));
         assertEquals("euronext", resolver.resolveToServerName("FOO FP", RemoteOrderType.MANUAL));
-        assertEquals("baml", resolver.resolveToServerName("FOO FP", RemoteOrderType.MKT_CLOSE));
-        assertEquals("baml", resolver.resolveToServerName("SF:FOO IX", RemoteOrderType.HAWK));
         assertEquals("xetra", resolver.resolveToServerName("FOO GY", RemoteOrderType.MKT_CLOSE));
-        assertEquals("baml", resolver.resolveToServerName("SF:FOO GY", RemoteOrderType.MKT_CLOSE));
         assertEquals("euronext", resolver.resolveToServerName("UNA NA", RemoteOrderType.MANUAL));
         assertEquals("euronext", resolver.resolveToServerName("FP FP", RemoteOrderType.MANUAL));
         assertEquals("eurex-fast", resolver.resolveToServerName("FESBU4", RemoteOrderType.MANUAL));
+        assertEquals("baml", resolver.resolveToServerName("FOO AV", RemoteOrderType.MKT_CLOSE));
+        assertEquals("baml", resolver.resolveToServerName("FOO GA", RemoteOrderType.HAWK));
     }
 
 
@@ -49,14 +48,11 @@ public class ResolverTest {
         assertEquals("nibbler-euronext", resolver.resolveToServerName("FOO FP", RemoteOrderType.MANUAL));
         assertEquals("nibbler-baml", resolver.resolveToServerName("FOO FP", RemoteOrderType.MKT_CLOSE));
         assertEquals("nibbler-xetra", resolver.resolveToServerName("FOO GY", RemoteOrderType.MKT_CLOSE));
-        assertEquals("nibbler-baml", resolver.resolveToServerName("SF:FOO GY", RemoteOrderType.MKT_CLOSE));
         assertEquals("nibbler-euronext", resolver.resolveToServerName("UNA NA", RemoteOrderType.MANUAL));
         assertEquals("nibbler-euronext", resolver.resolveToServerName("FP FP", RemoteOrderType.MANUAL));
-        assertEquals("nibbler-baml", resolver.resolveToServerName("SF:SAN SQ", RemoteOrderType.MANUAL));
-        assertEquals("nibbler-baml", resolver.resolveToServerName("SF:SAN SQ", RemoteOrderType.HAWK));
-
-
-
+        assertEquals("nibbler-baml", resolver.resolveToServerName("SAN SQ", RemoteOrderType.MANUAL));
+        assertEquals("nibbler-baml", resolver.resolveToServerName("SAN SQ", RemoteOrderType.HAWK));
+        assertEquals("nibbler-baml", resolver.resolveToServerName("FOO GA", RemoteOrderType.MKT_CLOSE));
     }
 
 
@@ -104,10 +100,6 @@ public class ResolverTest {
         assertEquals("LITTERBOX1DIV", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.MANUAL));
         assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.GTC));
     }
-
-
-
-
 }
 
 
