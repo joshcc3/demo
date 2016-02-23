@@ -5,6 +5,7 @@ import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
 
@@ -35,6 +36,14 @@ public class ResolverTest {
         assertEquals("baml", resolver.resolveToServerName("FOO GA", RemoteOrderType.HAWK));
     }
 
+
+    @Test
+    public void test_local_equities_resolver() throws IOException {
+        Environment environment =new Environment(Config.fromFile("etc/local.properties"));
+        Environment.RemoteOrderServerResolver resolver = environment.getServerResolver();
+        assertEquals("nibbler-chix", resolver.resolveToServerName("ARMH UF", RemoteOrderType.MANUAL));
+
+    }
 
     @Test
     public void test_prod_equities_resolver() throws Exception {
