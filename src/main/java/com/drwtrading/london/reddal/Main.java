@@ -68,6 +68,7 @@ import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
+import com.drwtrading.london.reddal.util.ReconnectingOPXLClient;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.MsgCodec;
@@ -102,8 +103,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -119,7 +120,7 @@ public class Main {
     public static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
-            final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
+                                                  final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
         webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
 
@@ -703,26 +704,21 @@ public class Main {
 
         // Desk Position
         if (environment.opxlDeskPositionEnabled()) {
-            for (final String key : environment.opxlDeskPositionKeys()) {
-                final OpxlPositionSubscriber opxlPositionSubscriber =
-                        new OpxlPositionSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key,
-                                channels.metaData::publish);
-                fibers.onStart(() -> fibers.opxlPosition.execute(opxlPositionSubscriber.connectToOpxl()));
-            }
+            ReconnectingOPXLClient client = new ReconnectingOPXLClient(
+                    config.get("opxl.host"), config.getInt("opxl.port"),
+                    new OpxlPositionSubscriber(channels.errorPublisher, channels.metaData::publish)::onOpxlData,
+                    new HashSet<>(environment.opxlDeskPositionKeys()), fibers.opxlPosition.getFiber(), channels.error);
         }
 
         // Ladder Text
         {
             if (environment.opxlLadderTextEnabled()) {
-
-                final Collection<String> keys = environment.getOpxlLadderTextKeys();
-
-                for (final String key : keys) {
-                    final OpxlLadderTextSubscriber opxlLadderTextSubscriber =
-                            new OpxlLadderTextSubscriber(config.get("opxl.host"), config.getInt("opxl.port"), channels.errorPublisher, key,
-                                    channels.metaData);
-                    fibers.onStart(() -> fibers.opxlText.execute(opxlLadderTextSubscriber.connectToOpxl()));
-                }
+                final HashSet<String> keys = new HashSet<>(environment.getOpxlLadderTextKeys());
+                ReconnectingOPXLClient client = new ReconnectingOPXLClient(
+                        config.get("opxl.host"), config.getInt("opxl.port"),
+                        new OpxlLadderTextSubscriber(channels.errorPublisher, channels.metaData)::onOpxlData,
+                        keys, fibers.metaData.getFiber(), channels.error
+                );
             }
         }
 
@@ -767,7 +763,7 @@ public class Main {
     }
 
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,
-            final AtomicBoolean multicastEnabled) {
+                                                       final AtomicBoolean multicastEnabled) {
         return new Transport() {
             @Override
             public <T> void publish(final MsgCodec<T> codec, final T msg) {
