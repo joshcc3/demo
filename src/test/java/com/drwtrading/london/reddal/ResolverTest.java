@@ -41,7 +41,6 @@ public class ResolverTest {
     public void test_local_equities_resolver() throws IOException {
         Environment environment =new Environment(Config.fromFile("etc/local.properties"));
         Environment.RemoteOrderServerResolver resolver = environment.getServerResolver();
-        assertEquals("nibbler-chix", resolver.resolveToServerName("ARMH UF", RemoteOrderType.MANUAL));
 
     }
 
