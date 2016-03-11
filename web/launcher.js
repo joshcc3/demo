@@ -62,15 +62,15 @@ function launchLadder(symbol) {
         dataType:"jsonp",
         crossDomain:true
     });
-
+	launchBasket(symbol,true);
 }
 
-function launchBasket(symbol) {
+function launchBasket(symbol,noPopUp) {
     var basketHost = "http://prod-bop.eeif.drw:8113";
     $.ajax({
         success: function(d,s,x) {
-            if (d != "success") {
-                window.open(basketHost+"/ladders#" + symbol, "Basket " + symbol, "dialog=yes,width=800,height=470");
+            if (d != "success" && d != "none" && !noPopUp) {
+				window.open(basketHost+"/ladders#" + symbol, "Basket " + symbol, "dialog=yes,width=800,height=470");
             }
         },
         error: function(e) {
