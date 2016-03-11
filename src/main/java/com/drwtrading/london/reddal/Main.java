@@ -120,7 +120,7 @@ public class Main {
     public static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
-                                                  final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
+            final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
         webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
 
@@ -687,10 +687,12 @@ public class Main {
             final SelectIO selectIO = SelectIO.mappedMonitorSelectIO("SelectIO", reddalMonitor, ReddalComponents.SELECT_IO_CLOSE,
                     ReddalComponents.SELECT_IO_SELECT, ReddalComponents.SELECT_IO_UNHANDLED);
 
+            final String indyUsername = indyConfig.getString("username");
+
             final IResourceMonitor<IndyTransportComponents> indyMonitor =
                     MappedResourceMonitor.mapMonitorByName(reddalMonitor, IndyTransportComponents.class, ReddalComponents.class, "INDY_");
             final TransportTCPKeepAliveConnection<?, ?> indyConnection =
-                    IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, "reddal [" + configName + ']', indyListener);
+                    IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, indyListener);
             selectIO.execute(indyConnection::restart);
             fibers.onStart(() -> {
                 try {
@@ -704,8 +706,7 @@ public class Main {
 
         // Desk Position
         if (environment.opxlDeskPositionEnabled()) {
-            ReconnectingOPXLClient client = new ReconnectingOPXLClient(
-                    config.get("opxl.host"), config.getInt("opxl.port"),
+            ReconnectingOPXLClient client = new ReconnectingOPXLClient(config.get("opxl.host"), config.getInt("opxl.port"),
                     new OpxlPositionSubscriber(channels.errorPublisher, channels.metaData::publish)::onOpxlData,
                     new HashSet<>(environment.opxlDeskPositionKeys()), fibers.opxlPosition.getFiber(), channels.error);
         }
@@ -714,11 +715,9 @@ public class Main {
         {
             if (environment.opxlLadderTextEnabled()) {
                 final HashSet<String> keys = new HashSet<>(environment.getOpxlLadderTextKeys());
-                ReconnectingOPXLClient client = new ReconnectingOPXLClient(
-                        config.get("opxl.host"), config.getInt("opxl.port"),
-                        new OpxlLadderTextSubscriber(channels.errorPublisher, channels.metaData)::onOpxlData,
-                        keys, fibers.metaData.getFiber(), channels.error
-                );
+                ReconnectingOPXLClient client = new ReconnectingOPXLClient(config.get("opxl.host"), config.getInt("opxl.port"),
+                        new OpxlLadderTextSubscriber(channels.errorPublisher, channels.metaData)::onOpxlData, keys,
+                        fibers.metaData.getFiber(), channels.error);
             }
         }
 
@@ -763,7 +762,7 @@ public class Main {
     }
 
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,
-                                                       final AtomicBoolean multicastEnabled) {
+            final AtomicBoolean multicastEnabled) {
         return new Transport() {
             @Override
             public <T> void publish(final MsgCodec<T> codec, final T msg) {
