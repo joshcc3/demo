@@ -66,6 +66,9 @@ function launchLadder(symbol) {
 }
 
 function launchBasket(symbol,noPopUp) {
+    if (symbol.indexOf("-") != -1) {
+	symbol = symbol.split("-")[0];
+    }
     var basketHost = "http://prod-bop.eeif.drw:8113";
     $.ajax({
         success: function(d,s,x) {
