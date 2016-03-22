@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal;
 
 import com.drw.xetra.ebs.mds.XetraStream;
 import com.drw.xetra.ebs.mds.XetraTypes;
-import com.drwtrading.eeif.md.xetra.XetraStreamPair;
+import com.drwtrading.eeif.md.xetra.refData.XetraStreamPair;
 import com.drwtrading.london.config.Config;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
@@ -14,7 +14,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class Environment {
@@ -138,7 +145,7 @@ public class Environment {
     public Collection<XetraStreamPair> getXetraReferenceDataStreams(String marketDataName) {
         marketDataName = MARKET_DATA + "." + marketDataName;
         List<String> xetraRefDataStreams = config.getList(marketDataName + ".refDataStreams");
-        List<XetraStreamPair> xetraStreamPairs = new ArrayList<XetraStreamPair>();
+        List<XetraStreamPair> xetraStreamPairs = new ArrayList<>();
         for (String xetraRefDataStream : xetraRefDataStreams) {
             String prefix = marketDataName + ".refData." + xetraRefDataStream;
             XetraStreamPair streamPair = new XetraStreamPair(
@@ -183,7 +190,7 @@ public class Environment {
     }
 
     public Set<String> getXetraMarkets(String mds) {
-        return new HashSet<String>(config.getList(MARKET_DATA + "." + mds + ".markets"));
+        return new HashSet<>(config.getList(MARKET_DATA + "." + mds + ".markets"));
     }
 
 

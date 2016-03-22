@@ -230,15 +230,15 @@ public class UiPipeImpl implements UiPipe {
         }
         String[] args = data.split("\0");
         String cmd = args[0];
-        if (cmd.equals("click")) {
+        if ("click".equals(cmd)) {
             inboundHandler.onClick(args[1], getDataArg(args));
-        } else if (cmd.equals("scroll")) {
+        } else if ("scroll".equals(cmd)) {
             inboundHandler.onScroll(args[1]);
-        } else if (cmd.equals("dblclick")) {
+        } else if ("dblclick".equals(cmd)) {
             inboundHandler.onDblClick(args[1], getDataArg(args));
-        } else if (cmd.equals("update")) {
+        } else if ("update".equals(cmd)) {
             inboundHandler.onUpdate(args[1], getDataArg(args));
-        } else if (cmd.equals("keydown")) {
+        } else if ("keydown".equals(cmd)) {
             inboundHandler.onKeyDown(Integer.parseInt(args[1]));
         } else {
             inboundHandler.onIncoming(args);
@@ -254,7 +254,7 @@ public class UiPipeImpl implements UiPipe {
     }
 
     public static Map<String, String> getDataArg(String[] args) {
-        Map<String, String> data = new HashMap<String, String>();
+        Map<String, String> data = new HashMap<>();
         int arg = 2;
         if (args.length > arg) {
             String[] unpacked = args[arg].split("\2");
