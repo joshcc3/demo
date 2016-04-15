@@ -58,7 +58,7 @@ public class OpxlLadderTextSubscriber {
                         }
 
 
-                        if ("".equals(value.trim())) {
+                        if ("".equals(value.trim()) || "#ERR".equals(value.trim())) {
                             publisher.publish(new LaserLine(symbol, laserColor, 0, false, "EEIF"));
                         } else {
                             try {
