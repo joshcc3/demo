@@ -461,14 +461,14 @@ public class LadderView implements UiPipe.UiEventHandler {
     }
 
     private static Long getLastTradeChangeOnDay(final MarketDataForSymbol m) {
-        if (m.lastTrade == null) {
-            return null;
-        }
         if (m.settle == null) {
             return null;
         }
-        final long lastTradePrice = m.lastTrade.getPrice();
         final long settlementPrice = m.settle.getSettlementPrice();
+        if (m.lastTrade == null) {
+            return settlementPrice;
+        }
+        final long lastTradePrice = m.lastTrade.getPrice();
         return lastTradePrice - settlementPrice;
     }
 
