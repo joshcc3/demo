@@ -19,8 +19,8 @@ import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
-import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
+import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
@@ -230,6 +230,13 @@ public class LadderPresenter {
         if (spreadContractSet.spread != null) {
             dataBySymbol.get(spreadContractSet.spread).onFuturesContractSet(spreadContractSet);
         }
+    }
+
+    @Subscribe
+    public void on(final ChixSymbolPair chixSymbolPair) {
+
+        dataBySymbol.get(chixSymbolPair.primarySymbol).setChixSwitchSymbol(chixSymbolPair.chixSymbol);
+        dataBySymbol.get(chixSymbolPair.chixSymbol).setChixSwitchSymbol(chixSymbolPair.primarySymbol);
     }
 
     @Subscribe

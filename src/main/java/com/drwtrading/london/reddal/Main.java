@@ -154,6 +154,7 @@ public class Main {
         public final TypedChannel<UnsubscribeMarketData> unsubscribeFromMarketData;
         public final TypedChannel<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
         public final TypedChannel<SpreadContractSet> contractSets;
+        public final TypedChannel<ChixSymbolPair> chixSymbolPairs;
         public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
         public final TypedChannel<Jsonable> trace;
         public final TypedChannel<ReplaceCommand> replaceCommand;
@@ -188,6 +189,7 @@ public class Main {
             unsubscribeFromMarketData = create(UnsubscribeMarketData.class);
             recenterLaddersForUser = create(LadderPresenter.RecenterLaddersForUser.class);
             contractSets = create(SpreadContractSet.class);
+            chixSymbolPairs = create(ChixSymbolPair.class);
             singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
             trace = create(Jsonable.class);
             ladderClickTradingIssues = create(LadderClickTradingIssue.class);
@@ -420,8 +422,9 @@ public class Main {
                     fiberBuilder.subscribe(presenter, websocket, channels.workingOrders, channels.metaData, channels.position,
                             channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol,
                             channels.reddalCommandSymbolAvailable, channels.recenterLaddersForUser, channels.contractSets,
-                            channels.singleOrderCommand, channels.ladderClickTradingIssues, channels.replaceCommand,
-                            channels.userCycleContractPublisher, channels.orderEntrySymbols, channels.orderEntryFromServer);
+                            channels.chixSymbolPairs, channels.singleOrderCommand, channels.ladderClickTradingIssues,
+                            channels.replaceCommand, channels.userCycleContractPublisher, channels.orderEntrySymbols,
+                            channels.orderEntryFromServer);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::flushAllLadders,
                             10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
                     fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::sendAllHeartbeats,
@@ -484,7 +487,11 @@ public class Main {
 
             final SyntheticSpreadContractSetGenerator generator = new SyntheticSpreadContractSetGenerator(channels.contractSets);
             fibers.contracts.subscribe(generator, channels.refData);
+
+            final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
+            fibers.contracts.subscribe(chixInstMatcher, channels.refData);
         }
+
 
         // Market data
         {

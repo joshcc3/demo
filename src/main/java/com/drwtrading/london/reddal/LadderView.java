@@ -699,6 +699,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         if (m != null && m.refData != null) {
             ui.clear();
             ui.clickable('#' + Html.SYMBOL);
+            ui.clickable('#' + Html.CLOCK);
             if (pendingRefDataAndSettle) {
                 onRefDataAndSettleFirstAppeared();
             }
@@ -1113,6 +1114,10 @@ public class LadderView implements UiPipe.UiEventHandler {
                 }
             } else if (label.startsWith(Html.VOLUME)) {
                 view.launchBasket(symbol);
+            } else if (label.equals(Html.CLOCK)){
+                if (switchChixSymbol()) {
+                    return;
+                }
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(Html.BID) || label.startsWith(Html.OFFER)) {
@@ -1156,6 +1161,15 @@ public class LadderView implements UiPipe.UiEventHandler {
             } else {
                 return false;
             }
+        } else {
+            return false;
+        }
+    }
+
+    boolean switchChixSymbol() {
+        if (null != dataForSymbol && null != dataForSymbol.chixSwitchSymbol) {
+            view.goToSymbol(dataForSymbol.chixSwitchSymbol);
+            return true;
         } else {
             return false;
         }
