@@ -26,11 +26,13 @@ import java.util.regex.Pattern;
 
 public class Environment {
 
+
+
     public static enum Exchange {
         EUREX,
         XETRA,
         EURONEXT,
-        FILTERED, REMOTE
+        FILTERED, REMOTE;
     }
 
     public static final String MARKET_DATA = "marketData";
@@ -198,6 +200,9 @@ public class Environment {
         return NetworkInterfaces.find(config.get(MARKET_DATA + "." + mds + ".interface"));
     }
 
+    public String getEntity() {
+        return config.getOrDefault("entity", "eeif");
+    }
 
     /**
      * Remote commands server are matched in order.

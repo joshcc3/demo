@@ -366,6 +366,7 @@ public class Main {
 
             fibers.onStart(() -> fibers.ui.execute(() -> {
                 try {
+                    webapp.alias("/style.css", "/style-" + environment.getEntity() + ".css");
                     webapp.serveStaticContent("web");
                     webapp.start();
                 } catch (final Exception e) {
@@ -451,6 +452,7 @@ public class Main {
 
             fibers.onStart(() -> fibers.ui.execute(() -> {
                 try {
+                    webapp.alias("/style.css", "/style-" + environment.getEntity() + ".css");
                     webapp.serveStaticContent("web");
                     webapp.start();
                 } catch (final Exception e) {
