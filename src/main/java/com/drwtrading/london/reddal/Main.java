@@ -366,7 +366,7 @@ public class Main {
 
             fibers.onStart(() -> fibers.ui.execute(() -> {
                 try {
-                    webapp.alias("/style.css", "/style-" + environment.getEntity() + ".css");
+                    setupEntityAliases(environment, webapp);
                     webapp.serveStaticContent("web");
                     webapp.start();
                 } catch (final Exception e) {
@@ -452,7 +452,7 @@ public class Main {
 
             fibers.onStart(() -> fibers.ui.execute(() -> {
                 try {
-                    webapp.alias("/style.css", "/style-" + environment.getEntity() + ".css");
+                    setupEntityAliases(environment, webapp);
                     webapp.serveStaticContent("web");
                     webapp.start();
                 } catch (final Exception e) {
@@ -768,6 +768,11 @@ public class Main {
 
         fibers.start();
         new CountDownLatch(1).await();
+    }
+
+    private static void setupEntityAliases(Environment environment, WebApplication webapp) {
+        webapp.alias("/style.css", "/style-" + environment.getEntity() + ".css");
+        webapp.alias("/launcher.js", "/launcher-" + environment.getEntity() + ".js");
     }
 
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,
