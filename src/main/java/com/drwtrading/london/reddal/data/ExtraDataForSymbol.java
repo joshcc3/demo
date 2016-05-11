@@ -20,7 +20,6 @@ public class ExtraDataForSymbol {
     public DeskPosition deskPosition;
     public InfoOnLadder infoOnLadder;
     public final Map<String, LadderText> ladderTextByPosition = FastUtilCollections.newFastMap();
-    public final Long theoreticalValue = null;
     public LastTrade lastBuy;
     public LastTrade lastSell;
     public Position dayPosition;

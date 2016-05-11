@@ -17,10 +17,12 @@ import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
+import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
 import com.drwtrading.london.eeif.utils.monitoring.BasicStdOutErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.MappedResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.eeif.utils.transport.io.TransportTCPKeepAliveConnection;
@@ -52,6 +54,7 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.DisplaySymbol;
+import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
@@ -69,6 +72,7 @@ import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.reddal.util.ReconnectingOPXLClient;
+import com.drwtrading.london.reddal.util.SelectIOFiber;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.MsgCodec;
@@ -104,6 +108,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -114,8 +119,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Main {
 
     public static final long SERVER_TIMEOUT = 3000L;
-    public static final int BATCH_FLUSH_INTERVAL_MS = 1000 / 12;
-    public static final int HEARTBEAT_INTERVAL_MS = 3000;
+    public static final long HEARTBEAT_INTERVAL_MS = 3000;
     public static final int NUM_DISPLAY_THREADS = 12;
     public static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
@@ -330,6 +334,9 @@ public class Main {
         final Environment environment = new Environment(config);
         final File logDir = environment.getLogDirectory(configName);
 
+        final IErrorLogger errorLog = new BasicStdOutErrorLogger();
+        final IResourceMonitor<ReddalComponents> monitor = new ResourceMonitor<>("Reddal", ReddalComponents.class, errorLog, true);
+
         final NnsApi nnsApi = new NnsFactory().create();
         final LoggingTransport fileTransport = new LoggingTransport(new File(logDir, "jetlang.log"));
         fileTransport.start();
@@ -406,42 +413,50 @@ public class Main {
             }
 
             // Ladder presenters
-            final List<TypedChannel<WebSocketControlMessage>> websockets = Lists.newArrayList();
-            {
-                for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
+            final MultiLayeredResourceMonitor<ReddalComponents> parentMonitor =
+                    new MultiLayeredResourceMonitor<>(monitor, ReddalComponents.class, errorLog);
 
-                    final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
-                    websockets.add(websocket);
-                    final String name = "Ladder-" + (i);
-                    final FiberBuilder fiberBuilder = fibers.fiberGroup.create(name);
-                    final LadderPresenter presenter =
-                            new LadderPresenter(channels.remoteOrderCommand, environment.ladderOptions(), channels.stats,
-                                    channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
-                                    channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser,
-                                    fiberBuilder.getFiber(), channels.trace, channels.ladderClickTradingIssues,
-                                    channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
-                    fiberBuilder.subscribe(presenter, websocket, channels.workingOrders, channels.metaData, channels.position,
-                            channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol,
-                            channels.reddalCommandSymbolAvailable, channels.recenterLaddersForUser, channels.contractSets,
-                            channels.chixSymbolPairs, channels.singleOrderCommand, channels.ladderClickTradingIssues,
-                            channels.replaceCommand, channels.userCycleContractPublisher, channels.orderEntrySymbols,
-                            channels.orderEntryFromServer);
-                    fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::flushAllLadders,
-                            10 + i * (BATCH_FLUSH_INTERVAL_MS / websockets.size()), BATCH_FLUSH_INTERVAL_MS, TimeUnit.MILLISECONDS);
-                    fiberBuilder.getFiber().scheduleWithFixedDelay(presenter::sendAllHeartbeats,
-                            10 + i * (HEARTBEAT_INTERVAL_MS / websockets.size()), HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
-                }
+            final List<TypedChannel<WebSocketControlMessage>> webSockets = Lists.newArrayList();
+            for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
 
+                final String name = "Ladder-" + i;
+                final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
+                final MappedResourceMonitor<SelectIOComponents, ReddalComponents> selectIOMonitor =
+                        MappedResourceMonitor.mapMonitorByName(displayMonitor, SelectIOComponents.class, ReddalComponents.class,
+                                "SELECT_IO_");
+
+                final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
+
+                final TypedChannel<WebSocketControlMessage> webSocket = TypedChannels.create(WebSocketControlMessage.class);
+                webSockets.add(webSocket);
+                final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
+
+                final Map<String, LevelThreeBookSubscriber> newClientsBySuffix = new HashMap<>();
+
+                final LadderPresenter presenter =
+                        new LadderPresenter(newClientsBySuffix, channels.remoteOrderCommand, environment.ladderOptions(), channels.stats,
+                                channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
+                                channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser,
+                                displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
+                                channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
+
+                final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
+                fiberBuilder.subscribe(presenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
+                        channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
+                        channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand,
+                        channels.ladderClickTradingIssues, channels.replaceCommand, channels.userCycleContractPublisher,
+                        channels.orderEntrySymbols, channels.orderEntryFromServer);
+
+                final long initialDelay = 10 + i * (LadderPresenter.BATCH_FLUSH_INTERVAL_MS / webSockets.size());
+                displaySelectIO.addDelayedAction(initialDelay, presenter::flushAllLadders);
+                displaySelectIO.addDelayedAction(initialDelay, presenter::sendAllHeartbeats);
             }
 
             // Ladder router
-            {
-                final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("ladder", "ladder", fibers.ladder, webapp, ladderWebSocket);
-                final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(websockets);
-                fibers.ladder.subscribe(ladderMessageRouter, ladderWebSocket);
-            }
-
+            final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("ladder", "ladder", fibers.ladder, webapp, ladderWebSocket);
+            final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(webSockets);
+            fibers.ladder.subscribe(ladderMessageRouter, ladderWebSocket);
         }
 
         // Non SSO-protected webapp to allow AJAX requests
@@ -493,7 +508,6 @@ public class Main {
             final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
             fibers.contracts.subscribe(chixInstMatcher, channels.refData);
         }
-
 
         // Market data
         {
@@ -690,7 +704,6 @@ public class Main {
             final ConfigGroup indyConfig = new com.drwtrading.london.eeif.utils.config.Config(configFile).getRoot().getGroup("indy");
             final IIndyCacheListener indyListener = new IndyClient(channels.instDefs);
 
-            final IErrorLogger errorLog = new BasicStdOutErrorLogger();
             final IResourceMonitor<ReddalComponents> reddalMonitor = new ResourceMonitor<>("Indy", ReddalComponents.class, errorLog, true);
 
             final SelectIO selectIO = SelectIO.mappedMonitorSelectIO("SelectIO", reddalMonitor, ReddalComponents.SELECT_IO_CLOSE,

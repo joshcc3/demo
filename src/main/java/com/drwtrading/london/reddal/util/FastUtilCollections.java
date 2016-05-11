@@ -10,18 +10,18 @@ import java.util.Set;
 
 public class FastUtilCollections {
     public static <K, V> Map<K, V> newFastMap() {
-        return new Object2ObjectOpenHashMap<K, V>();
+        return new Object2ObjectOpenHashMap<>();
     }
 
     public static <K, V> Map<K, V> newFastMap(final int expected) {
-        return new Object2ObjectOpenHashMap<K, V>(expected);
+        return new Object2ObjectOpenHashMap<>(expected);
     }
 
     public static <K> Set<K> newFastSet() {
-        return new ObjectOpenHashSet<K>();
+        return new ObjectOpenHashSet<>();
     }
-    
+
     public static <K> List<K> newFastList() {
-        return new ObjectArrayList<K>();
+        return new ObjectArrayList<>();
     }
 }

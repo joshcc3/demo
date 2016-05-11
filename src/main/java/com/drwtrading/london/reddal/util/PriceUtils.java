@@ -1,23 +1,33 @@
 package com.drwtrading.london.reddal.util;
 
+import com.drwtrading.london.eeif.utils.marketData.book.ticks.ITickTable;
 import com.drwtrading.london.prices.NormalizedPrice;
 import com.drwtrading.london.prices.PriceFormat;
 import com.drwtrading.london.prices.PriceFormats;
 import com.drwtrading.london.prices.tickbands.TickSizeTracker;
-import com.drwtrading.london.protocols.photon.marketdata.*;
+import com.drwtrading.london.protocols.photon.marketdata.DecimalTickStructure;
+import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
+import com.drwtrading.london.protocols.photon.marketdata.NormalizedBandedDecimalTickStructure;
+import com.drwtrading.london.protocols.photon.marketdata.NormalizedDecimalTickStructure;
+import com.drwtrading.london.protocols.photon.marketdata.PriceStructure;
+import com.drwtrading.london.protocols.photon.marketdata.Side;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
+import java.util.NavigableMap;
 
 import static com.drwtrading.london.protocols.photon.marketdata.Side.BID;
-import static com.drwtrading.london.protocols.photon.marketdata.Side.OFFER;
-
 
 public class PriceUtils implements PriceOperations {
 
     private final PriceOperationsUtil theOperationsToUse;
 
-    private PriceUtils(PriceStructure priceStructure) {
+    public PriceUtils(final ITickTable tickTable) {
+        theOperationsToUse = new TickLevelUtils(tickTable);
+    }
+
+    private PriceUtils(final PriceStructure priceStructure) {
         if (priceStructure.getTickStructure() instanceof NormalizedBandedDecimalTickStructure) {
             theOperationsToUse = new TickBandUtils((NormalizedBandedDecimalTickStructure) priceStructure.getTickStructure());
         } else {
@@ -26,50 +36,31 @@ public class PriceUtils implements PriceOperations {
     }
 
     @Override
-    public long tickIncrement(long nearbyPrice, Side side) {
-        return theOperationsToUse.tickIncrement(nearbyPrice, side);
-    }
-
-
-    @Override
-    public long tradeablePrice(BigDecimal price, Side side) {
-        return theOperationsToUse.tradeablePrice(price, side);
+    public long tradablePrice(final long price, final Side side) {
+        return theOperationsToUse.conservativeTradablePrice(price, side);
     }
 
     @Override
-    public long tradeablePrice(String price, Side side) {
-        return theOperationsToUse.tradeablePrice(new BigDecimal(price), side);
-    }
-
-    @Override
-    public long tradeablePrice(long price, Side side) {
-        return theOperationsToUse.conservativeTradeablePrice(price, side);
-    }
-
-    @Override
-    public long nTicksAway(long price, int n, Direction direction) {
+    public long nTicksAway(final long price, final int n, final Direction direction) {
         return theOperationsToUse.nTicksAway(price, n, direction);
     }
 
-
-    public static PriceOperations from(PriceStructure priceStructure) {
+    public static PriceOperations from(final PriceStructure priceStructure) {
         return new PriceUtils(priceStructure);
     }
 
-    public static PriceOperations from(InstrumentDefinitionEvent instrumentDefinitionEvent) {
+    public static PriceOperations from(final InstrumentDefinitionEvent instrumentDefinitionEvent) {
         return new PriceUtils(instrumentDefinitionEvent.getPriceStructure());
     }
 
     public static enum Direction {
-        Add, Subtract
+        Add,
+        Subtract
     }
 
     public static interface PriceOperationsUtil {
-        long tickIncrement(long nearbyPrice, Side side);
 
-        long tradeablePrice(BigDecimal price, Side side);
-
-        long conservativeTradeablePrice(long price, Side side);
+        long conservativeTradablePrice(long price, Side side);
 
         long nTicksAway(long price, long n, Direction direction);
 
@@ -83,52 +74,45 @@ public class PriceUtils implements PriceOperations {
             this.priceStructure = priceStructure;
         }
 
-        @Override
-        public long tickIncrement(long nearbyPrice, Side side) {
+        public long tickIncrement() {
             return priceStructure.getTickIncrement();
         }
 
-        @Override
-        public long tradeablePrice(BigDecimal price, Side side) {
-            if (priceStructure.getTickStructure() instanceof DecimalTickStructure) {
-                DecimalTickStructure decimalTickStructure = (DecimalTickStructure) priceStructure.getTickStructure();
-                int pointPosition = decimalTickStructure.getPointPosition();
-                long nonTradeablePrice = price.movePointRight(pointPosition).setScale(0, side == BID ? RoundingMode.FLOOR : RoundingMode.CEILING).longValueExact();
-                return roundToTradeablePrice(nonTradeablePrice, priceStructure.getTickIncrement(), 1, side);
-            } else if (priceStructure.getTickStructure() instanceof NormalizedDecimalTickStructure) {
-                return roundConservativelyForNormalizedDecimalTickStructure(price, side, priceStructure);
-            } else {
-                throw new IllegalArgumentException("Handle this other type of instrument definition" + priceStructure.getClass());
-            }
-        }
-
-        private long roundConservativelyForNormalizedDecimalTickStructure(BigDecimal price, Side side, PriceStructure priceStructure) {
+        private static long roundConservativelyForNormalizedDecimalTickStructure(final BigDecimal price, final Side side,
+                final PriceStructure priceStructure) {
             final PriceFormat priceFormat = PriceFormats.from(priceStructure.getTickStructure());
-            final NormalizedDecimalTickStructure normalizedDecimalTickStructure = (NormalizedDecimalTickStructure) priceStructure.getTickStructure();
-            return priceFormat.normalizedPriceToProtocols(NormalizedPrice.from(round(price, priceFormat.protocolsPriceToNormalized(priceStructure.getTickIncrement()).toBigDecimal(), normalizedDecimalTickStructure.getDecimalPlaces(), side)));
+            final NormalizedDecimalTickStructure normalizedDecimalTickStructure =
+                    (NormalizedDecimalTickStructure) priceStructure.getTickStructure();
+            return priceFormat.normalizedPriceToProtocols(NormalizedPrice.from(
+                    round(price, priceFormat.protocolsPriceToNormalized(priceStructure.getTickIncrement()).toBigDecimal(),
+                            normalizedDecimalTickStructure.getDecimalPlaces(), side)));
         }
 
         @Override
-        public long conservativeTradeablePrice(long nonTradeablePrice, Side side) {
+        public long conservativeTradablePrice(final long nonTradeablePrice, final Side side) {
             if (priceStructure.getTickStructure() instanceof DecimalTickStructure) {
-                return roundToTradeablePrice(nonTradeablePrice, priceStructure.getTickIncrement(), 1, side);
+                return roundToTradablePrice(nonTradeablePrice, priceStructure.getTickIncrement(), 1, side);
             } else if (priceStructure.getTickStructure() instanceof NormalizedDecimalTickStructure) {
-                return roundConservativelyForNormalizedDecimalTickStructure(PriceFormats.from(priceStructure.getTickStructure()).toBigDecimal(new NormalizedPrice(nonTradeablePrice)), side, priceStructure);
+                return roundConservativelyForNormalizedDecimalTickStructure(
+                        PriceFormats.from(priceStructure.getTickStructure()).toBigDecimal(new NormalizedPrice(nonTradeablePrice)), side,
+                        priceStructure);
             } else {
-                throw new IllegalArgumentException("Handle this other type of instrument definition" + priceStructure.getTickStructure().typeEnum());
+                throw new IllegalArgumentException(
+                        "Handle this other type of instrument definition" + priceStructure.getTickStructure().typeEnum());
             }
         }
 
         @Override
-        public long nTicksAway(long price, long n, Direction direction) {
-            return direction == Direction.Add ? price + (n * tickIncrement(price, BID)) : price - (n * tickIncrement(price, OFFER));
+        public long nTicksAway(final long price, final long n, final Direction direction) {
+            return direction == Direction.Add ? price + (n * tickIncrement()) : price - (n * tickIncrement());
         }
 
-        private long roundToTradeablePrice(long price, long tickIncrement, long modTickMultiplier, Side side) {
+        private static long roundToTradablePrice(final long price, final long tickIncrement, final long modTickMultiplier,
+                final Side side) {
             final long tickIncPostMod = tickIncrement * modTickMultiplier;
             long fractionalAmount = price % tickIncPostMod;
             fractionalAmount = fractionalAmount >= 0 ? fractionalAmount : fractionalAmount + tickIncPostMod;
-            long flooredPrice = price - fractionalAmount;
+            final long flooredPrice = price - fractionalAmount;
             if (fractionalAmount == 0 || side == BID) {
                 return flooredPrice;
             } else {
@@ -136,18 +120,23 @@ public class PriceUtils implements PriceOperations {
             }
         }
 
-        public BigDecimal round(BigDecimal price, BigDecimal roundingIncrement, int decimalPrecisionForRounding, Side side) {
+        public static BigDecimal round(final BigDecimal price, final BigDecimal roundingIncrement, final int decimalPrecisionForRounding,
+                final Side side) {
             if (decimalPrecisionForRounding < 0) {
-                throw new IllegalArgumentException("Rounding.round() cannot support negative decimal precision for rounding: " + decimalPrecisionForRounding + ", price " + price);
+                throw new IllegalArgumentException(
+                        "Rounding.round() cannot support negative decimal precision for rounding: " + decimalPrecisionForRounding +
+                                ", price " + price);
             }
-            BigDecimal answer = BigDecimal.valueOf(roundToTradeablePrice(price.movePointRight(decimalPrecisionForRounding).setScale(0, side == BID ? RoundingMode.FLOOR : RoundingMode.CEILING).longValueExact(), roundingIncrement.movePointRight(decimalPrecisionForRounding).longValueExact(), 1, side)).movePointLeft(decimalPrecisionForRounding);
+            BigDecimal answer = BigDecimal.valueOf(roundToTradablePrice(price.movePointRight(decimalPrecisionForRounding).setScale(0,
+                            side == BID ? RoundingMode.FLOOR : RoundingMode.CEILING).longValueExact(),
+                    roundingIncrement.movePointRight(decimalPrecisionForRounding).longValueExact(), 1, side)).movePointLeft(
+                    decimalPrecisionForRounding);
             if (decimalPrecisionForRounding > 0) {
                 answer = answer.setScale(decimalPrecisionForRounding);
             }
             return answer;
         }
     }
-
 
     protected static class TickBandUtils implements PriceUtils.PriceOperationsUtil {
 
@@ -158,14 +147,8 @@ public class PriceUtils implements PriceOperations {
         }
 
         @Override
-        public long tradeablePrice(BigDecimal price, Side side) {
-            final long value = price.movePointRight(PriceFormats.NORMAL_POINT_POSITION).setScale(0, side == BID ? RoundingMode.FLOOR : RoundingMode.CEILING).longValueExact();
-            return conservativeTradeablePrice(value, side);
-        }
-
-        @Override
-        public long conservativeTradeablePrice(long value, Side side) {
-            long rounded = tracker.roundDown(value);
+        public long conservativeTradablePrice(final long value, final Side side) {
+            final long rounded = tracker.roundDown(value);
             if (side == BID) {
                 return rounded;
             } else {
@@ -174,21 +157,55 @@ public class PriceUtils implements PriceOperations {
         }
 
         @Override
-        public long nTicksAway(long price, long n, Direction direction) {
+        public long nTicksAway(long price, final long n, final Direction direction) {
             for (int i = 0; i < n; i++) {
                 price = direction == Direction.Add ? tracker.priceAbove(price) : tracker.priceBelow(price);
             }
             return price;
         }
+    }
 
-        public long tickIncrement(long nearbyPrice, Side side) {
-            long rounded = tracker.roundDown(nearbyPrice);
-            if (side == BID) {
-                return rounded - tracker.priceBelow(rounded);
+    protected static class TickLevelUtils implements PriceUtils.PriceOperationsUtil {
+
+        private final ITickTable tickTable;
+
+        TickLevelUtils(final ITickTable tickTable) {
+            this.tickTable = tickTable;
+        }
+
+        @Override
+        public long conservativeTradablePrice(final long price, final Side side) {
+
+            final NavigableMap<Long, Long> tickLevels = tickTable.getRawTickLevels();
+            if (Side.BID == side) {
+                final Map.Entry<Long, Long> tickLevel = tickLevels.floorEntry(price);
+                final long tickSize;
+                if (null == tickLevel) {
+                    tickSize = tickLevels.firstEntry().getValue();
+                } else {
+                    tickSize = tickLevel.getValue();
+                }
+                return tickSize * (price / tickSize);
             } else {
-                return tracker.priceAbove(rounded) - rounded;
+                final Map.Entry<Long, Long> tickLevel = tickLevels.floorEntry(price);
+                final long tickSize;
+                if (null == tickLevel) {
+                    tickSize = tickLevels.lastEntry().getValue();
+                } else {
+                    tickSize = tickLevel.getValue();
+                }
+                return tickSize * (long) Math.ceil(price / (double) tickSize);
             }
         }
 
+        @Override
+        public long nTicksAway(final long price, final long n, final Direction direction) {
+
+            if (Direction.Add == direction) {
+                return tickTable.addTicks(price, n);
+            } else {
+                return tickTable.addTicks(price, -n);
+            }
+        }
     }
 }
