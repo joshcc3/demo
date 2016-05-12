@@ -8,6 +8,7 @@ import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 
@@ -22,7 +23,7 @@ public class LadderWorkspace {
     Multimap<String, View> workspacesByHost = ArrayListMultimap.create();
     Multimap<String, View> setsByHost = ArrayListMultimap.create();
     Set<View> lockedViews = new HashSet<>();
-    Map<String, SpreadContractSet> contractSets = new HashMap<>();
+    HashMultimap<String, String> contractSets = HashMultimap.create();
 
     public LadderWorkspace(Publisher<ReplaceCommand> replaceCommand) {
 
@@ -51,9 +52,17 @@ public class LadderWorkspace {
 
     @Subscribe
     public void on(SpreadContractSet contractSet) {
-        contractSets.put(contractSet.back, contractSet);
-        contractSets.put(contractSet.front, contractSet);
-        contractSets.put(contractSet.spread, contractSet);
+        contractSets.put(contractSet.back, contractSet.back);
+        contractSets.put(contractSet.back, contractSet.front);
+        contractSets.put(contractSet.back, contractSet.spread);
+
+        contractSets.put(contractSet.front, contractSet.back);
+        contractSets.put(contractSet.front, contractSet.front);
+        contractSets.put(contractSet.front, contractSet.spread);
+
+        contractSets.put(contractSet.spread, contractSet.back);
+        contractSets.put(contractSet.spread, contractSet.front);
+        contractSets.put(contractSet.spread, contractSet.spread);
     }
 
     @FromWebSocketView
@@ -95,7 +104,6 @@ public class LadderWorkspace {
     public boolean openLadderForUser(String user, String symbol) {
 
         boolean openedSomething = false;
-
         if (workspacesByHost.containsKey(user)) {
             ArrayDeque<View> viewsList = new ArrayDeque<>(workspacesByHost.get(user));
             View view;
@@ -113,26 +121,23 @@ public class LadderWorkspace {
         }
 
         if (setsByHost.containsKey(user)) {
-            final String finalSymbol = symbol;
-            List<String> symbols = contractSets.values().stream()
-                    .filter(set -> set.spread.contains(finalSymbol))
-                    .flatMap(set -> Stream.of(set.front, set.back, set.spread))
-                    .filter(s -> !s.equals(finalSymbol))
-                    .distinct()
-                    .collect(Collectors.toList());
-            Collections.reverse(symbols);
-            if (!symbols.isEmpty()) {
-                ArrayDeque<View> viewsList = new ArrayDeque<>(setsByHost.get(user));
+
+            Collection<String> contractSet = contractSets.get(symbol);
+            if (!contractSet.isEmpty()) {
                 View view;
+                ArrayDeque<View> viewsList = new ArrayDeque<>(setsByHost.get(user));
                 while ((view = viewsList.pollLast()) != null) {
                     if (!lockedViews.contains(view)) {
-                        symbols.forEach(view::addSymbol);
-                        view.addSymbol(finalSymbol);
+                        HashSet<String> symbols = new HashSet<>(contractSet);
+                        symbols.remove(symbol);
+                        contractSet.forEach(view::addSymbol);
+                        view.addSymbol(symbol);
                         openedSomething = true;
                         break;
                     }
                 }
             }
+
         }
 
 

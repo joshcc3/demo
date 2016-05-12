@@ -87,7 +87,7 @@ public class FuturesContractSetGenerator {
             if (spread != null) {
                 return new SpreadContractSet(front.getValue().getSymbol(), back.getValue().getSymbol(), spread.getSymbol());
             } else {
-                return new SpreadContractSet(front.getValue().getSymbol(), back.getValue().getSymbol(), null);
+                return new SpreadContractSet(front.getValue().getSymbol(), back.getValue().getSymbol(), front.getValue().getSymbol() + "-" + back.getValue().getSymbol());
             }
         }
         return null;
