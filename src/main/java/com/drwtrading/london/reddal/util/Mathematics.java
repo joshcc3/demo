@@ -22,7 +22,7 @@ public class Mathematics {
     }
 
     public static double toQuantityFromNotionalInSafetyCurrency(final double notionalInSafetyCurrency, final long price,
-            final IBook<?> book, final double wpv) {
+                                                                final IBook<?> book, final double wpv) {
 
         if (0 == price) {
             return 0;
@@ -737,6 +737,7 @@ public class Mathematics {
         TICK_VALUES.put("FESU", 5d);
         TICK_VALUES.put("FESV", 5d);
         TICK_VALUES.put("FESX", 10d);
+        TICK_VALUES.put("FESQ", 10d);
         TICK_VALUES.put("FESY", 5d);
         TICK_VALUES.put("FESZ", 5d);
         TICK_VALUES.put("FETD", 5d);
