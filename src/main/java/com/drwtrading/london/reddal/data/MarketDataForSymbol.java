@@ -90,6 +90,9 @@ public class MarketDataForSymbol implements IMarketData {
 
     private TopOfBook lastImpliedMsg;
 
+    private final boolean isSwiss;
+    private TopOfBook swissLastTopOfBook;
+
     public MarketDataForSymbol(final String symbol) {
 
         this.symbol = symbol;
@@ -97,6 +100,8 @@ public class MarketDataForSymbol implements IMarketData {
         this.queuedMD = new LinkedList<>();
 
         this.tradeTracker = new TradeTracker();
+
+        this.isSwiss = symbol.endsWith(" SE") || symbol.endsWith(" VX");
     }
 
     @Override
@@ -284,6 +289,32 @@ public class MarketDataForSymbol implements IMarketData {
                     book.setImpliedQty(BookSide.ASK, ask.getPrice(), ask.getQuantity());
                 }
                 lastImpliedMsg = msg;
+
+            } else if (isSwiss) {
+
+                if (null != swissLastTopOfBook) {
+
+                    final BestPrice bid = swissLastTopOfBook.getBestBid();
+                    if (bid.isExists()) {
+                        book.deleteLevel(BookSide.BID, bid.getPrice());
+                    }
+
+                    final BestPrice ask = swissLastTopOfBook.getBestOffer();
+                    if (ask.isExists()) {
+                        book.deleteLevel(BookSide.ASK, ask.getPrice());
+                    }
+                }
+
+                final BestPrice bid = msg.getBestBid();
+                if (bid.isExists()) {
+                    book.setLevel(BookSide.BID, bid.getPrice(), bid.getQuantity());
+                }
+
+                final BestPrice ask = msg.getBestOffer();
+                if (ask.isExists()) {
+                    book.setLevel(BookSide.ASK, ask.getPrice(), ask.getQuantity());
+                }
+                swissLastTopOfBook = msg;
             }
             return null;
         }
