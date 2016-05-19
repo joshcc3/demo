@@ -54,7 +54,7 @@ public class Environment {
     }
 
     public int getCommandsPort() throws ConfigException {
-        return config.getInt("commands.port");
+        return config.getGroup("commands").getInt("port");
     }
 
     public Exchange getMarketDataExchange(final String mds) throws ConfigException {

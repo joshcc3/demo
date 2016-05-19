@@ -571,7 +571,7 @@ public class Main {
                 final OrderEntryClient client =
                         new OrderEntryClient(instanceName, new SystemClock(), server, fibers.remoteOrders.getFiber(),
                                 channels.orderEntrySymbols, channels.ladderClickTradingIssues);
-                final Environment.HostAndNic command = environment.getHostAndNic(Environment.EEIF_OE + ".command", server);
+                final Environment.HostAndNic command = environment.getHostAndNic(Environment.EEIF_OE + "Command", server);
                 final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
                         OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
                                 OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
@@ -584,7 +584,7 @@ public class Main {
                 fibers.remoteOrders.execute(cmdClient::start);
                 System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
 
-                final Environment.HostAndNic update = environment.getHostAndNic(Environment.EEIF_OE + ".update", server);
+                final Environment.HostAndNic update = environment.getHostAndNic(Environment.EEIF_OE + "Update", server);
                 final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
                         OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
                                 fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
@@ -744,7 +744,7 @@ public class Main {
             });
         }
 
-        final ConfigGroup opxlConfig = root.getGroup("opxl");
+        final ConfigGroup opxlConfig = root.getEnabledGroup("opxl");
 
         // Desk Position
         final ConfigGroup deskPositionConfig = root.getEnabledGroup("opxl", "deskposition");
