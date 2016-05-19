@@ -85,6 +85,9 @@ public class Mathematics {
         TICK_VALUES.put("RF", 12.5d);
         TICK_VALUES.put("RP", 6.5d);
         TICK_VALUES.put("6R", 12.5d);
+        TICK_VALUES.put("CL", 10.0d);
+        TICK_VALUES.put("HG", 12.5d);
+
 
         // Liffe
         TICK_VALUES.put("FBXF", 1d);
