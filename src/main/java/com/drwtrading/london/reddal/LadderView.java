@@ -410,7 +410,7 @@ public class LadderView implements UiPipe.UiEventHandler {
     private static Long getLastTradeChangeOnDay(final IMarketData m) {
 
         final IBookReferencePrice refPriceData = m.getBook().getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
-        if (!refPriceData.isValid() && m.getTradeTracker().hasTrade()) {
+        if (refPriceData.isValid() && m.getTradeTracker().hasTrade()) {
             return m.getTradeTracker().getLastPrice() - refPriceData.getPrice();
         } else {
             return null;
