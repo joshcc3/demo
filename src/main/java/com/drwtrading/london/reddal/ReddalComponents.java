@@ -12,7 +12,13 @@ public enum ReddalComponents implements IMonitoredComponent {
     INDY_UNDERLYING_TCP,
     INDY_TCP_PROTOCOL_FAILURE,
 
-    MD_TRANSPORT;
+    MD_L3_HANDLER,
+
+    NEW_MD_HUB_AVAILABLE,
+    NEW_MD_COULD_NOT_ESTABLISH_CONNECTION,
+    NEW_MD_UNDERLYING_TCP,
+    NEW_MD_TCP_PROTOCOL_FAILURE,
+    NEW_MD_MD_SERVER_VIEWER;
 
     @Override
     public String getMnemonic() {

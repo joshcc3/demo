@@ -43,8 +43,6 @@ public class TradeTracker {
         }
 
         lastPrice = tradeUpdate.getPrice();
-        minTradedPrice = Math.min(minTradedPrice, lastPrice);
-        maxTradedPrice = Math.max(maxTradedPrice, lastPrice);
 
     }
 
@@ -58,6 +56,8 @@ public class TradeTracker {
         } else {
             totalQtyTraded += qty - prevQty;
         }
+        minTradedPrice = Math.min(minTradedPrice, price);
+        maxTradedPrice = Math.max(maxTradedPrice, price);
     }
 
     public boolean hasTrade() {

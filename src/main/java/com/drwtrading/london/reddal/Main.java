@@ -11,13 +11,15 @@ import com.drwtrading.eeif.md.remote.UnsubscribeMarketData;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
-import com.drwtrading.london.config.Config;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
 import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.config.Config;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
+import com.drwtrading.london.eeif.utils.config.ConfigParam;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
+import com.drwtrading.london.eeif.utils.io.files.FileUtils;
 import com.drwtrading.london.eeif.utils.monitoring.BasicStdOutErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -37,6 +39,7 @@ import com.drwtrading.london.jetlang.stats.MonitoredJetlangFactory;
 import com.drwtrading.london.jetlang.transport.LowTrafficMulticastTransport;
 import com.drwtrading.london.logging.ErrorLogger;
 import com.drwtrading.london.logging.JsonChannelLogger;
+import com.drwtrading.london.md.transport.tcpShaped.MDTransportComponents;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.photons.eeifoe.OrderEntryCommandMsg;
 import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
@@ -102,19 +105,21 @@ import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 public class Main {
 
@@ -330,15 +335,17 @@ public class Main {
 
         System.out.println("Starting with configuration: " + configName);
         final Path configFile = Paths.get("./etc", configName + ".properties");
-        final Config config = Config.fromFile(configFile.toFile());
-        final Environment environment = new Environment(config);
-        final File logDir = environment.getLogDirectory(configName);
+        final ConfigGroup root = new Config(configFile).getRoot();
+        final Environment environment = new Environment(root);
+        final Path baseLogDir = Paths.get("/sitelogs/drw/reddal");
+        final Path logDir = FileUtils.getTodaysPath(baseLogDir, configName);
+        Files.createDirectories(logDir);
 
         final IErrorLogger errorLog = new BasicStdOutErrorLogger();
         final IResourceMonitor<ReddalComponents> monitor = new ResourceMonitor<>("Reddal", ReddalComponents.class, errorLog, true);
 
         final NnsApi nnsApi = new NnsFactory().create();
-        final LoggingTransport fileTransport = new LoggingTransport(new File(logDir, "jetlang.log"));
+        final LoggingTransport fileTransport = new LoggingTransport(logDir.resolve("jetlang.log").toFile());
         fileTransport.start();
         final MulticastGroup statsGroup = nnsApi.multicastGroupFor(environment.getStatsNns());
         final LowTrafficMulticastTransport lowTrafficMulticastTransport =
@@ -416,6 +423,8 @@ public class Main {
             final MultiLayeredResourceMonitor<ReddalComponents> parentMonitor =
                     new MultiLayeredResourceMonitor<>(monitor, ReddalComponents.class, errorLog);
 
+            final ConfigGroup newMDConfig = root.getEnabledGroup("newMD");
+
             final List<TypedChannel<WebSocketControlMessage>> webSockets = Lists.newArrayList();
             for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
 
@@ -431,7 +440,13 @@ public class Main {
                 webSockets.add(webSocket);
                 final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
 
+                final IResourceMonitor<MDTransportComponents> mdClientMonitor =
+                        MappedResourceMonitor.mapMonitorByName(displayMonitor, MDTransportComponents.class, ReddalComponents.class,
+                                "NEW_MD_");
+
                 final Map<String, LevelThreeBookSubscriber> newClientsBySuffix = new HashMap<>();
+//                final MDSource mdSource = MDSource.get(
+//                final MDTransportClient mdClient = MDTransportClientFactory.createLevel3Client(displaySelectIO, mdClientMonitor,
 
                 final LadderPresenter presenter =
                         new LadderPresenter(newClientsBySuffix, channels.remoteOrderCommand, environment.ladderOptions(), channels.stats,
@@ -494,7 +509,7 @@ public class Main {
         {
             final LadderSettings ladderSettings = new LadderSettings(environment.getSettingsFile(), channels.ladderPrefsLoaded);
             fibers.settings.subscribe(ladderSettings, channels.storeLadderPref);
-            fibers.onStart(() -> fibers.settings.execute(ladderSettings.loadRunnable()));
+            fibers.onStart(() -> fibers.settings.execute(ladderSettings::load));
         }
 
         // Contract sets
@@ -548,16 +563,19 @@ public class Main {
 
         // EEIF-OE
         {
-            final List<String> oeList = environment.getList(Environment.EEIF_OE);
+            final Collection<String> oeList = environment.getList(Environment.EEIF_OE);
             for (final String server : oeList) {
+
+                final ConfigGroup eeifOEGroup = root.getGroup("eeifoe");
+                final String instanceName = eeifOEGroup.getString("instance");
                 final OrderEntryClient client =
-                        new OrderEntryClient(environment.getEeifOeInstance(), new SystemClock(), server, fibers.remoteOrders.getFiber(),
+                        new OrderEntryClient(instanceName, new SystemClock(), server, fibers.remoteOrders.getFiber(),
                                 channels.orderEntrySymbols, channels.ladderClickTradingIssues);
                 final Environment.HostAndNic command = environment.getHostAndNic(Environment.EEIF_OE + ".command", server);
                 final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
                         OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
                                 OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
-                cmdClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(new File(logDir, "order-entry." + server + ".log"),
+                cmdClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("order-entry." + server + ".log").toFile(),
                         fibers.logging.getFiber(), true).handler(
                         new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10)).handler(
                         new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
@@ -570,7 +588,7 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
                         OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
                                 fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
-                updateClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(new File(logDir, "order-update." + server + ".log"),
+                updateClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("order-update." + server + ".log").toFile(),
                         fibers.logging.getFiber(), true).handler(
                         new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10)).handler(
                         new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
@@ -604,7 +622,7 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client =
                         OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
                                 Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
-                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(new File(logDir, "metadata." + server + ".log"),
+                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("metadata." + server + ".log").toFile(),
                         fibers.logging.getFiber(), true).handler(
                         new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10)).handler(
                         new JetlangChannelHandler<>(channels.metaData));
@@ -620,7 +638,7 @@ public class Main {
                         OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic),
                                 RemoteOrderManagementEvent.class, RemoteOrderManagementCommand.class, fibers.workingOrders.getFiber(),
                                 EXCEPTION_HANDLER);
-                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(new File(logDir, "remote-commands." + server + ".log"),
+                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("remote-commands." + server + ".log").toFile(),
                         fibers.logging.getFiber(), true).handler(
                         new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10)).handler(
                         new JetlangChannelHandler<>(msg -> channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg)),
@@ -636,7 +654,7 @@ public class Main {
             final Photocols<ReddalMessage, ReddalMessage> commandServer =
                     Photocols.server(new InetSocketAddress(environment.getCommandsPort()), ReddalMessage.class, ReddalMessage.class,
                             fibers.metaData.getFiber(), EXCEPTION_HANDLER);
-            commandServer.logFile(new File(logDir, "photocols.commands.log"), fibers.logging.getFiber(), true);
+            commandServer.logFile(logDir.resolve("photocols.commands.log").toFile(), fibers.logging.getFiber(), true);
             commandServer.endpoint().add(
                     new JetlangChannelHandler<>(channels.reddalCommandSymbolAvailable, channels.reddalCommand, fibers.metaData.getFiber()));
             fibers.onStart(() -> {
@@ -657,7 +675,7 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<WorkingOrderEvent, Void> client =
                         OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic),
                                 WorkingOrderEvent.class, Void.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
-                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(new File(logDir, "working-orders." + server + ".log"),
+                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("working-orders." + server + ".log").toFile(),
                         fibers.logging.getFiber(), true).handler(
                         new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10)).handler(
                         new JetlangChannelHandler<>(msg -> {
@@ -688,7 +706,7 @@ public class Main {
                             fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
             final PhotocolsHandler<Position, Subscription> positionHandler = new PositionSubscriptionPhotocolsHandler(channels.position);
             fibers.mrPhil.subscribe(positionHandler, channels.refData);
-            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(new File(logDir, "mr-phil.log"), fibers.logging.getFiber(),
+            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("mr-phil.log").toFile(), fibers.logging.getFiber(),
                     true).handler(positionHandler);
             fibers.onStart(client::start);
         }
@@ -699,9 +717,9 @@ public class Main {
         channels.refData.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setInstDefEvent);
 
         // Indy
-        if (environment.indyEnabled()) {
+        final ConfigGroup indyConfig = root.getEnabledGroup("indy");
+        if (null != indyConfig) {
 
-            final ConfigGroup indyConfig = new com.drwtrading.london.eeif.utils.config.Config(configFile).getRoot().getGroup("indy");
             final IIndyCacheListener indyListener = new IndyClient(channels.instDefs);
 
             final IResourceMonitor<ReddalComponents> reddalMonitor = new ResourceMonitor<>("Indy", ReddalComponents.class, errorLog, true);
@@ -726,21 +744,26 @@ public class Main {
             });
         }
 
+        final ConfigGroup opxlConfig = root.getGroup("opxl");
+
         // Desk Position
-        if (environment.opxlDeskPositionEnabled()) {
-            ReconnectingOPXLClient client = new ReconnectingOPXLClient(config.get("opxl.host"), config.getInt("opxl.port"),
-                    new OpxlPositionSubscriber(channels.errorPublisher, channels.metaData::publish)::onOpxlData,
-                    new HashSet<>(environment.opxlDeskPositionKeys()), fibers.opxlPosition.getFiber(), channels.error);
+        final ConfigGroup deskPositionConfig = root.getEnabledGroup("opxl", "deskposition");
+        if (null != deskPositionConfig) {
+            final ConfigParam keysParam = deskPositionConfig.getParam("keys");
+            final Set<String> keys = keysParam.getSet(Pattern.compile(","));
+            new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
+                    new OpxlPositionSubscriber(channels.errorPublisher, channels.metaData::publish)::onOpxlData, keys,
+                    fibers.opxlPosition.getFiber(), channels.error);
         }
 
         // Ladder Text
-        {
-            if (environment.opxlLadderTextEnabled()) {
-                final HashSet<String> keys = new HashSet<>(environment.getOpxlLadderTextKeys());
-                ReconnectingOPXLClient client = new ReconnectingOPXLClient(config.get("opxl.host"), config.getInt("opxl.port"),
-                        new OpxlLadderTextSubscriber(channels.errorPublisher, channels.metaData)::onOpxlData, keys,
-                        fibers.metaData.getFiber(), channels.error);
-            }
+        final ConfigGroup ladderTextConfig = root.getEnabledGroup("opxl", "laddertext");
+        if (null != ladderTextConfig) {
+            final ConfigParam keysParam = ladderTextConfig.getParam("keys");
+            final Set<String> keys = keysParam.getSet(Pattern.compile(","));
+            new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
+                    new OpxlLadderTextSubscriber(channels.errorPublisher, channels.metaData)::onOpxlData, keys, fibers.metaData.getFiber(),
+                    channels.error);
         }
 
         // Error souting
@@ -759,22 +782,25 @@ public class Main {
 
         // Logging
         {
-            fibers.logging.subscribe(new ErrorLogger(new File(logDir, "errors.log")).onThrowableCallback(), channels.error);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "remote-order.json", channels.errorPublisher),
+            fibers.logging.subscribe(new ErrorLogger(logDir.resolve("errors.log").toFile()).onThrowableCallback(), channels.error);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "remote-order.json", channels.errorPublisher),
                     channels.workingOrderEvents, channels.remoteOrderEvents);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "trading-status.json", channels.errorPublisher), channels.tradingStatus);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "preferences.json", channels.errorPublisher), channels.ladderPrefsLoaded,
-                    channels.storeLadderPref);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "status.json", channels.errorPublisher), channels.stats);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "reference-data.json", channels.errorPublisher), channels.refData);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "heartbeats.json", channels.errorPublisher),
+            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trading-status.json", channels.errorPublisher),
+                    channels.tradingStatus);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "preferences.json", channels.errorPublisher),
+                    channels.ladderPrefsLoaded, channels.storeLadderPref);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "status.json", channels.errorPublisher), channels.stats);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "reference-data.json", channels.errorPublisher),
+                    channels.refData);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "heartbeats.json", channels.errorPublisher),
                     channels.heartbeatRoundTrips);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "contracts.json", channels.errorPublisher), channels.contractSets);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "single-order.json", channels.errorPublisher),
+            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "contracts.json", channels.errorPublisher),
+                    channels.contractSets);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "single-order.json", channels.errorPublisher),
                     channels.singleOrderCommand);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir, "trace.json", channels.errorPublisher), channels.trace);
+            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trace.json", channels.errorPublisher), channels.trace);
             for (final String name : websocketsForLogging.keySet()) {
-                fibers.logging.subscribe(new JsonChannelLogger(logDir, "websocket" + name + ".json", channels.errorPublisher),
+                fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "websocket" + name + ".json", channels.errorPublisher),
                         websocketsForLogging.get(name));
             }
         }
@@ -783,7 +809,7 @@ public class Main {
         new CountDownLatch(1).await();
     }
 
-    private static void setupEntityAliases(Environment environment, WebApplication webapp) {
+    private static void setupEntityAliases(Environment environment, WebApplication webapp) throws ConfigException {
         webapp.alias("/style.css", "/style-" + environment.getEntity() + ".css");
         webapp.alias("/launcher.js", "/launcher-" + environment.getEntity() + ".js");
     }

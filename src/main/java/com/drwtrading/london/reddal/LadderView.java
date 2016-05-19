@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
+import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
@@ -828,17 +829,19 @@ public class LadderView implements UiPipe.UiEventHandler {
 
             long center = 0;
 
-            final IBookLevel bestBid = md.getBook().getBestBid();
-            final IBookLevel bestAsk = md.getBook().getBestAsk();
+            final IBook<?> book = md.getBook();
+            final IBookLevel bestBid = book.getBestBid();
+            final IBookLevel bestAsk = book.getBestAsk();
+            final boolean isBookNotAuction = book.getStatus() != BookMarketState.AUCTION;
             final IBookReferencePrice auctionIndicativePrice = md.getBook().getRefPriceData(ReferencePoint.AUCTION_INDICATIVE);
             final IBookReferencePrice auctionSummaryPrice = md.getBook().getRefPriceData(ReferencePoint.AUCTION_SUMMARY);
             final IBookReferencePrice yestClose = md.getBook().getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
 
-            if (null != bestBid && null != bestAsk) {
+            if (isBookNotAuction && null != bestBid && null != bestAsk) {
                 center = (bestBid.getPrice() + bestAsk.getPrice()) / 2;
-            } else if (null != bestBid) {
+            } else if (isBookNotAuction && null != bestBid) {
                 center = bestBid.getPrice();
-            } else if (null != bestAsk) {
+            } else if (isBookNotAuction && null != bestAsk) {
                 center = bestAsk.getPrice();
             } else if (auctionIndicativePrice.isValid()) {
                 center = auctionIndicativePrice.getPrice();

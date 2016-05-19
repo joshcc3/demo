@@ -1,38 +1,29 @@
 package com.drwtrading.london.reddal;
 
-import com.drw.xetra.ebs.mds.XetraStream;
-import com.drw.xetra.ebs.mds.XetraTypes;
-import com.drwtrading.eeif.md.xetra.refData.XetraStreamPair;
-import com.drwtrading.london.config.Config;
+import com.drwtrading.london.eeif.utils.config.ConfigException;
+import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 public class Environment {
-
-
 
     public static enum Exchange {
         EUREX,
         XETRA,
         EURONEXT,
-        FILTERED, REMOTE;
+        FILTERED,
+        REMOTE;
     }
 
     public static final String MARKET_DATA = "marketData";
@@ -41,167 +32,125 @@ public class Environment {
     public static final String EEIF_OE = "eeifoe";
     public static final String METADATA = "metadata";
 
-    public boolean opxlDeskPositionEnabled() {
-        return config.getBooleanOrDefault("opxl.deskposition.enabled", false);
+    private final ConfigGroup config;
+
+    public Environment(final ConfigGroup config) {
+        this.config = config;
     }
 
-    public Collection<String> opxlDeskPositionKeys() {
-        return config.getListOrEmpty("opxl.deskposition.keys");
-    }
-
-    public boolean opxlLadderTextEnabled() {
-        return config.getBooleanOrDefault("opxl.laddertext.enabled", false);
-    }
-
-    public HostAndNic getMrPhilHostAndNic() throws SocketException {
+    public HostAndNic getMrPhilHostAndNic() throws SocketException, ConfigException {
         return getHostAndNic("mr-phil");
     }
 
-    public File getSettingsFile() throws IOException {
-        File file = new File(config.get("settings.file"));
-        if (!file.getParentFile().exists()) {
-            file.getParentFile().mkdirs();
+    public Path getSettingsFile() throws IOException, ConfigException {
+
+        final Path settingsFile = config.getGroup("settings").getPath("file");
+
+        Files.createDirectories(settingsFile.getParent());
+        if (Files.notExists(settingsFile)) {
+            Files.createFile(settingsFile);
         }
-        if (!file.exists()) {
-            file.createNewFile();
-        }
-        return file;
+        return settingsFile;
     }
 
-    public boolean indyEnabled() {
-        return config.getBooleanOrDefault("indy.enabled", false);
-    }
-
-    public HostAndNic getIndyHostAndNic() throws SocketException {
-        return getHostAndNic("indy");
-    }
-
-    public int getCommandsPort() {
+    public int getCommandsPort() throws ConfigException {
         return config.getInt("commands.port");
     }
 
-    public Collection<String> getOpxlLadderTextKeys() {
-        return config.getListOrEmpty("opxl.laddertext.keys");
-    }
-
-    public Exchange getMarketDataExchange(final String mds) {
-        return Exchange.valueOf(config.getOrDefault(MARKET_DATA + "." + mds + ".exchange", "REMOTE"));
+    public Exchange getMarketDataExchange(final String mds) throws ConfigException {
+        final ConfigGroup mdGroup = config.getGroup(MARKET_DATA);
+        final ConfigGroup mdsGroup = mdGroup.getGroup(mds);
+        final String exchange = mdsGroup.getString("exchange");
+        return Exchange.valueOf(exchange);
     }
 
     public static class HostAndNic {
+
         public final InetSocketAddress host;
         public final String nic;
 
-        public HostAndNic(InetSocketAddress host, String nic) {
+        public HostAndNic(final InetSocketAddress host, final String nic) {
             this.host = host;
             this.nic = nic;
         }
     }
 
-    public String getEeifOeInstance() {
-        return config.getOrNull("eeifoe.instance");
+    public String getStatsName() throws ConfigException {
+        return config.getGroup("stats").getString("name");
     }
 
-
-    private final Config config;
-
-    public Environment(Config config) {
-        this.config = config;
+    public String getStatsNns() throws ConfigException {
+        return config.getGroup("stats").getString("nns");
     }
 
-    public String getStatsName() {
-        return config.get("stats.name");
+    public String getStatsInterface() throws SocketException, ConfigException {
+        final String nic = config.getGroup("stats").getString("interface");
+        return NetworkInterfaces.find(nic);
     }
 
-    public String getStatsNns() {
-        return config.get("stats.nns");
+    public int getWebPort() throws ConfigException {
+        return config.getGroup("web").getInt("port");
     }
 
-    public String getStatsInterface() throws SocketException {
-        return NetworkInterfaces.find(config.get("stats.interface"));
-    }
-
-    public int getWebPort() {
-        return config.getInt("web.port");
-    }
-
-    public File getXetraReferenceDataFile(String marketDataName) {
-        File file = getFile(MARKET_DATA + "." + marketDataName + ".referenceDataFile");
-        file.getParentFile().mkdirs();
-        return file;
-    }
-
-    private File getFile(String key) {
-        return new File(config.get(key).replace("{date}", new SimpleDateFormat("yyyy-MM-dd").format(new Date())));
-    }
-
-    public File getLogDirectory(String configName) throws IOException {
-        File baseLogDir = new File(config.get("logDir"));
-        String today = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-        File logDir = new File(baseLogDir, today + "-" + configName).getCanonicalFile();
-        logDir.mkdirs();
-        return logDir;
-    }
-
-
-    public Collection<XetraStreamPair> getXetraReferenceDataStreams(String marketDataName) {
-        marketDataName = MARKET_DATA + "." + marketDataName;
-        List<String> xetraRefDataStreams = config.getList(marketDataName + ".refDataStreams");
-        List<XetraStreamPair> xetraStreamPairs = new ArrayList<>();
-        for (String xetraRefDataStream : xetraRefDataStreams) {
-            String prefix = marketDataName + ".refData." + xetraRefDataStream;
-            XetraStreamPair streamPair = new XetraStreamPair(
-                    new XetraStream(XetraTypes.StreamType.ReferenceData, XetraStream.XetraStreamServiceType.A, config.get(prefix + ".addressA"), config.getInt(prefix + ".port"), null, null),
-                    new XetraStream(XetraTypes.StreamType.ReferenceData, XetraStream.XetraStreamServiceType.B, config.get(prefix + ".addressB"), config.getInt(prefix + ".port"), null, null)
-            );
-            xetraStreamPairs.add(streamPair);
+    public Collection<String> getList(final String prefix) throws ConfigException {
+        if (config.paramExists(prefix)) {
+            return config.getParam(prefix).getSet(Pattern.compile(","));
+        } else {
+            return Collections.emptyList();
         }
-        return xetraStreamPairs;
     }
 
-    public List<String> getList(final String prefix) {
-        return ImmutableList.copyOf(config.getListOrEmpty(prefix));
+    public LadderOptions ladderOptions() throws ConfigException {
+        final ConfigGroup tradingGroup = config.getGroup("trading");
+        final Collection<String> leftClickOrderTypes = tradingGroup.getParam("orderTypesLeft").getSet(Pattern.compile(","));
+        final Collection<String> rightClickOrderTypes = tradingGroup.getParam("orderTypesRight").getSet(Pattern.compile(","));
+        final Collection<String> trades = tradingGroup.getParam("traders").getSet(Pattern.compile(","));
+        final String theoLaserLine = tradingGroup.getString("theoLaserLine");
+        final double reloadFraction = tradingGroup.getDouble("randomReloadFraction");
+        final String basketURL;
+        if (tradingGroup.paramExists("basketUrl")) {
+            basketURL = tradingGroup.getString("basketUrl");
+        } else {
+            basketURL = null;
+        }
+        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, trades, theoLaserLine, getServerResolver(), reloadFraction,
+                basketURL);
     }
 
-    public LadderOptions ladderOptions() {
-        return new LadderOptions(
-                getList("trading.orderTypesLeft"),
-                getList("trading.orderTypesRight"),
-                getList("trading.traders"),
-                config.get("trading.theoLaserLine"),
-                getServerResolver(),
-                config.getDouble("trading.randomReloadFraction"),
-                config.getOrNull("trading.basketUrl"));
+    public HostAndNic getHostAndNic(final String prefix, final String server) throws SocketException, ConfigException {
+
+        final ConfigGroup serverConfig = config.getGroup(prefix).getGroup(server);
+        final String address = serverConfig.getString("address");
+        final String nic;
+        if (serverConfig.paramExists("nic")) {
+            nic = serverConfig.getString("nic");
+        } else {
+            nic = "0.0.0.0";
+        }
+        return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])),
+                NetworkInterfaces.find(nic));
     }
 
-    public HostAndNic getHostAndNic(String prefix, String server) throws SocketException {
-        prefix = prefix + "." + server;
-        final String address = config.get(prefix + ".address");
-        final String nic = config.getOrDefault(prefix + ".nic", "0.0.0.0");
-        return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])), NetworkInterfaces.find(nic));
+    public HostAndNic getHostAndNic(final String prefix) throws SocketException, ConfigException {
+
+        final ConfigGroup serverConfig = config.getGroup(prefix);
+        final String address = serverConfig.getString("address");
+        final String nic;
+        if (serverConfig.paramExists("nic")) {
+            nic = serverConfig.getString("nic");
+        } else {
+            nic = "0.0.0.0";
+        }
+        return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])),
+                NetworkInterfaces.find(nic));
     }
 
-    public HostAndNic getHostAndNic(String prefix) throws SocketException {
-        final String address = config.get(prefix + ".address");
-        final String nic = config.getOrDefault(prefix + ".nic", "0.0.0.0");
-        return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])), NetworkInterfaces.find(nic));
-    }
-
-    public Collection<String> getMarkets(final String mds) {
-        return config.getList(MARKET_DATA + "." + mds + ".markets");
-    }
-
-    public Set<String> getXetraMarkets(String mds) {
-        return new HashSet<>(config.getList(MARKET_DATA + "." + mds + ".markets"));
-    }
-
-
-    public String getMarketDataInterface(final String mds) throws SocketException {
-        return NetworkInterfaces.find(config.get(MARKET_DATA + "." + mds + ".interface"));
-    }
-
-    public String getEntity() {
-        return config.getOrDefault("entity", "eeif");
+    public String getEntity() throws ConfigException {
+        if (config.paramExists("entity")) {
+            return config.getString("entity");
+        } else {
+            return "eeif";
+        }
     }
 
     /**
@@ -210,20 +159,38 @@ public class Environment {
      *
      * @return
      */
-    public RemoteOrderServerResolver getServerResolver() {
+    public RemoteOrderServerResolver getServerResolver() throws ConfigException {
 
         System.out.println("Loading server resolver:");
         final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<>();
 
-        for (String remoteServer : getList(REMOTE_COMMANDS)) {
-            String symbolRegex = config.getOrDefault(REMOTE_COMMANDS + "." + remoteServer + ".symbolRegex", ".*");
-            Pattern pattern = Pattern.compile(symbolRegex);
-            Set<String> orderTypes = ImmutableSet.copyOf(config.getListOrDefault(REMOTE_COMMANDS + "." + remoteServer + ".orderTypes", ImmutableList.of("*")));
-            System.out.println("\t" + remoteServer + ": regex '" + symbolRegex + "', order types: " + orderTypes);
-            if (orderTypes.size() == 1 && orderTypes.contains("*")) {
-                orderTypes = null;
+        final ConfigGroup remoteCommands = config.getGroup(REMOTE_COMMANDS);
+        final String[] orderedServers = config.getString(REMOTE_COMMANDS).split(",");
+        for (final String orderedServer : orderedServers) {
+            final String remoteServer = orderedServer.trim();
+            final ConfigGroup remoteServerCMDs = remoteCommands.getGroup(remoteServer);
+            final String symbolRegex;
+            if (remoteServerCMDs.paramExists("symbolRegex")) {
+                symbolRegex = remoteServerCMDs.getString("symbolRegex");
+            } else {
+                symbolRegex = ".*";
             }
-            matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypes));
+            final Pattern pattern = Pattern.compile(symbolRegex);
+            final Collection<String> orderTypesRaw;
+            if (remoteServerCMDs.paramExists("orderTypes")) {
+                orderTypesRaw = remoteServerCMDs.getParam("orderTypes").getSet(Pattern.compile(","));
+            } else {
+                orderTypesRaw = Collections.singleton("*");
+            }
+
+            System.out.println('\t' + remoteServer + ": regex '" + symbolRegex + "', order types: " + orderTypesRaw);
+
+            if (orderTypesRaw.size() == 1 && orderTypesRaw.contains("*")) {
+                matchers.put(remoteServer, new RemoteOrderMatcher(pattern, null));
+            } else {
+                final Collection<String> orderTypes = Collections.unmodifiableCollection(orderTypesRaw);
+                matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypes));
+            }
         }
         return getRemoteOrderServerResolver(matchers);
     }
@@ -240,22 +207,25 @@ public class Environment {
     }
 
     public static interface RemoteOrderServerResolver {
+
         public String resolveToServerName(String symbol, String orderType);
-        default String resolveToServerName(String symbol, RemoteOrderType remoteOrderType) {
+
+        default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType) {
             return resolveToServerName(symbol, remoteOrderType.name());
         }
     }
 
     public static class RemoteOrderMatcher {
-        public final Pattern symbolPattern;
-        public final Set<String> orderTypes;
 
-        public RemoteOrderMatcher(Pattern symbolPattern, Set<String> orderTypes) {
+        public final Pattern symbolPattern;
+        public final Collection<String> orderTypes;
+
+        public RemoteOrderMatcher(final Pattern symbolPattern, final Collection<String> orderTypes) {
             this.symbolPattern = symbolPattern;
             this.orderTypes = orderTypes;
         }
 
-        public boolean matches(String symbol, String orderType) {
+        public boolean matches(final String symbol, final String orderType) {
             return symbolPattern.matcher(symbol).find() && (orderTypes == null || orderTypes.contains(orderType));
         }
     }

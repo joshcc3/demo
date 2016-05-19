@@ -100,12 +100,12 @@ public class LevelThreeBookHandler extends BookLevelThreeMonitorAdaptor {
 
     @Override
     public void logErrorMsg(final String msg) {
-        monitor.logError(ReddalComponents.MD_TRANSPORT, msg);
+        monitor.logError(ReddalComponents.MD_L3_HANDLER, msg);
     }
 
     @Override
     public void logErrorMsg(final String msg, final Throwable t) {
-        monitor.logError(ReddalComponents.MD_TRANSPORT, msg, t);
+        monitor.logError(ReddalComponents.MD_L3_HANDLER, msg, t);
     }
 
     @Override
@@ -118,9 +118,9 @@ public class LevelThreeBookHandler extends BookLevelThreeMonitorAdaptor {
                     listener.bookUpdated();
                 }
             }
-            monitor.setOK(ReddalComponents.MD_TRANSPORT);
+            monitor.setOK(ReddalComponents.MD_L3_HANDLER);
         } catch (final Exception e) {
-            monitor.logError(ReddalComponents.MD_TRANSPORT, "Failed to complete batch.", e);
+            monitor.logError(ReddalComponents.MD_L3_HANDLER, "Failed to complete batch.", e);
         } finally {
             batch.clear();
         }
