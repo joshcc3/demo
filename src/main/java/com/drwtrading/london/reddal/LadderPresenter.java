@@ -146,7 +146,7 @@ public class LadderPresenter {
         md.unsubscribeForMD();
 
         final int suffixLoc = symbol.indexOf(' ');
-        if (suffixLoc < 1 || !newClientsBySuffix.containsKey(symbol.substring(suffixLoc, symbol.length() - suffixLoc))) {
+        if (suffixLoc < 1 || !newClientsBySuffix.containsKey(symbol.substring(suffixLoc))) {
             marketDataForSymbolMap.remove(symbol);
             final MemoryChannel<MarketDataEvent> mdEventMemChannel = mdEventChannels.remove(symbol);
             unsubscribeFromMarketData.publish(new UnsubscribeMarketData(symbol, mdEventMemChannel));
