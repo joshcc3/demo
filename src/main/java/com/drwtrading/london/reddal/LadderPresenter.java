@@ -9,7 +9,7 @@ import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.reddal.data.DisplaySymbol;
+import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.IMarketData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
@@ -17,7 +17,7 @@ import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.SelectIOMDForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
+import com.drwtrading.london.reddal.data.ibook.IBookHandler;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
@@ -56,7 +56,7 @@ public class LadderPresenter {
 
     public static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 12;
 
-    private final Map<String, LevelThreeBookSubscriber> newClientsBySuffix;
+    private final Map<String, IBookHandler> newClientsBySuffix;
 
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
@@ -86,7 +86,7 @@ public class LadderPresenter {
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
 
-    public LadderPresenter(final Map<String, LevelThreeBookSubscriber> newClientsBySuffix,
+    public LadderPresenter(final Map<String, IBookHandler> newClientsBySuffix,
             final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
             final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<LadderView.HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
@@ -121,19 +121,13 @@ public class LadderPresenter {
         final int suffixLoc = symbol.indexOf(' ');
         if (0 < suffixLoc && newClientsBySuffix.containsKey(symbol.substring(suffixLoc))) {
             // new subscription method
-            final LevelThreeBookSubscriber bookSubscriber =
-                    newClientsBySuffix.get(symbol.substring(suffixLoc));
-            final SelectIOMDForSymbol mdForSymbol = new SelectIOMDForSymbol(bookSubscriber.mdClient, symbol, () -> fastFlushSymbol(symbol));
-            bookSubscriber.bookHandler.subscribe(symbol, mdForSymbol);
-            return mdForSymbol;
+            final IBookHandler bookHandler = newClientsBySuffix.get(symbol.substring(suffixLoc));
+            return new SelectIOMDForSymbol(bookHandler, symbol);
         } else {
             // Subscribe to channel for this symbol
             final MemoryChannel<MarketDataEvent> mdEventMemoryChannel = new MemoryChannel<>();
             final MarketDataForSymbol mdForSymbol = new MarketDataForSymbol(symbol);
-            mdEventMemoryChannel.subscribe(new BatchSubscriber<>(fiber, (message) -> {
-                mdForSymbol.onMarketDataBatch(message);
-                fastFlushSymbol(symbol);
-            }, 0, TimeUnit.MILLISECONDS));
+            mdEventMemoryChannel.subscribe(new BatchSubscriber<>(fiber, mdForSymbol::onMarketDataBatch, 0, TimeUnit.MILLISECONDS));
             mdEventChannels.put(symbol, mdEventMemoryChannel);
             subscribeToMarketData.publish(new SubscribeMarketData(symbol, mdEventMemoryChannel));
             return mdForSymbol;
@@ -374,12 +368,6 @@ public class LadderPresenter {
             ladderView.flush();
         }
         return BATCH_FLUSH_INTERVAL_MS;
-    }
-
-    public void fastFlushSymbol(final String symbol) {
-        for (final LadderView ladderView : viewsBySymbol.get(symbol)) {
-            ladderView.fastMdFlush();
-        }
     }
 
     public long sendAllHeartbeats() {

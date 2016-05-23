@@ -3,36 +3,36 @@ package com.drwtrading.london.reddal.data;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
-import com.drwtrading.london.md.transport.tcpShaped.io.MDTransportClient;
+import com.drwtrading.london.reddal.data.ibook.IBookHandler;
 import com.drwtrading.london.reddal.util.PriceOperations;
 import com.drwtrading.london.reddal.util.PriceUtils;
 
 import java.text.DecimalFormat;
-import java.util.regex.Pattern;
 
 public class SelectIOMDForSymbol implements IMarketData {
 
-    private static final Pattern NUMBER_FORMAT_REPLACEMENT = Pattern.compile("[0-9]");
-
-    private final MDTransportClient mdTransportClient;
+    private final IBookHandler bookHandler;
+    private final String symbol;
 
     private final boolean isPriceInverted;
     public final TradeTracker tradeTracker;
-    private final Runnable fastFlush;
 
     private IBook<?> book;
     private PriceOperations priceOperations;
     private DecimalFormat df;
 
-    private boolean updatesWanted;
+    public SelectIOMDForSymbol(final IBookHandler bookHandler, final String symbol) {
 
-    public SelectIOMDForSymbol(final MDTransportClient mdTransportClient, final String symbol, final Runnable fastFlush) {
-
-        this.mdTransportClient = mdTransportClient;
+        this.bookHandler = bookHandler;
+        this.symbol = symbol;
 
         this.isPriceInverted = symbol.startsWith("6R");
         this.tradeTracker = new TradeTracker();
-        this.fastFlush = fastFlush;
+    }
+
+    @Override
+    public void subscribeForMD() {
+        bookHandler.subscribeForMD(symbol, this);
     }
 
     public void setBook(final IBook<?> book) {
@@ -41,34 +41,18 @@ public class SelectIOMDForSymbol implements IMarketData {
         this.priceOperations = new PriceUtils(book.getTickTable());
 
         final long smallestTick = book.getTickTable().getRawTickLevels().firstEntry().getValue();
-        final String numberFormat = NUMBER_FORMAT_REPLACEMENT.matcher(Long.toString(smallestTick)).replaceAll("0");
-        this.df = NumberFormatUtil.getDF(numberFormat);
-
-        if (updatesWanted) {
-            mdTransportClient.subscribeToInst(book.getLocalID());
-        }
-    }
-
-    @Override
-    public void subscribeForMD() {
-
-        updatesWanted = true;
-        if (null != book) {
-            mdTransportClient.subscribeToInst(book.getLocalID());
-        }
+        final int decimalPlaces = Math.max(0, 10 - Long.toString(smallestTick).length());
+        this.df = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, decimalPlaces);
     }
 
     @Override
     public void unsubscribeForMD() {
-
-        updatesWanted = false;
-        if (null != book) {
-            mdTransportClient.unsubscribeToInst(book.getLocalID());
-        }
+        bookHandler.unsubscribeForMD(symbol);
     }
 
-    public void bookUpdated() {
-        fastFlush.run();
+    public void trade(final long price, final long qty) {
+        tradeTracker.addTrade(price, qty);
+        tradeTracker.addTotalTraded(price, qty);
     }
 
     @Override

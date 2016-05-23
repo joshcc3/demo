@@ -175,13 +175,13 @@ public class MarketDataForSymbol implements IMarketData {
 
         @Override
         public Void visitTradeUpdate(final TradeUpdate msg) {
-            tradeTracker.addTrade(msg);
+            tradeTracker.addTrade(msg.getPrice(), msg.getQuantityTraded());
             return null;
         }
 
         @Override
         public Void visitTotalTradedVolumeByPrice(final TotalTradedVolumeByPrice msg) {
-            tradeTracker.setTotalTraded(msg);
+            tradeTracker.setTotalTraded(msg.getPrice(), msg.getQuantityTraded());
             return null;
         }
 
@@ -195,6 +195,7 @@ public class MarketDataForSymbol implements IMarketData {
             final double wpv = Mathematics.getPointValue(instType, symbol, tickTable);
 
             book = new LevelTwoBook(BookLevelTwoViewerAdaptor.INSTANCE, symbol, -1, instID, instType, tickTable, mdSource, wpv);
+            book.setValidity(true);
 
             priceOperations = PriceUtils.from(msg);
             priceFormat = PriceFormats.from(msg.getPriceStructure().getTickStructure());
@@ -242,7 +243,11 @@ public class MarketDataForSymbol implements IMarketData {
 
         @Override
         public Void visitAuctionIndicativePrice(final AuctionIndicativePrice msg) {
-            book.referencePrice(ReferencePoint.AUCTION_INDICATIVE, msg.getIndicativePrice(), msg.getQuantity());
+            if (msg.isHasIndicativePrice()) {
+                book.invalidateReferencePrice(ReferencePoint.AUCTION_INDICATIVE);
+            } else {
+                book.referencePrice(ReferencePoint.AUCTION_INDICATIVE, msg.getIndicativePrice(), msg.getQuantity());
+            }
             return null;
         }
 
@@ -254,10 +259,15 @@ public class MarketDataForSymbol implements IMarketData {
 
         @Override
         public Void visitProductReset(final ProductReset msg) {
+
             book.setStatus(BookMarketState.CLOSED);
             book.clearBook();
             book.invalidateReferencePrice(ReferencePoint.AUCTION_SUMMARY);
             book.invalidateReferencePrice(ReferencePoint.AUCTION_SUMMARY);
+
+            lastImpliedMsg = null;
+            swissLastTopOfBook = null;
+            
             return null;
         }
 
@@ -459,7 +469,7 @@ public class MarketDataForSymbol implements IMarketData {
         }
     }
 
-    private static MDSource getSource(final InstrumentDefinitionEvent def) {
+    public static MDSource getSource(final InstrumentDefinitionEvent def) {
 
         if ("CXE".equals(def.getExchange()) || "BXE".equals(def.getExchange())) {
             return MDSource.BATS_EUROPE;

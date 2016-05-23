@@ -183,6 +183,8 @@ public class LadderView implements UiPipe.UiEventHandler {
     private final TradingStatusForAll tradingStatusForAll;
     private final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
+    private final Map<Long, Integer> levelByPrice;
+
     public String symbol;
     private IMarketData marketData;
     private WorkingOrdersForSymbol workingOrdersForSymbol;
@@ -190,7 +192,6 @@ public class LadderView implements UiPipe.UiEventHandler {
     private int levels;
     private LadderPrefsForSymbolUser ladderPrefsForSymbolUser;
     private OrderUpdatesForSymbol orderUpdatesForSymbol;
-    Map<Long, Integer> levelByPrice = new HashMap<>();
     private boolean pendingRefDataAndSettle = true;
     private boolean isCashEquityOrFX = false;
     private long centerPrice;
@@ -223,6 +224,7 @@ public class LadderView implements UiPipe.UiEventHandler {
         this.tradingStatusForAll = tradingStatusForAll;
         this.heartbeatRoundTripPublisher = heartbeatRoundTripPublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
+        this.levelByPrice = new HashMap<>();
         this.ui.setHandler(this);
         initDefaultPrefs();
     }
@@ -270,9 +272,6 @@ public class LadderView implements UiPipe.UiEventHandler {
             ui.cls(Html.PRICING + mode, "invisible", !pricingMode.isValidChoice(mode));
             ui.cls(Html.PRICING + mode, "active_mode", pricingMode.get() == mode);
         }
-    }
-
-    public void fastMdFlush() {
     }
 
     public void fastInputFlush() {
@@ -377,7 +376,7 @@ public class LadderView implements UiPipe.UiEventHandler {
             if (d != null && d.laserLineByName.containsKey(ladderOptions.theoLaserLine)) {
                 theo = d.laserLineByName.get(ladderOptions.theoLaserLine);
             }
-            for (final Long price : levelByPrice.keySet())
+            for (final long price : levelByPrice.keySet())
                 if (pricingMode.get() == PricingMode.BPS && theo.isValid()) {
                     final double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
                     ui.txt(priceKey(price), BASIS_POINT_DECIMAL_FORMAT.format(points));
@@ -626,7 +625,7 @@ public class LadderView implements UiPipe.UiEventHandler {
 
     private void tryToDrawLadder() {
         final IMarketData m = this.marketData;
-        if (null != m && null != m.getBook()) {
+        if (null != m && null != m.getBook() && m.getBook().isValid()) {
             ui.clear();
             ui.clickable('#' + Html.SYMBOL);
             ui.clickable('#' + Html.CLOCK);

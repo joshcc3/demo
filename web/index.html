@@ -28,7 +28,7 @@
             }, 200);
             $("#search").keyup(function (e) {
                 if (e.keyCode == 13 && topResult) {
-                    window.open(topResult.link, topResult.symbol, "dialog=yes,width=300,height=600");
+                    window.open(topResult.link, topResult.symbol, "dialog=yes,width=245,height=600");
                 }
             });
             $("#search").focus();
@@ -39,7 +39,6 @@
         });
         function display(results, toomany) {
             topResult = undefined;
-            console.log(results);
             $("#too_many").toggleClass("invisible",!toomany);
             if(results) {
                 $(".result").remove();
@@ -62,7 +61,6 @@
                     row.find('.worm').bind('click', function() {
                         webwormLink([{symbol:x.symbol,exchange:x.exchange}]);
                     });
-                    console.log(i,x);
                 })
             }
         }
@@ -91,7 +89,6 @@
                     .split("{{SYMBOLS}}").join(symbolList)
                     .split("{{DATE}}").join(d.toISOString().split("T")[0]);
 
-            console.log(link);
             popUp(link,  undefined, 1400, 1000);
 
         }

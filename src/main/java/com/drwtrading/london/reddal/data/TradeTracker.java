@@ -1,8 +1,6 @@
 package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.eeif.utils.collections.LongMap;
-import com.drwtrading.london.protocols.photon.marketdata.TotalTradedVolumeByPrice;
-import com.drwtrading.london.protocols.photon.marketdata.TradeUpdate;
 
 public class TradeTracker {
 
@@ -26,30 +24,40 @@ public class TradeTracker {
         this.maxTradedPrice = Long.MIN_VALUE;
     }
 
-    public void addTrade(final TradeUpdate tradeUpdate) {
+    public void addTrade(final long price, final long qty) {
 
         if (0 < qtyRunAtLastPrice) {
-            if (lastPrice == tradeUpdate.getPrice()) {
-                qtyRunAtLastPrice += tradeUpdate.getQuantityTraded();
+            if (lastPrice == price) {
+                qtyRunAtLastPrice += qty;
                 isLastTradeSameLevel = true;
             } else {
-                qtyRunAtLastPrice = tradeUpdate.getQuantityTraded();
+                qtyRunAtLastPrice = qty;
                 isLastTradeSameLevel = false;
-                isLastTickUp = lastPrice < tradeUpdate.getPrice();
+                isLastTickUp = lastPrice < price;
                 isLastTickDown = !isLastTickUp;
             }
         } else {
-            qtyRunAtLastPrice = tradeUpdate.getQuantityTraded();
+            qtyRunAtLastPrice = qty;
         }
 
-        lastPrice = tradeUpdate.getPrice();
-
+        lastPrice = price;
     }
 
-    public void setTotalTraded(final TotalTradedVolumeByPrice totalTradedUpdate) {
+    public void addTotalTraded(final long price, final long qty) {
 
-        final long price = totalTradedUpdate.getPrice();
-        final long qty = totalTradedUpdate.getQuantityTraded();
+        final Long prevQty = totalTradedVolumeByPrice.get(price);
+        if (null == prevQty) {
+            totalTradedVolumeByPrice.put(price, qty);
+        } else {
+            totalTradedVolumeByPrice.put(price, prevQty + qty);
+        }
+        totalQtyTraded += qty;
+        minTradedPrice = Math.min(minTradedPrice, price);
+        maxTradedPrice = Math.max(maxTradedPrice, price);
+    }
+
+    public void setTotalTraded(final long price, final long qty) {
+
         final Long prevQty = totalTradedVolumeByPrice.put(price, qty);
         if (null == prevQty) {
             totalQtyTraded += qty;

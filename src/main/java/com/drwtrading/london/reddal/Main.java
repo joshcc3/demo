@@ -20,6 +20,7 @@ import com.drwtrading.london.eeif.utils.config.ConfigParam;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
 import com.drwtrading.london.eeif.utils.io.files.FileUtils;
+import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.monitoring.BasicStdOutErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -40,6 +41,8 @@ import com.drwtrading.london.jetlang.transport.LowTrafficMulticastTransport;
 import com.drwtrading.london.logging.ErrorLogger;
 import com.drwtrading.london.logging.JsonChannelLogger;
 import com.drwtrading.london.md.transport.tcpShaped.MDTransportComponents;
+import com.drwtrading.london.md.transport.tcpShaped.io.MDTransportClient;
+import com.drwtrading.london.md.transport.tcpShaped.io.MDTransportClientFactory;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.photons.eeifoe.OrderEntryCommandMsg;
 import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
@@ -56,8 +59,8 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.reddal.data.DisplaySymbol;
-import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
+import com.drwtrading.london.reddal.data.ibook.IBookHandler;
+import com.drwtrading.london.reddal.data.ibook.LevelThreeBookHandler;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
@@ -68,8 +71,11 @@ import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.ProductResetter;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
+import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
+import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
@@ -123,6 +129,8 @@ import java.util.regex.Pattern;
 
 public class Main {
 
+    public static final int MD_SERVER_TIMEOUT = 5000;
+
     public static final long SERVER_TIMEOUT = 3000L;
     public static final long HEARTBEAT_INTERVAL_MS = 3000;
     public static final int NUM_DISPLAY_THREADS = 12;
@@ -155,6 +163,7 @@ public class Main {
         public final TypedChannel<LadderSettings.StoreLadderPref> storeLadderPref;
         public final TypedChannel<InstrumentDef> instDefs;
         public final TypedChannel<DisplaySymbol> displaySymbol;
+        public final TypedChannel<SearchResult> searchResults;
         public final TypedChannel<LadderView.HeartbeatRoundtrip> heartbeatRoundTrips;
         private final ChannelFactory channelFactory;
         public final TypedChannel<ReddalMessage> reddalCommand;
@@ -191,6 +200,7 @@ public class Main {
             storeLadderPref = create(LadderSettings.StoreLadderPref.class);
             instDefs = create(InstrumentDef.class);
             displaySymbol = create(DisplaySymbol.class);
+            searchResults = create(SearchResult.class);
             heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
             reddalCommand = create(ReddalMessage.class);
             reddalCommandSymbolAvailable = create(ReddalMessage.class);
@@ -393,8 +403,9 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("/", "index", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("index", websocket);
-                final IndexPresenter indexPresenter = new IndexPresenter();
+                final IndexUIPresenter indexPresenter = new IndexUIPresenter();
                 fibers.ui.subscribe(indexPresenter, channels.displaySymbol, channels.refData, websocket);
+                channels.searchResults.subscribe(fibers.ui.getFiber(), indexPresenter::addSearchResult);
             }
 
             // Orders presenter
@@ -440,13 +451,35 @@ public class Main {
                 webSockets.add(webSocket);
                 final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
 
-                final IResourceMonitor<MDTransportComponents> mdClientMonitor =
-                        MappedResourceMonitor.mapMonitorByName(displayMonitor, MDTransportComponents.class, ReddalComponents.class,
-                                "NEW_MD_");
+                final Map<String, IBookHandler> newClientsBySuffix = new HashMap<>();
 
-                final Map<String, LevelThreeBookSubscriber> newClientsBySuffix = new HashMap<>();
-//                final MDSource mdSource = MDSource.get(
-//                final MDTransportClient mdClient = MDTransportClientFactory.createLevel3Client(displaySelectIO, mdClientMonitor,
+                if (null != newMDConfig) {
+
+                    final IResourceMonitor<MDTransportComponents> mdClientMonitor =
+                            MappedResourceMonitor.mapMonitorByName(displayMonitor, MDTransportComponents.class, ReddalComponents.class,
+                                    "NEW_MD_");
+                    final LevelThreeBookHandler bookHandler = new LevelThreeBookHandler(displayMonitor, channels.searchResults);
+
+                    for (final ConfigGroup mdSourceGroup : newMDConfig.groups()) {
+
+                        final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
+
+                        final MDTransportClient mdClient =
+                                MDTransportClientFactory.createLevel3Client(displaySelectIO, mdClientMonitor, mdSource,
+                                        "reddal-" + configName + '-' + i, bookHandler, MD_SERVER_TIMEOUT);
+                        bookHandler.setMDClient(mdSource, mdClient);
+
+                        for (final String suffix : mdSourceGroup.getParam("suffixes").getSet(Pattern.compile(","))) {
+                            if (null != newClientsBySuffix.put(' ' + suffix, bookHandler)) {
+                                throw new ConfigException("Suffix [" + suffix + "] is defined for two MDSources [" + mdSource + "].");
+                            }
+                        }
+
+                        final TransportTCPKeepAliveConnection<?, ?> connection =
+                                MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
+                        displaySelectIO.execute(connection::restart);
+                    }
+                }
 
                 final LadderPresenter presenter =
                         new LadderPresenter(newClientsBySuffix, channels.remoteOrderCommand, environment.ladderOptions(), channels.stats,

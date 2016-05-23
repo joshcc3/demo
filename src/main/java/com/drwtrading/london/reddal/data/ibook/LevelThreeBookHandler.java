@@ -1,43 +1,56 @@
 package com.drwtrading.london.reddal.data.ibook;
 
-import com.drwtrading.london.eeif.utils.collections.LongMap;
-import com.drwtrading.london.eeif.utils.collections.LongMapNode;
+import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.AggressorSide;
 import com.drwtrading.london.eeif.utils.marketData.book.BookLevelThreeMonitorAdaptor;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
-import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
-import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.md.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.SelectIOMDForSymbol;
+import com.drwtrading.london.reddal.symbols.SearchResult;
+import org.jetlang.channels.Channel;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class LevelThreeBookHandler extends BookLevelThreeMonitorAdaptor {
+public class LevelThreeBookHandler extends BookLevelThreeMonitorAdaptor implements IBookHandler {
 
     private final IResourceMonitor<ReddalComponents> monitor;
 
-    private final LongMap<IBook<IBookLevelWithOrders>> batch;
+    private final Map<MDSource, MDTransportClient> mdClients;
+    private final Channel<SearchResult> searchResults;
+
     private final Map<String, IBook<IBookLevelWithOrders>> books;
     private final Map<String, SelectIOMDForSymbol> listeners;
 
-    public LevelThreeBookHandler(final IResourceMonitor<ReddalComponents> monitor) {
+    public LevelThreeBookHandler(final IResourceMonitor<ReddalComponents> monitor, final Channel<SearchResult> searchResults) {
 
         this.monitor = monitor;
+        this.searchResults = searchResults;
 
-        this.batch = new LongMap<>();
+        this.mdClients = new EnumMap<>(MDSource.class);
+
         this.books = new HashMap<>();
         this.listeners = new HashMap<>();
     }
 
-    public void subscribe(final String symbol, final SelectIOMDForSymbol listener) {
+    public void setMDClient(final MDSource mdSource, final MDTransportClient client) {
+
+        if (null != mdClients.put(mdSource, client)) {
+            monitor.logError(ReddalComponents.MD_L3_HANDLER, "Duplicate client for MDSource [" + mdSource + "].");
+        }
+    }
+
+    @Override
+    public void subscribeForMD(final String symbol, final SelectIOMDForSymbol listener) {
 
         listeners.put(symbol, listener);
         final IBook<IBookLevelWithOrders> book = books.get(symbol);
         if (null != book) {
-            listener.setBook(book);
+            bookSubscribe(listener, book);
         }
     }
 
@@ -47,55 +60,40 @@ public class LevelThreeBookHandler extends BookLevelThreeMonitorAdaptor {
         books.put(book.getSymbol(), book);
         final SelectIOMDForSymbol listener = listeners.get(book.getSymbol());
         if (null != listener) {
-            listener.setBook(book);
+            bookSubscribe(listener, book);
         }
+        final SearchResult searchResult = new SearchResult(book);
+        searchResults.publish(searchResult);
+    }
+
+    private void bookSubscribe(final SelectIOMDForSymbol listener, final IBook<?> book) {
+
+        listener.setBook(book);
+        final MDTransportClient client = mdClients.get(book.getSourceExch());
+        client.subscribeToInst(book.getLocalID());
+        monitor.setOK(ReddalComponents.MD_L3_HANDLER);
     }
 
     @Override
-    public void clearBook(final IBook<IBookLevelWithOrders> book) {
-        batch.put(book.getLocalID(), book);
-    }
+    public void unsubscribeForMD(final String symbol) {
 
-    @Override
-    public void impliedQty(final IBook<IBookLevelWithOrders> book, final IBookLevelWithOrders level) {
-        batch.put(book.getLocalID(), book);
-    }
+        listeners.remove(symbol);
+        final IBook<IBookLevelWithOrders> book = books.get(symbol);
+        if (null != book) {
+            final MDTransportClient client = mdClients.get(book.getSourceExch());
+            client.unsubscribeToInst(book.getLocalID());
+        }
 
-    @Override
-    public void addOrder(final IBook<IBookLevelWithOrders> book, final IBookOrder addOrder) {
-        batch.put(book.getLocalID(), book);
-    }
-
-    @Override
-    public void modifyOrder(final IBook<IBookLevelWithOrders> book, final IBookLevelWithOrders oldLevel, final IBookOrder order) {
-        batch.put(book.getLocalID(), book);
-    }
-
-    @Override
-    public void deleteOrder(final IBook<IBookLevelWithOrders> book, final IBookOrder order) {
-        batch.put(book.getLocalID(), book);
-    }
-
-    @Override
-    public void statusUpdate(final IBook<IBookLevelWithOrders> book) {
-        batch.put(book.getLocalID(), book);
-    }
-
-    @Override
-    public void bookValidated(final IBook<IBookLevelWithOrders> book) {
-        batch.put(book.getLocalID(), book);
     }
 
     @Override
     public void trade(final IBook<IBookLevelWithOrders> book, final long execID, final AggressorSide side, final long price,
             final long qty) {
 
-        // no-op
-    }
-
-    @Override
-    public void referencePrice(final IBook<IBookLevelWithOrders> book, final IBookReferencePrice referencePriceData) {
-        // no-op
+        final SelectIOMDForSymbol listener = listeners.get(book.getSymbol());
+        if (null != listener) {
+            listener.trade(price, qty);
+        }
     }
 
     @Override
@@ -106,23 +104,5 @@ public class LevelThreeBookHandler extends BookLevelThreeMonitorAdaptor {
     @Override
     public void logErrorMsg(final String msg, final Throwable t) {
         monitor.logError(ReddalComponents.MD_L3_HANDLER, msg, t);
-    }
-
-    @Override
-    public void batchComplete() {
-        try {
-            for (final LongMapNode<IBook<IBookLevelWithOrders>> bookNode : batch) {
-                final IBook<IBookLevelWithOrders> book = bookNode.getValue();
-                final SelectIOMDForSymbol listener = listeners.get(book.getSymbol());
-                if (null != listener) {
-                    listener.bookUpdated();
-                }
-            }
-            monitor.setOK(ReddalComponents.MD_L3_HANDLER);
-        } catch (final Exception e) {
-            monitor.logError(ReddalComponents.MD_L3_HANDLER, "Failed to complete batch.", e);
-        } finally {
-            batch.clear();
-        }
     }
 }
