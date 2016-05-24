@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.util;
 
-import com.drwtrading.london.reddal.LadderView;
+import com.drwtrading.london.reddal.ladders.LadderView;
 import org.junit.Test;
 
 import java.util.EnumSet;

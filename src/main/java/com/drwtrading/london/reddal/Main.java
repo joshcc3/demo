@@ -61,6 +61,15 @@ import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEve
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.ibook.IBookHandler;
 import com.drwtrading.london.reddal.data.ibook.LevelThreeBookHandler;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
+import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
+import com.drwtrading.london.reddal.ladders.LadderPresenter;
+import com.drwtrading.london.reddal.ladders.LadderSettings;
+import com.drwtrading.london.reddal.ladders.LadderView;
+import com.drwtrading.london.reddal.ladders.LadderWorkspace;
+import com.drwtrading.london.reddal.ladders.OrdersPresenter;
+import com.drwtrading.london.reddal.ladders.WorkingOrdersPresenter;
+import com.drwtrading.london.reddal.ladders.WorkspaceRequestHandler;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
@@ -466,7 +475,7 @@ public class Main {
 
                         final MDTransportClient mdClient =
                                 MDTransportClientFactory.createLevel3Client(displaySelectIO, mdClientMonitor, mdSource,
-                                        "reddal-" + configName + '-' + i, bookHandler, MD_SERVER_TIMEOUT);
+                                        "reddal-" + configName + '-' + i, bookHandler, MD_SERVER_TIMEOUT, true);
                         bookHandler.setMDClient(mdSource, mdClient);
 
                         for (final String suffix : mdSourceGroup.getParam("suffixes").getSet(Pattern.compile(","))) {

@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal;
+package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.prices.PriceFormats;
@@ -6,6 +6,7 @@ import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
+import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.monitoring.stats.StatsMsg;
@@ -115,12 +116,8 @@ public class WorkingOrdersPresenter {
     private void cancel(String user, Main.WorkingOrderUpdateFromServer order) {
         commands.publish(new Main.RemoteOrderCommandToServer(order.fromServer,
                 new RemoteCancelOrder(order.fromServer, user, order.value.getChainId(),
-                        LadderView.getRemoteOrderFromWorkingOrder(
-                                false,
-                                order.value.getPrice(),
-                                order.value,
-                                order.value.getTotalQuantity()
-                        ))));
+                        LadderView.getRemoteOrderFromWorkingOrder(false, order.value.getPrice(), order.value,
+                                order.value.getTotalQuantity()))));
     }
 
     private void repaint() {

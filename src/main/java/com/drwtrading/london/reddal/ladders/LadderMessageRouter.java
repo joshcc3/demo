@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal;
+package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
@@ -7,7 +7,6 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
-import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
@@ -28,12 +27,7 @@ public class LadderMessageRouter {
 
     public LadderMessageRouter(final List<TypedChannel<WebSocketControlMessage>> pool) {
         this.pool = pool;
-        shards = new MapMaker().makeComputingMap(new Function<String, Publisher<WebSocketControlMessage>>() {
-            @Override
-            public Publisher<WebSocketControlMessage> apply(final String from) {
-                return null;
-            }
-        });
+        this.shards = new MapMaker().makeComputingMap(from -> null);
     }
 
     @Subscribe

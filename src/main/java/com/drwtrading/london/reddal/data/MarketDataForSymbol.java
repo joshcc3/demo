@@ -111,7 +111,9 @@ public class MarketDataForSymbol implements IMarketData {
 
     @Override
     public void unsubscribeForMD() {
-        // no-op
+
+        lastImpliedMsg = null;
+        swissLastTopOfBook = null;
     }
 
     @Override
@@ -146,7 +148,7 @@ public class MarketDataForSymbol implements IMarketData {
         }
     }
 
-    public void onMarketDataEvent(final MarketDataEvent e) {
+    private void onMarketDataEvent(final MarketDataEvent e) {
 
         if (e instanceof InstrumentDefinitionEvent) {
 
@@ -174,14 +176,14 @@ public class MarketDataForSymbol implements IMarketData {
         private final Queue<PriceUpdate> priceUpdates = new LinkedList<>();
 
         @Override
-        public Void visitTradeUpdate(final TradeUpdate msg) {
-            tradeTracker.addTrade(msg.getPrice(), msg.getQuantityTraded());
+        public Void visitTotalTradedVolumeByPrice(final TotalTradedVolumeByPrice msg) {
+            tradeTracker.setTotalTraded(msg.getPrice(), msg.getQuantityTraded());
             return null;
         }
 
         @Override
-        public Void visitTotalTradedVolumeByPrice(final TotalTradedVolumeByPrice msg) {
-            tradeTracker.setTotalTraded(msg.getPrice(), msg.getQuantityTraded());
+        public Void visitTradeUpdate(final TradeUpdate msg) {
+            tradeTracker.tradeUpdate(msg.getPrice(), msg.getQuantityTraded());
             return null;
         }
 
@@ -193,6 +195,9 @@ public class MarketDataForSymbol implements IMarketData {
             final ITickTable tickTable = getTickTable(msg);
             final MDSource mdSource = getSource(msg);
             final double wpv = Mathematics.getPointValue(instType, symbol, tickTable);
+
+            swissLastTopOfBook = null;
+            lastImpliedMsg = null;
 
             book = new LevelTwoBook(BookLevelTwoViewerAdaptor.INSTANCE, symbol, -1, instID, instType, tickTable, mdSource, wpv);
             book.setValidity(true);

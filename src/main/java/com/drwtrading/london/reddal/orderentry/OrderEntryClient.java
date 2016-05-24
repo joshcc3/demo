@@ -13,7 +13,7 @@ import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
 import com.drwtrading.london.photons.eeifoe.Reject;
 import com.drwtrading.london.photons.eeifoe.ServerHeartbeat;
 import com.drwtrading.london.photons.eeifoe.Submit;
-import com.drwtrading.london.reddal.LadderClickTradingIssue;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;

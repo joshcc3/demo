@@ -1,5 +1,6 @@
-package com.drwtrading.london.reddal;
+package com.drwtrading.london.reddal.ladders;
 
+import com.drwtrading.london.reddal.ladders.LadderWorkspace;
 import org.webbitserver.HttpControl;
 import org.webbitserver.HttpHandler;
 import org.webbitserver.HttpRequest;
@@ -7,7 +8,6 @@ import org.webbitserver.HttpResponse;
 
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
-import java.net.SocketAddress;
 
 public class WorkspaceRequestHandler implements HttpHandler {
     private final LadderWorkspace ladderWorkspace;

@@ -48,11 +48,11 @@ public class SelectIOMDForSymbol implements IMarketData {
     @Override
     public void unsubscribeForMD() {
         bookHandler.unsubscribeForMD(symbol);
+        tradeTracker.clear();
     }
 
     public void trade(final long price, final long qty) {
         tradeTracker.addTrade(price, qty);
-        tradeTracker.addTotalTraded(price, qty);
     }
 
     @Override

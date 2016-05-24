@@ -24,7 +24,22 @@ public class TradeTracker {
         this.maxTradedPrice = Long.MIN_VALUE;
     }
 
-    public void addTrade(final long price, final long qty) {
+    void clear() {
+
+        totalTradedVolumeByPrice.clear();
+
+        lastPrice = 0;
+        minTradedPrice = 0;
+        maxTradedPrice = 0;
+
+        totalQtyTraded = 0;
+        qtyRunAtLastPrice = 0;
+        isLastTradeSameLevel = false;
+        isLastTickUp = false;
+        isLastTickDown = false;
+    }
+
+    void addTrade(final long price, final long qty) {
 
         if (0 < qtyRunAtLastPrice) {
             if (lastPrice == price) {
@@ -41,9 +56,6 @@ public class TradeTracker {
         }
 
         lastPrice = price;
-    }
-
-    public void addTotalTraded(final long price, final long qty) {
 
         final Long prevQty = totalTradedVolumeByPrice.get(price);
         if (null == prevQty) {
@@ -56,7 +68,7 @@ public class TradeTracker {
         maxTradedPrice = Math.max(maxTradedPrice, price);
     }
 
-    public void setTotalTraded(final long price, final long qty) {
+    void setTotalTraded(final long price, final long qty) {
 
         final Long prevQty = totalTradedVolumeByPrice.put(price, qty);
         if (null == prevQty) {
@@ -66,6 +78,25 @@ public class TradeTracker {
         }
         minTradedPrice = Math.min(minTradedPrice, price);
         maxTradedPrice = Math.max(maxTradedPrice, price);
+    }
+
+    void tradeUpdate(final long price, final long qty) {
+
+        if (0 < qtyRunAtLastPrice) {
+            if (lastPrice == price) {
+                qtyRunAtLastPrice += qty;
+                isLastTradeSameLevel = true;
+            } else {
+                qtyRunAtLastPrice = qty;
+                isLastTradeSameLevel = false;
+                isLastTickUp = lastPrice < price;
+                isLastTickDown = !isLastTickUp;
+            }
+        } else {
+            qtyRunAtLastPrice = qty;
+        }
+
+        lastPrice = price;
     }
 
     public boolean hasTrade() {

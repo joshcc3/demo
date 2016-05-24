@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal;
+package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.util.Struct;
 

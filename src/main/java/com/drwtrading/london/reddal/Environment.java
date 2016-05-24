@@ -2,8 +2,10 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
+import com.drwtrading.london.fastui.html.CSSClass;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
+import com.drwtrading.london.reddal.ladders.LadderOptions;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -12,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -101,9 +104,10 @@ public class Environment {
     }
 
     public LadderOptions ladderOptions() throws ConfigException {
+
         final ConfigGroup tradingGroup = config.getGroup("trading");
-        final Collection<String> leftClickOrderTypes = tradingGroup.getParam("orderTypesLeft").getSet(Pattern.compile(","));
-        final Collection<String> rightClickOrderTypes = tradingGroup.getParam("orderTypesRight").getSet(Pattern.compile(","));
+        final Collection<CSSClass> leftClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesLeft");
+        final Collection<CSSClass> rightClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesRight");
         final Collection<String> trades = tradingGroup.getParam("traders").getSet(Pattern.compile(","));
         final String theoLaserLine = tradingGroup.getString("theoLaserLine");
         final double reloadFraction = tradingGroup.getDouble("randomReloadFraction");
@@ -115,6 +119,22 @@ public class Environment {
         }
         return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, trades, theoLaserLine, getServerResolver(), reloadFraction,
                 basketURL);
+    }
+
+    private static Collection<CSSClass> getClickOrderTypes(final ConfigGroup config, final String groupName) throws ConfigException {
+
+        final EnumSet<CSSClass> result = EnumSet.noneOf(CSSClass.class);
+
+        final Collection<String> clickOrderTypes = config.getParam(groupName).getSet(Pattern.compile(","));
+        for (final String orderType : clickOrderTypes) {
+            try {
+                final CSSClass cssClass = CSSClass.valueOf(orderType);
+                result.add(cssClass);
+            } catch (final Exception ignore) {
+                throw new IllegalArgumentException("No CSS Class has been assigned for given order type [" + orderType + "].");
+            }
+        }
+        return result;
     }
 
     public HostAndNic getHostAndNic(final String prefix, final String server) throws SocketException, ConfigException {
@@ -156,8 +176,6 @@ public class Environment {
     /**
      * Remote commands server are matched in order.
      * If the symbol matches the regex AND (no order types are specified OR the order is among the types specified) THEN it matches
-     *
-     * @return
      */
     public RemoteOrderServerResolver getServerResolver() throws ConfigException {
 
@@ -208,7 +226,7 @@ public class Environment {
 
     public static interface RemoteOrderServerResolver {
 
-        public String resolveToServerName(String symbol, String orderType);
+        public String resolveToServerName(final String symbol, final String orderType);
 
         default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType) {
             return resolveToServerName(symbol, remoteOrderType.name());

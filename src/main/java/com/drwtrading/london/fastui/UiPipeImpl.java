@@ -1,6 +1,7 @@
 package com.drwtrading.london.fastui;
 
-import com.drwtrading.london.reddal.util.FastUtilCollections;
+import com.drwtrading.london.fastui.html.CSSClass;
+import com.drwtrading.london.fastui.html.DataKey;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import com.google.common.base.Joiner;
 import org.jetlang.channels.Publisher;
@@ -10,180 +11,83 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class UiPipeImpl implements UiPipe {
+public class UiPipeImpl {
 
-    public final Joiner commandJoiner = Joiner.on(COMMAND_SEPARATOR);
+    static final char DATA_SEPARATOR = '\0';
+    static final char COMMAND_SEPARATOR = '\1';
+
+    private static final String CLEAR_CMD = "clear";
+    private static final String TXT_CMD = "txt";
+    private static final String CLS_CMD = "cls";
+    private static final String DATA_CMD = "data";
+    private static final String HEIGHT_CMD = "height";
+    private static final String EVAL_CMD = "eval";
+    private static final String CLICKABLE_CMD = "clickable";
+    private static final String SCROLLABLE_CMD = "scrollable";
+    private static final String TITLE_CMD = "title";
+
+    private final Joiner commandJoiner = Joiner.on(COMMAND_SEPARATOR);
     private final Publisher<WebSocketOutboundData> pipe;
 
-    public static class KeyedBatcher {
+    private final KeyedBatcher text = new KeyedBatcher(TXT_CMD);
+    private final ClassBatcher classes = new ClassBatcher(CLS_CMD);
+    private final KeyedBatcher data = new KeyedBatcher(DATA_CMD);
+    private final KeyedBatcher height = new KeyedBatcher(HEIGHT_CMD);
 
-        public final Map<String, String> values = new HashMap<>();
-        public final Map<String, String> pendingValues = new HashMap<>();
-        private final String command;
+    private final ListBatcher clickable = new ListBatcher(CLICKABLE_CMD);
+    private final ListBatcher scrollable = new ListBatcher(SCROLLABLE_CMD);
+    private final StringBatcher titleBatcher = new StringBatcher(TITLE_CMD);
 
-        public KeyedBatcher(final String command) {
-            this.command = command;
-        }
-
-        public void put(final String key, final String value) {
-            if (!value.equals(values.get(key))) {
-                pendingValues.put(key, value);
-            } else {
-                pendingValues.remove(key);
-            }
-        }
-
-        public void flushPendingIntoCommandList(final List<String> commands) {
-            if (!pendingValues.isEmpty()) {
-                commands.add(getCommand());
-                values.putAll(pendingValues);
-                pendingValues.clear();
-            }
-        }
-
-        public String getCommand() {
-            final List<String> updates = new ArrayList<>();
-            for (final Map.Entry<String, String> entry : pendingValues.entrySet()) {
-                updates.add(entry.getKey());
-                updates.add(entry.getValue());
-            }
-            return cmd(this.command, cmd(updates.toArray()));
-        }
-
-        public void clear() {
-            values.clear();
-            pendingValues.clear();
-        }
-
-    }
-
-    public static class ListBatcher {
-
-        public final List<String> pendingValues = FastUtilCollections.newFastList();
-        private final String command;
-
-        public ListBatcher(final String command) {
-            this.command = command;
-        }
-
-        public void put(final String value) {
-            pendingValues.add(value);
-        }
-
-        public void flushPendingIntoCommandList(final List<String> commands) {
-            if (!pendingValues.isEmpty()) {
-                commands.add(getCommand());
-                pendingValues.clear();
-            }
-        }
-
-        public String getCommand() {
-            return cmd(this.command, cmd(pendingValues.toArray()));
-        }
-
-        public void clear() {
-            pendingValues.clear();
-        }
-
-    }
-
-    public static class StringBatcher {
-
-        public String pendingValue = "";
-        public String value = "";
-        private final String command;
-
-        public StringBatcher(final String command) {
-            this.command = command;
-        }
-
-        public void put(final String value) {
-            pendingValue = value;
-        }
-
-        public void flushPendingIntoCommandList(final List<String> commands) {
-            if (!pendingValue.equals(value)) {
-                commands.add(cmd(this.command, pendingValue));
-                value = pendingValue;
-            }
-        }
-
-        public void clear() {
-            pendingValue = "";
-            value = "";
-        }
-
-    }
-
-    final KeyedBatcher text = new KeyedBatcher(TXT_CMD);
-    final KeyedBatcher classes = new KeyedBatcher(CLS_CMD);
-    final KeyedBatcher data = new KeyedBatcher(DATA_CMD);
-    final KeyedBatcher height = new KeyedBatcher(HEIGHT_CMD);
-
-    final ListBatcher clickable = new ListBatcher(CLICKABLE_CMD);
-    final ListBatcher scrollable = new ListBatcher(SCROLLABLE_CMD);
-    final StringBatcher titleBatcher = new StringBatcher(TITLE_CMD);
-
-    UiEventHandler inboundHandler;
+    private UiEventHandler inboundHandler;
 
     public UiPipeImpl(final Publisher<WebSocketOutboundData> pipe) {
         this.pipe = pipe;
     }
 
-    @Override
     public Publisher<WebSocketOutboundData> evalPublisher() {
         return msg -> eval(msg.getData());
     }
 
     // Attaches {dataKey:value} pair to element #key
-    @Override
-    public void data(final String key, final String dataKey, final Object value) {
-        data.put(cmd(key, dataKey), value.toString());
+    public void data(final String key, final DataKey dataKey, final Object value) {
+        data.put(cmd(key, dataKey.key), value.toString());
     }
 
     // Toggles class cssClass on element #key
-    @Override
-    public void cls(final String key, final String cssClass, final boolean enabled) {
-        classes.put(key + DATA_SEPARATOR + cssClass, enabled ? "true" : "false");
+    public void cls(final String key, final CSSClass cssClass, final boolean enabled) {
+        classes.put(key, cssClass, enabled);
     }
 
     // Sets text of element #key to value
-    @Override
     public void txt(final String key, final Object value) {
         text.put(key, value.toString());
     }
 
     // Moves top of element #moveId to the center of #refId, offset by heightFraction * height of #refId (positive is up)
-    @Override
     public void height(final String moveId, final String refId, final double heightFraction) {
         final String value = cmd(refId, String.format("%.1f", heightFraction));
         height.put(moveId, value);
     }
 
-    @Override
     public void eval(final String eval) {
         flush();
         send(cmd(EVAL_CMD, eval));
     }
 
-    @Override
     public void clickable(final String id) {
         clickable.put(id);
     }
 
-    @Override
     public void scrollable(final String id) {
         scrollable.put(id);
     }
 
-    @Override
     public void title(final String title) {
         titleBatcher.put(title);
     }
 
     // Buffer interface
 
-    @Override
     public void clear() {
         text.clear();
         classes.clear();
@@ -195,7 +99,6 @@ public class UiPipeImpl implements UiPipe {
         send(cmd(CLEAR_CMD));
     }
 
-    @Override
     public void flush() {
         final List<String> commands = new ArrayList<>();
         text.flushPendingIntoCommandList(commands);
@@ -210,12 +113,10 @@ public class UiPipeImpl implements UiPipe {
         }
     }
 
-    @Override
     public void setHandler(final UiEventHandler eventHandler) {
         this.inboundHandler = eventHandler;
     }
 
-    @Override
     public void onInbound(final String data) {
         if (inboundHandler == null) {
             return;
@@ -256,5 +157,4 @@ public class UiPipeImpl implements UiPipe {
         }
         return data;
     }
-
 }
