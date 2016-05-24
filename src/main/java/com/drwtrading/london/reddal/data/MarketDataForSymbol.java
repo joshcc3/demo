@@ -244,9 +244,9 @@ public class MarketDataForSymbol implements IMarketData {
         @Override
         public Void visitAuctionIndicativePrice(final AuctionIndicativePrice msg) {
             if (msg.isHasIndicativePrice()) {
-                book.invalidateReferencePrice(ReferencePoint.AUCTION_INDICATIVE);
-            } else {
                 book.referencePrice(ReferencePoint.AUCTION_INDICATIVE, msg.getIndicativePrice(), msg.getQuantity());
+            } else {
+                book.invalidateReferencePrice(ReferencePoint.AUCTION_INDICATIVE);
             }
             return null;
         }
@@ -267,7 +267,7 @@ public class MarketDataForSymbol implements IMarketData {
 
             lastImpliedMsg = null;
             swissLastTopOfBook = null;
-            
+
             return null;
         }
 
