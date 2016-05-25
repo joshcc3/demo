@@ -6,6 +6,8 @@ import com.drwtrading.london.photons.eeifoe.Ack;
 import com.drwtrading.london.photons.eeifoe.AvailableSymbol;
 import com.drwtrading.london.photons.eeifoe.Cancel;
 import com.drwtrading.london.photons.eeifoe.ClientHeartbeat;
+import com.drwtrading.london.photons.eeifoe.Dead;
+import com.drwtrading.london.photons.eeifoe.Fill;
 import com.drwtrading.london.photons.eeifoe.OrderEntryCommand;
 import com.drwtrading.london.photons.eeifoe.OrderEntryCommandMsg;
 import com.drwtrading.london.photons.eeifoe.OrderEntryReply;
@@ -123,6 +125,16 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     @Override
     public Void visitAck(Ack msg) {
         seqNoToSymbol.remove(msg.getAckSeqNo());
+        return null;
+    }
+
+    @Override
+    public Void visitFill(Fill msg) {
+        return null;
+    }
+
+    @Override
+    public Void visitDead(Dead msg) {
         return null;
     }
 
