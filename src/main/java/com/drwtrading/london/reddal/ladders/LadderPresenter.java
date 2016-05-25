@@ -184,7 +184,7 @@ public class LadderPresenter {
         final String[] args = data.split("\0");
         final String cmd = args[0];
         final LadderView view = viewBySocket.get(msg.getOutboundChannel());
-        if (view != null) {
+        if (null != view) {
             if ("ladder-subscribe".equals(cmd)) {
                 final String symbol = args[1];
                 final int levels = Integer.parseInt(args[2]);
@@ -206,8 +206,9 @@ public class LadderPresenter {
                 view.fastInputFlush();
             }
         }
-        trace.publish(new LadderView.InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args,
-                UiPipeImpl.getDataArg(args)));
+        if (!"heartbeat".equals(cmd)) {
+            trace.publish(new LadderView.InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
+        }
     }
 
     @Subscribe

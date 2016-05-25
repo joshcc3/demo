@@ -975,15 +975,23 @@ public class LadderView implements UiEventHandler {
     }
 
     @Override
-    public void onIncoming(final String[] args) {
-        final String cmd = args[0];
-        if ("heartbeat".equals(cmd)) {
-            onHeartbeat(Long.valueOf(args[1]));
+    public void onHeartbeat(final long sentTimeMillis) {
+
+        final long returnTimeMillis = System.currentTimeMillis();
+        if (lastHeartbeatSentMillis == sentTimeMillis) {
+            lastHeartbeatSentMillis = null;
+            lastHeartbeatRoundtripMillis = returnTimeMillis - sentTimeMillis;
+            heartbeatRoundTripPublisher.publish(
+                    new HeartbeatRoundtrip(client.getUserName(), symbol, sentTimeMillis, returnTimeMillis, lastHeartbeatRoundtripMillis));
+        } else {
+            throw new RuntimeException(
+                    "Received heartbeat reply " + sentTimeMillis + " which does not match last sent heartbeat " + lastHeartbeatSentMillis);
         }
     }
 
     @Override
     public void onDblClick(final String label, final Map<String, String> dataArg) {
+
         if (null != workingOrdersForSymbol) {
             if (HTML.BUY_QTY.equals(label)) {
                 cancelAllForSide(BookSide.BID);
@@ -1582,22 +1590,8 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    private void onHeartbeat(final long sentTimeMillis) {
-
-        final long returnTimeMillis = System.currentTimeMillis();
-        if (lastHeartbeatSentMillis == sentTimeMillis) {
-            lastHeartbeatSentMillis = null;
-            lastHeartbeatRoundtripMillis = returnTimeMillis - sentTimeMillis;
-            heartbeatRoundTripPublisher.publish(
-                    new HeartbeatRoundtrip(client.getUserName(), symbol, sentTimeMillis, returnTimeMillis, lastHeartbeatRoundtripMillis));
-        } else {
-            throw new RuntimeException(
-                    "Received heartbeat reply " + sentTimeMillis + " which does not match last sent heartbeat " + lastHeartbeatSentMillis);
-        }
-    }
-
     public long getClientSpeedMillis() {
-        return Math.max(lastHeartbeatSentMillis == null ? 0L : System.currentTimeMillis() - lastHeartbeatSentMillis,
+        return Math.max(null == lastHeartbeatSentMillis ? 0L : System.currentTimeMillis() - lastHeartbeatSentMillis,
                 lastHeartbeatRoundtripMillis);
     }
 

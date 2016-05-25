@@ -118,23 +118,24 @@ public class UiPipeImpl {
     }
 
     public void onInbound(final String data) {
-        if (inboundHandler == null) {
-            return;
-        }
-        final String[] args = data.split("\0");
-        final String cmd = args[0];
-        if ("click".equals(cmd)) {
-            inboundHandler.onClick(args[1], getDataArg(args));
-        } else if ("scroll".equals(cmd)) {
-            inboundHandler.onScroll(args[1]);
-        } else if ("dblclick".equals(cmd)) {
-            inboundHandler.onDblClick(args[1], getDataArg(args));
-        } else if ("update".equals(cmd)) {
-            inboundHandler.onUpdate(args[1], getDataArg(args));
-        } else if ("keydown".equals(cmd)) {
-            inboundHandler.onKeyDown(Integer.parseInt(args[1]));
-        } else {
-            inboundHandler.onIncoming(args);
+
+        if (null != inboundHandler) {
+            final String[] args = data.split("\0");
+            final String cmd = args[0];
+            if ("click".equals(cmd)) {
+                inboundHandler.onClick(args[1], getDataArg(args));
+            } else if ("scroll".equals(cmd)) {
+                inboundHandler.onScroll(args[1]);
+            } else if ("dblclick".equals(cmd)) {
+                inboundHandler.onDblClick(args[1], getDataArg(args));
+            } else if ("update".equals(cmd)) {
+                inboundHandler.onUpdate(args[1], getDataArg(args));
+            } else if ("keydown".equals(cmd)) {
+                inboundHandler.onKeyDown(Integer.parseInt(args[1]));
+            } else if ("heartbeat".equals(cmd)) {
+                final long sentTimeMillis = Long.valueOf(args[1]);
+                inboundHandler.onHeartbeat(sentTimeMillis);
+            }
         }
     }
 

@@ -4,15 +4,15 @@ import java.util.Map;
 
 public interface UiEventHandler {
 
-    public void onClick(String id, Map<String, String> data);
+    public void onClick(final String id, final Map<String, String> data);
 
-    public void onDblClick(String id, Map<String, String> data);
+    public void onDblClick(final String id, final Map<String, String> data);
 
-    public void onUpdate(String id, Map<String, String> data);
+    public void onUpdate(final String id, final Map<String, String> data);
 
-    public void onScroll(String direction);
+    public void onScroll(final String direction);
 
-    public void onKeyDown(int keyCode);
+    public void onKeyDown(final int keyCode);
 
-    public void onIncoming(String[] args);
+    public void onHeartbeat(final long sentTimeMillis);
 }
