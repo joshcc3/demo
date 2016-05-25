@@ -13,12 +13,12 @@ public class OrderUpdatesForSymbol {
     public Map<String, UpdateFromServer> updatesByKey = new HashMap<>();
     public Map<Long, Map<String, UpdateFromServer>> updatesByPrice = new MapMaker().makeComputingMap(price -> new HashMap<>());
 
-    public OrderUpdatesForSymbol(String symbol) {
+    public OrderUpdatesForSymbol(final String symbol) {
 
         this.symbol = symbol;
     }
 
-    public void onUpdate(UpdateFromServer update) {
+    public void onUpdate(final UpdateFromServer update) {
         if (update.update.getOrder().getSymbol().equals(symbol)) {
             updatesByKey.remove(update.key());
             updatesByPrice.values().forEach(map -> map.remove(update.key()));
@@ -29,22 +29,21 @@ public class OrderUpdatesForSymbol {
         }
     }
 
-    public void onDisconnected(ServerDisconnected disconnected) {
-        for (Iterator<UpdateFromServer> iterator = updatesByKey.values().iterator(); iterator.hasNext(); ) {
-            UpdateFromServer fromServer = iterator.next();
+    public void onDisconnected(final ServerDisconnected disconnected) {
+        for (final Iterator<UpdateFromServer> iterator = updatesByKey.values().iterator(); iterator.hasNext(); ) {
+            final UpdateFromServer fromServer = iterator.next();
             if (fromServer.server.equals(disconnected.server)) {
                 iterator.remove();
             }
         }
         updatesByPrice.forEach((aLong, map) -> {
-            for (Iterator<UpdateFromServer> iterator = map.values().iterator(); iterator.hasNext(); ) {
-                UpdateFromServer fromServer = iterator.next();
+            for (final Iterator<UpdateFromServer> iterator = map.values().iterator(); iterator.hasNext(); ) {
+                final UpdateFromServer fromServer = iterator.next();
                 if (fromServer.server.equals(disconnected.server)) {
                     iterator.remove();
                 }
             }
         });
     }
-
 
 }

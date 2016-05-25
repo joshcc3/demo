@@ -29,7 +29,7 @@ public class TradeTracker {
         totalTradedVolumeByPrice.clear();
 
         lastPrice = 0;
-        minTradedPrice = 0;
+        minTradedPrice = Long.MAX_VALUE;
         maxTradedPrice = 0;
 
         totalQtyTraded = 0;

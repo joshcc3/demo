@@ -14,14 +14,15 @@ public class WorkingOrdersForSymbol {
     public final String symbol;
     public final Map<String, Main.WorkingOrderUpdateFromServer> ordersByKey = new LinkedHashMap<>();
     public final Multimap<Long, Main.WorkingOrderUpdateFromServer> ordersByPrice = LinkedHashMultimap.create();
-    public WorkingOrdersForSymbol(String symbol) {
+
+    public WorkingOrdersForSymbol(final String symbol) {
         this.symbol = symbol;
     }
 
-    public Main.WorkingOrderUpdateFromServer onWorkingOrderUpdate(Main.WorkingOrderUpdateFromServer workingOrderUpdateFromServer) {
-        WorkingOrderUpdate workingOrderUpdate = workingOrderUpdateFromServer.value;
+    public Main.WorkingOrderUpdateFromServer onWorkingOrderUpdate(final Main.WorkingOrderUpdateFromServer workingOrderUpdateFromServer) {
+        final WorkingOrderUpdate workingOrderUpdate = workingOrderUpdateFromServer.value;
         if (workingOrderUpdate.getSymbol().equals(symbol)) {
-            Main.WorkingOrderUpdateFromServer previous;
+            final Main.WorkingOrderUpdateFromServer previous;
             if (workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
                 previous = ordersByKey.remove(workingOrderUpdateFromServer.key());
             } else {
@@ -30,7 +31,7 @@ public class WorkingOrdersForSymbol {
             }
             // Need the .equals() because HashMultimap doesn't store duplicates, so we would delete the only
             // copy of this working order otherwise.
-            if (previous != null && !workingOrderUpdateFromServer.equals(previous) ) {
+            if (previous != null && !workingOrderUpdateFromServer.equals(previous)) {
                 ordersByPrice.remove(previous.value.getPrice(), previous);
             }
             return previous;

@@ -1,6 +1,8 @@
 package com.drwtrading.london.fastui.html;
 
-public enum DataKey {
+import com.drwtrading.london.fastui.IEnumKey;
+
+public enum DataKey implements IEnumKey {
 
     PRICE("price"),
     ORDER("orderKeys"),
@@ -10,5 +12,10 @@ public enum DataKey {
 
     private DataKey(final String key) {
         this.key = key;
+    }
+
+    @Override
+    public String getHTMLKey() {
+        return key;
     }
 }

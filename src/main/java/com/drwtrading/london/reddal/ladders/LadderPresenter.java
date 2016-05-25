@@ -29,7 +29,6 @@ import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
-import com.drwtrading.london.util.Struct;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.DeskPosition;
@@ -155,7 +154,7 @@ public class LadderPresenter {
     @Subscribe
     public void onConnected(final WebSocketConnected connected) {
         final UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
-        final View view = new WebSocketOutputDispatcher<>(View.class).wrap(uiPipe.evalPublisher());
+        final View view = new WebSocketOutputDispatcher<>(View.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final LadderView ladderView =
                 new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher,
                         tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
@@ -381,14 +380,5 @@ public class LadderPresenter {
             ladderView.sendHeartbeat();
         }
         return BATCH_FLUSH_INTERVAL_MS;
-    }
-
-    public static class RecenterLaddersForUser extends Struct {
-
-        public final String user;
-
-        public RecenterLaddersForUser(final String user) {
-            this.user = user;
-        }
     }
 }

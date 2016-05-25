@@ -68,6 +68,7 @@ import com.drwtrading.london.reddal.ladders.LadderSettings;
 import com.drwtrading.london.reddal.ladders.LadderView;
 import com.drwtrading.london.reddal.ladders.LadderWorkspace;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
+import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
 import com.drwtrading.london.reddal.ladders.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.ladders.WorkspaceRequestHandler;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
@@ -178,7 +179,7 @@ public class Main {
         public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
         public final TypedChannel<SubscribeMarketData> subscribeToMarketData;
         public final TypedChannel<UnsubscribeMarketData> unsubscribeFromMarketData;
-        public final TypedChannel<LadderPresenter.RecenterLaddersForUser> recenterLaddersForUser;
+        public final TypedChannel<RecenterLaddersForUser> recenterLaddersForUser;
         public final TypedChannel<SpreadContractSet> contractSets;
         public final TypedChannel<ChixSymbolPair> chixSymbolPairs;
         public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
@@ -214,7 +215,7 @@ public class Main {
             reddalCommandSymbolAvailable = create(ReddalMessage.class);
             subscribeToMarketData = create(SubscribeMarketData.class);
             unsubscribeFromMarketData = create(UnsubscribeMarketData.class);
-            recenterLaddersForUser = create(LadderPresenter.RecenterLaddersForUser.class);
+            recenterLaddersForUser = create(RecenterLaddersForUser.class);
             contractSets = create(SpreadContractSet.class);
             chixSymbolPairs = create(ChixSymbolPair.class);
             singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
@@ -563,6 +564,7 @@ public class Main {
 
             final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
             fibers.contracts.subscribe(chixInstMatcher, channels.refData);
+            channels.searchResults.subscribe(fibers.contracts.getFiber(), chixInstMatcher::setSearchResult);
         }
 
         // Market data
@@ -663,10 +665,10 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client =
                         OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
                                 Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
-                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("metadata." + server + ".log").toFile(),
-                        fibers.logging.getFiber(), true).handler(
-                        new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10)).handler(
-                        new JetlangChannelHandler<>(channels.metaData));
+                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
+                client.logFile(logDir.resolve("metadata." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+                client.handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10));
+                client.handler(new JetlangChannelHandler<>(channels.metaData));
                 fibers.onStart(client::start);
             }
         }

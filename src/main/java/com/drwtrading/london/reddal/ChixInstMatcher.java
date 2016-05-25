@@ -5,9 +5,9 @@ import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
-import com.drwtrading.london.protocols.photon.marketdata.ExchangeInstrumentDefinitionDetails;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentStructure;
+import com.drwtrading.london.reddal.symbols.SearchResult;
 import org.jetlang.channels.Channel;
 
 import java.util.HashMap;
@@ -43,22 +43,38 @@ public class ChixInstMatcher {
             if (null != symbol && 12 == isin.length() && null != ccy && null != mic) {
 
                 final InstrumentID instID = new InstrumentID(isin, ccy, mic);
+                addEquityDef(symbol, instID);
+            }
+        }
+    }
 
-                if (ExchangeInstrumentDefinitionDetails.Type.BATS_INSTRUMENT_DEFINITION == instDefEvent.getExchangeInstrumentDefinitionDetails().typeEnum()) {
+    public void setSearchResult(final SearchResult searchResult) {
 
-                    chixSymbols.put(instID, symbol);
-                    final String primarySymbol = primaryExchSymbols.get(instID);
-                    if (null != primarySymbol) {
-                        updateChixPair(primarySymbol, symbol);
-                    }
-                } else {
+        switch (searchResult.instType) {
+            case EQUITY:
+            case DR:
+            case ETF: {
+                addEquityDef(searchResult.symbol, searchResult.instID);
+                break;
+            }
+        }
+    }
 
-                    primaryExchSymbols.put(instID, symbol);
-                    final String chixSymbol = chixSymbols.get(instID);
-                    if (null != chixSymbol) {
-                        updateChixPair(symbol, chixSymbol);
-                    }
-                }
+    private void addEquityDef(final String symbol, final InstrumentID instID) {
+
+        if (MIC.CHIX == instID.mic) {
+
+            chixSymbols.put(instID, symbol);
+            final String primarySymbol = primaryExchSymbols.get(instID);
+            if (null != primarySymbol) {
+                updateChixPair(primarySymbol, symbol);
+            }
+        } else {
+
+            primaryExchSymbols.put(instID, symbol);
+            final String chixSymbol = chixSymbols.get(instID);
+            if (null != chixSymbol) {
+                updateChixPair(symbol, chixSymbol);
             }
         }
     }

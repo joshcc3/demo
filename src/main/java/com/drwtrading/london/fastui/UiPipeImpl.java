@@ -31,7 +31,7 @@ public class UiPipeImpl {
 
     private final KeyedBatcher text = new KeyedBatcher(TXT_CMD);
     private final ClassBatcher classes = new ClassBatcher(CLS_CMD);
-    private final KeyedBatcher data = new KeyedBatcher(DATA_CMD);
+    private final DataBatcher<DataKey> data = new DataBatcher<>(DATA_CMD, DataKey.class);
     private final KeyedBatcher height = new KeyedBatcher(HEIGHT_CMD);
 
     private final ListBatcher clickable = new ListBatcher(CLICKABLE_CMD);
@@ -44,13 +44,9 @@ public class UiPipeImpl {
         this.pipe = pipe;
     }
 
-    public Publisher<WebSocketOutboundData> evalPublisher() {
-        return msg -> eval(msg.getData());
-    }
-
     // Attaches {dataKey:value} pair to element #key
     public void data(final String key, final DataKey dataKey, final Object value) {
-        data.put(cmd(key, dataKey.key), value.toString());
+        data.put(key, dataKey, value.toString());
     }
 
     // Toggles class cssClass on element #key

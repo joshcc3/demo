@@ -1,7 +1,9 @@
 package com.drwtrading.london.reddal.symbols;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.protocols.photon.marketdata.BatsInstrumentDefinition;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.ExchangeInstrumentDefinitionDetails;
@@ -59,22 +61,49 @@ public class IndexUIPresenter {
         final String link = "/ladder#" + symbol;
 
         String company = "";
-        final ExchangeInstrumentDefinitionDetails details = instDefEvent.getExchangeInstrumentDefinitionDetails();
-        if (details instanceof BatsInstrumentDefinition) {
-            company = ((BatsInstrumentDefinition) details).getCompanyName();
-        } else if (details instanceof XetraInstrumentDefinition) {
-            company = ((XetraInstrumentDefinition) details).getLongName();
-        }
 
+        final InstrumentID instID = MarketDataForSymbol.getInstrumentID(instDefEvent);
+
+        final InstType instType;
         String desc = "";
         final InstrumentStructure structure = instDefEvent.getInstrumentStructure();
-        if (structure instanceof CashOutrightStructure) {
-            desc = ((CashOutrightStructure) structure).getIsin() + '.' +
-                    instDefEvent.getPriceStructure().getCurrency().toString() + '.' +
-                    ((CashOutrightStructure) structure).getMic();
-        } else if (structure instanceof FutureStrategyStructure) {
-            for (final FutureLegStructure futureLegStructure : ((FutureStrategyStructure) structure).getLegs()) {
-                desc = desc + futureLegStructure.getPosition() + 'x' + futureLegStructure.getSymbol();
+        switch (structure.typeEnum()) {
+            case CASH_OUTRIGHT_STRUCTURE: {
+                instType = InstType.EQUITY;
+                desc = ((CashOutrightStructure) structure).getIsin() + '.' +
+                        instDefEvent.getPriceStructure().getCurrency().toString() + '.' +
+                        ((CashOutrightStructure) structure).getMic();
+
+                final ExchangeInstrumentDefinitionDetails details = instDefEvent.getExchangeInstrumentDefinitionDetails();
+                switch (details.typeEnum()) {
+                    case BATS_INSTRUMENT_DEFINITION: {
+                        company = ((BatsInstrumentDefinition) details).getCompanyName();
+                        break;
+                    }
+                    case XETRA_INSTRUMENT_DEFINITION: {
+                        company = ((XetraInstrumentDefinition) details).getLongName();
+                        break;
+                    }
+                }
+                break;
+            }
+            case FOREX_PAIR_STRUCTURE: {
+                instType = InstType.FX;
+                break;
+            }
+            case FUTURE_OUTRIGHT_STRUCTURE: {
+                instType = InstType.FUTURE;
+                break;
+            }
+            case FUTURE_STRATEGY_STRUCTURE: {
+                instType = InstType.FUTURE_SPREAD;
+                for (final FutureLegStructure futureLegStructure : ((FutureStrategyStructure) structure).getLegs()) {
+                    desc = desc + futureLegStructure.getPosition() + 'x' + futureLegStructure.getSymbol();
+                }
+                break;
+            }
+            default: {
+                instType = InstType.UNKNOWN;
             }
         }
 
@@ -103,7 +132,7 @@ public class IndexUIPresenter {
 
         final long expiry = getExpiry(instDefEvent);
 
-        final SearchResult searchResult = new SearchResult(symbol, link, description, mdSource, terms, expiry);
+        final SearchResult searchResult = new SearchResult(symbol, instID, instType, link, description, mdSource, terms, expiry);
         setSearchResult(searchResult);
     }
 
@@ -119,8 +148,8 @@ public class IndexUIPresenter {
             final Collection<String> keywords = new ArrayList<>(searchResult.keywords);
             keywords.add(displaySymbol.displaySymbol);
             final SearchResult newResult =
-                    new SearchResult(displaySymbol.displaySymbol, searchResult.link, searchResult.description, searchResult.mdSource,
-                            keywords, searchResult.expiry);
+                    new SearchResult(displaySymbol.displaySymbol, searchResult.instID, searchResult.instType, searchResult.link,
+                            searchResult.description, searchResult.mdSource, keywords, searchResult.expiry);
             setSearchResult(newResult);
         }
     }
@@ -142,8 +171,8 @@ public class IndexUIPresenter {
             final SearchResult searchResult = searchResultBySymbol.get(displaySymbol.marketDataSymbol);
             searchResult.keywords.add(displaySymbol.displaySymbol);
             final SearchResult newResult =
-                    new SearchResult(searchResult.symbol, searchResult.link, searchResult.description, searchResult.mdSource,
-                            searchResult.keywords, searchResult.expiry);
+                    new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType, searchResult.link,
+                            searchResult.description, searchResult.mdSource, searchResult.keywords, searchResult.expiry);
             searchResultBySymbol.put(searchResult.symbol, newResult);
         }
     }

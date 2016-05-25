@@ -413,7 +413,7 @@ public class MarketDataForSymbol implements IMarketData {
         }
     };
 
-    private static InstrumentID getInstrumentID(final InstrumentDefinitionEvent refData) {
+    public static InstrumentID getInstrumentID(final InstrumentDefinitionEvent refData) {
         if (refData.getInstrumentStructure() instanceof CashOutrightStructure) {
             final CashOutrightStructure cash = (CashOutrightStructure) refData.getInstrumentStructure();
             if ("CXE".equals(refData.getExchange())) {
