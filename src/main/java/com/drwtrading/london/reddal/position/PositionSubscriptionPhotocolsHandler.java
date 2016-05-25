@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.position;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
-import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
 import com.drwtrading.photons.mrphil.Position;
@@ -17,6 +17,7 @@ import java.util.UUID;
 import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
 
 public class PositionSubscriptionPhotocolsHandler implements PhotocolsHandler<Position, Subscription> {
+
     Set<String> allSymbols = newFastSet();
     PhotocolsConnection<Subscription> connection = null;
     final Publisher<Position> positionPublisher;
@@ -32,9 +33,14 @@ public class PositionSubscriptionPhotocolsHandler implements PhotocolsHandler<Po
         subscribe(symbol);
     }
 
+    public void setSearchResult(final SearchResult searchResult) {
+        allSymbols.add(searchResult.symbol);
+        subscribe(searchResult.symbol);
+    }
+
     private void subscribe(String symbol) {
         if (connection != null) {
-            connection.send(new PositionSubscription(UUID.randomUUID().toString(), symbol, new ObjectArraySet<String>()));
+            connection.send(new PositionSubscription(UUID.randomUUID().toString(), symbol, new ObjectArraySet<>()));
         }
     }
 
@@ -59,6 +65,6 @@ public class PositionSubscriptionPhotocolsHandler implements PhotocolsHandler<Po
 
     @Override
     public void onMessage(PhotocolsConnection<Subscription> connection, Position message) {
-       this.positionPublisher.publish(message);
+        this.positionPublisher.publish(message);
     }
 }

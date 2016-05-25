@@ -101,7 +101,6 @@ import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.monitoring.transport.LoggingTransport;
 import com.drwtrading.monitoring.transport.MultiplexTransport;
 import com.drwtrading.photocols.PhotocolsConnection;
-import com.drwtrading.photocols.PhotocolsHandler;
 import com.drwtrading.photocols.easy.Photocols;
 import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
@@ -746,8 +745,9 @@ public class Main {
             final OnHeapBufferPhotocolsNioClient<Position, Subscription> client =
                     OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic, Position.class, Subscription.class,
                             fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
-            final PhotocolsHandler<Position, Subscription> positionHandler = new PositionSubscriptionPhotocolsHandler(channels.position);
+            final PositionSubscriptionPhotocolsHandler positionHandler = new PositionSubscriptionPhotocolsHandler(channels.position);
             fibers.mrPhil.subscribe(positionHandler, channels.refData);
+            channels.searchResults.subscribe(fibers.mrPhil.getFiber(), positionHandler::setSearchResult);
             client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("mr-phil.log").toFile(), fibers.logging.getFiber(),
                     true).handler(positionHandler);
             fibers.onStart(client::start);

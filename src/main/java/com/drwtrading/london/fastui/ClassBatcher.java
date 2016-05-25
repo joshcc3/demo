@@ -7,19 +7,24 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 class ClassBatcher {
 
     private final String command;
 
-    public final Map<String, EnumMap<CSSClass, Boolean>> values;
-    public final Map<String, EnumMap<CSSClass, Boolean>> pendingValues;
+    private final Map<String, EnumMap<CSSClass, Boolean>> values;
+    private final Map<String, EnumMap<CSSClass, Boolean>> pendingValues;
+
+    private final CSSClass[] cssClasses;
 
     ClassBatcher(final String command) {
 
         this.command = command;
         this.values = new HashMap<>();
         this.pendingValues = new HashMap<>();
+
+        this.cssClasses = CSSClass.values();
     }
 
     void put(final String key, final CSSClass cssClass, final boolean enabled) {
@@ -42,16 +47,17 @@ class ClassBatcher {
         sb.append(this.command);
         for (final Map.Entry<String, EnumMap<CSSClass, Boolean>> entry : pendingValues.entrySet()) {
 
+            final EnumMap<CSSClass, Boolean> pendingEnabledClasses = entry.getValue();
             final EnumMap<CSSClass, Boolean> oldEnabledClasses = MapUtils.getMappedEnumMap(values, entry.getKey(), CSSClass.class);
 
-            for (final Map.Entry<CSSClass, Boolean> changedEnabled : entry.getValue().entrySet()) {
+            for (int i = 0; i < cssClasses.length; ++i) {
 
-                final CSSClass cssClass = changedEnabled.getKey();
-                final boolean cssEnabled = changedEnabled.getValue();
+                final CSSClass cssClass = cssClasses[i];
 
+                final Boolean cssEnabled = pendingEnabledClasses.get(cssClass);
                 final Boolean oldValue = oldEnabledClasses.put(cssClass, cssEnabled);
 
-                if (null == oldValue || oldValue != cssEnabled) {
+                if (!Objects.equals(oldValue, cssEnabled)) {
 
                     sb.append(UiPipeImpl.DATA_SEPARATOR);
                     sb.append(entry.getKey());

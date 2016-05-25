@@ -39,8 +39,6 @@ public enum CSSClass {
 
     MODIFY_PRICE_SELECTED("modify_price_selected"),
 
-    BIG_NUMBER("big_number"),
-
     WORKING_QTY("working_qty"),
     WORKING_BID("working_bid"),
     WORKING_OFFER("working_offer"),

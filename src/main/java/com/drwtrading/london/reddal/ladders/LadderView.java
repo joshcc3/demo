@@ -3,7 +3,9 @@ package com.drwtrading.london.reddal.ladders;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
+import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
@@ -63,8 +65,8 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetlang.channels.Publisher;
 
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -102,7 +104,6 @@ public class LadderView implements UiEventHandler {
     public static final int AUTO_RECENTER_TICKS = 3;
     public static final int RECENTER_TIME_MS = 11000;
     public static final int RECENTER_WARN_TIME_MS = 9000;
-    public static final int BIG_NUMBER_THRESHOLD = 99999;
     public static final int REALLY_BIG_NUMBER_THRESHOLD = 100000;
     public static final String BID_LOWERCASE = "bid";
     public static final String OFFER_LOWERCASE = "offer";
@@ -137,6 +138,7 @@ public class LadderView implements UiEventHandler {
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final LongMap<Integer> levelByPrice;
     private final LadderHTMLKeys ladderHTMLKeys;
+    private final NumberFormat bigNumberDF;
 
     public String symbol;
     private IMarketData marketData;
@@ -152,6 +154,13 @@ public class LadderView implements UiEventHandler {
     private long bottomPrice;
     public EnumSwitcher<PricingMode> pricingMode = new EnumSwitcher<>(PricingMode.class, EnumSet.allOf(PricingMode.class));
     public long lastCenteredTime = 0;
+
+    private Long modifyFromPrice = null;
+    private Long modifyFromPriceSelectedTime = 0L;
+
+    private Long lastHeartbeatSentMillis = null;
+    private long lastHeartbeatRoundtripMillis = 0;
+    private ClientSpeedState clientSpeedState = ClientSpeedState.FINE;
 
     public LadderView(final WebSocketClient client, final UiPipeImpl ui, final View view,
             final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
@@ -180,6 +189,7 @@ public class LadderView implements UiEventHandler {
         this.userCycleContractPublisher = userCycleContractPublisher;
         this.levelByPrice = new LongMap<>();
         this.ladderHTMLKeys = new LadderHTMLKeys();
+        this.bigNumberDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE + 'M', 0, 2);
         this.ui.setHandler(this);
         initDefaultPrefs();
     }
@@ -259,8 +269,8 @@ public class LadderView implements UiEventHandler {
     }
 
     private void drawClientSpeedState() {
-        ui.cls(HTML.CLOCK, CSSClass.SLOW, clientSpeedState == ClientSpeedState.Slow);
-        ui.cls(HTML.CLOCK, CSSClass.VERY_SLOW, clientSpeedState == ClientSpeedState.TooSlow);
+        ui.cls(HTML.CLOCK, CSSClass.SLOW, clientSpeedState == ClientSpeedState.SLOW);
+        ui.cls(HTML.CLOCK, CSSClass.VERY_SLOW, clientSpeedState == ClientSpeedState.TOO_SLOW);
     }
 
     private void drawMetaData() {
@@ -274,13 +284,15 @@ public class LadderView implements UiEventHandler {
                     ui.txt(HTML.DESK_POSITION, formatPosition(decimal.doubleValue()));
                     decorateUpDown(HTML.DESK_POSITION, decimal.longValue());
                 } catch (final NumberFormatException ignored) {
-                 /*                    exception.printStackTrace();*/
+                 /* exception.printStackTrace();*/
                 }
-            } /* Day position*/
+            }
+            /* Day position*/
             if (d.dayPosition != null) {
                 ui.txt(HTML.POSITION, formatPosition(d.dayPosition.getNet()));
                 decorateUpDown(HTML.POSITION, d.dayPosition.getNet());
-            } /* Change on day*/
+            }
+            /* Change on day*/
             final Long lastTradeChangeOnDay = getLastTradeChangeOnDay(m);
             if (lastTradeChangeOnDay != null) {
                 drawPrice(m, lastTradeChangeOnDay, HTML.LAST_TRADE_COD);
@@ -453,9 +465,23 @@ public class LadderView implements UiEventHandler {
         }
     }
 
+    private void workingQty(final long price, final int qty, final String side, final Set<WorkingOrderType> orderTypes,
+            final boolean hasEeifOEOrder) {
+
+        ui.txt(orderKey(price), formatMktQty(qty));
+        ui.cls(orderKey(price), CSSClass.WORKING_QTY, 0 < qty);
+        ui.cls(orderKey(price), CSSClass.WORKING_BID, BID_LOWERCASE.equals(side));
+        ui.cls(orderKey(price), CSSClass.WORKING_OFFER, OFFER_LOWERCASE.equals(side));
+        for (final WorkingOrderType workingOrderType : WorkingOrderType.values()) {
+            final CSSClass cssClass = WORKING_ORDER_CSS.get(workingOrderType);
+            ui.cls(orderKey(price), cssClass, !hasEeifOEOrder && orderTypes.contains(workingOrderType));
+        }
+        ui.cls(orderKey(price), CSSClass.EEIF_ORDER_TYPE, hasEeifOEOrder);
+    }
+
     private void drawLastTrade() {
         final IMarketData m = this.marketData;
-        if (!pendingRefDataAndSettle && m != null && m.getTradeTracker().hasTrade()) {
+        if (!pendingRefDataAndSettle && null != m && m.getTradeTracker().hasTrade()) {
             for (final LongMapNode<?> priceNode : levelByPrice) {
                 final long price = priceNode.key;
                 if (price == m.getTradeTracker().getLastPrice()) {
@@ -958,11 +984,11 @@ public class LadderView implements UiEventHandler {
 
     @Override
     public void onDblClick(final String label, final Map<String, String> dataArg) {
-        if (workingOrdersForSymbol != null) {
+        if (null != workingOrdersForSymbol) {
             if (HTML.BUY_QTY.equals(label)) {
-                cancelAllForSide(com.drwtrading.london.protocols.photon.execution.Side.BID);
+                cancelAllForSide(BookSide.BID);
             } else if (HTML.SELL_QTY.equals(label)) {
-                cancelAllForSide(com.drwtrading.london.protocols.photon.execution.Side.OFFER);
+                cancelAllForSide(BookSide.ASK);
             }
         }
         flush();
@@ -1198,9 +1224,9 @@ public class LadderView implements UiEventHandler {
         return l.get(id, defaultPrefs.get(id));
     }
 
-    private void cancelAllForSide(final com.drwtrading.london.protocols.photon.execution.Side side) {
+    private void cancelAllForSide(final BookSide side) {
         for (final Main.WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
-            if (orderUpdateFromServer.value.getSide() == side) {
+            if (convertSide(orderUpdateFromServer.value.getSide()) == side) {
                 cancelOrder(orderUpdateFromServer);
             }
         }
@@ -1211,18 +1237,21 @@ public class LadderView implements UiEventHandler {
         });
     }
 
-    private static com.drwtrading.london.protocols.photon.execution.Side convertSide(final OrderSide s1) {
-        final com.drwtrading.london.protocols.photon.execution.Side s;
+    private static BookSide convertSide(final OrderSide s1) {
         if (s1 == OrderSide.BUY) {
-            s = com.drwtrading.london.protocols.photon.execution.Side.BID;
+            return BookSide.BID;
         } else {
-            s = com.drwtrading.london.protocols.photon.execution.Side.OFFER;
+            return BookSide.ASK;
         }
-        return s;
     }
 
-    Long modifyFromPrice = null;
-    Long modifyFromPriceSelectedTime = 0L;
+    private static BookSide convertSide(final com.drwtrading.london.protocols.photon.execution.Side s1) {
+        if (s1 == com.drwtrading.london.protocols.photon.execution.Side.BID) {
+            return BookSide.BID;
+        } else {
+            return BookSide.ASK;
+        }
+    }
 
     private void rightClickModify(final Map<String, String> data, final boolean autoHedge) {
         if (workingOrdersForSymbol != null) {
@@ -1386,7 +1415,7 @@ public class LadderView implements UiEventHandler {
         trace.publish(new CommandTrace("submit", client.getUserName(), symbol, orderType, autoHedge, price, side.toString(), tag,
                 clickTradingBoxQty, sequenceNumber));
 
-        if (clientSpeedState == ClientSpeedState.TooSlow) {
+        if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
             final String message =
                     "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", client " + client.getUserName() +
                             " is " + clientSpeedState + " speed: " + getClientSpeedMillis() + "ms";
@@ -1442,7 +1471,7 @@ public class LadderView implements UiEventHandler {
 
             final TradingStatusWatchdog.ServerTradingStatus serverTradingStatus =
                     tradingStatusForAll.serverTradingStatusMap.get(order.fromServer);
-            if (clientSpeedState == ClientSpeedState.TooSlow) {
+            if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
                 statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING,
                         "Cannot modify order , client " + client.getUserName() + " is " + clientSpeedState + " speed: " +
                                 getClientSpeedMillis() + "ms"));
@@ -1535,19 +1564,16 @@ public class LadderView implements UiEventHandler {
     // Heartbeats
 
     public static enum ClientSpeedState {
-        TooSlow(10000),
-        Slow(5000),
-        Fine(0);
+        TOO_SLOW(10000),
+        SLOW(5000),
+        FINE(0);
+
         public final int thresholdMillis;
 
         ClientSpeedState(final int thresholdMillis) {
             this.thresholdMillis = thresholdMillis;
         }
     }
-
-    private Long lastHeartbeatSentMillis = null;
-    private long lastHeartbeatRoundtripMillis = 0;
-    private ClientSpeedState clientSpeedState = ClientSpeedState.Fine;
 
     public void sendHeartbeat() {
         if (lastHeartbeatSentMillis == null) {
@@ -1576,12 +1602,14 @@ public class LadderView implements UiEventHandler {
     }
 
     public void checkClientSpeed() {
-        if (getClientSpeedMillis() > ClientSpeedState.TooSlow.thresholdMillis) {
-            clientSpeedState = ClientSpeedState.TooSlow;
-        } else if (getClientSpeedMillis() > ClientSpeedState.Slow.thresholdMillis) {
-            clientSpeedState = ClientSpeedState.Slow;
+
+        final long clientSpeed = getClientSpeedMillis();
+        if (ClientSpeedState.TOO_SLOW.thresholdMillis < clientSpeed) {
+            clientSpeedState = ClientSpeedState.TOO_SLOW;
+        } else if (ClientSpeedState.SLOW.thresholdMillis < clientSpeed) {
+            clientSpeedState = ClientSpeedState.SLOW;
         } else {
-            clientSpeedState = ClientSpeedState.Fine;
+            clientSpeedState = ClientSpeedState.FINE;
         }
     }
 
@@ -1590,43 +1618,22 @@ public class LadderView implements UiEventHandler {
     public void bidQty(final long price, final long qty) {
         ui.txt(bidKey(price), formatMktQty(qty));
         ui.cls(bidKey(price), CSSClass.BID_ACTIVE, 0 < qty);
-        styleBigNumber(bidKey(price), qty);
-    }
-
-    private void styleBigNumber(final String key, final long qty) {
-        ui.cls(key, CSSClass.BIG_NUMBER, BIG_NUMBER_THRESHOLD < qty && qty < REALLY_BIG_NUMBER_THRESHOLD);
     }
 
     public void askQty(final long price, final long qty) {
         ui.txt(offerKey(price), formatMktQty(qty));
-        ui.cls(offerKey(price), CSSClass.ASK_ACTIVE, qty > 0);
-        styleBigNumber(offerKey(price), qty);
+        ui.cls(offerKey(price), CSSClass.ASK_ACTIVE, 0 < qty);
     }
 
-    public static String formatMktQty(final long qty) {
+    public String formatMktQty(final long qty) {
         if (qty <= 0) {
             return HTML.EMPTY;
         } else if (REALLY_BIG_NUMBER_THRESHOLD <= qty) {
-            final double d = (double) qty / 1000000;
-            return new BigDecimal(d).round(new MathContext(2)).toString() + 'M';
+            final double d = qty / 1000000d;
+            return bigNumberDF.format(d);
         } else {
             return Long.toString(qty);
         }
-    }
-
-    public void workingQty(final long price, final int qty, final String side, final Set<WorkingOrderType> orderTypes,
-            final boolean hasEeifOEOrder) {
-
-        ui.txt(orderKey(price), formatMktQty(qty));
-        ui.cls(orderKey(price), CSSClass.WORKING_QTY, qty > 0);
-        styleBigNumber(orderKey(price), qty);
-        ui.cls(orderKey(price), CSSClass.WORKING_BID, BID_LOWERCASE.equals(side));
-        ui.cls(orderKey(price), CSSClass.WORKING_OFFER, OFFER_LOWERCASE.equals(side));
-        for (final WorkingOrderType workingOrderType : WorkingOrderType.values()) {
-            final CSSClass cssClass = WORKING_ORDER_CSS.get(workingOrderType);
-            ui.cls(orderKey(price), cssClass, !hasEeifOEOrder && orderTypes.contains(workingOrderType));
-        }
-        ui.cls(orderKey(price), CSSClass.EEIF_ORDER_TYPE, hasEeifOEOrder);
     }
 
     private static String laserKey(final String name) {

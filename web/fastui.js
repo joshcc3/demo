@@ -44,7 +44,6 @@ var Handler = function (ws) {
     }
 
     function set(k, v) {
-		console.log(k, v);
         var elem = q(k);
         if (elem.tagName == "INPUT" && elem.type == "checkbox") {
             elem.checked = v == "true";
