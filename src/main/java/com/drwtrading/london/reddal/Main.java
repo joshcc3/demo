@@ -59,7 +59,6 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.reddal.data.ibook.IBookHandler;
 import com.drwtrading.london.reddal.data.ibook.LevelThreeBookHandler;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
@@ -127,7 +126,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -460,18 +459,22 @@ public class Main {
                 webSockets.add(webSocket);
                 final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
 
-                final Map<String, IBookHandler> newClientsBySuffix = new HashMap<>();
+                final Set<String> newClientsBySuffix = new HashSet<>();
+
+                final LevelThreeBookHandler bookHandler = new LevelThreeBookHandler(displayMonitor, channels.searchResults);
 
                 if (null != newMDConfig) {
 
                     final IResourceMonitor<MDTransportComponents> mdClientMonitor =
                             MappedResourceMonitor.mapMonitorByName(displayMonitor, MDTransportComponents.class, ReddalComponents.class,
                                     "NEW_MD_");
-                    final LevelThreeBookHandler bookHandler = new LevelThreeBookHandler(displayMonitor, channels.searchResults);
 
                     for (final ConfigGroup mdSourceGroup : newMDConfig.groups()) {
 
                         final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
+                        if (null == mdSource) {
+                            throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
+                        }
 
                         final MDTransportClient mdClient =
                                 MDTransportClientFactory.createLevel3Client(displaySelectIO, mdClientMonitor, mdSource,
@@ -479,7 +482,7 @@ public class Main {
                         bookHandler.setMDClient(mdSource, mdClient);
 
                         for (final String suffix : mdSourceGroup.getParam("suffixes").getSet(Pattern.compile(","))) {
-                            if (null != newClientsBySuffix.put(' ' + suffix, bookHandler)) {
+                            if (!newClientsBySuffix.add(' ' + suffix)) {
                                 throw new ConfigException("Suffix [" + suffix + "] is defined for two MDSources [" + mdSource + "].");
                             }
                         }
@@ -491,8 +494,8 @@ public class Main {
                 }
 
                 final LadderPresenter presenter =
-                        new LadderPresenter(newClientsBySuffix, channels.remoteOrderCommand, environment.ladderOptions(), channels.stats,
-                                channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
+                        new LadderPresenter(newClientsBySuffix, bookHandler, channels.remoteOrderCommand, environment.ladderOptions(),
+                                channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
                                 channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser,
                                 displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
                                 channels.userCycleContractPublisher, channels.orderEntryCommandToServer);

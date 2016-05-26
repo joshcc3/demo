@@ -14,7 +14,6 @@ import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.reddal.UserCycleRequest;
-import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.IMarketData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
@@ -29,6 +28,7 @@ import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.DeskPosition;
@@ -54,13 +54,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class LadderPresenter {
 
     public static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 12;
 
-    private final Map<String, IBookHandler> newClientsBySuffix;
+    private final Set<String> newClientsBySuffix;
+    private final IBookHandler bookHandler;
 
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
@@ -90,7 +92,7 @@ public class LadderPresenter {
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
 
-    public LadderPresenter(final Map<String, IBookHandler> newClientsBySuffix,
+    public LadderPresenter(final Set<String> newClientsBySuffix, final IBookHandler bookHandler,
             final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
             final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<LadderView.HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
@@ -101,6 +103,7 @@ public class LadderPresenter {
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
 
         this.newClientsBySuffix = newClientsBySuffix;
+        this.bookHandler = bookHandler;
 
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
@@ -123,9 +126,8 @@ public class LadderPresenter {
     private IMarketData subscribeToMarketDataForSymbol(final String symbol, final Fiber fiber) {
 
         final int suffixLoc = symbol.indexOf(' ');
-        if (0 < suffixLoc && newClientsBySuffix.containsKey(symbol.substring(suffixLoc))) {
+        if (true || 0 < suffixLoc && newClientsBySuffix.contains(symbol.substring(suffixLoc))) {
             // new subscription method
-            final IBookHandler bookHandler = newClientsBySuffix.get(symbol.substring(suffixLoc));
             return new SelectIOMDForSymbol(bookHandler, symbol);
         } else {
             // Subscribe to channel for this symbol
@@ -144,7 +146,7 @@ public class LadderPresenter {
         md.unsubscribeForMD();
 
         final int suffixLoc = symbol.indexOf(' ');
-        if (suffixLoc < 1 || !newClientsBySuffix.containsKey(symbol.substring(suffixLoc))) {
+        if (suffixLoc < 1 || !newClientsBySuffix.contains(symbol.substring(suffixLoc))) {
             marketDataForSymbolMap.remove(symbol);
             final MemoryChannel<MarketDataEvent> mdEventMemChannel = mdEventChannels.remove(symbol);
             unsubscribeFromMarketData.publish(new UnsubscribeMarketData(symbol, mdEventMemChannel));
@@ -206,7 +208,8 @@ public class LadderPresenter {
             }
         }
         if (!"heartbeat".equals(cmd)) {
-            trace.publish(new LadderView.InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
+            trace.publish(new LadderView.InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args,
+                    UiPipeImpl.getDataArg(args)));
         }
     }
 

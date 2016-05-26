@@ -2,9 +2,11 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
+import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
+import com.drwtrading.london.protocols.photon.marketdata.ExchangeInstrumentDefinitionDetails;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentStructure;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -40,10 +42,20 @@ public class ChixInstMatcher {
             final CCY ccy = CCY.getCCY(instDefEvent.getPriceStructure().getCurrency().name());
             final MIC mic = MIC.getMIC(cashStructure.getMic());
 
+            final MDSource mdSource;
+            if (ExchangeInstrumentDefinitionDetails.Type.BATS_INSTRUMENT_DEFINITION ==
+                    instDefEvent.getExchangeInstrumentDefinitionDetails().typeEnum()) {
+
+                mdSource = MDSource.CHIX;
+            } else {
+                // TODO: NOTE, this is just "OTHER" currently.
+                mdSource = MDSource.LSE;
+            }
+
             if (null != symbol && 12 == isin.length() && null != ccy && null != mic) {
 
                 final InstrumentID instID = new InstrumentID(isin, ccy, mic);
-                addEquityDef(symbol, instID);
+                addEquityDef(symbol, instID, mdSource);
             }
         }
     }
@@ -54,15 +66,15 @@ public class ChixInstMatcher {
             case EQUITY:
             case DR:
             case ETF: {
-                addEquityDef(searchResult.symbol, searchResult.instID);
+                addEquityDef(searchResult.symbol, searchResult.instID, searchResult.mdSource);
                 break;
             }
         }
     }
 
-    private void addEquityDef(final String symbol, final InstrumentID instID) {
+    private void addEquityDef(final String symbol, final InstrumentID instID, final MDSource mdSource) {
 
-        if (MIC.CHIX == instID.mic) {
+        if (MDSource.CHIX == mdSource) {
 
             chixSymbols.put(instID, symbol);
             final String primarySymbol = primaryExchSymbols.get(instID);
