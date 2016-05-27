@@ -465,9 +465,9 @@ public class Main {
 
                 if (null != newMDConfig) {
 
-                    final IResourceMonitor<MDTransportComponents> mdClientMonitor =
-                            MappedResourceMonitor.mapMonitorByName(displayMonitor, MDTransportComponents.class, ReddalComponents.class,
-                                    "NEW_MD_");
+                    final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
+                            MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
+                                    ReddalComponents.class, "NEW_MD_", errorLog);
 
                     for (final ConfigGroup mdSourceGroup : newMDConfig.groups()) {
 
@@ -475,6 +475,9 @@ public class Main {
                         if (null == mdSource) {
                             throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
                         }
+
+                        final IResourceMonitor<MDTransportComponents> mdClientMonitor =
+                                mdParentMonitor.createChildResourceMonitor(mdSource.name());
 
                         final MDTransportClient mdClient =
                                 MDTransportClientFactory.createLevel3Client(displaySelectIO, mdClientMonitor, mdSource,

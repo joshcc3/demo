@@ -41,6 +41,7 @@ import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.IMarketData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.TradeTracker;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.orderentry.ManagedOrderType;
@@ -413,13 +414,14 @@ public class LadderView implements UiEventHandler {
         final IMarketData m = this.marketData;
         if (!pendingRefDataAndSettle && null != m) {
 
-            final long lastTradePrice = m.getTradeTracker().getQtyRunAtLastPrice();
+            final TradeTracker tradeTracker = m.getTradeTracker();
+            final long lastTradePrice = tradeTracker.getQtyRunAtLastPrice();
 
             for (final LongMapNode<?> priceNode : levelByPrice) {
 
                 final long price = priceNode.key;
 
-                final Long qty = m.getTradeTracker().getTotalQtyTradedAtPrice(price);
+                final Long qty = tradeTracker.getTotalQtyTradedAtPrice(price);
                 if (null != qty) {
                     ui.txt(volumeKey(price), formatMktQty(qty));
                 } else {
@@ -427,16 +429,16 @@ public class LadderView implements UiEventHandler {
                 }
 
                 final boolean withinTradedRange =
-                        m.getTradeTracker().getMinTradedPrice() <= price && price <= m.getTradeTracker().getMaxTradedPrice();
+                        tradeTracker.getMinTradedPrice() <= price && price <= tradeTracker.getMaxTradedPrice();
                 ui.cls(priceKey(price), CSSClass.PRICE_TRADED, withinTradedRange);
 
-                if (price == m.getTradeTracker().getLastPrice()) {
+                if (tradeTracker.hasTrade() && price == tradeTracker.getLastPrice()) {
                     ui.txt(tradeKey(price), formatMktQty(lastTradePrice));
                     ui.cls(tradeKey(price), CSSClass.INVISIBLE, false);
                     ui.cls(volumeKey(price), CSSClass.INVISIBLE, true);
-                    ui.cls(tradeKey(price), CSSClass.TRADED_UP, m.getTradeTracker().isLastTickUp());
-                    ui.cls(tradeKey(price), CSSClass.TRADED_DOWN, m.getTradeTracker().isLastTickDown());
-                    ui.cls(tradeKey(price), CSSClass.TRADED_AGAIN, m.getTradeTracker().isLastTradeSameLevel());
+                    ui.cls(tradeKey(price), CSSClass.TRADED_UP, tradeTracker.isLastTickUp());
+                    ui.cls(tradeKey(price), CSSClass.TRADED_DOWN, tradeTracker.isLastTickDown());
+                    ui.cls(tradeKey(price), CSSClass.TRADED_AGAIN, tradeTracker.isLastTradeSameLevel());
                 } else {
                     ui.txt(tradeKey(price), HTML.BLANK);
                     ui.cls(tradeKey(price), CSSClass.INVISIBLE, true);
@@ -449,7 +451,7 @@ public class LadderView implements UiEventHandler {
 
             ui.txt(HTML.VOLUME + '0', marketData.getBook().getCCY().name());
             ui.cls(HTML.VOLUME + '0', CSSClass.CCY, true);
-            final long quantityTraded = m.getTradeTracker().getTotalQtyTraded();
+            final long quantityTraded = tradeTracker.getTotalQtyTraded();
             if (1000000 < quantityTraded) {
                 ui.txt(HTML.TOTAL_TRADED_VOLUME, BASIS_POINT_DECIMAL_FORMAT.format(1.0 / 1000000 * quantityTraded) + 'M');
             } else if (1000 < quantityTraded) {
