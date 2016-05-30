@@ -3,7 +3,7 @@ package com.drwtrading.london.reddal.data;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
-import com.drwtrading.london.reddal.data.ibook.IBookHandler;
+import com.drwtrading.london.reddal.data.ibook.IBookSubscriber;
 import com.drwtrading.london.reddal.util.PriceOperations;
 import com.drwtrading.london.reddal.util.PriceUtils;
 
@@ -11,7 +11,7 @@ import java.text.DecimalFormat;
 
 public class SelectIOMDForSymbol implements IMarketData {
 
-    private final IBookHandler bookHandler;
+    private final IBookSubscriber bookHandler;
     private final String symbol;
 
     private final boolean isPriceInverted;
@@ -21,7 +21,7 @@ public class SelectIOMDForSymbol implements IMarketData {
     private PriceOperations priceOperations;
     private DecimalFormat df;
 
-    public SelectIOMDForSymbol(final IBookHandler bookHandler, final String symbol) {
+    public SelectIOMDForSymbol(final IBookSubscriber bookHandler, final String symbol) {
 
         this.bookHandler = bookHandler;
         this.symbol = symbol;

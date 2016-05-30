@@ -59,7 +59,9 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
-import com.drwtrading.london.reddal.data.ibook.LevelThreeBookHandler;
+import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
+import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
+import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
@@ -461,7 +463,8 @@ public class Main {
 
                 final Set<String> newClientsBySuffix = new HashSet<>();
 
-                final LevelThreeBookHandler bookHandler = new LevelThreeBookHandler(displayMonitor, channels.searchResults);
+                final LevelThreeBookSubscriber l3BookHandler = new LevelThreeBookSubscriber(displayMonitor, channels.searchResults);
+                final LevelTwoBookSubscriber l2BookHandler = new LevelTwoBookSubscriber(displayMonitor, channels.searchResults);
 
                 if (null != newMDConfig) {
 
@@ -480,9 +483,10 @@ public class Main {
                                 mdParentMonitor.createChildResourceMonitor(mdSource.name());
 
                         final MDTransportClient mdClient =
-                                MDTransportClientFactory.createLevel3Client(displaySelectIO, mdClientMonitor, mdSource,
-                                        "reddal-" + configName + '-' + i, bookHandler, MD_SERVER_TIMEOUT, true);
-                        bookHandler.setMDClient(mdSource, mdClient);
+                                MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource,
+                                        "reddal-" + configName + '-' + i, l3BookHandler, l2BookHandler, MD_SERVER_TIMEOUT, true);
+                        l3BookHandler.setMDClient(mdSource, mdClient);
+                        l2BookHandler.setMDClient(mdSource, mdClient);
 
                         for (final String suffix : mdSourceGroup.getParam("suffixes").getSet(Pattern.compile(","))) {
                             if (!newClientsBySuffix.add(' ' + suffix)) {
@@ -496,12 +500,13 @@ public class Main {
                     }
                 }
 
-                final LadderPresenter presenter =
-                        new LadderPresenter(newClientsBySuffix, bookHandler, channels.remoteOrderCommand, environment.ladderOptions(),
-                                channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
-                                channels.subscribeToMarketData, channels.unsubscribeFromMarketData, channels.recenterLaddersForUser,
-                                displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
-                                channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
+                final DepthBookSubscriber depthBookSubscriber = new DepthBookSubscriber(l3BookHandler, l2BookHandler);
+
+                final LadderPresenter presenter = new LadderPresenter(newClientsBySuffix, depthBookSubscriber, channels.remoteOrderCommand,
+                        environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips,
+                        channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData,
+                        channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
+                        channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
 
                 final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
                 fiberBuilder.subscribe(presenter, webSocket, channels.workingOrders, channels.metaData, channels.position,

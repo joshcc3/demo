@@ -21,7 +21,7 @@ import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.data.SelectIOMDForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.data.ibook.IBookHandler;
+import com.drwtrading.london.reddal.data.ibook.IBookSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
@@ -62,7 +62,7 @@ public class LadderPresenter {
     public static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 12;
 
     private final Set<String> newClientsBySuffix;
-    private final IBookHandler bookHandler;
+    private final IBookSubscriber bookHandler;
 
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
@@ -92,7 +92,7 @@ public class LadderPresenter {
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
 
-    public LadderPresenter(final Set<String> newClientsBySuffix, final IBookHandler bookHandler,
+    public LadderPresenter(final Set<String> newClientsBySuffix, final IBookSubscriber bookHandler,
             final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
             final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<LadderView.HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,

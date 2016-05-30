@@ -13,6 +13,7 @@ public enum ReddalComponents implements IMonitoredComponent {
     INDY_TCP_PROTOCOL_FAILURE,
 
     MD_L3_HANDLER,
+    MD_L2_HANDLER,
 
     NEW_MD_HUB_AVAILABLE,
     NEW_MD_COULD_NOT_ESTABLISH_CONNECTION,

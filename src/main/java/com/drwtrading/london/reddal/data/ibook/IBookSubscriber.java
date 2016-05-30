@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.data.ibook;
 
 import com.drwtrading.london.reddal.data.SelectIOMDForSymbol;
 
-public interface IBookHandler {
+public interface IBookSubscriber {
 
     public void subscribeForMD(final String symbol, final SelectIOMDForSymbol listener);
 

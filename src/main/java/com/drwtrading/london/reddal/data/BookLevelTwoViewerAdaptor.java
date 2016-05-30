@@ -6,7 +6,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelTwoMonitor;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 
-public class BookLevelTwoViewerAdaptor implements IBookLevelTwoMonitor<IBookLevel> {
+public class BookLevelTwoViewerAdaptor implements IBookLevelTwoMonitor {
 
     public static final BookLevelTwoViewerAdaptor INSTANCE = new BookLevelTwoViewerAdaptor();
 
