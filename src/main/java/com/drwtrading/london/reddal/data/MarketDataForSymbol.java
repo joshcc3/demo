@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.data;
 import com.drwtrading.eeif.md.utils.MarketDataEventUtil;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
+import com.drwtrading.london.eeif.utils.marketData.book.BookLevelTwoMonitorAdaptor;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
@@ -199,7 +200,7 @@ public class MarketDataForSymbol implements IMarketData {
             swissLastTopOfBook = null;
             lastImpliedMsg = null;
 
-            book = new LevelTwoBook(BookLevelTwoViewerAdaptor.INSTANCE, symbol, -1, instID, instType, tickTable, mdSource, wpv);
+            book = new LevelTwoBook(BookLevelTwoMonitorAdaptor.INSTANCE, symbol, -1, instID, instType, tickTable, mdSource, wpv);
             book.setValidity(true);
 
             priceOperations = PriceUtils.from(msg);

@@ -22,12 +22,12 @@ public class Mathematics {
     }
 
     public static double toQuantityFromNotionalInSafetyCurrency(final double notionalInSafetyCurrency, final long price,
-                                                                final IBook<?> book, final double wpv) {
+            final IBook<?> book, final double wpv) {
 
         if (0 == price) {
             return 0;
         } else {
-            final double priceEUR = toEUR(book.getCCY(), price / Constants.NORMALISING_FACTOR);
+            final double priceEUR = toEUR(book.getCCY(), price / (double) Constants.NORMALISING_FACTOR);
             final double notionalValue = wpv * priceEUR;
             return notionalInSafetyCurrency / notionalValue;
         }
@@ -56,7 +56,7 @@ public class Mathematics {
         }
     }
 
-    private static double toEUR(final CCY fromCCY, final long price) {
+    private static double toEUR(final CCY fromCCY, final double price) {
 
         return TO_EUR_RATES.get(fromCCY) * price;
     }
@@ -87,7 +87,6 @@ public class Mathematics {
         TICK_VALUES.put("6R", 12.5d);
         TICK_VALUES.put("CL", 10.0d);
         TICK_VALUES.put("HG", 12.5d);
-
 
         // Liffe
         TICK_VALUES.put("FBXF", 1d);
