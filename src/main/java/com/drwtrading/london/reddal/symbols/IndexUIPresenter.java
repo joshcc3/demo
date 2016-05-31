@@ -156,10 +156,9 @@ public class IndexUIPresenter {
     }
 
     private void setSearchResult(final SearchResult searchResult) {
-        if (null == searchResultBySymbol.put(searchResult.symbol, searchResult)) {
-            for (final String keyword : searchResult.keywords) {
-                suffixTree.put(keyword, searchResult.symbol);
-            }
+        searchResultBySymbol.put(searchResult.symbol, searchResult);
+        for (final String keyword : searchResult.keywords) {
+            suffixTree.put(keyword, searchResult.symbol);
         }
     }
 
