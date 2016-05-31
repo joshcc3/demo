@@ -767,9 +767,12 @@ public class Main {
         }
 
         // Display symbols
-        final DisplaySymbolMapper displaySymbolMapper = new DisplaySymbolMapper(channels.displaySymbol);
-        channels.instDefs.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setInstDef);
-        channels.refData.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setInstDefEvent);
+        {
+            final DisplaySymbolMapper displaySymbolMapper = new DisplaySymbolMapper(channels.displaySymbol);
+            channels.instDefs.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setInstDef);
+            channels.refData.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setInstDefEvent);
+            channels.searchResults.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setSearchResult);
+        }
 
         // Indy
         final ConfigGroup indyConfig = root.getEnabledGroup("indy");

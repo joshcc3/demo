@@ -58,8 +58,6 @@ public class IndexUIPresenter {
         instDefsMap.put(instDefEvent.getSymbol(), instDefEvent);
 
         String symbol = instDefEvent.getSymbol();
-        final String link = "/ladder#" + symbol;
-
         String company = "";
 
         final InstrumentID instID = MarketDataForSymbol.getInstrumentID(instDefEvent);
@@ -123,16 +121,19 @@ public class IndexUIPresenter {
 
         terms.addAll(Arrays.asList(desc.split(("\\W"))));
 
-        final DisplaySymbol displaySymbol = symbolToDisplay.get(symbol);
-        if (null != displaySymbol) {
-            symbol = displaySymbol.displaySymbol;
-            terms.add(displaySymbol.displaySymbol);
+        String displaySymbol;
+        if (symbolToDisplay.containsKey(symbol)) {
+            displaySymbol = symbolToDisplay.get(symbol).displaySymbol;
+            terms.add(displaySymbol);
+        } else {
+            displaySymbol = symbol;
         }
+
         final MDSource mdSource = MarketDataForSymbol.getSource(instDefEvent);
 
         final long expiry = getExpiry(instDefEvent);
 
-        final SearchResult searchResult = new SearchResult(symbol, instID, instType, link, description, mdSource, terms, expiry);
+        final SearchResult searchResult = new SearchResult(symbol, instID, instType, description, mdSource, terms, expiry, displaySymbol);
         setSearchResult(searchResult);
     }
 
@@ -148,8 +149,8 @@ public class IndexUIPresenter {
             final Collection<String> keywords = new ArrayList<>(searchResult.keywords);
             keywords.add(displaySymbol.displaySymbol);
             final SearchResult newResult =
-                    new SearchResult(displaySymbol.displaySymbol, searchResult.instID, searchResult.instType, searchResult.link,
-                            searchResult.description, searchResult.mdSource, keywords, searchResult.expiry);
+                    new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType,
+                            searchResult.description, searchResult.mdSource, keywords, searchResult.expiry, displaySymbol.displaySymbol);
             setSearchResult(newResult);
         }
     }
@@ -164,15 +165,13 @@ public class IndexUIPresenter {
 
     @Subscribe
     public void on(final DisplaySymbol displaySymbol) {
-
         symbolToDisplay.put(displaySymbol.marketDataSymbol, displaySymbol);
-        suffixTree.put(displaySymbol.displaySymbol, displaySymbol.marketDataSymbol);
         if (searchResultBySymbol.containsKey(displaySymbol.marketDataSymbol)) {
             final SearchResult searchResult = searchResultBySymbol.get(displaySymbol.marketDataSymbol);
             searchResult.keywords.add(displaySymbol.displaySymbol);
             final SearchResult newResult =
-                    new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType, searchResult.link,
-                            searchResult.description, searchResult.mdSource, searchResult.keywords, searchResult.expiry);
+                    new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType,
+                            searchResult.description, searchResult.mdSource, searchResult.keywords, searchResult.expiry, displaySymbol.displaySymbol);
             searchResultBySymbol.put(searchResult.symbol, newResult);
         }
     }

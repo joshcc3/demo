@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.symbols;
 
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.FutureOutrightStructure;
@@ -52,6 +53,18 @@ public class DisplaySymbolMapper {
             publishIfNew(displaySymbol);
         }
     }
+
+    public void setSearchResult(SearchResult searchResult) {
+        if(searchResult.instType == InstType.EQUITY || searchResult.instType == InstType.DR ||
+                searchResult.instType == InstType.ETF) {
+            mdSymbolsByIsin.put(searchResult.instID.isin, searchResult.symbol);
+            final String bbgCode = bbgByIsin.get(searchResult.instID.isin);
+            if (null != bbgCode) {
+                makeDisplaySymbol(searchResult.symbol, bbgCode);
+            }
+        }
+    }
+
 
     public void setInstDef(final InstrumentDef instDef) {
 
