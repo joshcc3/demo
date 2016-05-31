@@ -28,7 +28,7 @@
             }, 200);
             $("#search").keyup(function (e) {
                 if (e.keyCode == 13 && topResult) {
-                    window.open(topResult.link, topResult.symbol, "dialog=yes,width=245,height=600");
+                    window.open("/ladder#" + topResult.symbol, topResult.symbol, "dialog=yes,width=245,height=600");
                 }
             });
             $("#search").focus();
