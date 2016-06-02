@@ -61,6 +61,7 @@ public class LadderPresenter {
 
     public static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 12;
 
+    private final boolean allNewMD;
     private final Set<String> newClientsBySuffix;
     private final IBookSubscriber bookHandler;
 
@@ -92,7 +93,7 @@ public class LadderPresenter {
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
 
-    public LadderPresenter(final Set<String> newClientsBySuffix, final IBookSubscriber bookHandler,
+    public LadderPresenter(final boolean allNewMD, final Set<String> newClientsBySuffix, final IBookSubscriber bookHandler,
             final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
             final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<LadderView.HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
@@ -102,6 +103,7 @@ public class LadderPresenter {
             final Publisher<UserCycleRequest> userCycleContractPublisher,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
 
+        this.allNewMD = allNewMD;
         this.newClientsBySuffix = newClientsBySuffix;
         this.bookHandler = bookHandler;
 
@@ -126,7 +128,7 @@ public class LadderPresenter {
     private IMarketData subscribeToMarketDataForSymbol(final String symbol, final Fiber fiber) {
 
         final int suffixLoc = symbol.indexOf(' ');
-        if (0 < suffixLoc && newClientsBySuffix.contains(symbol.substring(suffixLoc))) {
+        if (allNewMD) {
             // new subscription method
             return new SelectIOMDForSymbol(bookHandler, symbol);
         } else {

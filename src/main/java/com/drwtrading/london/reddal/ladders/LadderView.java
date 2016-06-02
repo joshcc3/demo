@@ -218,6 +218,24 @@ public class LadderView implements UiEventHandler {
         sendHeartbeat();
     }
 
+    private void tryToDrawLadder() {
+        final IMarketData m = this.marketData;
+        if (null != m && null != m.getBook() && m.getBook().isValid()) {
+            ui.clear();
+            ui.clickable('#' + HTML.SYMBOL);
+            ui.clickable('#' + HTML.CLOCK);
+            if (pendingRefDataAndSettle) {
+                onRefDataAndSettleFirstAppeared();
+            }
+            centerPrice = this.marketData.getPriceOperations().tradablePrice(centerPrice, Side.BID);
+            pendingRefDataAndSettle = false;
+            recenter();
+            recenterLadderAndDrawPriceLevels();
+            setUpBasketLink();
+            setUpClickTrading();
+        }
+    }
+
     public void flush() {
         checkClientSpeed();
         drawLadderIfRefDataHasJustComeIn();
@@ -641,24 +659,6 @@ public class LadderView implements UiEventHandler {
                     }
                 }
             }
-        }
-    }
-
-    private void tryToDrawLadder() {
-        final IMarketData m = this.marketData;
-        if (null != m && null != m.getBook() && m.getBook().isValid()) {
-            ui.clear();
-            ui.clickable('#' + HTML.SYMBOL);
-            ui.clickable('#' + HTML.CLOCK);
-            if (pendingRefDataAndSettle) {
-                onRefDataAndSettleFirstAppeared();
-            }
-            centerPrice = this.marketData.getPriceOperations().tradablePrice(centerPrice, Side.BID);
-            pendingRefDataAndSettle = false;
-            recenter();
-            recenterLadderAndDrawPriceLevels();
-            setUpBasketLink();
-            setUpClickTrading();
         }
     }
 

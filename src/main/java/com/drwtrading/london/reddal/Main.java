@@ -445,6 +445,7 @@ public class Main {
                     new MultiLayeredResourceMonitor<>(monitor, ReddalComponents.class, errorLog);
 
             final ConfigGroup newMDConfig = root.getEnabledGroup("newMD");
+            final boolean allNewMD = root.paramExists("allNewMD") && root.getBoolean("allNewMD");
 
             final List<TypedChannel<WebSocketControlMessage>> webSockets = Lists.newArrayList();
             for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
@@ -502,7 +503,7 @@ public class Main {
 
                 final DepthBookSubscriber depthBookSubscriber = new DepthBookSubscriber(l3BookHandler, l2BookHandler);
 
-                final LadderPresenter presenter = new LadderPresenter(newClientsBySuffix, depthBookSubscriber, channels.remoteOrderCommand,
+                final LadderPresenter presenter = new LadderPresenter(allNewMD, newClientsBySuffix, depthBookSubscriber, channels.remoteOrderCommand,
                         environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips,
                         channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData,
                         channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
