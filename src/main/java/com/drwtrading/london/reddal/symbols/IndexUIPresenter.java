@@ -167,11 +167,14 @@ public class IndexUIPresenter {
         symbolToDisplay.put(displaySymbol.marketDataSymbol, displaySymbol);
         if (searchResultBySymbol.containsKey(displaySymbol.marketDataSymbol)) {
             final SearchResult searchResult = searchResultBySymbol.get(displaySymbol.marketDataSymbol);
-            searchResult.keywords.add(displaySymbol.displaySymbol);
-            final SearchResult newResult =
-                    new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType,
-                            searchResult.description, searchResult.mdSource, searchResult.keywords, searchResult.expiry, displaySymbol.displaySymbol);
-            searchResultBySymbol.put(searchResult.symbol, newResult);
+            if (!searchResult.displaySymbol.equals(displaySymbol.displaySymbol)) {
+                searchResult.keywords.add(displaySymbol.displaySymbol);
+                final SearchResult newResult =
+                        new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType,
+                                searchResult.description, searchResult.mdSource, searchResult.keywords, searchResult.expiry, displaySymbol.displaySymbol);
+                searchResultBySymbol.put(searchResult.symbol, newResult);
+                setSearchResult(searchResult);
+            }
         }
     }
 
