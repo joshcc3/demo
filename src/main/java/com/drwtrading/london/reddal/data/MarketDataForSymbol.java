@@ -30,6 +30,8 @@ import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
 import com.drwtrading.london.protocols.photon.marketdata.CmeDecimalTickStructure;
 import com.drwtrading.london.protocols.photon.marketdata.CmeFractionalTickStructure;
 import com.drwtrading.london.protocols.photon.marketdata.DecimalTickStructure;
+import com.drwtrading.london.protocols.photon.marketdata.FutureOutrightStructure;
+import com.drwtrading.london.protocols.photon.marketdata.FutureStrategyStructure;
 import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.protocols.photon.marketdata.Level;
 import com.drwtrading.london.protocols.photon.marketdata.LiffeThirtySecondsTickStructure;
@@ -189,27 +191,29 @@ public class MarketDataForSymbol implements IMarketData {
         }
 
         @Override
-        public Void visitInstrumentDefinitionEvent(final InstrumentDefinitionEvent msg) {
+        public Void visitInstrumentDefinitionEvent(final InstrumentDefinitionEvent def) {
 
-            final InstrumentID instID = getInstrumentID(msg);
-            final InstType instType = getInstType(msg);
-            final ITickTable tickTable = getTickTable(msg);
-            final MDSource mdSource = getSource(msg);
+            final InstrumentID instID = getInstrumentID(def);
+            final InstType instType = getInstType(def);
+            final ITickTable tickTable = getTickTable(def);
+            final MDSource mdSource = getSource(def);
             final double wpv = Mathematics.getPointValue(instType, symbol, tickTable);
+            final long expiryMilliSinceUTC = getExpiry(def);
 
             swissLastTopOfBook = null;
             lastImpliedMsg = null;
 
-            book = new LevelTwoBook(BookLevelTwoMonitorAdaptor.INSTANCE, symbol, -1, instID, instType, tickTable, mdSource, wpv);
+            book = new LevelTwoBook(BookLevelTwoMonitorAdaptor.INSTANCE, symbol, -1, instID, instType, tickTable, mdSource, wpv,
+                    expiryMilliSinceUTC);
             book.setValidity(true);
 
-            priceOperations = PriceUtils.from(msg);
-            priceFormat = PriceFormats.from(msg.getPriceStructure().getTickStructure());
+            priceOperations = PriceUtils.from(def);
+            priceFormat = PriceFormats.from(def.getPriceStructure().getTickStructure());
 
-            if (msg.getPriceStructure().getTickStructure() instanceof NormalizedDecimalTickStructure) {
+            if (def.getPriceStructure().getTickStructure() instanceof NormalizedDecimalTickStructure) {
                 final NormalizedBandedDecimalTickStructure bandedDecimalTickStructure = new NormalizedBandedDecimalTickStructure(
-                        (NormalizedDecimalTickStructure) msg.getPriceStructure().getTickStructure(),
-                        new ObjectArrayList<>(new TickBand[]{new TickBand(0, msg.getPriceStructure().getTickIncrement())}));
+                        (NormalizedDecimalTickStructure) def.getPriceStructure().getTickStructure(),
+                        new ObjectArrayList<>(new TickBand[]{new TickBand(0, def.getPriceStructure().getTickIncrement())}));
                 priceFormat = PriceFormats.from(bandedDecimalTickStructure);
             }
             return null;
@@ -545,5 +549,21 @@ public class MarketDataForSymbol implements IMarketData {
                 throw new IllegalArgumentException("Unsupported tick structure: " + msg);
             }
         });
+    }
+
+    private static long getExpiry(final InstrumentDefinitionEvent def) {
+
+        switch (def.getInstrumentStructure().typeEnum()) {
+            case FUTURE_OUTRIGHT_STRUCTURE: {
+                return ((FutureOutrightStructure) def.getInstrumentStructure()).getExpiry().getTimestamp();
+            }
+            case FUTURE_STRATEGY_STRUCTURE: {
+                final FutureStrategyStructure structure = (FutureStrategyStructure) def.getInstrumentStructure();
+                return structure.getLegs().get(0).getExpiry().getTimestamp();
+            }
+            default: {
+                return Long.MAX_VALUE;
+            }
+        }
     }
 }

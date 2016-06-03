@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
@@ -15,48 +16,50 @@ import com.drwtrading.london.protocols.photon.marketdata.InstrumentStructure;
 import com.drwtrading.london.protocols.photon.marketdata.XetraInstrumentDefinition;
 import com.drwtrading.london.reddal.data.MarketDataForSymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
-import com.drwtrading.london.util.Struct;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.MapMaker;
 import org.jetlang.channels.Publisher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
-import java.util.TreeMap;
 
 public class FuturesContractSetGenerator {
 
     private final Set<String> excludedMarkets = ImmutableSet.of("FEXD");
 
-    private final Map<String, TreeMap<String, SearchResult>> marketToOutrightsByExpiry =
-            new MapMaker().makeComputingMap(from -> new TreeMap<>());
-
-    private final Map<String, HashMap<SpreadExpiries, SearchResult>> marketToSpreads =
-            new MapMaker().makeComputingMap(from -> new HashMap<>());
-
-    private final Map<String, SpreadContractSet> setByFrontMonth = new HashMap<>();
+    private final Map<String, NavigableMap<Long, SearchResult>> marketToOutrightsByExpiry;
+    private final Map<String, HashMap<String, SearchResult>> spreadByExpires;
+    private final Map<String, SpreadContractSet> setByFrontMonth;
 
     private final Publisher<SpreadContractSet> publisher;
 
     public FuturesContractSetGenerator(final Publisher<SpreadContractSet> publisher) {
+
         this.publisher = publisher;
+
+        this.marketToOutrightsByExpiry = new HashMap<>();
+        this.spreadByExpires = new HashMap<>();
+        this.setByFrontMonth = new HashMap<>();
     }
 
     @Subscribe
-    public void on(final InstrumentDefinitionEvent instrumentDefinitionEvent) {
+    public void on(final InstrumentDefinitionEvent instDef) {
 
-        if (instrumentDefinitionEvent.getInstrumentStructure() instanceof FutureOutrightStructure) {
-
-            final SearchResult searchResult = getSearchResult(instrumentDefinitionEvent);
-            setSearchResult(searchResult);
-
-        } else if (instrumentDefinitionEvent.getInstrumentStructure() instanceof FutureStrategyStructure) {
-
-            final SearchResult searchResult = getSearchResult(instrumentDefinitionEvent);
-            setSearchResult(searchResult);
+        switch (instDef.getInstrumentStructure().typeEnum()) {
+            case FUTURE_OUTRIGHT_STRUCTURE: {
+                final SearchResult searchResult = getSearchResult(instDef);
+                setSearchResult(searchResult);
+                break;
+            }
+            case FUTURE_STRATEGY_STRUCTURE: {
+                final SearchResult searchResult = getSearchResult(instDef);
+                setSearchResult(searchResult);
+                break;
+            }
         }
     }
 
@@ -150,43 +153,35 @@ public class FuturesContractSetGenerator {
 
         switch (searchResult.instType) {
             case FUTURE: {
+
                 final int contractLength = searchResult.symbol.length() - 2;
                 final String contract = searchResult.symbol.substring(0, contractLength);
-                final String expiry = reverseString(searchResult.symbol.substring(contractLength));
-                marketToOutrightsByExpiry.get(contract).put(expiry, searchResult);
+                final long expiryMilliSinceUTC = searchResult.expiry;
+                MapUtils.getNavigableMap(marketToOutrightsByExpiry, contract).put(expiryMilliSinceUTC, searchResult);
+
                 publishContractSet(contract);
                 break;
             }
             case FUTURE_SPREAD: {
+
                 final String[] legs = searchResult.symbol.split("-");
+
+                final Map<String, SearchResult> spreadByBackMonth = MapUtils.getMappedMap(spreadByExpires, legs[0]);
+                spreadByBackMonth.put(legs[1], searchResult);
 
                 final int frontContractLength = legs[0].length() - 2;
                 final String frontContract = legs[0].substring(0, frontContractLength);
-                final String frontExpiry = reverseString(legs[0].substring(frontContractLength));
 
-                final int backContractLength = legs[1].length() - 2;
-                final String backExpiry = reverseString(legs[1].substring(backContractLength));
-
-                final SpreadExpiries spreadExpiries = new SpreadExpiries(frontExpiry, backExpiry);
-                marketToSpreads.get(frontContract).put(spreadExpiries, searchResult);
                 publishContractSet(frontContract);
                 break;
             }
         }
     }
 
-    private static String reverseString(final String s) {
+    private void publishContractSet(final String contract) {
 
-        final StringBuilder sb = new StringBuilder();
-        for (int i = s.length() - 1; -1 < i; --i) {
-            sb.append(s.charAt(i));
-        }
-        return sb.toString();
-    }
-
-    private void publishContractSet(final String market) {
-        if (!excludedMarkets.contains(market)) {
-            final SpreadContractSet spreadContractSet = updateMarket(market);
+        if (!excludedMarkets.contains(contract)) {
+            final SpreadContractSet spreadContractSet = updateMarket(contract);
             if (spreadContractSet != null && !spreadContractSet.equals(setByFrontMonth.put(spreadContractSet.front, spreadContractSet))) {
                 publisher.publish(spreadContractSet);
             }
@@ -194,36 +189,33 @@ public class FuturesContractSetGenerator {
     }
 
     private SpreadContractSet updateMarket(final String market) {
-        final TreeMap<String, SearchResult> outrights = marketToOutrightsByExpiry.get(market);
+
+        final NavigableMap<Long, SearchResult> outrights = MapUtils.getNavigableMap(marketToOutrightsByExpiry, market);
+
         if (outrights.isEmpty()) {
+
             return null;
-        } else if (outrights.size() == 1) {
-            return new SpreadContractSet(outrights.firstEntry().getValue().symbol, null, null);
-        } else if (outrights.size() > 1) {
-            final ArrayList<Map.Entry<String, SearchResult>> values = new ArrayList<>(outrights.entrySet());
-            final Map.Entry<String, SearchResult> front = values.get(0);
-            final Map.Entry<String, SearchResult> back = values.get(1);
-            final HashMap<SpreadExpiries, SearchResult> spreads = marketToSpreads.get(market);
-            final SearchResult spread = spreads.get(new SpreadExpiries(front.getKey(), back.getKey()));
-            if (spread != null) {
-                return new SpreadContractSet(front.getValue().symbol, back.getValue().symbol, spread.symbol);
+
+        } else if (1 == outrights.size()) {
+
+            final String symbol = outrights.firstEntry().getValue().symbol;
+            return new SpreadContractSet(symbol, symbol, symbol);
+
+        } else {
+
+            final Iterator<SearchResult> expiries = outrights.values().iterator();
+
+            final SearchResult firstExpiry = expiries.next();
+            final SearchResult secondExpiry = expiries.next();
+
+            final Map<String, SearchResult> spreadByBackMonth = MapUtils.getMappedMap(spreadByExpires, firstExpiry.symbol);
+            final SearchResult spread = spreadByBackMonth.get(secondExpiry.symbol);
+
+            if (null == spread) {
+                return new SpreadContractSet(firstExpiry.symbol, secondExpiry.symbol, firstExpiry.symbol + '-' + secondExpiry.symbol);
             } else {
-                return new SpreadContractSet(front.getValue().symbol, back.getValue().symbol,
-                        front.getValue().symbol + '-' + back.getValue().symbol);
+                return new SpreadContractSet(firstExpiry.symbol, secondExpiry.symbol, spread.symbol);
             }
         }
-        return null;
     }
-
-    public static class SpreadExpiries extends Struct {
-
-        public final String frontExpiry;
-        public final String backExpiry;
-
-        public SpreadExpiries(final String frontExpiry, final String backExpiry) {
-            this.frontExpiry = frontExpiry;
-            this.backExpiry = backExpiry;
-        }
-    }
-
 }

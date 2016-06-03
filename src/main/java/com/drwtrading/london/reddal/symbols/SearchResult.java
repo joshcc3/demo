@@ -16,9 +16,9 @@ public class SearchResult extends Struct {
     public final InstType instType;
     public final String description;
     public final MDSource mdSource;
-    public final Collection<String> keywords;
     public final long expiry;
     public final String displaySymbol;
+    public final Collection<String> keywords;
 
     public SearchResult(final String symbol, final InstrumentID instID, final InstType instType, final String description,
             final MDSource mdSource, final Collection<String> keywords, final long expiry, final String displaySymbol) {
@@ -35,7 +35,6 @@ public class SearchResult extends Struct {
 
     public SearchResult(final IBook<?> book) {
 
-        // TODO: Support Future expiry dates
         // TODO: Description of spread to contain buy/sell info
 
         final String isinCcyMic = book.getInstID().toString();
@@ -45,13 +44,13 @@ public class SearchResult extends Struct {
         this.instType = book.getInstType();
         this.description = isinCcyMic + ' ' + book.getMIC().exchange;
         this.mdSource = book.getSourceExch();
+
+        this.expiry = book.getExpiryMilliSinceUTC();
         this.displaySymbol = book.getSymbol();
 
         this.keywords = new ArrayList<>();
         keywords.add(symbol);
         keywords.add(isinCcyMic);
         keywords.add(book.getMIC().exchange.name());
-
-        this.expiry = 0;
     }
 }

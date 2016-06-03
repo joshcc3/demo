@@ -204,7 +204,7 @@ public class PriceUtils implements PriceOperations {
             if (Direction.Add == direction) {
                 return tickTable.addTicks(price, n);
             } else {
-                return tickTable.addTicks(price, -n);
+                return tickTable.subtractTicks(price, n);
             }
         }
     }
