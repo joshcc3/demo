@@ -570,6 +570,7 @@ public class Main {
         {
             final FuturesContractSetGenerator futuresContractSetGenerator = new FuturesContractSetGenerator(channels.contractSets);
             fibers.contracts.subscribe(futuresContractSetGenerator, channels.refData);
+             channels.searchResults.subscribe(fibers.contracts.getFiber(), futuresContractSetGenerator::setSearchResult);
 
             final SyntheticSpreadContractSetGenerator generator = new SyntheticSpreadContractSetGenerator(channels.contractSets);
             fibers.contracts.subscribe(generator, channels.refData);

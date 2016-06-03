@@ -20,8 +20,8 @@ public class SearchResult extends Struct {
     public final long expiry;
     public final String displaySymbol;
 
-    public SearchResult(final String symbol, final InstrumentID instID, final InstType instType,
-                        final String description, final MDSource mdSource, final Collection<String> keywords, final long expiry, String displaySymbol) {
+    public SearchResult(final String symbol, final InstrumentID instID, final InstType instType, final String description,
+            final MDSource mdSource, final Collection<String> keywords, final long expiry, final String displaySymbol) {
 
         this.symbol = symbol;
         this.instID = instID;
