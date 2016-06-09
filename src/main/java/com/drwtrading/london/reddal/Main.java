@@ -514,7 +514,7 @@ public class Main {
                         channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
                         channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand,
                         channels.ladderClickTradingIssues, channels.replaceCommand, channels.userCycleContractPublisher,
-                        channels.orderEntrySymbols, channels.orderEntryFromServer);
+                        channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults);
 
                 final long initialDelay = 10 + i * (LadderPresenter.BATCH_FLUSH_INTERVAL_MS / webSockets.size());
                 displaySelectIO.addDelayedAction(initialDelay, presenter::flushAllLadders);

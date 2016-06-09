@@ -77,6 +77,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class LadderView implements UiEventHandler {
@@ -132,6 +133,7 @@ public class LadderView implements UiEventHandler {
     private final TradingStatusForAll tradingStatusForAll;
     private final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
+    private final Predicate<String> symbolExists;
     private final LongMap<Integer> levelByPrice;
     private final LongMap<String> formattedPrices;
     private final LadderHTMLKeys ladderHTMLKeys;
@@ -160,14 +162,15 @@ public class LadderView implements UiEventHandler {
     private ClientSpeedState clientSpeedState = ClientSpeedState.FINE;
 
     public LadderView(final WebSocketClient client, final UiPipeImpl ui, final View view,
-            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
-            final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
-            final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-            final Publisher<UserCycleRequest> userCycleContractPublisher,
-            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
+                      final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
+                      final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
+                      final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+                      final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
+                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+                      final Publisher<UserCycleRequest> userCycleContractPublisher,
+                      final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+                      final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
+                      final Predicate<String> symbolExists) {
 
         this.client = client;
         this.view = view;
@@ -184,6 +187,7 @@ public class LadderView implements UiEventHandler {
         this.tradingStatusForAll = tradingStatusForAll;
         this.heartbeatRoundTripPublisher = heartbeatRoundTripPublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
+        this.symbolExists = symbolExists;
         this.levelByPrice = new LongMap<>();
         this.formattedPrices = new LongMap<>();
         this.ladderHTMLKeys = new LadderHTMLKeys();
@@ -194,8 +198,10 @@ public class LadderView implements UiEventHandler {
 
     public void replaceSymbol(final ReplaceCommand replaceCommand) {
         if (view != null) {
-            System.out.println("Replacing: " + symbol + " -> " + symbol.replace(replaceCommand.from, replaceCommand.to));
-            view.goToSymbol(symbol.replace(replaceCommand.from, replaceCommand.to));
+            if (symbolExists.test(replaceCommand.to)) {
+                System.out.println("Replacing: " + symbol + " -> " + symbol.replace(replaceCommand.from, replaceCommand.to));
+                view.goToSymbol(symbol.replace(replaceCommand.from, replaceCommand.to));
+            }
         }
     }
 
@@ -1100,8 +1106,12 @@ public class LadderView implements UiEventHandler {
     boolean nextContract() {
         if (dataForSymbol != null && dataForSymbol.spreadContractSet != null) {
             final SpreadContractSet contracts = dataForSymbol.spreadContractSet;
-            final String nextContract = contracts.next(symbol);
-            if (null != nextContract && !symbol.equals(nextContract)) {
+            String nextContract = contracts.next(symbol);
+            int count = 3;
+            while (!symbolExists.test(nextContract) && 0 < count--) {
+                nextContract = contracts.next(nextContract);
+            }
+            if (null != nextContract && !symbol.equals(nextContract) && symbolExists.test(nextContract)) {
                 view.goToSymbol(nextContract);
                 return true;
             } else {
@@ -1113,7 +1123,7 @@ public class LadderView implements UiEventHandler {
     }
 
     boolean switchChixSymbol() {
-        if (null != dataForSymbol && null != dataForSymbol.chixSwitchSymbol) {
+        if (null != dataForSymbol && null != dataForSymbol.chixSwitchSymbol && symbolExists.test(dataForSymbol.chixSwitchSymbol)) {
             view.goToSymbol(dataForSymbol.chixSwitchSymbol);
             return true;
         } else {

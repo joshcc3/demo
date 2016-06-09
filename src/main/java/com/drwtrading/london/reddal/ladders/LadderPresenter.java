@@ -29,6 +29,7 @@ import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
+import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.DeskPosition;
@@ -52,6 +53,7 @@ import org.jetlang.fibers.Fiber;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -79,6 +81,7 @@ public class LadderPresenter {
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap = new HashMap<>();
     private final Map<String, IMarketData> marketDataForSymbolMap;
+    private final Set<String> existingSymbols = new HashSet<>();
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderView.HeartbeatRoundtrip> roundTripPublisher;
@@ -156,13 +159,19 @@ public class LadderPresenter {
     }
 
     @Subscribe
+    public void onSearchResult(final SearchResult searchResult) {
+        existingSymbols.add(searchResult.symbol);
+    }
+
+    @Subscribe
     public void onConnected(final WebSocketConnected connected) {
         final UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         final View view = new WebSocketOutputDispatcher<>(View.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final LadderView ladderView =
                 new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher,
                         tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
-                        ladderClickTradingIssuePublisher, userCycleContractPublisher, orderEntryMap, orderEntryCommandToServerPublisher);
+                        ladderClickTradingIssuePublisher, userCycleContractPublisher, orderEntryMap, orderEntryCommandToServerPublisher,
+                        existingSymbols::contains);
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }
