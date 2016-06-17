@@ -1,7 +1,5 @@
 package com.drwtrading.london.reddal.position;
 
-import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
@@ -22,15 +20,8 @@ public class PositionSubscriptionPhotocolsHandler implements PhotocolsHandler<Po
     PhotocolsConnection<Subscription> connection = null;
     final Publisher<Position> positionPublisher;
 
-    public PositionSubscriptionPhotocolsHandler(Publisher<Position> positionPublisher) {
+    public PositionSubscriptionPhotocolsHandler(final Publisher<Position> positionPublisher) {
         this.positionPublisher = positionPublisher;
-    }
-
-    @Subscribe
-    public void on(InstrumentDefinitionEvent instrumentDefinitionEvent) {
-        String symbol = instrumentDefinitionEvent.getSymbol();
-        allSymbols.add(symbol);
-        subscribe(symbol);
     }
 
     public void setSearchResult(final SearchResult searchResult) {
@@ -38,16 +29,16 @@ public class PositionSubscriptionPhotocolsHandler implements PhotocolsHandler<Po
         subscribe(searchResult.symbol);
     }
 
-    private void subscribe(String symbol) {
+    private void subscribe(final String symbol) {
         if (connection != null) {
             connection.send(new PositionSubscription(UUID.randomUUID().toString(), symbol, new ObjectArraySet<>()));
         }
     }
 
     @Override
-    public PhotocolsConnection<Subscription> onOpen(PhotocolsConnection<Subscription> connection) {
+    public PhotocolsConnection<Subscription> onOpen(final PhotocolsConnection<Subscription> connection) {
         this.connection = connection;
-        for (String symbol : allSymbols) {
+        for (final String symbol : allSymbols) {
             subscribe(symbol);
         }
         return connection;
@@ -59,12 +50,12 @@ public class PositionSubscriptionPhotocolsHandler implements PhotocolsHandler<Po
     }
 
     @Override
-    public void onClose(PhotocolsConnection<Subscription> connection) {
+    public void onClose(final PhotocolsConnection<Subscription> connection) {
         this.connection = null;
     }
 
     @Override
-    public void onMessage(PhotocolsConnection<Subscription> connection, Position message) {
+    public void onMessage(final PhotocolsConnection<Subscription> connection, final Position message) {
         this.positionPublisher.publish(message);
     }
 }

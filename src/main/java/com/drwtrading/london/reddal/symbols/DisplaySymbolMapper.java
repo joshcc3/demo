@@ -1,10 +1,6 @@
 package com.drwtrading.london.reddal.symbols;
 
-import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
-import com.drwtrading.london.protocols.photon.marketdata.CashOutrightStructure;
-import com.drwtrading.london.protocols.photon.marketdata.FutureOutrightStructure;
-import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
@@ -28,43 +24,32 @@ public class DisplaySymbolMapper {
         this.displaySymbolPublisher = displaySymbolPublisher;
     }
 
-    public void setInstDefEvent(final InstrumentDefinitionEvent instrumentDefinitionEvent) {
+    public void setSearchResult(final SearchResult searchResult) {
 
-        if (instrumentDefinitionEvent.getInstrumentStructure() instanceof CashOutrightStructure) {
-
-            final String isin = ((CashOutrightStructure) instrumentDefinitionEvent.getInstrumentStructure()).getIsin();
-            final String symbol = instrumentDefinitionEvent.getSymbol();
-            mdSymbolsByIsin.put(isin, symbol);
-
-            final String bbgCode = bbgByIsin.get(isin);
-            if (null != bbgCode) {
-                makeDisplaySymbol(symbol, bbgCode);
+        switch (searchResult.instType) {
+            case EQUITY:
+            case DR:
+            case ETF: {
+                mdSymbolsByIsin.put(searchResult.instID.isin, searchResult.symbol);
+                final String bbgCode = bbgByIsin.get(searchResult.instID.isin);
+                if (null != bbgCode) {
+                    makeDisplaySymbol(searchResult.symbol, bbgCode);
+                }
+                break;
             }
-        } else if (instrumentDefinitionEvent.getInstrumentStructure() instanceof FutureOutrightStructure) {
+            case FUTURE: {
 
-            final String market = instrumentDefinitionEvent.getMarket();
-            final SimpleDateFormat sdf = new SimpleDateFormat("MMM yy");
+                final String market = searchResult.symbol.substring(0, searchResult.symbol.length() - 2);
 
-            final FutureOutrightStructure futureDetails = ((FutureOutrightStructure) instrumentDefinitionEvent.getInstrumentStructure());
-            final long expiryMillis = futureDetails.getExpiry().getTimestamp();
-            final Date expiryTime = new Date(expiryMillis);
-            final String expiry = sdf.format(expiryTime);
-            final DisplaySymbol displaySymbol = new DisplaySymbol(instrumentDefinitionEvent.getSymbol(), market + ' ' + expiry);
-            publishIfNew(displaySymbol);
-        }
-    }
+                final SimpleDateFormat sdf = new SimpleDateFormat("MMM yy");
+                final Date expiryTime = new Date(searchResult.expiry);
+                final String expiry = sdf.format(expiryTime);
 
-    public void setSearchResult(SearchResult searchResult) {
-        if(searchResult.instType == InstType.EQUITY || searchResult.instType == InstType.DR ||
-                searchResult.instType == InstType.ETF) {
-            mdSymbolsByIsin.put(searchResult.instID.isin, searchResult.symbol);
-            final String bbgCode = bbgByIsin.get(searchResult.instID.isin);
-            if (null != bbgCode) {
-                makeDisplaySymbol(searchResult.symbol, bbgCode);
+                final DisplaySymbol displaySymbol = new DisplaySymbol(searchResult.symbol, market + ' ' + expiry);
+                publishIfNew(displaySymbol);
             }
         }
     }
-
 
     public void setInstDef(final InstrumentDef instDef) {
 

@@ -19,6 +19,7 @@ public enum ReddalComponents implements IMonitoredComponent {
     NEW_MD_COULD_NOT_ESTABLISH_CONNECTION,
     NEW_MD_UNDERLYING_TCP,
     NEW_MD_TCP_PROTOCOL_FAILURE,
+    NEW_MD_MD_SERVER_UPDATE,
     NEW_MD_MD_SERVER_VIEWER;
 
     @Override

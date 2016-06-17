@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.symbols;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
+import com.drwtrading.london.eeif.utils.marketData.book.ticks.ITickTable;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.util.Struct;
 
@@ -18,10 +19,13 @@ public class SearchResult extends Struct {
     public final MDSource mdSource;
     public final long expiry;
     public final String displaySymbol;
+    public final ITickTable tickTable;
     public final Collection<String> keywords;
+    public final int decimalPlaces;
 
     public SearchResult(final String symbol, final InstrumentID instID, final InstType instType, final String description,
-            final MDSource mdSource, final Collection<String> keywords, final long expiry, final String displaySymbol) {
+            final MDSource mdSource, final Collection<String> keywords, final long expiry, final String displaySymbol,
+            final ITickTable tickTable) {
 
         this.symbol = symbol;
         this.instID = instID;
@@ -31,6 +35,11 @@ public class SearchResult extends Struct {
         this.keywords = keywords;
         this.expiry = expiry;
         this.displaySymbol = displaySymbol;
+        this.tickTable = tickTable;
+
+        final long smallestTick = tickTable.getRawTickLevels().firstEntry().getValue();
+        this.decimalPlaces = Math.max(0, 10 - Long.toString(smallestTick).length());
+
     }
 
     public SearchResult(final IBook<?> book) {
@@ -48,9 +57,14 @@ public class SearchResult extends Struct {
         this.expiry = book.getExpiryMilliSinceUTC();
         this.displaySymbol = book.getSymbol();
 
+        this.tickTable = book.getTickTable();
+
         this.keywords = new ArrayList<>();
         keywords.add(symbol);
         keywords.add(isinCcyMic);
         keywords.add(book.getMIC().exchange.name());
+
+        final long smallestTick = tickTable.getRawTickLevels().firstEntry().getValue();
+        this.decimalPlaces = Math.max(0, 10 - Long.toString(smallestTick).length());
     }
 }

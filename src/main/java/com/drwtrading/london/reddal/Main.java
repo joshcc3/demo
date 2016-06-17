@@ -87,6 +87,7 @@ import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.symbols.SearchResultGenerator;
 import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
@@ -194,39 +195,39 @@ public class Main {
 
         public ReddalChannels(final ChannelFactory channelFactory) {
             this.channelFactory = channelFactory;
-            error = ERROR_CHANNEL;
-            errorPublisher = new BogusErrorFilteringPublisher(error);
-            metaData = create(LadderMetadata.class);
-            position = create(Position.class);
-            tradingStatus = create(TradingStatusWatchdog.ServerTradingStatus.class);
-            workingOrders = create(WorkingOrderUpdateFromServer.class);
-            workingOrderEvents = create(WorkingOrderEventFromServer.class);
-            remoteOrderEvents = create(RemoteOrderEventFromServer.class);
-            stats = create(StatsMsg.class);
-            refData = create(InstrumentDefinitionEvent.class);
-            remoteOrderCommandByServer = new MapMaker().makeComputingMap(from -> create(RemoteOrderManagementCommand.class));
-            remoteOrderCommand = msg -> remoteOrderCommandByServer.get(msg.toServer).publish(msg.value);
-            ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);
-            storeLadderPref = create(LadderSettings.StoreLadderPref.class);
-            instDefs = create(InstrumentDef.class);
-            displaySymbol = create(DisplaySymbol.class);
-            searchResults = create(SearchResult.class);
-            heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
-            reddalCommand = create(ReddalMessage.class);
-            reddalCommandSymbolAvailable = create(ReddalMessage.class);
-            subscribeToMarketData = create(SubscribeMarketData.class);
-            unsubscribeFromMarketData = create(UnsubscribeMarketData.class);
-            recenterLaddersForUser = create(RecenterLaddersForUser.class);
-            contractSets = create(SpreadContractSet.class);
-            chixSymbolPairs = create(ChixSymbolPair.class);
-            singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
-            trace = create(Jsonable.class);
-            ladderClickTradingIssues = create(LadderClickTradingIssue.class);
-            userCycleContractPublisher = create(UserCycleRequest.class);
-            replaceCommand = create(ReplaceCommand.class);
-            orderEntryFromServer = create(OrderEntryFromServer.class);
-            orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
-            orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
+            this.error = ERROR_CHANNEL;
+            this.errorPublisher = new BogusErrorFilteringPublisher(error);
+            this.metaData = create(LadderMetadata.class);
+            this.position = create(Position.class);
+            this.tradingStatus = create(TradingStatusWatchdog.ServerTradingStatus.class);
+            this.workingOrders = create(WorkingOrderUpdateFromServer.class);
+            this.workingOrderEvents = create(WorkingOrderEventFromServer.class);
+            this.remoteOrderEvents = create(RemoteOrderEventFromServer.class);
+            this.stats = create(StatsMsg.class);
+            this.refData = create(InstrumentDefinitionEvent.class);
+            this.remoteOrderCommandByServer = new MapMaker().makeComputingMap(from -> create(RemoteOrderManagementCommand.class));
+            this.remoteOrderCommand = msg -> remoteOrderCommandByServer.get(msg.toServer).publish(msg.value);
+            this.ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);
+            this.storeLadderPref = create(LadderSettings.StoreLadderPref.class);
+            this.instDefs = create(InstrumentDef.class);
+            this.displaySymbol = create(DisplaySymbol.class);
+            this.searchResults = create(SearchResult.class);
+            this.heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
+            this.reddalCommand = create(ReddalMessage.class);
+            this.reddalCommandSymbolAvailable = create(ReddalMessage.class);
+            this.subscribeToMarketData = create(SubscribeMarketData.class);
+            this.unsubscribeFromMarketData = create(UnsubscribeMarketData.class);
+            this.recenterLaddersForUser = create(RecenterLaddersForUser.class);
+            this.contractSets = create(SpreadContractSet.class);
+            this.chixSymbolPairs = create(ChixSymbolPair.class);
+            this.singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
+            this.trace = create(Jsonable.class);
+            this.ladderClickTradingIssues = create(LadderClickTradingIssue.class);
+            this.userCycleContractPublisher = create(UserCycleRequest.class);
+            this.replaceCommand = create(ReplaceCommand.class);
+            this.orderEntryFromServer = create(OrderEntryFromServer.class);
+            this.orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
+            this.orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
         }
 
         public <T> TypedChannel<T> create(final Class<T> clazz) {
@@ -414,7 +415,7 @@ public class Main {
                 createWebPageWithWebSocket("/", "index", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("index", websocket);
                 final IndexUIPresenter indexPresenter = new IndexUIPresenter();
-                fibers.ui.subscribe(indexPresenter, channels.displaySymbol, channels.refData, websocket);
+                fibers.ui.subscribe(indexPresenter, channels.displaySymbol, websocket);
                 channels.searchResults.subscribe(fibers.ui.getFiber(), indexPresenter::addSearchResult);
             }
 
@@ -433,9 +434,10 @@ public class Main {
             {
                 final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
+
                 final WorkingOrdersPresenter presenter =
                         new WorkingOrdersPresenter(fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand);
-                fibers.ui.subscribe(presenter, channels.refData, ws);
+                channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
                 channels.workingOrders.subscribe(
                         new BatchSubscriber<>(fibers.ui.getFiber(), presenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
             }
@@ -503,11 +505,12 @@ public class Main {
 
                 final DepthBookSubscriber depthBookSubscriber = new DepthBookSubscriber(l3BookHandler, l2BookHandler);
 
-                final LadderPresenter presenter = new LadderPresenter(allNewMD, newClientsBySuffix, depthBookSubscriber, channels.remoteOrderCommand,
-                        environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips,
-                        channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData,
-                        channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
-                        channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
+                final LadderPresenter presenter =
+                        new LadderPresenter(allNewMD, newClientsBySuffix, depthBookSubscriber, channels.remoteOrderCommand,
+                                environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips,
+                                channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData,
+                                channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
+                                channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
 
                 final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
                 fiberBuilder.subscribe(presenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
@@ -566,29 +569,32 @@ public class Main {
             fibers.onStart(() -> fibers.settings.execute(ladderSettings::load));
         }
 
-        // Contract sets
-        {
+        { // Contract sets
             final FuturesContractSetGenerator futuresContractSetGenerator = new FuturesContractSetGenerator(channels.contractSets);
-            fibers.contracts.subscribe(futuresContractSetGenerator, channels.refData);
-             channels.searchResults.subscribe(fibers.contracts.getFiber(), futuresContractSetGenerator::setSearchResult);
+            channels.searchResults.subscribe(fibers.contracts.getFiber(), futuresContractSetGenerator::setSearchResult);
 
             final SyntheticSpreadContractSetGenerator generator = new SyntheticSpreadContractSetGenerator(channels.contractSets);
-            fibers.contracts.subscribe(generator, channels.refData);
+            channels.searchResults.subscribe(fibers.contracts.getFiber(), generator::setSearchResult);
 
             final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
-            fibers.contracts.subscribe(chixInstMatcher, channels.refData);
             channels.searchResults.subscribe(fibers.contracts.getFiber(), chixInstMatcher::setSearchResult);
         }
 
         // Market data
         {
+            final SearchResultGenerator searchResultGenerator = new SearchResultGenerator(channels.searchResults);
+            channels.refData.subscribe(fibers.contracts.getFiber(), searchResultGenerator::setInstDefEvent);
+            channels.displaySymbol.subscribe(fibers.contracts.getFiber(), searchResultGenerator::setDisplaySymbol);
+
             for (final String mds : environment.getList(Environment.MARKET_DATA)) {
+
                 System.out.println(mds + " connecting to: " + environment.getMarketDataExchange(mds));
                 final MarketDataEventSnapshottingPublisher snapshottingPublisher = new MarketDataEventSnapshottingPublisher();
                 final FiberBuilder fiber = fibers.fiberGroup.create("Market Data: " + mds);
                 final ProductResetter productResetter = new ProductResetter(snapshottingPublisher);
                 final MarketDataSubscriberImpl marketDataSubscriber = new MarketDataSubscriberImpl(channels.refData);
                 fiber.subscribe(marketDataSubscriber, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
+
                 if (environment.getMarketDataExchange(mds) == Environment.Exchange.REMOTE) {
                     final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
                     final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client =
@@ -761,7 +767,6 @@ public class Main {
                     OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic, Position.class, Subscription.class,
                             fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
             final PositionSubscriptionPhotocolsHandler positionHandler = new PositionSubscriptionPhotocolsHandler(channels.position);
-            fibers.mrPhil.subscribe(positionHandler, channels.refData);
             channels.searchResults.subscribe(fibers.mrPhil.getFiber(), positionHandler::setSearchResult);
             client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("mr-phil.log").toFile(), fibers.logging.getFiber(),
                     true).handler(positionHandler);
@@ -772,7 +777,6 @@ public class Main {
         {
             final DisplaySymbolMapper displaySymbolMapper = new DisplaySymbolMapper(channels.displaySymbol);
             channels.instDefs.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setInstDef);
-            channels.refData.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setInstDefEvent);
             channels.searchResults.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setSearchResult);
         }
 
@@ -850,8 +854,6 @@ public class Main {
             fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "preferences.json", channels.errorPublisher),
                     channels.ladderPrefsLoaded, channels.storeLadderPref);
             fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "status.json", channels.errorPublisher), channels.stats);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "reference-data.json", channels.errorPublisher),
-                    channels.refData);
             fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "heartbeats.json", channels.errorPublisher),
                     channels.heartbeatRoundTrips);
             fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "contracts.json", channels.errorPublisher),
