@@ -475,6 +475,7 @@ public class Main {
                             MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
                                     ReddalComponents.class, "NEW_MD_", errorLog);
 
+                    int mdCount = 0;
                     for (final ConfigGroup mdSourceGroup : newMDConfig.groups()) {
 
                         final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
@@ -499,7 +500,12 @@ public class Main {
 
                         final TransportTCPKeepAliveConnection<?, ?> connection =
                                 MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
-                        displaySelectIO.execute(connection::restart);
+
+                        final long staggeringDelay = 250L * ++mdCount;
+                        displaySelectIO.execute(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
+                            connection.restart();
+                            return -1;
+                        }));
                     }
                 }
 

@@ -131,7 +131,7 @@ public class LadderPresenter {
     private IMarketData subscribeToMarketDataForSymbol(final String symbol, final Fiber fiber) {
 
         final int suffixLoc = symbol.indexOf(' ');
-        if (allNewMD || (0 < suffixLoc && newClientsBySuffix.contains(symbol.substring(suffixLoc)))) {
+        if (allNewMD || symbol.startsWith("SPREAD:") || (0 < suffixLoc && newClientsBySuffix.contains(symbol.substring(suffixLoc)))) {
             // new subscription method
             return new SelectIOMDForSymbol(bookHandler, symbol);
         } else {
