@@ -41,7 +41,16 @@ public class SelectIOMDForSymbol implements IMarketData {
         this.priceOperations = new PriceUtils(book.getTickTable());
 
         final long smallestTick = book.getTickTable().getRawTickLevels().firstEntry().getValue();
-        final int decimalPlaces = Math.max(0, 10 - Long.toString(smallestTick).length());
+        final String tickSize = Long.toString(smallestTick);
+
+        int leastSigDigit = 0;
+        for (int i = 0; i < tickSize.length(); ++i) {
+
+            if ('0' != tickSize.charAt(i)) {
+                leastSigDigit = tickSize.length() - i;
+            }
+        }
+        final int decimalPlaces = Math.max(0, 10 - leastSigDigit);
         this.df = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, decimalPlaces);
     }
 
