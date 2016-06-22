@@ -9,12 +9,9 @@ import java.util.Map;
 import java.util.Set;
 
 public class FastUtilCollections {
+
     public static <K, V> Map<K, V> newFastMap() {
         return new Object2ObjectOpenHashMap<>();
-    }
-
-    public static <K, V> Map<K, V> newFastMap(final int expected) {
-        return new Object2ObjectOpenHashMap<>(expected);
     }
 
     public static <K> Set<K> newFastSet() {

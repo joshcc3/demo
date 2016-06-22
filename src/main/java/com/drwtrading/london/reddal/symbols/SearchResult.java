@@ -9,8 +9,11 @@ import com.drwtrading.london.util.Struct;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.regex.Pattern;
 
 public class SearchResult extends Struct {
+
+    private static final Pattern FX_SPLIT = Pattern.compile("/", Pattern.LITERAL);
 
     public final String symbol;
     public final InstrumentID instID;
@@ -18,14 +21,12 @@ public class SearchResult extends Struct {
     public final String description;
     public final MDSource mdSource;
     public final long expiry;
-    public final String displaySymbol;
     public final ITickTable tickTable;
     public final Collection<String> keywords;
     public final int decimalPlaces;
 
     public SearchResult(final String symbol, final InstrumentID instID, final InstType instType, final String description,
-            final MDSource mdSource, final Collection<String> keywords, final long expiry, final String displaySymbol,
-            final ITickTable tickTable) {
+            final MDSource mdSource, final Collection<String> keywords, final long expiry, final ITickTable tickTable) {
 
         this.symbol = symbol;
         this.instID = instID;
@@ -34,7 +35,6 @@ public class SearchResult extends Struct {
         this.mdSource = mdSource;
         this.keywords = keywords;
         this.expiry = expiry;
-        this.displaySymbol = displaySymbol;
         this.tickTable = tickTable;
 
         final long smallestTick = tickTable.getRawTickLevels().firstEntry().getValue();
@@ -55,7 +55,6 @@ public class SearchResult extends Struct {
         this.mdSource = book.getSourceExch();
 
         this.expiry = book.getExpiryMilliSinceUTC();
-        this.displaySymbol = book.getSymbol();
 
         this.tickTable = book.getTickTable();
 
@@ -63,6 +62,11 @@ public class SearchResult extends Struct {
         keywords.add(symbol);
         keywords.add(isinCcyMic);
         keywords.add(book.getMIC().exchange.name());
+
+        if (InstType.FX == book.getInstType()) {
+            final String fxSymbol = FX_SPLIT.matcher(symbol.split(" ")[0]).replaceAll("");
+            keywords.add(fxSymbol);
+        }
 
         final long smallestTick = tickTable.getRawTickLevels().firstEntry().getValue();
         this.decimalPlaces = Math.max(0, 10 - Long.toString(smallestTick).length());

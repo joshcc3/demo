@@ -21,15 +21,6 @@ import java.util.regex.Pattern;
 
 public class Environment {
 
-    public static enum Exchange {
-        EUREX,
-        XETRA,
-        EURONEXT,
-        FILTERED,
-        REMOTE;
-    }
-
-    public static final String MARKET_DATA = "marketData";
     public static final String WORKING_ORDERS = "workingOrders";
     public static final String REMOTE_COMMANDS = "remoteCommands";
     public static final String EEIF_OE = "eeifoe";
@@ -58,13 +49,6 @@ public class Environment {
 
     public int getCommandsPort() throws ConfigException {
         return config.getGroup("commands").getInt("port");
-    }
-
-    public Exchange getMarketDataExchange(final String mds) throws ConfigException {
-        final ConfigGroup mdGroup = config.getGroup(MARKET_DATA);
-        final ConfigGroup mdsGroup = mdGroup.getGroup(mds);
-        final String exchange = mdsGroup.getString("exchange");
-        return Exchange.valueOf(exchange);
     }
 
     public static class HostAndNic {

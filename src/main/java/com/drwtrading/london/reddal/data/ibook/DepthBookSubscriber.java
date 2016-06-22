@@ -1,8 +1,8 @@
 package com.drwtrading.london.reddal.data.ibook;
 
-import com.drwtrading.london.reddal.data.SelectIOMDForSymbol;
+import com.drwtrading.london.reddal.data.MDForSymbol;
 
-public class DepthBookSubscriber implements IBookSubscriber {
+public class DepthBookSubscriber {
 
     private final LevelThreeBookSubscriber l3BookSubscriber;
     private final LevelTwoBookSubscriber l2BookSubscriber;
@@ -13,14 +13,12 @@ public class DepthBookSubscriber implements IBookSubscriber {
         this.l2BookSubscriber = l2BookSubscriber;
     }
 
-    @Override
-    public void subscribeForMD(final String symbol, final SelectIOMDForSymbol listener) {
+    public void subscribeForMD(final String symbol, final MDForSymbol listener) {
 
         this.l3BookSubscriber.subscribeForMD(symbol, listener);
         this.l2BookSubscriber.subscribeForMD(symbol, listener);
     }
 
-    @Override
     public void unsubscribeForMD(final String symbol) {
 
         this.l3BookSubscriber.unsubscribeForMD(symbol);

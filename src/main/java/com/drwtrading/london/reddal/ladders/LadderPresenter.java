@@ -1,27 +1,22 @@
 package com.drwtrading.london.reddal.ladders;
 
-import com.drwtrading.eeif.md.remote.SubscribeMarketData;
-import com.drwtrading.eeif.md.remote.UnsubscribeMarketData;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
-import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.ChixSymbolPair;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.IMarketData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.MarketDataForSymbol;
-import com.drwtrading.london.reddal.data.SelectIOMDForSymbol;
+import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.data.ibook.IBookSubscriber;
+import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
@@ -46,8 +41,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import drw.london.json.Jsonable;
-import org.jetlang.channels.BatchSubscriber;
-import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
 
@@ -63,9 +56,7 @@ public class LadderPresenter {
 
     public static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 12;
 
-    private final boolean allNewMD;
-    private final Set<String> newClientsBySuffix;
-    private final IBookSubscriber bookHandler;
+    private final DepthBookSubscriber bookHandler;
 
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
@@ -74,21 +65,18 @@ public class LadderPresenter {
     private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<>();
     private final Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
     private final Multimap<String, LadderView> viewsByUser = HashMultimap.create();
-    private final Map<String, MemoryChannel<MarketDataEvent>> mdEventChannels = new HashMap<>();
     private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
     private final Map<String, OrderUpdatesForSymbol> eeifOrdersBySymbol = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
     private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(ExtraDataForSymbol::new);
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap = new HashMap<>();
-    private final Map<String, IMarketData> marketDataForSymbolMap;
+    private final Map<String, MDForSymbol> marketDataForSymbolMap;
     private final Set<String> existingSymbols = new HashSet<>();
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderView.HeartbeatRoundtrip> roundTripPublisher;
     private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
-    private final Publisher<SubscribeMarketData> subscribeToMarketData;
-    private final Publisher<UnsubscribeMarketData> unsubscribeFromMarketData;
     private final Publisher<Jsonable> trace;
 
     private final Fiber fiber;
@@ -96,18 +84,16 @@ public class LadderPresenter {
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
 
-    public LadderPresenter(final boolean allNewMD, final Set<String> newClientsBySuffix, final IBookSubscriber bookHandler,
-            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-            final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+    public LadderPresenter(final DepthBookSubscriber bookHandler, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer,
+            final LadderOptions ladderOptions, final Publisher<StatsMsg> statsPublisher,
+            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<LadderView.HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<SubscribeMarketData> subscribeToMarketData, final Publisher<UnsubscribeMarketData> unsubscribeFromMarketData,
+
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
 
-        this.allNewMD = allNewMD;
-        this.newClientsBySuffix = newClientsBySuffix;
         this.bookHandler = bookHandler;
 
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
@@ -117,8 +103,6 @@ public class LadderPresenter {
         this.commandPublisher = commandPublisher;
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.fiber = fiber;
-        this.subscribeToMarketData = subscribeToMarketData;
-        this.unsubscribeFromMarketData = unsubscribeFromMarketData;
         this.trace = trace;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
@@ -128,34 +112,14 @@ public class LadderPresenter {
         this.marketDataForSymbolMap = new MapMaker().makeComputingMap(symbol -> subscribeToMarketDataForSymbol(symbol, fiber));
     }
 
-    private IMarketData subscribeToMarketDataForSymbol(final String symbol, final Fiber fiber) {
-
-        final int suffixLoc = symbol.indexOf(' ');
-        if (allNewMD || symbol.startsWith("SPREAD:") || (0 < suffixLoc && newClientsBySuffix.contains(symbol.substring(suffixLoc)))) {
-            // new subscription method
-            return new SelectIOMDForSymbol(bookHandler, symbol);
-        } else {
-            // Subscribe to channel for this symbol
-            final MemoryChannel<MarketDataEvent> mdEventMemoryChannel = new MemoryChannel<>();
-            final MarketDataForSymbol mdForSymbol = new MarketDataForSymbol(symbol);
-            mdEventMemoryChannel.subscribe(new BatchSubscriber<>(fiber, mdForSymbol::onMarketDataBatch, 0, TimeUnit.MILLISECONDS));
-            mdEventChannels.put(symbol, mdEventMemoryChannel);
-            subscribeToMarketData.publish(new SubscribeMarketData(symbol, mdEventMemoryChannel));
-            return mdForSymbol;
-        }
+    private MDForSymbol subscribeToMarketDataForSymbol(final String symbol, final Fiber fiber) {
+        return new MDForSymbol(bookHandler, symbol);
     }
 
     private void unsubscribeFromMarketDataForSymbol(final String symbol) {
 
-        final IMarketData md = marketDataForSymbolMap.get(symbol);
+        final MDForSymbol md = marketDataForSymbolMap.get(symbol);
         md.unsubscribeForMD();
-
-        final int suffixLoc = symbol.indexOf(' ');
-        if (suffixLoc < 1 || !newClientsBySuffix.contains(symbol.substring(suffixLoc))) {
-            marketDataForSymbolMap.remove(symbol);
-            final MemoryChannel<MarketDataEvent> mdEventMemChannel = mdEventChannels.remove(symbol);
-            unsubscribeFromMarketData.publish(new UnsubscribeMarketData(symbol, mdEventMemChannel));
-        }
     }
 
     @Subscribe
@@ -200,7 +164,7 @@ public class LadderPresenter {
             if ("ladder-subscribe".equals(cmd)) {
                 final String symbol = args[1];
                 final int levels = Integer.parseInt(args[2]);
-                final IMarketData mdForSymbol = marketDataForSymbolMap.get(symbol);
+                final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
                 mdForSymbol.subscribeForMD();
                 view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), dataBySymbol.get(symbol),
                         ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()), eeifOrdersBySymbol.get(symbol));

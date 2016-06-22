@@ -20,7 +20,9 @@ public class ReconnectingOPXLClient extends OpxlCallbacks {
     final Fiber fiber;
     final Publisher<Throwable> errors;
 
-    public ReconnectingOPXLClient(String opxlHost, int opxlPort, Consumer<OpxlData> dataConsumer, Set<String> keys, Fiber fiber, Publisher<Throwable> errors) {
+    public ReconnectingOPXLClient(final String opxlHost, final int opxlPort, final Consumer<OpxlData> dataConsumer, final Set<String> keys,
+            final Fiber fiber, final Publisher<Throwable> errors) {
+
         this.opxlHost = opxlHost;
         this.opxlPort = opxlPort;
         this.dataConsumer = dataConsumer;
@@ -31,16 +33,16 @@ public class ReconnectingOPXLClient extends OpxlCallbacks {
     }
 
     public void connect() {
-        OpxlClient client = new OpxlClient(opxlHost, opxlPort, keys, this);
+        final OpxlClient client = new OpxlClient(opxlHost, opxlPort, keys, this);
         try {
             client.connect();
-        } catch (IOException e) {
+        } catch (final IOException e) {
             errors.publish(e);
         }
     }
 
     @Override
-    public void on(OpxlData data) {
+    public void on(final OpxlData data) {
         dataConsumer.accept(data);
     }
 

@@ -1,8 +1,5 @@
 package com.drwtrading.london.reddal.util;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.MapMaker;
 import com.google.common.io.Files;
 import drw.london.json.Jsonable;
 import org.joda.time.DateTime;
@@ -16,7 +13,6 @@ import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,10 +37,7 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
         }
 
         public static JsonFileDbEntry fromJson(final JSONObject jsonObject) throws JSONException {
-            return new JsonFileDbEntry(
-                    jsonObject.getString("id"),
-                    jsonObject.getLong("time"),
-                    jsonObject.getJSONObject("value"));
+            return new JsonFileDbEntry(jsonObject.getString("id"), jsonObject.getLong("time"), jsonObject.getJSONObject("value"));
         }
 
         @Override
@@ -55,8 +48,7 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
                 jsonObject.put("time", time);
                 jsonObject.put("value", value);
                 out.append(jsonObject.toString());
-            } catch (final JSONException e) {
-                return;
+            } catch (final JSONException ignored) {
             }
         }
     }
@@ -71,11 +63,6 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
         this.dataFile = dataFile.toFile();
         printWriter = new PrintWriter(new FileWriter(this.dataFile, true));
         load();
-    }
-
-
-    public boolean isLoaded() {
-        return isLoaded;
     }
 
     public void load() throws IOException {
@@ -132,6 +119,7 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
         }
     }
 
+    @Override
     public void put(final String id, final JSONObject value) {
 
         if (isClosed) {
@@ -162,22 +150,23 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
         objectById.put(value.id, value);
     }
 
+    @Override
     public JSONObject get(final String id) {
         final JsonFileDbEntry jsonFileDbEntry = objectById.get(id);
         return jsonFileDbEntry != null ? jsonFileDbEntry.value : null;
     }
 
+    @Override
     public List<JSONObject> getAll(final String id) {
-        final List<JSONObject> collect = objectById.values().stream()
-                .map(jsonFileDbEntry -> jsonFileDbEntry.value).collect(Collectors.toList());
-        return collect;
+        return objectById.values().stream().map(jsonFileDbEntry -> jsonFileDbEntry.value).collect(Collectors.toList());
     }
 
+    @Override
     public Set<Map.Entry<String, JSONObject>> entries() {
-        final Set<Map.Entry<String, JSONObject>> entries = new HashSet<Map.Entry<String, JSONObject>>();
+        final Set<Map.Entry<String, JSONObject>> entries = new HashSet<>();
         for (final String key : objectById.keySet()) {
             if (!key.equals(LAST_UPDATED) && get(key) != null) {
-                entries.add(new AbstractMap.SimpleEntry<String, JSONObject>(key, get(key)));
+                entries.add(new AbstractMap.SimpleEntry<>(key, get(key)));
             }
         }
         return entries;
@@ -185,14 +174,9 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
 
     @Override
     public Set<String> keys() {
-        final Set<String> keys = new HashSet<String>(objectById.keySet());
+        final Set<String> keys = new HashSet<>(objectById.keySet());
         keys.remove(LAST_UPDATED);
         return keys;
-    }
-
-    public void close() {
-        printWriter.close();
-        isClosed = true;
     }
 
 }

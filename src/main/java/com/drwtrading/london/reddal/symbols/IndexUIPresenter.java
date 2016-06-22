@@ -50,7 +50,7 @@ public class IndexUIPresenter {
             keywords.add(displaySymbol.displaySymbol);
             final SearchResult newResult =
                     new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType, searchResult.description,
-                            searchResult.mdSource, keywords, searchResult.expiry, displaySymbol.displaySymbol, searchResult.tickTable);
+                            searchResult.mdSource, keywords, searchResult.expiry, searchResult.tickTable);
             setSearchResult(newResult);
         }
     }
@@ -69,12 +69,11 @@ public class IndexUIPresenter {
 
         if (searchResultBySymbol.containsKey(displaySymbol.marketDataSymbol)) {
             final SearchResult searchResult = searchResultBySymbol.get(displaySymbol.marketDataSymbol);
-            if (!searchResult.displaySymbol.equals(displaySymbol.displaySymbol)) {
+            if (!searchResult.symbol.equals(displaySymbol.displaySymbol)) {
                 searchResult.keywords.add(displaySymbol.displaySymbol);
                 final SearchResult newResult =
                         new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType, searchResult.description,
-                                searchResult.mdSource, searchResult.keywords, searchResult.expiry, displaySymbol.displaySymbol,
-                                searchResult.tickTable);
+                                searchResult.mdSource, searchResult.keywords, searchResult.expiry, searchResult.tickTable);
                 searchResultBySymbol.put(searchResult.symbol, newResult);
                 setSearchResult(searchResult);
             }

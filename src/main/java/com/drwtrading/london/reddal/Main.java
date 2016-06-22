@@ -3,11 +3,6 @@ package com.drwtrading.london.reddal;
 import com.drw.nns.api.MulticastGroup;
 import com.drw.nns.api.NnsApi;
 import com.drw.nns.api.NnsFactory;
-import com.drwtrading.eeif.md.publishing.MarketDataEventSnapshottingPublisher;
-import com.drwtrading.eeif.md.remote.MarketDataSubscriberImpl;
-import com.drwtrading.eeif.md.remote.RemoteFilteredClient;
-import com.drwtrading.eeif.md.remote.SubscribeMarketData;
-import com.drwtrading.eeif.md.remote.UnsubscribeMarketData;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
@@ -49,16 +44,12 @@ import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
 import com.drwtrading.london.photons.eeifoe.OrderUpdateEvent;
 import com.drwtrading.london.photons.eeifoe.OrderUpdateEventMsg;
 import com.drwtrading.london.photons.eeifoe.Update;
-import com.drwtrading.london.photons.mdreq.FeedType;
-import com.drwtrading.london.photons.mdreq.MdRequest;
 import com.drwtrading.london.photons.reddal.Heartbeat;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.InstrumentDefinitionEvent;
-import com.drwtrading.london.protocols.photon.marketdata.MarketDataEvent;
 import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
@@ -80,17 +71,14 @@ import com.drwtrading.london.reddal.orderentry.OrderEntryFromServer;
 import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
-import com.drwtrading.london.reddal.safety.ProductResetter;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
 import com.drwtrading.london.reddal.symbols.SearchResult;
-import com.drwtrading.london.reddal.symbols.SearchResultGenerator;
 import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
-import com.drwtrading.london.reddal.util.IdleConnectionTimeoutHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.reddal.util.ReconnectingOPXLClient;
 import com.drwtrading.london.reddal.util.SelectIOFiber;
@@ -129,7 +117,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -167,7 +154,6 @@ public class Main {
         public final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents;
         public final TypedChannel<RemoteOrderEventFromServer> remoteOrderEvents;
         public final TypedChannel<StatsMsg> stats;
-        public final TypedChannel<InstrumentDefinitionEvent> refData;
         public final Publisher<RemoteOrderCommandToServer> remoteOrderCommand;
         public final Map<String, TypedChannel<RemoteOrderManagementCommand>> remoteOrderCommandByServer;
         public final TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded;
@@ -179,8 +165,6 @@ public class Main {
         private final ChannelFactory channelFactory;
         public final TypedChannel<ReddalMessage> reddalCommand;
         public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
-        public final TypedChannel<SubscribeMarketData> subscribeToMarketData;
-        public final TypedChannel<UnsubscribeMarketData> unsubscribeFromMarketData;
         public final TypedChannel<RecenterLaddersForUser> recenterLaddersForUser;
         public final TypedChannel<SpreadContractSet> contractSets;
         public final TypedChannel<ChixSymbolPair> chixSymbolPairs;
@@ -204,7 +188,6 @@ public class Main {
             this.workingOrderEvents = create(WorkingOrderEventFromServer.class);
             this.remoteOrderEvents = create(RemoteOrderEventFromServer.class);
             this.stats = create(StatsMsg.class);
-            this.refData = create(InstrumentDefinitionEvent.class);
             this.remoteOrderCommandByServer = new MapMaker().makeComputingMap(from -> create(RemoteOrderManagementCommand.class));
             this.remoteOrderCommand = msg -> remoteOrderCommandByServer.get(msg.toServer).publish(msg.value);
             this.ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);
@@ -215,8 +198,6 @@ public class Main {
             this.heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
             this.reddalCommand = create(ReddalMessage.class);
             this.reddalCommandSymbolAvailable = create(ReddalMessage.class);
-            this.subscribeToMarketData = create(SubscribeMarketData.class);
-            this.unsubscribeFromMarketData = create(UnsubscribeMarketData.class);
             this.recenterLaddersForUser = create(RecenterLaddersForUser.class);
             this.contractSets = create(SpreadContractSet.class);
             this.chixSymbolPairs = create(ChixSymbolPair.class);
@@ -446,8 +427,7 @@ public class Main {
             final MultiLayeredResourceMonitor<ReddalComponents> parentMonitor =
                     new MultiLayeredResourceMonitor<>(monitor, ReddalComponents.class, errorLog);
 
-            final ConfigGroup newMDConfig = root.getEnabledGroup("newMD");
-            final boolean allNewMD = root.paramExists("allNewMD") && root.getBoolean("allNewMD");
+            final ConfigGroup mdConfig = root.getEnabledGroup("md");
 
             final List<TypedChannel<WebSocketControlMessage>> webSockets = Lists.newArrayList();
             for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
@@ -464,57 +444,45 @@ public class Main {
                 webSockets.add(webSocket);
                 final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
 
-                final Set<String> newClientsBySuffix = new HashSet<>();
-
                 final LevelThreeBookSubscriber l3BookHandler = new LevelThreeBookSubscriber(displayMonitor, channels.searchResults);
                 final LevelTwoBookSubscriber l2BookHandler = new LevelTwoBookSubscriber(displayMonitor, channels.searchResults);
 
-                if (null != newMDConfig) {
+                final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
+                        MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
+                                ReddalComponents.class, "NEW_MD_", errorLog);
 
-                    final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
-                            MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
-                                    ReddalComponents.class, "NEW_MD_", errorLog);
+                int mdCount = 0;
+                for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
 
-                    int mdCount = 0;
-                    for (final ConfigGroup mdSourceGroup : newMDConfig.groups()) {
-
-                        final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
-                        if (null == mdSource) {
-                            throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
-                        }
-
-                        final IResourceMonitor<MDTransportComponents> mdClientMonitor =
-                                mdParentMonitor.createChildResourceMonitor(mdSource.name());
-
-                        final MDTransportClient mdClient =
-                                MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource,
-                                        "reddal-" + configName + '-' + i, l3BookHandler, l2BookHandler, MD_SERVER_TIMEOUT, true);
-                        l3BookHandler.setMDClient(mdSource, mdClient);
-                        l2BookHandler.setMDClient(mdSource, mdClient);
-
-                        for (final String suffix : mdSourceGroup.getParam("suffixes").getSet(Pattern.compile(","))) {
-                            if (!newClientsBySuffix.add(' ' + suffix)) {
-                                throw new ConfigException("Suffix [" + suffix + "] is defined for two MDSources [" + mdSource + "].");
-                            }
-                        }
-
-                        final TransportTCPKeepAliveConnection<?, ?> connection =
-                                MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
-
-                        final long staggeringDelay = 250L * ++mdCount;
-                        displaySelectIO.execute(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
-                            connection.restart();
-                            return -1;
-                        }));
+                    final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
+                    if (null == mdSource) {
+                        throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
                     }
+
+                    final IResourceMonitor<MDTransportComponents> mdClientMonitor =
+                            mdParentMonitor.createChildResourceMonitor(mdSource.name());
+
+                    final MDTransportClient mdClient =
+                            MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource,
+                                    "reddal-" + configName + '-' + i, l3BookHandler, l2BookHandler, MD_SERVER_TIMEOUT, true);
+                    l3BookHandler.setMDClient(mdSource, mdClient);
+                    l2BookHandler.setMDClient(mdSource, mdClient);
+
+                    final TransportTCPKeepAliveConnection<?, ?> connection =
+                            MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
+
+                    final long staggeringDelay = 250L * ++mdCount;
+                    displaySelectIO.execute(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
+                        connection.restart();
+                        return -1;
+                    }));
                 }
 
                 final DepthBookSubscriber depthBookSubscriber = new DepthBookSubscriber(l3BookHandler, l2BookHandler);
 
                 final LadderPresenter presenter =
-                        new LadderPresenter(allNewMD, newClientsBySuffix, depthBookSubscriber, channels.remoteOrderCommand,
-                                environment.ladderOptions(), channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips,
-                                channels.reddalCommand, channels.subscribeToMarketData, channels.unsubscribeFromMarketData,
+                        new LadderPresenter(depthBookSubscriber, channels.remoteOrderCommand, environment.ladderOptions(), channels.stats,
+                                channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
                                 channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
                                 channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
 
@@ -584,49 +552,6 @@ public class Main {
 
             final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
             channels.searchResults.subscribe(fibers.contracts.getFiber(), chixInstMatcher::setSearchResult);
-        }
-
-        // Market data
-        {
-            final SearchResultGenerator searchResultGenerator = new SearchResultGenerator(channels.searchResults);
-            channels.refData.subscribe(fibers.contracts.getFiber(), searchResultGenerator::setInstDefEvent);
-            channels.displaySymbol.subscribe(fibers.contracts.getFiber(), searchResultGenerator::setDisplaySymbol);
-
-            for (final String mds : environment.getList(Environment.MARKET_DATA)) {
-
-                System.out.println(mds + " connecting to: " + environment.getMarketDataExchange(mds));
-                final MarketDataEventSnapshottingPublisher snapshottingPublisher = new MarketDataEventSnapshottingPublisher();
-                final FiberBuilder fiber = fibers.fiberGroup.create("Market Data: " + mds);
-                final ProductResetter productResetter = new ProductResetter(snapshottingPublisher);
-                final MarketDataSubscriberImpl marketDataSubscriber = new MarketDataSubscriberImpl(channels.refData);
-                fiber.subscribe(marketDataSubscriber, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
-
-                if (environment.getMarketDataExchange(mds) == Environment.Exchange.REMOTE) {
-                    final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
-                    final OnHeapBufferPhotocolsNioClient<MarketDataEvent, Void> client =
-                            OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic),
-                                    MarketDataEvent.class, Void.class, fiber.getFiber(), EXCEPTION_HANDLER);
-                    final ConnectionCloser connectionCloser =
-                            new ConnectionCloser(channels.stats, "Market data: " + mds, productResetter.resetRunnable());
-                    client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).handler(
-                            new IdleConnectionTimeoutHandler<>(connectionCloser, SERVER_TIMEOUT, fiber.getFiber())).handler(
-                            new JetlangChannelHandler<>(marketDataSubscriber));
-                    fibers.onStart(() -> fiber.execute(client::start));
-                } else if (environment.getMarketDataExchange(mds) == Environment.Exchange.FILTERED) {
-                    final RemoteFilteredClient filteredClient = new RemoteFilteredClient(channels.refData, FeedType.FULL_BOOK);
-                    fiber.subscribe(filteredClient, channels.subscribeToMarketData, channels.unsubscribeFromMarketData);
-                    final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.MARKET_DATA, mds);
-                    final OnHeapBufferPhotocolsNioClient<MarketDataEvent, MdRequest> client =
-                            OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic),
-                                    MarketDataEvent.class, MdRequest.class, fiber.getFiber(), EXCEPTION_HANDLER);
-                    final ConnectionCloser connectionCloser =
-                            new ConnectionCloser(channels.stats, "Market data: " + mds, productResetter.resetRunnable());
-                    client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).handler(
-                            new IdleConnectionTimeoutHandler<>(connectionCloser, SERVER_TIMEOUT, fiber.getFiber()));
-                    client.handler(filteredClient);
-                    fibers.onStart(() -> fiber.execute(client::start));
-                }
-            }
         }
 
         // EEIF-OE

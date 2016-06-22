@@ -7,7 +7,7 @@ public class ReplaceCommand extends Struct {
     public final String from;
     public final String to;
 
-    public ReplaceCommand(String user, String from, String to) {
+    public ReplaceCommand(final String user, final String from, final String to) {
         this.user = user;
         this.from = from;
         this.to = to;

@@ -7,14 +7,14 @@ import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
 import org.jetlang.channels.Publisher;
 
-public class PhotocolsStatsPublisher<Inbound, Outbound> implements PhotocolsHandler<Inbound, Outbound> {
+public class PhotocolsStatsPublisher<I, O> implements PhotocolsHandler<I, O> {
 
     private final Publisher<StatsMsg> statsPublisher;
     private final String statsName;
     private final int secondsValid;
     private final DoOnceEveryXMillis doOnceEveryXMillis;
 
-    public PhotocolsStatsPublisher(Publisher<StatsMsg> statsPublisher, String statsName, int secondsValid) {
+    public PhotocolsStatsPublisher(final Publisher<StatsMsg> statsPublisher, final String statsName, final int secondsValid) {
         this.statsPublisher = statsPublisher;
         this.statsName = statsName;
         this.secondsValid = secondsValid;
@@ -22,7 +22,7 @@ public class PhotocolsStatsPublisher<Inbound, Outbound> implements PhotocolsHand
     }
 
     @Override
-    public PhotocolsConnection<Outbound> onOpen(PhotocolsConnection<Outbound> connection) {
+    public PhotocolsConnection<O> onOpen(final PhotocolsConnection<O> connection) {
         return connection;
     }
 
@@ -31,16 +31,11 @@ public class PhotocolsStatsPublisher<Inbound, Outbound> implements PhotocolsHand
     }
 
     @Override
-    public void onClose(PhotocolsConnection<Outbound> connection) {
+    public void onClose(final PhotocolsConnection<O> connection) {
     }
 
     @Override
-    public void onMessage(PhotocolsConnection<Outbound> connection, Inbound message) {
-        doOnceEveryXMillis.doItEveryXMillis(new Runnable() {
-            @Override
-            public void run() {
-                statsPublisher.publish(new StatusStat(statsName, StatusStat.State.GREEN, secondsValid));
-            }
-        });
+    public void onMessage(final PhotocolsConnection<O> connection, final I message) {
+        doOnceEveryXMillis.doItEveryXMillis(() -> statsPublisher.publish(new StatusStat(statsName, StatusStat.State.GREEN, secondsValid)));
     }
 }

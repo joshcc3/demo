@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -14,9 +13,10 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class LadderWorkspace {
 
@@ -27,33 +27,32 @@ public class LadderWorkspace {
     Set<View> lockedViews = new HashSet<>();
     HashMultimap<String, String> contractSets = HashMultimap.create();
 
-    public LadderWorkspace(Publisher<ReplaceCommand> replaceCommand) {
+    public LadderWorkspace(final Publisher<ReplaceCommand> replaceCommand) {
 
         this.replaceCommand = replaceCommand;
     }
 
     @Subscribe
-    public void on(WebSocketConnected webSocketConnected) {
-        View view = views.register(webSocketConnected);
+    public void on(final WebSocketConnected webSocketConnected) {
+        final View view = views.register(webSocketConnected);
         workspacesByHost.put(webSocketConnected.getClient().getHost(), view);
     }
 
     @Subscribe
-    public void on(WebSocketDisconnected webSocketDisconnected) {
-        View view = views.unregister(webSocketDisconnected);
+    public void on(final WebSocketDisconnected webSocketDisconnected) {
+        final View view = views.unregister(webSocketDisconnected);
         workspacesByHost.remove(webSocketDisconnected.getClient().getHost(), view);
         lockedViews.remove(view);
         setsByHost.remove(webSocketDisconnected.getClient().getHost(), view);
     }
 
     @Subscribe
-    public void on(WebSocketInboundData data) {
+    public void on(final WebSocketInboundData data) {
         views.invoke(data);
     }
 
-
     @Subscribe
-    public void on(SpreadContractSet contractSet) {
+    public void on(final SpreadContractSet contractSet) {
         contractSets.put(contractSet.back, contractSet.back);
         contractSets.put(contractSet.back, contractSet.front);
         contractSets.put(contractSet.back, contractSet.spread);
@@ -68,46 +67,45 @@ public class LadderWorkspace {
     }
 
     @FromWebSocketView
-    public void setify(WebSocketInboundData data) {
-        View view = views.get(data.getOutboundChannel());
+    public void setify(final WebSocketInboundData data) {
+        final View view = views.get(data.getOutboundChannel());
         workspacesByHost.remove(data.getClient().getHost(), view);
         setsByHost.put(data.getClient().getHost(), view);
     }
 
     @FromWebSocketView
-    public void unsetify(WebSocketInboundData data) {
-        View view = views.get(data.getOutboundChannel());
+    public void unsetify(final WebSocketInboundData data) {
+        final View view = views.get(data.getOutboundChannel());
         setsByHost.remove(data.getClient().getHost(), view);
         workspacesByHost.put(data.getClient().getHost(), view);
     }
 
     @FromWebSocketView
-    public void lock(WebSocketInboundData data) {
-        View view = views.get(data.getOutboundChannel());
+    public void lock(final WebSocketInboundData data) {
+        final View view = views.get(data.getOutboundChannel());
         lockedViews.add(view);
     }
 
-
     @FromWebSocketView
-    public void unlock(WebSocketInboundData data) {
-        View view = views.get(data.getOutboundChannel());
+    public void unlock(final WebSocketInboundData data) {
+        final View view = views.get(data.getOutboundChannel());
         lockedViews.remove(view);
     }
 
     @FromWebSocketView
-    public void replace(String from, String to, WebSocketInboundData data) {
-        for (View view : workspacesByHost.values()) {
+    public void replace(final String from, final String to, final WebSocketInboundData data) {
+        for (final View view : workspacesByHost.values()) {
             view.replace(from, to);
         }
-        ReplaceCommand command = new ReplaceCommand(data.getClient().getUserName(), from, to);
+        final ReplaceCommand command = new ReplaceCommand(data.getClient().getUserName(), from, to);
         replaceCommand.publish(command);
     }
 
-    public boolean openLadderForUser(String user, String symbol) {
+    public boolean openLadderForUser(final String user, String symbol) {
 
         boolean openedSomething = false;
         if (workspacesByHost.containsKey(user)) {
-            ArrayDeque<View> viewsList = new ArrayDeque<>(workspacesByHost.get(user));
+            final ArrayDeque<View> viewsList = new ArrayDeque<>(workspacesByHost.get(user));
             View view;
             while ((view = viewsList.pollLast()) != null) {
                 if (!lockedViews.contains(view)) {
@@ -124,13 +122,13 @@ public class LadderWorkspace {
 
         if (setsByHost.containsKey(user)) {
 
-            Collection<String> contractSet = contractSets.get(symbol);
+            final Collection<String> contractSet = contractSets.get(symbol);
             if (!contractSet.isEmpty()) {
                 View view;
-                ArrayDeque<View> viewsList = new ArrayDeque<>(setsByHost.get(user));
+                final ArrayDeque<View> viewsList = new ArrayDeque<>(setsByHost.get(user));
                 while ((view = viewsList.pollLast()) != null) {
                     if (!lockedViews.contains(view)) {
-                        HashSet<String> symbols = new HashSet<>(contractSet);
+                        final HashSet<String> symbols = new HashSet<>(contractSet);
                         symbols.remove(symbol);
                         contractSet.forEach(view::addSymbol);
                         view.addSymbol(symbol);
@@ -142,12 +140,13 @@ public class LadderWorkspace {
 
         }
 
-
         return openedSomething;
     }
 
     public static interface View {
+
         public void addSymbol(String symbol);
+
         public void replace(String from, String to);
     }
 

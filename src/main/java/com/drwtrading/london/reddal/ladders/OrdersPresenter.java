@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.util.Struct;
@@ -28,25 +27,25 @@ public class OrdersPresenter {
     WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
     Map<String, WorkingOrdersForSymbol> orders = new MapMaker().makeComputingMap(new Function<String, WorkingOrdersForSymbol>() {
         @Override
-        public WorkingOrdersForSymbol apply(String from) {
+        public WorkingOrdersForSymbol apply(final String from) {
             return new WorkingOrdersForSymbol(from);
         }
     });
     Multimap<SymbolPrice, View> subscribed = HashMultimap.create();
 
-    public OrdersPresenter(Publisher<SingleOrderCommand> singleOrderCommandPublisher) {
+    public OrdersPresenter(final Publisher<SingleOrderCommand> singleOrderCommandPublisher) {
         this.singleOrderCommandPublisher = singleOrderCommandPublisher;
     }
 
 
-    public void onWorkingOrderBatch(List<Main.WorkingOrderUpdateFromServer> batch) {
+    public void onWorkingOrderBatch(final List<Main.WorkingOrderUpdateFromServer> batch) {
         batch.forEach(this::onWorkingOrder);
     }
 
     public void onWorkingOrder(final Main.WorkingOrderUpdateFromServer update) {
 
         final String symbol = update.value.getSymbol();
-        WorkingOrdersForSymbol orders = this.orders.get(symbol);
+        final WorkingOrdersForSymbol orders = this.orders.get(symbol);
         final Main.WorkingOrderUpdateFromServer prevUpdate = orders.onWorkingOrderUpdate(update);
         final long newPrice = update.value.getPrice();
         final long prevPrice = null == prevUpdate ? update.value.getPrice() : prevUpdate.value.getPrice();
@@ -54,15 +53,15 @@ public class OrdersPresenter {
     }
 
     @Subscribe
-    public void on(WebSocketConnected connected) {
+    public void on(final WebSocketConnected connected) {
         views.register(connected);
     }
 
     @Subscribe
-    public void on(WebSocketDisconnected disconnected) {
-        View view = views.unregister(disconnected);
-        for (Iterator<Map.Entry<SymbolPrice, View>> it = subscribed.entries().iterator(); it.hasNext(); ) {
-            Map.Entry<SymbolPrice, View> next = it.next();
+    public void on(final WebSocketDisconnected disconnected) {
+        final View view = views.unregister(disconnected);
+        for (final Iterator<Map.Entry<SymbolPrice, View>> it = subscribed.entries().iterator(); it.hasNext(); ) {
+            final Map.Entry<SymbolPrice, View> next = it.next();
             if (next.getValue().equals(view)) {
                 it.remove();
             }
@@ -70,26 +69,26 @@ public class OrdersPresenter {
     }
 
     @Subscribe
-    public void on(WebSocketInboundData data) {
+    public void on(final WebSocketInboundData data) {
         views.invoke(data);
     }
 
     @FromWebSocketView
-    public void subscribe(String symbol, String priceStr, WebSocketInboundData data) {
-        View view = views.get(data.getOutboundChannel());
+    public void subscribe(final String symbol, final String priceStr, final WebSocketInboundData data) {
+        final View view = views.get(data.getOutboundChannel());
         final long price = Long.valueOf(priceStr);
-        SymbolPrice symbolPrice = new SymbolPrice(symbol, price);
+        final SymbolPrice symbolPrice = new SymbolPrice(symbol, price);
         subscribed.put(symbolPrice, view);
         update(symbol, price, price);
     }
 
     @FromWebSocketView
-    public void modifyQuantity(String symbol, String key, int newRemainingQty, WebSocketClient client) {
+    public void modifyQuantity(final String symbol, final String key, final int newRemainingQty, final WebSocketClient client) {
         singleOrderCommandPublisher.publish(new ModifyOrderQuantity(symbol, key, client.getUserName(), newRemainingQty));
     }
 
     @FromWebSocketView
-    public void cancelOrder(String symbol, String key, WebSocketClient client) {
+    public void cancelOrder(final String symbol, final String key, final WebSocketClient client) {
         singleOrderCommandPublisher.publish(new CancelOrder(symbol, key, client.getUserName()));
     }
 
@@ -120,7 +119,7 @@ public class OrdersPresenter {
         public final String symbol;
         public final long price;
 
-        public SymbolPrice(String symbol, long price) {
+        public SymbolPrice(final String symbol, final long price) {
             this.symbol = symbol;
             this.price = price;
         }
@@ -143,7 +142,7 @@ public class OrdersPresenter {
         public final String username;
         public final int newRemainingQuantity;
 
-        public ModifyOrderQuantity(String symbol, String orderKey, String username, int newRemainingQuantity) {
+        public ModifyOrderQuantity(final String symbol, final String orderKey, final String username, final int newRemainingQuantity) {
             this.symbol = symbol;
             this.orderKey = orderKey;
             this.username = username;
@@ -172,7 +171,7 @@ public class OrdersPresenter {
         public final String orderKey;
         public final String username;
 
-        public CancelOrder(String symbol, String orderKey, String username) {
+        public CancelOrder(final String symbol, final String orderKey, final String username) {
             this.symbol = symbol;
             this.orderKey = orderKey;
             this.username = username;

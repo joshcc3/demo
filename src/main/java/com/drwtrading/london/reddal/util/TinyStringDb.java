@@ -78,14 +78,14 @@ public class TinyStringDb implements TinyDb<String> {
         return db.keys();
     }
 
-    private String getString(final JSONObject jsonObject) {
+    private static String getString(final JSONObject jsonObject) {
         if (jsonObject == null) {
             return null;
         }
         try {
             return jsonObject.getString(VALUE_KEY);
         } catch (final JSONException e) {
-            System.out.println(jsonObject.toString());
+            System.out.println(jsonObject);
             throw new RuntimeException(e);
         }
     }

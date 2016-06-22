@@ -1,20 +1,19 @@
 package com.drwtrading.london.reddal.ladders;
 
-import com.drwtrading.london.reddal.ladders.LadderWorkspace;
 import org.webbitserver.HttpControl;
 import org.webbitserver.HttpHandler;
 import org.webbitserver.HttpRequest;
 import org.webbitserver.HttpResponse;
 
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 
 public class WorkspaceRequestHandler implements HttpHandler {
-    private final LadderWorkspace ladderWorkspace;
-    private String host;
-    private int webPort;
 
-    public WorkspaceRequestHandler(LadderWorkspace ladderWorkspace, String host, int webPort) throws MalformedURLException {
+    private final LadderWorkspace ladderWorkspace;
+    private final String host;
+    private final int webPort;
+
+    public WorkspaceRequestHandler(final LadderWorkspace ladderWorkspace, final String host, final int webPort) {
         this.ladderWorkspace = ladderWorkspace;
         this.host = host;
         this.webPort = webPort;
@@ -25,14 +24,14 @@ public class WorkspaceRequestHandler implements HttpHandler {
         if ("GET".equals(request.method())) {
             final String user;
             if (request.remoteAddress() instanceof InetSocketAddress) {
-                InetSocketAddress socketAddress = (InetSocketAddress) request.remoteAddress();
+                final InetSocketAddress socketAddress = (InetSocketAddress) request.remoteAddress();
                 user = socketAddress.getAddress().getHostAddress();
             } else {
-                String addrString = request.remoteAddress().toString();
+                final String addrString = request.remoteAddress().toString();
                 user = addrString.substring(addrString.lastIndexOf(':'));
             }
-            String symbol = request.queryParam("symbol");
-            String content;
+            final String symbol = request.queryParam("symbol");
+            final String content;
             response.status(200);
             if (symbol == null) {
                 content = "fail";
@@ -41,7 +40,7 @@ public class WorkspaceRequestHandler implements HttpHandler {
             } else {
                 content = "success";
             }
-            String reply;
+            final String reply;
             if (request.queryParamKeys().contains("callback")) {
                 reply = request.queryParam("callback") + "(\"" + content + "\")";
             } else {

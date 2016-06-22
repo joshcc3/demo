@@ -33,14 +33,13 @@ import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderType;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
-import com.drwtrading.london.protocols.photon.marketdata.Side;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.IMarketData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.TradeTracker;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
@@ -51,9 +50,7 @@ import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
-import com.drwtrading.london.reddal.util.FastUtilCollections;
 import com.drwtrading.london.reddal.util.Mathematics;
-import com.drwtrading.london.reddal.util.PriceUtils;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
@@ -74,6 +71,7 @@ import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -140,7 +138,7 @@ public class LadderView implements UiEventHandler {
     private final NumberFormat bigNumberDF;
 
     public String symbol;
-    private IMarketData marketData;
+    private MDForSymbol marketData;
     private WorkingOrdersForSymbol workingOrdersForSymbol;
     private ExtraDataForSymbol dataForSymbol;
     private int levels;
@@ -162,15 +160,14 @@ public class LadderView implements UiEventHandler {
     private ClientSpeedState clientSpeedState = ClientSpeedState.FINE;
 
     public LadderView(final WebSocketClient client, final UiPipeImpl ui, final View view,
-                      final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
-                      final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
-                      final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-                      final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-                      final Publisher<UserCycleRequest> userCycleContractPublisher,
-                      final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-                      final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
-                      final Predicate<String> symbolExists) {
+            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
+            final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
+            final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+            final Publisher<UserCycleRequest> userCycleContractPublisher,
+            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher, final Predicate<String> symbolExists) {
 
         this.client = client;
         this.view = view;
@@ -205,7 +202,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    public void subscribeToSymbol(final String symbol, final int levels, final IMarketData marketData,
+    public void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
             final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
             final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
@@ -225,7 +222,7 @@ public class LadderView implements UiEventHandler {
     }
 
     private void tryToDrawLadder() {
-        final IMarketData m = this.marketData;
+        final MDForSymbol m = this.marketData;
         if (null != m && null != m.getBook() && m.getBook().isValid()) {
             ui.clear();
             ui.clickable('#' + HTML.SYMBOL);
@@ -233,7 +230,7 @@ public class LadderView implements UiEventHandler {
             if (pendingRefDataAndSettle) {
                 onRefDataAndSettleFirstAppeared();
             }
-            centerPrice = this.marketData.getPriceOperations().tradablePrice(centerPrice, Side.BID);
+            centerPrice = this.marketData.getBook().getTickTable().roundAwayToTick(BookSide.BID, centerPrice);
             pendingRefDataAndSettle = false;
             recenter();
             recenterLadderAndDrawPriceLevels();
@@ -335,7 +332,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    private static Long getLastTradeChangeOnDay(final IMarketData m) {
+    private static Long getLastTradeChangeOnDay(final MDForSymbol m) {
 
         final IBookReferencePrice refPriceData = m.getBook().getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
         if (refPriceData.isValid() && m.getTradeTracker().hasTrade()) {
@@ -346,7 +343,7 @@ public class LadderView implements UiEventHandler {
     }
 
     private void drawBook() {
-        final IMarketData m = this.marketData;
+        final MDForSymbol m = this.marketData;
         if (!pendingRefDataAndSettle && null != m && null != m.getBook()) {
             switch (m.getBook().getStatus()) {
                 case CONTINUOUS: {
@@ -435,7 +432,7 @@ public class LadderView implements UiEventHandler {
 
     private void drawTradedVolumes() {
 
-        final IMarketData m = this.marketData;
+        final MDForSymbol m = this.marketData;
         if (!pendingRefDataAndSettle && null != m) {
 
             final TradeTracker tradeTracker = m.getTradeTracker();
@@ -452,8 +449,7 @@ public class LadderView implements UiEventHandler {
                     ui.txt(volumeKey(price), HTML.EMPTY);
                 }
 
-                final boolean withinTradedRange =
-                        tradeTracker.getMinTradedPrice() <= price && price <= tradeTracker.getMaxTradedPrice();
+                final boolean withinTradedRange = tradeTracker.getMinTradedPrice() <= price && price <= tradeTracker.getMaxTradedPrice();
                 ui.cls(priceKey(price), CSSClass.PRICE_TRADED, withinTradedRange);
 
                 if (tradeTracker.hasTrade() && price == tradeTracker.getLastPrice()) {
@@ -600,7 +596,7 @@ public class LadderView implements UiEventHandler {
     private void drawMetaData() {
 
         final ExtraDataForSymbol d = dataForSymbol;
-        final IMarketData m = marketData;
+        final MDForSymbol m = marketData;
         if (!pendingRefDataAndSettle && null != d && null != m) {
             drawLaserLines(d, m);
             /* Desk position*/
@@ -641,7 +637,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    private void drawLaserLines(final ExtraDataForSymbol d, final IMarketData m) { /* Display laserlines*/
+    private void drawLaserLines(final ExtraDataForSymbol d, final MDForSymbol m) {
         for (final LaserLine laserLine : d.laserLineByName.values()) {
             final String laserKey = laserKey(laserLine.getId());
             ui.cls(laserKey, CSSClass.INVISIBLE, true);
@@ -654,7 +650,7 @@ public class LadderView implements UiEventHandler {
                     ui.height(laserKey, priceKey(bottomPrice), -0.5);
                 } else {
                     while (price <= topPrice) {
-                        final long priceAbove = m.getPriceOperations().nTicksAway(price, 1, PriceUtils.Direction.Add);
+                        final long priceAbove = m.getBook().getTickTable().addTicks(price, 1);
                         if (price <= laserLine.getPrice() && laserLine.getPrice() <= priceAbove && levelByPrice.containsKey(price)) {
                             final long fractionalPrice = laserLine.getPrice() - price;
                             final double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
@@ -820,7 +816,7 @@ public class LadderView implements UiEventHandler {
     }
 
     public void recenterIfTimeoutElapsed() {
-        final IMarketData m = marketData;
+        final MDForSymbol m = marketData;
         if (!pendingRefDataAndSettle && m != null) {
             if (bottomPrice <= getCenterPrice(m) && getCenterPrice(m) <= topPrice) {
                 resetLastCenteredTime();
@@ -834,15 +830,15 @@ public class LadderView implements UiEventHandler {
     }
 
     private void moveLadderTowardCenter() {
-        final int direction = (int) Math.signum(getCenterPrice(marketData) - centerPrice);
-        centerPrice = getPriceNTicksFrom(centerPrice, AUTO_RECENTER_TICKS * direction);
+        final long direction = (long) Math.signum(getCenterPrice(marketData) - centerPrice);
+        centerPrice = marketData.getBook().getTickTable().addTicks(centerPrice, AUTO_RECENTER_TICKS * direction);
     }
 
     private void resetLastCenteredTime() {
         lastCenteredTime = System.currentTimeMillis();
     }
 
-    private long getCenterPrice(final IMarketData md) {
+    private long getCenterPrice(final MDForSymbol md) {
 
         if (!pendingRefDataAndSettle) {
 
@@ -879,18 +875,18 @@ public class LadderView implements UiEventHandler {
                 center = yestClose.getPrice();
             }
 
-            return md.getPriceOperations().tradablePrice(center, Side.BID);
+            return md.getBook().getTickTable().roundAwayToTick(BookSide.BID, center);
         }
         return 0;
     }
 
     private void recenterLadderAndDrawPriceLevels() {
 
-        final IMarketData m = this.marketData;
+        final MDForSymbol m = this.marketData;
         if (null != m && null != m.getBook()) {
 
             final int centerLevel = levels / 2;
-            topPrice = getPriceNTicksFrom(centerPrice, centerLevel);
+            topPrice = marketData.getBook().getTickTable().addTicks(centerPrice, centerLevel);
             levelByPrice.clear();
             formattedPrices.clear();
 
@@ -910,7 +906,7 @@ public class LadderView implements UiEventHandler {
                 ui.data(orderKey(price), DataKey.PRICE, price);
 
                 bottomPrice = price;
-                price = getPriceNTicksFrom(price, -1);
+                price = marketData.getBook().getTickTable().addTicks(price, -1);
             }
         }
     }
@@ -940,9 +936,9 @@ public class LadderView implements UiEventHandler {
     @Override
     public void onScroll(final String direction) {
         if ("up".equals(direction)) {
-            centerPrice = marketData.getPriceOperations().nTicksAway(centerPrice, 1, PriceUtils.Direction.Add);
+            centerPrice = marketData.getBook().getTickTable().addTicks(centerPrice, 1);
         } else if ("down".equals(direction)) {
-            centerPrice = marketData.getPriceOperations().nTicksAway(centerPrice, 1, PriceUtils.Direction.Subtract);
+            centerPrice = marketData.getBook().getTickTable().subtractTicks(centerPrice, 1);
         } else {
             return;
         }
@@ -956,10 +952,10 @@ public class LadderView implements UiEventHandler {
 
         if (keyCode == PG_UP) {
             final int n = levelByPrice.size() - 1;
-            centerPrice = getPriceNTicksFrom(centerPrice, n);
+            centerPrice = marketData.getBook().getTickTable().addTicks(centerPrice, n);
         } else if (keyCode == PG_DOWN) {
             final int n = -1 * (levelByPrice.size() - 1);
-            centerPrice = getPriceNTicksFrom(centerPrice, n);
+            centerPrice = marketData.getBook().getTickTable().addTicks(centerPrice, n);
         } else if (keyCode == HOME_KEY) {
 
             if (null != marketData.getBook()) {
@@ -981,12 +977,6 @@ public class LadderView implements UiEventHandler {
         resetLastCenteredTime();
         recenterLadderAndDrawPriceLevels();
         flush();
-    }
-
-    private long getPriceNTicksFrom(final long price, final int n) {
-
-        final PriceUtils.Direction direction = n < 0 ? PriceUtils.Direction.Subtract : PriceUtils.Direction.Add;
-        return marketData.getPriceOperations().nTicksAway(price, Math.abs(n), direction);
     }
 
     @Override
@@ -1183,7 +1173,7 @@ public class LadderView implements UiEventHandler {
     private int clickTradingBoxQty = 0;
     private int orderSeqNo = 0;
 
-    public static final Set<String> persistentPrefs = FastUtilCollections.newFastSet();
+    public static final Set<String> persistentPrefs = new HashSet<>();
 
     static {
         persistentPrefs.add(HTML.WORKING_ORDER_TAG);
@@ -1195,7 +1185,7 @@ public class LadderView implements UiEventHandler {
         persistentPrefs.add(HTML.RANDOM_RELOAD);
     }
 
-    public final Map<String, String> defaultPrefs = FastUtilCollections.newFastMap();
+    public final Map<String, String> defaultPrefs = new HashMap<>();
 
     private void initDefaultPrefs() {
         defaultPrefs.put(HTML.WORKING_ORDER_TAG, "CHAD");
