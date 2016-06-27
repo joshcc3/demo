@@ -57,6 +57,7 @@ import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketClient;
+import com.google.common.collect.ImmutableSet;
 import drw.london.json.Jsonable;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetlang.channels.Publisher;
@@ -160,14 +161,14 @@ public class LadderView implements UiEventHandler {
     private ClientSpeedState clientSpeedState = ClientSpeedState.FINE;
 
     public LadderView(final WebSocketClient client, final UiPipeImpl ui, final View view,
-            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
-            final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
-            final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-            final Publisher<UserCycleRequest> userCycleContractPublisher,
-            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher, final Predicate<String> symbolExists) {
+                      final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
+                      final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
+                      final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+                      final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
+                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+                      final Publisher<UserCycleRequest> userCycleContractPublisher,
+                      final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+                      final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher, final Predicate<String> symbolExists) {
 
         this.client = client;
         this.view = view;
@@ -203,8 +204,8 @@ public class LadderView implements UiEventHandler {
     }
 
     public void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
-            final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
-            final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final OrderUpdatesForSymbol orderUpdatesForSymbol) {
+                                  final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
+                                  final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
         this.symbol = symbol;
         this.marketData = marketData;
@@ -580,7 +581,7 @@ public class LadderView implements UiEventHandler {
     }
 
     private void workingQty(final long price, final int qty, final BookSide side, final Set<WorkingOrderType> orderTypes,
-            final boolean hasEeifOEOrder) {
+                            final boolean hasEeifOEOrder) {
 
         ui.txt(orderKey(price), formatMktQty(qty));
         ui.cls(orderKey(price), CSSClass.WORKING_QTY, 0 < qty);
@@ -769,15 +770,20 @@ public class LadderView implements UiEventHandler {
             display = MILLIONS_QTY_FORMAT.format(qty / 1000000d) + 'M';
         }
         return display;
+
     }
 
+    final static Set<String> TAGS = ImmutableSet.of("CLICKNOUGHT", "CHAD", "DIV", "STRING");
+
     private Collection<String> filterUsableOrderTypes(final Collection<CSSClass> types) {
-        return types.stream().filter(input -> {
-            boolean oldOrderType = ladderOptions.serverResolver.resolveToServerName(symbol, input.name()) != null;
-            boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(input.name()) &&
-                    orderEntryMap.get(symbol).supportedTypes.contains(ManagedOrderType.valueOf(input.name()));
-            return oldOrderType || newOrderType;
-        }).map(Enum::name).collect(Collectors.toList());
+        return types.stream().filter(input ->
+                TAGS.stream().filter(tag -> {
+                    boolean oldOrderType = ladderOptions.serverResolver.resolveToServerName(symbol, input.name(), tag) != null;
+                    boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(input.name()) &&
+                            orderEntryMap.get(symbol).supportedTypes.contains(ManagedOrderType.valueOf(input.name()));
+                    return oldOrderType || newOrderType;
+                }).findAny().isPresent()
+        ).map(Enum::name).collect(Collectors.toList());
     }
 
     private void setupButtons() {
@@ -1158,7 +1164,7 @@ public class LadderView implements UiEventHandler {
         public final long roundtripMillis;
 
         public HeartbeatRoundtrip(final String userName, final String symbol, final long sentTimeMillis, final long returnTimeMillis,
-                final long roundtripMillis) {
+                                  final long roundtripMillis) {
 
             this.userName = userName;
             this.symbol = symbol;
@@ -1289,7 +1295,7 @@ public class LadderView implements UiEventHandler {
     }
 
     public static RemoteOrder getRemoteOrderFromWorkingOrder(final boolean autoHedge, final long price,
-            final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+                                                             final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
         final RemoteOrderType remoteOrderType = getRemoteOrderType(workingOrderUpdate.getWorkingOrderType().toString());
         return new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), price, totalQuantity, remoteOrderType,
                 autoHedge, workingOrderUpdate.getTag());
@@ -1301,7 +1307,7 @@ public class LadderView implements UiEventHandler {
             Arrays.asList(RemoteOrderType.values()).stream().map(Enum::toString).collect(Collectors.toSet());
 
     private void submitOrderClick(final String label, final Map<String, String> data, final String orderType, final boolean autoHedge,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher) {
+                                  final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher) {
 
         if (ladderOptions.traders.contains(client.getUserName())) {
 
@@ -1343,7 +1349,7 @@ public class LadderView implements UiEventHandler {
     }
 
     private void submitManagedOrder(final String orderType, final boolean autoHedge, final long price,
-            final com.drwtrading.london.protocols.photon.execution.Side side, final String tag) {
+                                    final com.drwtrading.london.protocols.photon.execution.Side side, final String tag) {
         int tradingBoxQty = this.clickTradingBoxQty;
         trace.publish(new CommandTrace("submitManaged", client.getUserName(), symbol, orderType, autoHedge, price, side.toString(), tag,
                 tradingBoxQty, orderSeqNo++));
@@ -1401,7 +1407,7 @@ public class LadderView implements UiEventHandler {
         public final int chainId;
 
         public CommandTrace(final String command, final String user, final String symbol, final String orderType, final boolean autoHedge,
-                final long price, final String side, final String tag, final int quantity, final int chainId) {
+                            final long price, final String side, final String tag, final int quantity, final int chainId) {
             this.command = command;
             this.user = user;
             this.symbol = symbol;
@@ -1416,8 +1422,8 @@ public class LadderView implements UiEventHandler {
     }
 
     private void submitOrder(final String orderType, final boolean autoHedge, final long price,
-            final com.drwtrading.london.protocols.photon.execution.Side side, final String tag,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+                             final com.drwtrading.london.protocols.photon.execution.Side side, final String tag,
+                             final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
 
         final int sequenceNumber = orderSeqNo++;
 
@@ -1433,7 +1439,7 @@ public class LadderView implements UiEventHandler {
             return;
         }
 
-        final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, orderType);
+        final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, orderType, tag);
 
         final RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
 
@@ -1465,7 +1471,7 @@ public class LadderView implements UiEventHandler {
     }
 
     private void modifyOrder(final boolean autoHedge, final long price, final Main.WorkingOrderUpdateFromServer order,
-            final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+                             final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
         final RemoteModifyOrder remoteModifyOrder =
                 new RemoteModifyOrder(order.fromServer, client.getUserName(), workingOrderUpdate.getChainId(),
                         getRemoteOrderFromWorkingOrder(autoHedge, workingOrderUpdate.getPrice(), workingOrderUpdate,

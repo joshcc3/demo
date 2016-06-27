@@ -171,36 +171,40 @@ public class Environment {
         for (final String orderedServer : orderedServers) {
             final String remoteServer = orderedServer.trim();
             final ConfigGroup remoteServerCMDs = remoteCommands.getGroup(remoteServer);
+
             final String symbolRegex;
             if (remoteServerCMDs.paramExists("symbolRegex")) {
                 symbolRegex = remoteServerCMDs.getString("symbolRegex");
             } else {
                 symbolRegex = ".*";
             }
+
             final Pattern pattern = Pattern.compile(symbolRegex);
+
             final Collection<String> orderTypesRaw;
             if (remoteServerCMDs.paramExists("orderTypes")) {
                 orderTypesRaw = remoteServerCMDs.getParam("orderTypes").getSet(Pattern.compile(","));
             } else {
-                orderTypesRaw = Collections.singleton("*");
+                orderTypesRaw = null;
             }
 
-            System.out.println('\t' + remoteServer + ": regex '" + symbolRegex + "', order types: " + orderTypesRaw);
-
-            if (orderTypesRaw.size() == 1 && orderTypesRaw.contains("*")) {
-                matchers.put(remoteServer, new RemoteOrderMatcher(pattern, null));
+            final Collection<String> tagsRaw;
+            if (remoteServerCMDs.paramExists("tags")) {
+                tagsRaw = remoteServerCMDs.getParam("tags").getSet(Pattern.compile(","));
             } else {
-                final Collection<String> orderTypes = Collections.unmodifiableCollection(orderTypesRaw);
-                matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypes));
+                tagsRaw = null;
             }
+
+            System.out.println('\t' + remoteServer + ": regex '" + symbolRegex + "', order types: " + orderTypesRaw + ", tags: " + tagsRaw);
+            matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypesRaw, tagsRaw));
         }
         return getRemoteOrderServerResolver(matchers);
     }
 
     public static RemoteOrderServerResolver getRemoteOrderServerResolver(final LinkedHashMap<String, RemoteOrderMatcher> matchers) {
-        return (symbol, orderType) -> {
+        return (symbol, orderType, tag) -> {
             for (Map.Entry<String, RemoteOrderMatcher> entry : matchers.entrySet()) {
-                if (entry.getValue().matches(symbol, orderType)) {
+                if (entry.getValue().matches(symbol, orderType, tag)) {
                     return entry.getKey();
                 }
             }
@@ -209,11 +213,10 @@ public class Environment {
     }
 
     public static interface RemoteOrderServerResolver {
+        public String resolveToServerName(final String symbol, final String orderType, final String tag);
 
-        public String resolveToServerName(final String symbol, final String orderType);
-
-        default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType) {
-            return resolveToServerName(symbol, remoteOrderType.name());
+        default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType, final String tag) {
+            return resolveToServerName(symbol, remoteOrderType.name(), tag);
         }
     }
 
@@ -221,14 +224,16 @@ public class Environment {
 
         public final Pattern symbolPattern;
         public final Collection<String> orderTypes;
+        private final Collection<String> tags;
 
-        public RemoteOrderMatcher(final Pattern symbolPattern, final Collection<String> orderTypes) {
+        public RemoteOrderMatcher(final Pattern symbolPattern, final Collection<String> orderTypes, final Collection<String> tags) {
             this.symbolPattern = symbolPattern;
             this.orderTypes = orderTypes;
+            this.tags = tags;
         }
 
-        public boolean matches(final String symbol, final String orderType) {
-            return symbolPattern.matcher(symbol).find() && (orderTypes == null || orderTypes.contains(orderType));
+        public boolean matches(final String symbol, final String orderType, final String tag) {
+            return symbolPattern.matcher(symbol).find() && (orderTypes == null || orderTypes.contains(orderType) && (tags == null || tags.contains(tag)));
         }
     }
 
