@@ -642,7 +642,7 @@ public class LadderView implements UiEventHandler {
         for (final LaserLine laserLine : d.laserLineByName.values()) {
             final String laserKey = laserKey(laserLine.getId());
             ui.cls(laserKey, CSSClass.INVISIBLE, true);
-            if (laserLine.isValid()) {
+            if (laserLine.isValid() && 0 < levels) {
                 long price = bottomPrice;
                 ui.cls(laserKey, CSSClass.INVISIBLE, false);
                 if (laserLine.getPrice() > topPrice) {

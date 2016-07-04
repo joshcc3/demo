@@ -449,7 +449,7 @@ public class Main {
 
                 final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
                         MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
-                                ReddalComponents.class, "NEW_MD_", errorLog);
+                                ReddalComponents.class, "MD_", errorLog);
 
                 int mdCount = 0;
                 for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {

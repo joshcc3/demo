@@ -27,6 +27,7 @@ import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
+import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.photons.ladder.DeskPosition;
 import com.drwtrading.photons.ladder.InfoOnLadder;
 import com.drwtrading.photons.ladder.LadderText;
@@ -347,8 +348,13 @@ public class LadderPresenter {
     }
 
     public long flushAllLadders() {
-        for (final LadderView ladderView : viewBySocket.values()) {
-            ladderView.flush();
+        try {
+            for (final LadderView ladderView : viewBySocket.values()) {
+                ladderView.flush();
+            }
+        } catch (final Throwable t) {
+            statsPublisher.publish(new AdvisoryStat("Reddal", AdvisoryStat.Level.WARNING, "Failed to flush [" + t.getMessage() + "]."));
+            t.printStackTrace();
         }
         return BATCH_FLUSH_INTERVAL_MS;
     }
