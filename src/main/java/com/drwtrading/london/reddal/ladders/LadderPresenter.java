@@ -58,6 +58,7 @@ public class LadderPresenter {
     public static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 12;
 
     private final DepthBookSubscriber bookHandler;
+    private final String ewokBaseURL;
 
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
@@ -85,9 +86,9 @@ public class LadderPresenter {
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
 
-    public LadderPresenter(final DepthBookSubscriber bookHandler, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer,
-            final LadderOptions ladderOptions, final Publisher<StatsMsg> statsPublisher,
-            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+    public LadderPresenter(final DepthBookSubscriber bookHandler, final String ewokBaseURL,
+            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
+            final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<LadderView.HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
 
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
@@ -96,6 +97,7 @@ public class LadderPresenter {
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
 
         this.bookHandler = bookHandler;
+        this.ewokBaseURL = ewokBaseURL;
 
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
@@ -133,7 +135,7 @@ public class LadderPresenter {
         final UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         final View view = new WebSocketOutputDispatcher<>(View.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final LadderView ladderView =
-                new LadderView(connected.getClient(), uiPipe, view, remoteOrderCommandByServer, ladderOptions, statsPublisher,
+                new LadderView(connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions, statsPublisher,
                         tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
                         ladderClickTradingIssuePublisher, userCycleContractPublisher, orderEntryMap, orderEntryCommandToServerPublisher,
                         existingSymbols::contains);

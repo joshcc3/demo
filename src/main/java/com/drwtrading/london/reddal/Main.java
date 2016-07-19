@@ -134,6 +134,8 @@ public class Main {
     public static final int NUM_DISPLAY_THREADS = 12;
     public static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
+    private static final String EWOK_BASE_URL_PARAM = "ewokBaseURL";
+
     public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
             final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
@@ -479,9 +481,10 @@ public class Main {
                 }
 
                 final DepthBookSubscriber depthBookSubscriber = new DepthBookSubscriber(l3BookHandler, l2BookHandler);
+                final String ewokBaseURL = root.getString(EWOK_BASE_URL_PARAM);
 
                 final LadderPresenter presenter =
-                        new LadderPresenter(depthBookSubscriber, channels.remoteOrderCommand, environment.ladderOptions(), channels.stats,
+                        new LadderPresenter(depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand, environment.ladderOptions(), channels.stats,
                                 channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
                                 channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
                                 channels.userCycleContractPublisher, channels.orderEntryCommandToServer);

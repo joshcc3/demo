@@ -9,6 +9,7 @@ public class HTML {
     public static final String ORDER = "order_";
     public static final String TRADE = "trade_";
     public static final String VOLUME = "volume_";
+    public static final String AFTER_HOURS_WEIGHT = "after_hours_weight";
     public static final String TEXT = "text_";
     /* Classes*/
     public static final String LASER = "laser_";
