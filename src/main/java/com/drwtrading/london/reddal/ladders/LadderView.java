@@ -38,6 +38,7 @@ import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.reddal.UserCycleRequest;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MDForSymbol;
@@ -509,7 +510,7 @@ public class LadderView implements UiEventHandler {
                 int totalQty = 0;
                 BookSide side = null;
 
-                for (final Main.WorkingOrderUpdateFromServer orderFromServer : w.ordersByPrice.get(price)) {
+                for (final WorkingOrderUpdateFromServer orderFromServer : w.ordersByPrice.get(price)) {
                     final WorkingOrderUpdate order = orderFromServer.value;
                     final int orderQty = order.getTotalQuantity() - order.getFilledQuantity();
                     side = convertSide(order.getSide());
@@ -551,7 +552,7 @@ public class LadderView implements UiEventHandler {
             int sellHiddenTTQty = 0;
             int buyManagedQty = 0;
             int sellManagedQty = 0;
-            for (final Main.WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByKey.values())
+            for (final WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByKey.values())
                 if (orderUpdateFromServer.value.getWorkingOrderState() != WorkingOrderState.DEAD) {
                     final int remainingQty =
                             orderUpdateFromServer.value.getTotalQuantity() - orderUpdateFromServer.value.getFilledQuantity();
@@ -871,7 +872,7 @@ public class LadderView implements UiEventHandler {
             } else if (null != workingOrdersForSymbol && !workingOrdersForSymbol.ordersByKey.isEmpty()) {
                 final long n = workingOrdersForSymbol.ordersByKey.size();
                 long avgPrice = 0L;
-                for (final Main.WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
+                for (final WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
                     avgPrice += (orderUpdateFromServer.value.getPrice() / n);
                 }
                 center = avgPrice;
@@ -1092,7 +1093,7 @@ public class LadderView implements UiEventHandler {
             } else if (label.startsWith(HTML.ORDER)) {
                 final String price = data.get("price");
                 final String url = String.format("/orders#%s,%s", symbol, price);
-                final Collection<Main.WorkingOrderUpdateFromServer> orders = workingOrdersForSymbol.ordersByPrice.get(Long.valueOf(price));
+                final Collection<WorkingOrderUpdateFromServer> orders = workingOrdersForSymbol.ordersByPrice.get(Long.valueOf(price));
                 if (!orders.isEmpty()) {
                     view.popUp(url, "orders", 270, 20 * (1 + orders.size()));
                 }
@@ -1284,7 +1285,7 @@ public class LadderView implements UiEventHandler {
     }
 
     private void cancelAllForSide(final BookSide side) {
-        for (final Main.WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
+        for (final WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
             if (convertSide(orderUpdateFromServer.value.getSide()) == side) {
                 cancelOrder(orderUpdateFromServer);
             }
@@ -1317,7 +1318,7 @@ public class LadderView implements UiEventHandler {
             final long price = Long.valueOf(data.get("price"));
             if (modifyFromPrice != null) {
                 if (workingOrdersForSymbol != null && modifyFromPrice != price) {
-                    for (final Main.WorkingOrderUpdateFromServer order : workingOrdersForSymbol.ordersByPrice.get(modifyFromPrice)) {
+                    for (final WorkingOrderUpdateFromServer order : workingOrdersForSymbol.ordersByPrice.get(modifyFromPrice)) {
                         final WorkingOrderUpdate workingOrderUpdate = order.value;
                         modifyOrder(autoHedge, price, order, workingOrderUpdate, workingOrderUpdate.getTotalQuantity());
                     }
@@ -1514,7 +1515,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    private void modifyOrder(final boolean autoHedge, final long price, final Main.WorkingOrderUpdateFromServer order,
+    private void modifyOrder(final boolean autoHedge, final long price, final WorkingOrderUpdateFromServer order,
             final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
         final RemoteModifyOrder remoteModifyOrder =
                 new RemoteModifyOrder(order.fromServer, client.getUserName(), workingOrderUpdate.getChainId(),
@@ -1548,7 +1549,7 @@ public class LadderView implements UiEventHandler {
     private void cancelWorkingOrders(final Long price) {
         final WorkingOrdersForSymbol w = this.workingOrdersForSymbol;
         if (!pendingRefDataAndSettle && w != null) {
-            for (final Main.WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByPrice.get(price)) {
+            for (final WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByPrice.get(price)) {
                 cancelOrder(orderUpdateFromServer);
             }
         }
@@ -1570,7 +1571,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    private void cancelOrder(final Main.WorkingOrderUpdateFromServer order) {
+    private void cancelOrder(final WorkingOrderUpdateFromServer order) {
         trace.publish(new CommandTrace("cancel", client.getUserName(), symbol, order.value.getWorkingOrderType().toString(), false,
                 order.value.getPrice(), order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty,
                 order.value.getChainId()));
@@ -1605,7 +1606,7 @@ public class LadderView implements UiEventHandler {
 
     public void onSingleOrderCommand(final OrdersPresenter.SingleOrderCommand singleOrderCommand) {
 
-        final Main.WorkingOrderUpdateFromServer orderUpdateFromServer =
+        final WorkingOrderUpdateFromServer orderUpdateFromServer =
                 workingOrdersForSymbol.ordersByKey.get(singleOrderCommand.getOrderKey());
         if (orderUpdateFromServer == null) {
             statsPublisher.publish(

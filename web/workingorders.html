@@ -1,226 +1,44 @@
 <html>
 <head>
-    <title>ladder</title>
-    <script src="js/jquery-1.4.2.js"></script>
-    <script src="js/websocket.js"></script>
-    <script src="js/websocket-ui.js"></script>
-    <script src="js/sound-files.js"></script>
-    <script src="js/sound-player.js"></script>
-    <script src="js/sounds.js"></script>
-    <script src="cell-functions.js"></script>
-    <style>
-        body {
-            font-family: tahoma, arial, sans-serif;
-            font-size: 9px;
-            background-color: #000000;
-            color: #ffffff;
-            margin: 0;
-            height: 100%;
-        }
-
-        #background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: -webkit-gradient(linear, left top, left bottom, from(#333333), to(#111111));
-            background-color: #333333;
-            z-index: -1;
-        }
-
-        td {
-            padding: 3px;
-        }
-
-        table {
-            border-collapse: collapse;
-            -webkit-user-select: none;
-        }
-
-        #workingOrders {
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        #workingOrders td, #workingOrders th {
-            border-bottom: 1px solid #555555;
-            text-align: center;
-            padding: 0 6px 0 6px;
-            cursor: default;
-        }
-
-        #workingOrders .bid {
-            background-color: #000022;
-        }
-
-        #workingOrders .bid .side {
-            color: #9999ff;
-        }
-
-        #workingOrders .offer .side {
-            color: #ff9999;
-        }
-
-        #workingOrders .bid:hover, #workingOrders .bid.highlight {
-            background-color: #000066;
-        }
-
-        #workingOrders .offer {
-            background-color: #220000;
-        }
-
-        #workingOrders .offer:hover, #workingOrders .offer.highlight {
-            background-color: #660000;
-        }
-
-        #workingOrders .pending {
-            opacity: 0.5;
-        }
-
-        #workingOrders .money_in .moneyness {
-            color: #99ff99;
-        }
-
-        #workingOrders .money_at .moneyness {
-            color: #ffffff;
-        }
-
-        #workingOrders .money_out .moneyness {
-            color: #ffb738;
-        }
-
-        #workingOrders .quoter .type {
-            color: #ffff99;
-        }
-
-        #workingOrders .manual .type {
-            color: #ff99ff;
-        }
-
-        #workingOrders .hedge_qty .type {
-            color: #99ffff;
-        }
-
-        #workingOrders th {
-            width: 11%;
-        }
-
-        #workingOrders .cancelOrder {
-            padding: 0 15px 0 15px;
-            border: 0;
-            margin: 0 0 3px 0;
-        }
-
-        #workingOrders .quoter .cancelOrder {
-            visibility: hidden;
-        }
-
-        .template {
-            display: none;
-        }
-
-        .cancelAll {
-            border: solid red 5px;
-            float: right;
-        }
-
-        .cancelNonGTC {
-            border: solid orange 5px;
-        }
-
-    </style>
-    <script>
-
-        Rows = {};
-
-        $(function () {
-            ws = connect();
-            ws.logToConsole = true;
-            ws.onmessage = function (x) {
-                eval(x)
-            };
-
-            $("button.cancelAll").die().bind("click", function () {
-                ws.send(command("cancelAll"));
-            });
-
-            $("button.cancelNonGTC").die().bind("click", function () {
-                ws.send(command("cancelNonGTC"));
-            });
-
-        });
-
-
-        function updateWorkingOrder(key,
-                                    instrument,
-                                    side,
-                                    price,
-                                    filledQuantity,
-                                    quantity,
-                                    state,
-                                    orderType,
-                                    tag,
-                                    server,
-                                    isDead) {
-
-            var row = Rows[key];
-
-            if (isDead) {
-                if (row) {
-                    delete Rows[key];
-                    row.remove();
-                }
-                return;
-            }
-
-            if (!row) {
-                row = $("table#workingOrders tr.template").clone().removeClass("template");
-                Rows[key] = row;
-                $("table#workingOrders").append(row);
-            }
-
-            row.find(".key").text(key);
-            row.find(".instrument").text(instrument);
-            row.find(".side").text(side);
-            row.find(".price").text(price);
-            row.find(".filledQuantity").text(filledQuantity);
-            row.find(".quantity").text(quantity);
-            row.find(".state").text(state);
-            row.find(".orderType").text(orderType);
-            row.find(".tag").text(tag);
-            row.find(".server").text(server);
-            row.toggleClass("bid", side == "BID");
-            row.toggleClass("offer", side == "OFFER");
-            row.find(".cancelOrder").die().bind("click", function () {
-                ws.send(command("cancelOrder", [key]));
-            });
-        }
-
-    </script>
+	<title>ladder</title>
+	<link rel="stylesheet" type="text/javascript" href="workingorders.css">
+	<script src="js/jquery-1.4.2.js"></script>
+	<script src="js/websocket.js"></script>
+	<script src="js/websocket-ui.js"></script>
+	<script src="js/sound-files.js"></script>
+	<script src="js/sound-player.js"></script>
+	<script src="js/sounds.js"></script>
+	<script src="cell-functions.js"></script>
+	<script src="workingorders.js"></script>
 </head>
 <body>
+
 <div id="background"></div>
+
 <div class="content">
-    <button class="cancelNonGTC">Cancel NON-GTC</button>
-    <button class="cancelAll">Cancel ALL</button>
-    <table id="workingOrders">
-        <tr class="template">
-            <td>
-                <button class="cancelOrder">x</button>
-            </td>
-            <td class="instrument"></td>
-            <td class="side"></td>
-            <td class="price"></td>
-            <td class="filledQuantity"></td>
-            <td class="quantity"></td>
-            <td class="state"></td>
-            <td class="orderType"></td>
-            <td class="tag"></td>
-            <td class="server"></td>
-            <td class="key"></td>
-        </tr>
-    </table>
+
+	<button class="cancelNonGTC">Cancel NON-GTC</button>
+
+	<button class="enableCancelAll">☢</button>
+	<button class="cancelAll">Cancel ALL</button>
+
+	<table id="workingOrders">
+		<tr class="template">
+			<td>
+				<button class="cancelOrder">x</button>
+			</td>
+			<td class="instrument"></td>
+			<td class="side"></td>
+			<td class="price"></td>
+			<td class="filledQuantity"></td>
+			<td class="quantity"></td>
+			<td class="state"></td>
+			<td class="orderType"></td>
+			<td class="tag"></td>
+			<td class="server"></td>
+			<td class="key"></td>
+		</tr>
+	</table>
 </div>
 </body>
 </html>

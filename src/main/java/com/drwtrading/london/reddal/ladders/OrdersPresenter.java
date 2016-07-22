@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -38,15 +38,15 @@ public class OrdersPresenter {
     }
 
 
-    public void onWorkingOrderBatch(final List<Main.WorkingOrderUpdateFromServer> batch) {
+    public void onWorkingOrderBatch(final List<WorkingOrderUpdateFromServer> batch) {
         batch.forEach(this::onWorkingOrder);
     }
 
-    public void onWorkingOrder(final Main.WorkingOrderUpdateFromServer update) {
+    public void onWorkingOrder(final WorkingOrderUpdateFromServer update) {
 
         final String symbol = update.value.getSymbol();
         final WorkingOrdersForSymbol orders = this.orders.get(symbol);
-        final Main.WorkingOrderUpdateFromServer prevUpdate = orders.onWorkingOrderUpdate(update);
+        final WorkingOrderUpdateFromServer prevUpdate = orders.onWorkingOrderUpdate(update);
         final long newPrice = update.value.getPrice();
         final long prevPrice = null == prevUpdate ? update.value.getPrice() : prevUpdate.value.getPrice();
         update(symbol, newPrice, prevPrice);
@@ -103,7 +103,7 @@ public class OrdersPresenter {
 
             if (symbol.equals(symbolPrice.symbol) && (newPrice == price || prevPrice == price)) {
 
-                final Collection<Main.WorkingOrderUpdateFromServer> orders = workingOrders.ordersByPrice.get(price);
+                final Collection<WorkingOrderUpdateFromServer> orders = workingOrders.ordersByPrice.get(price);
                 entry.getValue().orders(orders);
             }
         }
@@ -111,7 +111,7 @@ public class OrdersPresenter {
 
     public static interface View {
 
-        void orders(Collection<Main.WorkingOrderUpdateFromServer> workingOrderUpdates);
+        void orders(Collection<WorkingOrderUpdateFromServer> workingOrderUpdates);
     }
 
     public static class SymbolPrice extends Struct {

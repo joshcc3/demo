@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.safety;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.StatsMsg;
@@ -31,7 +32,7 @@ public class TradingStatusWatchdog {
     }
 
     @Subscribe
-    public void on(final Main.WorkingOrderEventFromServer serverHeartbeat) {
+    public void on(final WorkingOrderEventFromServer serverHeartbeat) {
         lastWorkingOrderEventFromServer.put(serverHeartbeat.fromServer, clock.now());
     }
 

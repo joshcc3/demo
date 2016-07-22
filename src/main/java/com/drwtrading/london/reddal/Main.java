@@ -61,7 +61,6 @@ import com.drwtrading.london.reddal.ladders.LadderView;
 import com.drwtrading.london.reddal.ladders.LadderWorkspace;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
-import com.drwtrading.london.reddal.ladders.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.ladders.WorkspaceRequestHandler;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
@@ -72,6 +71,8 @@ import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.stockAlerts.StockAlert;
+import com.drwtrading.london.reddal.stockAlerts.StockAlertPresenter;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
@@ -82,6 +83,9 @@ import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.reddal.util.ReconnectingOPXLClient;
 import com.drwtrading.london.reddal.util.SelectIOFiber;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.MsgCodec;
@@ -163,6 +167,7 @@ public class Main {
         public final TypedChannel<InstrumentDef> instDefs;
         public final TypedChannel<DisplaySymbol> displaySymbol;
         public final TypedChannel<SearchResult> searchResults;
+        public final TypedChannel<StockAlert> stockAlerts;
         public final TypedChannel<LadderView.HeartbeatRoundtrip> heartbeatRoundTrips;
         private final ChannelFactory channelFactory;
         public final TypedChannel<ReddalMessage> reddalCommand;
@@ -197,6 +202,7 @@ public class Main {
             this.instDefs = create(InstrumentDef.class);
             this.displaySymbol = create(DisplaySymbol.class);
             this.searchResults = create(SearchResult.class);
+            this.stockAlerts = create(StockAlert.class);
             this.heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
             this.reddalCommand = create(ReddalMessage.class);
             this.reddalCommandSymbolAvailable = create(ReddalMessage.class);
@@ -273,32 +279,6 @@ public class Main {
         }
     }
 
-    public static class WorkingOrderUpdateFromServer extends Struct {
-
-        public final String fromServer;
-        public final WorkingOrderUpdate value;
-
-        public WorkingOrderUpdateFromServer(final String fromServer, final WorkingOrderUpdate value) {
-            this.fromServer = fromServer;
-            this.value = value;
-        }
-
-        public String key() {
-            return fromServer + '_' + value.getChainId();
-        }
-    }
-
-    public static class WorkingOrderEventFromServer extends Struct {
-
-        public final String fromServer;
-        public final WorkingOrderEvent value;
-
-        public WorkingOrderEventFromServer(final String fromServer, final WorkingOrderEvent value) {
-            this.fromServer = fromServer;
-            this.value = value;
-        }
-    }
-
     public static class RemoteOrderCommandToServer extends Struct {
 
         public final String toServer;
@@ -365,8 +345,7 @@ public class Main {
 
         final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER = (t, e) -> channels.errorPublisher.publish(e);
 
-        // Monitoring
-        {
+        { // Monitoring
             fibers.stats.subscribe(statsPublisher::publish, channels.stats);
             fibers.stats.getFiber().schedule(() -> {
                 statsPublisher.start();
@@ -374,9 +353,8 @@ public class Main {
             }, 10, TimeUnit.SECONDS);
         }
 
-        // WebApp
         final Map<String, TypedChannel<WebSocketControlMessage>> websocketsForLogging = Maps.newHashMap();
-        {
+        { // WebApp
             final WebApplication webapp;
             webapp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
             System.out.println("http://localhost:" + environment.getWebPort());
@@ -392,8 +370,7 @@ public class Main {
                 }
             }));
 
-            // Index presenter
-            {
+            { // Index presenter
                 final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("/", "index", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("index", websocket);
@@ -402,8 +379,7 @@ public class Main {
                 channels.searchResults.subscribe(fibers.ui.getFiber(), indexPresenter::addSearchResult);
             }
 
-            // Orders presenter
-            {
+            { // Orders presenter
                 final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("orders", "orders", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("orders", websocket);
@@ -413,16 +389,25 @@ public class Main {
                         new BatchSubscriber<>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
             }
 
-            // Working orders screen
-            {
+            { // Working orders screen
                 final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
 
                 final WorkingOrdersPresenter presenter =
                         new WorkingOrdersPresenter(fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand);
+                fibers.ui.subscribe(presenter, ws);
                 channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
                 channels.workingOrders.subscribe(
                         new BatchSubscriber<>(fibers.ui.getFiber(), presenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
+            }
+
+            { // Stock alert screen
+                final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("stockalerts", "stockalerts", fibers.ui, webapp, ws);
+
+                final StockAlertPresenter presenter = new StockAlertPresenter();
+                fibers.ui.subscribe(presenter, ws);
+                channels.stockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
             }
 
             // Ladder presenters
@@ -446,8 +431,11 @@ public class Main {
                 webSockets.add(webSocket);
                 final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
 
-                final LevelThreeBookSubscriber l3BookHandler = new LevelThreeBookSubscriber(displayMonitor, channels.searchResults);
-                final LevelTwoBookSubscriber l2BookHandler = new LevelTwoBookSubscriber(displayMonitor, channels.searchResults);
+                final boolean isPrimary = 0 == i;
+                final LevelThreeBookSubscriber l3BookHandler =
+                        new LevelThreeBookSubscriber(isPrimary, displayMonitor, channels.searchResults, channels.stockAlerts);
+                final LevelTwoBookSubscriber l2BookHandler =
+                        new LevelTwoBookSubscriber(isPrimary, displayMonitor, channels.searchResults, channels.stockAlerts);
 
                 final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
                         MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
@@ -484,8 +472,8 @@ public class Main {
                 final String ewokBaseURL = root.getString(EWOK_BASE_URL_PARAM);
 
                 final LadderPresenter presenter =
-                        new LadderPresenter(depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand, environment.ladderOptions(), channels.stats,
-                                channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
+                        new LadderPresenter(depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand, environment.ladderOptions(),
+                                channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
                                 channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
                                 channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
 

@@ -1,0 +1,128 @@
+body {
+	font-family: tahoma, arial, sans-serif;
+	font-size: 9px;
+	background-color: #000000;
+	color: #ffffff;
+	margin: 0;
+	height: 100%;
+}
+
+#background {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: -webkit-gradient(linear, left top, left bottom, from(#333333), to(#111111));
+	background-color: #333333;
+	z-index: -1;
+}
+
+.cancelNonGTC {
+	border: solid orange 5px;
+}
+
+.enableCancelAll {
+	padding:  5px;
+	float: right;
+}
+
+.cancelAll {
+	border: solid red 5px;
+	float: right;
+}
+
+.cancelAll:not(.isClickable) {
+    opacity: 0.5;
+}
+
+td {
+	padding: 3px;
+}
+
+table {
+	border-collapse: collapse;
+	-webkit-user-select: none;
+}
+
+#workingOrders {
+	border-collapse: collapse;
+	width: 100%;
+}
+
+#workingOrders td, #workingOrders th {
+	border-bottom: 1px solid #555555;
+	text-align: center;
+	padding: 0 6px 0 6px;
+	cursor: default;
+}
+
+#workingOrders .bid {
+	background-color: #000022;
+}
+
+#workingOrders .bid .side {
+	color: #9999ff;
+}
+
+#workingOrders .offer .side {
+	color: #ff9999;
+}
+
+#workingOrders .bid:hover, #workingOrders .bid.highlight {
+	background-color: #000066;
+}
+
+#workingOrders .offer {
+	background-color: #220000;
+}
+
+#workingOrders .offer:hover, #workingOrders .offer.highlight {
+	background-color: #660000;
+}
+
+#workingOrders .pending {
+	opacity: 0.5;
+}
+
+#workingOrders .money_in .moneyness {
+	color: #99ff99;
+}
+
+#workingOrders .money_at .moneyness {
+	color: #ffffff;
+}
+
+#workingOrders .money_out .moneyness {
+	color: #ffb738;
+}
+
+#workingOrders .quoter .type {
+	color: #ffff99;
+}
+
+#workingOrders .manual .type {
+	color: #ff99ff;
+}
+
+#workingOrders .hedge_qty .type {
+	color: #99ffff;
+}
+
+#workingOrders th {
+	width: 11%;
+}
+
+#workingOrders .cancelOrder {
+	padding: 0 15px 0 15px;
+	border: 0;
+	margin: 0 0 3px 0;
+}
+
+#workingOrders .quoter .cancelOrder {
+	visibility: hidden;
+}
+
+.template {
+	display: none;
+}

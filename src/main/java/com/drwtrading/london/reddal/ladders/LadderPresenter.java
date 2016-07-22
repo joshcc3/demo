@@ -11,6 +11,7 @@ import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.reddal.UserCycleRequest;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MDForSymbol;
@@ -203,7 +204,7 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(final Main.WorkingOrderUpdateFromServer workingOrderUpdate) {
+    public void on(final WorkingOrderUpdateFromServer workingOrderUpdate) {
         ordersBySymbol.get(workingOrderUpdate.value.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
     }
 
@@ -264,16 +265,16 @@ public class LadderPresenter {
         tradingStatusForAll.on(serverTradingStatus);
         if (serverTradingStatus.workingOrderStatus == TradingStatusWatchdog.Status.NOT_OK) {
             for (final WorkingOrdersForSymbol ordersForSymbol : ordersBySymbol.values()) {
-                for (final Iterator<Main.WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByKey.values().iterator();
+                for (final Iterator<WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByKey.values().iterator();
                      iter.hasNext(); ) {
-                    final Main.WorkingOrderUpdateFromServer working = iter.next();
+                    final WorkingOrderUpdateFromServer working = iter.next();
                     if (working.fromServer.equals(serverTradingStatus.server)) {
                         iter.remove();
                     }
                 }
-                for (final Iterator<Main.WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByPrice.values().iterator();
+                for (final Iterator<WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByPrice.values().iterator();
                      iter.hasNext(); ) {
-                    final Main.WorkingOrderUpdateFromServer working = iter.next();
+                    final WorkingOrderUpdateFromServer working = iter.next();
                     if (working.fromServer.equals(serverTradingStatus.server)) {
                         iter.remove();
                     }

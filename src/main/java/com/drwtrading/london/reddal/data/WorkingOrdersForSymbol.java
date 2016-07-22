@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
-import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 
@@ -12,17 +12,17 @@ import java.util.Map;
 public class WorkingOrdersForSymbol {
 
     public final String symbol;
-    public final Map<String, Main.WorkingOrderUpdateFromServer> ordersByKey = new LinkedHashMap<>();
-    public final Multimap<Long, Main.WorkingOrderUpdateFromServer> ordersByPrice = LinkedHashMultimap.create();
+    public final Map<String, WorkingOrderUpdateFromServer> ordersByKey = new LinkedHashMap<>();
+    public final Multimap<Long, WorkingOrderUpdateFromServer> ordersByPrice = LinkedHashMultimap.create();
 
     public WorkingOrdersForSymbol(final String symbol) {
         this.symbol = symbol;
     }
 
-    public Main.WorkingOrderUpdateFromServer onWorkingOrderUpdate(final Main.WorkingOrderUpdateFromServer workingOrderUpdateFromServer) {
+    public WorkingOrderUpdateFromServer onWorkingOrderUpdate(final WorkingOrderUpdateFromServer workingOrderUpdateFromServer) {
         final WorkingOrderUpdate workingOrderUpdate = workingOrderUpdateFromServer.value;
         if (workingOrderUpdate.getSymbol().equals(symbol)) {
-            final Main.WorkingOrderUpdateFromServer previous;
+            final WorkingOrderUpdateFromServer previous;
             if (workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
                 previous = ordersByKey.remove(workingOrderUpdateFromServer.key());
             } else {

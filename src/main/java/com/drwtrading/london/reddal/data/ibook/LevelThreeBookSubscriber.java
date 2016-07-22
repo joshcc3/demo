@@ -5,36 +5,53 @@ import com.drwtrading.london.eeif.utils.marketData.book.AggressorSide;
 import com.drwtrading.london.eeif.utils.marketData.book.BookLevelThreeMonitorAdaptor;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
+import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
+import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.MDForSymbol;
+import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import org.jetlang.channels.Channel;
 
+import java.text.SimpleDateFormat;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
 public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
 
+    private final boolean isPrimary;
+
     private final IResourceMonitor<ReddalComponents> monitor;
 
     private final Map<MDSource, MDTransportClient> mdClients;
     private final Channel<SearchResult> searchResults;
+    private final Channel<StockAlert> stockAlertChannel;
 
     private final Map<String, IBook<IBookLevelWithOrders>> books;
     private final Map<String, MDForSymbol> listeners;
 
-    public LevelThreeBookSubscriber(final IResourceMonitor<ReddalComponents> monitor, final Channel<SearchResult> searchResults) {
+    private final SimpleDateFormat sdf;
+
+    public LevelThreeBookSubscriber(final boolean isPrimary, final IResourceMonitor<ReddalComponents> monitor,
+            final Channel<SearchResult> searchResults, final Channel<StockAlert> stockAlertChannel) {
+
+        this.isPrimary = isPrimary;
 
         this.monitor = monitor;
         this.searchResults = searchResults;
+        this.stockAlertChannel = stockAlertChannel;
 
         this.mdClients = new EnumMap<>(MDSource.class);
 
         this.books = new HashMap<>();
         this.listeners = new HashMap<>();
+
+        this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
+        this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
     }
 
     public void setMDClient(final MDSource mdSource, final MDTransportClient client) {
@@ -52,8 +69,22 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
         if (null != listener) {
             bookSubscribe(listener, book);
         }
-        final SearchResult searchResult = new SearchResult(book);
-        searchResults.publish(searchResult);
+
+        if (isPrimary) {
+            final SearchResult searchResult = new SearchResult(book);
+            searchResults.publish(searchResult);
+
+        }
+    }
+
+    @Override
+    public void referencePrice(final IBook<IBookLevelWithOrders> book, final IBookReferencePrice referencePriceData) {
+
+        if (isPrimary && referencePriceData.isValid() && ReferencePoint.RFQ == referencePriceData.getReferencePoint() ) {
+            final String timestamp = sdf.format(referencePriceData.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS);
+            final StockAlert stockAlert = new StockAlert(timestamp, "RFQ", book.getSymbol());
+            stockAlertChannel.publish(stockAlert);
+        }
     }
 
     public void subscribeForMD(final String symbol, final MDForSymbol listener) {
