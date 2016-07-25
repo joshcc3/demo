@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.workingOrders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
@@ -24,11 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 public class WorkingOrdersPresenter {
 
     public static final Predicate<WorkingOrderUpdateFromServer> WORKING_ORDER_FILTER = WorkingOrdersPresenter::workingOrderFilter;
     public static final Predicate<WorkingOrderUpdateFromServer> NON_GTC_FILTER = WorkingOrdersPresenter::nonGTCFilter;
+    private static final Pattern NIBBLER_REPLACE = Pattern.compile("nibbler-", Pattern.LITERAL);
 
     private final Publisher<StatsMsg> statsMsgPublisher;
     private final Publisher<Main.RemoteOrderCommandToServer> commands;
@@ -154,13 +157,16 @@ public class WorkingOrdersPresenter {
         if (null != searchResult) {
             df.setMinimumFractionDigits(searchResult.decimalPlaces);
             df.setMaximumFractionDigits(searchResult.decimalPlaces);
-            price = df.format(update.getPrice());
+            price = df.format(update.getPrice() / Constants.NORMALISING_FACTOR);
         } else {
             price = update.getPrice() + " (raw)";
         }
+
+        final String server = NIBBLER_REPLACE.matcher(order.fromServer).replaceAll("");
+
         view.updateWorkingOrder(order.key(), update.getSymbol(), update.getSide().toString(), price, update.getFilledQuantity(),
                 update.getTotalQuantity(), update.getWorkingOrderState().toString(), update.getWorkingOrderType().toString(),
-                update.getTag(), order.fromServer, update.getWorkingOrderState() == WorkingOrderState.DEAD);
+                update.getTag(), server, update.getWorkingOrderState() == WorkingOrderState.DEAD);
     }
 
 }

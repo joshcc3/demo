@@ -12,7 +12,7 @@ $(function () {
 	headerRow = $("#header");
 });
 
-function stockAlert(timestamp, type, symbol) {
+function stockAlert(timestamp, type, symbol, msg) {
 
 	var id = (type + symbol).replace(/ |\/|\.|:/g, "_");
 	var row = $('#' + id);
@@ -20,13 +20,14 @@ function stockAlert(timestamp, type, symbol) {
 	if (row[0]) {
 		row.remove();
 	} else {
-		row = table.find(".template").clone().removeClass("template");
+		row = table.find("#header").clone();
 		row.attr("id", id);
 	}
 
 	row.addClass(type);
 
 	row.find(".timestamp").text(timestamp);
+	row.find(".type").text(type);
 
 	var symbolCell = row.find(".symbol");
 	symbolCell.text(symbol);
@@ -34,7 +35,7 @@ function stockAlert(timestamp, type, symbol) {
 		launchLadder(symbol);
 	});
 
-	row.find(".msg").text(type);
+	row.find(".msg").text(msg);
 	row.insertAfter(headerRow);
 }
 

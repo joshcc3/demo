@@ -23,7 +23,7 @@ body {
 }
 
 .enableCancelAll {
-	padding:  5px;
+	padding: 5px;
 	float: right;
 }
 
@@ -33,32 +33,57 @@ body {
 }
 
 .cancelAll:not(.isClickable) {
-    opacity: 0.5;
+	opacity: 0.5;
 }
 
-td {
+.serverName {
+	padding: 3px 30px;
+	font-size: 16px;
+	cursor: pointer;
+}
+
+.row {
+	font-size: 0;
+	white-space: nowrap;
+	border-bottom: 1px solid #555555;
+	padding: 0 6px;
+}
+
+.row div {
+	display: inline-block;
+	width: 100px;
+	text-align: center;
 	padding: 3px;
 }
 
-table {
-	border-collapse: collapse;
-	-webkit-user-select: none;
+.row .button, .row .button button {
+	width: auto;
+	padding: 0;
+	cursor: pointer;
 }
 
-#workingOrders {
-	border-collapse: collapse;
-	width: 100%;
+.row#header div {
+	font-size: 14px;
 }
 
-#workingOrders td, #workingOrders th {
-	border-bottom: 1px solid #555555;
-	text-align: center;
-	padding: 0 6px 0 6px;
-	cursor: default;
+#header .button {
+	visibility: hidden;
+}
+
+div .hidden {
+	display: none;
+}
+
+.row:not(#header) div {
+	font-size: 11px;
 }
 
 #workingOrders .bid {
 	background-color: #000022;
+}
+
+#workingOrders .offer {
+	background-color: #220000;
 }
 
 #workingOrders .bid .side {
@@ -71,10 +96,6 @@ table {
 
 #workingOrders .bid:hover, #workingOrders .bid.highlight {
 	background-color: #000066;
-}
-
-#workingOrders .offer {
-	background-color: #220000;
 }
 
 #workingOrders .offer:hover, #workingOrders .offer.highlight {
@@ -109,10 +130,6 @@ table {
 	color: #99ffff;
 }
 
-#workingOrders th {
-	width: 11%;
-}
-
 #workingOrders .cancelOrder {
 	padding: 0 15px 0 15px;
 	border: 0;
@@ -121,8 +138,4 @@ table {
 
 #workingOrders .quoter .cancelOrder {
 	visibility: hidden;
-}
-
-.template {
-	display: none;
 }

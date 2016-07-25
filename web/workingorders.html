@@ -9,6 +9,7 @@
 	<script src="js/sound-player.js"></script>
 	<script src="js/sounds.js"></script>
 	<script src="cell-functions.js"></script>
+	<script src="launcher-eeif.js"></script>
 	<script src="workingorders.js"></script>
 </head>
 <body>
@@ -22,23 +23,29 @@
 	<button class="enableCancelAll">☢</button>
 	<button class="cancelAll">Cancel ALL</button>
 
-	<table id="workingOrders">
-		<tr class="template">
-			<td>
+	<div id="workingOrders">
+
+		<div id="header" class="row">
+			<div class="button">
 				<button class="cancelOrder">x</button>
-			</td>
-			<td class="instrument"></td>
-			<td class="side"></td>
-			<td class="price"></td>
-			<td class="filledQuantity"></td>
-			<td class="quantity"></td>
-			<td class="state"></td>
-			<td class="orderType"></td>
-			<td class="tag"></td>
-			<td class="server"></td>
-			<td class="key"></td>
-		</tr>
-	</table>
+			</div>
+			<div class="instrument">Symbol</div>
+			<div class="side">Side</div>
+			<div class="price">Price</div>
+			<div class="filledQuantity">Fill Qty</div>
+			<div class="quantity">Total Qty</div>
+			<div class="state">State</div>
+			<div class="orderType">Type</div>
+			<div class="tag">Tag</div>
+			<div class="server hidden">Server</div>
+			<div class="key">ID</div>
+		</div>
+
+		<div id="serverBlockTemplate" class="hidden">
+			<div class="serverName"></div>
+			<div class="rows"></div>
+		</div>
+	</div>
 </div>
 </body>
 </html>

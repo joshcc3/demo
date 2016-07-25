@@ -79,7 +79,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
 
         if (isPrimary && referencePriceData.isValid() && ReferencePoint.RFQ == referencePriceData.getReferencePoint() ) {
             final String timestamp = sdf.format(referencePriceData.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS);
-            final StockAlert stockAlert = new StockAlert(timestamp, "RFQ", book.getSymbol());
+            final StockAlert stockAlert = new StockAlert(timestamp, "RFQ", book.getSymbol(), "Qty: " + referencePriceData.getQty());
             stockAlertChannel.publish(stockAlert);
         }
     }

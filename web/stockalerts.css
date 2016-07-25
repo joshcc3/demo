@@ -19,11 +19,15 @@ body {
 
 .row {
 	font-size: 0;
+	white-space: nowrap;
+	border-bottom: 1px solid #555555;
+	cursor: default;
 }
 
 .row div {
 	display: inline-block;
 	width: 100px;
+	text-align: center;
 }
 
 .row#header div {

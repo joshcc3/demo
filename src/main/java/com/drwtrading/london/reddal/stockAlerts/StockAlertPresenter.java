@@ -25,7 +25,7 @@ public class StockAlertPresenter {
     public void onConnected(final WebSocketConnected connected) {
         final IStockAlertsView view = views.register(connected);
         for (final StockAlert update : alerts) {
-            view.stockAlert(update.timestamp, update.type, update.symbol);
+            view.stockAlert(update.timestamp, update.type, update.symbol, update.msg);
         }
     }
 
@@ -37,7 +37,7 @@ public class StockAlertPresenter {
     public void addAlert(final StockAlert stockAlert) {
 
         alerts.add(stockAlert);
-        views.all().stockAlert(stockAlert.timestamp, stockAlert.type, stockAlert.symbol);
+        views.all().stockAlert(stockAlert.timestamp, stockAlert.type, stockAlert.symbol, stockAlert.msg);
 
         if (MAX_HISTORY < alerts.size()) {
             alerts.poll();

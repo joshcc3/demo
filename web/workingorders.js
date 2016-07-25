@@ -2,7 +2,7 @@ Rows = {};
 
 $(function () {
 	ws = connect();
-	ws.logToConsole = true;
+	ws.logToConsole = false;
 	ws.onmessage = function (x) {
 		eval(x)
 	};
@@ -27,7 +27,6 @@ $(function () {
 });
 
 function setButtonDisabled() {
-	console.log("RUN");
 	var cancelAllButton = $("button.cancelAll");
 	cancelAllButton.unbind();
 	cancelAllButton.toggleClass("isClickable", false);
@@ -45,13 +44,40 @@ function updateWorkingOrder(key, instrument, side, price, filledQuantity, quanti
 	} else {
 
 		if (!row) {
-			row = $("table#workingOrders tr.template").clone().removeClass("template");
+			row = $("#header").clone().removeAttr("id");
 			Rows[key] = row;
-			$("table#workingOrders").append(row);
+
+			var serverBlock = $('#' + server);
+			if (!serverBlock[0]) {
+				serverBlock = $("#serverBlockTemplate").clone();
+				serverBlock.attr("id", server);
+				serverBlock.toggleClass("hidden", false);
+
+				var headerName = serverBlock.find(".serverName");
+				headerName.text(server);
+
+				var rowsBlock = serverBlock.find(".rows");
+				headerName.unbind().bind("click", function () {
+					rowsBlock.toggleClass("hidden", !rowsBlock.hasClass("hidden"))
+				});
+
+				$("#workingOrders").append(serverBlock);
+			}
+
+			var rows = serverBlock.find(".rows");
+			rows.append(row);
 		}
 
+		row.find(".button").toggleClass("hidden", false);
+
 		row.find(".key").text(key);
-		row.find(".instrument").text(instrument);
+
+		var symbolCell = row.find(".instrument");
+		symbolCell.text(instrument);
+		symbolCell.die().bind("click", function () {
+			launchLadder(instrument);
+		});
+
 		row.find(".side").text(side);
 		row.find(".price").text(price);
 		row.find(".filledQuantity").text(filledQuantity);
