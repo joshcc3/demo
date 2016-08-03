@@ -72,7 +72,7 @@ function updateWorkingOrder(key, instrument, side, price, filledQuantity, quanti
 
 		row.find(".key").text(key);
 
-		var symbolCell = row.find(".instrument");
+		var symbolCell = row.find(".symbol");
 		symbolCell.text(instrument);
 		symbolCell.die().bind("click", function () {
 			launchLadder(instrument);

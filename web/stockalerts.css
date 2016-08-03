@@ -20,7 +20,6 @@ body {
 .row {
 	font-size: 0;
 	white-space: nowrap;
-	border-bottom: 1px solid #555555;
 	cursor: default;
 }
 
@@ -28,6 +27,12 @@ body {
 	display: inline-block;
 	width: 100px;
 	text-align: center;
+	border-bottom: 1px solid #555555;
+}
+
+.row div.msg {
+	width: 100%;
+	text-align: left;
 }
 
 .row#header div {
@@ -38,6 +43,18 @@ body {
 	font-size: 11px;
 }
 
+.symbol {
+	cursor: pointer;
+}
+
 .RFQ div {
 	background-color: #7d4a3c;
+}
+
+.SWEEP div {
+	background-color: #534efa;
+}
+
+.TWAP div {
+	background-color: darkslategray;
 }

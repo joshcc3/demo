@@ -37,5 +37,10 @@ function stockAlert(timestamp, type, symbol, msg) {
 
 	row.find(".msg").text(msg);
 	row.insertAfter(headerRow);
+
+	var rows = table.children();
+	if (16 < rows.length) {
+		table.children().last().remove();
+	}
 }
 

@@ -9,83 +9,83 @@ retrieve JS_SOUND_FILES->web/js
 retrieve WAV_SOUND_FILES->web/sounds
 
 config default
-		include :rake
-		include :scripts
-		# Libraries and containers
-		include google.guava/r06
-		include fastutil/6.6.1
-		include photon-runtime-java/1.0.0.82
-		include com.drwtrading.photocols/0.9.8
-		include org.hdrhistogram/2.1.4
+	include :rake
+	include :scripts
 
-		# JSON
-		include drw.london.json/1.0.0.4
-		include json/1
+	include drw.london.eeif-utils/132
+	include drw.london.eeif-md/126
+	include drw.london.eeif-yoda-transport/1
 
-		# Jetlang
-		include jetlang/0.2.11
-		include jetlang-with-src/0.2.0
-		include drw.jetlang-core/1.0.0.145
-		include drw.london.jetlang-with-stats/23
+	# Libraries and containers
+	include google.guava/r06
+	include fastutil/6.6.1
+	include photon-runtime-java/1.0.0.82
+	include com.drwtrading.photocols/0.9.8
+	include org.hdrhistogram/2.1.4
 
-		# Web
-		include jquery/1.4.2
-		include org.jboss.netty-netty/3.2.7.Final
-		include drw.sso.client-java/1.0.0.32
-		include drw.london.server-common/50
-		include drw.simple-webbit-server/33:with-deps
-		include org.webbitserver-webbit-rest/0.3.0
-		include drw.london.javascript-common/33
-		include drw.london.sounds/20
+	# JSON
+	include drw.london.json/1.0.0.4
+	include json/1
 
-		# Monitoring
-		include drw.monitoring/1.0.0.54
+	# Jetlang
+	include jetlang/0.2.11
+	include jetlang-with-src/0.2.0
+	include drw.jetlang-core/1.0.0.145
+	include drw.london.jetlang-with-stats/23
 
-		# Photons
-		include log4j/1.2.16 # For protocols
-		include drw.london.eeif-photocols-client/72
-		include com.drwtrading.photons.mrphil/1.0.0.4
-		include com.drwtrading.london.photons.reddal/2
-		include com.drwtrading.london.photons.eeifoe/13
+	# Web
+	include jquery/1.4.2
+	include org.jboss.netty-netty/3.2.7.Final
+	include drw.sso.client-java/1.0.0.32
+	include drw.london.server-common/50
+	include drw.simple-webbit-server/33:with-deps
+	include org.webbitserver-webbit-rest/0.3.0
+	include drw.london.javascript-common/33
+	include drw.london.sounds/20
 
-		# MD
-		include mockito/1.8.3
-		include io.netty-netty/3.2.7.Final
-		include drw.london.esquilatency/26
+	# Monitoring
+	include drw.monitoring/1.0.0.54
 
-		include drw.london.eeif-md/125
+	# Photons
+	include log4j/1.2.16 # For protocols
+	include drw.london.eeif-photocols-client/73
+	include com.drwtrading.photons.mrphil/1.0.0.4
+	include com.drwtrading.london.photons.reddal/2
+	include com.drwtrading.london.photons.eeifoe/13
 
-		include nns/2.0.0.69
+	include nns/2.0.0.69
 
-		# Execution
-		include com.drwtrading.london.protocols.photon.execution/220
-		include com.drwtrading.photons.ladder/38
+	# Execution
+	include com.drwtrading.london.protocols.photon.execution/220
+	include com.drwtrading.photons.ladder/38
 
-		# Testing
-		include junit/4.10
+	# Testing
+	include junit/4.10
 
-		# Research
-		include joda.time/1.6
-		include org.apache.commons.math/2.2
+	# Research
+	include joda.time/1.6
+	include org.apache.commons.math/2.2
 
-		# OPXL
-		include drw.opxl/1.5.1
+	# OPXL
+	include drw.opxl/1.5.1
 
-		add PATH=/site/drw/java/jdk1.8.0_05/bin
+	add PATH=/site/drw/java/jdk1.8.0_05/bin
 end
 
 config build
-		include :default
+	include :default
 end
 
 config test
-		include :default
+	include :default
+	include testng/6.8
+	include mockito/1.9.5
 end
 
 config scripts
-		include drw.london.admin-scripts/24
+	include drw.london.admin-scripts/24
 end
 
 config rake
-		include drw.london.rake/1.0.1.9
+	include drw.london.rake/1.0.1.9
 end

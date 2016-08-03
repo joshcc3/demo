@@ -20,7 +20,9 @@ public enum ReddalComponents implements IMonitoredComponent {
     MD_UNDERLYING_TCP,
     MD_TCP_PROTOCOL_FAILURE,
     MD_MD_SERVER_UPDATE,
-    MD_MD_SERVER_VIEWER;
+    MD_MD_SERVER_VIEWER,
+
+    YODA;
 
     @Override
     public String getMnemonic() {

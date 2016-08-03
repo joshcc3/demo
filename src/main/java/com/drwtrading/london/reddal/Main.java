@@ -20,6 +20,7 @@ import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.MDTranspo
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClientFactory;
 import com.drwtrading.london.eeif.utils.monitoring.BasicStdOutErrorLogger;
+import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.MappedResourceMonitor;
@@ -27,6 +28,10 @@ import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.eeif.utils.transport.io.TransportTCPKeepAliveConnection;
+import com.drwtrading.london.eeif.yoda.transport.YodaSignalType;
+import com.drwtrading.london.eeif.yoda.transport.YodaTransportComponents;
+import com.drwtrading.london.eeif.yoda.transport.cache.YodaClientCacheFactory;
+import com.drwtrading.london.eeif.yoda.transport.io.YodaClientHandler;
 import com.drwtrading.london.indy.transport.IndyTransportComponents;
 import com.drwtrading.london.indy.transport.cache.IIndyCacheListener;
 import com.drwtrading.london.indy.transport.cache.IndyCacheFactory;
@@ -73,6 +78,9 @@ import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandle
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.stockAlerts.StockAlertPresenter;
+import com.drwtrading.london.reddal.stockAlerts.yoda.YodaRestingOrderClient;
+import com.drwtrading.london.reddal.stockAlerts.yoda.YodaSweepClient;
+import com.drwtrading.london.reddal.stockAlerts.yoda.YodaTWAPClient;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
@@ -121,6 +129,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -139,6 +148,7 @@ public class Main {
     public static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     private static final String EWOK_BASE_URL_PARAM = "ewokBaseURL";
+    private static final Pattern PROD_REPLACE = Pattern.compile("prod-", Pattern.LITERAL);
 
     public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
             final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
@@ -316,6 +326,7 @@ public class Main {
         }
 
         final String configName = args[0];
+        final String appName = "Reddal " + PROD_REPLACE.matcher(configName).replaceAll("");
 
         System.out.println("Starting with configuration: " + configName);
         final Path configFile = Paths.get("./etc", configName + ".properties");
@@ -703,32 +714,32 @@ public class Main {
         }
 
         // Indy
-        final ConfigGroup indyConfig = root.getEnabledGroup("indy");
-        if (null != indyConfig) {
+        final ConfigGroup indyConfig = root.getGroup("indy");
 
-            final IIndyCacheListener indyListener = new IndyClient(channels.instDefs);
+        final IIndyCacheListener indyListener = new IndyClient(channels.instDefs);
 
-            final IResourceMonitor<ReddalComponents> reddalMonitor = new ResourceMonitor<>("Indy", ReddalComponents.class, errorLog, true);
+        final IResourceMonitor<ReddalComponents> reddalMonitor = new ResourceMonitor<>("Indy", ReddalComponents.class, errorLog, true);
 
-            final SelectIO selectIO = SelectIO.mappedMonitorSelectIO("SelectIO", reddalMonitor, ReddalComponents.SELECT_IO_CLOSE,
-                    ReddalComponents.SELECT_IO_SELECT, ReddalComponents.SELECT_IO_UNHANDLED);
+        final SelectIO selectIO = SelectIO.mappedMonitorSelectIO("SelectIO", reddalMonitor, ReddalComponents.SELECT_IO_CLOSE,
+                ReddalComponents.SELECT_IO_SELECT, ReddalComponents.SELECT_IO_UNHANDLED);
 
-            final String indyUsername = indyConfig.getString("username");
+        final String indyUsername = indyConfig.getString("username");
 
-            final IResourceMonitor<IndyTransportComponents> indyMonitor =
-                    MappedResourceMonitor.mapMonitorByName(reddalMonitor, IndyTransportComponents.class, ReddalComponents.class, "INDY_");
-            final TransportTCPKeepAliveConnection<?, ?> indyConnection =
-                    IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, indyListener);
-            selectIO.execute(indyConnection::restart);
-            fibers.onStart(() -> {
-                try {
-                    selectIO.start("Indy Select IO");
-                } catch (final Exception e) {
-                    System.out.println("Exception starting select IO.");
-                    e.printStackTrace();
-                }
-            });
-        }
+        final IResourceMonitor<IndyTransportComponents> indyMonitor =
+                MappedResourceMonitor.mapMonitorByName(reddalMonitor, IndyTransportComponents.class, ReddalComponents.class, "INDY_");
+        final TransportTCPKeepAliveConnection<?, ?> indyConnection =
+                IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, indyListener);
+        selectIO.execute(indyConnection::restart);
+        fibers.onStart(() -> {
+            try {
+                selectIO.start("Indy Select IO");
+            } catch (final Exception e) {
+                System.out.println("Exception starting select IO.");
+                e.printStackTrace();
+            }
+        });
+
+        setupYodaSignals(selectIO, monitor, errorLog, root, appName, channels.stockAlerts);
 
         final ConfigGroup opxlConfig = root.getEnabledGroup("opxl");
 
@@ -820,4 +831,26 @@ public class Main {
         };
     }
 
+    private static void setupYodaSignals(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
+            final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts)
+            throws ConfigException {
+
+        final ConfigGroup yodaConfig = config.getEnabledGroup("yoda");
+        if (null != yodaConfig) {
+            final IResourceMonitor<YodaTransportComponents> yodaMonitor =
+                    new ExpandedDetailResourceMonitor<>(monitor, "Yoda", errorLog, YodaTransportComponents.class, ReddalComponents.YODA);
+
+            final YodaRestingOrderClient restingClient = new YodaRestingOrderClient(stockAlerts);
+            final YodaSweepClient sweepClient = new YodaSweepClient(stockAlerts);
+            final YodaTWAPClient twapClient = new YodaTWAPClient(stockAlerts);
+
+            final YodaClientHandler yodaHandler =
+                    YodaClientCacheFactory.createClientCache(selectIO, yodaMonitor, "yoda", appName, restingClient, sweepClient, twapClient,
+                            EnumSet.allOf(YodaSignalType.class));
+
+            final TransportTCPKeepAliveConnection<?, ?> client =
+                    YodaClientCacheFactory.createClient(selectIO, yodaConfig, yodaMonitor, yodaHandler);
+            selectIO.execute(client::restart);
+        }
+    }
 }

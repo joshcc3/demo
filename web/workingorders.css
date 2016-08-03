@@ -78,6 +78,10 @@ div .hidden {
 	font-size: 11px;
 }
 
+.symbol {
+	cursor: pointer;
+}
+
 #workingOrders .bid {
 	background-color: #000022;
 }

@@ -162,9 +162,10 @@ public class WorkingOrdersPresenter {
             price = update.getPrice() + " (raw)";
         }
 
+        final String chainID = Integer.toString(order.value.getChainId());
         final String server = NIBBLER_REPLACE.matcher(order.fromServer).replaceAll("");
 
-        view.updateWorkingOrder(order.key(), update.getSymbol(), update.getSide().toString(), price, update.getFilledQuantity(),
+        view.updateWorkingOrder(chainID, update.getSymbol(), update.getSide().toString(), price, update.getFilledQuantity(),
                 update.getTotalQuantity(), update.getWorkingOrderState().toString(), update.getWorkingOrderType().toString(),
                 update.getTag(), server, update.getWorkingOrderState() == WorkingOrderState.DEAD);
     }
