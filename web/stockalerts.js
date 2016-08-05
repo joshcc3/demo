@@ -16,7 +16,7 @@ $(function () {
 	table = $("#stockAlerts");
 	headerRow = $("#header");
 
-	rfqSound = new Audio("stockAlerts/attention-whistle.wav");
+	rfqSound = new Audio("stockAlerts/RFQ.wav");
 	sweepSound = new Audio("stockAlerts/sword-schwing.wav");
 	twapSound = new Audio("stockAlerts/metronome.wav");
 	unknownSound = new Audio("stockAlerts/huh-humm.wav");
@@ -53,7 +53,6 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 		table.children().last().remove();
 	}
 
-	console.log(isOriginal);
 	if (isOriginal) {
 		playSound(type);
 	}
