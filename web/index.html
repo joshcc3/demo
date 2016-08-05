@@ -59,7 +59,7 @@
                         topResult = x;
                     }
                     row.find('.worm').bind('click', function() {
-                        webwormLink([{symbol:x.symbol,exchange:x.exchange}]);
+                        webwormLink([{symbol:x.symbol,exchange:x.mdSource}]);
                     });
                 })
             }
@@ -70,7 +70,7 @@
             var d = date || new Date();
 
             var symbolTemplate = "(exchange:{{EXCHANGE}},name:{{SYMBOL}})";
-            var linkTemplate = "http://grid:18222/?date:%27{{DATE}}%27,symbols:!({{SYMBOLS}})";
+            var linkTemplate = "http://webworm/?date:%27{{DATE}}%27,symbols:!({{SYMBOLS}})";
 
             var symbolList = symbols.map(function(s) {
                 var symbol = s.symbol;

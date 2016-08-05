@@ -51,6 +51,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
         this.listeners = new HashMap<>();
 
         this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
+        this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
     }
 
     public void setMDClient(final MDSource mdSource, final MDTransportClient client) {
