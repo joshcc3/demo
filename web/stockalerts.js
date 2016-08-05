@@ -1,6 +1,11 @@
 var headerRow;
 var table;
 
+var rfqSound;
+var sweepSound;
+var twapSound;
+var unknownSound;
+
 $(function () {
 	ws = connect();
 	ws.logToConsole = false;
@@ -10,9 +15,14 @@ $(function () {
 
 	table = $("#stockAlerts");
 	headerRow = $("#header");
+
+	rfqSound = new Audio("stockAlerts/attention-whistle.wav");
+	sweepSound = new Audio("stockAlerts/sword-schwing.wav");
+	twapSound = new Audio("stockAlerts/metronome.wav");
+	unknownSound = new Audio("stockAlerts/huh-humm.wav");
 });
 
-function stockAlert(timestamp, type, symbol, msg) {
+function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 
 	var id = (type + symbol).replace(/ |\/|\.|:/g, "_");
 	var row = $('#' + id);
@@ -42,5 +52,21 @@ function stockAlert(timestamp, type, symbol, msg) {
 	if (16 < rows.length) {
 		table.children().last().remove();
 	}
+
+	console.log(isOriginal);
+	if (isOriginal) {
+		playSound(type);
+	}
 }
 
+function playSound(type) {
+	if ("RFQ" == type) {
+		rfqSound.play();
+	} else if ("SWEEP" == type) {
+		sweepSound.play();
+	} else if ("TWAP" == type) {
+		twapSound.play();
+	} else {
+		unknownSound.play();
+	}
+}
