@@ -16,7 +16,7 @@ $(function () {
 	table = $("#stockAlerts");
 	headerRow = $("#header");
 
-	rfqSound = new Audio("stockAlerts/RFQ.wav");
+	rfqSound = new Audio("stockAlerts/eastsideRFQ.wav");
 	sweepSound = new Audio("stockAlerts/sword-schwing.wav");
 	twapSound = new Audio("stockAlerts/metronome.wav");
 	unknownSound = new Audio("stockAlerts/huh-humm.wav");
