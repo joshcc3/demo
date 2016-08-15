@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.stockAlerts.yoda;
 
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.eeif.yoda.transport.data.TWAPSignal;
@@ -37,10 +38,16 @@ public class YodaTWAPClient implements ITransportCacheListener<YodaSignalKey, TW
 
         if (0 < signal.volumeBucketMax) {
             final String timestamp = sdf.format(signal.milliSinceMidnight);
-            final String period = df.format(signal.twapPeriodMillis / (double) 1000);
-            final String duration = df.format(signal.twapDurationMillis / (double) 1000);
+            final String period = df.format(signal.twapPeriodMillis / 1000d);
+            final String duration = df.format(signal.twapDurationMillis / 1000d);
+            final String action;
+            if (BookSide.BID == signal.key.side) {
+                action = "Selling every ";
+            } else {
+                action = "Buying every ";
+            }
             final String msg =
-                    signal.key.side + " every " + period + " for " + duration + " seconds [Bucket " + signal.volumeBucketMin + ", " +
+                    action + period + " for " + duration + " seconds [Bucket " + signal.volumeBucketMin + ", " +
                             signal.volumeBucketMax + "].";
 
             final StockAlert alert = new StockAlert(timestamp, signal.key.signal.name(), signal.key.symbol, msg);
