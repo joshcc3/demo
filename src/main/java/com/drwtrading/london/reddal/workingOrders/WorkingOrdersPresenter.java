@@ -157,7 +157,7 @@ public class WorkingOrdersPresenter {
         if (null != searchResult) {
             df.setMinimumFractionDigits(searchResult.decimalPlaces);
             df.setMaximumFractionDigits(searchResult.decimalPlaces);
-            price = df.format(update.getPrice() / Constants.NORMALISING_FACTOR);
+            price = df.format(update.getPrice() / (double) Constants.NORMALISING_FACTOR);
         } else {
             price = update.getPrice() + " (raw)";
         }
@@ -165,9 +165,8 @@ public class WorkingOrdersPresenter {
         final String chainID = Integer.toString(order.value.getChainId());
         final String server = NIBBLER_REPLACE.matcher(order.fromServer).replaceAll("");
 
-        view.updateWorkingOrder(chainID, update.getSymbol(), update.getSide().toString(), price, update.getFilledQuantity(),
+        view.updateWorkingOrder(order.key(), chainID, update.getSymbol(), update.getSide().toString(), price, update.getFilledQuantity(),
                 update.getTotalQuantity(), update.getWorkingOrderState().toString(), update.getWorkingOrderType().toString(),
                 update.getTag(), server, update.getWorkingOrderState() == WorkingOrderState.DEAD);
     }
-
 }

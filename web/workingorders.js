@@ -32,7 +32,7 @@ function setButtonDisabled() {
 	cancelAllButton.toggleClass("isClickable", false);
 }
 
-function updateWorkingOrder(key, instrument, side, price, filledQuantity, quantity, state, orderType, tag, server, isDead) {
+function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantity, quantity, state, orderType, tag, server, isDead) {
 
 	var row = Rows[key];
 
@@ -85,6 +85,7 @@ function updateWorkingOrder(key, instrument, side, price, filledQuantity, quanti
 		row.find(".state").text(state);
 		row.find(".orderType").text(orderType);
 		row.find(".tag").text(tag);
+		row.find(".chainID").text(chainID);
 		row.find(".server").text(server);
 
 		row.toggleClass("bid", side == "BID");

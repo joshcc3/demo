@@ -53,7 +53,11 @@ body {
 	display: inline-block;
 	width: 100px;
 	text-align: center;
-	padding: 3px;
+	padding: 1px;
+}
+
+.row div .narrow {
+	width: 60px;
 }
 
 .row .button, .row .button button {
@@ -75,7 +79,7 @@ div .hidden {
 }
 
 .row:not(#header) div {
-	font-size: 11px;
+	font-size: 10px;
 }
 
 .symbol {
