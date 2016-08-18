@@ -14,4 +14,9 @@ public class StockAlert {
         this.symbol = symbol;
         this.msg = msg;
     }
+
+    @Override
+    public String toString() {
+        return "StockAlert [" + type + "] " + timestamp + ", " + symbol + ": " + msg;
+    }
 }

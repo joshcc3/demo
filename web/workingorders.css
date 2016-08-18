@@ -56,7 +56,7 @@ body {
 	padding: 1px;
 }
 
-.row div .narrow {
+.row div.narrow {
 	width: 60px;
 }
 

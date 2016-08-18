@@ -18,7 +18,7 @@ $(function () {
 
 	rfqSound = new Audio("stockAlerts/eastsideRFQ.wav");
 	sweepSound = new Audio("stockAlerts/sword-schwing.wav");
-	twapSound = new Audio("stockAlerts/metronome.wav");
+	twapSound = new Audio("stockAlerts/TWAP.wav");
 	unknownSound = new Audio("stockAlerts/huh-humm.wav");
 });
 

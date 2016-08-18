@@ -26,6 +26,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.MappedResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
+import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.eeif.utils.transport.io.TransportTCPKeepAliveConnection;
 import com.drwtrading.london.eeif.yoda.transport.YodaSignalType;
@@ -88,6 +89,7 @@ import com.drwtrading.london.reddal.symbols.IndyClient;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
+import com.drwtrading.london.reddal.util.FileLogger;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.reddal.util.ReconnectingOPXLClient;
 import com.drwtrading.london.reddal.util.SelectIOFiber;
@@ -779,6 +781,8 @@ public class Main {
 
         // Logging
         {
+            final IClock sysClock = new SystemClock();
+
             fibers.logging.subscribe(new ErrorLogger(logDir.resolve("errors.log").toFile()).onThrowableCallback(), channels.error);
             fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "remote-order.json", channels.errorPublisher),
                     channels.workingOrderEvents, channels.remoteOrderEvents);
@@ -793,10 +797,12 @@ public class Main {
                     channels.contractSets);
             fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "single-order.json", channels.errorPublisher),
                     channels.singleOrderCommand);
+            fibers.logging.subscribe(new FileLogger(sysClock, logDir, "stockAlerts.json", channels.errorPublisher), channels.stockAlerts);
             fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trace.json", channels.errorPublisher), channels.trace);
-            for (final String name : websocketsForLogging.keySet()) {
-                fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "websocket" + name + ".json", channels.errorPublisher),
-                        websocketsForLogging.get(name));
+
+            for (final Map.Entry<String, TypedChannel<WebSocketControlMessage>> stringTypedChannelEntry : websocketsForLogging.entrySet()) {
+                fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "websocket" + stringTypedChannelEntry.getKey() + ".json",
+                        channels.errorPublisher), stringTypedChannelEntry.getValue());
             }
         }
 
