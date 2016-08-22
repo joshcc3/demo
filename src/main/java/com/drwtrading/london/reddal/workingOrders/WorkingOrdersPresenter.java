@@ -9,6 +9,7 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ladders.LadderView;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.monitoring.stats.StatsMsg;
@@ -33,6 +34,8 @@ public class WorkingOrdersPresenter {
     public static final Predicate<WorkingOrderUpdateFromServer> NON_GTC_FILTER = WorkingOrdersPresenter::nonGTCFilter;
     private static final Pattern NIBBLER_REPLACE = Pattern.compile("nibbler-", Pattern.LITERAL);
 
+    private final UILogger webLog;
+
     private final Publisher<StatsMsg> statsMsgPublisher;
     private final Publisher<Main.RemoteOrderCommandToServer> commands;
 
@@ -43,8 +46,10 @@ public class WorkingOrdersPresenter {
 
     private final DecimalFormat df;
 
-    public WorkingOrdersPresenter(final Scheduler scheduler, final Publisher<StatsMsg> statsMsgPublisher,
+    public WorkingOrdersPresenter(final UILogger webLog, final Scheduler scheduler, final Publisher<StatsMsg> statsMsgPublisher,
             final Publisher<Main.RemoteOrderCommandToServer> commands) {
+
+        this.webLog = webLog;
 
         this.statsMsgPublisher = statsMsgPublisher;
         this.commands = commands;
@@ -82,6 +87,7 @@ public class WorkingOrdersPresenter {
 
     @Subscribe
     public void onMessage(final WebSocketInboundData msg) {
+        webLog.write("workingOrders", msg);
         views.invoke(msg);
     }
 

@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.symbols;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.reddal.util.FastUtilCollections;
+import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
@@ -24,12 +25,16 @@ public class IndexUIPresenter {
     private static final int MIN_TERM_LENGTH = 2;
     private static final int MAX_RESULTS = 100;
 
+    private final UILogger webLog;
+
     private final SuffixTree<String> suffixTree;
     private final WebSocketViews<IndexUIView> views;
     private final Map<String, DisplaySymbol> symbolToDisplay;
     private final Map<String, SearchResult> searchResultBySymbol;
 
-    public IndexUIPresenter() {
+    public IndexUIPresenter(final UILogger webLog) {
+
+        this.webLog = webLog;
 
         this.suffixTree = new SuffixTree<>();
         this.views = WebSocketViews.create(IndexUIView.class, this);
@@ -91,8 +96,9 @@ public class IndexUIPresenter {
     }
 
     @Subscribe
-    public void on(final WebSocketInboundData inboundData) {
-        views.invoke(inboundData);
+    public void on(final WebSocketInboundData msg) {
+        webLog.write("indexUIPresenter", msg);
+        views.invoke(msg);
     }
 
     @FromWebSocketView

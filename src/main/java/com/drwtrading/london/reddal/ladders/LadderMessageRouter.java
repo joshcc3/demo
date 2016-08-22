@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
+import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
@@ -20,24 +21,30 @@ import java.util.Map;
 
 public class LadderMessageRouter {
 
-    final Multimap<Publisher<WebSocketOutboundData>, WebSocketControlMessage> queue = HashMultimap.create();
-    final Map<Publisher<WebSocketOutboundData>, Publisher<WebSocketControlMessage>> redirects = new HashMap<>();
-    final Map<String, Publisher<WebSocketControlMessage>> shards;
+    private final UILogger webLog;
+
+    private final Multimap<Publisher<WebSocketOutboundData>, WebSocketControlMessage> queue = HashMultimap.create();
+    private final Map<Publisher<WebSocketOutboundData>, Publisher<WebSocketControlMessage>> redirects = new HashMap<>();
+    private final Map<String, Publisher<WebSocketControlMessage>> shards;
+
     private final List<TypedChannel<WebSocketControlMessage>> pool;
 
-    public LadderMessageRouter(final List<TypedChannel<WebSocketControlMessage>> pool) {
+    public LadderMessageRouter(final UILogger webLog, final List<TypedChannel<WebSocketControlMessage>> pool) {
+
+        this.webLog = webLog;
+
         this.pool = pool;
         this.shards = new MapMaker().makeComputingMap(from -> null);
     }
 
     @Subscribe
-    public void onConnected(WebSocketConnected connected) {
+    public void onConnected(final WebSocketConnected connected) {
         queue.put(connected.getOutboundChannel(), connected);
     }
 
     @Subscribe
-    public void onDisconnected(WebSocketDisconnected disconnected) {
-        Publisher<WebSocketControlMessage> publisher = redirects.remove(disconnected.getOutboundChannel());
+    public void onDisconnected(final WebSocketDisconnected disconnected) {
+        final Publisher<WebSocketControlMessage> publisher = redirects.remove(disconnected.getOutboundChannel());
         if (publisher != null) {
             publisher.publish(disconnected);
         }
@@ -45,20 +52,25 @@ public class LadderMessageRouter {
     }
 
     @Subscribe
-    public void onMessage(WebSocketInboundData msg) {
+    public void onMessage(final WebSocketInboundData msg) {
+
+        final String data = msg.getData();
+        if (!data.startsWith("heartbeat")) {
+            webLog.write("ladderMsgRouter", msg);
+        }
+
         Publisher<WebSocketControlMessage> publisher = redirects.get(msg.getOutboundChannel());
         if (publisher != null) {
             publisher.publish(msg);
         } else {
-            String data = msg.getData();
-            String[] args = data.split("\0");
-            String cmd = args[0];
+            final String[] args = data.split("\0");
+            final String cmd = args[0];
             if (cmd.equals("ladder-subscribe")) {
                 final String symbol = args[1];
                 publisher = pool.get(getShard(symbol, pool.size()));
                 redirects.put(msg.getOutboundChannel(), publisher);
-                Collection<WebSocketControlMessage> queued = queue.removeAll(msg.getOutboundChannel());
-                for (WebSocketControlMessage queuedMsg : queued) {
+                final Collection<WebSocketControlMessage> queued = queue.removeAll(msg.getOutboundChannel());
+                for (final WebSocketControlMessage queuedMsg : queued) {
                     publisher.publish(queuedMsg);
                 }
                 publisher.publish(msg);
@@ -68,7 +80,7 @@ public class LadderMessageRouter {
         }
     }
 
-    public int getShard(String s, int n) {
+    public int getShard(final String s, final int n) {
         return Math.abs(HashCommon.murmurHash3(s.hashCode()) % n);
     }
 

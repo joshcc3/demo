@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.ladders;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
+import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
@@ -20,14 +21,17 @@ import java.util.Set;
 
 public class LadderWorkspace {
 
-    private final Publisher<ReplaceCommand> replaceCommand;
-    WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
-    Multimap<String, View> workspacesByHost = ArrayListMultimap.create();
-    Multimap<String, View> setsByHost = ArrayListMultimap.create();
-    Set<View> lockedViews = new HashSet<>();
-    HashMultimap<String, String> contractSets = HashMultimap.create();
+    private final UILogger webLog;
 
-    public LadderWorkspace(final Publisher<ReplaceCommand> replaceCommand) {
+    private final Publisher<ReplaceCommand> replaceCommand;
+    private final WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
+    private final Multimap<String, View> workspacesByHost = ArrayListMultimap.create();
+    private final Multimap<String, View> setsByHost = ArrayListMultimap.create();
+    private final Set<View> lockedViews = new HashSet<>();
+    private final HashMultimap<String, String> contractSets = HashMultimap.create();
+
+    public LadderWorkspace(final UILogger webLog, final Publisher<ReplaceCommand> replaceCommand) {
+        this.webLog = webLog;
 
         this.replaceCommand = replaceCommand;
     }
@@ -47,8 +51,9 @@ public class LadderWorkspace {
     }
 
     @Subscribe
-    public void on(final WebSocketInboundData data) {
-        views.invoke(data);
+    public void on(final WebSocketInboundData msg) {
+        webLog.write("LadderWorkspace", msg);
+        views.invoke(msg);
     }
 
     @Subscribe

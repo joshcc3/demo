@@ -1,8 +1,9 @@
 package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.util.UILogger;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
@@ -23,6 +24,8 @@ import java.util.Map;
 
 public class OrdersPresenter {
 
+    private final UILogger webLog;
+
     private final Publisher<SingleOrderCommand> singleOrderCommandPublisher;
     WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
     Map<String, WorkingOrdersForSymbol> orders = new MapMaker().makeComputingMap(new Function<String, WorkingOrdersForSymbol>() {
@@ -33,10 +36,11 @@ public class OrdersPresenter {
     });
     Multimap<SymbolPrice, View> subscribed = HashMultimap.create();
 
-    public OrdersPresenter(final Publisher<SingleOrderCommand> singleOrderCommandPublisher) {
+    public OrdersPresenter(final UILogger webLog, final Publisher<SingleOrderCommand> singleOrderCommandPublisher) {
+
+        this.webLog = webLog;
         this.singleOrderCommandPublisher = singleOrderCommandPublisher;
     }
-
 
     public void onWorkingOrderBatch(final List<WorkingOrderUpdateFromServer> batch) {
         batch.forEach(this::onWorkingOrder);
@@ -70,6 +74,7 @@ public class OrdersPresenter {
 
     @Subscribe
     public void on(final WebSocketInboundData data) {
+        webLog.write("ordersPresenter", data);
         views.invoke(data);
     }
 

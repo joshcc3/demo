@@ -93,6 +93,7 @@ import com.drwtrading.london.reddal.util.FileLogger;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.reddal.util.ReconnectingOPXLClient;
 import com.drwtrading.london.reddal.util.SelectIOFiber;
+import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
@@ -366,10 +367,12 @@ public class Main {
             }, 10, TimeUnit.SECONDS);
         }
 
+        final UILogger webLog = new UILogger(new SystemClock(), logDir);
+
         final Map<String, TypedChannel<WebSocketControlMessage>> websocketsForLogging = Maps.newHashMap();
         { // WebApp
-            final WebApplication webapp;
-            webapp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
+
+            final WebApplication webapp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
             System.out.println("http://localhost:" + environment.getWebPort());
             webapp.enableSingleSignOn();
 
@@ -387,7 +390,7 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("/", "index", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("index", websocket);
-                final IndexUIPresenter indexPresenter = new IndexUIPresenter();
+                final IndexUIPresenter indexPresenter = new IndexUIPresenter(webLog);
                 fibers.ui.subscribe(indexPresenter, channels.displaySymbol, websocket);
                 channels.searchResults.subscribe(fibers.ui.getFiber(), indexPresenter::addSearchResult);
             }
@@ -396,7 +399,7 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("orders", "orders", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("orders", websocket);
-                final OrdersPresenter ordersPresenter = new OrdersPresenter(channels.singleOrderCommand);
+                final OrdersPresenter ordersPresenter = new OrdersPresenter(webLog, channels.singleOrderCommand);
                 fibers.ui.subscribe(ordersPresenter, websocket);
                 channels.workingOrders.subscribe(
                         new BatchSubscriber<>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
@@ -407,7 +410,7 @@ public class Main {
                 createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
 
                 final WorkingOrdersPresenter presenter =
-                        new WorkingOrdersPresenter(fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand);
+                        new WorkingOrdersPresenter(webLog, fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand);
                 fibers.ui.subscribe(presenter, ws);
                 channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
                 channels.workingOrders.subscribe(
@@ -418,7 +421,7 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("stockalerts", "stockalerts", fibers.ui, webapp, ws);
 
-                final StockAlertPresenter presenter = new StockAlertPresenter();
+                final StockAlertPresenter presenter = new StockAlertPresenter(webLog);
                 fibers.ui.subscribe(presenter, ws);
                 channels.stockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
             }
@@ -505,15 +508,14 @@ public class Main {
             // Ladder router
             final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("ladder", "ladder", fibers.ladder, webapp, ladderWebSocket);
-            final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(webSockets);
+            final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(webLog, webSockets);
             fibers.ladder.subscribe(ladderMessageRouter, ladderWebSocket);
         }
 
         // Non SSO-protected webapp to allow AJAX requests
         {
 
-            final WebApplication webapp;
-            webapp = new WebApplication(environment.getWebPort() + 1, channels.errorPublisher);
+            final WebApplication webapp = new WebApplication(environment.getWebPort() + 1, channels.errorPublisher);
 
             fibers.onStart(() -> fibers.ui.execute(() -> {
                 try {
@@ -528,16 +530,13 @@ public class Main {
             webapp.webServer();
 
             // Workspace
-            {
-                final TypedChannel<WebSocketControlMessage> workspaceSocket = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("workspace", "workspace", fibers.ui, webapp, workspaceSocket);
+            final TypedChannel<WebSocketControlMessage> workspaceSocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("workspace", "workspace", fibers.ui, webapp, workspaceSocket);
 
-                final LadderWorkspace ladderWorkspace = new LadderWorkspace(channels.replaceCommand);
-                fibers.ui.subscribe(ladderWorkspace, workspaceSocket, channels.contractSets);
-                webapp.addHandler("/open",
-                        new WorkspaceRequestHandler(ladderWorkspace, new Uri(webapp.getBaseUri()).getHost(), environment.getWebPort()));
-            }
-
+            final LadderWorkspace ladderWorkspace = new LadderWorkspace(webLog, channels.replaceCommand);
+            fibers.ui.subscribe(ladderWorkspace, workspaceSocket, channels.contractSets);
+            webapp.addHandler("/open",
+                    new WorkspaceRequestHandler(ladderWorkspace, new Uri(webapp.getBaseUri()).getHost(), environment.getWebPort()));
         }
 
         // Settings
