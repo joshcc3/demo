@@ -408,6 +408,10 @@ div {
     background-color: #b76c58 !important;
 }
 
+.last_buy.last_sell {
+	background-color: #9982AC !important;
+}
+
 .traded_up {
     background-color: #00ff00 !important;
 }
