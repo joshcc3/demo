@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.stockAlerts.yoda;
 
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.eeif.yoda.transport.data.RestingOrderSignal;
@@ -32,8 +33,9 @@ public class YodaRestingOrderClient implements ITransportCacheListener<YodaSigna
     public boolean setValue(final int localID, final RestingOrderSignal signal) {
 
         final String timestamp = sdf.format(signal.milliSinceMidnight);
-        final String period = sdf.format(signal.timePlacedMilliSinceMidnight);
-        final String msg = signal.qty + " @ " + signal.price + " [" + signal.depthOriginallyPlaced + " deep at " + period + "].";
+        final String start = sdf.format(signal.timePlacedMilliSinceMidnight);
+        final String side = BookSide.BID == signal.getKey().side ? "Buy " : "Sell ";
+        final String msg = side + signal.qty + " @ " + signal.price + " [at " + start + "].";
 
         final StockAlert alert = new StockAlert(timestamp, signal.key.signal.name(), signal.key.symbol, msg);
         stockAlerts.publish(alert);
