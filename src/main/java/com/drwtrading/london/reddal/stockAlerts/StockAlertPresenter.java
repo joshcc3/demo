@@ -7,10 +7,21 @@ import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 
 public class StockAlertPresenter {
+
+    private static final Set<String> UNWANTED_RFQS = new HashSet<>();
+
+    static {
+        UNWANTED_RFQS.add("FGBS");
+        UNWANTED_RFQS.add("FGBM");
+        UNWANTED_RFQS.add("FGBL");
+        UNWANTED_RFQS.add("FGBX");
+    }
 
     private static final int MAX_HISTORY = 15;
 
@@ -47,11 +58,17 @@ public class StockAlertPresenter {
 
     public void addAlert(final StockAlert stockAlert) {
 
-        alerts.add(stockAlert);
-        views.all().stockAlert(stockAlert.timestamp, stockAlert.type, stockAlert.symbol, stockAlert.msg, true);
+        if (!"RFQ".equals(stockAlert.type) || !isRFQFiltered(stockAlert.symbol)) {
+            alerts.add(stockAlert);
+            views.all().stockAlert(stockAlert.timestamp, stockAlert.type, stockAlert.symbol, stockAlert.msg, true);
 
-        if (MAX_HISTORY < alerts.size()) {
-            alerts.poll();
+            if (MAX_HISTORY < alerts.size()) {
+                alerts.poll();
+            }
         }
+    }
+
+    private static boolean isRFQFiltered(final String symbol) {
+        return 4 < symbol.length() && UNWANTED_RFQS.contains(symbol.substring(0, 4));
     }
 }
