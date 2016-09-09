@@ -80,7 +80,7 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
     @Override
     public void referencePrice(final IBook<IBookLevelWithOrders> book, final IBookReferencePrice referencePriceData) {
 
-        if (isPrimary && referencePriceData.isValid() && ReferencePoint.RFQ == referencePriceData.getReferencePoint()) {
+        if (isPrimary && book.isValid() && referencePriceData.isValid() && ReferencePoint.RFQ == referencePriceData.getReferencePoint()) {
             final String timestamp = sdf.format(referencePriceData.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS);
             final StockAlert stockAlert = new StockAlert(timestamp, "RFQ", book.getSymbol(), "Qty: " + referencePriceData.getQty());
             stockAlertChannel.publish(stockAlert);
