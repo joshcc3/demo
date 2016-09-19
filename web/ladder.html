@@ -115,6 +115,10 @@
             }
         }
 
+        function replace(from, to) {
+            document.location.hash = document.location.hash.split(from).join(to);
+        }
+
         function goToSymbol(symbol) {
             document.location.hash = "#" + symbol;
         }
