@@ -17,4 +17,6 @@ public interface View {
     void popUp(String url, String name, int width, int height);
 
     void launchBasket(String symbol);
+
+    void replace(String from, String to);
 }

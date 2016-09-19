@@ -200,10 +200,10 @@ public class LadderView implements UiEventHandler {
 
     public void replaceSymbol(final ReplaceCommand replaceCommand) {
         if (view != null) {
-            if (symbolExists.test(replaceCommand.to)) {
+//            if (symbolExists.test(replaceCommand.to)) {
                 System.out.println("Replacing: " + symbol + " -> " + symbol.replace(replaceCommand.from, replaceCommand.to));
-                view.goToSymbol(symbol.replace(replaceCommand.from, replaceCommand.to));
-            }
+                view.replace(replaceCommand.from, replaceCommand.to);
+//            }
         }
     }
 
