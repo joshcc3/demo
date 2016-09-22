@@ -17,6 +17,13 @@ function launchLadderAtPrice(symbol,price) {
 }
 
 function getLadderHosts(symbol) {
+    if (window.location.href.indexOf('.gairloch.drw') != -1) {
+        if (IN_DEV) {
+            return {ladderHost: "lnhq-wuddc02:9044", workspaceHost: "lnhq-wuddc02:9045"};
+        }
+        return {ladderHost: "prod-ladder.gairloch.drw:9044", workspaceHost: "prod-ladder.gairloch.drw:9045"};
+    }
+
     var equitiesHost = "prod-equities-ladder.eeif.drw:9044";
     var equitiesWorkspace = "prod-equities-ladder.eeif.drw:9045";
 
