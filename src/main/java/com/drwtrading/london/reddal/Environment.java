@@ -92,7 +92,10 @@ public class Environment {
         final ConfigGroup tradingGroup = config.getGroup("trading");
         final Collection<CSSClass> leftClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesLeft");
         final Collection<CSSClass> rightClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesRight");
-        final Collection<String> trades = tradingGroup.getParam("traders").getSet(Pattern.compile(","));
+        final Collection<String> traders = tradingGroup.getParam("traders").getSet(Pattern.compile(","));
+        final Collection<String> fxTraders = tradingGroup.paramExists("fxTraders") ?
+                tradingGroup.getParam("fxTraders").getSet(Pattern.compile(","))
+                : Collections.emptyList();
         final String theoLaserLine = tradingGroup.getString("theoLaserLine");
         final double reloadFraction = tradingGroup.getDouble("randomReloadFraction");
         final String basketURL;
@@ -101,7 +104,7 @@ public class Environment {
         } else {
             basketURL = null;
         }
-        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, trades, theoLaserLine, getServerResolver(), reloadFraction,
+        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, fxTraders, theoLaserLine, getServerResolver(), reloadFraction,
                 basketURL);
     }
 
