@@ -5,14 +5,14 @@ import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.eeif.yoda.transport.data.TWAPSignal;
-import com.drwtrading.london.eeif.yoda.transport.data.YodaSignalKey;
+import com.drwtrading.london.eeif.yoda.transport.data.YodaSymbolSideKey;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
-public class YodaTWAPClient implements ITransportCacheListener<YodaSignalKey, TWAPSignal> {
+public class YodaTWAPClient implements ITransportCacheListener<YodaSymbolSideKey, TWAPSignal> {
 
     private final Publisher<StockAlert> stockAlerts;
 
@@ -29,7 +29,7 @@ public class YodaTWAPClient implements ITransportCacheListener<YodaSignalKey, TW
     }
 
     @Override
-    public boolean setKey(final int localID, final YodaSignalKey key) {
+    public boolean setKey(final int localID, final YodaSymbolSideKey key) {
         return true;
     }
 

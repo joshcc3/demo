@@ -28,10 +28,13 @@ import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
+import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.eeif.utils.transport.io.TransportTCPKeepAliveConnection;
 import com.drwtrading.london.eeif.yoda.transport.YodaSignalType;
 import com.drwtrading.london.eeif.yoda.transport.YodaTransportComponents;
 import com.drwtrading.london.eeif.yoda.transport.cache.YodaClientCacheFactory;
+import com.drwtrading.london.eeif.yoda.transport.data.PredictionSignal;
+import com.drwtrading.london.eeif.yoda.transport.data.YodaSymbolKey;
 import com.drwtrading.london.eeif.yoda.transport.io.YodaClientHandler;
 import com.drwtrading.london.indy.transport.IndyTransportComponents;
 import com.drwtrading.london.indy.transport.cache.IIndyCacheListener;
@@ -851,11 +854,30 @@ public class Main {
 
             final YodaClientHandler yodaHandler =
                     YodaClientCacheFactory.createClientCache(selectIO, yodaMonitor, "yoda", appName, restingClient, sweepClient, twapClient,
+                            noOp(),
                             EnumSet.allOf(YodaSignalType.class));
 
             final TransportTCPKeepAliveConnection<?, ?> client =
                     YodaClientCacheFactory.createClient(selectIO, yodaConfig, yodaMonitor, yodaHandler);
             selectIO.execute(client::restart);
         }
+    }
+
+    private static ITransportCacheListener<YodaSymbolKey, PredictionSignal> noOp() {
+        return new ITransportCacheListener<YodaSymbolKey, PredictionSignal>() {
+            @Override
+            public boolean setKey(int localID, YodaSymbolKey key) {
+                return true;
+            }
+
+            @Override
+            public boolean setValue(int localID, PredictionSignal item) {
+                return true;
+            }
+
+            @Override
+            public void batchComplete() {
+            }
+        };
     }
 }
