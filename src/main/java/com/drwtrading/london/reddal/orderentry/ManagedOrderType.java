@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.orderentry;
 import com.drwtrading.london.photons.eeifoe.BookParameters;
 import com.drwtrading.london.photons.eeifoe.OrderParameters;
 import com.drwtrading.london.photons.eeifoe.PegPriceToTheoOnSubmit;
+import com.drwtrading.london.photons.eeifoe.PredictionParameters;
 import com.drwtrading.london.photons.eeifoe.PriceParameters;
 import com.drwtrading.london.photons.eeifoe.QuotingParameters;
 import com.drwtrading.london.photons.eeifoe.TakingParameters;
@@ -17,7 +18,9 @@ public enum ManagedOrderType {
             return new OrderParameters(new PriceParameters(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
                     Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false));
+                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false),
+                    new PredictionParameters(false)
+            );
         }
 
         @Override
@@ -35,7 +38,8 @@ public enum ManagedOrderType {
             return new OrderParameters(new PriceParameters(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
                     Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false));
+                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false),
+                    new PredictionParameters(false));
         }
 
         @Override
@@ -57,7 +61,24 @@ public enum ManagedOrderType {
             return new OrderParameters(new PriceParameters(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
                     Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false));
+                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false),
+                    new PredictionParameters(false));
+        }
+
+        @Override
+        public boolean requiresLean() {
+            return true;
+        }
+    },
+
+    YAMON {
+        @Override
+        public OrderParameters getOrder(final long price, final int qty) {
+            return new OrderParameters(new PriceParameters(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
+                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    Constants.NO_TAKING,
+                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false),
+                    new PredictionParameters(true));
         }
 
         @Override
@@ -75,7 +96,8 @@ public enum ManagedOrderType {
             return new OrderParameters(new PriceParameters(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
                     Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false));
+                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false),
+                    new PredictionParameters(false));
         }
 
         @Override
@@ -97,7 +119,8 @@ public enum ManagedOrderType {
             return new OrderParameters(new PriceParameters(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
                     Constants.TAKE_BETTER_BY_ONE,
-                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false));
+                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false),
+                    new PredictionParameters(false));
         }
 
         @Override
@@ -115,7 +138,8 @@ public enum ManagedOrderType {
             return new OrderParameters(new PriceParameters(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
                     Constants.TAKE_BETTER_BY_ONE,
-                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false));
+                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false),
+                    new PredictionParameters(false));
         }
 
         @Override
@@ -135,6 +159,7 @@ public enum ManagedOrderType {
 
 
     public abstract OrderParameters getOrder(final long price, final int qty);
+
     public abstract boolean requiresLean();
 
     public int getQty(final int qty) {
