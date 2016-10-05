@@ -14,7 +14,7 @@ config default
 
 	include drw.london.eeif-utils/144
 	include drw.london.eeif-md/146
-	include drw.london.eeif-yoda-transport/7
+	include drw.london.eeif-yoda-transport/9
 
 	# Libraries and containers
 	include google.guava/r06
