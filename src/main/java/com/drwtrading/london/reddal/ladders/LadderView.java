@@ -32,6 +32,7 @@ import com.drwtrading.london.protocols.photon.execution.RemoteModifyOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
 import com.drwtrading.london.protocols.photon.execution.RemoteSubmitOrder;
+import com.drwtrading.london.protocols.photon.execution.Side;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderType;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
@@ -1418,10 +1419,11 @@ public class LadderView implements UiEventHandler {
             if (tradingBoxQty == 0) {
                 tradingBoxQty = clickTradingBoxQty;
             }
+            OrderSide orderSide = side == Side.BID ? OrderSide.BUY : OrderSide.SELL;
             final com.drwtrading.london.photons.eeifoe.RemoteOrder remoteOrder =
                     new com.drwtrading.london.photons.eeifoe.RemoteOrder(symbol,
-                            side == com.drwtrading.london.protocols.photon.execution.Side.BID ? OrderSide.BUY : OrderSide.SELL, price,
-                            tradingBoxQty, client.getUserName(), managedOrderType.getOrder(price, tradingBoxQty),
+                            orderSide, price,
+                            tradingBoxQty, client.getUserName(), managedOrderType.getOrder(price, tradingBoxQty, orderSide),
                             new ObjectArrayList<>(Arrays.asList(LADDER_SOURCE_METADATA, new Metadata("TAG", tag))));
             final Submit submit = new Submit(remoteOrder);
             symbolOrderChannel.publisher.publish(submit);

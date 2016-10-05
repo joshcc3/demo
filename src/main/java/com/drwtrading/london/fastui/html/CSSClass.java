@@ -51,6 +51,7 @@ public enum CSSClass {
     HAM("HAM"),
     HAMON("HAMON"),
     YAMON("YAMON"),
+    YODA("YODA"),
     HAM3("HAM3"),
     HAMON3("HAMON3"),
     TRON("TRON"),

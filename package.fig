@@ -51,7 +51,7 @@ config default
 	include drw.london.eeif-photocols-client/83
 	include com.drwtrading.photons.mrphil/1.0.0.4
 	include com.drwtrading.london.photons.reddal/2
-	include com.drwtrading.london.photons.eeifoe/14
+	include com.drwtrading.london.photons.eeifoe/15
 
 	include nns/2.0.0.69
 
