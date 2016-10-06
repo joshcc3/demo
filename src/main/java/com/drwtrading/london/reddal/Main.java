@@ -82,6 +82,7 @@ import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandle
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.stockAlerts.StockAlertPresenter;
+import com.drwtrading.london.reddal.stockAlerts.yoda.YodaAtCloseClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaRestingOrderClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaSweepClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaTWAPClient;
@@ -848,18 +849,28 @@ public class Main {
             final IResourceMonitor<YodaTransportComponents> yodaMonitor =
                     new ExpandedDetailResourceMonitor<>(monitor, "Yoda", errorLog, YodaTransportComponents.class, ReddalComponents.YODA);
 
-            final YodaRestingOrderClient restingClient = new YodaRestingOrderClient(stockAlerts);
-            final YodaSweepClient sweepClient = new YodaSweepClient(stockAlerts);
-            final YodaTWAPClient twapClient = new YodaTWAPClient(stockAlerts);
+            final MultiLayeredResourceMonitor<YodaTransportComponents> yodaParentMonitor =
+                    new MultiLayeredResourceMonitor<>(yodaMonitor, YodaTransportComponents.class, errorLog);
 
-            final YodaClientHandler yodaHandler =
-                    YodaClientCacheFactory.createClientCache(selectIO, yodaMonitor, "yoda", appName, restingClient, sweepClient, twapClient,
-                            noOp(),
-                            EnumSet.allOf(YodaSignalType.class));
+            for (final ConfigGroup yodaInstanceConfig : yodaConfig.groups()) {
 
-            final TransportTCPKeepAliveConnection<?, ?> client =
-                    YodaClientCacheFactory.createClient(selectIO, yodaConfig, yodaMonitor, yodaHandler);
-            selectIO.execute(client::restart);
+                final String instanceName = yodaInstanceConfig.getKey();
+                final IResourceMonitor<YodaTransportComponents> yodaChildMonitor =
+                        yodaParentMonitor.createChildResourceMonitor(instanceName);
+
+                final YodaAtCloseClient atCloseClient = new YodaAtCloseClient(stockAlerts);
+                final YodaRestingOrderClient restingClient = new YodaRestingOrderClient(stockAlerts);
+                final YodaSweepClient sweepClient = new YodaSweepClient(stockAlerts);
+                final YodaTWAPClient twapClient = new YodaTWAPClient(stockAlerts);
+
+                final YodaClientHandler yodaHandler =
+                        YodaClientCacheFactory.createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName, atCloseClient,
+                                restingClient, sweepClient, twapClient, noOp(), EnumSet.allOf(YodaSignalType.class));
+
+                final TransportTCPKeepAliveConnection<?, ?> client =
+                        YodaClientCacheFactory.createClient(selectIO, yodaInstanceConfig, yodaChildMonitor, yodaHandler);
+                selectIO.execute(client::restart);
+            }
         }
     }
 

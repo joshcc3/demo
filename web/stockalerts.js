@@ -2,6 +2,7 @@ var headerRow;
 var table;
 
 var rfqSound;
+var atCloseSound;
 var sweepSound;
 var twapSound;
 var unknownSound;
@@ -17,6 +18,7 @@ $(function () {
 	headerRow = $("#header");
 
 	rfqSound = new Audio("stockAlerts/eastsideRFQ.wav");
+	atCloseSound = new Audio("stockAlerts/calf-slap.wav");
 	sweepSound = new Audio("stockAlerts/sword-schwing.wav");
 	twapSound = new Audio("stockAlerts/TWAP.wav");
 	unknownSound = new Audio("stockAlerts/huh-humm.wav");
@@ -61,6 +63,8 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 function playSound(type) {
 	if ("RFQ" == type) {
 		rfqSound.play();
+	} else if ("AT_CLOSE" == type) {
+		atCloseSound.play();
 	} else if ("SWEEP" == type) {
 		sweepSound.play();
 	} else if ("TWAP" == type) {

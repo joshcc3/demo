@@ -51,14 +51,18 @@ body {
 	background-color: #7d4a3c;
 }
 
+.AT_CLOSE div {
+	background-color: #045264;
+}
+
+.RESTING_ORDER div {
+	background-color: #C13F4E;
+}
+
 .SWEEP div {
 	background-color: #534efa;
 }
 
 .TWAP div {
 	background-color: darkslategray;
-}
-
-.RESTING_ORDER div {
-	background-color: #C13F4E;
 }
