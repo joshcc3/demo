@@ -1,4 +1,4 @@
-Rows = {};
+var Rows = {};
 
 $(function () {
 	ws = connect();
@@ -8,28 +8,98 @@ $(function () {
 	};
 
 	$("button.cancelNonGTC").die().bind("click", function () {
-		ws.send(command("cancelNonGTC"));
+		ws.send(command("cancelAllNonGTC"));
 	});
 
-	var cancelAllButton = $("button.cancelAll");
+	var cancelAllButton = $("#cancelAll");
+	var shutdownAllButton = $("#shutdownAll");
 
-	$("button.enableCancelAll").die().bind("click", function () {
+	var header = $("#header");
+	var minimiseAllButton = header.find(".buttons .minimiseAll");
+	minimiseAllButton.unbind().bind("click", function () {
+		$(".rows").toggleClass("hidden", true);
+	});
 
-		var isClickable = cancelAllButton.hasClass("isClickable");
-		if (!isClickable) {
+	var maximiseAllButton = header.find(".buttons .maximiseAll");
+	maximiseAllButton.unbind().bind("click", function () {
+		$(".rows").toggleClass("hidden", false);
+	});
+
+	$("#enableAllNuclearOptions").die().bind("click", function () {
+
+		var isCancelAllClickable = cancelAllButton.hasClass("isClickable");
+		if (!isCancelAllClickable) {
+
 			cancelAllButton.unbind().bind("click", function () {
 				ws.send(command("cancelAll"));
 			});
+			shutdownAllButton.unbind().bind("click", function () {
+				ws.send(command("shutdownAll"));
+			});
+
 			cancelAllButton.toggleClass("isClickable", true);
-			window.setTimeout(setButtonDisabled, 2500);
+			shutdownAllButton.toggleClass("isClickable", true);
+			window.setTimeout(setButtonDisabled(cancelAllButton, shutdownAllButton), 2500);
 		}
 	});
 });
 
-function setButtonDisabled() {
-	var cancelAllButton = $("button.cancelAll");
-	cancelAllButton.unbind();
-	cancelAllButton.toggleClass("isClickable", false);
+function setButtonDisabled(cancelButton, shutdownButton) {
+
+	return function () {
+		cancelButton.unbind();
+		cancelButton.toggleClass("isClickable", false);
+
+		shutdownButton.unbind();
+		shutdownButton.toggleClass("isClickable", false);
+	}
+}
+
+function addNibbler(server) {
+
+	var serverBlock = $('#' + server);
+	if (!serverBlock[0]) {
+		serverBlock = $("#serverBlockTemplate").clone();
+		serverBlock.attr("id", server);
+		serverBlock.toggleClass("hidden", false);
+
+		var headerName = serverBlock.find(".serverName");
+		headerName.text(server);
+
+		var rowsBlock = serverBlock.find(".rows");
+		headerName.unbind().bind("click", function () {
+			rowsBlock.toggleClass("hidden", !rowsBlock.hasClass("hidden"))
+		});
+
+		var cancelNonGTCButton = serverBlock.find(".cancelNonGTC");
+		cancelNonGTCButton.die().bind("click", function () {
+			ws.send(command("cancelExchangeNonGTC", [server]));
+		});
+
+		var cancelAllButton = serverBlock.find(".cancelAll");
+		var shutdownAllButton = serverBlock.find(".shutdownOMS");
+
+		serverBlock.find(".enableNuclearOptions").die().bind("click", function () {
+
+			var isCancelAllClickable = cancelAllButton.hasClass("isClickable");
+			if (!isCancelAllClickable) {
+
+				cancelAllButton.unbind().bind("click", function () {
+					ws.send(command("cancelExchange", [server]));
+				});
+				shutdownAllButton.unbind().bind("click", function () {
+					ws.send(command("shutdownExchange", [server]));
+				});
+
+				cancelAllButton.toggleClass("isClickable", true);
+				shutdownAllButton.toggleClass("isClickable", true);
+				window.setTimeout(setButtonDisabled(cancelAllButton, shutdownAllButton), 2500);
+			}
+		});
+
+		$("#workingOrders").append(serverBlock);
+	}
+	return serverBlock;
 }
 
 function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantity, quantity, state, orderType, tag, server, isDead) {
@@ -47,23 +117,7 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 			row = $("#header").clone().removeAttr("id");
 			Rows[key] = row;
 
-			var serverBlock = $('#' + server);
-			if (!serverBlock[0]) {
-				serverBlock = $("#serverBlockTemplate").clone();
-				serverBlock.attr("id", server);
-				serverBlock.toggleClass("hidden", false);
-
-				var headerName = serverBlock.find(".serverName");
-				headerName.text(server);
-
-				var rowsBlock = serverBlock.find(".rows");
-				headerName.unbind().bind("click", function () {
-					rowsBlock.toggleClass("hidden", !rowsBlock.hasClass("hidden"))
-				});
-
-				$("#workingOrders").append(serverBlock);
-			}
-
+			var serverBlock = addNibbler(server);
 			var rows = serverBlock.find(".rows");
 			rows.append(row);
 		}

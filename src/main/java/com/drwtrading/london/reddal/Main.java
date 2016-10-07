@@ -413,8 +413,9 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
 
+                final Collection<String> nibblers = environment.getList(Environment.WORKING_ORDERS);
                 final WorkingOrdersPresenter presenter =
-                        new WorkingOrdersPresenter(webLog, fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand);
+                        new WorkingOrdersPresenter(webLog, fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand, nibblers);
                 fibers.ui.subscribe(presenter, ws);
                 channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
                 channels.workingOrders.subscribe(
@@ -631,22 +632,20 @@ public class Main {
         }
 
         // Remote commands
-        {
-            for (final String server : environment.getList(Environment.REMOTE_COMMANDS)) {
-                final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.REMOTE_COMMANDS, server);
-                final OnHeapBufferPhotocolsNioClient<RemoteOrderManagementEvent, RemoteOrderManagementCommand> client =
-                        OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic),
-                                RemoteOrderManagementEvent.class, RemoteOrderManagementCommand.class, fibers.workingOrders.getFiber(),
-                                EXCEPTION_HANDLER);
-                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("remote-commands." + server + ".log").toFile(),
-                        fibers.logging.getFiber(), true).handler(
-                        new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10)).handler(
-                        new JetlangChannelHandler<>(msg -> channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg)),
-                                channels.remoteOrderCommandByServer.get(server), fibers.remoteOrders.getFiber())).handler(
-                        new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
-                                new ConnectionCloser(channels.stats, "Remote order: " + server), SERVER_TIMEOUT));
-                fibers.onStart(client::start);
-            }
+        for (final String server : environment.getList(Environment.REMOTE_COMMANDS)) {
+            final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.REMOTE_COMMANDS, server);
+            final OnHeapBufferPhotocolsNioClient<RemoteOrderManagementEvent, RemoteOrderManagementCommand> client =
+                    OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic),
+                            RemoteOrderManagementEvent.class, RemoteOrderManagementCommand.class, fibers.workingOrders.getFiber(),
+                            EXCEPTION_HANDLER);
+            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("remote-commands." + server + ".log").toFile(),
+                    fibers.logging.getFiber(), true).handler(
+                    new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10)).handler(
+                    new JetlangChannelHandler<>(msg -> channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg)),
+                            channels.remoteOrderCommandByServer.get(server), fibers.remoteOrders.getFiber())).handler(
+                    new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
+                            new ConnectionCloser(channels.stats, "Remote order: " + server), SERVER_TIMEOUT));
+            fibers.onStart(client::start);
         }
 
         // Reddal server

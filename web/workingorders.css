@@ -20,15 +20,17 @@ body {
 
 .cancelNonGTC {
 	border: solid orange 5px;
+	margin: 1px;
 }
 
-.enableCancelAll {
+.enableNuclearOptions {
 	padding: 5px;
 	float: right;
 }
 
 .cancelAll {
 	border: solid red 5px;
+	margin: 1px 4px;
 	float: right;
 }
 
@@ -36,10 +38,15 @@ body {
 	opacity: 0.5;
 }
 
-.serverName {
-	padding: 3px 30px;
-	font-size: 16px;
-	cursor: pointer;
+.shutdownOMS {
+	padding: 4px;
+	margin: 1px 4px;
+	float: right;
+	background-color: #b50000;
+}
+
+.shutdownOMS:not(.isClickable) {
+	opacity: 0.5;
 }
 
 .row {
@@ -49,29 +56,49 @@ body {
 	padding: 0 6px;
 }
 
-.row div {
+.row div, .serverLine div {
 	display: inline-block;
 	width: 100px;
-	text-align: center;
 	padding: 1px;
+	text-align: center;
+}
+
+.serverLine div.serverName {
+	width: 200px;
+	font-size: 16px;
+	cursor: pointer;
+	text-align: left;
+	padding-left: 5px;
 }
 
 .row div.narrow {
 	width: 60px;
 }
 
-.row .button, .row .button button {
-	width: auto;
+.row .buttons {
+	width: 50px;
 	padding: 0;
+	margin-right: 5px;
+}
+
+.row .buttons button {
 	cursor: pointer;
+	display: none;
+	margin: 1px;
+}
+
+#header .buttons .folding {
+	display: inline-block;
+	width: 50%;
+}
+
+.row:not(#header) .buttons .cancelOrder {
+	display: inline-block;
+	width: 100%;
 }
 
 .row#header div {
 	font-size: 14px;
-}
-
-#header .button {
-	visibility: hidden;
 }
 
 div .hidden {

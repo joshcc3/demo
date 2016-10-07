@@ -1,6 +1,6 @@
 <html>
 <head>
-	<title>ladder</title>
+	<title>Orders</title>
 	<link rel="stylesheet" type="text/css" href="workingorders.css">
 	<script src="js/jquery-1.4.2.js"></script>
 	<script src="js/websocket.js"></script>
@@ -20,14 +20,17 @@
 
 	<button class="cancelNonGTC">Cancel NON-GTC</button>
 
-	<button class="enableCancelAll">☢</button>
-	<button class="cancelAll">Cancel ALL</button>
+	<button id="enableAllNuclearOptions" class="enableNuclearOptions">☢</button>
+	<button id="cancelAll" class="cancelAll">Cancel ALL</button>
+	<button id="shutdownAll" class="shutdownOMS">Shutdown All</button>
 
 	<div id="workingOrders">
 
 		<div id="header" class="row">
-			<div class="button">
+			<div class="buttons">
 				<button class="cancelOrder">x</button>
+				<button class="folding minimiseAll">-</button>
+				<button class="folding maximiseAll">+</button>
 			</div>
 			<div class="symbol">Symbol</div>
 			<div class="side narrow">Side</div>
@@ -43,7 +46,13 @@
 		</div>
 
 		<div id="serverBlockTemplate" class="hidden">
-			<div class="serverName"></div>
+			<div class="serverLine">
+				<button class="cancelNonGTC">Cancel NON-GTC</button>
+				<div class="serverName"></div>
+				<button class="enableNuclearOptions">☢</button>
+				<button class="cancelAll">Cancel ALL</button>
+				<button class="shutdownOMS">Shutdown OMS</button>
+			</div>
 			<div class="rows"></div>
 		</div>
 	</div>

@@ -4,6 +4,8 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
+import com.drwtrading.london.protocols.photon.execution.RemoteShutdownOms;
+import com.drwtrading.london.protocols.photon.execution.RemoteStopAllStrategy;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
@@ -21,6 +23,7 @@ import org.jetlang.channels.Publisher;
 import org.jetlang.core.Scheduler;
 
 import java.text.DecimalFormat;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +42,8 @@ public class WorkingOrdersPresenter {
     private final Publisher<StatsMsg> statsMsgPublisher;
     private final Publisher<Main.RemoteOrderCommandToServer> commands;
 
+    private final Collection<String> nibblers;
+
     private final WebSocketViews<IWorkingOrderView> views;
     private final Map<String, WorkingOrderUpdateFromServer> workingOrders;
     private final Map<String, WorkingOrderUpdateFromServer> dirty;
@@ -46,13 +51,17 @@ public class WorkingOrdersPresenter {
 
     private final DecimalFormat df;
 
+    private int numViewers;
+
     public WorkingOrdersPresenter(final UILogger webLog, final Scheduler scheduler, final Publisher<StatsMsg> statsMsgPublisher,
-            final Publisher<Main.RemoteOrderCommandToServer> commands) {
+            final Publisher<Main.RemoteOrderCommandToServer> commands, final Collection<String> nibblers) {
 
         this.webLog = webLog;
 
         this.statsMsgPublisher = statsMsgPublisher;
         this.commands = commands;
+
+        this.nibblers = nibblers;
 
         this.views = WebSocketViews.create(IWorkingOrderView.class, this);
         this.workingOrders = new HashMap<>();
@@ -60,6 +69,8 @@ public class WorkingOrdersPresenter {
         this.searchResults = new HashMap<>();
 
         this.df = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS);
+
+        this.numViewers = 0;
 
         scheduler.scheduleWithFixedDelay(this::repaint, 100, 250, TimeUnit.MILLISECONDS);
     }
@@ -74,7 +85,13 @@ public class WorkingOrdersPresenter {
 
     @Subscribe
     public void onConnected(final WebSocketConnected connected) {
+
+        ++numViewers;
         final IWorkingOrderView view = views.register(connected);
+
+        for (final String nibbler : nibblers) {
+            view.addNibbler(nibbler);
+        }
         for (final WorkingOrderUpdateFromServer update : workingOrders.values()) {
             publishWorkingOrderUpdate(view, update);
         }
@@ -82,6 +99,8 @@ public class WorkingOrdersPresenter {
 
     @Subscribe
     public void onDisconnected(final WebSocketDisconnected disconnected) {
+
+        --numViewers;
         views.unregister(disconnected);
     }
 
@@ -94,31 +113,94 @@ public class WorkingOrdersPresenter {
     // --------------
 
     @FromWebSocketView
+    public void shutdownAll(final WebSocketInboundData data) {
+
+        final String user = data.getClient().getUserName();
+        for (final String nibbler : nibblers) {
+            shutdownOMS(nibbler, user, "Working orders - Shutdown ALL exchanges.");
+        }
+    }
+
+    @FromWebSocketView
+    public void shutdownExchange(final WebSocketInboundData data, final String nibbler) {
+
+        final String user = data.getClient().getUserName();
+        shutdownOMS(nibbler, user, "Working orders - Shutdown exchange.");
+    }
+
+    private void shutdownOMS(final String nibbler, final String user, final String reason) {
+
+        final RemoteShutdownOms remoteCommand = new RemoteShutdownOms(nibbler, user, reason);
+        final Main.RemoteOrderCommandToServer command = new Main.RemoteOrderCommandToServer(nibbler, remoteCommand);
+        commands.publish(command);
+    }
+
+    @FromWebSocketView
+    public void cancelAllNonGTC(final WebSocketInboundData data) {
+
+        final String user = data.getClient().getUserName();
+        cancelAllNoneGTC(user, "Working orders - Cancel non-gtc.");
+    }
+
+    private void cancelAllNoneGTC(final String user, final String reason) {
+
+        workingOrders.values().stream().filter(NON_GTC_FILTER).forEach(order -> cancel(user, order));
+        for (final String nibbler : nibblers) {
+            stopAllStrategies(nibbler, user, reason);
+        }
+    }
+
+    @FromWebSocketView
+    public void cancelExchangeNonGTC(final WebSocketInboundData data, final String nibbler) {
+
+        final String user = data.getClient().getUserName();
+        workingOrders.values().stream().filter(NON_GTC_FILTER).forEach(order -> {
+            if (nibbler.equals(order.fromServer)) {
+                cancel(user, order);
+            }
+        });
+        stopAllStrategies(nibbler, user, "Working orders - Cancel exchange non-gtc.");
+    }
+
+    @FromWebSocketView
+    public void cancelAll(final WebSocketInboundData data) {
+
+        final String user = data.getClient().getUserName();
+        workingOrders.values().stream().forEach(order -> cancel(user, order));
+        for (final String nibbler : nibblers) {
+            stopAllStrategies(nibbler, user, "Working orders - Cancel ALL exchange.");
+        }
+    }
+
+    @FromWebSocketView
+    public void cancelExchange(final WebSocketInboundData data, final String nibbler) {
+
+        final String user = data.getClient().getUserName();
+        workingOrders.values().stream().forEach(order -> {
+            if (nibbler.equals(order.fromServer)) {
+                cancel(user, order);
+            }
+        });
+        stopAllStrategies(nibbler, user, "Working orders - Cancel ALL.");
+    }
+
+    private void stopAllStrategies(final String nibbler, final String user, final String reason) {
+
+        final RemoteStopAllStrategy stopCommand = new RemoteStopAllStrategy(nibbler, user, reason);
+        final Main.RemoteOrderCommandToServer command = new Main.RemoteOrderCommandToServer(nibbler, stopCommand);
+        commands.publish(command);
+    }
+
+    @FromWebSocketView
     public void cancelOrder(final String key, final WebSocketInboundData data) {
         final String user = data.getClient().getUserName();
         final WorkingOrderUpdateFromServer order = workingOrders.get(key);
         if (null == order) {
             statsMsgPublisher.publish(
-                    new AdvisoryStat("Reddal Working Orders", AdvisoryStat.Level.INFO, "Tried to cancel non-existent order [" + key + "]"));
+                    new AdvisoryStat("Reddal Working Orders", AdvisoryStat.Level.INFO, "Tried to cancel non-existent order [" + key + ']'));
         } else {
             cancel(user, order);
         }
-    }
-
-    @FromWebSocketView
-    public void cancelAll(final WebSocketInboundData data) {
-        final String user = data.getClient().getUserName();
-        workingOrders.values().stream().forEach(order -> {
-            cancel(user, order);
-        });
-    }
-
-    @FromWebSocketView
-    public void cancelNonGTC(final WebSocketInboundData data) {
-        final String user = data.getClient().getUserName();
-        workingOrders.values().stream().filter(NON_GTC_FILTER).forEach(order -> {
-            cancel(user, order);
-        });
     }
 
     // -----------------
@@ -141,8 +223,13 @@ public class WorkingOrdersPresenter {
     }
 
     private void repaint() {
-        for (final WorkingOrderUpdateFromServer workingOrderUpdate : dirty.values()) {
-            publishWorkingOrderUpdate(views.all(), workingOrderUpdate);
+
+        if (0 < numViewers) {
+            for (final WorkingOrderUpdateFromServer workingOrderUpdate : dirty.values()) {
+                publishWorkingOrderUpdate(views.all(), workingOrderUpdate);
+            }
+        } else {
+            cancelAllNoneGTC("AUTOMATED", "Working orders - no users viewing working orders screen.");
         }
         dirty.clear();
     }
