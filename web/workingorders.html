@@ -18,19 +18,22 @@
 
 <div class="content">
 
-	<button class="cancelNonGTC">Cancel NON-GTC</button>
-
-	<button id="enableAllNuclearOptions" class="enableNuclearOptions">☢</button>
-	<button id="cancelAll" class="cancelAll">Cancel ALL</button>
-	<button id="shutdownAll" class="shutdownOMS">Shutdown All</button>
+	<div class="masterControls row">
+		<div class="omsButtons">
+			<button id="cancelNonGTC" class="cancelNonGTC">Cancel NON-GTC</button>
+			<button id="shutdownAll" class="shutdownOMS">Shutdown OMS</button>
+			<button id="cancelAll" class="cancelAll">Cancel ALL</button>
+			<button id="enableAllNuclearOptions" class="enableNuclearOptions isClickable">☢</button>
+		</div>
+	</div>
 
 	<div id="workingOrders">
 
 		<div id="header" class="row">
 			<div class="buttons">
-				<button class="cancelOrder">x</button>
-				<button class="folding minimiseAll">-</button>
-				<button class="folding maximiseAll">+</button>
+				<button class="cancelOrder isClickable">x</button>
+				<button class="folding minimiseAll isClickable">-</button>
+				<button class="folding maximiseAll isClickable">+</button>
 			</div>
 			<div class="symbol">Symbol</div>
 			<div class="side narrow">Side</div>
@@ -39,19 +42,24 @@
 			<div class="quantity narrow">Total Qty</div>
 			<div class="orderType">Type</div>
 			<div class="tag narrow">Tag</div>
-			<div class="state">State</div>
+			<div class="state narrow">State</div>
 			<div class="chainID narrow">Chain ID</div>
 			<div class="server hidden">Server</div>
 			<div class="key hidden">Key</div>
 		</div>
 
-		<div id="serverBlockTemplate" class="hidden">
-			<div class="serverLine">
-				<button class="cancelNonGTC">Cancel NON-GTC</button>
-				<div class="serverName"></div>
-				<button class="enableNuclearOptions">☢</button>
-				<button class="cancelAll">Cancel ALL</button>
-				<button class="shutdownOMS">Shutdown OMS</button>
+		<div id="serverBlockTemplate" class="hidden ">
+			<div class="serverLine row">
+				<div class="serverDetails">
+					<div class="orderCount"></div>
+					<div class="serverName"></div>
+				</div>
+				<div class="omsButtons">
+					<button class="cancelNonGTC">Cancel NON-GTC</button>
+					<button class="shutdownOMS">Shutdown OMS</button>
+					<button class="cancelAll">Cancel ALL</button>
+					<button class="enableNuclearOptions isClickable">☢</button>
+				</div>
 			</div>
 			<div class="rows"></div>
 		</div>

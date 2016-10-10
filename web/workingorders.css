@@ -23,30 +23,31 @@ body {
 	margin: 1px;
 }
 
-.enableNuclearOptions {
-	padding: 3px;
-	float: right;
+.shutdownOMS {
+	padding: 4px;
+	margin: 1px 4px;
+	background-color: #b50000;
 }
 
 .cancelAll {
 	border: solid red 5px;
 	margin: 1px 4px;
-	float: right;
 }
 
-.cancelAll:not(.isClickable) {
+button:not(.isClickable) {
 	opacity: 0.5;
 }
 
-.shutdownOMS {
-	padding: 4px;
-	margin: 1px 4px;
-	float: right;
-	background-color: #b50000;
+.enableNuclearOptions {
+	padding: 3px;
 }
 
-.shutdownOMS:not(.isClickable) {
-	opacity: 0.5;
+div .hidden {
+	display: none;
+}
+
+.masterControls {
+	height: 33px;
 }
 
 .row {
@@ -54,25 +55,7 @@ body {
 	white-space: nowrap;
 	border-bottom: 1px solid #555555;
 	padding: 0 6px;
-}
-
-.row div, .serverLine div {
-	display: inline-block;
-	width: 100px;
-	padding: 1px;
-	text-align: center;
-}
-
-.serverLine div.serverName {
-	width: 200px;
-	font-size: 16px;
-	cursor: pointer;
-	text-align: left;
-	padding-left: 5px;
-}
-
-.row div.narrow {
-	width: 60px;
+	min-width: 610px;
 }
 
 .row .buttons {
@@ -87,26 +70,66 @@ body {
 	margin: 1px;
 }
 
-#header .buttons .folding {
+.row .omsButtons {
+	width: auto;
+	float: right;
+}
+
+.row#header .buttons .folding {
 	display: inline-block;
 	width: 50%;
 }
 
 .row:not(#header) .buttons .cancelOrder {
 	display: inline-block;
-	width: 100%;
+}
+
+.row div {
+	display: inline-block;
+	width: 100px;
+	padding: 1px;
+	text-align: center;
+}
+
+.row div.narrow {
+	width: 60px;
+	font-size: 10px;
 }
 
 .row#header div {
 	font-size: 14px;
 }
 
-div .hidden {
-	display: none;
+.row div.serverDetails {
+	cursor: pointer;
+	width: auto;
+	height: 33px;
+	font-size: 20px;
+	padding: 0;
+	margin: 0;
 }
 
-.row:not(#header) div {
-	font-size: 10px;
+.row div.orderCount {
+	width: 50px;
+	font-size: 12px;
+	text-align: right;
+}
+
+.row div.serverName {
+	text-align: left;
+	width: 180px;
+	padding: 0;
+	margin: 0;
+}
+
+.row .cancelOrder {
+	padding: 0 15px 0 15px;
+	border: 0;
+	margin: 0 0 3px 0;
+}
+
+.row .quoter .cancelOrder {
+	visibility: hidden;
 }
 
 .symbol {
@@ -137,10 +160,6 @@ div .hidden {
 	background-color: #660000;
 }
 
-#workingOrders .pending {
-	opacity: 0.5;
-}
-
 #workingOrders .money_in .moneyness {
 	color: #99ff99;
 }
@@ -163,14 +182,4 @@ div .hidden {
 
 #workingOrders .hedge_qty .type {
 	color: #99ffff;
-}
-
-#workingOrders .cancelOrder {
-	padding: 0 15px 0 15px;
-	border: 0;
-	margin: 0 0 3px 0;
-}
-
-#workingOrders .quoter .cancelOrder {
-	visibility: hidden;
 }

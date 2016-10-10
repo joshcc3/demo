@@ -86,7 +86,7 @@ public class WorkingOrdersPresenter {
     @Subscribe
     public void onConnected(final WebSocketConnected connected) {
 
-        ++numViewers;
+        webLog.write("workingOrders", connected, true, ++numViewers);
         final IWorkingOrderView view = views.register(connected);
 
         for (final String nibbler : nibblers) {
@@ -100,7 +100,7 @@ public class WorkingOrdersPresenter {
     @Subscribe
     public void onDisconnected(final WebSocketDisconnected disconnected) {
 
-        --numViewers;
+        webLog.write("workingOrders", disconnected, false, --numViewers);
         views.unregister(disconnected);
     }
 

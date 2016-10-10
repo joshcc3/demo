@@ -7,29 +7,29 @@ $(function () {
 		eval(x)
 	};
 
-	$("button.cancelNonGTC").die().bind("click", function () {
-		ws.send(command("cancelAllNonGTC"));
-	});
-
+	var cancelAllNonGTC = $("#cancelNonGTC");
 	var cancelAllButton = $("#cancelAll");
 	var shutdownAllButton = $("#shutdownAll");
 
-	var header = $("#header");
-	var minimiseAllButton = header.find(".buttons .minimiseAll");
+	var masterControls = $(".masterControls");
+	var minimiseAllButton = masterControls.find(".omsButtons .minimiseAll");
 	minimiseAllButton.unbind().bind("click", function () {
 		$(".rows").toggleClass("hidden", true);
 	});
 
-	var maximiseAllButton = header.find(".buttons .maximiseAll");
+	var maximiseAllButton = masterControls.find(".omsButtons .maximiseAll");
 	maximiseAllButton.unbind().bind("click", function () {
 		$(".rows").toggleClass("hidden", false);
 	});
 
-	$("#enableAllNuclearOptions").die().bind("click", function () {
+	masterControls.find(".omsButtons .enableNuclearOptions").die().bind("click", function () {
 
 		var isCancelAllClickable = cancelAllButton.hasClass("isClickable");
 		if (!isCancelAllClickable) {
 
+			cancelAllNonGTC.die().bind("click", function () {
+				ws.send(command("cancelAllNonGTC"));
+			});
 			cancelAllButton.unbind().bind("click", function () {
 				ws.send(command("cancelAll"));
 			});
@@ -37,16 +37,21 @@ $(function () {
 				ws.send(command("shutdownAll"));
 			});
 
+			cancelAllNonGTC.toggleClass("isClickable", true);
 			cancelAllButton.toggleClass("isClickable", true);
 			shutdownAllButton.toggleClass("isClickable", true);
-			window.setTimeout(setButtonDisabled(cancelAllButton, shutdownAllButton), 2500);
+			window.setTimeout(setButtonDisabled(cancelAllNonGTC, cancelAllButton, shutdownAllButton), 2500);
 		}
 	});
 });
 
-function setButtonDisabled(cancelButton, shutdownButton) {
+function setButtonDisabled(cancelAllGTC, cancelButton, shutdownButton) {
 
 	return function () {
+
+		cancelAllGTC.unbind();
+		cancelAllGTC.toggleClass("isClickable", false);
+
 		cancelButton.unbind();
 		cancelButton.toggleClass("isClickable", false);
 
@@ -67,15 +72,11 @@ function addNibbler(server) {
 		headerName.text(server);
 
 		var rowsBlock = serverBlock.find(".rows");
-		headerName.unbind().bind("click", function () {
+		serverBlock.find(".serverDetails").unbind().bind("click", function () {
 			rowsBlock.toggleClass("hidden", !rowsBlock.hasClass("hidden"))
 		});
 
 		var cancelNonGTCButton = serverBlock.find(".cancelNonGTC");
-		cancelNonGTCButton.die().bind("click", function () {
-			ws.send(command("cancelExchangeNonGTC", [server]));
-		});
-
 		var cancelAllButton = serverBlock.find(".cancelAll");
 		var shutdownAllButton = serverBlock.find(".shutdownOMS");
 
@@ -84,6 +85,9 @@ function addNibbler(server) {
 			var isCancelAllClickable = cancelAllButton.hasClass("isClickable");
 			if (!isCancelAllClickable) {
 
+				cancelNonGTCButton.die().bind("click", function () {
+					ws.send(command("cancelExchangeNonGTC", [server]));
+				});
 				cancelAllButton.unbind().bind("click", function () {
 					ws.send(command("cancelExchange", [server]));
 				});
@@ -91,13 +95,15 @@ function addNibbler(server) {
 					ws.send(command("shutdownExchange", [server]));
 				});
 
+				cancelNonGTCButton.toggleClass("isClickable", true);
 				cancelAllButton.toggleClass("isClickable", true);
 				shutdownAllButton.toggleClass("isClickable", true);
-				window.setTimeout(setButtonDisabled(cancelAllButton, shutdownAllButton), 2500);
+				window.setTimeout(setButtonDisabled(cancelNonGTCButton, cancelAllButton, shutdownAllButton), 2500);
 			}
 		});
 
 		$("#workingOrders").append(serverBlock);
+		setOrderCount(serverBlock);
 	}
 	return serverBlock;
 }
@@ -105,6 +111,7 @@ function addNibbler(server) {
 function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantity, quantity, state, orderType, tag, server, isDead) {
 
 	var row = Rows[key];
+	var serverBlock = addNibbler(server);
 
 	if (isDead) {
 		if (row) {
@@ -149,4 +156,13 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 			ws.send(command("cancelOrder", [key]));
 		});
 	}
+
+	setOrderCount(serverBlock);
+}
+
+function setOrderCount(server) {
+
+	var orderCountDiv = server.find(".orderCount");
+	var orders = server.find("rows").length;
+	orderCountDiv.text(orders);
 }
