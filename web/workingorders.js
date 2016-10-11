@@ -11,18 +11,18 @@ $(function () {
 	var cancelAllButton = $("#cancelAll");
 	var shutdownAllButton = $("#shutdownAll");
 
-	var masterControls = $(".masterControls");
-	var minimiseAllButton = masterControls.find(".omsButtons .minimiseAll");
+	var headerControls = $("#header");
+	var minimiseAllButton = headerControls.find(".buttons .minimiseAll");
 	minimiseAllButton.unbind().bind("click", function () {
 		$(".rows").toggleClass("hidden", true);
 	});
 
-	var maximiseAllButton = masterControls.find(".omsButtons .maximiseAll");
+	var maximiseAllButton = headerControls.find(".buttons .maximiseAll");
 	maximiseAllButton.unbind().bind("click", function () {
 		$(".rows").toggleClass("hidden", false);
 	});
 
-	masterControls.find(".omsButtons .enableNuclearOptions").die().bind("click", function () {
+	$(".masterControls .omsButtons .enableNuclearOptions").die().bind("click", function () {
 
 		var isCancelAllClickable = cancelAllButton.hasClass("isClickable");
 		if (!isCancelAllClickable) {
@@ -163,6 +163,6 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 function setOrderCount(server) {
 
 	var orderCountDiv = server.find(".orderCount");
-	var orders = server.find("rows").length;
+	var orders = server.find(".rows").children().length;
 	orderCountDiv.text(orders);
 }
