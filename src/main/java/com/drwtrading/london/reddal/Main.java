@@ -98,6 +98,7 @@ import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.reddal.util.ReconnectingOPXLClient;
 import com.drwtrading.london.reddal.util.SelectIOFiber;
 import com.drwtrading.london.reddal.util.UILogger;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
@@ -111,6 +112,7 @@ import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.monitoring.transport.LoggingTransport;
 import com.drwtrading.monitoring.transport.MultiplexTransport;
 import com.drwtrading.photocols.PhotocolsConnection;
+import com.drwtrading.photocols.PhotocolsHandler;
 import com.drwtrading.photocols.easy.Photocols;
 import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
@@ -174,6 +176,7 @@ public class Main {
         public final TypedChannel<Position> position;
         public final TypedChannel<TradingStatusWatchdog.ServerTradingStatus> tradingStatus;
         public final TypedChannel<WorkingOrderUpdateFromServer> workingOrders;
+        public final TypedChannel<WorkingOrderConnectionEstablished> workingOrderConnectionEstablished;
         public final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents;
         public final TypedChannel<RemoteOrderEventFromServer> remoteOrderEvents;
         public final TypedChannel<StatsMsg> stats;
@@ -209,6 +212,7 @@ public class Main {
             this.position = create(Position.class);
             this.tradingStatus = create(TradingStatusWatchdog.ServerTradingStatus.class);
             this.workingOrders = create(WorkingOrderUpdateFromServer.class);
+            this.workingOrderConnectionEstablished = create(WorkingOrderConnectionEstablished.class);
             this.workingOrderEvents = create(WorkingOrderEventFromServer.class);
             this.remoteOrderEvents = create(RemoteOrderEventFromServer.class);
             this.stats = create(StatsMsg.class);
@@ -413,13 +417,14 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
 
+                final IClock clock = new SystemClock();
                 final Collection<String> nibblers = environment.getList(Environment.WORKING_ORDERS);
                 final WorkingOrdersPresenter presenter =
-                        new WorkingOrdersPresenter(webLog, fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand, nibblers);
+                        new WorkingOrdersPresenter(clock, webLog, fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand, nibblers);
                 fibers.ui.subscribe(presenter, ws);
                 channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
-                channels.workingOrders.subscribe(
-                        new BatchSubscriber<>(fibers.ui.getFiber(), presenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
+                channels.workingOrders.subscribe(fibers.ui.getFiber(), presenter::onWorkingOrder);
+                channels.workingOrderConnectionEstablished.subscribe(fibers.ui.getFiber(), msg -> presenter.nibblerConnectionLost(msg));
             }
 
             { // Stock alert screen
@@ -668,24 +673,49 @@ public class Main {
         }
 
         // Working orders
-        {
-            for (final String server : environment.getList(Environment.WORKING_ORDERS)) {
-                final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.WORKING_ORDERS, server);
-                final OnHeapBufferPhotocolsNioClient<WorkingOrderEvent, Void> client =
-                        OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic),
-                                WorkingOrderEvent.class, Void.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
-                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("working-orders." + server + ".log").toFile(),
-                        fibers.logging.getFiber(), true).handler(
-                        new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10)).handler(
-                        new JetlangChannelHandler<>(msg -> {
-                            if (msg instanceof WorkingOrderUpdate) {
-                                channels.workingOrders.publish(new WorkingOrderUpdateFromServer(server, (WorkingOrderUpdate) msg));
-                            }
-                            channels.workingOrderEvents.publish(new WorkingOrderEventFromServer(server, msg));
-                        })).handler(new InboundTimeoutWatchdog<>(fibers.workingOrders.getFiber(),
-                        new ConnectionCloser(channels.stats, "Working order: " + server), SERVER_TIMEOUT));
-                fibers.onStart(client::start);
-            }
+        for (final String server : environment.getList(Environment.WORKING_ORDERS)) {
+            final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.WORKING_ORDERS, server);
+            final OnHeapBufferPhotocolsNioClient<WorkingOrderEvent, Void> client =
+                    OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), WorkingOrderEvent.class,
+                            Void.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
+            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
+            client.logFile(logDir.resolve("working-orders." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+            client.handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10));
+            client.handler(new JetlangChannelHandler<>(msg -> {
+                if (msg instanceof WorkingOrderUpdate) {
+                    channels.workingOrders.publish(new WorkingOrderUpdateFromServer(server, (WorkingOrderUpdate) msg));
+                }
+                channels.workingOrderEvents.publish(new WorkingOrderEventFromServer(server, msg));
+            }));
+            client.handler(new InboundTimeoutWatchdog<>(fibers.workingOrders.getFiber(),
+                    new ConnectionCloser(channels.stats, "Working order: " + server), SERVER_TIMEOUT));
+
+            final WorkingOrderConnectionEstablished connectionEstablished = new WorkingOrderConnectionEstablished(server);
+            final PhotocolsHandler<WorkingOrderEvent, Void> workingOrderLostPublisher = new PhotocolsHandler<WorkingOrderEvent, Void>() {
+                @Override
+                public PhotocolsConnection<Void> onOpen(final PhotocolsConnection<Void> connection) {
+                    channels.workingOrderConnectionEstablished.publish(connectionEstablished);
+                    return connection;
+                }
+
+                @Override
+                public void onConnectFailure() {
+                    // no-op
+                }
+
+                @Override
+                public void onClose(final PhotocolsConnection<Void> connection) {
+                    // no-op
+                }
+
+                @Override
+                public void onMessage(final PhotocolsConnection<Void> connection, final WorkingOrderEvent message) {
+                    // no-op
+                }
+            };
+            client.handler(workingOrderLostPublisher);
+
+            fibers.onStart(client::start);
         }
 
         // Working orders and remote commands watchdog

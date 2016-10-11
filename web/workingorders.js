@@ -43,7 +43,14 @@ $(function () {
 			window.setTimeout(setButtonDisabled(cancelAllNonGTC, cancelAllButton, shutdownAllButton), 2500);
 		}
 	});
+
+	heartbeat();
+	setInterval(heartbeat, 2500);
 });
+
+function heartbeat() {
+	ws.send(command("heartbeat"));
+}
 
 function setButtonDisabled(cancelAllGTC, cancelButton, shutdownButton) {
 

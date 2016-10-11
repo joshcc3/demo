@@ -3,6 +3,8 @@ package com.drwtrading.london.reddal.workingOrders;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
+import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteShutdownOms;
 import com.drwtrading.london.protocols.photon.execution.RemoteStopAllStrategy;
@@ -25,18 +27,18 @@ import org.jetlang.core.Scheduler;
 import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 
 public class WorkingOrdersPresenter {
 
-    public static final Predicate<WorkingOrderUpdateFromServer> WORKING_ORDER_FILTER = WorkingOrdersPresenter::workingOrderFilter;
-    public static final Predicate<WorkingOrderUpdateFromServer> NON_GTC_FILTER = WorkingOrdersPresenter::nonGTCFilter;
-    private static final Pattern NIBBLER_REPLACE = Pattern.compile("nibbler-", Pattern.LITERAL);
+    private static final long HEART_BEAT_TIMEOUT_NANOS = 5 * DateTimeUtil.NANOS_IN_SECS;
+    private static final Predicate<WorkingOrderUpdateFromServer> NON_GTC_FILTER = WorkingOrdersPresenter::nonGTCFilter;
 
+    private final IClock clock;
     private final UILogger webLog;
 
     private final Publisher<StatsMsg> statsMsgPublisher;
@@ -52,10 +54,13 @@ public class WorkingOrdersPresenter {
     private final DecimalFormat df;
 
     private int numViewers;
+    private long lastViewerHeartbeatNanoSinceMidnight;
 
-    public WorkingOrdersPresenter(final UILogger webLog, final Scheduler scheduler, final Publisher<StatsMsg> statsMsgPublisher,
-            final Publisher<Main.RemoteOrderCommandToServer> commands, final Collection<String> nibblers) {
+    public WorkingOrdersPresenter(final IClock clock, final UILogger webLog, final Scheduler scheduler,
+            final Publisher<StatsMsg> statsMsgPublisher, final Publisher<Main.RemoteOrderCommandToServer> commands,
+            final Collection<String> nibblers) {
 
+        this.clock = clock;
         this.webLog = webLog;
 
         this.statsMsgPublisher = statsMsgPublisher;
@@ -72,15 +77,45 @@ public class WorkingOrdersPresenter {
 
         this.numViewers = 0;
 
-        scheduler.scheduleWithFixedDelay(this::repaint, 100, 250, TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(this::repaint, 3000, 250, TimeUnit.MILLISECONDS);
     }
 
     public void addSearchResult(final SearchResult searchResult) {
         searchResults.put(searchResult.symbol, searchResult);
     }
 
-    public void onWorkingOrderBatch(final List<WorkingOrderUpdateFromServer> batch) {
-        batch.stream().filter(WORKING_ORDER_FILTER).forEach(this::onWorkingOrder);
+    public void onWorkingOrder(final WorkingOrderUpdateFromServer order) {
+
+        if (workingOrderFilter(order)) {
+            if (order.value.getWorkingOrderState() == WorkingOrderState.DEAD) {
+                workingOrders.remove(order.key());
+            } else {
+                workingOrders.put(order.key(), order);
+            }
+            dirty.put(order.key(), order);
+        }
+    }
+
+    public void nibblerConnectionLost(final WorkingOrderConnectionEstablished connectionLost) {
+
+        final List<WorkingOrderUpdateFromServer> removed = new LinkedList<>();
+        for (final WorkingOrderUpdateFromServer update : workingOrders.values()) {
+            if (connectionLost.server.equals(update.fromServer)) {
+                removed.add(update);
+            }
+        }
+
+        for (final WorkingOrderUpdateFromServer update : removed) {
+            workingOrders.remove(update.key());
+
+            final WorkingOrderUpdate prev = update.value;
+            final WorkingOrderUpdate delete =
+                    new WorkingOrderUpdate(prev.getServerName(), prev.getSymbol(), prev.getTag(), prev.getChainId(), prev.getPrice(),
+                            prev.getTotalQuantity(), prev.getFilledQuantity(), prev.getSide(), WorkingOrderState.DEAD,
+                            prev.getWorkingOrderType(), prev.getMoneyStatus(), prev.getMetadata());
+            final WorkingOrderUpdateFromServer deleteUpdate = new WorkingOrderUpdateFromServer(update.fromServer, delete);
+            dirty.put(deleteUpdate.key(), deleteUpdate);
+        }
     }
 
     @Subscribe
@@ -111,6 +146,12 @@ public class WorkingOrdersPresenter {
     }
 
     // --------------
+
+    @FromWebSocketView
+    public void heartbeat(final WebSocketInboundData data) {
+
+        this.lastViewerHeartbeatNanoSinceMidnight = clock.getReferenceNanoSinceMidnightUTC();
+    }
 
     @FromWebSocketView
     public void shutdownAll(final WebSocketInboundData data) {
@@ -228,19 +269,14 @@ public class WorkingOrdersPresenter {
             for (final WorkingOrderUpdateFromServer workingOrderUpdate : dirty.values()) {
                 publishWorkingOrderUpdate(views.all(), workingOrderUpdate);
             }
-        } else {
+        }
+
+        final boolean userHeartbeatLate =
+                HEART_BEAT_TIMEOUT_NANOS < (clock.getReferenceNanoSinceMidnightUTC() - lastViewerHeartbeatNanoSinceMidnight);
+        if (userHeartbeatLate) {
             cancelAllNoneGTC("AUTOMATED", "Working orders - no users viewing working orders screen.");
         }
         dirty.clear();
-    }
-
-    private void onWorkingOrder(final WorkingOrderUpdateFromServer order) {
-        if (order.value.getWorkingOrderState() == WorkingOrderState.DEAD) {
-            workingOrders.remove(order.key());
-        } else {
-            workingOrders.put(order.key(), order);
-        }
-        dirty.put(order.key(), order);
     }
 
     private void publishWorkingOrderUpdate(final IWorkingOrderView view, final WorkingOrderUpdateFromServer order) {
@@ -256,10 +292,9 @@ public class WorkingOrdersPresenter {
         }
 
         final String chainID = Integer.toString(order.value.getChainId());
-        final String server = NIBBLER_REPLACE.matcher(order.fromServer).replaceAll("");
 
         view.updateWorkingOrder(order.key(), chainID, update.getSymbol(), update.getSide().toString(), price, update.getFilledQuantity(),
                 update.getTotalQuantity(), update.getWorkingOrderState().toString(), update.getWorkingOrderType().toString(),
-                update.getTag(), server, update.getWorkingOrderState() == WorkingOrderState.DEAD);
+                update.getTag(), order.fromServer, update.getWorkingOrderState() == WorkingOrderState.DEAD);
     }
 }
