@@ -4,6 +4,14 @@ import com.drwtrading.london.eeif.utils.monitoring.IMonitoredComponent;
 
 public enum ReddalComponents implements IMonitoredComponent {
 
+    MONITOR_DUPLICATE_APPLICATION_REGISTRATION,
+    MONITOR_APP_COUNT,
+    MONITOR_CLIENT_PROTOCOL_ERROR,
+    MONITOR_CLIENT_HEARTBEAT_TIME_OUT,
+    MONITOR_CLIENT_TCP_CLOSED,
+    MONITOR_CLIENT_TCP_EXCEPTION,
+    MONITOR_CLIENT_UNKNOWN_MSG_TYPE,
+
     SELECT_IO_CLOSE,
     SELECT_IO_SELECT,
     SELECT_IO_UNHANDLED,
@@ -22,7 +30,9 @@ public enum ReddalComponents implements IMonitoredComponent {
     MD_MD_SERVER_UPDATE,
     MD_MD_SERVER_VIEWER,
 
-    YODA;
+    YODA,
+
+    SAFETY_WORKING_ORDER_VIEWER;
 
     @Override
     public String getMnemonic() {

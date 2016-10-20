@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.workingOrders;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
@@ -11,6 +12,7 @@ import com.drwtrading.london.protocols.photon.execution.RemoteStopAllStrategy;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ladders.LadderView;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -39,6 +41,7 @@ public class WorkingOrdersPresenter {
     private static final Predicate<WorkingOrderUpdateFromServer> NON_GTC_FILTER = WorkingOrdersPresenter::nonGTCFilter;
 
     private final IClock clock;
+    private final IResourceMonitor<ReddalComponents> monitor;
     private final UILogger webLog;
 
     private final Publisher<StatsMsg> statsMsgPublisher;
@@ -56,11 +59,12 @@ public class WorkingOrdersPresenter {
     private int numViewers;
     private long lastViewerHeartbeatNanoSinceMidnight;
 
-    public WorkingOrdersPresenter(final IClock clock, final UILogger webLog, final Scheduler scheduler,
-            final Publisher<StatsMsg> statsMsgPublisher, final Publisher<Main.RemoteOrderCommandToServer> commands,
-            final Collection<String> nibblers) {
+    public WorkingOrdersPresenter(final IClock clock, final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
+            final Scheduler scheduler, final Publisher<StatsMsg> statsMsgPublisher,
+            final Publisher<Main.RemoteOrderCommandToServer> commands, final Collection<String> nibblers) {
 
         this.clock = clock;
+        this.monitor = monitor;
         this.webLog = webLog;
 
         this.statsMsgPublisher = statsMsgPublisher;
@@ -274,7 +278,10 @@ public class WorkingOrdersPresenter {
         final boolean userHeartbeatLate =
                 HEART_BEAT_TIMEOUT_NANOS < (clock.getReferenceNanoSinceMidnightUTC() - lastViewerHeartbeatNanoSinceMidnight);
         if (userHeartbeatLate) {
+            monitor.logError(ReddalComponents.SAFETY_WORKING_ORDER_VIEWER, "No users viewing working order screen.");
             cancelAllNoneGTC("AUTOMATED", "Working orders - no users viewing working orders screen.");
+        } else {
+            monitor.setOK(ReddalComponents.SAFETY_WORKING_ORDER_VIEWER);
         }
         dirty.clear();
     }

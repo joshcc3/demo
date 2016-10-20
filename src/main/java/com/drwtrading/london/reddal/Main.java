@@ -26,6 +26,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.MappedResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.hub.ClientMonitoringHub;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
@@ -347,8 +348,11 @@ public class Main {
         final Path logDir = FileUtils.getTodaysPath(baseLogDir, configName);
         Files.createDirectories(logDir);
 
+        final IClock clock = new SystemClock();
         final IErrorLogger errorLog = new BasicStdOutErrorLogger();
-        final IResourceMonitor<ReddalComponents> monitor = new ResourceMonitor<>("Reddal", ReddalComponents.class, errorLog, true);
+        final ClientMonitoringHub<ReddalComponents> monitorHub =
+                new ClientMonitoringHub<>(errorLog, clock, "Reddal", ReddalComponents.class, "MONITOR_", true);
+        final IResourceMonitor<ReddalComponents> monitor  = monitorHub.getCoreMonitor();
 
         final NnsApi nnsApi = new NnsFactory().create();
         final LoggingTransport fileTransport = new LoggingTransport(logDir.resolve("jetlang.log").toFile());
@@ -417,10 +421,10 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
 
-                final IClock clock = new SystemClock();
                 final Collection<String> nibblers = environment.getList(Environment.WORKING_ORDERS);
                 final WorkingOrdersPresenter presenter =
-                        new WorkingOrdersPresenter(clock, webLog, fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand, nibblers);
+                        new WorkingOrdersPresenter(clock, monitor, webLog, fibers.ui.getFiber(), channels.stats,
+                                channels.remoteOrderCommand, nibblers);
                 fibers.ui.subscribe(presenter, ws);
                 channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
                 channels.workingOrders.subscribe(fibers.ui.getFiber(), presenter::onWorkingOrder);
