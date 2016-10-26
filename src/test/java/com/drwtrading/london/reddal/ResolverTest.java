@@ -103,10 +103,10 @@ public class ResolverTest {
         assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FSTBU4-FSTBZ4", RemoteOrderType.GTC, "CHAD"));
         assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FSTBU4-FSTBZ4", RemoteOrderType.QUICKDRAW, "CHAD"));
 
-        assertEquals("LITTERBOX1DIV", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.MANUAL, "CHAD"));
+        assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.MANUAL, "CHAD"));
         assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.GTC, "CHAD"));
 
-        assertEquals("LITTERBOX1DIV", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.MANUAL, "CHAD"));
+        assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.MANUAL, "CHAD"));
         assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.GTC, "CHAD"));
     }
 
