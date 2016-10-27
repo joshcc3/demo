@@ -42,12 +42,21 @@ button:not(.isClickable) {
 	padding: 3px;
 }
 
-div .hidden {
+div .hidden, #workingOrders.hideNoneEnder .row.notEnder {
 	display: none;
 }
 
 .masterControls {
 	height: 33px;
+}
+
+.masterControls .filters {
+	width: auto;
+	font-size: 8px;
+}
+
+.masterControls .filters #enderOnlyInput {
+	vertical-align: middle;
 }
 
 .row {

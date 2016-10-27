@@ -44,6 +44,11 @@ $(function () {
 		}
 	});
 
+
+	$("#enderOnlyInput").change(function() {
+		$("#workingOrders").toggleClass("hideNoneEnder", this.checked);
+	});
+
 	heartbeat();
 	setInterval(heartbeat, 2500);
 });
@@ -158,6 +163,7 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 
 		row.toggleClass("bid", side == "BID");
 		row.toggleClass("offer", side == "OFFER");
+		row.toggleClass("notEnder", tag != "Ender");
 
 		row.find(".cancelOrder").die().bind("click", function () {
 			ws.send(command("cancelOrder", [key]));
