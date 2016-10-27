@@ -29,13 +29,11 @@ import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.hub.ClientMonitoringHub;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
-import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.eeif.utils.transport.io.TransportTCPKeepAliveConnection;
 import com.drwtrading.london.eeif.yoda.transport.YodaSignalType;
 import com.drwtrading.london.eeif.yoda.transport.YodaTransportComponents;
 import com.drwtrading.london.eeif.yoda.transport.cache.YodaClientCacheFactory;
-import com.drwtrading.london.eeif.yoda.transport.data.PredictionSignal;
-import com.drwtrading.london.eeif.yoda.transport.data.YodaSymbolKey;
+import com.drwtrading.london.eeif.yoda.transport.cache.YodaNullClient;
 import com.drwtrading.london.eeif.yoda.transport.io.YodaClientHandler;
 import com.drwtrading.london.indy.transport.IndyTransportComponents;
 import com.drwtrading.london.indy.transport.cache.IIndyCacheListener;
@@ -83,7 +81,6 @@ import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandle
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.stockAlerts.StockAlertPresenter;
-import com.drwtrading.london.reddal.stockAlerts.yoda.YodaAtCloseClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaRestingOrderClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaSweepClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaTWAPClient;
@@ -352,7 +349,7 @@ public class Main {
         final IErrorLogger errorLog = new BasicStdOutErrorLogger();
         final ClientMonitoringHub<ReddalComponents> monitorHub =
                 new ClientMonitoringHub<>(errorLog, clock, "Reddal", ReddalComponents.class, "MONITOR_", true);
-        final IResourceMonitor<ReddalComponents> monitor  = monitorHub.getCoreMonitor();
+        final IResourceMonitor<ReddalComponents> monitor = monitorHub.getCoreMonitor();
 
         final NnsApi nnsApi = new NnsFactory().create();
         final LoggingTransport fileTransport = new LoggingTransport(logDir.resolve("jetlang.log").toFile());
@@ -891,37 +888,19 @@ public class Main {
                 final IResourceMonitor<YodaTransportComponents> yodaChildMonitor =
                         yodaParentMonitor.createChildResourceMonitor(instanceName);
 
-                final YodaAtCloseClient atCloseClient = new YodaAtCloseClient(stockAlerts);
                 final YodaRestingOrderClient restingClient = new YodaRestingOrderClient(stockAlerts);
                 final YodaSweepClient sweepClient = new YodaSweepClient(stockAlerts);
                 final YodaTWAPClient twapClient = new YodaTWAPClient(stockAlerts);
 
                 final YodaClientHandler yodaHandler =
-                        YodaClientCacheFactory.createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName, atCloseClient,
-                                restingClient, sweepClient, twapClient, noOp(), EnumSet.allOf(YodaSignalType.class));
+                        YodaClientCacheFactory.createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName,
+                                new YodaNullClient<>(), restingClient, sweepClient, twapClient, new YodaNullClient<>(),
+                                EnumSet.of(YodaSignalType.RESTING_ORDER, YodaSignalType.SWEEP, YodaSignalType.TWAP));
 
                 final TransportTCPKeepAliveConnection<?, ?> client =
                         YodaClientCacheFactory.createClient(selectIO, yodaInstanceConfig, yodaChildMonitor, yodaHandler);
                 selectIO.execute(client::restart);
             }
         }
-    }
-
-    private static ITransportCacheListener<YodaSymbolKey, PredictionSignal> noOp() {
-        return new ITransportCacheListener<YodaSymbolKey, PredictionSignal>() {
-            @Override
-            public boolean setKey(int localID, YodaSymbolKey key) {
-                return true;
-            }
-
-            @Override
-            public boolean setValue(int localID, PredictionSignal item) {
-                return true;
-            }
-
-            @Override
-            public void batchComplete() {
-            }
-        };
     }
 }
