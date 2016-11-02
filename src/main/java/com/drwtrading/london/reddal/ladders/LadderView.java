@@ -787,7 +787,7 @@ public class LadderView implements UiEventHandler {
 
     }
 
-    final static Set<String> TAGS = ImmutableSet.of("CLICKNOUGHT", "CHAD", "DIV", "STRING");
+    private static final Set<String> TAGS = ImmutableSet.of("CLICKNOUGHT", "CHAD", "DIV", "STRING");
 
     private Collection<String> filterUsableOrderTypes(final Collection<CSSClass> types) {
         return types.stream().filter(input -> TAGS.stream().filter(tag -> {
