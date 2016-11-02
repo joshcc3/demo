@@ -72,7 +72,7 @@ function setButtonDisabled(cancelAllGTC, cancelButton, shutdownButton) {
 	}
 }
 
-function addNibbler(server) {
+function addNibbler(server, connectionEstablished) {
 
 	var serverBlock = $('#' + server);
 	if (!serverBlock[0]) {
@@ -117,6 +117,9 @@ function addNibbler(server) {
 		$("#workingOrders").append(serverBlock);
 		setOrderCount(serverBlock);
 	}
+
+	serverBlock.toggleClass("connectionLost", !connectionEstablished);
+
 	return serverBlock;
 }
 

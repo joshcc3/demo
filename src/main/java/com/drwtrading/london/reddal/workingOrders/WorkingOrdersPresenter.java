@@ -47,7 +47,7 @@ public class WorkingOrdersPresenter {
     private final Publisher<StatsMsg> statsMsgPublisher;
     private final Publisher<Main.RemoteOrderCommandToServer> commands;
 
-    private final Collection<String> nibblers;
+    private final Map<String, Boolean> nibblersStatus;
 
     private final WebSocketViews<IWorkingOrderView> views;
     private final Map<String, WorkingOrderUpdateFromServer> workingOrders;
@@ -70,7 +70,10 @@ public class WorkingOrdersPresenter {
         this.statsMsgPublisher = statsMsgPublisher;
         this.commands = commands;
 
-        this.nibblers = nibblers;
+        this.nibblersStatus = new HashMap<>();
+        for (final String nibbler : nibblers) {
+            nibblersStatus.put(nibbler, false);
+        }
 
         this.views = WebSocketViews.create(IWorkingOrderView.class, this);
         this.workingOrders = new HashMap<>();
@@ -100,25 +103,29 @@ public class WorkingOrdersPresenter {
         }
     }
 
-    public void nibblerConnectionLost(final WorkingOrderConnectionEstablished connectionLost) {
+    public void nibblerConnectionEstablished(final WorkingOrderConnectionEstablished connectionEstablished) {
 
-        final List<WorkingOrderUpdateFromServer> removed = new LinkedList<>();
-        for (final WorkingOrderUpdateFromServer update : workingOrders.values()) {
-            if (connectionLost.server.equals(update.fromServer)) {
-                removed.add(update);
+        nibblersStatus.put(connectionEstablished.server, connectionEstablished.established);
+        views.all().addNibbler(connectionEstablished.server, connectionEstablished.established);
+
+        if (connectionEstablished.established) {
+            final List<WorkingOrderUpdateFromServer> removed = new LinkedList<>();
+            for (final WorkingOrderUpdateFromServer update : workingOrders.values()) {
+                if (connectionEstablished.server.equals(update.fromServer)) {
+                    removed.add(update);
+                }
             }
-        }
 
-        for (final WorkingOrderUpdateFromServer update : removed) {
-            workingOrders.remove(update.key());
+            for (final WorkingOrderUpdateFromServer update : removed) {
+                workingOrders.remove(update.key());
 
-            final WorkingOrderUpdate prev = update.value;
-            final WorkingOrderUpdate delete =
-                    new WorkingOrderUpdate(prev.getServerName(), prev.getSymbol(), prev.getTag(), prev.getChainId(), prev.getPrice(),
-                            prev.getTotalQuantity(), prev.getFilledQuantity(), prev.getSide(), WorkingOrderState.DEAD,
-                            prev.getWorkingOrderType(), prev.getMoneyStatus(), prev.getMetadata());
-            final WorkingOrderUpdateFromServer deleteUpdate = new WorkingOrderUpdateFromServer(update.fromServer, delete);
-            dirty.put(deleteUpdate.key(), deleteUpdate);
+                final WorkingOrderUpdate prev = update.value;
+                final WorkingOrderUpdate delete =
+                        new WorkingOrderUpdate(prev.getServerName(), prev.getSymbol(), prev.getTag(), prev.getChainId(), prev.getPrice(),
+                                prev.getTotalQuantity(), prev.getFilledQuantity(), prev.getSide(), WorkingOrderState.DEAD, prev.getWorkingOrderType(), prev.getMoneyStatus(), prev.getMetadata());
+                final WorkingOrderUpdateFromServer deleteUpdate = new WorkingOrderUpdateFromServer(update.fromServer, delete);
+                dirty.put(deleteUpdate.key(), deleteUpdate);
+            }
         }
     }
 
@@ -128,8 +135,8 @@ public class WorkingOrdersPresenter {
         webLog.write("workingOrders", connected, true, ++numViewers);
         final IWorkingOrderView view = views.register(connected);
 
-        for (final String nibbler : nibblers) {
-            view.addNibbler(nibbler);
+        for (final Map.Entry<String, Boolean> nibbler : nibblersStatus.entrySet()) {
+            view.addNibbler(nibbler.getKey(), nibbler.getValue());
         }
         for (final WorkingOrderUpdateFromServer update : workingOrders.values()) {
             publishWorkingOrderUpdate(view, update);
@@ -161,7 +168,7 @@ public class WorkingOrdersPresenter {
     public void shutdownAll(final WebSocketInboundData data) {
 
         final String user = data.getClient().getUserName();
-        for (final String nibbler : nibblers) {
+        for (final String nibbler : nibblersStatus.keySet()) {
             shutdownOMS(nibbler, user, "Working orders - Shutdown ALL exchanges.");
         }
     }
@@ -190,7 +197,7 @@ public class WorkingOrdersPresenter {
     private void cancelAllNoneGTC(final String user, final String reason) {
 
         workingOrders.values().stream().filter(NON_GTC_FILTER).forEach(order -> cancel(user, order));
-        for (final String nibbler : nibblers) {
+        for (final String nibbler : nibblersStatus.keySet()) {
             stopAllStrategies(nibbler, user, reason);
         }
     }
@@ -212,7 +219,7 @@ public class WorkingOrdersPresenter {
 
         final String user = data.getClient().getUserName();
         workingOrders.values().stream().forEach(order -> cancel(user, order));
-        for (final String nibbler : nibblers) {
+        for (final String nibbler : nibblersStatus.keySet()) {
             stopAllStrategies(nibbler, user, "Working orders - Cancel ALL exchange.");
         }
     }

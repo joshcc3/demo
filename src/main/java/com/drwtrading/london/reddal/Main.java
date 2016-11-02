@@ -425,7 +425,7 @@ public class Main {
                 fibers.ui.subscribe(presenter, ws);
                 channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
                 channels.workingOrders.subscribe(fibers.ui.getFiber(), presenter::onWorkingOrder);
-                channels.workingOrderConnectionEstablished.subscribe(fibers.ui.getFiber(), msg -> presenter.nibblerConnectionLost(msg));
+                channels.workingOrderConnectionEstablished.subscribe(fibers.ui.getFiber(), presenter::nibblerConnectionEstablished);
             }
 
             { // Stock alert screen
@@ -691,7 +691,8 @@ public class Main {
             client.handler(new InboundTimeoutWatchdog<>(fibers.workingOrders.getFiber(),
                     new ConnectionCloser(channels.stats, "Working order: " + server), SERVER_TIMEOUT));
 
-            final WorkingOrderConnectionEstablished connectionEstablished = new WorkingOrderConnectionEstablished(server);
+            final WorkingOrderConnectionEstablished connectionEstablished = new WorkingOrderConnectionEstablished(server, true);
+            final WorkingOrderConnectionEstablished connectionLost = new WorkingOrderConnectionEstablished(server, false);
             final PhotocolsHandler<WorkingOrderEvent, Void> workingOrderLostPublisher = new PhotocolsHandler<WorkingOrderEvent, Void>() {
                 @Override
                 public PhotocolsConnection<Void> onOpen(final PhotocolsConnection<Void> connection) {
@@ -701,12 +702,12 @@ public class Main {
 
                 @Override
                 public void onConnectFailure() {
-                    // no-op
+                    channels.workingOrderConnectionEstablished.publish(connectionLost);
                 }
 
                 @Override
                 public void onClose(final PhotocolsConnection<Void> connection) {
-                    // no-op
+                    channels.workingOrderConnectionEstablished.publish(connectionLost);
                 }
 
                 @Override

@@ -59,6 +59,10 @@ div .hidden, #workingOrders.hideNoneEnder .row.notEnder {
 	vertical-align: middle;
 }
 
+.connectionLost {
+	background-color: #dd989a;
+}
+
 .row {
 	font-size: 0;
 	white-space: nowrap;
