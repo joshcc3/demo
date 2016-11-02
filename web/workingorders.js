@@ -91,6 +91,7 @@ function getNibbler(server) {
 		headerName.text(server);
 
 		var rowsBlock = serverBlock.find(".rows");
+		rowsBlock.toggleClass("hidden", true);
 		serverBlock.find(".serverDetails").unbind().bind("click", function () {
 			rowsBlock.toggleClass("hidden", !rowsBlock.hasClass("hidden"))
 		});
