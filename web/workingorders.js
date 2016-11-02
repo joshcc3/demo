@@ -74,6 +74,13 @@ function setButtonDisabled(cancelAllGTC, cancelButton, shutdownButton) {
 
 function addNibbler(server, connectionEstablished) {
 
+	var serverBlock = getNibbler(server);
+	serverBlock.toggleClass("connectionLost", !connectionEstablished);
+}
+
+
+function getNibbler(server) {
+
 	var serverBlock = $('#' + server);
 	if (!serverBlock[0]) {
 		serverBlock = $("#serverBlockTemplate").clone();
@@ -118,15 +125,13 @@ function addNibbler(server, connectionEstablished) {
 		setOrderCount(serverBlock);
 	}
 
-	serverBlock.toggleClass("connectionLost", !connectionEstablished);
-
 	return serverBlock;
 }
 
 function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantity, quantity, state, orderType, tag, server, isDead) {
 
 	var row = Rows[key];
-	var serverBlock = addNibbler(server);
+	var serverBlock = getNibbler(server);
 
 	if (isDead) {
 		if (row) {
@@ -139,7 +144,7 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 			row = $("#header").clone().removeAttr("id");
 			Rows[key] = row;
 
-			var serverBlock = addNibbler(server);
+			var serverBlock = getNibbler(server);
 			var rows = serverBlock.find(".rows");
 			rows.append(row);
 		}
