@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import sun.misc.SharedSecrets;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 
 public class EnumSwitcher<E extends Enum<E>> {
@@ -14,14 +15,28 @@ public class EnumSwitcher<E extends Enum<E>> {
     E current = null;
     int currentIdx = 0;
 
-    public EnumSwitcher(final Class<E> clazz, final EnumSet<E> validChoices) {
-        this.validChoices = validChoices;
-        Preconditions.checkArgument(!validChoices.isEmpty(),
-                "Need at least one valid choice for enum switcher " + clazz.getName() + ", got " + validChoices);
+    @SafeVarargs
+    public EnumSwitcher(final Class<E> clazz, final E... validChoices) {
+
         this.universe = getUniverse(clazz);
         Preconditions.checkArgument(universe.length > 0,
                 "Need at least one element enum switcher " + clazz.getName() + ", got " + Arrays.asList(universe));
+
+        this.validChoices = EnumSet.noneOf(clazz);
+        setValidChoices(validChoices);
+
         current = universe[currentIdx];
+    }
+
+    @SafeVarargs
+    public final void setValidChoices(final E... validChoices) {
+
+        if (validChoices.length < 1) {
+            throw new IllegalArgumentException("Need at least one valid choice from [" + Arrays.toString(universe) + "].");
+        } else {
+            this.validChoices.clear();
+            Collections.addAll(this.validChoices, validChoices);
+        }
     }
 
     public E next() {
@@ -63,5 +78,4 @@ public class EnumSwitcher<E extends Enum<E>> {
     public boolean isValidChoice(final E choice) {
         return validChoices.contains(choice);
     }
-
 }

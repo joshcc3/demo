@@ -21,5 +21,4 @@ public class BogusErrorFilteringPublisher implements Publisher<Throwable> {
         publisher.publish(msg);
     }
 
-
 }

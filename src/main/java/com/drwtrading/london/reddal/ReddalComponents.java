@@ -30,6 +30,9 @@ public enum ReddalComponents implements IMonitoredComponent {
     MD_MD_SERVER_UPDATE,
     MD_MD_SERVER_VIEWER,
 
+    STACK_GROUP_CLIENT,
+    STACK_CONFIG_CLIENT,
+
     YODA,
 
     SAFETY_WORKING_ORDER_VIEWER;

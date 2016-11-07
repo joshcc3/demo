@@ -19,11 +19,8 @@ public enum ManagedOrderType {
         @Override
         public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
-                    Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false),
-                    new PredictionParameters(false)
-            );
+                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
+                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(false));
         }
 
         @Override
@@ -39,8 +36,7 @@ public enum ManagedOrderType {
             }
             qty = getQty(qty);
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
-                    Constants.NO_TAKING,
+                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
                     new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false),
                     new PredictionParameters(false));
         }
@@ -62,10 +58,8 @@ public enum ManagedOrderType {
         @Override
         public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
-                    Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false),
-                    new PredictionParameters(false));
+                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
+                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(false));
         }
 
         @Override
@@ -78,10 +72,8 @@ public enum ManagedOrderType {
         @Override
         public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
-                    Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false),
-                    new PredictionParameters(true));
+                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
+                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
         }
 
         @Override
@@ -93,11 +85,8 @@ public enum ManagedOrderType {
     YODA {
         @Override
         public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
-            return new OrderParameters(new PegToBook(BookPegLevel.MID),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
-                    Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false),
-                    new PredictionParameters(true));
+            return new OrderParameters(new PegToBook(BookPegLevel.MID), Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
+                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
         }
 
         @Override
@@ -113,8 +102,7 @@ public enum ManagedOrderType {
             }
             qty = getQty(qty);
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
-                    Constants.NO_TAKING,
+                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
                     new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false),
                     new PredictionParameters(false));
         }
@@ -136,10 +124,8 @@ public enum ManagedOrderType {
         @Override
         public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
-                    Constants.TAKE_BETTER_BY_ONE,
-                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false),
-                    new PredictionParameters(false));
+                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.TAKE_BETTER_BY_ONE,
+                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(false));
         }
 
         @Override
@@ -155,8 +141,7 @@ public enum ManagedOrderType {
             }
             qty = getQty(qty);
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
-                    Constants.TAKE_BETTER_BY_ONE,
+                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.TAKE_BETTER_BY_ONE,
                     new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false),
                     new PredictionParameters(false));
         }
@@ -176,7 +161,6 @@ public enum ManagedOrderType {
         return qty - (qty % i);
     }
 
-
     public abstract OrderParameters getOrder(final long price, final int qty, OrderSide orderSide);
 
     public abstract boolean requiresLean();
@@ -188,6 +172,7 @@ public enum ManagedOrderType {
     ;
 
     private static class Constants {
+
         public static final BookParameters ALLOW_ALL_EXCEPT_STATE_TRANSITION = new BookParameters(true, true, false, true, true);
         public static final TakingParameters TAKE_BETTER_BY_ONE = new TakingParameters(true, 0, 100, 2, true, 1);
         public static final TakingParameters NO_TAKING = new TakingParameters(false, 0, 0, 0, false, 0);

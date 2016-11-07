@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.util;
 
-import com.drwtrading.london.reddal.ladders.LadderView;
+import com.drwtrading.london.reddal.ladders.PricingMode;
 import org.junit.Test;
 
 import java.util.EnumSet;
@@ -12,27 +12,27 @@ public class EnumSwitcherTest {
 
     @Test
     public void test_works() {
-        EnumSwitcher<LadderView.PricingMode> switcher = new EnumSwitcher<>(LadderView.PricingMode.class, EnumSet.allOf(LadderView.PricingMode.class));
-        assertEquals(LadderView.PricingMode.BPS, switcher.get());
-        assertEquals(LadderView.PricingMode.EFP, switcher.next());
-        assertEquals(LadderView.PricingMode.RAW, switcher.next());
-        assertEquals(LadderView.PricingMode.BPS, switcher.next());
+        final EnumSwitcher<PricingMode> switcher = new EnumSwitcher<>(PricingMode.class, PricingMode.values());
+        assertEquals(PricingMode.BPS, switcher.get());
+        assertEquals(PricingMode.EFP, switcher.next());
+        assertEquals(PricingMode.RAW, switcher.next());
+        assertEquals(PricingMode.BPS, switcher.next());
     }
 
     @Test
     public void test_skips_some() {
-        EnumSwitcher<LadderView.PricingMode> switcher = new EnumSwitcher<>(LadderView.PricingMode.class, EnumSet.of(LadderView.PricingMode.BPS, LadderView.PricingMode.RAW));
-        assertEquals(LadderView.PricingMode.BPS, switcher.get());
-        assertEquals(LadderView.PricingMode.RAW, switcher.next());
-        assertEquals(LadderView.PricingMode.BPS, switcher.next());
-        assertEquals(LadderView.PricingMode.BPS, switcher.get());
+        final EnumSwitcher<PricingMode> switcher = new EnumSwitcher<>(PricingMode.class, PricingMode.BPS, PricingMode.RAW);
+        assertEquals(PricingMode.BPS, switcher.get());
+        assertEquals(PricingMode.RAW, switcher.next());
+        assertEquals(PricingMode.BPS, switcher.next());
+        assertEquals(PricingMode.BPS, switcher.get());
     }
 
     @Test
     public void test_refuses_empty() {
         try {
-            EnumSwitcher<LadderView.PricingMode> switcher = new EnumSwitcher<>(LadderView.PricingMode.class, EnumSet.noneOf(LadderView.PricingMode.class));
-        } catch (IllegalArgumentException e) {
+            final EnumSwitcher<PricingMode> switcher = new EnumSwitcher<>(PricingMode.class);
+        } catch (final IllegalArgumentException ignored) {
             return;
         }
         assertFalse("Should have thrown an exception", true);

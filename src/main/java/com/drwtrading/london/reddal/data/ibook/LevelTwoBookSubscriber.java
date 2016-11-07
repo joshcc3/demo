@@ -35,6 +35,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
     private final Map<String, MDForSymbol> listeners;
 
     private final SimpleDateFormat sdf;
+    private final long timezoneOffsetMillis;
 
     public LevelTwoBookSubscriber(final boolean isPrimary, final IResourceMonitor<ReddalComponents> monitor,
             final Channel<SearchResult> searchResults, final Channel<StockAlert> stockAlertChannel) {
@@ -52,6 +53,8 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
 
         this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
         this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
+
+        this.timezoneOffsetMillis = DateTimeUtil.LONDON_TIME_ZONE.getOffset(System.currentTimeMillis());
     }
 
     public void setMDClient(final MDSource mdSource, final MDTransportClient client) {
@@ -79,7 +82,8 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
     public void referencePrice(final IBook<IBookLevel> book, final IBookReferencePrice referencePriceData) {
 
         if (isPrimary && book.isValid() && referencePriceData.isValid() && ReferencePoint.RFQ == referencePriceData.getReferencePoint()) {
-            final String timestamp = sdf.format(referencePriceData.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS);
+            final String timestamp =
+                    sdf.format(timezoneOffsetMillis + (referencePriceData.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS));
             final StockAlert stockAlert = new StockAlert(timestamp, "RFQ", book.getSymbol(), "Qty: " + referencePriceData.getQty());
             stockAlertChannel.publish(stockAlert);
         }

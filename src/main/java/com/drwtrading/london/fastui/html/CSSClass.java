@@ -1,8 +1,11 @@
 package com.drwtrading.london.fastui.html;
 
+import java.util.EnumSet;
+
 public enum CSSClass {
 
     INVISIBLE("invisible"),
+    FULL_WIDTH("fullWidth"),
 
     ACTIVE_MODE("active_mode"),
 
@@ -44,6 +47,9 @@ public enum CSSClass {
     WORKING_OFFER("working_offer"),
     WORKING_ORDER_TYPE("working_order_type_"),
 
+    STACK_VIEW("stackView"),
+    STACK_QTY("stackQty"),
+
     EEIF_ORDER_TYPE("eeif_order_type_managed"),
 
     MKT_CLOSE("MKT_CLOSE"),
@@ -64,6 +70,13 @@ public enum CSSClass {
     IOC("IOC"),
     GTC("GTC"),
     QUICKDRAW("QUICKDRAW"),
+
+    PICARD("PICARD"),
+    QUOTER("QUOTER"),
+
+    ONE_SHOT("ONE_SHOT"),
+    AUTO_MANAGE("AUTO_MANAGE"),
+    REFRESHABLE("REFRESHABLE"),
 
     WORKING_ORDER_TYPE_HIDDEN_TICKTAKER("working_order_type_hidden_ticktaker"),
     WORKING_ORDER_TYPE_TICKTAKER("working_order_type_ticktaker"),
@@ -93,5 +106,13 @@ public enum CSSClass {
 
     private CSSClass(final String cssText) {
         this.cssText = cssText;
+    }
+
+    public static final EnumSet<CSSClass> STACK_TYPES;
+    public static final EnumSet<CSSClass> STACK_ORDER_TYPES;
+
+    static {
+        STACK_TYPES = EnumSet.of(QUOTER, PICARD);
+        STACK_ORDER_TYPES = EnumSet.of(ONE_SHOT, AUTO_MANAGE, REFRESHABLE);
     }
 }

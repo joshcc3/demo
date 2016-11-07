@@ -93,9 +93,6 @@ public class Environment {
         final Collection<CSSClass> leftClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesLeft");
         final Collection<CSSClass> rightClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesRight");
         final Collection<String> traders = tradingGroup.getParam("traders").getSet(Pattern.compile(","));
-        final Collection<String> fxTraders = tradingGroup.paramExists("fxTraders") ?
-                tradingGroup.getParam("fxTraders").getSet(Pattern.compile(","))
-                : Collections.emptyList();
         final String theoLaserLine = tradingGroup.getString("theoLaserLine");
         final double reloadFraction = tradingGroup.getDouble("randomReloadFraction");
         final String basketURL;
@@ -104,7 +101,7 @@ public class Environment {
         } else {
             basketURL = null;
         }
-        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, fxTraders, theoLaserLine, getServerResolver(), reloadFraction,
+        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, theoLaserLine, getServerResolver(), reloadFraction,
                 basketURL);
     }
 
@@ -170,36 +167,39 @@ public class Environment {
         final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<>();
 
         final ConfigGroup remoteCommands = config.getGroup(REMOTE_COMMANDS);
-        final String[] orderedServers = config.getString(REMOTE_COMMANDS).split(",");
+        final String[] orderedServers = config.getString(REMOTE_COMMANDS).trim().split(",");
         for (final String orderedServer : orderedServers) {
             final String remoteServer = orderedServer.trim();
-            final ConfigGroup remoteServerCMDs = remoteCommands.getGroup(remoteServer);
+            if (!"".equals(remoteServer)) {
+                final ConfigGroup remoteServerCMDs = remoteCommands.getGroup(remoteServer);
 
-            final String symbolRegex;
-            if (remoteServerCMDs.paramExists("symbolRegex")) {
-                symbolRegex = remoteServerCMDs.getString("symbolRegex");
-            } else {
-                symbolRegex = ".*";
+                final String symbolRegex;
+                if (remoteServerCMDs.paramExists("symbolRegex")) {
+                    symbolRegex = remoteServerCMDs.getString("symbolRegex");
+                } else {
+                    symbolRegex = ".*";
+                }
+
+                final Pattern pattern = Pattern.compile(symbolRegex);
+
+                final Collection<String> orderTypesRaw;
+                if (remoteServerCMDs.paramExists("orderTypes")) {
+                    orderTypesRaw = remoteServerCMDs.getParam("orderTypes").getSet(Pattern.compile(","));
+                } else {
+                    orderTypesRaw = null;
+                }
+
+                final Collection<String> tagsRaw;
+                if (remoteServerCMDs.paramExists("tags")) {
+                    tagsRaw = remoteServerCMDs.getParam("tags").getSet(Pattern.compile(","));
+                } else {
+                    tagsRaw = null;
+                }
+
+                System.out.println(
+                        '\t' + remoteServer + ": regex '" + symbolRegex + "', order types: " + orderTypesRaw + ", tags: " + tagsRaw);
+                matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypesRaw, tagsRaw));
             }
-
-            final Pattern pattern = Pattern.compile(symbolRegex);
-
-            final Collection<String> orderTypesRaw;
-            if (remoteServerCMDs.paramExists("orderTypes")) {
-                orderTypesRaw = remoteServerCMDs.getParam("orderTypes").getSet(Pattern.compile(","));
-            } else {
-                orderTypesRaw = null;
-            }
-
-            final Collection<String> tagsRaw;
-            if (remoteServerCMDs.paramExists("tags")) {
-                tagsRaw = remoteServerCMDs.getParam("tags").getSet(Pattern.compile(","));
-            } else {
-                tagsRaw = null;
-            }
-
-            System.out.println('\t' + remoteServer + ": regex '" + symbolRegex + "', order types: " + orderTypesRaw + ", tags: " + tagsRaw);
-            matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypesRaw, tagsRaw));
         }
         return getRemoteOrderServerResolver(matchers);
     }
@@ -216,6 +216,7 @@ public class Environment {
     }
 
     public static interface RemoteOrderServerResolver {
+
         public String resolveToServerName(final String symbol, final String orderType, final String tag);
 
         default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType, final String tag) {
@@ -236,7 +237,8 @@ public class Environment {
         }
 
         public boolean matches(final String symbol, final String orderType, final String tag) {
-            return symbolPattern.matcher(symbol).find() && (orderTypes == null || orderTypes.contains(orderType) && (tags == null || tags.contains(tag)));
+            return symbolPattern.matcher(symbol).find() &&
+                    (orderTypes == null || orderTypes.contains(orderType) && (tags == null || tags.contains(tag)));
         }
     }
 

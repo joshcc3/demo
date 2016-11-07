@@ -7,6 +7,9 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
+import com.drwtrading.london.eeif.stack.transport.StackTransportComponents;
+import com.drwtrading.london.eeif.stack.transport.cache.StackCacheFactory;
+import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.config.Config;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
@@ -61,11 +64,11 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
+import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
-import com.drwtrading.london.reddal.ladders.LadderView;
 import com.drwtrading.london.reddal.ladders.LadderWorkspace;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
@@ -79,6 +82,10 @@ import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.stacks.StackConfigCallbackBatcher;
+import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
+import com.drwtrading.london.reddal.stacks.configui.StackConfigNibblerView;
+import com.drwtrading.london.reddal.stacks.configui.StackConfigUIRouter;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.stockAlerts.StockAlertPresenter;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaRestingOrderClient;
@@ -186,7 +193,7 @@ public class Main {
         public final TypedChannel<DisplaySymbol> displaySymbol;
         public final TypedChannel<SearchResult> searchResults;
         public final TypedChannel<StockAlert> stockAlerts;
-        public final TypedChannel<LadderView.HeartbeatRoundtrip> heartbeatRoundTrips;
+        public final TypedChannel<HeartbeatRoundtrip> heartbeatRoundTrips;
         private final ChannelFactory channelFactory;
         public final TypedChannel<ReddalMessage> reddalCommand;
         public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
@@ -222,7 +229,7 @@ public class Main {
             this.displaySymbol = create(DisplaySymbol.class);
             this.searchResults = create(SearchResult.class);
             this.stockAlerts = create(StockAlert.class);
-            this.heartbeatRoundTrips = create(LadderView.HeartbeatRoundtrip.class);
+            this.heartbeatRoundTrips = create(HeartbeatRoundtrip.class);
             this.reddalCommand = create(ReddalMessage.class);
             this.reddalCommandSymbolAvailable = create(ReddalMessage.class);
             this.recenterLaddersForUser = create(RecenterLaddersForUser.class);
@@ -442,6 +449,7 @@ public class Main {
                     new MultiLayeredResourceMonitor<>(monitor, ReddalComponents.class, errorLog);
 
             final ConfigGroup mdConfig = root.getEnabledGroup("md");
+            final ConfigGroup stackConfig = root.getEnabledGroup("stacks");
 
             final List<TypedChannel<WebSocketControlMessage>> webSockets = Lists.newArrayList();
             for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
@@ -468,6 +476,8 @@ public class Main {
                         MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
                                 ReddalComponents.class, "MD_", errorLog);
 
+                final String localAppName = "reddal-" + configName + '-' + i;
+
                 int mdCount = 0;
                 for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
 
@@ -480,8 +490,8 @@ public class Main {
                             mdParentMonitor.createChildResourceMonitor(mdSource.name());
 
                     final MDTransportClient mdClient =
-                            MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource,
-                                    "reddal-" + configName + '-' + i, l3BookHandler, l2BookHandler, MD_SERVER_TIMEOUT, true);
+                            MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource, localAppName,
+                                    l3BookHandler, l2BookHandler, MD_SERVER_TIMEOUT, true);
                     l3BookHandler.setMDClient(mdSource, mdClient);
                     l2BookHandler.setMDClient(mdSource, mdClient);
 
@@ -504,6 +514,27 @@ public class Main {
                                 channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
                                 channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
 
+                if (null != stackConfig) {
+
+                    final MultiLayeredResourceMonitor<StackTransportComponents> stackParentMonitor =
+                            MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Stacks", errorLog,
+                                    StackTransportComponents.class, ReddalComponents.STACK_GROUP_CLIENT);
+
+                    for (final ConfigGroup stackConnectionConfig : stackConfig.groups()) {
+
+                        final String connectionName = localAppName + '-' + stackConnectionConfig.getKey();
+                        final IResourceMonitor<StackTransportComponents> stackMonitor =
+                                stackParentMonitor.createChildResourceMonitor(connectionName);
+
+                        final StackGroupCallbackBatcher stackUpdateBatcher = new StackGroupCallbackBatcher(presenter);
+                        final StackClientHandler clientHandler =
+                                StackCacheFactory.createClientCache(displaySelectIO, stackConnectionConfig, stackMonitor, connectionName,
+                                        localAppName, stackUpdateBatcher);
+
+                        stackUpdateBatcher.setStackClient(clientHandler);
+                    }
+                }
+
                 final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
                 fiberBuilder.subscribe(presenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
                         channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
@@ -519,8 +550,46 @@ public class Main {
             // Ladder router
             final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("ladder", "ladder", fibers.ladder, webapp, ladderWebSocket);
-            final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(webLog, webSockets);
+            final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(webLog, webSockets, fibers.ui);
             fibers.ladder.subscribe(ladderMessageRouter, ladderWebSocket);
+
+            if (null != stackConfig) {
+
+                final IResourceMonitor<ReddalComponents> stackConfigMonitor = parentMonitor.createChildResourceMonitor("StackConfig");
+                final MultiLayeredResourceMonitor<StackTransportComponents> stackParentMonitor =
+                        MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(stackConfigMonitor, "Stacks", errorLog,
+                                StackTransportComponents.class, ReddalComponents.STACK_GROUP_CLIENT);
+
+                final MappedResourceMonitor<SelectIOComponents, ReddalComponents> selectIOMonitor =
+                        MappedResourceMonitor.mapMonitorByName(stackConfigMonitor, SelectIOComponents.class, ReddalComponents.class,
+                                "SELECT_IO_");
+                final SelectIO stackConfigSelectIO = new SelectIO(selectIOMonitor);
+
+                final StackConfigUIRouter stackConfigUIRouter = new StackConfigUIRouter(fibers.ui, webLog);
+
+                for (final ConfigGroup stackConnectionConfig : stackConfig.groups()) {
+
+                    final String nibblerName = stackConnectionConfig.getKey();
+                    final String connectionName = "reddalConfig-" + configName + '-' + nibblerName;
+                    final IResourceMonitor<StackTransportComponents> stackMonitor =
+                            stackParentMonitor.createChildResourceMonitor(connectionName);
+
+                    final StackConfigNibblerView configPresenter = stackConfigUIRouter.getNibblerHandler(nibblerName);
+                    final StackConfigCallbackBatcher stackUpdateBatcher = new StackConfigCallbackBatcher(configPresenter);
+                    final StackClientHandler clientHandler =
+                            StackCacheFactory.createClientCache(stackConfigSelectIO, stackConnectionConfig, stackMonitor, connectionName,
+                                    "stackConfig", stackUpdateBatcher);
+
+                    configPresenter.setConfigClient(clientHandler);
+                }
+                final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(stackConfigSelectIO, errorLog, "Stack Config SelectIO.");
+                fibers.fiberGroup.wrap(displaySelectIOFiber, "Stack Config SelectIO Fiber.");
+
+                // Config router
+                final TypedChannel<WebSocketControlMessage> configWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("stackConfig", "stackConfig", fibers.ladder, webapp, configWebSocket);
+                fibers.ladder.subscribe(stackConfigUIRouter, configWebSocket);
+            }
         }
 
         // Non SSO-protected webapp to allow AJAX requests
@@ -623,18 +692,16 @@ public class Main {
         }
 
         // Meta data
-        {
-            for (final String server : environment.getList(Environment.METADATA)) {
-                final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.METADATA, server);
-                final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client =
-                        OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
-                                Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
-                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
-                client.logFile(logDir.resolve("metadata." + server + ".log").toFile(), fibers.logging.getFiber(), true);
-                client.handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10));
-                client.handler(new JetlangChannelHandler<>(channels.metaData));
-                fibers.onStart(client::start);
-            }
+        for (final String server : environment.getList(Environment.METADATA)) {
+            final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.METADATA, server);
+            final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client =
+                    OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
+                            Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
+            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
+            client.logFile(logDir.resolve("metadata." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+            client.handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10));
+            client.handler(new JetlangChannelHandler<>(channels.metaData));
+            fibers.onStart(client::start);
         }
 
         // Remote commands

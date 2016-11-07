@@ -46,7 +46,8 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
 
     private Map<Integer, String> seqNoToSymbol = new HashMap<>();
 
-    public OrderEntryClient(String thisInstance, IClock clock, String serverInstance, Fiber fiber, Publisher<SymbolOrderChannel> publisher, Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+    public OrderEntryClient(String thisInstance, IClock clock, String serverInstance, Fiber fiber, Publisher<SymbolOrderChannel> publisher,
+            Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
         this.thisInstance = thisInstance;
         this.clock = clock;
         this.serverInstance = serverInstance;
@@ -100,8 +101,10 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
         int expectedSeqNo = incomingSeqNo + 1;
         incomingSeqNo = message.getSessionSeqNo();
         long delayMs = clock.nowMilliUTC() - message.getMillisUtc();
-        Preconditions.checkArgument(serverInstance.equals(message.getFromInstance()), "Wrong instance: expecting %s, received %s, ", serverInstance, message.getFromInstance());
-        Preconditions.checkArgument(expectedSeqNo == message.getSessionSeqNo(), "Seq no doesn't match: expected %s, received %s", expectedSeqNo, message.getSessionSeqNo());
+        Preconditions.checkArgument(serverInstance.equals(message.getFromInstance()), "Wrong instance: expecting %s, received %s, ",
+                serverInstance, message.getFromInstance());
+        Preconditions.checkArgument(expectedSeqNo == message.getSessionSeqNo(), "Seq no doesn't match: expected %s, received %s",
+                expectedSeqNo, message.getSessionSeqNo());
         Preconditions.checkArgument(delayMs < 1000L, "Message delayed %d ms", delayMs);
         message.getMsg().accept(this);
     }
@@ -113,10 +116,8 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     @Override
     public Void visitAvailableSymbol(AvailableSymbol availableSymbol) {
         MemoryChannel<OrderEntryCommand> channel = new MemoryChannel<>();
-        Set<ManagedOrderType> orderTypes = Arrays.asList(ManagedOrderType.values())
-                .stream()
-                .filter(managedOrderType -> availableSymbol.isLeanAllowed() || !managedOrderType.requiresLean())
-                .collect(Collectors.toSet());
+        Set<ManagedOrderType> orderTypes = Arrays.asList(ManagedOrderType.values()).stream().filter(
+                managedOrderType -> availableSymbol.isLeanAllowed() || !managedOrderType.requiresLean()).collect(Collectors.toSet());
         publisher.publish(new SymbolOrderChannel(availableSymbol.getSymbol(), channel, orderTypes));
         channel.subscribe(fiber, this::send);
         return null;
@@ -153,6 +154,7 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     }
 
     public static class SymbolOrder extends Struct {
+
         public final String symbol;
 
         public SymbolOrder(String symbol) {
@@ -161,6 +163,7 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     }
 
     public static class SymbolOrderChannel extends Struct {
+
         public final String symbol;
         public final Publisher<OrderEntryCommand> publisher;
         public final Set<ManagedOrderType> supportedTypes;

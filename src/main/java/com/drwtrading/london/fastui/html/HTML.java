@@ -13,7 +13,6 @@ public class HTML {
     public static final String TEXT = "text_";
     /* Classes*/
     public static final String LASER = "laser_";
-    public static final String BLANK = " ";
     public static final String BUTTON_CLR = "btn_clear";
     public static final String INP_RELOAD = "inp_reload";
     public static final String WORKING_ORDER_TAG = "working_order_tags";
@@ -23,7 +22,8 @@ public class HTML {
     public static final String AUTO_HEDGE_LEFT = "chk_auto_hedge_left";
     public static final String AUTO_HEDGE_RIGHT = "chk_auto_hedge_right";
     public static final String BUTTONS = "button";
-    public static final String RANDOM_RELOAD = "chk_random_reload";
+    public static final String RANDOM_RELOAD = "random_reload";
+    public static final String RANDOM_RELOAD_CHECK = "chk_random_reload";
     /* Divs*/
     public static final String CLICK_TRADING_ISSUES = "click_trading_issues";
     public static final String DESK_POSITION = "desk_position";
@@ -31,6 +31,8 @@ public class HTML {
     public static final String LAST_TRADE_COD = "last_trade_cod";
     public static final String BUY_QTY = "buy_qty";
     public static final String SELL_QTY = "sell_qty";
+    public static final String BOOK_VIEW_BUTTON = "bookViewButton";
+    public static final String STACK_VIEW_BUTTON = "stackViewButton";
     public static final String CLOCK = "clock";
     public static final String POSITION = "position";
     public static final String LADDER = "ladder";
@@ -48,5 +50,4 @@ public class HTML {
     public static final String PRICING_RAW = "pricing_RAW";
     public static final String PRICING_EFP = "pricing_EFP";
     public static final String PRICING = "pricing_";
-    public static final String BOOK_STATE = "symbol";
 }

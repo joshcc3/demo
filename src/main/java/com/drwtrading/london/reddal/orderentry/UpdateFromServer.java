@@ -4,6 +4,7 @@ import com.drwtrading.london.photons.eeifoe.Update;
 import com.drwtrading.london.util.Struct;
 
 public class UpdateFromServer extends Struct implements OrderEntryFromServer {
+
     public final String server;
     public final Update update;
 

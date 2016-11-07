@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
+import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketControlMessage;
@@ -9,7 +10,6 @@ import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import it.unimi.dsi.fastutil.HashCommon;
 import org.jetlang.channels.Publisher;
@@ -25,16 +25,16 @@ public class LadderMessageRouter {
 
     private final Multimap<Publisher<WebSocketOutboundData>, WebSocketControlMessage> queue = HashMultimap.create();
     private final Map<Publisher<WebSocketOutboundData>, Publisher<WebSocketControlMessage>> redirects = new HashMap<>();
-    private final Map<String, Publisher<WebSocketControlMessage>> shards;
 
     private final List<TypedChannel<WebSocketControlMessage>> pool;
+    private final FiberBuilder logFiber;
 
-    public LadderMessageRouter(final UILogger webLog, final List<TypedChannel<WebSocketControlMessage>> pool) {
+    public LadderMessageRouter(final UILogger webLog, final List<TypedChannel<WebSocketControlMessage>> pool, final FiberBuilder logFiber) {
 
         this.webLog = webLog;
 
         this.pool = pool;
-        this.shards = new MapMaker().makeComputingMap(from -> null);
+        this.logFiber = logFiber;
     }
 
     @Subscribe
@@ -56,7 +56,7 @@ public class LadderMessageRouter {
 
         final String data = msg.getData();
         if (!data.startsWith("heartbeat")) {
-            webLog.write("ladderMsgRouter", msg);
+            logFiber.execute(() -> webLog.write("ladderMsgRouter", msg));
         }
 
         Publisher<WebSocketControlMessage> publisher = redirects.get(msg.getOutboundChannel());
@@ -80,8 +80,7 @@ public class LadderMessageRouter {
         }
     }
 
-    public int getShard(final String s, final int n) {
+    private static int getShard(final String s, final int n) {
         return Math.abs(HashCommon.murmurHash3(s.hashCode()) % n);
     }
-
 }

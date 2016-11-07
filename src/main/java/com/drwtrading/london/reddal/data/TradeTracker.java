@@ -30,7 +30,7 @@ public class TradeTracker {
 
         lastPrice = 0;
         minTradedPrice = Long.MAX_VALUE;
-        maxTradedPrice = 0;
+        maxTradedPrice = Long.MIN_VALUE;
 
         totalQtyTraded = 0;
         qtyRunAtLastPrice = 0;

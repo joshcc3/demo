@@ -122,7 +122,8 @@ public class WorkingOrdersPresenter {
                 final WorkingOrderUpdate prev = update.value;
                 final WorkingOrderUpdate delete =
                         new WorkingOrderUpdate(prev.getServerName(), prev.getSymbol(), prev.getTag(), prev.getChainId(), prev.getPrice(),
-                                prev.getTotalQuantity(), prev.getFilledQuantity(), prev.getSide(), WorkingOrderState.DEAD, prev.getWorkingOrderType(), prev.getMoneyStatus(), prev.getMetadata());
+                                prev.getTotalQuantity(), prev.getFilledQuantity(), prev.getSide(), WorkingOrderState.DEAD,
+                                prev.getWorkingOrderType(), prev.getMoneyStatus(), prev.getMetadata());
                 final WorkingOrderUpdateFromServer deleteUpdate = new WorkingOrderUpdateFromServer(update.fromServer, delete);
                 dirty.put(deleteUpdate.key(), deleteUpdate);
             }

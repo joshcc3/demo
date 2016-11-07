@@ -26,7 +26,8 @@ public class ConnectionCloser implements Notifier {
     public void onTimeout(final PhotocolsConnection connection, final Long millisSinceLastMessage) {
         if (closedConnections.add(connection)) {
             connection.close();
-            status.publish(new AdvisoryStat(name, AdvisoryStat.Level.INFO, "Disconnected " + name + ", idle for " + millisSinceLastMessage + "ms"));
+            status.publish(new AdvisoryStat(name, AdvisoryStat.Level.INFO,
+                    "Disconnected " + name + ", idle for " + millisSinceLastMessage + "ms"));
         }
     }
 

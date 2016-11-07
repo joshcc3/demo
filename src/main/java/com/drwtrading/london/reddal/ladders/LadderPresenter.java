@@ -1,7 +1,10 @@
 package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
+import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
@@ -11,10 +14,11 @@ import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.reddal.UserCycleRequest;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MDForSymbol;
+import com.drwtrading.london.reddal.data.SymbolMetaData;
+import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
@@ -26,6 +30,7 @@ import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
@@ -71,13 +76,15 @@ public class LadderPresenter {
     private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
     private final Map<String, OrderUpdatesForSymbol> eeifOrdersBySymbol = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
     private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(ExtraDataForSymbol::new);
+    private final Map<String, SymbolStackData> stackBySymbol = new MapMaker().makeComputingMap(SymbolStackData::new);
+    private final Map<String, SymbolMetaData> metaDataBySymbol = new MapMaker().makeComputingMap(SymbolMetaData::new);
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap = new HashMap<>();
     private final Map<String, MDForSymbol> marketDataForSymbolMap;
     private final Set<String> existingSymbols = new HashSet<>();
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
-    private final Publisher<LadderView.HeartbeatRoundtrip> roundTripPublisher;
+    private final Publisher<HeartbeatRoundtrip> roundTripPublisher;
     private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
@@ -90,7 +97,7 @@ public class LadderPresenter {
     public LadderPresenter(final DepthBookSubscriber bookHandler, final String ewokBaseURL,
             final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
             final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
-            final Publisher<LadderView.HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
 
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
@@ -113,10 +120,10 @@ public class LadderPresenter {
         this.orderEntryCommandToServerPublisher = orderEntryCommandToServerPublisher;
         this.ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(
                 symbol -> new MapMaker().makeComputingMap(user -> new LadderPrefsForSymbolUser(symbol, user, storeLadderPrefPublisher)));
-        this.marketDataForSymbolMap = new MapMaker().makeComputingMap(symbol -> subscribeToMarketDataForSymbol(symbol, fiber));
+        this.marketDataForSymbolMap = new MapMaker().makeComputingMap(this::subscribeToMarketDataForSymbol);
     }
 
-    private MDForSymbol subscribeToMarketDataForSymbol(final String symbol, final Fiber fiber) {
+    private MDForSymbol subscribeToMarketDataForSymbol(final String symbol) {
         return new MDForSymbol(bookHandler, symbol);
     }
 
@@ -134,7 +141,7 @@ public class LadderPresenter {
     @Subscribe
     public void onConnected(final WebSocketConnected connected) {
         final UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
-        final View view = new WebSocketOutputDispatcher<>(View.class).wrap(msg -> uiPipe.eval(msg.getData()));
+        final ILadderUI view = new WebSocketOutputDispatcher<>(ILadderUI.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final LadderView ladderView =
                 new LadderView(connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions, statsPublisher,
                         tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
@@ -170,7 +177,8 @@ public class LadderPresenter {
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
                 mdForSymbol.subscribeForMD();
-                view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), dataBySymbol.get(symbol),
+                view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), metaDataBySymbol.get(symbol),
+                        dataBySymbol.get(symbol), stackBySymbol.get(symbol),
                         ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()), eeifOrdersBySymbol.get(symbol));
                 if (3 < args.length) {
                     try {
@@ -187,8 +195,8 @@ public class LadderPresenter {
             }
         }
         if (!"heartbeat".equals(cmd)) {
-            trace.publish(new LadderView.InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args,
-                    UiPipeImpl.getDataArg(args)));
+            trace.publish(
+                    new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
         }
     }
 
@@ -215,12 +223,12 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(final DeskPosition deskPosition) {
-        dataBySymbol.get(deskPosition.getSymbol()).onDeskPosition(deskPosition);
+        metaDataBySymbol.get(deskPosition.getSymbol()).onDeskPosition(deskPosition);
     }
 
     @Subscribe
     public void on(final InfoOnLadder infoOnLadder) {
-        dataBySymbol.get(infoOnLadder.getSymbol()).onInfoOnLadder(infoOnLadder);
+        metaDataBySymbol.get(infoOnLadder.getSymbol()).onInfoOnLadder(infoOnLadder);
     }
 
     @Subscribe
@@ -228,7 +236,7 @@ public class LadderPresenter {
         if ("execution".equals(ladderText.getCell())) {
             on(new LadderClickTradingIssue(ladderText.getSymbol(), ladderText.getText()));
         } else {
-            dataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
+            metaDataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
         }
     }
 
@@ -239,25 +247,26 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(final SpreadContractSet spreadContractSet) {
-        dataBySymbol.get(spreadContractSet.front).onFuturesContractSet(spreadContractSet);
+
+        metaDataBySymbol.get(spreadContractSet.front).onFuturesContractSet(spreadContractSet);
         if (spreadContractSet.back != null) {
-            dataBySymbol.get(spreadContractSet.back).onFuturesContractSet(spreadContractSet);
+            metaDataBySymbol.get(spreadContractSet.back).onFuturesContractSet(spreadContractSet);
         }
         if (spreadContractSet.spread != null) {
-            dataBySymbol.get(spreadContractSet.spread).onFuturesContractSet(spreadContractSet);
+            metaDataBySymbol.get(spreadContractSet.spread).onFuturesContractSet(spreadContractSet);
         }
     }
 
     @Subscribe
     public void on(final ChixSymbolPair chixSymbolPair) {
 
-        dataBySymbol.get(chixSymbolPair.primarySymbol).setChixSwitchSymbol(chixSymbolPair.chixSymbol);
-        dataBySymbol.get(chixSymbolPair.chixSymbol).setChixSwitchSymbol(chixSymbolPair.primarySymbol);
+        metaDataBySymbol.get(chixSymbolPair.primarySymbol).setChixSwitchSymbol(chixSymbolPair.chixSymbol);
+        metaDataBySymbol.get(chixSymbolPair.chixSymbol).setChixSwitchSymbol(chixSymbolPair.primarySymbol);
     }
 
     @Subscribe
     public void on(final Position position) {
-        dataBySymbol.get(position.getSymbol()).onDayPosition(position);
+        metaDataBySymbol.get(position.getSymbol()).onDayPosition(position);
     }
 
     @Subscribe
@@ -303,7 +312,7 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(final DisplaySymbol displaySymbol) {
-        dataBySymbol.get(displaySymbol.marketDataSymbol).setDisplaySymbol(displaySymbol);
+        metaDataBySymbol.get(displaySymbol.marketDataSymbol).setDisplaySymbol(displaySymbol);
     }
 
     @Subscribe
@@ -353,7 +362,7 @@ public class LadderPresenter {
     public long flushAllLadders() {
         try {
             for (final LadderView ladderView : viewBySocket.values()) {
-                ladderView.flush();
+                ladderView.timedRefresh();
             }
         } catch (final Throwable t) {
             statsPublisher.publish(new AdvisoryStat("Reddal", AdvisoryStat.Level.WARNING, "Failed to flush [" + t.getMessage() + "]."));
@@ -367,5 +376,32 @@ public class LadderPresenter {
             ladderView.sendHeartbeat();
         }
         return BATCH_FLUSH_INTERVAL_MS;
+    }
+
+    public void stacksConnectionLost() {
+
+        for (final SymbolStackData stackData : stackBySymbol.values()) {
+            stackData.stackConnectionLost();
+        }
+    }
+
+    public void stackGroupCreated(final StackGroup stackGroup, final StackClientHandler stackClientHandler) {
+
+        final String symbol = stackGroup.getSymbol();
+        final SymbolStackData stackData = stackBySymbol.get(symbol);
+        stackData.setStackClientHandler(stackClientHandler);
+
+        stackGroupUpdated(stackGroup);
+    }
+
+    public void stackGroupUpdated(final StackGroup stackGroup) {
+
+        final String symbol = stackGroup.getSymbol();
+        final SymbolStackData stackData = stackBySymbol.get(symbol);
+        if (BookSide.BID == stackGroup.getSide()) {
+            stackData.setBidGroup(stackGroup);
+        } else {
+            stackData.setAskGroup(stackGroup);
+        }
     }
 }

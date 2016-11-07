@@ -1,0 +1,65 @@
+<html>
+<head>
+	<link rel="stylesheet" type="text/css" href="stackConfig.css">
+	<script src="jquery-1.8.3.js"></script>
+	<script src="js/websocket.js"></script>
+	<script src="js/websocket-ui.js"></script>
+	<script src="js/sound-files.js"></script>
+	<script src="js/sound-player.js"></script>
+	<script src="js/sounds.js"></script>
+	<script src="cell-functions.js"></script>
+	<script src="stackConfig.js"></script>
+	<title>Stacks Config</title>
+</head>
+<body>
+
+<body id="body">
+<div>
+	<div>
+		<label for="configTypes">Filter</label>
+		<select id="configTypes"></select>
+	</div>
+	<div id="table">
+		<div id="header" class="row">
+			<div class="configID symbol">Symbol</div>
+			<div class="configID side sided">Side</div>
+			<div class="configID configType">Config Type</div>
+
+			<div class="quoteInst maxBookAgeMillis">Quote Max Book Age Millis</div>
+			<div class="quoteInst isAuctionQuotingEnabled boolean">Quote Enable Auction</div>
+			<div class="quoteInst isOnlyAuction boolean">Quote Only Auction</div>
+			<div class="quoteInst auctionTheoMaxTicksThrough">Quote Ticks Through Auction Indicative</div>
+			<div class="quoteInst maxJumpBPS">Quote Max Jump BPS</div>
+			<div class="quoteInst bettermentQty">Quote Betterment Qty</div>
+			<div class="quoteInst bettermentTicks">Quote Betterment Ticks</div>
+
+			<div class="fx maxBookAgeMillis">FX Max Book Age Millis</div>
+			<div class="fx maxJumpBPS">FX Max Jump BPS</div>
+
+			<div class="leanInst maxBookAgeMillis">Lean Max Book Age Millis</div>
+			<div class="leanInst maxJumpBPS">Lean Max Jump BPS</div>
+			<div class="leanInst requiredQty">Lean Required Qty</div>
+
+			<div class="plan minLevelQty sided">Plan Min Level Qty</div>
+			<div class="plan maxLevelQty sided">Plan Max Level Qty</div>
+			<div class="plan lotSize sided">Plan Lot Size</div>
+			<div class="plan maxLevels sided">Plan Max Levels</div>
+
+			<div class="strategy maxOrdersPerLevel sided">Quote Max Orders Per Level</div>
+			<div class="strategy isQuoteBettermentOn sided boolean">Quote Betterment On</div>
+			<div class="strategy quoteFlickerBuffer sided">Quote Flicker Buffer</div>
+			<div class="strategy quotePicardMaxTicksThrough sided">Quote/Picard Max Ticks Through</div>
+			<div class="strategy picardMaxPerSec sided">Picard Max Per Sec</div>
+			<div class="strategy picardMaxPerMin sided">Picard Max Per Min</div>
+			<div class="strategy picardMaxPerHour sided">Picard Max Per Hour</div>
+			<div class="strategy picardMaxPerDay sided">Picard Max Per Day</div>
+
+			<div class="button">
+				<button type="button">submit</button>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+</body>
+</html>

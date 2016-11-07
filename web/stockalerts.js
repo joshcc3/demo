@@ -26,7 +26,7 @@ $(function () {
 
 function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 
-	var id = (type + symbol).replace(/ |\/|\.|:/g, "_");
+	var id = (type + symbol + timestamp).replace(/ |\/|\.|:/g, "_");
 	var row = $('#' + id);
 
 	if (row[0]) {
