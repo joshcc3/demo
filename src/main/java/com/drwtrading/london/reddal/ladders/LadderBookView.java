@@ -576,36 +576,38 @@ class LadderBookView implements ILadderBoard {
 
     private void drawLaserLines(final int levels) {
 
-        for (final LaserLine laserLine : dataForSymbol.laserLineByName.values()) {
+        if (null != marketData.getBook() && marketData.getBook().isValid()) {
+            for (final LaserLine laserLine : dataForSymbol.laserLineByName.values()) {
 
-            final String laserKey = HTML.LASER + laserLine.getId();
+                final String laserKey = HTML.LASER + laserLine.getId();
 
-            if (laserLine.isValid() && 0 < levels) {
+                if (laserLine.isValid() && 0 < levels) {
 
-                if (topPrice < laserLine.getPrice()) {
-                    final LadderBoardRow priceRow = priceRows.get(topPrice);
-                    ui.height(laserKey, priceRow.htmlKeys.priceKey, 0.5);
-                } else if (laserLine.getPrice() < bottomPrice) {
-                    final LadderBoardRow priceRow = priceRows.get(bottomPrice);
-                    ui.height(laserKey, priceRow.htmlKeys.priceKey, -0.5);
-                } else {
-                    long price = bottomPrice;
-                    while (price <= topPrice) {
-                        final long priceAbove = marketData.getBook().getTickTable().addTicks(price, 1);
-                        if (price <= laserLine.getPrice() && laserLine.getPrice() <= priceAbove && priceRows.containsKey(price)) {
-                            final long fractionalPrice = laserLine.getPrice() - price;
-                            final double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
-                            final LadderBoardRow priceRow = priceRows.get(price);
-                            ui.height(laserKey, priceRow.htmlKeys.priceKey, tickFraction);
-                            break;
+                    if (topPrice < laserLine.getPrice()) {
+                        final LadderBoardRow priceRow = priceRows.get(topPrice);
+                        ui.height(laserKey, priceRow.htmlKeys.priceKey, 0.5);
+                    } else if (laserLine.getPrice() < bottomPrice) {
+                        final LadderBoardRow priceRow = priceRows.get(bottomPrice);
+                        ui.height(laserKey, priceRow.htmlKeys.priceKey, -0.5);
+                    } else {
+                        long price = bottomPrice;
+                        while (price <= topPrice) {
+                            final long priceAbove = marketData.getBook().getTickTable().addTicks(price, 1);
+                            if (price <= laserLine.getPrice() && laserLine.getPrice() <= priceAbove && priceRows.containsKey(price)) {
+                                final long fractionalPrice = laserLine.getPrice() - price;
+                                final double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
+                                final LadderBoardRow priceRow = priceRows.get(price);
+                                ui.height(laserKey, priceRow.htmlKeys.priceKey, tickFraction);
+                                break;
+                            }
+                            price = priceAbove;
                         }
-                        price = priceAbove;
                     }
-                }
 
-                ui.cls(laserKey, CSSClass.INVISIBLE, false);
-            } else {
-                ui.cls(laserKey, CSSClass.INVISIBLE, true);
+                    ui.cls(laserKey, CSSClass.INVISIBLE, false);
+                } else {
+                    ui.cls(laserKey, CSSClass.INVISIBLE, true);
+                }
             }
         }
     }

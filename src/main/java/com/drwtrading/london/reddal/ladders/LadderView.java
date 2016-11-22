@@ -270,17 +270,21 @@ public class LadderView implements UiEventHandler {
         ui.clickable('#' + HTML.CLOCK);
         ui.clickable('#' + HTML.AFTER_HOURS_WEIGHT);
 
+        for (int i = 0; i < levels; i++) {
+            ui.clickable('#' + HTML.PRICE + i);
+        }
+        ui.clickable(HTML.BUTTONS);
+        ui.scrollable('#' + HTML.LADDER);
+
         final boolean isTrader = isTrader();
         if (isTrader) {
 
             for (int i = 0; i < levels; i++) {
-                ui.clickable('#' + HTML.PRICE + i);
                 ui.clickable('#' + HTML.BID + i);
                 ui.clickable('#' + HTML.OFFER + i);
                 ui.clickable('#' + HTML.ORDER + i);
             }
 
-            ui.clickable(HTML.BUTTONS);
             ui.clickable('#' + HTML.BUY_QTY);
             ui.clickable('#' + HTML.SELL_QTY);
             ui.clickable('#' + HTML.BUY_OFFSET_UP);
@@ -291,8 +295,6 @@ public class LadderView implements UiEventHandler {
             ui.clickable('#' + HTML.STOP_BUY);
             ui.clickable('#' + HTML.START_SELL);
             ui.clickable('#' + HTML.STOP_SELL);
-
-            ui.scrollable('#' + HTML.LADDER);
 
             ui.cls(HTML.OFFSET_CONTROL, CSSClass.INVISIBLE, false);
         }
