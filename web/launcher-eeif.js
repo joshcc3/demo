@@ -9,7 +9,7 @@ function openLink(ladderHost, symbol) {
         rawSymbol = symbol;
     }
     var link = 'http://' + ladderHost + '/ladder#' + symbol;
-    window.open(link, rawSymbol, "dialog=yes,width=262,height=325");
+    window.open(link, rawSymbol, "dialog=yes,width=262,height=350");
 }
 
 function launchLadderAtPrice(symbol,price) {

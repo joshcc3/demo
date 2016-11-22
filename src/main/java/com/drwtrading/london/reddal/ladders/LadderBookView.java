@@ -225,6 +225,9 @@ class LadderBookView implements ILadderBoard {
         this.pendingRefDataAndSettle = true;
 
         this.centeredPrice = centeredPrice;
+
+        this.bottomPrice = Long.MAX_VALUE;
+        this.topPrice = Long.MIN_VALUE;
     }
 
     @Override
@@ -351,7 +354,7 @@ class LadderBookView implements ILadderBoard {
             final long bookCenter = getCenterPrice();
             if (bookCenter < bottomPrice || topPrice < bookCenter) {
                 final long newCentrePrice;
-                if (centeredPrice == 0) {
+                if (0 == centeredPrice) {
                     newCentrePrice = bookCenter;
                 } else {
                     final long direction = (long) Math.signum(getCenterPrice() - centeredPrice);
@@ -786,9 +789,9 @@ class LadderBookView implements ILadderBoard {
             }
             buyQty += Math.max(buyHiddenTTQty, buyManagedQty);
             sellQty += Math.max(sellHiddenTTQty, sellManagedQty);
-            ui.cls(HTML.BUY_QTY, CSSClass.INVISIBLE, buyQty == 0);
+            ui.cls(HTML.BUY_QTY, CSSClass.INVISIBLE, 0 == buyQty);
             ui.txt(HTML.BUY_QTY, buyQty);
-            ui.cls(HTML.SELL_QTY, CSSClass.INVISIBLE, sellQty == 0);
+            ui.cls(HTML.SELL_QTY, CSSClass.INVISIBLE, 0 == sellQty);
             ui.txt(HTML.SELL_QTY, sellQty);
         }
     }
@@ -1097,7 +1100,7 @@ class LadderBookView implements ILadderBoard {
                 return;
             }
             tradingBoxQty = managedOrderType.getQty(tradingBoxQty);
-            if (tradingBoxQty == 0) {
+            if (0 == tradingBoxQty) {
                 tradingBoxQty = clickTradingBoxQty;
             }
             final OrderSide orderSide = side == Side.BID ? OrderSide.BUY : OrderSide.SELL;
