@@ -38,14 +38,17 @@ public class YodaRestingOrderClient implements ITransportCacheListener<YodaSymbo
     @Override
     public boolean setValue(final int localID, final RestingOrderSignal signal) {
 
-        final String timestamp = sdf.format(signal.milliSinceMidnight);
-        final String start = sdf.format(signal.timePlacedMilliSinceMidnight);
-        final String side = BookSide.BID == signal.getKey().side ? "Buy " : "Sell ";
-        final String price = priceDF.format(signal.price / (double) Constants.NORMALISING_FACTOR);
-        final String msg = side + signal.qty + " @ " + price + " [at " + start + "].";
+        if (0 < signal.price) {
+            final String timestamp = sdf.format(signal.milliSinceMidnight);
+            final String start = sdf.format(signal.timePlacedMilliSinceMidnight);
+            final String side = BookSide.BID == signal.getKey().side ? "Buy " : "Sell ";
+            final String price = priceDF.format(signal.price / (double) Constants.NORMALISING_FACTOR);
+            final String msg = side + signal.qty + " @ " + price + " [at " + start + "].";
 
-        final StockAlert alert = new StockAlert(timestamp, signal.key.signal.name(), signal.key.symbol, msg);
-        stockAlerts.publish(alert);
+            final StockAlert alert = new StockAlert(timestamp, signal.key.signal.name(), signal.key.symbol, msg);
+            stockAlerts.publish(alert);
+
+        }
         return true;
     }
 

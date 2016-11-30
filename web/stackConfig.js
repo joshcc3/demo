@@ -22,7 +22,6 @@ $(function () {
 	});
 
 	ws.send("subscribe-nibbler," + nibbler);
-
 	var configTypeCombo = $("#configTypes");
 	addConfigTypeOption(configTypeCombo, NO_FILTER);
 	configTypeCombo.on("change", function () {
@@ -145,11 +144,12 @@ function addConfigTypeOption(configTypeCombo, configType) {
 
 function setRow(id, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
 				quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis,
-				fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
-				bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer, bidQuotePicardMaxTicksThrough,
-				bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty,
-				askPlanLotSize, askPlanMaxLevels, askMaxOrdersPerLevel, askIsQuoteBettermentOn, askQuoteFlickerBuffer,
-				askQuotePicardMaxTicksThrough, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay) {
+				fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanToQuoteRatio, bidPlanMinLevelQty,
+				bidPlanMaxLevelQty, bidPlanLotSize, bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer,
+				bidQuotePicardMaxTicksThrough, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay,
+				askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMaxOrdersPerLevel, askIsQuoteBettermentOn,
+				askQuoteFlickerBuffer, askQuotePicardMaxTicksThrough, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour,
+				askPicardMaxPerDay) {
 
 	var row = $("#" + id);
 	if (0 === symbolFilter.length || -1 < symbolFilter.indexOf(symbol) || "ALL" == symbol) {
@@ -199,6 +199,21 @@ function setRow(id, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuo
 				submitRow(row);
 			});
 
+			var quoteFlickerBufferInput = row.find(".quoteFlickerBuffer input");
+			quoteFlickerBufferInput.attr("min", 0);
+			quoteFlickerBufferInput.attr("max", 100);
+			quoteFlickerBufferInput.on('keydown', function (e) {
+
+				if (10 == $(this).val()  &&
+					((96 < e.keyCode && e.keyCode < 106) || (48 < e.keyCode && e.keyCode < 58))) {
+
+					e.preventDefault();
+				} else if (10 < $(this).val() &&
+					((95 < e.keyCode && e.keyCode < 106) || (47 < e.keyCode && e.keyCode < 58))) {
+
+					e.preventDefault();
+				}
+			});
 		}
 		row.attr("configType", configType);
 		var selectedConfigType = getSelectedConfigType();
@@ -230,6 +245,7 @@ function setRow(id, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuo
 		setCellData(row, ".leanInst.maxBookAgeMillis input", leanMaxBookAgeMillis);
 		setCellData(row, ".leanInst.maxJumpBPS input", leanMaxJumpBPS);
 		setCellData(row, ".leanInst.requiredQty input", leanRequiredQty);
+		setDoubleData(row, ".leanInst.leanToQuoteRatio input", leanToQuoteRatio);
 
 		setCellData(row, ".plan.minLevelQty .bid", bidPlanMinLevelQty);
 		setCellData(row, ".plan.maxLevelQty .bid", bidPlanMaxLevelQty);
@@ -278,6 +294,19 @@ function setCellData(row, cellID, value) {
 	input.removeClass("notPersisted");
 }
 
+function setDoubleData(row, cellID, value) {
+
+	var input = row.find(cellID);
+	if (typeof value != "undefined") {
+		input.attr("data", value);
+		input.val(parseFloat(value));
+	} else {
+		input.attr("data", "");
+		input.val("");
+	}
+	input.removeClass("notPersisted");
+}
+
 function setBoolData(row, cellID, value) {
 
 	var input = row.find(cellID);
@@ -309,6 +338,7 @@ function submitRow(row) {
 	var leanMaxBookAgeMillis = getCellData(row, ".leanInst.maxBookAgeMillis input");
 	var leanMaxJumpBPS = getCellData(row, ".leanInst.maxJumpBPS input");
 	var leanRequiredQty = getCellData(row, ".leanInst.requiredQty input");
+	var leanToQuoteRatio = getCellFloat(row, ".leanInst.leanToQuoteRatio input");
 
 	var bidPlanMinLevelQty = getCellData(row, ".plan.minLevelQty .bid");
 	var bidPlanMaxLevelQty = getCellData(row, ".plan.maxLevelQty .bid");
@@ -338,17 +368,24 @@ function submitRow(row) {
 	var askPicardMaxPerHour = getCellData(row, ".strategy.picardMaxPerHour .ask");
 	var askPicardMaxPerDay = getCellData(row, ".strategy.picardMaxPerDay .ask");
 
+	console.log(leanToQuoteRatio);
+
 	ws.send(command("submitChange", [configID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
 		quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS,
-		leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize, bidPlanMaxLevels,
-		bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer, bidQuotePicardMaxTicksThrough, bidPicardMaxPerSec,
-		bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize,
-		askPlanMaxLevels, askMaxOrdersPerLevel, askIsQuoteBettermentOn, askQuoteFlickerBuffer, askQuotePicardMaxTicksThrough,
-		askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay]));
+		leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanToQuoteRatio, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
+		bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer, bidQuotePicardMaxTicksThrough,
+		bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty,
+		askPlanLotSize, askPlanMaxLevels, askMaxOrdersPerLevel, askIsQuoteBettermentOn, askQuoteFlickerBuffer,
+		askQuotePicardMaxTicksThrough, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay]));
 }
 
 function getCellData(row, cellID) {
 	return parseInt(row.find(cellID).val(), 10);
+}
+
+function getCellFloat(row, cellID) {
+	console.log(cellID, row.find(cellID), row.find(cellID).val());
+	return row.find(cellID).val();
 }
 
 function getCellBool(row, cellID) {

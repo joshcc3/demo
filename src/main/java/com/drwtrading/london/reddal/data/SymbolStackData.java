@@ -97,13 +97,13 @@ public class SymbolStackData {
 
                 result += level.getRemainingQty();
 
-                final long signedTickOffset = priceMultiplier * level.getTickOffset();
-                final SymbolStackPriceLevel priceLevel = stackLevels.get(signedTickOffset);
+                final long pullbackTicks = priceMultiplier * level.getPullbackTicks();
+                final SymbolStackPriceLevel priceLevel = stackLevels.get(pullbackTicks);
                 if (null == priceLevel) {
 
                     final SymbolStackPriceLevel newPriceLevel = new SymbolStackPriceLevel();
                     newPriceLevel.setStackLevel(stackType, level);
-                    stackLevels.put(signedTickOffset, newPriceLevel);
+                    stackLevels.put(pullbackTicks, newPriceLevel);
                 } else {
 
                     priceLevel.setStackLevel(stackType, level);
@@ -172,7 +172,7 @@ public class SymbolStackData {
             final Stack stack = stackGroup.getStack(stackType);
             final StackLevel level = stack.getFirstLevel();
             if (null != level) {
-                mostAggressiveTick = Math.min(mostAggressiveTick, level.getTickOffset());
+                mostAggressiveTick = Math.min(mostAggressiveTick, level.getPullbackTicks());
             }
         }
 
@@ -264,7 +264,8 @@ public class SymbolStackData {
         if (null != bidStackGroup) {
             for (final StackType stackType : StackType.values()) {
                 for (final StackOrderType orderType : StackOrderType.values()) {
-                    stackClient.setStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType, BID_PRICE_MULTIPLIER * tickOffset, 0);
+                    stackClient.addStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType, BID_PRICE_MULTIPLIER * tickOffset,
+                            -Long.MAX_VALUE);
                 }
             }
             return stackClient.batchComplete();
@@ -278,7 +279,8 @@ public class SymbolStackData {
         if (null != askStackGroup) {
             for (final StackType stackType : StackType.values()) {
                 for (final StackOrderType orderType : StackOrderType.values()) {
-                    stackClient.setStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType, ASK_PRICE_MULTIPLIER * tickOffset, 0);
+                    stackClient.addStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType, ASK_PRICE_MULTIPLIER * tickOffset,
+                            -Long.MAX_VALUE);
                 }
             }
             return stackClient.batchComplete();
@@ -290,7 +292,7 @@ public class SymbolStackData {
     public boolean setBidStackQty(final StackType stackType, final StackOrderType orderType, final int tickOffset, final long qty) {
 
         if (null != bidStackGroup) {
-            stackClient.setStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType, BID_PRICE_MULTIPLIER * tickOffset, qty);
+            stackClient.addStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType, BID_PRICE_MULTIPLIER * tickOffset, qty);
             return stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
@@ -300,7 +302,7 @@ public class SymbolStackData {
     public boolean setAskStackQty(final StackType stackType, final StackOrderType orderType, final int tickOffset, final long qty) {
 
         if (null != askStackGroup) {
-            stackClient.setStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType, ASK_PRICE_MULTIPLIER * tickOffset, qty);
+            stackClient.addStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType, ASK_PRICE_MULTIPLIER * tickOffset, qty);
             return stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");

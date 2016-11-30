@@ -61,7 +61,8 @@ import java.util.concurrent.TimeUnit;
 
 public class LadderPresenter {
 
-    public static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 12;
+    public static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 5;
+    public static final long HEARTBEAT_INTERVAL_MS = 1000;
 
     private final DepthBookSubscriber bookHandler;
     private final String ewokBaseURL;
@@ -375,7 +376,7 @@ public class LadderPresenter {
         for (final LadderView ladderView : viewBySocket.values()) {
             ladderView.sendHeartbeat();
         }
-        return BATCH_FLUSH_INTERVAL_MS;
+        return HEARTBEAT_INTERVAL_MS;
     }
 
     public void stacksConnectionLost() {

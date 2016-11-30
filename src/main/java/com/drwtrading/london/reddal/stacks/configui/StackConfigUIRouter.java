@@ -50,7 +50,10 @@ public class StackConfigUIRouter {
     @Subscribe
     public void onDisconnected(final WebSocketDisconnected disconnected) {
 
-        nibblerHandlerForUI.remove(disconnected.getOutboundChannel()).removeUI(disconnected);
+        final StackConfigNibblerView view = nibblerHandlerForUI.remove(disconnected.getOutboundChannel());
+        if (null != view) {
+            view.removeUI(disconnected);
+        }
     }
 
     @Subscribe
@@ -60,7 +63,6 @@ public class StackConfigUIRouter {
 
         final String data = msg.getData();
         final String[] args = data.split(",");
-        System.out.println(data);
         if ("subscribe-nibbler".equals(args[0])) {
             final String nibbler = args[1];
             if (!nibbler.isEmpty()) {
@@ -70,7 +72,9 @@ public class StackConfigUIRouter {
             }
         } else {
             final StackConfigNibblerView nibblerHandler = nibblerHandlerForUI.get(msg.getOutboundChannel());
-            nibblerHandler.onMessage(msg);
+            if (null != nibblerHandler) {
+                nibblerHandler.onMessage(msg);
+            }
         }
     }
 }

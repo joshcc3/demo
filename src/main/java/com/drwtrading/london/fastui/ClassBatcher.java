@@ -38,7 +38,9 @@ class ClassBatcher {
         if (!pendingValues.isEmpty()) {
             final StringBuilder sb = new StringBuilder();
             appendCommands(sb);
-            commands.add(sb.toString());
+            if (this.command.length() < sb.length()) {
+                commands.add(sb.toString());
+            }
         }
     }
 

@@ -86,6 +86,8 @@ import com.drwtrading.london.reddal.stacks.StackConfigCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigNibblerView;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigUIRouter;
+import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesNibblerView;
+import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesUIRouter;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.stockAlerts.StockAlertPresenter;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaRestingOrderClient;
@@ -565,6 +567,7 @@ public class Main {
                                 "SELECT_IO_");
                 final SelectIO stackConfigSelectIO = new SelectIO(selectIOMonitor);
 
+                final StackStrategiesUIRouter stackStrategiesUIRouter = new StackStrategiesUIRouter(fibers.ui, webLog);
                 final StackConfigUIRouter stackConfigUIRouter = new StackConfigUIRouter(fibers.ui, webLog);
 
                 for (final ConfigGroup stackConnectionConfig : stackConfig.groups()) {
@@ -574,16 +577,27 @@ public class Main {
                     final IResourceMonitor<StackTransportComponents> stackMonitor =
                             stackParentMonitor.createChildResourceMonitor(connectionName);
 
+                    final StackStrategiesNibblerView strategiesPresenter = stackStrategiesUIRouter.getNibblerHandler(nibblerName);
                     final StackConfigNibblerView configPresenter = stackConfigUIRouter.getNibblerHandler(nibblerName);
-                    final StackConfigCallbackBatcher stackUpdateBatcher = new StackConfigCallbackBatcher(configPresenter);
+                    final StackConfigCallbackBatcher stackUpdateBatcher =
+                            new StackConfigCallbackBatcher(strategiesPresenter, configPresenter);
                     final StackClientHandler clientHandler =
                             StackCacheFactory.createClientCache(stackConfigSelectIO, stackConnectionConfig, stackMonitor, connectionName,
                                     "stackConfig", stackUpdateBatcher);
 
+                    strategiesPresenter.setStrategyClient(clientHandler);
                     configPresenter.setConfigClient(clientHandler);
                 }
+
                 final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(stackConfigSelectIO, errorLog, "Stack Config SelectIO.");
                 fibers.fiberGroup.wrap(displaySelectIOFiber, "Stack Config SelectIO Fiber.");
+
+                channels.searchResults.subscribe(displaySelectIOFiber,
+                        searchResult -> stackStrategiesUIRouter.addInstID(searchResult.symbol, searchResult.instID));
+
+                final TypedChannel<WebSocketControlMessage> strategiesWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("stackStrategy", "stackStrategy", fibers.ladder, webapp, strategiesWebSocket);
+                fibers.ladder.subscribe(stackStrategiesUIRouter, strategiesWebSocket);
 
                 // Config router
                 final TypedChannel<WebSocketControlMessage> configWebSocket = TypedChannels.create(WebSocketControlMessage.class);

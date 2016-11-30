@@ -10,6 +10,7 @@ import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigNibblerView;
+import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesNibblerView;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,21 +18,19 @@ import java.util.Set;
 public class StackConfigCallbackBatcher
         implements IStackConnectionListener, IStackGroupUpdateCallback, IStackConfigUpdateCallback, IStackStrategyUpdateCallback {
 
+    private final StackStrategiesNibblerView strategiesPresenter;
     private final StackConfigNibblerView configPresenter;
 
+    private final Set<StackStrategy> strategyBatch;
     private final Set<StackConfigGroup> configBatch;
 
-    public StackConfigCallbackBatcher(final StackConfigNibblerView configPresenter) {
+    public StackConfigCallbackBatcher(final StackStrategiesNibblerView strategiesPresenter, final StackConfigNibblerView configPresenter) {
 
+        this.strategiesPresenter = strategiesPresenter;
         this.configPresenter = configPresenter;
 
+        this.strategyBatch = new HashSet<>();
         this.configBatch = new HashSet<>();
-    }
-
-    @Override
-    public IStackStrategyUpdateCallback getStrategyListener(final String symbol, final InstrumentID instID, final String leanSymbol,
-            final InstrumentID leanInstID) {
-        return this;
     }
 
     @Override
@@ -47,15 +46,19 @@ public class StackConfigCallbackBatcher
     @Override
     public void connectionLost(final String remoteAppName) {
         configBatch.clear();
+        strategiesPresenter.serverConnectionLost();
         configPresenter.serverConnectionLost();
     }
 
     @Override
-    public void stackGroupCreated(final StackGroup stackGroup) {
-    }
+    public IStackStrategyUpdateCallback getStrategyListener(final String symbol, final InstrumentID instID, final String leanSymbol,
+            final InstrumentID leanInstID) {
 
-    @Override
-    public void stackGroupUpdated(final StackGroup stackGroup) {
+        if (null == strategiesPresenter) {
+            throw new IllegalStateException("Strategy presenter has not been set.");
+        } else {
+            return this;
+        }
     }
 
     @Override
@@ -66,6 +69,16 @@ public class StackConfigCallbackBatcher
         } else {
             return this;
         }
+    }
+
+    @Override
+    public void strategyCreated(final StackStrategy strategy) {
+        strategiesPresenter.strategyCreated(strategy);
+    }
+
+    @Override
+    public void strategyUpdated(final StackStrategy strategy) {
+        strategyBatch.add(strategy);
     }
 
     @Override
@@ -81,11 +94,21 @@ public class StackConfigCallbackBatcher
     @Override
     public void batchComplete() {
 
+        for (final StackStrategy strategy : strategyBatch) {
+            try {
+                strategiesPresenter.strategyUpdated(strategy);
+            } catch (final Exception e) {
+                System.out.println("Failed Strategy stack batch update.");
+                e.printStackTrace();
+            }
+        }
+        strategyBatch.clear();
+
         for (final StackConfigGroup config : configBatch) {
             try {
                 configPresenter.configUpdated(config);
             } catch (final Exception e) {
-                System.out.println("Failed stack batch update.");
+                System.out.println("Failed Config stack batch update.");
                 e.printStackTrace();
             }
         }
@@ -93,12 +116,12 @@ public class StackConfigCallbackBatcher
     }
 
     @Override
-    public void strategyCreated(final StackStrategy strategy) {
+    public void stackGroupCreated(final StackGroup stackGroup) {
         // no-op
     }
 
     @Override
-    public void strategyUpdated(final StackStrategy strategy) {
+    public void stackGroupUpdated(final StackGroup stackGroup) {
         // no-op
     }
 }

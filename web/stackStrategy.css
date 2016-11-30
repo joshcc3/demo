@@ -1,0 +1,88 @@
+
+#background {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: -webkit-gradient(linear, left top, left bottom, from(#333333), to(#111111));
+	z-index: -1;
+}
+
+body {
+	color: white;
+}
+
+.row {
+	white-space: nowrap;
+	display: flex;
+}
+
+.row > div {
+	white-space: normal;
+	display: flex;
+	text-align: center;
+	align-items: center;
+	justify-content: center;
+}
+
+#createdTable .row > div {
+	min-width: 70px;
+	max-width: 70px;
+	font-size: 12px;
+	border-bottom: solid darkgrey 1px;
+}
+
+.row div.button {
+	width: 70px;
+}
+
+#creationRow label {
+	width: 90px;
+	margin-right: 10px;
+	text-align: right;
+}
+
+#creationRow input {
+	width: 200px;
+	border: 0;
+	padding: 0;
+	margin: 0;
+}
+
+#infoRow {
+	height: 20px;
+	color: black;
+}
+
+#infoRow .instrumentID.unknown {
+	background-color: lightpink;
+}
+
+#infoRow .instrumentID:not(.unknown) {
+	background-color: lightgreen;
+}
+
+#infoRow .instrumentID {
+	width: 300px;
+}
+
+#infoRow .instrumentID div {
+
+	width: 75px;
+}
+
+#infoRow .instrumentID div.isin {
+	width: 150px;
+}
+
+#createdTable .dataRow {
+	height: 37px;
+}
+
+#createdTable .dataRow .boolean.isTrue {
+	background-color: lightgreen;
+}
+#createdTable .dataRow .boolean:not(.isTrue) {
+	background-color: lightpink;
+}
