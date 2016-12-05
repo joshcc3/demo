@@ -78,6 +78,7 @@ public class StackStrategiesNibblerView {
     }
 
     public void serverConnectionLost() {
+        strategies.clear();
         views.all().removeAll();
     }
 

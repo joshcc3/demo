@@ -883,13 +883,13 @@ public class Main {
         // Error souting
         {
             channels.error.subscribe(fibers.logging.getFiber(), message -> {
-                System.out.println(new Date().toString());
+                System.out.println(new Date());
                 message.printStackTrace();
             });
             channels.stats.subscribe(fibers.logging.getFiber(), message -> {
                 if (message instanceof AdvisoryStat) {
-                    System.out.println(new Date().toString());
-                    System.out.println(message.toString());
+                    System.out.println(new Date());
+                    System.out.println(message);
                 }
             });
         }

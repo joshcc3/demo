@@ -386,7 +386,7 @@ public class LadderView implements UiEventHandler {
             }
             // Ladder text
             for (final LadderText ladderText : metaData.ladderTextByPosition.values()) {
-                ui.txt(HTML.TEXT + ladderText.getCell(), ladderText.getText()); /* Last trade*/
+                ui.txt(HTML.TEXT + ladderText.getCell(), ladderText.getText());
             }
         }
     }
