@@ -33,6 +33,7 @@ public enum ReddalComponents implements IMonitoredComponent {
     STACK_GROUP_CLIENT,
     STACK_CONFIG_CLIENT,
 
+    PKS,
     YODA,
 
     SAFETY_WORKING_ORDER_VIEWER;

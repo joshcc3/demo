@@ -380,6 +380,16 @@ public class LadderView implements UiEventHandler {
                 ui.txt(HTML.POSITION, formatPosition(metaData.dayPosition.getNet()));
                 decorateUpDown(ui, HTML.POSITION, metaData.dayPosition.getNet());
             }
+            if (null != metaData.pksExposure) {
+                final String pksValue = formatPosition(metaData.pksExposure.exposure);
+                ui.txt(HTML.PKS_EXPOSURE, pksValue);
+                decorateUpDown(ui, HTML.PKS_EXPOSURE, (long) metaData.pksExposure.exposure);
+                final IBook<?> book = marketData.getBook();
+                if (null != book && InstType.FUTURE != book.getInstType() && InstType.FUTURE_SPREAD != book.getInstType()) {
+                    final LadderText excelExposure = metaData.ladderTextByPosition.get("r1c1");
+                    ui.cls(HTML.TEXT + "r1c1", CSSClass.VERY_SLOW, null == excelExposure || !pksValue.equals(excelExposure.getText()));
+                }
+            }
             // Ladder info
             if (metaData.infoOnLadder != null) {
                 ui.txt(HTML.AFTER_HOURS_WEIGHT, metaData.infoOnLadder.getValue());

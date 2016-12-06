@@ -7,6 +7,9 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
+import com.drwtrading.london.eeif.position.transport.PositionTransportComponents;
+import com.drwtrading.london.eeif.position.transport.cache.PositionCacheFactory;
+import com.drwtrading.london.eeif.position.transport.io.PositionClientHandler;
 import com.drwtrading.london.eeif.stack.transport.StackTransportComponents;
 import com.drwtrading.london.eeif.stack.transport.cache.StackCacheFactory;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
@@ -41,8 +44,6 @@ import com.drwtrading.london.eeif.yoda.transport.io.YodaClientHandler;
 import com.drwtrading.london.indy.transport.IndyTransportComponents;
 import com.drwtrading.london.indy.transport.cache.IIndyCacheListener;
 import com.drwtrading.london.indy.transport.cache.IndyCacheFactory;
-import com.drwtrading.london.indy.transport.data.InstrumentDef;
-import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
 import com.drwtrading.london.jetlang.JetlangFactory;
 import com.drwtrading.london.jetlang.stats.MonitoredJetlangFactory;
@@ -64,22 +65,19 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
-import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
-import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
 import com.drwtrading.london.reddal.ladders.LadderWorkspace;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
-import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
 import com.drwtrading.london.reddal.ladders.WorkspaceRequestHandler;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
-import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderEntryFromServer;
 import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
+import com.drwtrading.london.reddal.pks.PKSPositionClient;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.stacks.StackConfigCallbackBatcher;
@@ -93,12 +91,9 @@ import com.drwtrading.london.reddal.stockAlerts.StockAlertPresenter;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaRestingOrderClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaSweepClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaTWAPClient;
-import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
-import com.drwtrading.london.reddal.symbols.SearchResult;
-import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.FileLogger;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
@@ -112,7 +107,6 @@ import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.MsgCodec;
-import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.StatsPublisher;
 import com.drwtrading.monitoring.stats.Transport;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
@@ -130,10 +124,8 @@ import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
 import com.sun.jndi.toolkit.url.Uri;
-import drw.london.json.Jsonable;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
@@ -174,84 +166,6 @@ public class Main {
     }
 
     public static final TypedChannel<Throwable> ERROR_CHANNEL = TypedChannels.create(Throwable.class);
-
-    public static class ReddalChannels {
-
-        public final TypedChannel<Throwable> error;
-        public final Publisher<Throwable> errorPublisher;
-        public final TypedChannel<LadderMetadata> metaData;
-        public final TypedChannel<Position> position;
-        public final TypedChannel<TradingStatusWatchdog.ServerTradingStatus> tradingStatus;
-        public final TypedChannel<WorkingOrderUpdateFromServer> workingOrders;
-        public final TypedChannel<WorkingOrderConnectionEstablished> workingOrderConnectionEstablished;
-        public final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents;
-        public final TypedChannel<RemoteOrderEventFromServer> remoteOrderEvents;
-        public final TypedChannel<StatsMsg> stats;
-        public final Publisher<RemoteOrderCommandToServer> remoteOrderCommand;
-        public final Map<String, TypedChannel<RemoteOrderManagementCommand>> remoteOrderCommandByServer;
-        public final TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded;
-        public final TypedChannel<LadderSettings.StoreLadderPref> storeLadderPref;
-        public final TypedChannel<InstrumentDef> instDefs;
-        public final TypedChannel<DisplaySymbol> displaySymbol;
-        public final TypedChannel<SearchResult> searchResults;
-        public final TypedChannel<StockAlert> stockAlerts;
-        public final TypedChannel<HeartbeatRoundtrip> heartbeatRoundTrips;
-        private final ChannelFactory channelFactory;
-        public final TypedChannel<ReddalMessage> reddalCommand;
-        public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
-        public final TypedChannel<RecenterLaddersForUser> recenterLaddersForUser;
-        public final TypedChannel<SpreadContractSet> contractSets;
-        public final TypedChannel<ChixSymbolPair> chixSymbolPairs;
-        public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
-        public final TypedChannel<Jsonable> trace;
-        public final TypedChannel<ReplaceCommand> replaceCommand;
-        public final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
-        public final TypedChannel<UserCycleRequest> userCycleContractPublisher;
-        public final TypedChannel<OrderEntryFromServer> orderEntryFromServer;
-        public final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
-        public final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
-
-        public ReddalChannels(final ChannelFactory channelFactory) {
-            this.channelFactory = channelFactory;
-            this.error = ERROR_CHANNEL;
-            this.errorPublisher = new BogusErrorFilteringPublisher(error);
-            this.metaData = create(LadderMetadata.class);
-            this.position = create(Position.class);
-            this.tradingStatus = create(TradingStatusWatchdog.ServerTradingStatus.class);
-            this.workingOrders = create(WorkingOrderUpdateFromServer.class);
-            this.workingOrderConnectionEstablished = create(WorkingOrderConnectionEstablished.class);
-            this.workingOrderEvents = create(WorkingOrderEventFromServer.class);
-            this.remoteOrderEvents = create(RemoteOrderEventFromServer.class);
-            this.stats = create(StatsMsg.class);
-            this.remoteOrderCommandByServer = new MapMaker().makeComputingMap(from -> create(RemoteOrderManagementCommand.class));
-            this.remoteOrderCommand = msg -> remoteOrderCommandByServer.get(msg.toServer).publish(msg.value);
-            this.ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);
-            this.storeLadderPref = create(LadderSettings.StoreLadderPref.class);
-            this.instDefs = create(InstrumentDef.class);
-            this.displaySymbol = create(DisplaySymbol.class);
-            this.searchResults = create(SearchResult.class);
-            this.stockAlerts = create(StockAlert.class);
-            this.heartbeatRoundTrips = create(HeartbeatRoundtrip.class);
-            this.reddalCommand = create(ReddalMessage.class);
-            this.reddalCommandSymbolAvailable = create(ReddalMessage.class);
-            this.recenterLaddersForUser = create(RecenterLaddersForUser.class);
-            this.contractSets = create(SpreadContractSet.class);
-            this.chixSymbolPairs = create(ChixSymbolPair.class);
-            this.singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
-            this.trace = create(Jsonable.class);
-            this.ladderClickTradingIssues = create(LadderClickTradingIssue.class);
-            this.userCycleContractPublisher = create(UserCycleRequest.class);
-            this.replaceCommand = create(ReplaceCommand.class);
-            this.orderEntryFromServer = create(OrderEntryFromServer.class);
-            this.orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
-            this.orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
-        }
-
-        public <T> TypedChannel<T> create(final Class<T> clazz) {
-            return channelFactory.createChannel(clazz, clazz.getSimpleName());
-        }
-
-    }
 
     public static class ReddalFibers {
 
@@ -543,6 +457,8 @@ public class Main {
                         channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand,
                         channels.ladderClickTradingIssues, channels.replaceCommand, channels.userCycleContractPublisher,
                         channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults);
+
+                channels.pksExposure.subscribe(fiberBuilder.getFiber(), presenter::setPKSExposure);
 
                 final long initialDelay = 10 + i * (LadderPresenter.BATCH_FLUSH_INTERVAL_MS / webSockets.size());
                 displaySelectIO.addDelayedAction(initialDelay, presenter::flushAllLadders);
@@ -839,6 +755,7 @@ public class Main {
 
         final SelectIO selectIO = SelectIO.mappedMonitorSelectIO("SelectIO", reddalMonitor, ReddalComponents.SELECT_IO_CLOSE,
                 ReddalComponents.SELECT_IO_SELECT, ReddalComponents.SELECT_IO_UNHANDLED);
+        final SelectIOFiber selectIOFiber = new SelectIOFiber(selectIO, errorLog, "Select IO");
 
         final String indyUsername = indyConfig.getString("username");
 
@@ -868,6 +785,22 @@ public class Main {
             new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
                     new OpxlPositionSubscriber(channels.errorPublisher, channels.metaData::publish)::onOpxlData, keys,
                     fibers.opxlPosition.getFiber(), channels.error);
+        }
+
+        final ConfigGroup pksConfig = root.getEnabledGroup("pks");
+        if (null != pksConfig) {
+
+            final IResourceMonitor<PositionTransportComponents> pksMonitor =
+                    new ExpandedDetailResourceMonitor<>(monitor, "PKS", errorLog, PositionTransportComponents.class, ReddalComponents.PKS);
+
+            final PKSPositionClient pksClient = new PKSPositionClient(channels.pksExposure);
+            channels.searchResults.subscribe(selectIOFiber, pksClient::setSearchResult);
+
+            final PositionClientHandler cache =
+                    PositionCacheFactory.createClientCache(selectIO, pksMonitor, "PKS", appName, pksClient, pksClient, true);
+
+            final TransportTCPKeepAliveConnection<?, ?> client = PositionCacheFactory.createClient(selectIO, pksConfig, pksMonitor, cache);
+            client.restart();
         }
 
         // Ladder Text

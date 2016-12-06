@@ -21,7 +21,7 @@ public class OpxlLadderTextSubscriber {
     public final DoOnce latch = new DoOnce();
 
     private final Set<String> validCells =
-            newHashSet("r1c1", "r1c2", "r1c3", "r1c4", "r2c1", "r2c2", "r2c3", "r2c4", "r2c5", "r3c1", "r3c2", "r3c3", "r3c4", "r3c5");
+            newHashSet("r1c1", "r1c2", "r1c3", "r1c4", "r2c1", "r2c2", "r2c3", "r2c4", "r2c5", "r3c2", "r3c3", "r3c4", "r3c5");
 
     public OpxlLadderTextSubscriber(final Publisher<Throwable> errorPublisher, final Publisher<LadderMetadata> publisher) {
         this.errorPublisher = errorPublisher;
@@ -76,5 +76,4 @@ public class OpxlLadderTextSubscriber {
             latch.doOnce(() -> errorPublisher.publish(throwable));
         }
     }
-
 }

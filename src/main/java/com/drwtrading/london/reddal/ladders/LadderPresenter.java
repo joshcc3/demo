@@ -27,6 +27,7 @@ import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
+import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -99,7 +100,6 @@ public class LadderPresenter {
             final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
             final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher,
@@ -268,6 +268,10 @@ public class LadderPresenter {
     @Subscribe
     public void on(final Position position) {
         metaDataBySymbol.get(position.getSymbol()).onDayPosition(position);
+    }
+
+    public void setPKSExposure(final PKSExposure position) {
+        metaDataBySymbol.get(position.symbol).onPKSExposure(position);
     }
 
     @Subscribe

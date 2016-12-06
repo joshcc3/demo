@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.reddal.SpreadContractSet;
+import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.util.FastUtilCollections;
 import com.drwtrading.photons.ladder.DeskPosition;
@@ -18,6 +19,7 @@ public class SymbolMetaData {
     public InfoOnLadder infoOnLadder;
     public final Map<String, LadderText> ladderTextByPosition = FastUtilCollections.newFastMap();
     public Position dayPosition;
+    public PKSExposure pksExposure;
     public String chixSwitchSymbol;
     public SpreadContractSet spreadContractSet;
 
@@ -41,6 +43,10 @@ public class SymbolMetaData {
 
     public void onDayPosition(final Position data) {
         this.dayPosition = data;
+    }
+
+    public void onPKSExposure(final PKSExposure data) {
+        this.pksExposure = data;
     }
 
     public void setDisplaySymbol(final DisplaySymbol displaySymbol) {
