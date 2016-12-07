@@ -47,6 +47,10 @@ public class SymbolStackData {
         this.askFormattedPriceOffset = "---";
     }
 
+    public String getRemoteAppName() {
+        return stackClient.getRemoteName();
+    }
+
     public void setStackClientHandler(final StackClientHandler stackClient) {
 
         if (null != this.stackClient && !this.stackClient.equals(stackClient)) {

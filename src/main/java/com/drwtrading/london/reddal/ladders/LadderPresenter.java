@@ -383,10 +383,12 @@ public class LadderPresenter {
         return HEARTBEAT_INTERVAL_MS;
     }
 
-    public void stacksConnectionLost() {
+    public void stacksConnectionLost(final String remoteAppName) {
 
         for (final SymbolStackData stackData : stackBySymbol.values()) {
-            stackData.stackConnectionLost();
+            if (remoteAppName.equals(stackData.getRemoteAppName())) {
+                stackData.stackConnectionLost();
+            }
         }
     }
 

@@ -61,7 +61,7 @@ public class StackGroupCallbackBatcher
     @Override
     public void connectionLost(final String remoteAppName) {
         stackBatch.clear();
-        ladderPresenter.stacksConnectionLost();
+        ladderPresenter.stacksConnectionLost(remoteAppName);
     }
 
     @Override
