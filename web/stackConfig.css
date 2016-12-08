@@ -1,10 +1,36 @@
 
+#stickyHeader:not(.sticky) {
+	display: none;
+}
+
+#stickyHeader.sticky {
+	z-index: 2;
+	position: fixed;
+	top: 0;
+	padding-top: 5px;
+	background: white;
+}
+
+.stickyColumn:not(.sticky) {
+	display: none;
+}
+
+.stickyColumn.sticky {
+	display: flex;
+	white-space: nowrap;
+	z-index: 1;
+	position: fixed;
+	left: 0;
+	padding-left: 5px;
+	background: white;
+}
+
 .row {
 	white-space: nowrap;
 	display: flex;
 }
 
-.row > div {
+.row > div:not(.stickyColumn), .row > .stickyColumn > div {
 	white-space: normal;
 	display: flex;
 	align-items: center;
@@ -20,7 +46,7 @@
 	display: block;
 }
 
-#header.row div.sided {
+.header.row div.sided {
 	display: flex;
 }
 
@@ -28,20 +54,20 @@
 	border-bottom: solid darkgrey 1px;
 }
 
-#header .quoteInst {
+.header .quoteInst {
 	background-color: #FF6464;
 	color: white;
 }
 
-#header .fx {
+.header .fx {
 	background-color: #FFC764;
 }
 
-#header .leanInst {
+.header .leanInst {
 	background-color: #58E158;
 }
 
-#header .plan, #header .strategy {
+.header .plan, .header .strategy {
 	background-color: #5B87CC;
 	color: white;
 }
@@ -66,7 +92,7 @@ input::-webkit-inner-spin-button:hover {
 	height: 17px;
 }
 
-#header .button button {
+.header .button button {
 	visibility: hidden;
 }
 

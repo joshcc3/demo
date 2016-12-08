@@ -21,6 +21,8 @@ $(function () {
 		return 0 !== el.length;
 	});
 
+	setupTable();
+
 	ws.send("subscribe-nibbler," + nibbler);
 	var configTypeCombo = $("#configTypes");
 	addConfigTypeOption(configTypeCombo, NO_FILTER);
@@ -156,12 +158,15 @@ function setRow(id, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuo
 		if (row.length < 1) {
 			row = $("#header").clone();
 			row.attr("id", id);
+			row.removeClass("header");
 			$("#table").append(row);
+
+			setupStickyColumns(row);
 
 			row.find("div").each(function (i, d) {
 
 				d = $(d);
-				if (!d.hasClass("button")) {
+				if (!d.hasClass("button") && !d.hasClass("stickyColumn")) {
 					d.text("");
 
 					var inputType;
@@ -204,7 +209,7 @@ function setRow(id, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuo
 			quoteFlickerBufferInput.attr("max", 100);
 			quoteFlickerBufferInput.on('keydown', function (e) {
 
-				if (10 == $(this).val()  &&
+				if (10 == $(this).val() &&
 					((96 < e.keyCode && e.keyCode < 106) || (48 < e.keyCode && e.keyCode < 58))) {
 
 					e.preventDefault();
@@ -368,8 +373,6 @@ function submitRow(row) {
 	var askPicardMaxPerHour = getCellData(row, ".strategy.picardMaxPerHour .ask");
 	var askPicardMaxPerDay = getCellData(row, ".strategy.picardMaxPerDay .ask");
 
-	console.log(leanToQuoteRatio);
-
 	ws.send(command("submitChange", [configID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
 		quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS,
 		leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanToQuoteRatio, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
@@ -384,7 +387,6 @@ function getCellData(row, cellID) {
 }
 
 function getCellFloat(row, cellID) {
-	console.log(cellID, row.find(cellID), row.find(cellID).val());
 	return row.find(cellID).val();
 }
 
@@ -410,4 +412,66 @@ function checkInputPersisted(checkbox) {
 		allPersisted &= input.prop("checked") == ("true" === input.attr("data"));
 	});
 	parentDiv.toggleClass("notPersisted", !allPersisted);
+}
+
+function setupTable() {
+
+	document.oncontextmenu = function () {
+		return false;
+	};
+
+	var header = $("#header");
+	var stickyHeader = header.clone();
+	stickyHeader.appendTo(header.parent());
+	stickyHeader.attr("id", "stickyHeader");
+	var wind = $(window);
+	var headerYPos = header.offset().top;
+	var headerXPos = header.offset().left;
+
+	wind.scroll(function () {
+
+		if (headerYPos < wind.scrollTop()) {
+			stickyHeader.toggleClass('sticky', true);
+
+			var x = headerXPos - $(this).scrollLeft();
+			stickyHeader.css('left', x);
+		} else {
+			stickyHeader.toggleClass('sticky', false);
+		}
+	});
+}
+
+function setupStickyColumns(rows) {
+
+	rows.each(function () {
+
+		var row = $(this);
+		row.find(".stickyColumn").remove();
+		var columns = row.find(".configID");
+
+		var stickyColumns = $("<div class=\"stickyColumn\"></div>");
+
+		stickyColumns.appendTo(row);
+		columns.clone().appendTo(stickyColumns);
+		stickyColumns.removeAttr("id");
+
+		var referenceColumn = columns.filter(".leftMost");
+
+		var wind = $(window);
+		var columnYPos = referenceColumn.offset().top;
+		var columnXPos = referenceColumn.offset().left;
+
+		wind.scroll(function () {
+
+			if (columnXPos < wind.scrollLeft()) {
+				stickyColumns.toggleClass('sticky', true);
+
+				var y = columnYPos - $(this).scrollTop();
+				stickyColumns.css("top", y);
+				stickyColumns.css("height", referenceColumn.outerHeight());
+			} else {
+				stickyColumns.toggleClass('sticky', false);
+			}
+		});
+	});
 }
