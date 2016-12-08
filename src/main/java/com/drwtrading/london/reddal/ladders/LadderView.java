@@ -263,7 +263,13 @@ public class LadderView implements UiEventHandler {
 
         view.draw(levels);
         ui.txt(HTML.SYMBOL, symbol);
+
+        ui.cls(HTML.LASER + "bid", CSSClass.INVISIBLE, true);
+        ui.cls(HTML.LASER + "green", CSSClass.INVISIBLE, true);
+        ui.cls(HTML.LASER + "offer", CSSClass.INVISIBLE, true);
+
         activeView.switchedTo();
+
         ui.clickable('#' + HTML.SYMBOL);
         ui.clickable('#' + HTML.BOOK_VIEW_BUTTON);
         ui.clickable('#' + HTML.STACK_VIEW_BUTTON);

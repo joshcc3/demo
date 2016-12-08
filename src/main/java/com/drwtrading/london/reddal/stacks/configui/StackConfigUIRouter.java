@@ -62,7 +62,7 @@ public class StackConfigUIRouter {
         logFiber.execute(() -> uiLogger.write("StackConfig", msg));
 
         final String data = msg.getData();
-        final String[] args = data.split(",");
+        final String[] args = data.split(",", -1);
         if ("subscribe-nibbler".equals(args[0])) {
             final String nibbler = args[1];
             if (!nibbler.isEmpty()) {
