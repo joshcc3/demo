@@ -61,15 +61,21 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 }
 
 function playSound(type) {
+
+	var sound;
 	if ("RFQ" == type) {
-		rfqSound.play();
+		sound = rfqSound;
 	} else if ("AT_CLOSE" == type) {
-		atCloseSound.play();
+		sound = atCloseSound;
 	} else if ("SWEEP" == type) {
-		sweepSound.play();
+		sound = sweepSound;
 	} else if ("TWAP" == type) {
-		twapSound.play();
+		sound = twapSound;
 	} else {
-		unknownSound.play();
+		sound = unknownSound;
 	}
+	if (!sound.readyState) {
+		sound.load();
+	}
+	sound.play();
 }

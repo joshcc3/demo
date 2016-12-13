@@ -386,9 +386,7 @@ public class LadderPresenter {
     public void stacksConnectionLost(final String remoteAppName) {
 
         for (final SymbolStackData stackData : stackBySymbol.values()) {
-            if (remoteAppName.equals(stackData.getRemoteAppName())) {
-                stackData.stackConnectionLost();
-            }
+            stackData.stackConnectionLost(remoteAppName);
         }
     }
 

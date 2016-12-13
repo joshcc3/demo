@@ -47,10 +47,6 @@ public class SymbolStackData {
         this.askFormattedPriceOffset = "---";
     }
 
-    public String getRemoteAppName() {
-        return stackClient.getRemoteName();
-    }
-
     public void setStackClientHandler(final StackClientHandler stackClient) {
 
         if (null != this.stackClient && !this.stackClient.equals(stackClient)) {
@@ -60,15 +56,18 @@ public class SymbolStackData {
         }
     }
 
-    public void stackConnectionLost() {
+    public void stackConnectionLost(final String remoteAppName) {
 
-        bidStackLevels.clear();
-        bidStackGroup = null;
-        bidFormattedPriceOffset = "---";
+        if (null != this.stackClient && remoteAppName.equals(this.stackClient.getRemoteName())) {
 
-        askStackLevels.clear();
-        askStackGroup = null;
-        askFormattedPriceOffset = "---";
+            bidStackLevels.clear();
+            bidStackGroup = null;
+            bidFormattedPriceOffset = "---";
+
+            askStackLevels.clear();
+            askStackGroup = null;
+            askFormattedPriceOffset = "---";
+        }
     }
 
     public void setBidGroup(final StackGroup stackGroup) {
