@@ -760,9 +760,9 @@ public class Main {
         final String indyUsername = indyConfig.getString("username");
 
         final IResourceMonitor<IndyTransportComponents> indyMonitor =
-                MappedResourceMonitor.mapMonitorByName(reddalMonitor, IndyTransportComponents.class, ReddalComponents.class, "INDY_");
+                new ExpandedDetailResourceMonitor<>(reddalMonitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
         final TransportTCPKeepAliveConnection<?, ?> indyConnection =
-                IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, indyListener);
+                IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
         selectIO.execute(indyConnection::restart);
         fibers.onStart(() -> {
             try {

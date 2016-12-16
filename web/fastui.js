@@ -158,53 +158,56 @@ var Handler = function (ws) {
 		}
 	};
 
-    self.clickable = function (args) {
-        for (var i = 1; i < args.length; i++) {
-            toggleClass(args[i], 'clickable', true);
-            $(args[i]).unbind()
-                .bind('dblclick', function (e) {
-                    var event = 'dblclick';
-                    var elementId = e.target.id;
-                    var button = getButton(e);
-                    send(event, elementId, packData(elementId, {"button": button}));
-                    e.stopPropagation();
-                })
-                .bind('mousedown', function (e) {
-                    var event = 'click';
-                    var elementId = e.target.id;
-                    var button = getButton(e);
-                    send(event, elementId, packData(elementId, {"button": button}));
-                    e.stopPropagation();
-                })
-                .bind("contextmenu", function (e) {
-                    e.preventDefault();
-                    return false;
-                });
-        }
-    };
+	self.clickable = function (args) {
+		for (var i = 1; i < args.length; i++) {
+			toggleClass(args[i], 'clickable', true);
+			$(args[i]).unbind("dblclick")
+				.bind("dblclick", function (e) {
+					var event = 'dblclick';
+					var elementId = e.target.id;
+					var button = getButton(e);
+					console.log("dblclick", elementId, button);
+					send(event, elementId, packData(elementId, {"button": button}));
+					e.stopPropagation();
+				})
+				.unbind("mousedown")
+				.bind("mousedown", function (e) {
+					var event = 'click';
+					var elementId = e.target.id;
+					var button = getButton(e);
+					send(event, elementId, packData(elementId, {"button": button}));
+					e.stopPropagation();
+				})
+				.unbind("contextmenu")
+				.bind("contextmenu", function (e) {
+					e.preventDefault();
+					return false;
+				});
+		}
+	};
 
-    self.scrollable = function (args) {
-        for (var i = 1; i < args.length; i++) {
-            $(args[i]).unbind('mousewheel').bind('mousewheel', function (event) {
-                send('scroll', event.wheelDelta > 0 ? "up" : "down", event.target.id, packData(event.target.id));
-            })
-        }
-    };
+	self.scrollable = function (args) {
+		for (var i = 1; i < args.length; i++) {
+			$(args[i]).unbind('mousewheel').bind('mousewheel', function (event) {
+				send('scroll', event.wheelDelta > 0 ? "up" : "down", event.target.id, packData(event.target.id));
+			})
+		}
+	};
 
 	self.title = function (args) {
 		window.document.title = args[1];
 	};
 
 	self.updateOn = function (el, s) {
-		$(el).unbind().bind(s, function () {
-			send('update', el.id, packData(el.id));
+		$(el).unbind("update").bind(s, function () {
+			send("update", el.id, packData(el.id));
 		});
 	};
 
 	self.send = send;
 
-	$(window).unbind('keydown').bind('keydown', function (event) {
-		send('keydown', event.keyCode);
+	$(window).unbind("keydown").bind("keydown", function (event) {
+		send("keydown", event.keyCode);
 	});
 
 };

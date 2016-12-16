@@ -43,7 +43,7 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 
 	var symbolCell = row.find(".symbol");
 	symbolCell.text(symbol);
-	symbolCell.die().bind("click", function () {
+	symbolCell.unbind().bind("click", function () {
 		launchLadder(symbol);
 	});
 

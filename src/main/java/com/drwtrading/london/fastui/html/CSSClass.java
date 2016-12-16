@@ -8,6 +8,7 @@ public enum CSSClass {
     FULL_WIDTH("fullWidth"),
 
     ACTIVE_MODE("active_mode"),
+    ENABLED("enabled"),
 
     SLOW("slow"),
     VERY_SLOW("very-slow"),

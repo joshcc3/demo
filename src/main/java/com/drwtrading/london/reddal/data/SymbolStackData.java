@@ -30,11 +30,13 @@ public class SymbolStackData {
     private StackGroup bidStackGroup;
     private String bidFormattedPriceOffset;
     private long totalBidQty;
+    private final boolean[] enabledBidStacks;
 
     private final LongMap<SymbolStackPriceLevel> askStackLevels;
     private StackGroup askStackGroup;
     private String askFormattedPriceOffset;
     private long totalAskQty;
+    private final boolean[] enabledAskStacks;
 
     public SymbolStackData(final String symbol) {
 
@@ -45,6 +47,9 @@ public class SymbolStackData {
 
         this.bidFormattedPriceOffset = "---";
         this.askFormattedPriceOffset = "---";
+
+        this.enabledBidStacks = new boolean[StackType.values().length];
+        this.enabledAskStacks = new boolean[StackType.values().length];
     }
 
     public void setStackClientHandler(final StackClientHandler stackClient) {
@@ -58,7 +63,7 @@ public class SymbolStackData {
 
     public void stackConnectionLost(final String remoteAppName) {
 
-        if (null != this.stackClient && remoteAppName.equals(this.stackClient.getRemoteName())) {
+        if (null != this.stackClient && remoteAppName.equals(this.stackClient.getRemoteUser())) {
 
             bidStackLevels.clear();
             bidStackGroup = null;
@@ -67,6 +72,11 @@ public class SymbolStackData {
             askStackLevels.clear();
             askStackGroup = null;
             askFormattedPriceOffset = "---";
+
+            for (final StackType stackType : StackType.values()) {
+                enabledBidStacks[stackType.ordinal()] = false;
+                enabledAskStacks[stackType.ordinal()] = false;
+            }
         }
     }
 
@@ -76,6 +86,10 @@ public class SymbolStackData {
         bidFormattedPriceOffset = PRICE_DF.format(stackGroup.getPriceOffset() / (double) Constants.NORMALISING_FACTOR);
         totalBidQty = setGroup(bidStackLevels, stackGroup, BID_PRICE_MULTIPLIER);
 
+        for (final StackType stackType : StackType.values()) {
+            final Stack stack = stackGroup.getStack(stackType);
+            enabledBidStacks[stackType.ordinal()] = stack.isEnabled();
+        }
     }
 
     public void setAskGroup(final StackGroup stackGroup) {
@@ -83,6 +97,11 @@ public class SymbolStackData {
         askStackGroup = stackGroup;
         askFormattedPriceOffset = PRICE_DF.format(stackGroup.getPriceOffset() / (double) Constants.NORMALISING_FACTOR);
         totalAskQty = setGroup(askStackLevels, stackGroup, ASK_PRICE_MULTIPLIER);
+
+        for (final StackType stackType : StackType.values()) {
+            final Stack stack = stackGroup.getStack(stackType);
+            enabledAskStacks[stackType.ordinal()] = stack.isEnabled();
+        }
     }
 
     private static long setGroup(final LongMap<SymbolStackPriceLevel> stackLevels, final StackGroup stackGroup,
@@ -119,6 +138,10 @@ public class SymbolStackData {
         return result;
     }
 
+    public boolean isBidStackEnabled(final StackType stackType) {
+        return enabledBidStacks[stackType.ordinal()];
+    }
+
     public String getFormattedBidPriceOffset() {
         return bidFormattedPriceOffset;
     }
@@ -141,6 +164,10 @@ public class SymbolStackData {
 
     public long getTotalBidQty() {
         return totalBidQty;
+    }
+
+    public boolean isAskStackEnabled(final StackType stackType) {
+        return enabledAskStacks[stackType.ordinal()];
     }
 
     public String getFormattedAskPriceOffset() {
@@ -180,6 +207,17 @@ public class SymbolStackData {
         }
 
         return priceMultiplier * mostAggressiveTick;
+    }
+
+    public boolean setStackPriceOffsetTickSize(final long tickSize) {
+
+        if (null != bidStackGroup) {
+            stackClient.updateStackPriceOffsetTickSize(SOURCE, bidStackGroup.getStackID(), tickSize);
+            stackClient.updateStackPriceOffsetTickSize(SOURCE, askStackGroup.getStackID(), tickSize);
+            return stackClient.batchComplete();
+        } else {
+            throw new IllegalStateException("No stack for symbol.");
+        }
     }
 
     public boolean improveBidStackPriceOffset(final long priceOffset) {

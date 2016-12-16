@@ -33,6 +33,16 @@ public final class LadderNoView implements ILadderBoard {
     }
 
     @Override
+    public void setStackTickSize(final double tickSize) {
+
+    }
+
+    @Override
+    public void setStackTickSizeToMatchQuote() {
+
+    }
+
+    @Override
     public boolean setPersistencePreference(final String label, final String value) {
         return true;
     }

@@ -16,9 +16,7 @@ public enum ReddalComponents implements IMonitoredComponent {
     SELECT_IO_SELECT,
     SELECT_IO_UNHANDLED,
 
-    INDY_HUB_AVAILABLE,
-    INDY_UNDERLYING_TCP,
-    INDY_TCP_PROTOCOL_FAILURE,
+    INDY,
 
     MD_L3_HANDLER,
     MD_L2_HANDLER,

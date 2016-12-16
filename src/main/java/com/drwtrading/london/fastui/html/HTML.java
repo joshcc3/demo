@@ -11,6 +11,12 @@ public class HTML {
     public static final String VOLUME = "volume_";
     public static final String AFTER_HOURS_WEIGHT = "after_hours_weight";
     public static final String TEXT = "text_";
+    public static final String STACK_TICK_SIZE = "stackTickSize";
+    public static final String STACK_SUBMIT_TICK_SIZE = "btn_submitStackTickSize";
+    public static final String STACK_BID_QUOTE_ENABLED = "stackBidQuoterEnabled";
+    public static final String STACK_BID_PICARD_ENABLED = "stackBidPicardEnabled";
+    public static final String STACK_ASK_QUOTE_ENABLED = "stackAskQuoterEnabled";
+    public static final String STACK_ASK_PICARD_ENABLED = "stackAskPicardEnabled";
     /* Classes*/
     public static final String LASER = "laser_";
     public static final String BUTTON_CLR = "btn_clear";
@@ -43,6 +49,7 @@ public class HTML {
     public static final String SELL_OFFSET_UP = "sell_offset_up";
     public static final String SELL_OFFSET_DOWN = "sell_offset_down";
     public static final String OFFSET_CONTROL = "offset_control";
+    public static final String STACKS_CONTROL = "stacks_control";
     public static final String START_BUY = "start_buy";
     public static final String STOP_BUY = "stop_buy";
     public static final String START_SELL = "start_sell";

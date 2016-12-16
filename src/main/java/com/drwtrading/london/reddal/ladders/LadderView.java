@@ -214,7 +214,7 @@ public class LadderView implements UiEventHandler {
         final long stackCenteredPrice = null == stackView ? 0 : stackView.getCenteredPrice();
         this.stackView =
                 new LadderStackView(client.getUserName(), isTrader(), symbol, buttonQties, levels, ladderHTMLKeys, stackData, ui, view,
-                        ladderPrefsForSymbolUser, stackCenteredPrice);
+                        ladderPrefsForSymbolUser, marketData, stackCenteredPrice);
 
         if (wasBookView) {
             setBookView();
@@ -462,6 +462,8 @@ public class LadderView implements UiEventHandler {
             value = value.trim();
             if (HTML.INP_QTY.equals(label)) {
                 activeView.setTradingBoxQty(Integer.valueOf(value));
+            } else if (HTML.STACK_TICK_SIZE.equals(label)) {
+                activeView.setStackTickSize(Double.valueOf(value));
             } else if (!activeView.setPersistencePreference(label, value)) {
                 throw new IllegalArgumentException("Update for unknown value: " + label + ' ' + dataArg);
             }
@@ -531,6 +533,8 @@ public class LadderView implements UiEventHandler {
             activeView.cancelAllForSide(BookSide.BID);
         } else if (HTML.SELL_QTY.equals(label)) {
             activeView.cancelAllForSide(BookSide.ASK);
+        } else if (HTML.STACK_TICK_SIZE.equals(label)) {
+            activeView.setStackTickSizeToMatchQuote();
         }
         flushDynamicFeatures();
     }

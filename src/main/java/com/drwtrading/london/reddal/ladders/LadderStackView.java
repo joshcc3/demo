@@ -2,14 +2,18 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.marketData.book.IBook;
+import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.fastui.UiPipeImpl;
 import com.drwtrading.london.fastui.html.CSSClass;
 import com.drwtrading.london.fastui.html.DataKey;
 import com.drwtrading.london.fastui.html.HTML;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.SymbolStackPriceLevel;
 
@@ -72,14 +76,18 @@ public class LadderStackView implements ILadderBoard {
 
     private final LadderPrefsForSymbolUser ladderPrefsForSymbolUser;
 
+    private final MDForSymbol marketData;
+
     private int tradingBoxQty;
+    private double stackTickSizeBoxValue;
 
     private long centeredPrice;
     private long topPrice;
 
     public LadderStackView(final String username, final boolean isTrader, final String symbol, final Map<String, Integer> buttonQties,
             final int levels, final LadderHTMLTable ladderHTMLKeys, final SymbolStackData stackData, final UiPipeImpl ui,
-            final ILadderUI view, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final long centeredPrice) {
+            final ILadderUI view, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final MDForSymbol marketData,
+            final long centeredPrice) {
 
         this.username = username;
         this.isTrader = isTrader;
@@ -98,6 +106,8 @@ public class LadderStackView implements ILadderBoard {
 
         this.ladderPrefsForSymbolUser = ladderPrefsForSymbolUser;
 
+        this.marketData = marketData;
+
         this.centeredPrice = centeredPrice;
         setCenteredPrice(centeredPrice);
     }
@@ -106,6 +116,8 @@ public class LadderStackView implements ILadderBoard {
     public void switchedTo() {
 
         view.trading(isTrader, STACK_TYPES, STACK_ORDER_TYPES, STACK_ORDER_TYPES);
+
+        ui.cls(HTML.STACKS_CONTROL, CSSClass.INVISIBLE, false);
 
         ui.cls(HTML.AUTO_HEDGE_LEFT, CSSClass.INVISIBLE, true);
         ui.cls(HTML.AUTO_HEDGE_RIGHT, CSSClass.INVISIBLE, true);
@@ -119,8 +131,14 @@ public class LadderStackView implements ILadderBoard {
             ui.txt(entry.getKey(), display);
         }
 
-        if (isTrader) {
+        ui.clickable('#' + HTML.STACK_TICK_SIZE);
+        ui.clickable('#' + HTML.STACK_SUBMIT_TICK_SIZE);
+        ui.clickable('#' + HTML.STACK_BID_QUOTE_ENABLED);
+        ui.clickable('#' + HTML.STACK_BID_PICARD_ENABLED);
+        ui.clickable('#' + HTML.STACK_ASK_QUOTE_ENABLED);
+        ui.clickable('#' + HTML.STACK_ASK_PICARD_ENABLED);
 
+        if (isTrader) {
             for (int i = 0; i < levels; i++) {
                 ui.clickable('#' + HTML.VOLUME + i);
             }
@@ -140,6 +158,7 @@ public class LadderStackView implements ILadderBoard {
         ui.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, true);
 
         ui.txt(HTML.INP_QTY, tradingBoxQty);
+        ui.txt(HTML.STACK_TICK_SIZE, stackTickSizeBoxValue);
 
         for (final PricingMode mode : PricingMode.values()) {
             ui.cls(HTML.PRICING + mode, CSSClass.INVISIBLE, true);
@@ -171,6 +190,11 @@ public class LadderStackView implements ILadderBoard {
         final long totalAskQty = stackData.getTotalAskQty();
         ui.cls(HTML.SELL_QTY, CSSClass.INVISIBLE, totalAskQty == 0);
         ui.txt(HTML.SELL_QTY, totalAskQty);
+
+        ui.cls(HTML.STACK_BID_QUOTE_ENABLED, CSSClass.ENABLED, stackData.isBidStackEnabled(StackType.QUOTER));
+        ui.cls(HTML.STACK_BID_PICARD_ENABLED, CSSClass.ENABLED, stackData.isBidStackEnabled(StackType.PICARD));
+        ui.cls(HTML.STACK_ASK_QUOTE_ENABLED, CSSClass.ENABLED, stackData.isAskStackEnabled(StackType.QUOTER));
+        ui.cls(HTML.STACK_ASK_PICARD_ENABLED, CSSClass.ENABLED, stackData.isAskStackEnabled(StackType.PICARD));
 
         for (int i = 0; i < levels; ++i) {
 
@@ -254,6 +278,24 @@ public class LadderStackView implements ILadderBoard {
     @Override
     public void setTradingBoxQty(final int qty) {
         tradingBoxQty = qty;
+    }
+
+    @Override
+    public void setStackTickSize(final double tickSize) {
+        stackTickSizeBoxValue = tickSize;
+    }
+
+    @Override
+    public void setStackTickSizeToMatchQuote() {
+
+        final IBook<?> book = marketData.getBook();
+        if (null != book) {
+            final IBookLevel bestBid = book.getBestBid();
+            if (null != bestBid) {
+                final long tickSize = book.getTickTable().getRawTickLevels().floorEntry(bestBid.getPrice()).getValue();
+                stackTickSizeBoxValue = tickSize / (double) Constants.NORMALISING_FACTOR;
+            }
+        }
     }
 
     @Override
@@ -393,6 +435,17 @@ public class LadderStackView implements ILadderBoard {
                 stackData.stopBidStrategy();
             } else if (label.equals(HTML.STOP_SELL)) {
                 stackData.stopAskStrategy();
+            } else if (label.equals(HTML.STACK_BID_QUOTE_ENABLED)) {
+                stackData.setBidStackEnabled(StackType.QUOTER, true);
+            } else if (label.equals(HTML.STACK_BID_PICARD_ENABLED)) {
+                stackData.setBidStackEnabled(StackType.PICARD, true);
+            } else if (label.equals(HTML.STACK_ASK_QUOTE_ENABLED)) {
+                stackData.setAskStackEnabled(StackType.QUOTER, true);
+            } else if (label.equals(HTML.STACK_ASK_PICARD_ENABLED)) {
+                stackData.setAskStackEnabled(StackType.PICARD, true);
+            } else if (label.equals(HTML.STACK_SUBMIT_TICK_SIZE)) {
+                final long tickSize = (long) (stackTickSizeBoxValue * Constants.NORMALISING_FACTOR);
+                stackData.setStackPriceOffsetTickSize(tickSize);
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
@@ -401,6 +454,16 @@ public class LadderStackView implements ILadderBoard {
                 }
             } else if (label.startsWith(HTML.ORDER)) {
                 //                rightClickModify(clientSpeedState, data);
+            } else if (label.equals(HTML.STACK_BID_QUOTE_ENABLED)) {
+                stackData.setBidStackEnabled(StackType.QUOTER, false);
+            } else if (label.equals(HTML.STACK_BID_PICARD_ENABLED)) {
+                stackData.setBidStackEnabled(StackType.PICARD, false);
+            } else if (label.equals(HTML.STACK_ASK_QUOTE_ENABLED)) {
+                stackData.setAskStackEnabled(StackType.QUOTER, false);
+            } else if (label.equals(HTML.STACK_ASK_PICARD_ENABLED)) {
+                stackData.setAskStackEnabled(StackType.PICARD, false);
+            } else if (label.equals(HTML.STACK_SUBMIT_TICK_SIZE)) {
+                ui.txt(HTML.STACK_TICK_SIZE, stackData.getBidPriceOffsetTickSize());
             }
         } else if ("middle".equals(button)) {
             //            if (label.startsWith(HTML.ORDER)) {

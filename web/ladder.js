@@ -76,7 +76,7 @@ function trading(clickTrading, workingOrderTags, orderTypesLeft, orderTypesRight
 		});
 	});
 
-	$("input[type=text]").each(function (i, el) {
+	$("input[type=text], input[type=number]").each(function (i, el) {
 		handler.updateOn(el, 'keyup');
 	});
 

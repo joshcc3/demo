@@ -22,12 +22,12 @@ $(function () {
 		$(".rows").toggleClass("hidden", false);
 	});
 
-	$(".masterControls .omsButtons .enableNuclearOptions").die().bind("click", function () {
+	$(".masterControls .omsButtons .enableNuclearOptions").unbind().bind("click", function () {
 
 		var isCancelAllClickable = cancelAllButton.hasClass("isClickable");
 		if (!isCancelAllClickable) {
 
-			cancelAllNonGTC.die().bind("click", function () {
+			cancelAllNonGTC.unbind().bind("click", function () {
 				ws.send(command("cancelAllNonGTC"));
 			});
 			cancelAllButton.unbind().bind("click", function () {
@@ -100,12 +100,12 @@ function getNibbler(server) {
 		var cancelAllButton = serverBlock.find(".cancelAll");
 		var shutdownAllButton = serverBlock.find(".shutdownOMS");
 
-		serverBlock.find(".enableNuclearOptions").die().bind("click", function () {
+		serverBlock.find(".enableNuclearOptions").unbind().bind("click", function () {
 
 			var isCancelAllClickable = cancelAllButton.hasClass("isClickable");
 			if (!isCancelAllClickable) {
 
-				cancelNonGTCButton.die().bind("click", function () {
+				cancelNonGTCButton.unbind().bind("click", function () {
 					ws.send(command("cancelExchangeNonGTC", [server]));
 				});
 				cancelAllButton.unbind().bind("click", function () {
@@ -156,7 +156,7 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 
 		var symbolCell = row.find(".symbol");
 		symbolCell.text(instrument);
-		symbolCell.die().bind("click", function () {
+		symbolCell.unbind().bind("click", function () {
 			launchLadder(instrument);
 		});
 
@@ -174,7 +174,7 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 		row.toggleClass("offer", side == "OFFER");
 		row.toggleClass("notEnder", tag != "Ender");
 
-		row.find(".cancelOrder").die().bind("click", function () {
+		row.find(".cancelOrder").unbind().bind("click", function () {
 			ws.send(command("cancelOrder", [key]));
 		});
 	}

@@ -251,6 +251,16 @@ class LadderBookView implements ILadderBoard {
     }
 
     @Override
+    public void setStackTickSize(final double tickSize) {
+        // ignored
+    }
+
+    @Override
+    public void setStackTickSizeToMatchQuote() {
+        // ignored
+    }
+
+    @Override
     public void switchedTo() {
 
         view.trading(isTrader, TAGS, filterUsableOrderTypes(ladderOptions.orderTypesLeft),
@@ -262,6 +272,8 @@ class LadderBookView implements ILadderBoard {
 
         ui.cls(HTML.ORDER_TYPE_LEFT, CSSClass.FULL_WIDTH, false);
         ui.cls(HTML.ORDER_TYPE_RIGHT, CSSClass.FULL_WIDTH, false);
+
+        ui.cls(HTML.STACKS_CONTROL, CSSClass.INVISIBLE, true);
 
         for (final Map.Entry<String, Integer> entry : buttonQty.entrySet()) {
             final String display = LadderView.formatClickQty(entry.getValue());

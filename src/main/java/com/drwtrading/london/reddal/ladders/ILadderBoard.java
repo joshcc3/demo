@@ -14,6 +14,10 @@ public interface ILadderBoard {
 
     public void setTradingBoxQty(final int qty);
 
+    public void setStackTickSize(final double tickSize);
+
+    public void setStackTickSizeToMatchQuote();
+
     public boolean setPersistencePreference(final String label, final String value);
 
     public boolean canMoveTowardsCenter();

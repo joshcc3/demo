@@ -833,6 +833,71 @@ div {
 	background-color: #ff9999;
 }
 
+#stacks_control {
+	position: absolute;
+	left: 0;
+	top: 288px;
+	width: 42px;
+	border: 0;
+}
+
+#stacks_control * {
+	position: absolute;
+	font-size: 9px;
+	margin: 0;
+	padding: 0;
+	text-align: center;
+}
+
+#stackTickSize {
+	top: 0;
+	left: 0;
+	width: 42px;
+}
+
+#btn_submitStackTickSize {
+	top: 15px;
+	left: 0;
+	width: 42px;
+}
+
+#stackBidQuoterEnabled, #stackBidPicardEnabled, #stackAskQuoterEnabled, #stackAskPicardEnabled {
+	width: 19px;
+	height: 15px;
+	text-align: center;
+	color: white;
+	border: 2px solid red;
+}
+
+#stackBidQuoterEnabled, #stackAskQuoterEnabled {
+	top: 30px;
+	background: #FB6E75;
+}
+
+#stackBidPicardEnabled, #stackAskPicardEnabled {
+	top: 47px;
+	background: #5970B2;
+}
+
+#stackBidQuoterEnabled, #stackBidPicardEnabled {
+	left: 1px;
+}
+
+#stackAskQuoterEnabled, #stackAskPicardEnabled {
+	left: 22px;
+}
+
+#stackBidQuoterEnabled.enabled, #stackBidPicardEnabled.enabled, #stackAskQuoterEnabled.enabled, #stackAskPicardEnabled.enabled {
+	border: 2px solid green;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button,
+input::-webkit-outer-spin-button:hover,
+input::-webkit-inner-spin-button:hover {
+	-webkit-appearance: none;
+}
+
 .pricing_button {
 	width: 38px;
 	height: 15px;
