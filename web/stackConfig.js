@@ -1,6 +1,7 @@
 var ws;
 
 var NO_FILTER = "--ALL--";
+var STICKY_HEADER_ID = "stickyHeader";
 var symbolFilter;
 
 $(function () {
@@ -77,7 +78,7 @@ function selectedConfigTypeChanged() {
 }
 
 function filterRowByConfigType(row, selectedConfigType) {
-	row.toggleClass("filtered", NO_FILTER != selectedConfigType && row.attr("configType") != selectedConfigType);
+	row.toggleClass("filtered", STICKY_HEADER_ID != row.attr("ID") && NO_FILTER != selectedConfigType && row.attr("configType") != selectedConfigType);
 }
 
 function setupCopyToAllRows(i, input) {
@@ -423,7 +424,7 @@ function setupTable() {
 	var header = $("#header");
 	var stickyHeader = header.clone();
 	stickyHeader.appendTo(header.parent());
-	stickyHeader.attr("id", "stickyHeader");
+	stickyHeader.attr("id", STICKY_HEADER_ID);
 	var wind = $(window);
 	var headerYPos = header.offset().top;
 	var headerXPos = header.offset().left;
@@ -458,7 +459,6 @@ function setupStickyColumns(rows) {
 		var referenceColumn = columns.filter(".leftMost");
 
 		var wind = $(window);
-		var columnYPos = referenceColumn.offset().top;
 		var columnXPos = referenceColumn.offset().left;
 
 		wind.scroll(function () {
@@ -466,6 +466,7 @@ function setupStickyColumns(rows) {
 			if (columnXPos < wind.scrollLeft()) {
 				stickyColumns.toggleClass('sticky', true);
 
+				var columnYPos = referenceColumn.offset().top;
 				var y = columnYPos - $(this).scrollTop();
 				stickyColumns.css("top", y);
 				stickyColumns.css("height", referenceColumn.outerHeight());
