@@ -346,7 +346,7 @@ class LadderBookView implements ILadderBoard {
         drawWorkingOrders();
         drawPricingButtons();
         drawPriceLevels();
-        drawMetaData(levels);
+        drawMetaData();
         drawClickTrading();
     }
 
@@ -510,11 +510,11 @@ class LadderBookView implements ILadderBoard {
         return null != marketData.getBook() && null != marketData.getBook().getBestBid();
     }
 
-    private void drawMetaData(final int levels) {
+    private void drawMetaData() {
 
         if (!pendingRefDataAndSettle && null != dataForSymbol && null != marketData) {
 
-            drawLaserLines(levels);
+            drawLaserLines();
             /* Change on day*/
             final Long lastTradeChangeOnDay = getLastTradeChangeOnDay(marketData);
             if (lastTradeChangeOnDay != null) {
@@ -589,7 +589,7 @@ class LadderBookView implements ILadderBoard {
         }
     }
 
-    private void drawLaserLines(final int levels) {
+    private void drawLaserLines() {
 
         if (null != marketData.getBook() && marketData.getBook().isValid()) {
             for (final LaserLine laserLine : dataForSymbol.laserLineByName.values()) {
