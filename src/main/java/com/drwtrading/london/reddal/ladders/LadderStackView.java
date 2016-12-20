@@ -143,6 +143,8 @@ public class LadderStackView implements ILadderBoard {
                 ui.clickable('#' + HTML.VOLUME + i);
             }
         }
+
+        this.stackTickSizeBoxValue = stackData.getBidPriceOffsetTickSize() / (double) Constants.NORMALISING_FACTOR;
     }
 
     @Override

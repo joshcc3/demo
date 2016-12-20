@@ -10,27 +10,33 @@ import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigNibblerView;
+import com.drwtrading.london.reddal.stacks.opxl.StackGroupOPXLView;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesNibblerView;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class StackConfigCallbackBatcher
+public class StackCallbackBatcher
         implements IStackConnectionListener, IStackGroupUpdateCallback, IStackConfigUpdateCallback, IStackStrategyUpdateCallback {
 
     private final StackStrategiesNibblerView strategiesPresenter;
     private final StackConfigNibblerView configPresenter;
+    private final StackGroupOPXLView stackOPXLView;
 
     private final Set<StackStrategy> strategyBatch;
     private final Set<StackConfigGroup> configBatch;
+    private final Set<StackGroup> groupBatch;
 
-    public StackConfigCallbackBatcher(final StackStrategiesNibblerView strategiesPresenter, final StackConfigNibblerView configPresenter) {
+    public StackCallbackBatcher(final StackStrategiesNibblerView strategiesPresenter, final StackConfigNibblerView configPresenter,
+            final StackGroupOPXLView stackOPXLView) {
 
         this.strategiesPresenter = strategiesPresenter;
         this.configPresenter = configPresenter;
+        this.stackOPXLView = stackOPXLView;
 
         this.strategyBatch = new HashSet<>();
         this.configBatch = new HashSet<>();
+        this.groupBatch = new HashSet<>();
     }
 
     @Override
@@ -46,7 +52,7 @@ public class StackConfigCallbackBatcher
     @Override
     public void connectionLost(final String remoteAppName) {
         configBatch.clear();
-        strategiesPresenter.serverConnectionLost();
+        strategiesPresenter.serverConnectionLost(remoteAppName);
         configPresenter.serverConnectionLost();
     }
 
@@ -92,6 +98,16 @@ public class StackConfigCallbackBatcher
     }
 
     @Override
+    public void stackGroupCreated(final StackGroup stackGroup) {
+        groupBatch.add(stackGroup);
+    }
+
+    @Override
+    public void stackGroupUpdated(final StackGroup stackGroup) {
+        groupBatch.add(stackGroup);
+    }
+
+    @Override
     public void batchComplete() {
 
         for (final StackStrategy strategy : strategyBatch) {
@@ -113,15 +129,15 @@ public class StackConfigCallbackBatcher
             }
         }
         configBatch.clear();
-    }
 
-    @Override
-    public void stackGroupCreated(final StackGroup stackGroup) {
-        // no-op
-    }
-
-    @Override
-    public void stackGroupUpdated(final StackGroup stackGroup) {
-        // no-op
+        for (final StackGroup group : groupBatch) {
+            try {
+                stackOPXLView.setStackGroup(group);
+            } catch (final Exception e) {
+                System.out.println("Failed Group stack batch update.");
+                e.printStackTrace();
+            }
+        }
+        groupBatch.clear();
     }
 }

@@ -6,12 +6,12 @@ import com.drwtrading.london.eeif.utils.marketData.book.BookLevelThreeMonitorAda
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
-import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.MDForSymbol;
+import com.drwtrading.london.reddal.stacks.opxl.StackRefPriceDetail;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import org.jetlang.channels.Channel;
@@ -30,20 +30,24 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
     private final Map<MDSource, MDTransportClient> mdClients;
     private final Channel<SearchResult> searchResults;
     private final Channel<StockAlert> stockAlertChannel;
+    private final Channel<StackRefPriceDetail> stackRefPriceDetails;
 
     private final Map<String, IBook<IBookLevelWithOrders>> books;
     private final Map<String, MDForSymbol> listeners;
 
     private final SimpleDateFormat sdf;
+    private final long timezoneOffsetMillis;
 
     public LevelThreeBookSubscriber(final boolean isPrimary, final IResourceMonitor<ReddalComponents> monitor,
-            final Channel<SearchResult> searchResults, final Channel<StockAlert> stockAlertChannel) {
+            final Channel<SearchResult> searchResults, final Channel<StockAlert> stockAlertChannel,
+            final Channel<StackRefPriceDetail> stackRefPriceDetails) {
 
         this.isPrimary = isPrimary;
 
         this.monitor = monitor;
         this.searchResults = searchResults;
         this.stockAlertChannel = stockAlertChannel;
+        this.stackRefPriceDetails = stackRefPriceDetails;
 
         this.mdClients = new EnumMap<>(MDSource.class);
 
@@ -52,6 +56,8 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
 
         this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
         this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
+
+        this.timezoneOffsetMillis = DateTimeUtil.LONDON_TIME_ZONE.getOffset(System.currentTimeMillis());
     }
 
     public void setMDClient(final MDSource mdSource, final MDTransportClient client) {
@@ -78,12 +84,25 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
     }
 
     @Override
-    public void referencePrice(final IBook<IBookLevelWithOrders> book, final IBookReferencePrice referencePriceData) {
+    public void referencePrice(final IBook<IBookLevelWithOrders> book, final IBookReferencePrice refPrice) {
 
-        if (isPrimary && book.isValid() && referencePriceData.isValid() && ReferencePoint.RFQ == referencePriceData.getReferencePoint()) {
-            final String timestamp = sdf.format(referencePriceData.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS);
-            final StockAlert stockAlert = new StockAlert(timestamp, "RFQ", book.getSymbol(), "Qty: " + referencePriceData.getQty());
-            stockAlertChannel.publish(stockAlert);
+        if (isPrimary && refPrice.isValid()) {
+            switch (refPrice.getReferencePoint()) {
+                case RFQ: {
+                    if (book.isValid()) {
+                        final String timestamp =
+                                sdf.format(timezoneOffsetMillis + (refPrice.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS));
+                        final StockAlert stockAlert = new StockAlert(timestamp, "RFQ", book.getSymbol(), "Qty: " + refPrice.getQty());
+                        stockAlertChannel.publish(stockAlert);
+                    }
+                    break;
+                }
+                case YESTERDAY_CLOSE: {
+                    final String symbol = book.getSymbol();
+                    final StackRefPriceDetail refPriceDetail = new StackRefPriceDetail(symbol, refPrice.getPrice(), book.getTickTable());
+                    stackRefPriceDetails.publish(refPriceDetail);
+                }
+            }
         }
     }
 

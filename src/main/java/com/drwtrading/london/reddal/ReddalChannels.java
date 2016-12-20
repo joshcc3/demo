@@ -15,6 +15,7 @@ import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderEntryFromServer;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.stacks.opxl.StackRefPriceDetail;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -67,8 +68,10 @@ public class ReddalChannels {
     public final TypedChannel<OrderEntryFromServer> orderEntryFromServer;
     public final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
     public final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
+    public final TypedChannel<StackRefPriceDetail> stackRefPriceDetailChannel;
 
     public ReddalChannels(final ChannelFactory channelFactory) {
+
         this.channelFactory = channelFactory;
         this.error = Main.ERROR_CHANNEL;
         this.errorPublisher = new BogusErrorFilteringPublisher(error);
@@ -103,6 +106,7 @@ public class ReddalChannels {
         this.orderEntryFromServer = create(OrderEntryFromServer.class);
         this.orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
         this.orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
+        this.stackRefPriceDetailChannel = create(StackRefPriceDetail.class);
     }
 
     public <T> TypedChannel<T> create(final Class<T> clazz) {

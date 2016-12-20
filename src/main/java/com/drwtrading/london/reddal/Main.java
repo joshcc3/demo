@@ -80,10 +80,11 @@ import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.pks.PKSPositionClient;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
-import com.drwtrading.london.reddal.stacks.StackConfigCallbackBatcher;
+import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigNibblerView;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigUIRouter;
+import com.drwtrading.london.reddal.stacks.opxl.StackGroupOPXLView;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesNibblerView;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesUIRouter;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
@@ -384,9 +385,11 @@ public class Main {
 
                 final boolean isPrimary = 0 == i;
                 final LevelThreeBookSubscriber l3BookHandler =
-                        new LevelThreeBookSubscriber(isPrimary, displayMonitor, channels.searchResults, channels.stockAlerts);
+                        new LevelThreeBookSubscriber(isPrimary, displayMonitor, channels.searchResults, channels.stockAlerts,
+                                channels.stackRefPriceDetailChannel);
                 final LevelTwoBookSubscriber l2BookHandler =
-                        new LevelTwoBookSubscriber(isPrimary, displayMonitor, channels.searchResults, channels.stockAlerts);
+                        new LevelTwoBookSubscriber(isPrimary, displayMonitor, channels.searchResults, channels.stockAlerts,
+                                channels.stackRefPriceDetailChannel);
 
                 final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
                         MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
@@ -483,8 +486,16 @@ public class Main {
                                 "SELECT_IO_");
                 final SelectIO stackConfigSelectIO = new SelectIO(selectIOMonitor);
 
+                final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(stackConfigSelectIO, errorLog, "Stack Config SelectIO.");
+                fibers.fiberGroup.wrap(displaySelectIOFiber, "Stack Config SelectIO Fiber.");
+
                 final StackStrategiesUIRouter stackStrategiesUIRouter = new StackStrategiesUIRouter(fibers.ui, webLog);
                 final StackConfigUIRouter stackConfigUIRouter = new StackConfigUIRouter(fibers.ui, webLog);
+
+                final String stackOPXLTopic = stackConfig.getString("opxlSpreadTopic");
+                final StackGroupOPXLView stackOPXLView = new StackGroupOPXLView(stackConfigMonitor, stackOPXLTopic);
+                channels.stackRefPriceDetailChannel.subscribe(displaySelectIOFiber, stackOPXLView::setStackRefPrice);
+                stackConfigSelectIO.addDelayedAction(5000, stackOPXLView::update);
 
                 for (final ConfigGroup stackConnectionConfig : stackConfig.groups()) {
 
@@ -495,8 +506,8 @@ public class Main {
 
                     final StackStrategiesNibblerView strategiesPresenter = stackStrategiesUIRouter.getNibblerHandler(nibblerName);
                     final StackConfigNibblerView configPresenter = stackConfigUIRouter.getNibblerHandler(nibblerName);
-                    final StackConfigCallbackBatcher stackUpdateBatcher =
-                            new StackConfigCallbackBatcher(strategiesPresenter, configPresenter);
+                    final StackCallbackBatcher stackUpdateBatcher =
+                            new StackCallbackBatcher(strategiesPresenter, configPresenter, stackOPXLView);
                     final StackClientHandler clientHandler =
                             StackCacheFactory.createClientCache(stackConfigSelectIO, stackConnectionConfig, stackMonitor, connectionName,
                                     "stackConfig", stackUpdateBatcher);
@@ -504,9 +515,6 @@ public class Main {
                     strategiesPresenter.setStrategyClient(clientHandler);
                     configPresenter.setConfigClient(clientHandler);
                 }
-
-                final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(stackConfigSelectIO, errorLog, "Stack Config SelectIO.");
-                fibers.fiberGroup.wrap(displaySelectIOFiber, "Stack Config SelectIO Fiber.");
 
                 channels.searchResults.subscribe(displaySelectIOFiber,
                         searchResult -> stackStrategiesUIRouter.addInstID(searchResult.symbol, searchResult.instID));

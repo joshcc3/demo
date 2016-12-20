@@ -77,9 +77,11 @@ public class StackStrategiesNibblerView {
                 strategy.isFXAvailable(), strategy.getSelectedConfigType().name());
     }
 
-    public void serverConnectionLost() {
-        strategies.clear();
-        views.all().removeAll();
+    public void serverConnectionLost(final String nibblerName) {
+        if (nibblerName.equals(this.nibblerName)) {
+            strategies.clear();
+            views.all().removeAll();
+        }
     }
 
     public void removeUI(final WebSocketDisconnected disconnected) {

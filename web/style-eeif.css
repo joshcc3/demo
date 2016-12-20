@@ -849,33 +849,21 @@ div {
 	text-align: center;
 }
 
-#stackTickSize {
-	top: 0;
-	left: 0;
-	width: 42px;
-}
-
-#btn_submitStackTickSize {
-	top: 15px;
-	left: 0;
-	width: 42px;
-}
-
 #stackBidQuoterEnabled, #stackBidPicardEnabled, #stackAskQuoterEnabled, #stackAskPicardEnabled {
 	width: 19px;
 	height: 15px;
 	text-align: center;
 	color: white;
-	border: 2px solid red;
+	border: 3px solid red;
 }
 
 #stackBidQuoterEnabled, #stackAskQuoterEnabled {
-	top: 30px;
+	top: 0;
 	background: #FB6E75;
 }
 
 #stackBidPicardEnabled, #stackAskPicardEnabled {
-	top: 47px;
+	top: 17px;
 	background: #5970B2;
 }
 
@@ -888,7 +876,7 @@ div {
 }
 
 #stackBidQuoterEnabled.enabled, #stackBidPicardEnabled.enabled, #stackAskQuoterEnabled.enabled, #stackAskPicardEnabled.enabled {
-	border: 2px solid green;
+	border: 3px solid green;
 }
 
 input::-webkit-outer-spin-button,
@@ -896,6 +884,18 @@ input::-webkit-inner-spin-button,
 input::-webkit-outer-spin-button:hover,
 input::-webkit-inner-spin-button:hover {
 	-webkit-appearance: none;
+}
+
+#stackTickSize {
+	top: 34px;
+	left: 0;
+	width: 42px;
+}
+
+#btn_submitStackTickSize {
+	top: 49px;
+	left: 0;
+	width: 42px;
 }
 
 .pricing_button {
