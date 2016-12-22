@@ -83,6 +83,11 @@ body {
 #createdTable .dataRow .boolean.isTrue {
 	background-color: lightgreen;
 }
+
 #createdTable .dataRow .boolean:not(.isTrue) {
 	background-color: lightpink;
+}
+
+#createdTable .dataRow .symbol {
+	cursor: pointer;
 }

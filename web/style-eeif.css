@@ -16,6 +16,7 @@ body {
 	color: white;;
 	font-size: 10px;
 	font-family: verdana, tahoma, arial, serif;
+	overflow: hidden;
 }
 
 #symbol.spread {

@@ -72,12 +72,18 @@ function setRow(id, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanSymbol, lean
 		});
 	}
 
-	setCellData(row, ".quote.symbol", quoteSymbol);
+	var quoteSymbolCell = setCellData(row, ".quote.symbol", quoteSymbol);
+	quoteSymbolCell.unbind().bind("click", function () {
+		launchLadder(quoteSymbol);
+	});
 	setCellData(row, ".quote.isin", quoteISIN);
 	setCellData(row, ".quote.ccy", quoteCCY);
 	setCellData(row, ".quote.mic", quoteMIC);
 
-	setCellData(row, ".lean.symbol", leanSymbol);
+	var leanSymbolCell = setCellData(row, ".lean.symbol", leanSymbol);
+	leanSymbolCell.unbind().bind("click", function () {
+		launchLadder(leanSymbol);
+	});
 	setCellData(row, ".lean.isin", leanISIN);
 	setCellData(row, ".lean.ccy", leanCCY);
 	setCellData(row, ".lean.mic", leanMIC);
@@ -100,6 +106,7 @@ function setCellData(row, cellID, value) {
 		input.attr("data", "");
 		input.text("");
 	}
+	return input
 }
 
 function setBoolData(row, cellID, value) {
