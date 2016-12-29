@@ -9,9 +9,11 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigNibblerView;
 import com.drwtrading.london.reddal.stacks.opxl.StackGroupOPXLView;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesNibblerView;
+import org.jetlang.channels.Publisher;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -27,12 +29,16 @@ public class StackCallbackBatcher
     private final Set<StackConfigGroup> configBatch;
     private final Set<StackGroup> groupBatch;
 
+    private final Publisher<SpreadContractSet> stackContractSetPublisher;
+
     public StackCallbackBatcher(final StackStrategiesNibblerView strategiesPresenter, final StackConfigNibblerView configPresenter,
-            final StackGroupOPXLView stackOPXLView) {
+            final StackGroupOPXLView stackOPXLView, final Publisher<SpreadContractSet> stackContractSetPublisher) {
 
         this.strategiesPresenter = strategiesPresenter;
         this.configPresenter = configPresenter;
         this.stackOPXLView = stackOPXLView;
+
+        this.stackContractSetPublisher = stackContractSetPublisher;
 
         this.strategyBatch = new HashSet<>();
         this.configBatch = new HashSet<>();
@@ -80,6 +86,10 @@ public class StackCallbackBatcher
     @Override
     public void strategyCreated(final StackStrategy strategy) {
         strategiesPresenter.strategyCreated(strategy);
+
+        final String symbol = strategy.getSymbol();
+        final SpreadContractSet contractSet = new SpreadContractSet(symbol, strategy.getLeanSymbol(), symbol + ";S");
+        stackContractSetPublisher.publish(contractSet);
     }
 
     @Override
@@ -113,6 +123,7 @@ public class StackCallbackBatcher
         for (final StackStrategy strategy : strategyBatch) {
             try {
                 strategiesPresenter.strategyUpdated(strategy);
+
             } catch (final Exception e) {
                 System.out.println("Failed Strategy stack batch update.");
                 e.printStackTrace();

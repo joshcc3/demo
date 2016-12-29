@@ -182,11 +182,15 @@ public class LadderPresenter {
                         dataBySymbol.get(symbol), stackBySymbol.get(symbol),
                         ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()), eeifOrdersBySymbol.get(symbol));
                 if (3 < args.length) {
-                    try {
-                        final long price = (long) (Constants.NORMALISING_FACTOR * Double.parseDouble(args[3]));
-                        view.setCenterPrice(price);
-                    } catch (final NumberFormatException ignored) {
-                        // Ignore price request.
+                    if ("S".equals(args[3])) {
+                        view.setStackView();
+                    } else {
+                        try {
+                            final long price = (long) (Constants.NORMALISING_FACTOR * Double.parseDouble(args[3]));
+                            view.setCenterPrice(price);
+                        } catch (final NumberFormatException ignored) {
+                            // Ignore price request.
+                        }
                     }
                 }
                 viewsBySymbol.put(symbol, view);

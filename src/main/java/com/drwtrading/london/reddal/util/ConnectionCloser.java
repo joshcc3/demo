@@ -13,7 +13,7 @@ public class ConnectionCloser implements Notifier {
 
     private final Publisher<StatsMsg> status;
     private final String name;
-    private final Set<PhotocolsConnection> closedConnections;
+    private final Set<PhotocolsConnection<?>> closedConnections;
 
     public ConnectionCloser(final Publisher<StatsMsg> status, final String name) {
 

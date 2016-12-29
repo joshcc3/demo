@@ -44,10 +44,10 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     private int seqNo = 0;
     private int incomingSeqNo = -1;
 
-    private Map<Integer, String> seqNoToSymbol = new HashMap<>();
+    private final Map<Integer, String> seqNoToSymbol = new HashMap<>();
 
-    public OrderEntryClient(String thisInstance, IClock clock, String serverInstance, Fiber fiber, Publisher<SymbolOrderChannel> publisher,
-            Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+    public OrderEntryClient(final String thisInstance, final IClock clock, final String serverInstance, final Fiber fiber,
+            final Publisher<SymbolOrderChannel> publisher, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
         this.thisInstance = thisInstance;
         this.clock = clock;
         this.serverInstance = serverInstance;
@@ -61,9 +61,9 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
         send(new ClientHeartbeat());
     }
 
-    private boolean send(OrderEntryCommand command) {
+    private boolean send(final OrderEntryCommand command) {
         if (null != connection) {
-            int cmdSeqNo = seqNo++;
+            final int cmdSeqNo = seqNo++;
             connection.send(new OrderEntryCommandMsg(thisInstance, serverInstance, clock.nowMilliUTC(), cmdSeqNo, command));
             if (command instanceof Submit) {
                 seqNoToSymbol.put(cmdSeqNo, ((Submit) command).getOrder().getSymbol());
@@ -76,31 +76,31 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     }
 
     @Subscribe
-    public void on(OrderEntryCommandToServer cmd) {
+    public void on(final OrderEntryCommandToServer cmd) {
         if (serverInstance.equals(cmd.server)) {
             send(cmd.command);
         }
     }
 
     @Override
-    public PhotocolsConnection<OrderEntryCommandMsg> onOpen(PhotocolsConnection<OrderEntryCommandMsg> connection) {
+    public PhotocolsConnection<OrderEntryCommandMsg> onOpen(final PhotocolsConnection<OrderEntryCommandMsg> connection) {
         Preconditions.checkArgument(this.connection == null, "Double connection");
         this.connection = connection;
         return connection;
     }
 
     @Override
-    public void onClose(PhotocolsConnection<OrderEntryCommandMsg> connection) {
+    public void onClose(final PhotocolsConnection<OrderEntryCommandMsg> connection) {
         this.connection = null;
         incomingSeqNo = -1;
         seqNo = 0;
     }
 
     @Override
-    public void onMessage(PhotocolsConnection<OrderEntryCommandMsg> connection, OrderEntryReplyMsg message) {
-        int expectedSeqNo = incomingSeqNo + 1;
+    public void onMessage(final PhotocolsConnection<OrderEntryCommandMsg> connection, final OrderEntryReplyMsg message) {
+        final int expectedSeqNo = incomingSeqNo + 1;
         incomingSeqNo = message.getSessionSeqNo();
-        long delayMs = clock.nowMilliUTC() - message.getMillisUtc();
+        final long delayMs = clock.nowMilliUTC() - message.getMillisUtc();
         Preconditions.checkArgument(serverInstance.equals(message.getFromInstance()), "Wrong instance: expecting %s, received %s, ",
                 serverInstance, message.getFromInstance());
         Preconditions.checkArgument(expectedSeqNo == message.getSessionSeqNo(), "Seq no doesn't match: expected %s, received %s",
@@ -114,9 +114,9 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     }
 
     @Override
-    public Void visitAvailableSymbol(AvailableSymbol availableSymbol) {
-        MemoryChannel<OrderEntryCommand> channel = new MemoryChannel<>();
-        Set<ManagedOrderType> orderTypes = Arrays.asList(ManagedOrderType.values()).stream().filter(
+    public Void visitAvailableSymbol(final AvailableSymbol availableSymbol) {
+        final MemoryChannel<OrderEntryCommand> channel = new MemoryChannel<>();
+        final Set<ManagedOrderType> orderTypes = Arrays.asList(ManagedOrderType.values()).stream().filter(
                 managedOrderType -> availableSymbol.isLeanAllowed() || !managedOrderType.requiresLean()).collect(Collectors.toSet());
         publisher.publish(new SymbolOrderChannel(availableSymbol.getSymbol(), channel, orderTypes));
         channel.subscribe(fiber, this::send);
@@ -124,24 +124,24 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     }
 
     @Override
-    public Void visitAck(Ack msg) {
+    public Void visitAck(final Ack msg) {
         seqNoToSymbol.remove(msg.getAckSeqNo());
         return null;
     }
 
     @Override
-    public Void visitFill(Fill msg) {
+    public Void visitFill(final Fill msg) {
         return null;
     }
 
     @Override
-    public Void visitDead(Dead msg) {
+    public Void visitDead(final Dead msg) {
         return null;
     }
 
     @Override
-    public Void visitReject(Reject msg) {
-        String symbol = seqNoToSymbol.remove(msg.getRejSeqNo());
+    public Void visitReject(final Reject msg) {
+        final String symbol = seqNoToSymbol.remove(msg.getRejSeqNo());
         if (null != symbol) {
             ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, msg.getMessage()));
         }
@@ -149,17 +149,8 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     }
 
     @Override
-    public Void visitServerHeartbeat(ServerHeartbeat msg) {
+    public Void visitServerHeartbeat(final ServerHeartbeat msg) {
         return null;
-    }
-
-    public static class SymbolOrder extends Struct {
-
-        public final String symbol;
-
-        public SymbolOrder(String symbol) {
-            this.symbol = symbol;
-        }
     }
 
     public static class SymbolOrderChannel extends Struct {
@@ -168,7 +159,8 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
         public final Publisher<OrderEntryCommand> publisher;
         public final Set<ManagedOrderType> supportedTypes;
 
-        public SymbolOrderChannel(String symbol, Publisher<OrderEntryCommand> publisher, Set<ManagedOrderType> supportedTypes) {
+        public SymbolOrderChannel(final String symbol, final Publisher<OrderEntryCommand> publisher,
+                final Set<ManagedOrderType> supportedTypes) {
             this.symbol = symbol;
             this.publisher = publisher;
             this.supportedTypes = supportedTypes;

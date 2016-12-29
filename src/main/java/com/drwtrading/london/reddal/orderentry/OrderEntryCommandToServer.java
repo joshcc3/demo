@@ -8,7 +8,7 @@ public class OrderEntryCommandToServer extends Struct {
     public final String server;
     public final OrderEntryCommand command;
 
-    public OrderEntryCommandToServer(String server, OrderEntryCommand command) {
+    public OrderEntryCommandToServer(final String server, final OrderEntryCommand command) {
         this.server = server;
         this.command = command;
     }

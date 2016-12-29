@@ -93,14 +93,12 @@ public class WorkingOrdersPresenter {
 
     public void onWorkingOrder(final WorkingOrderUpdateFromServer order) {
 
-        if (workingOrderFilter(order)) {
-            if (order.value.getWorkingOrderState() == WorkingOrderState.DEAD) {
-                workingOrders.remove(order.key());
-            } else {
-                workingOrders.put(order.key(), order);
-            }
-            dirty.put(order.key(), order);
+        if (order.value.getWorkingOrderState() == WorkingOrderState.DEAD) {
+            workingOrders.remove(order.key());
+        } else {
+            workingOrders.put(order.key(), order);
         }
+        dirty.put(order.key(), order);
     }
 
     public void nibblerConnectionEstablished(final WorkingOrderConnectionEstablished connectionEstablished) {
@@ -257,10 +255,6 @@ public class WorkingOrdersPresenter {
     }
 
     // -----------------
-
-    public static boolean workingOrderFilter(final WorkingOrderUpdateFromServer order) {
-        return !"synthetic".equals(order.fromServer);
-    }
 
     public static boolean nonGTCFilter(final WorkingOrderUpdateFromServer order) {
         return !(order.fromServer.toUpperCase().contains("GTC") ||

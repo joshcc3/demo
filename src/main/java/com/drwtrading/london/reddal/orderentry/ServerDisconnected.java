@@ -6,7 +6,7 @@ public class ServerDisconnected extends Struct implements OrderEntryFromServer {
 
     public final String server;
 
-    public ServerDisconnected(String server) {
+    public ServerDisconnected(final String server) {
         this.server = server;
     }
 }

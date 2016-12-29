@@ -1,0 +1,46 @@
+body {
+	margin: 0px;
+	overflow: hidden;
+}
+
+div.ladder {
+	float: left;
+	border: 1px solid #d4d0c7;
+	margin: 1px;;
+	overflow: hidden;
+}
+
+div.ladder:hover {
+	border: 1px solid yellow;
+}
+
+iframe {
+	border: none;
+}
+
+#options {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 4px;
+	height: 4px;
+	border: 1px solid green;
+	overflow: hidden;
+	background-color: green;
+}
+
+#options:hover {
+	width: 50px;
+	height: 25px;
+	border: 1px solid yellow;
+}
+
+button.enabled {
+	background-color: red;
+}
+
+button {
+	width: 20px;
+	height: 20px;
+	font-size: 8px;
+}

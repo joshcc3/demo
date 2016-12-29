@@ -8,13 +8,13 @@ public class UpdateFromServer extends Struct implements OrderEntryFromServer {
     public final String server;
     public final Update update;
 
-    public UpdateFromServer(String server, Update update) {
+    public UpdateFromServer(final String server, final Update update) {
         this.server = server;
         this.update = update;
     }
 
     public String key() {
-        return "EEIFOE_" + server + "_" + update.getSystemOrderId();
+        return "EEIFOE_" + server + '_' + update.getSystemOrderId();
     }
 
     public String getSymbol() {

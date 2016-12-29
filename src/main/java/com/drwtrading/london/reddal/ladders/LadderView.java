@@ -238,7 +238,7 @@ public class LadderView implements UiEventHandler {
         refreshAll();
     }
 
-    private void setStackView() {
+    void setStackView() {
 
         activeView = stackView;
         refreshAll();

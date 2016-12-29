@@ -113,8 +113,8 @@ function subscribe() {
 	NumLevels = calcLevels();
 	draw(NumLevels);
 	if (0 < symbolEnd) {
-		var price = document.location.hash.substr(symbolEnd + 1);
-		handler.send("ladder-subscribe", symbol, NumLevels, price);
+		var ladderSwitch = document.location.hash.substr(symbolEnd + 1);
+		handler.send("ladder-subscribe", symbol, NumLevels, ladderSwitch);
 	} else {
 		handler.send("ladder-subscribe", symbol, NumLevels);
 	}

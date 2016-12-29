@@ -142,7 +142,6 @@ public class LadderWorkspace {
                     }
                 }
             }
-
         }
 
         return openedSomething;

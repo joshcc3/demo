@@ -507,7 +507,7 @@ public class Main {
                     final StackStrategiesNibblerView strategiesPresenter = stackStrategiesUIRouter.getNibblerHandler(nibblerName);
                     final StackConfigNibblerView configPresenter = stackConfigUIRouter.getNibblerHandler(nibblerName);
                     final StackCallbackBatcher stackUpdateBatcher =
-                            new StackCallbackBatcher(strategiesPresenter, configPresenter, stackOPXLView);
+                            new StackCallbackBatcher(strategiesPresenter, configPresenter, stackOPXLView, channels.contractSets);
                     final StackClientHandler clientHandler =
                             StackCacheFactory.createClientCache(stackConfigSelectIO, stackConnectionConfig, stackMonitor, connectionName,
                                     "stackConfig", stackUpdateBatcher);
@@ -567,9 +567,6 @@ public class Main {
         { // Contract sets
             final FuturesContractSetGenerator futuresContractSetGenerator = new FuturesContractSetGenerator(channels.contractSets);
             channels.searchResults.subscribe(fibers.contracts.getFiber(), futuresContractSetGenerator::setSearchResult);
-
-            final SyntheticSpreadContractSetGenerator generator = new SyntheticSpreadContractSetGenerator(channels.contractSets);
-            channels.searchResults.subscribe(fibers.contracts.getFiber(), generator::setSearchResult);
 
             final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
             channels.searchResults.subscribe(fibers.contracts.getFiber(), chixInstMatcher::setSearchResult);

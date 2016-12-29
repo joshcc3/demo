@@ -53,7 +53,6 @@ public class ResolverTest {
         Environment environment = new Environment(new Config(Paths.get("etc/prod-equities.properties")).getRoot());
         Environment.RemoteOrderServerResolver resolver = environment.getServerResolver();
 
-        assertEquals("synthetic", resolver.resolveToServerName("SPREAD:TUI LN-TUI1 GY", RemoteOrderType.MANUAL, "CHAD"));
         assertEquals("nibbler-chix", resolver.resolveToServerName("FOO IX", RemoteOrderType.HAWK, "CHAD"));
         assertEquals("nibbler-chix", resolver.resolveToServerName("FOO GY IX", RemoteOrderType.HAWK, "CHAD"));
         assertEquals("nibbler-euronext", resolver.resolveToServerName("FOO FP", RemoteOrderType.HAWK, "CHAD"));
