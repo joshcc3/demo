@@ -21,12 +21,15 @@
 	<div id="creationTable">
 		<div id="creationRow" class="row">
 
-			<label>Quote Symbol</label>
-			<input type="text" name="quote">
+			<label for="quoteSymbol">Quote Symbol</label>
+			<input id="quoteSymbol" type="text" name="quote">
 
-			<label>Lean Symbol
-			</label>
-			<input type="text" name="lean">
+			<label for="leanInstID">Lean Type</label>
+			<select name="leanInstID" id="leanInstID">
+			</select>
+
+			<label for="leanSymbol">Lean Symbol</label>
+			<input id="leanSymbol" type="text" name="lean">
 
 			<div class="button">
 				<button type="button">submit</button>
@@ -39,7 +42,6 @@
 				<div class="ccy"></div>
 				<div class="mic"></div>
 			</div>
-
 
 			<div id="leanInfo" class="instrumentID unknown">
 				<div class="isin"></div>

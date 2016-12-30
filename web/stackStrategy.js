@@ -19,8 +19,9 @@ $(function () {
 	submit.off("click").click(function () {
 
 		var quoteSymbol = creationRow.find("input[name=quote]").val();
+		var leanInstType = creationRow.find("#leanInstID").find("option:selected").text();
 		var leanSymbol = creationRow.find("input[name=lean]").val();
-		ws.send(command("submitSymbol", [quoteSymbol, leanSymbol]));
+		ws.send(command("submitSymbol", [quoteSymbol, leanInstType, leanSymbol]));
 	});
 });
 
@@ -40,6 +41,19 @@ function noInstID(type) {
 	var infoRow = $("#" + type + "Info");
 	infoRow.toggleClass("unknown", true);
 	infoRow.find("div").text("");
+}
+
+function addInstType(instTypes) {
+
+	var instTypeCombo = $("#leanInstID");
+	$(instTypeCombo).find("option").remove();
+	instTypes.forEach(function (instType) {
+
+		var option = $("<option value=\"" + instType + "\">" + instType + "</option>");
+		option.addClass(instType);
+		option.attr("data", instType);
+		instTypeCombo.append(option);
+	});
 }
 
 function setInstID(type, isin, ccy, mic) {

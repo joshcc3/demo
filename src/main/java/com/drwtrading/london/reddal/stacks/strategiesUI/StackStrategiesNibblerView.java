@@ -5,19 +5,23 @@ import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
+import com.google.common.collect.Lists;
 import org.jetlang.channels.Publisher;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 public class StackStrategiesNibblerView {
 
-    private static final String SOURCE = "STRATEGIES_UI";
+    private static final Collection<String> ALLOWED_INST_TYPES =
+            Lists.newArrayList(InstType.EQUITY.name(), InstType.DR.name(), InstType.INDEX.name());
 
     private final String nibblerName;
     private final WebSocketViews<IStackStrategiesUI> views;
@@ -58,6 +62,7 @@ public class StackStrategiesNibblerView {
     public void addUI(final Publisher<WebSocketOutboundData> channel) {
 
         final IStackStrategiesUI newView = views.get(channel);
+        newView.addInstType(ALLOWED_INST_TYPES);
 
         for (final LongMapNode<StackStrategy> configNode : strategies) {
 
@@ -93,15 +98,16 @@ public class StackStrategiesNibblerView {
     }
 
     @FromWebSocketView
-    public void submitSymbol(final String quoteSymbol, final String leanSymbol) {
+    public void submitSymbol(final String quoteSymbol, final String leanInstrumentType, final String leanSymbol) {
 
         if (null != strategyClient) {
 
             final InstrumentID quoteInstId = instIDs.get(quoteSymbol);
+            final InstType leanInstType = InstType.getInstType(leanInstrumentType);
             final InstrumentID leanInstID = instIDs.get(leanSymbol);
 
-            if (null != quoteInstId && null != leanInstID) {
-                strategyClient.createStrategy(quoteSymbol, quoteInstId, leanSymbol, leanInstID);
+            if (null != quoteInstId && null != leanInstType && null != leanInstID) {
+                strategyClient.createStrategy(quoteSymbol, quoteInstId, leanInstType, leanSymbol, leanInstID);
                 strategyClient.batchComplete();
             }
         }

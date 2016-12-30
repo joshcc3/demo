@@ -1,8 +1,12 @@
 package com.drwtrading.london.reddal.stacks.strategiesUI;
 
+import java.util.Collection;
+
 public interface IStackStrategiesUI {
 
     public void noInstID(final String type);
+
+    public void addInstType(final Collection<String> instTypes);
 
     public void setInstID(final String type, final String isin, final String ccy, final String mic);
 
