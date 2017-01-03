@@ -95,7 +95,7 @@ public class StackConfigNibblerView {
                 quoteConfig.isAuctionQuotingEnabled(), quoteConfig.isOnlyAuctionQuoting(), quoteConfig.getAuctionTheoMaxTicksThrough(),
                 quoteConfig.getMaxJumpBPS(), quoteConfig.getBettermentQty(), quoteConfig.getBettermentTicks(),
                 fxConfig.getMaxBookAgeMillis(), fxConfig.getMaxJumpBPS(), leanConfig.getMaxBookAgeMillis(), leanConfig.getMaxJumpBPS(),
-                leanConfig.getRequiredQty(), leanToQuoteRatio, bidPlanConfig.getMinLevelQty(),
+                leanConfig.getRequiredQty(), leanConfig.getMaxPapaWeight(), leanToQuoteRatio, bidPlanConfig.getMinLevelQty(),
                 bidPlanConfig.getMaxLevelQty(), bidPlanConfig.getLotSize(), bidPlanConfig.getMaxLevels(),
                 bidStrategyConfig.getMaxOrdersPerLevel(), bidStrategyConfig.isQuoteBettermentOn(),
                 bidStrategyConfig.getQuoteFlickerBufferPercent(), bidStrategyConfig.getQuotePicardMaxTicksThrough(),
@@ -123,14 +123,14 @@ public class StackConfigNibblerView {
     public void submitChange(final String configGroupIDStr, final int quoteMaxBookAgeMillis, final boolean quoteIsAuctionQuotingEnabled,
             final boolean quoteIsOnlyAuction, final int quoteAuctionTheoMaxTicksThrough, final int quoteMaxJumpBPS,
             final int quoteBettermentQty, final int quoteBettermentTicks, final int fxMaxBookAgeMillis, final int fxMaxJumpBPS,
-            final int leanMaxBookAgeMillis, final int leanMaxJumpBPS, final int leanRequiredQty, final String leanToQuoteRatioStr,
-            final int bidPlanMinLevelQty, final int bidPlanMaxLevelQty, final int bidPlanLotSize, final int bidPlanMaxLevels,
-            final int bidMaxOrdersPerLevel, final boolean bidIsQuoteBettermentOn, final int bidQuoteFlickerBufferPercent,
-            final int bidPicardMaxTicksThrough, final int bidPicardMaxPerSec, final int bidPicardMaxPerMin, final int bidPicardMaxPerHour,
-            final int bidPicardMaxPerDay, final int askPlanMinLevelQty, final int askPlanMaxLevelQty, final int askPlanLotSize,
-            final int askPlanMaxLevels, final int askMaxOrdersPerLevel, final boolean askIsQuoteBettermentOn,
-            final int askQuoteFlickerBufferPercent, final int askPicardMaxTicksThrough, final int askPicardMaxPerSec,
-            final int askPicardMaxPerMin, final int askPicardMaxPerHour, final int askPicardMaxPerDay) {
+            final int leanMaxBookAgeMillis, final int leanMaxJumpBPS, final int leanRequiredQty, final int leanMaxPapaWeight,
+            final String leanToQuoteRatioStr, final int bidPlanMinLevelQty, final int bidPlanMaxLevelQty, final int bidPlanLotSize,
+            final int bidPlanMaxLevels, final int bidMaxOrdersPerLevel, final boolean bidIsQuoteBettermentOn,
+            final int bidQuoteFlickerBufferPercent, final int bidPicardMaxTicksThrough, final int bidPicardMaxPerSec,
+            final int bidPicardMaxPerMin, final int bidPicardMaxPerHour, final int bidPicardMaxPerDay, final int askPlanMinLevelQty,
+            final int askPlanMaxLevelQty, final int askPlanLotSize, final int askPlanMaxLevels, final int askMaxOrdersPerLevel,
+            final boolean askIsQuoteBettermentOn, final int askQuoteFlickerBufferPercent, final int askPicardMaxTicksThrough,
+            final int askPicardMaxPerSec, final int askPicardMaxPerMin, final int askPicardMaxPerHour, final int askPicardMaxPerDay) {
 
         final double leanToQuoteRatio = Double.parseDouble(leanToQuoteRatioStr);
 
@@ -140,7 +140,8 @@ public class StackConfigNibblerView {
             configClient.quoteConfigUpdated(SOURCE, configGroupID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
                     quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks);
             configClient.fxConfigUpdated(SOURCE, configGroupID, fxMaxBookAgeMillis, fxMaxJumpBPS);
-            configClient.leanConfigUpdated(SOURCE, configGroupID, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanToQuoteRatio);
+            configClient.leanConfigUpdated(SOURCE, configGroupID, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty,
+                    (byte) leanMaxPapaWeight, leanToQuoteRatio);
 
             configClient.planConfigUpdated(SOURCE, configGroupID, BookSide.BID, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
                     bidPlanMaxLevels);

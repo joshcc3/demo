@@ -38,6 +38,8 @@ public class SymbolStackData {
     private long totalAskQty;
     private final boolean[] enabledAskStacks;
 
+    private long priceOffsetTickSize;
+
     public SymbolStackData(final String symbol) {
 
         this.symbol = symbol;
@@ -50,6 +52,8 @@ public class SymbolStackData {
 
         this.enabledBidStacks = new boolean[StackType.values().length];
         this.enabledAskStacks = new boolean[StackType.values().length];
+
+        this.priceOffsetTickSize = 0L;
     }
 
     public void setStackClientHandler(final StackClientHandler stackClient) {
@@ -73,6 +77,8 @@ public class SymbolStackData {
             askStackGroup = null;
             askFormattedPriceOffset = "---";
 
+            priceOffsetTickSize = 0L;
+
             for (final StackType stackType : StackType.values()) {
                 enabledBidStacks[stackType.ordinal()] = false;
                 enabledAskStacks[stackType.ordinal()] = false;
@@ -90,6 +96,8 @@ public class SymbolStackData {
             final Stack stack = stackGroup.getStack(stackType);
             enabledBidStacks[stackType.ordinal()] = stack.isEnabled();
         }
+
+        priceOffsetTickSize = stackGroup.getPriceOffsetTickSize();
     }
 
     public void setAskGroup(final StackGroup stackGroup) {
@@ -146,8 +154,8 @@ public class SymbolStackData {
         return bidFormattedPriceOffset;
     }
 
-    public long getBidPriceOffsetTickSize() {
-        return bidStackGroup.getPriceOffsetTickSize();
+    public long getPriceOffsetTickSize() {
+        return priceOffsetTickSize;
     }
 
     public boolean hasBestBid() {
@@ -172,10 +180,6 @@ public class SymbolStackData {
 
     public String getFormattedAskPriceOffset() {
         return askFormattedPriceOffset;
-    }
-
-    public long getAskPriceOffsetTickSize() {
-        return askStackGroup.getPriceOffsetTickSize();
     }
 
     public boolean hasBestAsk() {

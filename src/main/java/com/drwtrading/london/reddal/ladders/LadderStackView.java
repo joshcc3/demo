@@ -144,7 +144,7 @@ public class LadderStackView implements ILadderBoard {
             }
         }
 
-        this.stackTickSizeBoxValue = stackData.getBidPriceOffsetTickSize() / (double) Constants.NORMALISING_FACTOR;
+        this.stackTickSizeBoxValue = stackData.getPriceOffsetTickSize() / (double) Constants.NORMALISING_FACTOR;
     }
 
     @Override
@@ -414,19 +414,19 @@ public class LadderStackView implements ILadderBoard {
                     System.out.println("Mismatched label: " + data.get("price") + ' ' + htmlRowKeys.orderKey + ' ' + label);
                 }
             } else if (label.equals(HTML.BUY_OFFSET_UP)) {
-                if (!stackData.improveBidStackPriceOffset(stackData.getBidPriceOffsetTickSize())) {
+                if (!stackData.improveBidStackPriceOffset(stackData.getPriceOffsetTickSize())) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.BUY_OFFSET_DOWN)) {
-                if (!stackData.improveBidStackPriceOffset(-stackData.getBidPriceOffsetTickSize())) {
+                if (!stackData.improveBidStackPriceOffset(-stackData.getPriceOffsetTickSize())) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.SELL_OFFSET_UP)) {
-                if (!stackData.improveAskStackPriceOffset(stackData.getAskPriceOffsetTickSize())) {
+                if (!stackData.improveAskStackPriceOffset(stackData.getPriceOffsetTickSize())) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.SELL_OFFSET_DOWN)) {
-                if (!stackData.improveAskStackPriceOffset(-stackData.getAskPriceOffsetTickSize())) {
+                if (!stackData.improveAskStackPriceOffset(-stackData.getPriceOffsetTickSize())) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.START_BUY)) {
@@ -465,7 +465,7 @@ public class LadderStackView implements ILadderBoard {
             } else if (label.equals(HTML.STACK_ASK_PICARD_ENABLED)) {
                 stackData.setAskStackEnabled(StackType.PICARD, false);
             } else if (label.equals(HTML.STACK_SUBMIT_TICK_SIZE)) {
-                ui.txt(HTML.STACK_TICK_SIZE, stackData.getBidPriceOffsetTickSize());
+                ui.txt(HTML.STACK_TICK_SIZE, stackData.getPriceOffsetTickSize());
             }
         } else if ("middle".equals(button)) {
             //            if (label.startsWith(HTML.ORDER)) {

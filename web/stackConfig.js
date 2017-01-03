@@ -147,7 +147,7 @@ function addConfigTypeOption(configTypeCombo, configType) {
 
 function setRow(id, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
 				quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis,
-				fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanToQuoteRatio, bidPlanMinLevelQty,
+				fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, bidPlanMinLevelQty,
 				bidPlanMaxLevelQty, bidPlanLotSize, bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer,
 				bidQuotePicardMaxTicksThrough, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay,
 				askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMaxOrdersPerLevel, askIsQuoteBettermentOn,
@@ -205,10 +205,10 @@ function setRow(id, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuo
 				submitRow(row);
 			});
 
-			var quoteFlickerBufferInput = row.find(".quoteFlickerBuffer input");
-			quoteFlickerBufferInput.attr("min", 0);
-			quoteFlickerBufferInput.attr("max", 100);
-			quoteFlickerBufferInput.on('keydown', function (e) {
+			var limitedBufferInput = row.find(".quoteFlickerBuffer input, .maxPapaWeight input");
+			limitedBufferInput.attr("min", 0);
+			limitedBufferInput.attr("max", 100);
+			limitedBufferInput.on('keydown', function (e) {
 
 				if (10 == $(this).val() &&
 					((96 < e.keyCode && e.keyCode < 106) || (48 < e.keyCode && e.keyCode < 58))) {
@@ -251,6 +251,7 @@ function setRow(id, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuo
 		setCellData(row, ".leanInst.maxBookAgeMillis input", leanMaxBookAgeMillis);
 		setCellData(row, ".leanInst.maxJumpBPS input", leanMaxJumpBPS);
 		setCellData(row, ".leanInst.requiredQty input", leanRequiredQty);
+		setCellData(row, ".leanInst.maxPapaWeight input", leanMaxPapaWeight);
 		setDoubleData(row, ".leanInst.leanToQuoteRatio input", leanToQuoteRatio);
 
 		setCellData(row, ".plan.minLevelQty .bid", bidPlanMinLevelQty);
@@ -344,6 +345,7 @@ function submitRow(row) {
 	var leanMaxBookAgeMillis = getCellData(row, ".leanInst.maxBookAgeMillis input");
 	var leanMaxJumpBPS = getCellData(row, ".leanInst.maxJumpBPS input");
 	var leanRequiredQty = getCellData(row, ".leanInst.requiredQty input");
+	var leanMaxPapaWeight = getCellData(row, ".leanInst.maxPapaWeight input");
 	var leanToQuoteRatio = getCellFloat(row, ".leanInst.leanToQuoteRatio input");
 
 	var bidPlanMinLevelQty = getCellData(row, ".plan.minLevelQty .bid");
@@ -376,10 +378,10 @@ function submitRow(row) {
 
 	ws.send(command("submitChange", [configID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
 		quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS,
-		leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanToQuoteRatio, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
-		bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer, bidQuotePicardMaxTicksThrough,
-		bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty,
-		askPlanLotSize, askPlanMaxLevels, askMaxOrdersPerLevel, askIsQuoteBettermentOn, askQuoteFlickerBuffer,
+		leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, bidPlanMinLevelQty, bidPlanMaxLevelQty,
+		bidPlanLotSize, bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer,
+		bidQuotePicardMaxTicksThrough, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty,
+		askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMaxOrdersPerLevel, askIsQuoteBettermentOn, askQuoteFlickerBuffer,
 		askQuotePicardMaxTicksThrough, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay]));
 }
 
