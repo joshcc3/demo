@@ -84,6 +84,7 @@ function trading(clickTrading, workingOrderTags, orderTypesLeft, orderTypesRight
 		handler.updateOn(el, 'click');
 	});
 
+
 	$("select").each(function (i, el) {
 		handler.updateOn(el, 'change');
 	});

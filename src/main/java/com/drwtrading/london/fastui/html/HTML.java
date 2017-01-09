@@ -42,6 +42,7 @@ public class HTML {
     public static final String STACK_VIEW_BUTTON = "stackViewButton";
     public static final String CLOCK = "clock";
     public static final String POSITION = "position";
+    public static final String TOTAL_TRADED = "totalTraded";
     public static final String LADDER = "ladder";
     public static final String SYMBOL = "symbol";
     public static final String BUY_OFFSET_UP = "buy_offset_up";

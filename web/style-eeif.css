@@ -636,6 +636,13 @@ div {
 	top: 60px;
 }
 
+#totalTraded {
+	top: 60px;
+	background-color: white;
+	color: black;
+}
+
+
 #position.positive {
 	background-color: #534efa;
 	color: white;

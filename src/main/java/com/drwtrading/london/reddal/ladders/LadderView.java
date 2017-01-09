@@ -133,26 +133,26 @@ public class LadderView implements UiEventHandler {
     private MDForSymbol marketData;
     private long lastCenteredTime = 0;
     private SymbolMetaData metaData;
-
     private ClientSpeedState clientSpeedState = ClientSpeedState.FINE;
+
+    private boolean showTotalTraded = false;
 
     private Long lastHeartbeatSentMillis = null;
     private long lastHeartbeatRoundTripMillis = 0;
 
     private LadderBookView bookView;
     private ILadderBoard stackView;
-
     private ILadderBoard activeView;
 
     public LadderView(final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view, final String ewokBaseURL,
-            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
-            final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
-            final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-            final Publisher<UserCycleRequest> userCycleContractPublisher,
-            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher, final Predicate<String> symbolExists) {
+                      final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
+                      final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
+                      final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+                      final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
+                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+                      final Publisher<UserCycleRequest> userCycleContractPublisher,
+                      final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+                      final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher, final Predicate<String> symbolExists) {
 
         this.client = client;
         this.view = view;
@@ -185,9 +185,9 @@ public class LadderView implements UiEventHandler {
     }
 
     public void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
-            final WorkingOrdersForSymbol workingOrdersForSymbol, final SymbolMetaData metaData, final ExtraDataForSymbol extraDataForSymbol,
-            final SymbolStackData stackData, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
-            final OrderUpdatesForSymbol orderUpdatesForSymbol) {
+                                  final WorkingOrdersForSymbol workingOrdersForSymbol, final SymbolMetaData metaData, final ExtraDataForSymbol extraDataForSymbol,
+                                  final SymbolStackData stackData, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+                                  final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
         this.symbol = symbol;
         this.levels = levels;
@@ -274,6 +274,8 @@ public class LadderView implements UiEventHandler {
         ui.clickable('#' + HTML.BOOK_VIEW_BUTTON);
         ui.clickable('#' + HTML.STACK_VIEW_BUTTON);
         ui.clickable('#' + HTML.CLOCK);
+        ui.clickable('#' + HTML.POSITION);
+        ui.clickable('#' + HTML.TOTAL_TRADED);
         ui.clickable('#' + HTML.AFTER_HOURS_WEIGHT);
 
         for (int i = 0; i < levels; i++) {
@@ -385,7 +387,12 @@ public class LadderView implements UiEventHandler {
             if (null != metaData.dayPosition) {
                 ui.txt(HTML.POSITION, formatPosition(metaData.dayPosition.getNet()));
                 decorateUpDown(ui, HTML.POSITION, metaData.dayPosition.getNet());
+                ui.txt(HTML.TOTAL_TRADED, formatPosition(metaData.dayPosition.getVolume()));
+
+                ui.cls(HTML.POSITION, CSSClass.INVISIBLE, showTotalTraded);
+                ui.cls(HTML.TOTAL_TRADED, CSSClass.INVISIBLE, !showTotalTraded);
             }
+
             if (null != metaData.pksExposure) {
                 final String pksValue = formatPosition(metaData.pksExposure.exposure);
                 ui.txt(HTML.PKS_EXPOSURE, pksValue);
@@ -544,7 +551,6 @@ public class LadderView implements UiEventHandler {
 
         resetLastCenteredTime();
         final String button = data.get("button");
-
         if (label.startsWith(HTML.SYMBOL)) {
             switch (button) {
                 case "left": {
@@ -579,9 +585,9 @@ public class LadderView implements UiEventHandler {
                 openEwokView();
             }
         } else if (label.startsWith(HTML.PRICE) && "middle".equals(button)) {
-
             recenterLaddersForUser.publish(new RecenterLaddersForUser(client.getUserName()));
-
+        } else if (label.equals(HTML.POSITION) || label.equals(HTML.TOTAL_TRADED)) {
+            showTotalTraded = !showTotalTraded;
         } else {
 
             try {
@@ -687,7 +693,7 @@ public class LadderView implements UiEventHandler {
     }
 
     public static RemoteOrder getRemoteOrderFromWorkingOrder(final boolean autoHedge, final long price,
-            final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+                                                             final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
 
         return LadderBookView.getRemoteOrderFromWorkingOrder(autoHedge, price, workingOrderUpdate, totalQuantity);
     }
