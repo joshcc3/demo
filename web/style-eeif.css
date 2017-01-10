@@ -628,6 +628,10 @@ div {
 	top: 36px;
 }
 
+#yesterday_settle {
+	top: 36px;
+}
+
 #total_traded_volume {
 	top: 48px;
 }

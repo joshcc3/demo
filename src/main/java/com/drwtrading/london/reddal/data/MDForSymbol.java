@@ -17,6 +17,7 @@ public class MDForSymbol {
 
     private IBook<?> book;
     private DecimalFormat df;
+    private DecimalFormat nonTrailingDF;
 
     public MDForSymbol(final DepthBookSubscriber bookHandler, final String symbol) {
 
@@ -47,6 +48,7 @@ public class MDForSymbol {
         }
         final int decimalPlaces = Math.max(0, 10 - leastSigDigit);
         this.df = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, decimalPlaces);
+        this.nonTrailingDF = NumberFormatUtil.getDF(NumberFormatUtil.ZERO_TO_FOUR_DP, 1, decimalPlaces);
     }
 
     public void trade(final long price, final long qty) {
@@ -73,4 +75,10 @@ public class MDForSymbol {
     public String formatPrice(final long price) {
         return df.format(price / (double) Constants.NORMALISING_FACTOR);
     }
+
+    public String formatPriceWithoutTrailingZeroes(final long price) {
+        return nonTrailingDF.format(price / (double) Constants.NORMALISING_FACTOR);
+    }
+
+
 }

@@ -146,6 +146,7 @@ class LadderBookView implements ILadderBoard {
     private final Set<String> oldOrderTypes;
 
     private boolean isCashEquityOrFX;
+    private boolean showYesterdaySettleInsteadOfCOD;
 
     private boolean pendingRefDataAndSettle;
 
@@ -160,14 +161,14 @@ class LadderBookView implements ILadderBoard {
     private long modifyFromPriceSelectedTime;
 
     LadderBookView(final String username, final boolean isTrader, final String symbol, final UiPipeImpl ui, final ILadderUI view,
-            final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-            final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
-            final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
-            final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
-            final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-            final long centeredPrice) {
+                   final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+                   final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
+                   final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+                   final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
+                   final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
+                   final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
+                   final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+                   final long centeredPrice) {
 
         this.username = username;
         this.isTrader = isTrader;
@@ -265,6 +266,9 @@ class LadderBookView implements ILadderBoard {
 
         view.trading(isTrader, TAGS, filterUsableOrderTypes(ladderOptions.orderTypesLeft),
                 filterUsableOrderTypes(ladderOptions.orderTypesRight));
+
+        ui.clickable("#" + HTML.YESTERDAY_SETTLE);
+        ui.clickable("#" + HTML.LAST_TRADE_COD);
 
         ui.cls(HTML.AUTO_HEDGE_LEFT, CSSClass.INVISIBLE, false);
         ui.cls(HTML.AUTO_HEDGE_RIGHT, CSSClass.INVISIBLE, false);
@@ -515,13 +519,22 @@ class LadderBookView implements ILadderBoard {
         if (!pendingRefDataAndSettle && null != dataForSymbol && null != marketData) {
 
             drawLaserLines();
+
             /* Change on day*/
             final Long lastTradeChangeOnDay = getLastTradeChangeOnDay(marketData);
             if (lastTradeChangeOnDay != null) {
-                final String formatPrice = marketData.formatPrice(lastTradeChangeOnDay);
-                ui.txt(HTML.LAST_TRADE_COD, formatPrice);
+                ui.txt(HTML.LAST_TRADE_COD, marketData.formatPrice(lastTradeChangeOnDay));
             }
             LadderView.decorateUpDown(ui, HTML.LAST_TRADE_COD, lastTradeChangeOnDay);
+
+            /* Yesterday settle */
+            final Long yesterdaySettle = getYesterdaySettle(marketData);
+            if (null != yesterdaySettle) {
+                ui.txt(HTML.YESTERDAY_SETTLE, marketData.formatPriceWithoutTrailingZeroes(yesterdaySettle));
+            }
+
+            ui.cls(HTML.YESTERDAY_SETTLE, CSSClass.INVISIBLE, !showYesterdaySettleInsteadOfCOD);
+            ui.cls(HTML.LAST_TRADE_COD, CSSClass.INVISIBLE, showYesterdaySettleInsteadOfCOD);
 
             for (final LongMapNode<LadderBoardRow> entry : priceRows) {
                 final long price = entry.key;
@@ -580,10 +593,18 @@ class LadderBookView implements ILadderBoard {
     }
 
     private static Long getLastTradeChangeOnDay(final MDForSymbol m) {
-
         final IBookReferencePrice refPriceData = m.getBook().getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
         if (refPriceData.isValid() && m.getTradeTracker().hasTrade()) {
             return m.getTradeTracker().getLastPrice() - refPriceData.getPrice();
+        } else {
+            return null;
+        }
+    }
+
+    private static Long getYesterdaySettle(final MDForSymbol m) {
+        final IBookReferencePrice refPriceData = m.getBook().getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
+        if (refPriceData.isValid()) {
+            return refPriceData.getPrice();
         } else {
             return null;
         }
@@ -862,7 +883,7 @@ class LadderBookView implements ILadderBoard {
     }
 
     private void workingQty(final LadderHTMLRow htmlRowKeys, final int qty, final BookSide side, final Set<WorkingOrderType> orderTypes,
-            final boolean hasEeifOEOrder) {
+                            final boolean hasEeifOEOrder) {
 
         ui.txt(htmlRowKeys.orderKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.orderKey, CSSClass.WORKING_QTY, 0 < qty);
@@ -965,6 +986,8 @@ class LadderBookView implements ILadderBoard {
                 pricingModes.next();
             } else if (label.startsWith(HTML.VOLUME)) {
                 view.launchBasket(symbol);
+            } else if (label.equals(HTML.YESTERDAY_SETTLE) || label.equals(HTML.LAST_TRADE_COD)) {
+                showYesterdaySettleInsteadOfCOD = !showYesterdaySettleInsteadOfCOD;
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
@@ -1056,7 +1079,7 @@ class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrderClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data,
-            final String orderType, final boolean autoHedge) {
+                                  final String orderType, final boolean autoHedge) {
 
         final long price = Long.valueOf(data.get("price"));
         final LadderBoardRow bookRow = priceRows.get(price);
@@ -1129,7 +1152,7 @@ class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final boolean autoHedge, final long price,
-            final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+                             final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
 
         final int sequenceNumber = orderSeqNo++;
 
@@ -1205,7 +1228,7 @@ class LadderBookView implements ILadderBoard {
     }
 
     private void modifyOrder(final ClientSpeedState clientSpeedState, final boolean autoHedge, final long price,
-            final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+                             final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
 
         trace.publish(new CommandTrace("modify", username, symbol, order.value.getWorkingOrderType().toString(), autoHedge, price,
                 order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
@@ -1328,7 +1351,7 @@ class LadderBookView implements ILadderBoard {
     }
 
     static RemoteOrder getRemoteOrderFromWorkingOrder(final boolean autoHedge, final long price,
-            final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+                                                      final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
 
         final RemoteOrderType remoteOrderType = getRemoteOrderType(workingOrderUpdate.getWorkingOrderType().toString());
         return new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), price, totalQuantity, remoteOrderType,
