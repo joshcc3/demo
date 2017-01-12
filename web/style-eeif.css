@@ -19,6 +19,10 @@ body {
 	overflow: hidden;
 }
 
+body#search_page {
+	overflow: auto !important;
+}
+
 #symbol.spread {
 	background-color: #bad4b1;
 }
