@@ -69,7 +69,7 @@ function removeAll() {
 	$(".dataRow").remove();
 }
 
-function setRow(id, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanSymbol, leanISIN, leanCCY, leanMIC, isQuoteInstDefEventAvailable,
+function setRow(id, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanInstType, leanSymbol, leanISIN, leanCCY, leanMIC, isQuoteInstDefEventAvailable,
 				isQuoteBookAvailable, isLeanBookAvailable, isFXAvailable, selectedConfigType) {
 
 	var row = $("#" + id);
@@ -98,6 +98,7 @@ function setRow(id, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanSymbol, lean
 	leanSymbolCell.unbind().bind("click", function () {
 		launchLadder(leanSymbol);
 	});
+	setCellData(row, ".lean.instType", leanInstType);
 	setCellData(row, ".lean.isin", leanISIN);
 	setCellData(row, ".lean.ccy", leanCCY);
 	setCellData(row, ".lean.mic", leanMIC);

@@ -509,8 +509,8 @@ public class Main {
                     final StackCallbackBatcher stackUpdateBatcher =
                             new StackCallbackBatcher(strategiesPresenter, configPresenter, stackOPXLView, channels.contractSets);
                     final StackClientHandler clientHandler =
-                            StackCacheFactory.createClientCache(stackConfigSelectIO, stackConnectionConfig, stackMonitor, connectionName,
-                                    "stackConfig", stackUpdateBatcher);
+                            StackCacheFactory.createClientCache(stackConfigSelectIO, stackConnectionConfig, stackMonitor, nibblerName,
+                                    connectionName, stackUpdateBatcher);
 
                     strategiesPresenter.setStrategyClient(clientHandler);
                     configPresenter.setConfigClient(clientHandler);

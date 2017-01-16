@@ -77,7 +77,7 @@ public class StackStrategiesNibblerView {
         final InstrumentID leanInstID = strategy.getLeanInstID();
 
         viewer.setRow(strategy.getStrategyID(), strategy.getSymbol(), quoteInstID.isin, quoteInstID.ccy.name(), quoteInstID.mic.name(),
-                strategy.getLeanSymbol(), leanInstID.isin, leanInstID.ccy.name(), leanInstID.mic.name(),
+                strategy.getLeanInstType().name(), strategy.getLeanSymbol(), leanInstID.isin, leanInstID.ccy.name(), leanInstID.mic.name(),
                 strategy.isQuoteInstDefEventAvailable(), strategy.isQuoteBookAvailable(), strategy.isLeanBookAvailable(),
                 strategy.isFXAvailable(), strategy.getSelectedConfigType().name());
     }

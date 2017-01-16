@@ -57,7 +57,8 @@ public class LadderStackView implements ILadderBoard {
         }
     }
 
-    private static final DecimalFormat PRICE_FORMAT = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 0);
+    private static final DecimalFormat TICK_OFFSET_FORMAT = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 0);
+    private static final DecimalFormat PRICE_OFFSET_TICK_SIZE_FORMAT = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 0, 10);
 
     private final String username;
     private final boolean isTrader;
@@ -160,7 +161,8 @@ public class LadderStackView implements ILadderBoard {
         ui.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, true);
 
         ui.txt(HTML.INP_QTY, tradingBoxQty);
-        ui.txt(HTML.STACK_TICK_SIZE, stackTickSizeBoxValue);
+        final String priceOffsetTickSize = PRICE_OFFSET_TICK_SIZE_FORMAT.format(stackTickSizeBoxValue);
+        ui.txt(HTML.STACK_TICK_SIZE, priceOffsetTickSize);
 
         for (final PricingMode mode : PricingMode.values()) {
             ui.cls(HTML.PRICING + mode, CSSClass.INVISIBLE, true);
@@ -316,7 +318,7 @@ public class LadderStackView implements ILadderBoard {
         long price = topPrice;
         for (int i = 0; i < levels; ++i) {
 
-            final String formattedPrice = PRICE_FORMAT.format(price);
+            final String formattedPrice = TICK_OFFSET_FORMAT.format(price);
             final LadderHTMLRow htmlRowKeys = ladderHTMLKeys.getRow(i);
             final LadderBoardRow ladderBookRow = new LadderBoardRow(formattedPrice, htmlRowKeys);
 
@@ -465,6 +467,7 @@ public class LadderStackView implements ILadderBoard {
             } else if (label.equals(HTML.STACK_ASK_PICARD_ENABLED)) {
                 stackData.setAskStackEnabled(StackType.PICARD, false);
             } else if (label.equals(HTML.STACK_SUBMIT_TICK_SIZE)) {
+                stackTickSizeBoxValue = stackData.getPriceOffsetTickSize() / (double) Constants.NORMALISING_FACTOR;
                 ui.txt(HTML.STACK_TICK_SIZE, stackData.getPriceOffsetTickSize());
             }
         } else if ("middle".equals(button)) {
