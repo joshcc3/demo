@@ -199,7 +199,7 @@ var Handler = function (ws) {
 	};
 
 	self.updateOn = function (el, s) {
-		$(el).unbind("update").bind(s, function () {
+		$(el).unbind(s).bind(s, function () {
 			send("update", el.id, packData(el.id));
 		});
 	};
