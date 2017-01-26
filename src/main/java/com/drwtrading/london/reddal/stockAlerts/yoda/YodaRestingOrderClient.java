@@ -31,12 +31,12 @@ public class YodaRestingOrderClient implements ITransportCacheListener<YodaSymbo
     }
 
     @Override
-    public boolean setKey(final int localID, final YodaSymbolSideKey key) {
-        return true;
+    public boolean initialValue(final int transportID, final RestingOrderSignal item) {
+        return updateValue(transportID, item);
     }
 
     @Override
-    public boolean setValue(final int localID, final RestingOrderSignal signal) {
+    public boolean updateValue(final int transportID, final RestingOrderSignal signal) {
 
         if (0 < signal.price) {
             final String timestamp = sdf.format(signal.milliSinceMidnight);

@@ -394,8 +394,10 @@ public class LadderView implements UiEventHandler {
             }
 
             if (null != metaData.pksExposure) {
-                final String pksValue = formatPosition(metaData.pksExposure.exposure);
-                ui.txt(HTML.PKS_EXPOSURE, pksValue);
+                final String pksExposure = formatPosition(metaData.pksExposure.exposure);
+                final String pksPosition = formatPosition(metaData.pksExposure.position);
+                ui.txt(HTML.PKS_EXPOSURE, pksExposure);
+                ui.txt(HTML.PKS_POSITION, pksPosition);
             }
             // Ladder info
             if (metaData.infoOnLadder != null) {

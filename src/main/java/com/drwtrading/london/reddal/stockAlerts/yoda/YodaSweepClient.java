@@ -25,12 +25,12 @@ public class YodaSweepClient implements ITransportCacheListener<YodaSymbolSideKe
     }
 
     @Override
-    public boolean setKey(final int localID, final YodaSymbolSideKey key) {
-        return true;
+    public boolean initialValue(final int transportID, final SweepSignal item) {
+        return updateValue(transportID, item);
     }
 
     @Override
-    public boolean setValue(final int localID, final SweepSignal signal) {
+    public boolean updateValue(final int transportID, final SweepSignal signal) {
 
         if (0 < signal.numLevels) {
             final String timestamp = sdf.format(signal.milliSinceMidnight);

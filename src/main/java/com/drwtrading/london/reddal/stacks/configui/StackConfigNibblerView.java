@@ -108,6 +108,7 @@ public class StackConfigNibblerView {
     }
 
     public void serverConnectionLost() {
+        stackConfigs.clear();
         views.all().removeAll();
     }
 

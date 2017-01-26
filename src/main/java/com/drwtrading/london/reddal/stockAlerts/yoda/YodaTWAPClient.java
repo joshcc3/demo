@@ -29,12 +29,12 @@ public class YodaTWAPClient implements ITransportCacheListener<YodaSymbolSideKey
     }
 
     @Override
-    public boolean setKey(final int localID, final YodaSymbolSideKey key) {
-        return true;
+    public boolean initialValue(final int transportID, final TWAPSignal item) {
+        return updateValue(transportID, item);
     }
 
     @Override
-    public boolean setValue(final int localID, final TWAPSignal signal) {
+    public boolean updateValue(final int transportID, final TWAPSignal signal) {
 
         if (0 < signal.volumeBucketMax) {
             final String timestamp = sdf.format(signal.milliSinceMidnight);

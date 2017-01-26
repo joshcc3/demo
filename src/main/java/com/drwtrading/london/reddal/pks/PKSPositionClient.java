@@ -17,7 +17,7 @@ public class PKSPositionClient implements ITransportCacheListener<String, Positi
     private final Publisher<PKSExposure> positionPublisher;
 
     private final Map<String, HashSet<String>> isinToSymbols;
-    private final Map<String, Double> isinExposures;
+    private final Map<String, PositionValue> isinExposures;
 
     public PKSPositionClient(final Publisher<PKSExposure> positionPublisher) {
 
@@ -32,9 +32,9 @@ public class PKSPositionClient implements ITransportCacheListener<String, Positi
         final HashSet<String> symbols = MapUtils.getMappedSet(isinToSymbols, searchResult.instID.isin);
         symbols.add(searchResult.symbol);
 
-        final Double exposure = isinExposures.get(searchResult.instID.isin);
-        if (null != exposure) {
-            publisherExposure(searchResult.symbol, exposure);
+        final PositionValue pksPosition = isinExposures.get(searchResult.instID.isin);
+        if (null != pksPosition) {
+            publisherExposure(searchResult.symbol, pksPosition);
         }
     }
 
@@ -49,25 +49,27 @@ public class PKSPositionClient implements ITransportCacheListener<String, Positi
     }
 
     @Override
-    public boolean setKey(final int localID, final String isin) {
-        return true;
+    public boolean initialValue(final int transportID, final PositionValue item) {
+
+        isinExposures.put(item.getKey(), item);
+        return updateValue(transportID, item);
     }
 
     @Override
-    public boolean setValue(final int localID, final PositionValue item) {
+    public boolean updateValue(final int transportID, final PositionValue pksPosition) {
 
-        final Set<String> symbols = isinToSymbols.get(item.getKey());
+        final Set<String> symbols = isinToSymbols.get(pksPosition.getKey());
         if (null != symbols) {
             for (final String symbol : symbols) {
-                publisherExposure(symbol, item.position);
+                publisherExposure(symbol, pksPosition);
             }
         }
         return true;
     }
 
-    private void publisherExposure(final String symbol, final double exposure) {
-        final PKSExposure position = new PKSExposure(symbol, exposure);
-        positionPublisher.publish(position);
+    private void publisherExposure(final String symbol, final PositionValue pksPosition) {
+        final PKSExposure pks = new PKSExposure(symbol, pksPosition.exposure, pksPosition.position);
+        positionPublisher.publish(pks);
     }
 
     @Override

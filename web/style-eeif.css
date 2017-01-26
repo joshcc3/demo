@@ -495,7 +495,7 @@ div {
 	top: 28px;
 }
 
-#text_r3c5 {
+#pks_position {
 	left: 160px;
 	top: 28px;
 }
@@ -875,12 +875,12 @@ div {
 
 #stackBidQuoterEnabled, #stackAskQuoterEnabled {
 	top: 0;
-	background: #FB6E75;
+	background: #5970B2;
 }
 
 #stackBidPicardEnabled, #stackAskPicardEnabled {
 	top: 17px;
-	background: #5970B2;
+	background: #FB6E75;
 }
 
 #stackBidQuoterEnabled, #stackBidPicardEnabled {

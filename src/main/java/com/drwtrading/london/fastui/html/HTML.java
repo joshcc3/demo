@@ -34,6 +34,7 @@ public class HTML {
     public static final String CLICK_TRADING_ISSUES = "click_trading_issues";
     public static final String DESK_POSITION = "desk_position";
     public static final String PKS_EXPOSURE = "pks_exposure";
+    public static final String PKS_POSITION = "pks_position";
     public static final String TOTAL_TRADED_VOLUME = "total_traded_volume";
     public static final String LAST_TRADE_COD = "last_trade_cod";
     public static final String YESTERDAY_SETTLE = "yesterday_settle";
