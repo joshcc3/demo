@@ -12,11 +12,15 @@ import java.text.SimpleDateFormat;
 
 public class YodaSweepClient implements ITransportCacheListener<YodaSymbolSideKey, SweepSignal> {
 
+    private final long millisAtMidnight;
+
     private final Publisher<StockAlert> stockAlerts;
 
     private final SimpleDateFormat sdf;
 
-    public YodaSweepClient(final Publisher<StockAlert> stockAlerts) {
+    public YodaSweepClient(final long millisAtMidnight, final Publisher<StockAlert> stockAlerts) {
+
+        this.millisAtMidnight = millisAtMidnight;
 
         this.stockAlerts = stockAlerts;
 
@@ -33,7 +37,7 @@ public class YodaSweepClient implements ITransportCacheListener<YodaSymbolSideKe
     public boolean updateValue(final int transportID, final SweepSignal signal) {
 
         if (0 < signal.numLevels) {
-            final String timestamp = sdf.format(signal.milliSinceMidnight);
+            final String timestamp = sdf.format(millisAtMidnight + signal.milliSinceMidnight);
             final String action;
             if (BookSide.BID == signal.key.side) {
                 action = "Buys ";

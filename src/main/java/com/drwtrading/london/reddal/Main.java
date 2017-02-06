@@ -902,15 +902,17 @@ public class Main {
             final MultiLayeredResourceMonitor<YodaTransportComponents> yodaParentMonitor =
                     new MultiLayeredResourceMonitor<>(yodaMonitor, YodaTransportComponents.class, errorLog);
 
+            final long millisAtMidnight = selectIO.getMillisAtMidnightUTC();
+
             for (final ConfigGroup yodaInstanceConfig : yodaConfig.groups()) {
 
                 final String instanceName = yodaInstanceConfig.getKey();
                 final IResourceMonitor<YodaTransportComponents> yodaChildMonitor =
                         yodaParentMonitor.createChildResourceMonitor(instanceName);
 
-                final YodaRestingOrderClient restingClient = new YodaRestingOrderClient(stockAlerts);
-                final YodaSweepClient sweepClient = new YodaSweepClient(stockAlerts);
-                final YodaTWAPClient twapClient = new YodaTWAPClient(stockAlerts);
+                final YodaRestingOrderClient restingClient = new YodaRestingOrderClient(millisAtMidnight, stockAlerts);
+                final YodaSweepClient sweepClient = new YodaSweepClient(millisAtMidnight, stockAlerts);
+                final YodaTWAPClient twapClient = new YodaTWAPClient(millisAtMidnight, stockAlerts);
 
                 final YodaClientHandler yodaHandler =
                         YodaClientCacheFactory.createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName,

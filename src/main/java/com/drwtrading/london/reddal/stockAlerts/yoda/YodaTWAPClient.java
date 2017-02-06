@@ -14,12 +14,16 @@ import java.text.SimpleDateFormat;
 
 public class YodaTWAPClient implements ITransportCacheListener<YodaSymbolSideKey, TWAPSignal> {
 
+    private final long millisAtMidnight;
+
     private final Publisher<StockAlert> stockAlerts;
 
     private final SimpleDateFormat sdf;
     private final DecimalFormat df;
 
-    public YodaTWAPClient(final Publisher<StockAlert> stockAlerts) {
+    public YodaTWAPClient(final long millisAtMidnight, final Publisher<StockAlert> stockAlerts) {
+
+        this.millisAtMidnight = millisAtMidnight;
 
         this.stockAlerts = stockAlerts;
 
@@ -37,7 +41,7 @@ public class YodaTWAPClient implements ITransportCacheListener<YodaSymbolSideKey
     public boolean updateValue(final int transportID, final TWAPSignal signal) {
 
         if (0 < signal.volumeBucketMax) {
-            final String timestamp = sdf.format(signal.milliSinceMidnight);
+            final String timestamp = sdf.format(millisAtMidnight + signal.milliSinceMidnight);
             final String period = df.format(signal.twapPeriodMillis / 1000d);
             final String duration = df.format(signal.twapDurationMillis / 1000d);
             final String action;

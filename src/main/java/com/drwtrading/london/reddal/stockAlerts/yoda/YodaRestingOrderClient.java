@@ -15,13 +15,16 @@ import java.text.SimpleDateFormat;
 
 public class YodaRestingOrderClient implements ITransportCacheListener<YodaSymbolSideKey, RestingOrderSignal> {
 
+    private final long millisAtMidnight;
+
     private final Publisher<StockAlert> stockAlerts;
 
     private final SimpleDateFormat sdf;
     private final DecimalFormat priceDF;
 
-    public YodaRestingOrderClient(final Publisher<StockAlert> stockAlerts) {
+    public YodaRestingOrderClient(final long millisAtMidnight, final Publisher<StockAlert> stockAlerts) {
 
+        this.millisAtMidnight = millisAtMidnight;
         this.stockAlerts = stockAlerts;
 
         this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
@@ -39,7 +42,7 @@ public class YodaRestingOrderClient implements ITransportCacheListener<YodaSymbo
     public boolean updateValue(final int transportID, final RestingOrderSignal signal) {
 
         if (0 < signal.price) {
-            final String timestamp = sdf.format(signal.milliSinceMidnight);
+            final String timestamp = sdf.format(millisAtMidnight + signal.milliSinceMidnight);
             final String start = sdf.format(signal.timePlacedMilliSinceMidnight);
             final String side = BookSide.BID == signal.getKey().side ? "Buy " : "Sell ";
             final String price = priceDF.format(signal.price / (double) Constants.NORMALISING_FACTOR);
