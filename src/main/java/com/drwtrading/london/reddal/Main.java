@@ -62,6 +62,10 @@ import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCom
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
+import com.drwtrading.london.reddal.autopull.AutoPullPersistence;
+import com.drwtrading.london.reddal.autopull.AutoPuller;
+import com.drwtrading.london.reddal.autopull.AutoPullerUI;
+import com.drwtrading.london.reddal.autopull.PullerBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
@@ -160,7 +164,7 @@ public class Main {
     private static final Pattern PROD_REPLACE = Pattern.compile("prod-", Pattern.LITERAL);
 
     public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
-            final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
+                                                  final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
         webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
 
@@ -466,6 +470,62 @@ public class Main {
                 final long initialDelay = 10 + i * (LadderPresenter.BATCH_FLUSH_INTERVAL_MS / webSockets.size());
                 displaySelectIO.addDelayedAction(initialDelay, presenter::flushAllLadders);
                 displaySelectIO.addDelayedAction(initialDelay, presenter::sendAllHeartbeats);
+
+
+            }
+
+
+            // Auto-puller thread
+            {
+                final String name = "AutoPuller";
+                final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
+                final MappedResourceMonitor<SelectIOComponents, ReddalComponents> selectIOMonitor =
+                        MappedResourceMonitor.mapMonitorByName(displayMonitor, SelectIOComponents.class, ReddalComponents.class,
+                                "SELECT_IO_");
+                final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
+                final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
+                        MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
+                                ReddalComponents.class, "MD_", errorLog);
+
+
+                PullerBookSubscriber subscriber = new PullerBookSubscriber();
+
+                for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
+
+                    final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
+                    if (null == mdSource) {
+                        throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
+                    }
+
+                    final IResourceMonitor<MDTransportComponents> mdClientMonitor =
+                            mdParentMonitor.createChildResourceMonitor(mdSource.name());
+
+                    final MDTransportClient mdClient =
+                            MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource, "reddal-" + configName + "-pull",
+                                    subscriber.getL3(), subscriber.getL2(), MD_SERVER_TIMEOUT, true);
+
+                    final TransportTCPKeepAliveConnection<?, ?> connection =
+                            MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
+                    subscriber.setClient(mdSource, mdClient);
+                    final long staggeringDelay = 300L * NUM_DISPLAY_THREADS;
+                    displaySelectIO.execute(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
+                        connection.restart();
+                        return -1;
+                    }));
+
+                }
+
+                final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
+                final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
+
+                AutoPullPersistence persistence = new AutoPullPersistence(Paths.get("/site/drw/reddal/data/").resolve("autopull.json"));
+                final AutoPuller puller = new AutoPuller(channels.remoteOrderCommand, subscriber, persistence);
+                fiberBuilder.subscribe(puller, channels.workingOrders);
+
+                AutoPullerUI autoPullerUI = new AutoPullerUI(puller, fiberBuilder.getFiber());
+                TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("autopuller", "autopuller", fiberBuilder, webapp, ws);
+                fiberBuilder.subscribe(autoPullerUI, ws);
             }
 
             // Ladder router
@@ -869,7 +929,7 @@ public class Main {
     }
 
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,
-            final AtomicBoolean multicastEnabled) {
+                                                       final AtomicBoolean multicastEnabled) {
         return new Transport() {
             @Override
             public <T> void publish(final MsgCodec<T> codec, final T msg) {
@@ -891,7 +951,7 @@ public class Main {
     }
 
     private static void setupYodaSignals(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
-            final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts)
+                                         final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts)
             throws ConfigException {
 
         final ConfigGroup yodaConfig = config.getEnabledGroup("yoda");

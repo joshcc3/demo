@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+    <script src="js/jquery-1.4.2.js"></script>
+    <script src="js/websocket.js"></script>
+    <script src="js/websocket-ui.js"></script>
+    <script src="js/sound-files.js"></script>
+    <script src="js/sound-player.js"></script>
+    <script src="js/sounds.js"></script>
+    <script src="cell-functions.js"></script>
+    <script src="launcher-eeif.js"></script>
+    <style>
+        .template {
+            display: none !important;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        table {
+            border-spacing: 4px;
+        }
+
+        thead {
+            border-bottom: 1px solid black;
+        }
+
+        thead td {
+            text-align: center;
+            font-size: 12px;
+        }
+
+        td {
+            padding: 3px;
+            padding-right: 10px;
+            color: black;
+        }
+
+        input.qtyThreshold {
+            width: 5em;
+        }
+
+        input {
+            font-size: 10px;
+            padding: 2px;
+            border: 1px solid #909090;
+        }
+
+        select {
+            font-size: 10px;
+            padding: 2px;
+
+        }
+
+        button {
+            font-size: 10px;
+            padding: 2px;
+        }
+
+        button.start {
+            width: 20px;
+            height: 20px;
+            background-color: green;
+        }
+
+        button.stop {
+            width: 20px;
+            height: 20px;
+            background-color: red;
+        }
+
+        tr.enabled {
+            background-color: #add4b5;
+            border: 1px solid #a0ff7e;
+        }
+
+    </style>
+    <meta charset="UTF-8">
+    <title>Autopuller</title>
+    <script>
+
+        var ws;
+        var Rows = {};
+        var Set = new Set();
+        var WorkingPx = {};
+        var MdPx = {};
+        var Symbols = [];
+
+        $(function () {
+            ws = connect();
+            ws.logToConsole = false;
+            ws.onmessage = function (x) {
+                eval(x)
+            };
+            setupInputBehavior();
+        });
+
+        function setupInputBehavior() {
+            var inputRow = $("#rules tr.ruleInput");
+            var symbolSelect = inputRow.find(".symbolSelect");
+            symbolSelect.unbind('change').bind('change', function () {
+                var symbol = symbolSelect.val();
+                populateRowPrices(inputRow, symbol);
+            });
+            inputRow.find("button.update").unbind('click').bind('click', function () {
+                sendWriteRule(inputRow);
+            });
+        }
+
+        function populateSelect(select, values, defaultVal) {
+            if (defaultVal && values.indexOf(defaultVal) == -1) {
+                values.push(defaultVal);
+            }
+            select.find("option").remove();
+            values.forEach(function (s) {
+                select.append($("<option value='" + s + "'>" + s + "</option>"));
+            });
+            if (select.data('value')) {
+                select.val(select.data('value'));
+            } else if (defaultVal) {
+                select.val(defaultVal);
+            }
+        }
+
+        function populateRowPrices(inputRow, symbol) {
+
+            var fromPrice = inputRow.find(".fromPrice");
+            var toPrice = inputRow.find(".toPrice");
+            if (WorkingPx[symbol]) {
+                populateSelect(fromPrice, WorkingPx[symbol], WorkingPx[symbol][WorkingPx[symbol].length - 1]);
+                populateSelect(toPrice, WorkingPx[symbol], WorkingPx[symbol][0]);
+            } else {
+                populateSelect(fromPrice, []);
+                populateSelect(toPrice, []);
+            }
+
+
+            var priceCondition = inputRow.find(".priceCondition");
+            if (MdPx[symbol]) {
+
+                populateSelect(priceCondition, MdPx[symbol], MdPx[symbol][MdPx[symbol].length / 2]);
+            } else {
+                populateSelect(priceCondition, []);
+
+            }
+        }
+
+        function populateRuleRow(row, side, symbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition, qtyThreshold) {
+            row.find(".side").val(side);
+            populateSelect(row.find(".fromPrice"), WorkingPx[symbol], orderPriceFrom);
+            populateSelect(row.find(".toPrice"), WorkingPx[symbol], orderPriceTo);
+            populateSelect(row.find(".priceCondition"), MdPx[symbol], conditionPrice);
+            row.find(".conditionSide").val(conditionSide);
+            row.find(".qtyCondition").val(qtyCondition);
+            row.find(".qtyThreshold").val(qtyThreshold);
+        }
+
+        // Commands from server
+
+        function updateGlobals(symbols, symbolToWorkingPrice, symbolToMdPrice) {
+            Symbols = symbols;
+            WorkingPx = symbolToWorkingPrice;
+            MdPx = symbolToMdPrice;
+
+            var currSymbol = Symbols[0];
+            var inputRow = $("#rules tr.ruleInput");
+            var symbolSelect = inputRow.find(".symbolSelect");
+            populateSelect(symbolSelect, Symbols, currSymbol);
+            populateRowPrices(inputRow, currSymbol);
+        }
+
+        function displayRule(key, symbol,
+                             side,
+                             orderPriceFrom,
+                             orderPriceTo,
+                             conditionPrice,
+                             conditionSide,
+                             qtyCondition,
+                             qtyThreshold,
+                             enabled,
+                             enabledByUser) {
+            var row = Rows[key];
+            if (!row) {
+
+                row = $("#rules tr.ruleInput").clone().removeClass("ruleInput");
+                row.attr('id', key);
+                row.data('ruleID', key);
+
+                $("#rules").append(row);
+
+                Rows[key] = row;
+
+                var symbolSelect = row.find(".symbolSelect");
+                populateSelect(symbolSelect, [symbol], symbol);
+                symbolSelect.attr('disabled', 'disabled');
+
+                row.find("button.delete").toggleClass("hidden", false);
+                row.find("button.copy").toggleClass("hidden", false);
+                row.find("button.start").toggleClass("hidden", false);
+                row.find("button.stop").toggleClass("hidden", false);
+
+                row.find("button.update").unbind('click').bind('click', function () {
+                    sendWriteRule(row);
+                });
+
+                row.find("button.delete").unbind('click').bind('click', function () {
+                    sendDeleteRule(row);
+                });
+
+                row.find("button.copy").unbind('click').bind('click', function () {
+                    var inputRow = $("#rules tr.ruleInput");
+                    var symbolSelect = inputRow.find(".symbolSelect");
+                    populateSelect(symbolSelect, Symbols, symbol);
+                    populateRuleRow(inputRow, side, symbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition, qtyThreshold);
+                });
+
+                row.find("button.start").unbind('click').bind('click', function () {
+                    sendStartRule(row);
+                });
+                row.find("button.stop").unbind('click').bind('click', function () {
+                    sendStopRule(row);
+                });
+            }
+
+            populateRuleRow(row, side, symbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition, qtyThreshold);
+            row.toggleClass("enabled", enabled);
+            row.find(".enabledByUser").text(enabledByUser);
+        }
+
+        function removeRule(key) {
+            var row = Rows[key];
+            row.remove();
+        }
+
+
+        // Send commands to server
+
+        function sendWriteRule(inputRow) {
+            var ruleID = inputRow.data('ruleID');
+            if (!ruleID) {
+                ruleID = "NEW";
+            }
+            var symbol = inputRow.find(".symbolSelect").val();
+            var side = inputRow.find(".side").val();
+            var fromPrice = inputRow.find(".fromPrice").val();
+            var toPrice = inputRow.find(".toPrice").val();
+            var priceCondition = inputRow.find(".priceCondition").val();
+            var conditionSide = inputRow.find(".conditionSide").val();
+            var qtyCondition = inputRow.find(".qtyCondition").val();
+            var qtyThreshold = inputRow.find(".qtyThreshold").val();
+            ws.send(command("writeRule", [ruleID,
+                symbol,
+                side,
+                fromPrice,
+                toPrice,
+                priceCondition,
+                conditionSide,
+                qtyCondition,
+                qtyThreshold]));
+        }
+
+        function sendDeleteRule(row) {
+            ws.send(command("deleteRule", [row.data('ruleID')]));
+        }
+
+        function sendStartRule(row) {
+            ws.send(command("startRule", [row.data('ruleID')]));
+        }
+        function sendStopRule(row) {
+            ws.send(command("stopRule", [row.data('ruleID')]));
+        }
+
+    </script>
+</head>
+<body>
+
+<table id="rules">
+    <thead>
+    <td></td>
+    <td>Pull</td>
+    <td>Symbol</td>
+    <td>Side</td>
+    <td>Price</td>
+    <td>If</td>
+    <td>Price</td>
+    <td>Side</td>
+    <td>Condition</td>
+    <td>Qty</td>
+    <td></td>
+    <td></td>
+    </thead>
+
+    <tr class="ruleInput">
+        <td>
+            <button class="start hidden">&nbsp;</button>
+            <button class="stop  hidden">&nbsp;</button>
+        </td>
+        <td>Pull</td>
+        <td class="symbol">
+            <select class="symbolSelect">
+            </select>
+        </td>
+        <td>
+            <select class="side">
+                <option>BID</option>
+                <option>ASK</option>
+            </select>
+        </td>
+        <td><select class="fromPrice">
+        </select> - <select class="toPrice">
+        </select>
+        </td>
+        <td>If</td>
+        <td>
+            <select class="priceCondition">
+            </select>
+        </td>
+        <td>
+            <select class="conditionSide">
+                <option>BID</option>
+                <option>ASK</option>
+            </select>
+        </td>
+        <td>
+            <select class="qtyCondition">
+                <option>GT</option>
+                <option>LT</option>
+            </select>
+        </td>
+        <td><input type="number" class="qtyThreshold"/></td>
+        <td>
+            <button class="update">OK</button>
+            <button class="copy hidden">C</button>
+            <button class="delete hidden">X</button>
+        </td>
+        <td class="enabledByUser"></td>
+    </tr>
+
+</table>
+
+</body>
+</html>

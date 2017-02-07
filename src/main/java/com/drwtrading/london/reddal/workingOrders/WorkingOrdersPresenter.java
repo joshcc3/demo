@@ -13,7 +13,6 @@ import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
 import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReddalComponents;
-import com.drwtrading.london.reddal.ladders.LadderView;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -38,7 +37,7 @@ import java.util.function.Predicate;
 public class WorkingOrdersPresenter {
 
     private static final long HEART_BEAT_TIMEOUT_NANOS = 5 * DateTimeUtil.NANOS_IN_SECS;
-    private static final Predicate<WorkingOrderUpdateFromServer> NON_GTC_FILTER = WorkingOrdersPresenter::nonGTCFilter;
+    public static final Predicate<WorkingOrderUpdateFromServer> NON_GTC_FILTER = (order) -> !order.isLikelyGTC();
 
     private final IClock clock;
     private final IResourceMonitor<ReddalComponents> monitor;
@@ -60,8 +59,8 @@ public class WorkingOrdersPresenter {
     private long lastViewerHeartbeatNanoSinceMidnight;
 
     public WorkingOrdersPresenter(final IClock clock, final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
-            final Scheduler scheduler, final Publisher<StatsMsg> statsMsgPublisher,
-            final Publisher<Main.RemoteOrderCommandToServer> commands, final Collection<String> nibblers) {
+                                  final Scheduler scheduler, final Publisher<StatsMsg> statsMsgPublisher,
+                                  final Publisher<Main.RemoteOrderCommandToServer> commands, final Collection<String> nibblers) {
 
         this.clock = clock;
         this.monitor = monitor;
@@ -256,17 +255,11 @@ public class WorkingOrdersPresenter {
 
     // -----------------
 
-    public static boolean nonGTCFilter(final WorkingOrderUpdateFromServer order) {
-        return !(order.fromServer.toUpperCase().contains("GTC") ||
-                order.value.getTag().toUpperCase().contains("GTC") ||
-                order.value.getWorkingOrderType().name().toUpperCase().contains("GTC"));
-    }
-
     private void cancel(final String user, final WorkingOrderUpdateFromServer order) {
+
         commands.publish(new Main.RemoteOrderCommandToServer(order.fromServer,
                 new RemoteCancelOrder(order.fromServer, user, order.value.getChainId(),
-                        LadderView.getRemoteOrderFromWorkingOrder(false, order.value.getPrice(), order.value,
-                                order.value.getTotalQuantity()))));
+                        order.toRemoteOrder(false, order.value.getPrice(), order.value.getTotalQuantity()))));
     }
 
     private void repaint() {

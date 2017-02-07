@@ -29,6 +29,7 @@ import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.websockets.WebSocketClient;
@@ -693,11 +694,6 @@ public class LadderView implements UiEventHandler {
         bookView.onSingleOrderCommand(clientSpeedState, singleOrderCommand);
     }
 
-    public static RemoteOrder getRemoteOrderFromWorkingOrder(final boolean autoHedge, final long price,
-                                                             final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
-
-        return LadderBookView.getRemoteOrderFromWorkingOrder(autoHedge, price, workingOrderUpdate, totalQuantity);
-    }
     // Heartbeats
 
     public void sendHeartbeat() {

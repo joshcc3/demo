@@ -24,7 +24,6 @@ import com.drwtrading.london.photons.reddal.Direction;
 import com.drwtrading.london.photons.reddal.ReddalCommand;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.UpdateOffset;
-import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteModifyOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
 import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
@@ -69,7 +68,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-class LadderBookView implements ILadderBoard {
+public class LadderBookView implements ILadderBoard {
 
     private static final int MODIFY_TIMEOUT_MILLI = 5000;
 
@@ -1168,7 +1167,7 @@ class LadderBookView implements ILadderBoard {
 
             final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, orderType, tag);
 
-            final RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
+            final RemoteOrderType remoteOrderType = WorkingOrderUpdateFromServer.getRemoteOrderType(orderType);
 
             if (null == serverName) {
                 final String message = "Cannot submit order " + orderType + ' ' + side + ' ' + clickTradingBoxQty + " for " + symbol +
@@ -1248,9 +1247,9 @@ class LadderBookView implements ILadderBoard {
 
                 final RemoteModifyOrder remoteModifyOrder =
                         new RemoteModifyOrder(order.fromServer, username, workingOrderUpdate.getChainId(),
-                                getRemoteOrderFromWorkingOrder(autoHedge, workingOrderUpdate.getPrice(), workingOrderUpdate,
+                                order.toRemoteOrder(autoHedge, workingOrderUpdate.getPrice(),
                                         workingOrderUpdate.getTotalQuantity()),
-                                getRemoteOrderFromWorkingOrder(autoHedge, price, workingOrderUpdate, totalQuantity));
+                                order.toRemoteOrder(autoHedge, price, totalQuantity));
 
                 remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(order.fromServer, remoteModifyOrder));
             }
@@ -1314,21 +1313,8 @@ class LadderBookView implements ILadderBoard {
                         order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
 
         if (isTrader) {
-            final WorkingOrderUpdate workingOrderUpdate = order.value;
-            final String orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
-            final RemoteOrder remoteOrder =
-                    new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(),
-                            workingOrderUpdate.getTotalQuantity(), getRemoteOrderType(orderType), false, workingOrderUpdate.getTag());
-            remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(order.fromServer,
-                    new RemoteCancelOrder(workingOrderUpdate.getServerName(), username, workingOrderUpdate.getChainId(), remoteOrder)));
-        }
-    }
-
-    static String getOrderType(final WorkingOrderType workingOrderType) {
-        if (workingOrderType == WorkingOrderType.MARKET) {
-            return "MKT_CLOSE";
-        } else {
-            return workingOrderType.name();
+            Main.RemoteOrderCommandToServer cancel = order.buildCancelCommand(username);
+            remoteOrderCommandToServerPublisher.publish(cancel);
         }
     }
 
@@ -1350,21 +1336,4 @@ class LadderBookView implements ILadderBoard {
         }
     }
 
-    static RemoteOrder getRemoteOrderFromWorkingOrder(final boolean autoHedge, final long price,
-                                                      final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
-
-        final RemoteOrderType remoteOrderType = getRemoteOrderType(workingOrderUpdate.getWorkingOrderType().toString());
-        return new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), price, totalQuantity, remoteOrderType,
-                autoHedge, workingOrderUpdate.getTag());
-    }
-
-    private static RemoteOrderType getRemoteOrderType(final String orderType) {
-
-        for (final RemoteOrderType remoteOrderType : RemoteOrderType.values()) {
-            if (remoteOrderType.toString().toUpperCase().equals(orderType.toUpperCase())) {
-                return remoteOrderType;
-            }
-        }
-        return RemoteOrderType.MANUAL;
-    }
 }
