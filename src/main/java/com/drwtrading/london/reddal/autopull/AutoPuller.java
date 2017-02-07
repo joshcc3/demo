@@ -4,6 +4,7 @@ import com.drwtrading.jetlang.autosubscribe.BatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
@@ -75,12 +76,12 @@ public class AutoPuller {
     }
 
     private boolean createIfNewSymbol(String symbol) {
-        boolean newSymbols = false;
+        boolean symbolIsNew = false;
         WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
         if (null == ordersForSymbol) {
             ordersForSymbol = new WorkingOrdersForSymbol(symbol);
             orders.put(symbol, ordersForSymbol);
-            newSymbols = true;
+            symbolIsNew = true;
         }
 
         IBook<?> book = md.get(symbol);
@@ -88,10 +89,10 @@ public class AutoPuller {
             book = bookSubscriber.subscribeToSymbol(symbol, this::onBookUpdated);
             if (null != book) {
                 md.put(symbol, book);
+                symbolIsNew = true;
             }
-            newSymbols = true;
         }
-        return newSymbols;
+        return symbolIsNew;
     }
 
     public void addOrUpdateRule(PullRule pullRule) {
@@ -148,6 +149,9 @@ public class AutoPuller {
     }
 
     public void onBookUpdated(IBook<?> book) {
+        if (!md.containsKey(book.getSymbol())) {
+            md.put(book.getSymbol(), book);
+        }
         runSymbol(book.getSymbol());
     }
 

@@ -10,9 +10,12 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import org.jetlang.core.Scheduler;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -21,6 +24,7 @@ public class AutoPullerUI {
     final AutoPuller autoPuller;
     private final Scheduler scheduler;
     final WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
+    Set<View> viewSet = new HashSet<>();
 
     public AutoPullerUI(AutoPuller autoPuller, Scheduler scheduler) {
         this.autoPuller = autoPuller;
@@ -31,6 +35,7 @@ public class AutoPullerUI {
     @Subscribe
     public void on(WebSocketConnected connected) {
         View view = views.register(connected);
+        viewSet.add(view);
         onConnected(view);
     }
 
@@ -42,6 +47,7 @@ public class AutoPullerUI {
     @Subscribe
     public void on(WebSocketDisconnected disconnected) {
         View view = views.unregister(disconnected);
+        viewSet.remove(view);
     }
 
 
@@ -92,7 +98,9 @@ public class AutoPullerUI {
     }
 
     public void refreshRules() {
-        onConnected(views.all());
+        if (!viewSet.isEmpty()) {
+            onConnected(views.all());
+        }
     }
 
     private void onConnected(View view) {
@@ -106,24 +114,13 @@ public class AutoPullerUI {
 
     private void updateGlobals(View view) {
         List<String> symbols = autoPuller.getRelevantSymbols();
-        Map<String, List<String>> orderPrices = new HashMap<>();
+        symbols.sort(Comparator.naturalOrder());
         Map<String, List<String>> relevantPrices = new HashMap<>();
         for (String symbol : symbols) {
-            List<String> list = autoPuller.getWorkingOrderPrices(symbol).stream()
-                    .map(AutoPullerUI::formatPx)
-                    .collect(Collectors.toList());
-            orderPrices.put(symbol, list);
             List<String> priceList = autoPuller.getMDPrices(symbol).stream().map(AutoPullerUI::formatPx).collect(Collectors.toList());
-            if (priceList.isEmpty()) {
-                retryLater();
-            }
             relevantPrices.put(symbol, priceList);
         }
         view.updateGlobals(symbols, relevantPrices, relevantPrices);
-    }
-
-    private void retryLater() {
-        scheduler.schedule(this::refreshRules, 2, TimeUnit.SECONDS);
     }
 
     private void displayRule(View view, AutoPuller.EnabledPullRule enabledPullRule) {
