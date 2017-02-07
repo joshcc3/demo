@@ -76,6 +76,9 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
                 try {
                     final JSONObject lineObj = new JSONObject(string);
                     final JsonFileDbEntry entry = JsonFileDbEntry.fromJson(lineObj);
+                    if (entry.id.equals("__lastUpdated")) {
+                        continue;
+                    }
                     if (entry.deleted) {
                         objectById.remove(entry.id);
                     } else {
