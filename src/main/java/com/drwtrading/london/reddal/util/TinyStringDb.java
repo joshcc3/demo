@@ -79,7 +79,7 @@ public class TinyStringDb implements TinyDb<String> {
     }
 
     private static String getString(final JSONObject jsonObject) {
-        if (jsonObject == null) {
+        if (jsonObject == null || !jsonObject.has(VALUE_KEY)) {
             return null;
         }
         try {
