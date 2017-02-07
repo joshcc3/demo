@@ -38,7 +38,9 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
         }
 
         public static JsonFileDbEntry fromJson(final JSONObject jsonObject) throws JSONException {
-            return new JsonFileDbEntry(jsonObject.getString("id"), jsonObject.getLong("time"), jsonObject.getJSONObject("value"), jsonObject.getBoolean("deleted"));
+            return new JsonFileDbEntry(
+                    jsonObject.getString("id"), jsonObject.getLong("time"), jsonObject.getJSONObject("value"),
+                    jsonObject.has("deleted") && jsonObject.getBoolean("deleted"));
         }
 
         @Override
