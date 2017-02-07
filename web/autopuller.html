@@ -77,6 +77,12 @@
             border: 1px solid #a0ff7e;
         }
 
+
+        tr.alert {
+            background-color: #d2a1d4;
+            border: 1px solid #ff0008;
+        }
+
     </style>
     <meta charset="UTF-8">
     <title>Autopuller</title>
@@ -181,7 +187,8 @@
                              qtyCondition,
                              qtyThreshold,
                              enabled,
-                             enabledByUser) {
+                             enabledByUser,
+                             instantPullCount) {
             var row = Rows[key];
             if (!row) {
 
@@ -228,6 +235,14 @@
             populateRuleRow(row, side, symbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition, qtyThreshold);
             row.toggleClass("enabled", enabled);
             row.find(".enabledByUser").text(enabledByUser);
+
+            if (0 < instantPullCount) {
+                row.find(".instantPull").text("Instantly pull " + instantPullCount + " orders!");
+                row.toggleClass("alert", true);
+            } else {
+                row.find(".instantPull").text("");
+                row.toggleClass("alert", false);
+            }
         }
 
         function removeRule(key) {
@@ -291,6 +306,7 @@
     <td>Qty</td>
     <td></td>
     <td></td>
+    <td></td>
     </thead>
 
     <tr class="ruleInput">
@@ -337,6 +353,7 @@
             <button class="delete hidden">X</button>
         </td>
         <td class="enabledByUser"></td>
+        <td class="instantPull"></td>
     </tr>
 
 </table>

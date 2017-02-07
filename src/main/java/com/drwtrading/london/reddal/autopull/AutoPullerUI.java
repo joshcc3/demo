@@ -128,6 +128,7 @@ public class AutoPullerUI {
 
     private void displayRule(View view, AutoPuller.EnabledPullRule enabledPullRule) {
         PullRule rule = enabledPullRule.getPullRule();
+        int pullCount = autoPuller.getPullCount(enabledPullRule);
         view.displayRule(Long.toString(rule.ruleID), rule.symbol, rule.orderSelection.side.toString(),
                 formatPx(rule.orderSelection.fromPrice),
                 formatPx(rule.orderSelection.toPrice),
@@ -136,7 +137,8 @@ public class AutoPullerUI {
                 rule.mktCondition.qtyCondition.toString(),
                 Integer.toString(rule.mktCondition.qtyThreshold),
                 enabledPullRule.isEnabled(),
-                enabledPullRule.getEnabledByUser() != null ? enabledPullRule.getEnabledByUser() : ""
+                enabledPullRule.getEnabledByUser() != null ? enabledPullRule.getEnabledByUser() : "",
+                pullCount
         );
     }
 
@@ -160,7 +162,8 @@ public class AutoPullerUI {
                          String qtyCondition,
                          String qtyThreshold,
                          boolean enabled,
-                         String enabledByUser);
+                         String enabledByUser,
+                         int pullCount);
 
         void removeRule(String key);
     }

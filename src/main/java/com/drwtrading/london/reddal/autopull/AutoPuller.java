@@ -5,9 +5,7 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.reddal.Main;
-import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -102,8 +100,8 @@ public class AutoPuller {
         if (null != prevRule) {
             rulesBySymbol.remove(prevRule.symbol, enabledPullRule);
         }
-        enabledPullRule.setPullRule(pullRule);
         enabledPullRule.disable();
+        enabledPullRule.setPullRule(pullRule);
         rulesBySymbol.put(enabledPullRule.getPullRule().symbol, enabledPullRule);
         persistence.updateRule(pullRule);
         if (createIfNewSymbol(pullRule.symbol)) {
@@ -232,6 +230,17 @@ public class AutoPuller {
 
     public void setRefreshCallback(Runnable refreshCallback) {
         this.refreshCallback = refreshCallback;
+    }
+
+    public int getPullCount(EnabledPullRule enabledPullRule) {
+        String symbol = enabledPullRule.pullRule.symbol;
+        WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
+        IBook<?> book = md.get(symbol);
+        if (null != book && null != ordersForSymbol) {
+            List<Main.RemoteOrderCommandToServer> example = enabledPullRule.pullRule.ordersToPull("example", ordersForSymbol, book);
+            return example.size();
+        }
+        return 0;
     }
 
     public static class EnabledPullRule {
