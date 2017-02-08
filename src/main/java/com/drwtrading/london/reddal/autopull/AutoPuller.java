@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 public class AutoPuller {
@@ -192,10 +193,13 @@ public class AutoPuller {
     }
 
     public List<Long> getMDPrices(String symbol) {
+        TreeSet<Long> prices = new TreeSet<>(Comparator.reverseOrder());
+
+        WorkingOrdersForSymbol workingOrdersForSymbol = orders.get(symbol);
+        prices.addAll(workingOrdersForSymbol.ordersByPrice.keySet());
+
         IBook<?> book = md.get(symbol);
-        if (null == book) {
-            return Collections.emptyList();
-        } else {
+        if (null != book) {
             Long bidPrice = null;
             for (IBookLevel lvl = book.getBestBid(); lvl != null; lvl = lvl.next()) {
                 bidPrice = lvl.getPrice();
@@ -216,16 +220,18 @@ public class AutoPuller {
                 return Collections.emptyList();
             }
 
-            Long minPrice = book.getTickTable().subtractTicks(bidPrice, 1);
-            Long maxPrice = book.getTickTable().addTicks(askPrice, 1);
-            List<Long> prices = new ArrayList<>();
+            Long minPrice = book.getTickTable().subtractTicks(bidPrice, 5);
+            Long maxPrice = book.getTickTable().addTicks(askPrice, 5);
 
-            for (long price = maxPrice; price >= minPrice; price = book.getTickTable().subtractTicks(price, 1)) {
+            prices.add(minPrice);
+            prices.add(maxPrice);
+
+            for (long price = prices.first(); price >= prices.last(); price = book.getTickTable().subtractTicks(price, 1)) {
                 prices.add(price);
             }
 
-            return prices;
         }
+        return new ArrayList<>(prices);
     }
 
     public EnabledPullRule getRule(long ruleID) {
