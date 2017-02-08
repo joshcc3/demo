@@ -14,6 +14,7 @@ import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -185,18 +186,17 @@ public class AutoPuller {
         }
     }
 
-    public List<Long> getWorkingOrderPrices(String symbol) {
-        return Optional.ofNullable(orders.get(symbol))
-                .map(ordersForSymbol -> ordersForSymbol.ordersByPrice.keySet())
-                .orElse(Collections.emptySet())
-                .stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
-    }
-
     public List<Long> getMDPrices(String symbol) {
         TreeSet<Long> prices = new TreeSet<>(Comparator.reverseOrder());
 
         WorkingOrdersForSymbol workingOrdersForSymbol = orders.get(symbol);
         prices.addAll(workingOrdersForSymbol.ordersByPrice.keySet());
+
+        for (EnabledPullRule enabledPullRule : rulesBySymbol.get(symbol)) {
+            prices.add(enabledPullRule.getPullRule().mktCondition.price);
+            prices.add(enabledPullRule.getPullRule().orderSelection.fromPrice);
+            prices.add(enabledPullRule.getPullRule().orderSelection.toPrice);
+        }
 
         IBook<?> book = md.get(symbol);
         if (null != book) {
@@ -216,16 +216,10 @@ public class AutoPuller {
             if (askPrice == null && null != bidPrice) {
                 askPrice = bidPrice;
             }
-            if (bidPrice == null) {
-                return Collections.emptyList();
+            if (bidPrice != null) {
+                prices.add(book.getTickTable().subtractTicks(bidPrice, 5));
+                prices.add(book.getTickTable().addTicks(askPrice, 5));
             }
-
-            Long minPrice = book.getTickTable().subtractTicks(bidPrice, 5);
-            Long maxPrice = book.getTickTable().addTicks(askPrice, 5);
-
-            prices.add(minPrice);
-            prices.add(maxPrice);
-
             for (long price = prices.first(); price >= prices.last(); price = book.getTickTable().subtractTicks(price, 1)) {
                 prices.add(price);
             }
