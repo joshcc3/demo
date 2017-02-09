@@ -21,7 +21,7 @@ import java.util.Map;
 public class StackStrategiesNibblerView {
 
     private static final Collection<String> ALLOWED_INST_TYPES =
-            Lists.newArrayList(InstType.EQUITY.name(), InstType.DR.name(), InstType.INDEX.name());
+            Lists.newArrayList(InstType.EQUITY.name(), InstType.DR.name(), InstType.INDEX.name(), InstType.SYNTHETIC.name());
 
     private final String nibblerName;
     private final WebSocketViews<IStackStrategiesUI> views;
