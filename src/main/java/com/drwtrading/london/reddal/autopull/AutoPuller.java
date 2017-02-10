@@ -247,6 +247,10 @@ public class AutoPuller {
         return 0;
     }
 
+    public void disableAllRules() {
+        rulesBySymbol.values().forEach(EnabledPullRule::disable);
+    }
+
     public static class EnabledPullRule {
 
         PullRule pullRule;

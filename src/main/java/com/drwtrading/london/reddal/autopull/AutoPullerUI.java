@@ -48,6 +48,9 @@ public class AutoPullerUI {
     public void on(WebSocketDisconnected disconnected) {
         View view = views.unregister(disconnected);
         viewSet.remove(view);
+        if (viewSet.isEmpty()) {
+            autoPuller.disableAllRules();
+        }
     }
 
 
