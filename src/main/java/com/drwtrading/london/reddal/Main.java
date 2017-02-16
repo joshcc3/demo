@@ -133,6 +133,7 @@ import org.jetlang.fibers.Fiber;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Date;
 import java.util.EnumSet;
@@ -157,7 +158,7 @@ public class Main {
     private static final Pattern PROD_REPLACE = Pattern.compile("prod-", Pattern.LITERAL);
 
     public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
-                                                  final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
+            final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
         webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
 
@@ -454,22 +455,19 @@ public class Main {
                 displaySelectIO.addDelayedAction(initialDelay, presenter::flushAllLadders);
                 displaySelectIO.addDelayedAction(initialDelay, presenter::sendAllHeartbeats);
 
-
             }
-
 
             // Auto-puller thread
             {
                 final String name = "AutoPuller";
                 final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
-                final MappedResourceMonitor<SelectIOComponents, ReddalComponents> selectIOMonitor =
-                        MappedResourceMonitor.mapMonitorByName(displayMonitor, SelectIOComponents.class, ReddalComponents.class,
-                                "SELECT_IO_");
+                final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+                        new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class,
+                                ReddalComponents.AUTO_PULLER_SELECT_IO);
                 final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
                 final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
                         MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
                                 ReddalComponents.class, "MD_", errorLog);
-
 
                 PullerBookSubscriber subscriber = new PullerBookSubscriber();
 
@@ -484,8 +482,8 @@ public class Main {
                             mdParentMonitor.createChildResourceMonitor(mdSource.name());
 
                     final MDTransportClient mdClient =
-                            MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource, "reddal-" + configName + "-pull",
-                                    subscriber.getL3(), subscriber.getL2(), MD_SERVER_TIMEOUT, true);
+                            MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource,
+                                    app.appName + "-pull", subscriber.getL3(), subscriber.getL2(), MD_SERVER_TIMEOUT, true);
 
                     final TransportTCPKeepAliveConnection<?, ?> connection =
                             MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
@@ -908,7 +906,7 @@ public class Main {
     }
 
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,
-                                                       final AtomicBoolean multicastEnabled) {
+            final AtomicBoolean multicastEnabled) {
         return new Transport() {
             @Override
             public <T> void publish(final MsgCodec<T> codec, final T msg) {
@@ -930,7 +928,7 @@ public class Main {
     }
 
     private static void setupYodaSignals(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
-                                         final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts)
+            final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts)
             throws ConfigException {
 
         final ConfigGroup yodaConfig = config.getEnabledGroup("yoda");
