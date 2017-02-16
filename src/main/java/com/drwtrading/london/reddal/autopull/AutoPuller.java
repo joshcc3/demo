@@ -220,10 +220,11 @@ public class AutoPuller {
                 prices.add(book.getTickTable().subtractTicks(bidPrice, 5));
                 prices.add(book.getTickTable().addTicks(askPrice, 5));
             }
-            for (long price = prices.first(); price >= prices.last(); price = book.getTickTable().subtractTicks(price, 1)) {
-                prices.add(price);
+            if (!prices.isEmpty()) {
+                for (long price = prices.first(); price >= prices.last(); price = book.getTickTable().subtractTicks(price, 1)) {
+                    prices.add(price);
+                }
             }
-
         }
         return new ArrayList<>(prices);
     }
