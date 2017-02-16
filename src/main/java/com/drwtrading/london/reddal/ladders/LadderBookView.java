@@ -256,6 +256,11 @@ public class LadderBookView implements ILadderBoard {
     }
 
     @Override
+    public void setStackGroupTickMultiplier(final int tickMultiplier) {
+        // ignored
+    }
+
+    @Override
     public void setStackTickSizeToMatchQuote() {
         // ignored
     }

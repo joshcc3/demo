@@ -4,19 +4,13 @@ import com.drwtrading.london.eeif.utils.monitoring.IMonitoredComponent;
 
 public enum ReddalComponents implements IMonitoredComponent {
 
-    MONITOR_DUPLICATE_APPLICATION_REGISTRATION,
-    MONITOR_APP_COUNT,
-    MONITOR_CLIENT_PROTOCOL_ERROR,
-    MONITOR_CLIENT_HEARTBEAT_TIME_OUT,
-    MONITOR_CLIENT_TCP_CLOSED,
-    MONITOR_CLIENT_TCP_EXCEPTION,
-    MONITOR_CLIENT_UNKNOWN_MSG_TYPE,
-
-    SELECT_IO_CLOSE,
-    SELECT_IO_SELECT,
-    SELECT_IO_UNHANDLED,
+    SELECT_IO,
+    MONITOR,
 
     INDY,
+
+    UI_SELECT_IO,
+    STACK_SELECT_IO,
 
     MD_L3_HANDLER,
     MD_L2_HANDLER,

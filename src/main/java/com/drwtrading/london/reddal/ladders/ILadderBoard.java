@@ -16,6 +16,8 @@ public interface ILadderBoard {
 
     public void setStackTickSize(final double tickSize);
 
+    public void setStackGroupTickMultiplier(final int tickMultiplier);
+
     public void setStackTickSizeToMatchQuote();
 
     public boolean setPersistencePreference(final String label, final String value);

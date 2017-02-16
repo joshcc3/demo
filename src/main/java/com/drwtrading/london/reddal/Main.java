@@ -14,25 +14,20 @@ import com.drwtrading.london.eeif.stack.transport.StackTransportComponents;
 import com.drwtrading.london.eeif.stack.transport.cache.StackCacheFactory;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
-import com.drwtrading.london.eeif.utils.config.Config;
+import com.drwtrading.london.eeif.utils.application.Application;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.config.ConfigParam;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
-import com.drwtrading.london.eeif.utils.io.files.FileUtils;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.MDTransportComponents;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClientFactory;
-import com.drwtrading.london.eeif.utils.monitoring.BasicStdOutErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
-import com.drwtrading.london.eeif.utils.monitoring.MappedResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
-import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
-import com.drwtrading.london.eeif.utils.monitoring.hub.ClientMonitoringHub;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.eeif.utils.transport.io.TransportTCPKeepAliveConnection;
@@ -137,9 +132,7 @@ import org.jetlang.fibers.Fiber;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Date;
 import java.util.EnumSet;
@@ -257,27 +250,17 @@ public class Main {
     }
 
     private static void start(final String[] args) throws IOException, InterruptedException, ConfigException {
-        if (args.length == 0) {
-            System.out.println("Configuration name required as argument.");
-            System.exit(-1);
-        }
 
-        final String configName = args[0];
-        final String appName = "Reddal " + PROD_REPLACE.matcher(configName).replaceAll("");
+        final Application<ReddalComponents> app = new Application<>(args, "Reddal", ReddalComponents.class);
 
-        System.out.println("Starting with configuration: " + configName);
-        final Path configFile = Paths.get("./etc", configName + ".properties");
-        final ConfigGroup root = new Config(configFile).getRoot();
+        final IClock clock = app.clock;
+        final ConfigGroup root = app.config;
+        final Path logDir = app.logDir;
+        final IErrorLogger errorLog = app.errorLog;
+        final IResourceMonitor<ReddalComponents> monitor = app.monitor;
+        final SelectIO selectIO = app.selectIO;
+
         final Environment environment = new Environment(root);
-        final Path baseLogDir = Paths.get("/sitelogs/drw/reddal");
-        final Path logDir = FileUtils.getTodaysPath(baseLogDir, configName);
-        Files.createDirectories(logDir);
-
-        final IClock clock = new SystemClock();
-        final IErrorLogger errorLog = new BasicStdOutErrorLogger();
-        final ClientMonitoringHub<ReddalComponents> monitorHub =
-                new ClientMonitoringHub<>(errorLog, clock, "Reddal", ReddalComponents.class, "MONITOR_", true);
-        final IResourceMonitor<ReddalComponents> monitor = monitorHub.getCoreMonitor();
 
         final NnsApi nnsApi = new NnsFactory().create();
         final LoggingTransport fileTransport = new LoggingTransport(logDir.resolve("jetlang.log").toFile());
@@ -377,9 +360,9 @@ public class Main {
 
                 final String name = "Ladder-" + i;
                 final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
-                final MappedResourceMonitor<SelectIOComponents, ReddalComponents> selectIOMonitor =
-                        MappedResourceMonitor.mapMonitorByName(displayMonitor, SelectIOComponents.class, ReddalComponents.class,
-                                "SELECT_IO_");
+                final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+                        new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class,
+                                ReddalComponents.UI_SELECT_IO);
 
                 final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
 
@@ -399,7 +382,7 @@ public class Main {
                         MultiLayeredResourceMonitor.getMappedMultiLayerMonitor(displayMonitor, MDTransportComponents.class,
                                 ReddalComponents.class, "MD_", errorLog);
 
-                final String localAppName = "reddal-" + configName + '-' + i;
+                final String localAppName = app.env.name() + ':' + app.appName + '-' + i;
 
                 int mdCount = 0;
                 for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
@@ -541,9 +524,9 @@ public class Main {
                         MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(stackConfigMonitor, "Stacks", errorLog,
                                 StackTransportComponents.class, ReddalComponents.STACK_GROUP_CLIENT);
 
-                final MappedResourceMonitor<SelectIOComponents, ReddalComponents> selectIOMonitor =
-                        MappedResourceMonitor.mapMonitorByName(stackConfigMonitor, SelectIOComponents.class, ReddalComponents.class,
-                                "SELECT_IO_");
+                final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+                        new ExpandedDetailResourceMonitor<>(stackConfigMonitor, "Stack Config", errorLog, SelectIOComponents.class,
+                                ReddalComponents.STACK_SELECT_IO);
                 final SelectIO stackConfigSelectIO = new SelectIO(selectIOMonitor);
 
                 final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(stackConfigSelectIO, errorLog, "Stack Config SelectIO.");
@@ -560,7 +543,7 @@ public class Main {
                 for (final ConfigGroup stackConnectionConfig : stackConfig.groups()) {
 
                     final String nibblerName = stackConnectionConfig.getKey();
-                    final String connectionName = "reddalConfig-" + configName + '-' + nibblerName;
+                    final String connectionName = app.env.name() + "reddalConfig-" + app.appName + '-' + nibblerName;
                     final IResourceMonitor<StackTransportComponents> stackMonitor =
                             stackParentMonitor.createChildResourceMonitor(connectionName);
 
@@ -590,7 +573,7 @@ public class Main {
             }
         }
 
-        // Non SSO-protected webapp to allow AJAX requests
+        // Non SSO-protected web App to allow AJAX requests
         {
 
             final WebApplication webapp = new WebApplication(environment.getWebPort() + 1, channels.errorPublisher);
@@ -816,16 +799,12 @@ public class Main {
 
         final IIndyCacheListener indyListener = new IndyClient(channels.instDefs);
 
-        final IResourceMonitor<ReddalComponents> reddalMonitor = new ResourceMonitor<>("Indy", ReddalComponents.class, errorLog, true);
-
-        final SelectIO selectIO = SelectIO.mappedMonitorSelectIO("SelectIO", reddalMonitor, ReddalComponents.SELECT_IO_CLOSE,
-                ReddalComponents.SELECT_IO_SELECT, ReddalComponents.SELECT_IO_UNHANDLED);
         final SelectIOFiber selectIOFiber = new SelectIOFiber(selectIO, errorLog, "Select IO");
 
         final String indyUsername = indyConfig.getString("username");
 
         final IResourceMonitor<IndyTransportComponents> indyMonitor =
-                new ExpandedDetailResourceMonitor<>(reddalMonitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
+                new ExpandedDetailResourceMonitor<>(monitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
         final TransportTCPKeepAliveConnection<?, ?> indyConnection =
                 IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
         selectIO.execute(indyConnection::restart);
@@ -838,7 +817,7 @@ public class Main {
             }
         });
 
-        setupYodaSignals(selectIO, monitor, errorLog, root, appName, channels.stockAlerts);
+        setupYodaSignals(selectIO, monitor, errorLog, root, app.appName, channels.stockAlerts);
 
         final ConfigGroup opxlConfig = root.getEnabledGroup("opxl");
 
@@ -862,7 +841,7 @@ public class Main {
             channels.searchResults.subscribe(selectIOFiber, pksClient::setSearchResult);
 
             final PositionClientHandler cache =
-                    PositionCacheFactory.createClientCache(selectIO, pksMonitor, "PKS", appName, pksClient, pksClient, true);
+                    PositionCacheFactory.createClientCache(selectIO, pksMonitor, "PKS", app.appName, pksClient, pksClient, true);
 
             final TransportTCPKeepAliveConnection<?, ?> client = PositionCacheFactory.createClient(selectIO, pksConfig, pksMonitor, cache);
             client.restart();

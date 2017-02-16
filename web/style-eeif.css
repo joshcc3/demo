@@ -908,8 +908,14 @@ input::-webkit-inner-spin-button:hover {
 	width: 42px;
 }
 
-#btn_submitStackTickSize {
+#stackGroupTickMultiplier {
 	top: 49px;
+	left: 0;
+	width: 42px;
+}
+
+#btn_submitStackTickSize {
+	top: 64px;
 	left: 0;
 	width: 42px;
 }
