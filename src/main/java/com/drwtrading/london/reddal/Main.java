@@ -130,7 +130,6 @@ import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -140,7 +139,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -250,7 +248,7 @@ public class Main {
         }
     }
 
-    private static void start(final String[] args) throws IOException, InterruptedException, ConfigException {
+    private static void start(final String[] args) throws Exception {
 
         final Application<ReddalComponents> app = new Application<>(args, "Reddal", ReddalComponents.class);
 
@@ -482,8 +480,8 @@ public class Main {
                             mdParentMonitor.createChildResourceMonitor(mdSource.name());
 
                     final MDTransportClient mdClient =
-                            MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource,
-                                    app.appName + "-pull", subscriber.getL3(), subscriber.getL2(), MD_SERVER_TIMEOUT, true);
+                            MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource, app.appName + "-pull",
+                                    subscriber.getL3(), subscriber.getL2(), MD_SERVER_TIMEOUT, true);
 
                     final TransportTCPKeepAliveConnection<?, ?> connection =
                             MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
@@ -541,7 +539,7 @@ public class Main {
                 for (final ConfigGroup stackConnectionConfig : stackConfig.groups()) {
 
                     final String nibblerName = stackConnectionConfig.getKey();
-                    final String connectionName = app.env.name() + "reddalConfig-" + app.appName + '-' + nibblerName;
+                    final String connectionName = app.appName + " config";
                     final IResourceMonitor<StackTransportComponents> stackMonitor =
                             stackParentMonitor.createChildResourceMonitor(connectionName);
 
@@ -550,8 +548,8 @@ public class Main {
                     final StackCallbackBatcher stackUpdateBatcher =
                             new StackCallbackBatcher(strategiesPresenter, configPresenter, stackOPXLView, channels.contractSets);
                     final StackClientHandler clientHandler =
-                            StackCacheFactory.createClientCache(stackConfigSelectIO, stackConnectionConfig, stackMonitor, nibblerName,
-                                    connectionName, stackUpdateBatcher);
+                            StackCacheFactory.createClientCache(stackConfigSelectIO, stackConnectionConfig, stackMonitor,
+                                    nibblerName + " config", app.env.name() + connectionName, stackUpdateBatcher);
 
                     strategiesPresenter.setStrategyClient(clientHandler);
                     configPresenter.setConfigClient(clientHandler);
@@ -806,14 +804,6 @@ public class Main {
         final TransportTCPKeepAliveConnection<?, ?> indyConnection =
                 IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
         selectIO.execute(indyConnection::restart);
-        fibers.onStart(() -> {
-            try {
-                selectIO.start("Indy Select IO");
-            } catch (final Exception e) {
-                System.out.println("Exception starting select IO.");
-                e.printStackTrace();
-            }
-        });
 
         setupYodaSignals(selectIO, monitor, errorLog, root, app.appName, channels.stockAlerts);
 
@@ -870,34 +860,29 @@ public class Main {
         }
 
         // Logging
-        {
-            final IClock sysClock = new SystemClock();
+        fibers.logging.subscribe(new ErrorLogger(logDir.resolve("errors.log").toFile()).onThrowableCallback(), channels.error);
+        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "remote-order.json", channels.errorPublisher),
+                channels.workingOrderEvents, channels.remoteOrderEvents);
+        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trading-status.json", channels.errorPublisher),
+                channels.tradingStatus);
+        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "preferences.json", channels.errorPublisher),
+                channels.ladderPrefsLoaded, channels.storeLadderPref);
+        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "status.json", channels.errorPublisher), channels.stats);
+        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "heartbeats.json", channels.errorPublisher),
+                channels.heartbeatRoundTrips);
+        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "contracts.json", channels.errorPublisher), channels.contractSets);
+        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "single-order.json", channels.errorPublisher),
+                channels.singleOrderCommand);
+        fibers.logging.subscribe(new FileLogger(clock, logDir, "stockAlerts.json", channels.errorPublisher), channels.stockAlerts);
+        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trace.json", channels.errorPublisher), channels.trace);
 
-            fibers.logging.subscribe(new ErrorLogger(logDir.resolve("errors.log").toFile()).onThrowableCallback(), channels.error);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "remote-order.json", channels.errorPublisher),
-                    channels.workingOrderEvents, channels.remoteOrderEvents);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trading-status.json", channels.errorPublisher),
-                    channels.tradingStatus);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "preferences.json", channels.errorPublisher),
-                    channels.ladderPrefsLoaded, channels.storeLadderPref);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "status.json", channels.errorPublisher), channels.stats);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "heartbeats.json", channels.errorPublisher),
-                    channels.heartbeatRoundTrips);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "contracts.json", channels.errorPublisher),
-                    channels.contractSets);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "single-order.json", channels.errorPublisher),
-                    channels.singleOrderCommand);
-            fibers.logging.subscribe(new FileLogger(sysClock, logDir, "stockAlerts.json", channels.errorPublisher), channels.stockAlerts);
-            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trace.json", channels.errorPublisher), channels.trace);
-
-            for (final Map.Entry<String, TypedChannel<WebSocketControlMessage>> stringTypedChannelEntry : websocketsForLogging.entrySet()) {
-                fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "websocket" + stringTypedChannelEntry.getKey() + ".json",
-                        channels.errorPublisher), stringTypedChannelEntry.getValue());
-            }
+        for (final Map.Entry<String, TypedChannel<WebSocketControlMessage>> stringTypedChannelEntry : websocketsForLogging.entrySet()) {
+            fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "websocket" + stringTypedChannelEntry.getKey() + ".json",
+                    channels.errorPublisher), stringTypedChannelEntry.getValue());
         }
 
-        fibers.start();
-        new CountDownLatch(1).await();
+        app.addStartUpAction(fibers::start);
+        app.run();
     }
 
     private static void setupEntityAliases(Environment environment, WebApplication webapp) throws ConfigException {
