@@ -81,7 +81,6 @@ import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandle
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
-import com.drwtrading.london.reddal.stacks.configui.StackConfigNibblerView;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigUIRouter;
 import com.drwtrading.london.reddal.stacks.opxl.StackGroupOPXLView;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesNibblerView;
@@ -529,7 +528,7 @@ public class Main {
                 fibers.fiberGroup.wrap(displaySelectIOFiber, "Stack Config SelectIO Fiber.");
 
                 final StackStrategiesUIRouter stackStrategiesUIRouter = new StackStrategiesUIRouter(fibers.ui, webLog);
-                final StackConfigUIRouter stackConfigUIRouter = new StackConfigUIRouter(fibers.ui, webLog);
+                final StackConfigUIRouter stackConfigPresenter = new StackConfigUIRouter(fibers.ui, webLog);
 
                 final String stackOPXLTopic = stackConfig.getString("opxlSpreadTopic");
                 final StackGroupOPXLView stackOPXLView = new StackGroupOPXLView(stackConfigMonitor, stackOPXLTopic);
@@ -544,15 +543,16 @@ public class Main {
                             stackParentMonitor.createChildResourceMonitor(connectionName);
 
                     final StackStrategiesNibblerView strategiesPresenter = stackStrategiesUIRouter.getNibblerHandler(nibblerName);
-                    final StackConfigNibblerView configPresenter = stackConfigUIRouter.getNibblerHandler(nibblerName);
+
                     final StackCallbackBatcher stackUpdateBatcher =
-                            new StackCallbackBatcher(strategiesPresenter, configPresenter, stackOPXLView, channels.contractSets);
+                            new StackCallbackBatcher(nibblerName, strategiesPresenter, stackConfigPresenter, stackOPXLView,
+                                    channels.contractSets);
                     final StackClientHandler clientHandler =
                             StackCacheFactory.createClientCache(stackConfigSelectIO, stackConnectionConfig, stackMonitor,
                                     nibblerName + " config", app.env.name() + connectionName, stackUpdateBatcher);
 
                     strategiesPresenter.setStrategyClient(clientHandler);
-                    configPresenter.setConfigClient(clientHandler);
+                    stackConfigPresenter.setConfigClient(nibblerName, clientHandler);
                 }
 
                 channels.searchResults.subscribe(displaySelectIOFiber,
@@ -565,7 +565,7 @@ public class Main {
                 // Config router
                 final TypedChannel<WebSocketControlMessage> configWebSocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("stackConfig", "stackConfig", fibers.ladder, webapp, configWebSocket);
-                fibers.ladder.subscribe(stackConfigUIRouter, configWebSocket);
+                fibers.ladder.subscribe(stackConfigPresenter, configWebSocket);
             }
         }
 

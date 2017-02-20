@@ -10,7 +10,7 @@ import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.SpreadContractSet;
-import com.drwtrading.london.reddal.stacks.configui.StackConfigNibblerView;
+import com.drwtrading.london.reddal.stacks.configui.StackConfigUIRouter;
 import com.drwtrading.london.reddal.stacks.opxl.StackGroupOPXLView;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesNibblerView;
 import org.jetlang.channels.Publisher;
@@ -21,8 +21,10 @@ import java.util.Set;
 public class StackCallbackBatcher
         implements IStackConnectionListener, IStackGroupUpdateCallback, IStackConfigUpdateCallback, IStackStrategyUpdateCallback {
 
+    private final String nibblerName;
+
     private final StackStrategiesNibblerView strategiesPresenter;
-    private final StackConfigNibblerView configPresenter;
+    private final StackConfigUIRouter configPresenter;
     private final StackGroupOPXLView stackOPXLView;
 
     private final Set<StackStrategy> strategyBatch;
@@ -31,8 +33,11 @@ public class StackCallbackBatcher
 
     private final Publisher<SpreadContractSet> stackContractSetPublisher;
 
-    public StackCallbackBatcher(final StackStrategiesNibblerView strategiesPresenter, final StackConfigNibblerView configPresenter,
-            final StackGroupOPXLView stackOPXLView, final Publisher<SpreadContractSet> stackContractSetPublisher) {
+    public StackCallbackBatcher(final String nibblerName, final StackStrategiesNibblerView strategiesPresenter,
+            final StackConfigUIRouter configPresenter, final StackGroupOPXLView stackOPXLView,
+            final Publisher<SpreadContractSet> stackContractSetPublisher) {
+
+        this.nibblerName = nibblerName;
 
         this.strategiesPresenter = strategiesPresenter;
         this.configPresenter = configPresenter;
@@ -59,7 +64,7 @@ public class StackCallbackBatcher
     public void connectionLost(final String remoteAppName) {
         configBatch.clear();
         strategiesPresenter.serverConnectionLost(remoteAppName);
-        configPresenter.serverConnectionLost();
+        configPresenter.serverConnectionLost(nibblerName);
     }
 
     @Override
@@ -99,7 +104,7 @@ public class StackCallbackBatcher
 
     @Override
     public void configGroupCreated(final StackConfigGroup configGroup) {
-        configPresenter.configGroupCreated(configGroup);
+        configPresenter.configUpdated(nibblerName, configGroup);
     }
 
     @Override
@@ -133,7 +138,7 @@ public class StackCallbackBatcher
 
         for (final StackConfigGroup config : configBatch) {
             try {
-                configPresenter.configUpdated(config);
+                configPresenter.configUpdated(nibblerName, config);
             } catch (final Exception e) {
                 System.out.println("Failed Config stack batch update.");
                 e.printStackTrace();

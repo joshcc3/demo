@@ -24,14 +24,14 @@ $(function () {
 
 	setupTable();
 
-	ws.send("subscribe-nibbler," + nibbler);
+	ws.send("subscribe");
 	var configTypeCombo = $("#configTypes");
 	addConfigTypeOption(configTypeCombo, NO_FILTER);
 	configTypeCombo.on("change", function () {
 		selectedConfigTypeChanged();
 	});
 
-	var massControlRow = setRow("massControl", "ALL", "");
+	var massControlRow = setRow("massControl", "ALL", "ALL", "");
 	massControlRow.find("input").each(setupCopyToAllRows);
 
 	var massControlSubmitAll = massControlRow.find(".button button");
@@ -48,8 +48,8 @@ $(function () {
 	});
 });
 
-function removeAll() {
-	getAllConfigRows().remove();
+function removeAll(nibblerName) {
+	getAllConfigRows().filter("[data-nibblerName=\"" + nibblerName + "\"]").remove();
 }
 
 function setConfigTypes(configTypes) {
@@ -145,7 +145,7 @@ function addConfigTypeOption(configTypeCombo, configType) {
 	configTypeCombo.append(option);
 }
 
-function setRow(id, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
+function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
 				quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis,
 				fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, bidPlanMinLevelQty,
 				bidPlanMaxLevelQty, bidPlanLotSize, bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer,
@@ -154,11 +154,14 @@ function setRow(id, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuo
 				askQuoteFlickerBuffer, askQuotePicardMaxTicksThrough, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour,
 				askPicardMaxPerDay) {
 
-	var row = $("#" + id);
+	var rowID = nibblerName + configGroupID;
+	var row = $("#" + rowID);
 	if (0 === symbolFilter.length || -1 < symbolFilter.indexOf(symbol) || "ALL" == symbol) {
 		if (row.length < 1) {
 			row = $("#header").clone();
-			row.attr("id", id);
+			row.attr("id", rowID);
+			row.attr("data-nibblerName", nibblerName);
+			row.attr("data-configGroupID", configGroupID);
 			row.removeClass("header");
 			$("#table").append(row);
 
@@ -329,7 +332,8 @@ function setBoolData(row, cellID, value) {
 
 function submitRow(row) {
 
-	var configID = row.attr("id");
+	var nibblerName = row.attr("data-nibblerName");
+	var configGroupID = row.attr("data-configGroupID");
 
 	var quoteMaxBookAgeMillis = getCellData(row, ".quoteInst.maxBookAgeMillis input");
 	var quoteIsAuctionQuotingEnabled = getCellBool(row, ".quoteInst.isAuctionQuotingEnabled input");
@@ -376,7 +380,7 @@ function submitRow(row) {
 	var askPicardMaxPerHour = getCellData(row, ".strategy.picardMaxPerHour .ask");
 	var askPicardMaxPerDay = getCellData(row, ".strategy.picardMaxPerDay .ask");
 
-	ws.send(command("submitChange", [configID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
+	ws.send(command("submitChange", [nibblerName, configGroupID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
 		quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS,
 		leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, bidPlanMinLevelQty, bidPlanMaxLevelQty,
 		bidPlanLotSize, bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer,
@@ -398,7 +402,7 @@ function getCellBool(row, cellID) {
 }
 
 function getAllConfigRows() {
-	return $("#table").find(".row:not(#header):not(#massControl)");
+	return $("#table").find(".row:not(#header):not(#massControlAll)");
 }
 
 function getSelectedConfigType() {
