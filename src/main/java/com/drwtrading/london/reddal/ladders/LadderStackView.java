@@ -121,6 +121,7 @@ public class LadderStackView implements ILadderBoard {
 
         view.trading(isTrader, STACK_TYPES, STACK_ORDER_TYPES, STACK_ORDER_TYPES);
 
+        ui.cls(HTML.STACK_CONFIG_BUTTON, CSSClass.INVISIBLE, false);
         ui.cls(HTML.STACKS_CONTROL, CSSClass.INVISIBLE, false);
 
         ui.cls(HTML.AUTO_HEDGE_LEFT, CSSClass.INVISIBLE, true);
@@ -135,6 +136,7 @@ public class LadderStackView implements ILadderBoard {
             ui.txt(entry.getKey(), display);
         }
 
+        ui.clickable('#' + HTML.STACK_CONFIG_BUTTON);
         ui.clickable('#' + HTML.STACK_TICK_SIZE);
         ui.clickable('#' + HTML.STACK_GROUP_TICK_MULTIPLIER);
         ui.clickable('#' + HTML.STACK_SUBMIT_TICK_SIZE);
@@ -475,6 +477,9 @@ public class LadderStackView implements ILadderBoard {
                 final long tickSize = (long) (stackTickSizeBoxValue * Constants.NORMALISING_FACTOR);
                 stackData.setStackGroupUpdate(tickSize, stackGroupTickMultiplierBoxValue);
                 setCenteredPrice(centeredPrice);
+            } else if (label.equals(HTML.STACK_CONFIG_BUTTON)) {
+                final String url = "/stackConfig#;" + symbol;
+                view.popUp(url, "stackConfig:" + symbol, 2200, 300);
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
@@ -482,7 +487,7 @@ public class LadderStackView implements ILadderBoard {
                     submitOrderRightClick(clientSpeedState, label, data);
                 }
             } else if (label.startsWith(HTML.ORDER)) {
-                //                rightClickModify(clientSpeedState, data);
+                // rightClickModify(clientSpeedState, data);
             } else if (label.equals(HTML.STACK_BID_QUOTE_ENABLED)) {
                 stackData.setBidStackEnabled(StackType.QUOTER, false);
             } else if (label.equals(HTML.STACK_BID_PICARD_ENABLED)) {

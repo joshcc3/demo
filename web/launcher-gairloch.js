@@ -17,7 +17,7 @@ function launchLadderAtPrice(symbol,price) {
 
 function getLadderHosts(symbol) {
     if (IN_DEV) {
-        return {ladderHost: "lnhq-wuddc02:9044", workspaceHost: "lnhq-wuddc02:9045"};
+        return {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
     }
     return {ladderHost: "prod-ladder.gairloch.drw:9044", workspaceHost: "prod-ladder.gairloch.drw:9045"};
 }

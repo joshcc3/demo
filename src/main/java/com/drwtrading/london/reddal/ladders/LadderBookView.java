@@ -160,14 +160,14 @@ public class LadderBookView implements ILadderBoard {
     private long modifyFromPriceSelectedTime;
 
     LadderBookView(final String username, final boolean isTrader, final String symbol, final UiPipeImpl ui, final ILadderUI view,
-                   final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
-                   final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
-                   final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-                   final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
-                   final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
-                   final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
-                   final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-                   final long centeredPrice) {
+            final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+            final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
+            final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
+            final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
+            final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+            final long centeredPrice) {
 
         this.username = username;
         this.isTrader = isTrader;
@@ -281,6 +281,7 @@ public class LadderBookView implements ILadderBoard {
         ui.cls(HTML.ORDER_TYPE_LEFT, CSSClass.FULL_WIDTH, false);
         ui.cls(HTML.ORDER_TYPE_RIGHT, CSSClass.FULL_WIDTH, false);
 
+        ui.cls(HTML.STACK_CONFIG_BUTTON, CSSClass.INVISIBLE, true);
         ui.cls(HTML.STACKS_CONTROL, CSSClass.INVISIBLE, true);
 
         for (final Map.Entry<String, Integer> entry : buttonQty.entrySet()) {
@@ -887,7 +888,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void workingQty(final LadderHTMLRow htmlRowKeys, final int qty, final BookSide side, final Set<WorkingOrderType> orderTypes,
-                            final boolean hasEeifOEOrder) {
+            final boolean hasEeifOEOrder) {
 
         ui.txt(htmlRowKeys.orderKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.orderKey, CSSClass.WORKING_QTY, 0 < qty);
@@ -1004,7 +1005,7 @@ public class LadderBookView implements ILadderBoard {
         } else if ("middle".equals(button)) {
             if (label.startsWith(HTML.ORDER)) {
                 final String price = data.get("price");
-                final String url = String.format("/orders#%s,%s", symbol, price);
+                final String url = "/orders#" + symbol + ',' + price;
                 final Collection<WorkingOrderUpdateFromServer> orders = workingOrdersForSymbol.ordersByPrice.get(Long.valueOf(price));
                 if (!orders.isEmpty()) {
                     view.popUp(url, "orders", 270, 20 * (1 + orders.size()));
@@ -1083,7 +1084,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrderClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data,
-                                  final String orderType, final boolean autoHedge) {
+            final String orderType, final boolean autoHedge) {
 
         final long price = Long.valueOf(data.get("price"));
         final LadderBoardRow bookRow = priceRows.get(price);
@@ -1156,7 +1157,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final boolean autoHedge, final long price,
-                             final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+            final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
 
         final int sequenceNumber = orderSeqNo++;
 
@@ -1232,7 +1233,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void modifyOrder(final ClientSpeedState clientSpeedState, final boolean autoHedge, final long price,
-                             final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+            final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
 
         trace.publish(new CommandTrace("modify", username, symbol, order.value.getWorkingOrderType().toString(), autoHedge, price,
                 order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
@@ -1252,8 +1253,7 @@ public class LadderBookView implements ILadderBoard {
 
                 final RemoteModifyOrder remoteModifyOrder =
                         new RemoteModifyOrder(order.fromServer, username, workingOrderUpdate.getChainId(),
-                                order.toRemoteOrder(autoHedge, workingOrderUpdate.getPrice(),
-                                        workingOrderUpdate.getTotalQuantity()),
+                                order.toRemoteOrder(autoHedge, workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity()),
                                 order.toRemoteOrder(autoHedge, price, totalQuantity));
 
                 remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(order.fromServer, remoteModifyOrder));

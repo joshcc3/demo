@@ -11,6 +11,7 @@ public class HTML {
     public static final String VOLUME = "volume_";
     public static final String AFTER_HOURS_WEIGHT = "after_hours_weight";
     public static final String TEXT = "text_";
+    public static final String STACK_CONFIG_BUTTON = "btn_stack_config";
     public static final String STACK_TICK_SIZE = "stackTickSize";
     public static final String STACK_GROUP_TICK_MULTIPLIER = "stackGroupTickMultiplier";
     public static final String STACK_SUBMIT_TICK_SIZE = "btn_submitStackTickSize";
