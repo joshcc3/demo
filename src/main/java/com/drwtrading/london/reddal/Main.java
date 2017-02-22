@@ -148,7 +148,7 @@ public class Main {
 
     public static final long SERVER_TIMEOUT = 3000L;
     public static final long HEARTBEAT_INTERVAL_MS = 3000;
-    public static final int NUM_DISPLAY_THREADS = 12;
+    public static final int NUM_DISPLAY_THREADS = 6;
     public static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     private static final String EWOK_BASE_URL_PARAM = "ewokBaseURL";
