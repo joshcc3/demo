@@ -902,7 +902,13 @@ input::-webkit-inner-spin-button:hover {
 }
 
 #btn_stack_config {
-	top: 144px;
+	position: absolute;
+	font-size: 9px;
+	margin: 0;
+	padding: 0;
+	text-align: center;
+	top: 216px;
+	left: 0;
 	width: 40px;
 	height: 12px;
 }
