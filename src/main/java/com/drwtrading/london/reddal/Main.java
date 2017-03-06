@@ -500,7 +500,7 @@ public class Main {
                 final AutoPuller puller = new AutoPuller(channels.remoteOrderCommand, subscriber, persistence);
                 fiberBuilder.subscribe(puller, channels.workingOrders);
 
-                AutoPullerUI autoPullerUI = new AutoPullerUI(puller, fiberBuilder.getFiber());
+                AutoPullerUI autoPullerUI = new AutoPullerUI(puller);
                 TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("autopuller", "autopuller", fiberBuilder, webapp, ws);
                 fiberBuilder.subscribe(autoPullerUI, ws);

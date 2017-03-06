@@ -16,20 +16,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class AutoPullerUI {
+public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
 
-    final AutoPuller autoPuller;
-    private final Scheduler scheduler;
-    final WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
-    Set<View> viewSet = new HashSet<>();
+    private final AutoPuller autoPuller;
+    private final WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
+    private final Set<View> viewSet = new HashSet<>();
 
-    public AutoPullerUI(AutoPuller autoPuller, Scheduler scheduler) {
+    public AutoPullerUI(AutoPuller autoPuller) {
         this.autoPuller = autoPuller;
-        this.scheduler = scheduler;
-        autoPuller.setRefreshCallback(this::refreshRules);
+        autoPuller.setCallbacks(this);
     }
 
     @Subscribe
@@ -100,12 +97,6 @@ public class AutoPullerUI {
         displayRule(views.all(), pullRule);
     }
 
-    public void refreshRules() {
-        if (!viewSet.isEmpty()) {
-            onConnected(views.all());
-        }
-    }
-
     private void onConnected(View view) {
         updateGlobals(view);
         displayAllRules(view);
@@ -150,6 +141,19 @@ public class AutoPullerUI {
         return new BigDecimal(price).movePointRight(9).longValue();
     }
 
+    @Override
+    public void runRefreshView() {
+        if (!viewSet.isEmpty()) {
+            onConnected(views.all());
+        }
+    }
+
+    @Override
+    public void ruleFired(AutoPuller.EnabledPullRule rule) {
+        displayRule(views.all(), rule);
+        views.all().ruleFired(Long.toString(rule.getPullRule().ruleID));
+    }
+
     public interface View {
         void updateGlobals(List<String> relevantSymbols, Map<String, List<String>> symbolToWorkingPrice, Map<String, List<String>> symbolToPossiblePrices);
 
@@ -164,6 +168,8 @@ public class AutoPullerUI {
                          boolean enabled,
                          String enabledByUser,
                          int pullCount);
+
+        void ruleFired(String key);
 
         void removeRule(String key);
     }

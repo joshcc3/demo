@@ -4,7 +4,6 @@ import com.drwtrading.jetlang.autosubscribe.BatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
-import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
@@ -14,17 +13,14 @@ import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 public class AutoPuller {
 
@@ -35,7 +31,7 @@ public class AutoPuller {
     private final Multimap<String, EnabledPullRule> rulesBySymbol = HashMultimap.create();
     private final Map<Long, EnabledPullRule> rulesByID = new TreeMap<>();
     private final AutoPullPersistence persistence;
-    private Runnable refreshCallback;
+    private IAutoPullCallbacks refreshCallback = IAutoPullCallbacks.DEFAULT;
 
     public AutoPuller(Publisher<Main.RemoteOrderCommandToServer> commandPublisher, PullerBookSubscriber bookSubscriber, AutoPullPersistence persistence) {
         this.commandPublisher = commandPublisher;
@@ -64,7 +60,7 @@ public class AutoPuller {
 
         updatedSymbols.forEach(this::onOrdersUpdated);
         if (newSymbols) {
-            triggerRefresh();
+            refreshCallback.runRefreshView();
         }
 
     }
@@ -72,7 +68,7 @@ public class AutoPuller {
     private void onNewBook(IBook<?> book) {
         if (rulesBySymbol.containsKey(book.getSymbol())) {
             if (createIfNewSymbol(book.getSymbol())) {
-                triggerRefresh();
+                refreshCallback.runRefreshView();
             }
         }
     }
@@ -108,7 +104,7 @@ public class AutoPuller {
         rulesBySymbol.put(enabledPullRule.getPullRule().symbol, enabledPullRule);
         persistence.updateRule(pullRule);
         if (createIfNewSymbol(pullRule.symbol)) {
-            triggerRefresh();
+            refreshCallback.runRefreshView();
         }
     }
 
@@ -162,7 +158,6 @@ public class AutoPuller {
     }
 
     public void runSymbol(String symbol) {
-        boolean pulledSomething = false;
         for (EnabledPullRule pullRule : rulesBySymbol.get(symbol)) {
             WorkingOrdersForSymbol workingOrdersForSymbol = orders.get(symbol);
             IBook<?> book = md.get(symbol);
@@ -171,19 +166,11 @@ public class AutoPuller {
                 cancels.forEach(commandPublisher::publish);
                 if (!cancels.isEmpty()) {
                     pullRule.disable();
-                    pulledSomething = true;
+                    refreshCallback.ruleFired(pullRule);
                 }
             }
         }
-        if (pulledSomething) {
-            triggerRefresh();
-        }
-    }
 
-    public void triggerRefresh() {
-        if (null != refreshCallback) {
-            refreshCallback.run();
-        }
     }
 
     public List<Long> getMDPrices(String symbol) {
@@ -233,8 +220,8 @@ public class AutoPuller {
         return rulesByID.get(ruleID);
     }
 
-    public void setRefreshCallback(Runnable refreshCallback) {
-        this.refreshCallback = refreshCallback;
+    public void setCallbacks(IAutoPullCallbacks callbacks) {
+        this.refreshCallback = callbacks;
     }
 
     public int getPullCount(EnabledPullRule enabledPullRule) {
@@ -292,6 +279,25 @@ public class AutoPuller {
         public String getEnabledByUser() {
             return enabledByUser;
         }
+    }
+
+    public interface IAutoPullCallbacks {
+        void runRefreshView();
+
+        void ruleFired(EnabledPullRule rule);
+
+        IAutoPullCallbacks DEFAULT = new IAutoPullCallbacks() {
+            @Override
+            public void runRefreshView() {
+
+            }
+
+            @Override
+            public void ruleFired(EnabledPullRule rule) {
+
+            }
+
+        };
     }
 
 

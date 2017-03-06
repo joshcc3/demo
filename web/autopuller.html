@@ -6,9 +6,6 @@
     <script src="js/jquery-1.4.2.js"></script>
     <script src="js/websocket.js"></script>
     <script src="js/websocket-ui.js"></script>
-    <script src="js/sound-files.js"></script>
-    <script src="js/sound-player.js"></script>
-    <script src="js/sounds.js"></script>
     <script src="cell-functions.js"></script>
     <script src="launcher-eeif.js"></script>
     <style>
@@ -90,10 +87,10 @@
 
         var ws;
         var Rows = {};
-        var Set = new Set();
         var WorkingPx = {};
         var MdPx = {};
         var Symbols = [];
+        var Sound;
 
         $(function () {
             ws = connect();
@@ -102,6 +99,8 @@
                 eval(x)
             };
             setupInputBehavior();
+            Sound = new Audio("sounds/firealarm.wav");
+            Sound.load();
         });
 
         function setupInputBehavior() {
@@ -164,6 +163,9 @@
             row.find(".qtyThreshold").val(qtyThreshold);
         }
 
+        function playSound() {
+            Sound.play();
+        }
         // Commands from server
 
         function updateGlobals(symbols, symbolToWorkingPrice, symbolToMdPrice) {
@@ -177,6 +179,11 @@
             populateSelect(symbolSelect, Symbols, currSymbol);
             populateRowPrices(inputRow, currSymbol);
         }
+
+        function ruleFired(key) {
+            playSound();
+        }
+
 
         function displayRule(key, symbol,
                              side,
