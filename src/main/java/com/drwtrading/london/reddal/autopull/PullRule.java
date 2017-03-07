@@ -34,7 +34,7 @@ public class PullRule extends Struct {
             return workingOrdersForSymbol.ordersByKey.values().stream()
                     .filter(workingOrderUpdateFromServer -> orderIsInMarketData(workingOrderUpdateFromServer, book))
                     .filter(orderSelection::selectionMet)
-                    .map(o -> o.buildCancelCommand(username))
+                    .map(o -> o.buildAutoCancel(username))
                     .collect(Collectors.toList());
         } else {
             return Collections.emptyList();

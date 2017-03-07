@@ -1,8 +1,8 @@
 package com.drwtrading.london.reddal.autopull;
 
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import com.drwtrading.london.protocols.photon.execution.Side;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
+import eeif.execution.Side;
+import eeif.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.util.Struct;
 import drw.london.json.Jsonable;

@@ -6,11 +6,11 @@ import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
-import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteShutdownOms;
-import com.drwtrading.london.protocols.photon.execution.RemoteStopAllStrategy;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
+import eeif.execution.RemoteCancelOrder;
+import eeif.execution.RemoteShutdownOms;
+import eeif.execution.RemoteStopAllStrategy;
+import eeif.execution.WorkingOrderState;
+import eeif.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -120,7 +120,7 @@ public class WorkingOrdersPresenter {
                 final WorkingOrderUpdate delete =
                         new WorkingOrderUpdate(prev.getServerName(), prev.getSymbol(), prev.getTag(), prev.getChainId(), prev.getPrice(),
                                 prev.getTotalQuantity(), prev.getFilledQuantity(), prev.getSide(), WorkingOrderState.DEAD,
-                                prev.getWorkingOrderType(), prev.getMoneyStatus(), prev.getMetadata());
+                                prev.getWorkingOrderType());
                 final WorkingOrderUpdateFromServer deleteUpdate = new WorkingOrderUpdateFromServer(update.fromServer, delete);
                 dirty.put(deleteUpdate.key(), deleteUpdate);
             }

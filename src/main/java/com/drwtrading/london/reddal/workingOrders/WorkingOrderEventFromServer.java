@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.workingOrders;
 
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderEvent;
+import eeif.execution.WorkingOrderEvent;
 import com.drwtrading.london.util.Struct;
 
 public class WorkingOrderEventFromServer extends Struct {

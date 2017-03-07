@@ -1,10 +1,11 @@
 package com.drwtrading.london.reddal.workingOrders;
 
-import com.drwtrading.london.protocols.photon.execution.RemoteCancelOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrder;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderType;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
+import eeif.execution.RemoteAutoCancelOrder;
+import eeif.execution.RemoteCancelOrder;
+import eeif.execution.RemoteOrder;
+import eeif.execution.RemoteOrderType;
+import eeif.execution.WorkingOrderType;
+import eeif.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.util.Struct;
 
@@ -26,6 +27,16 @@ public class WorkingOrderUpdateFromServer extends Struct {
                         workingOrderUpdate.getTotalQuantity(), getRemoteOrderType(orderType), false, workingOrderUpdate.getTag());
         return new Main.RemoteOrderCommandToServer(this.fromServer,
                 new RemoteCancelOrder(workingOrderUpdate.getServerName(), username, workingOrderUpdate.getChainId(), remoteOrder));
+    }
+
+    public Main.RemoteOrderCommandToServer buildAutoCancel(String username) {
+        final WorkingOrderUpdate workingOrderUpdate = this.value;
+        final String orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
+        final RemoteOrder remoteOrder =
+                new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(),
+                        workingOrderUpdate.getTotalQuantity(), getRemoteOrderType(orderType), false, workingOrderUpdate.getTag());
+        return new Main.RemoteOrderCommandToServer(this.fromServer,
+                new RemoteAutoCancelOrder(workingOrderUpdate.getServerName(), username, workingOrderUpdate.getChainId(), remoteOrder));
     }
 
     static String getOrderType(final WorkingOrderType workingOrderType) {

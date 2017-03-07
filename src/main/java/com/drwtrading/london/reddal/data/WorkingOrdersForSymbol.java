@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.data;
 
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderState;
-import com.drwtrading.london.protocols.photon.execution.WorkingOrderUpdate;
+import eeif.execution.WorkingOrderState;
+import eeif.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;

@@ -4,7 +4,7 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrderManagementCommand;
+import eeif.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderSettings;

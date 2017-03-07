@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.eeif.utils.config.Config;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
-import com.drwtrading.london.protocols.photon.execution.RemoteOrderType;
+import eeif.execution.RemoteOrderType;
 import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 
@@ -100,7 +100,6 @@ public class ResolverTest {
 
         assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.GTC, "CHAD"));
         assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FSTBU4-FSTBZ4", RemoteOrderType.GTC, "CHAD"));
-        assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FSTBU4-FSTBZ4", RemoteOrderType.QUICKDRAW, "CHAD"));
 
         assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.MANUAL, "CHAD"));
         assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FEXDZ4", RemoteOrderType.GTC, "CHAD"));
