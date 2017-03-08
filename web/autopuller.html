@@ -214,6 +214,10 @@
                 populateSelect(symbolSelect, [symbol], symbol);
                 symbolSelect.attr('disabled', 'disabled');
 
+                symbolSelect.toggleClass("hidden",true);
+                row.find(".symbolDisplay").text(symbol).toggleClass("hidden", false);
+
+
                 row.find("button.delete").toggleClass("hidden", false);
                 row.find("button.copy").toggleClass("hidden", false);
                 row.find("button.start").toggleClass("hidden", false);
@@ -328,6 +332,7 @@
         <td class="symbol">
             <select class="symbolSelect">
             </select>
+            <span class="symbolDisplay hidden"></span>
         </td>
         <td>
             <select class="side">
