@@ -499,7 +499,7 @@ public class Main {
                 AutoPullPersistence persistence = new AutoPullPersistence(Paths.get("/site/drw/reddal/data/").resolve("autopull.json"));
                 final AutoPuller puller = new AutoPuller(channels.remoteOrderCommand, subscriber, persistence);
                 fiberBuilder.subscribe(puller, channels.workingOrders);
-
+                fiberBuilder.getFiber().scheduleWithFixedDelay(puller::timeChecker, 1, 1, TimeUnit.MINUTES);
                 AutoPullerUI autoPullerUI = new AutoPullerUI(puller);
                 TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("autopuller", "autopuller", fiberBuilder, webapp, ws);

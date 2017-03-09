@@ -11,6 +11,8 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
+import org.joda.time.DateTime;
+import org.joda.time.Instant;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,6 +25,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 public class AutoPuller {
+    private final Instant DISABLE_TIME = new DateTime().withHourOfDay(20).withMinuteOfHour(57).withSecondOfMinute(00).toInstant();
 
     private final Publisher<Main.RemoteOrderCommandToServer> commandPublisher;
     private final PullerBookSubscriber bookSubscriber;
@@ -60,7 +63,7 @@ public class AutoPuller {
 
         updatedSymbols.forEach(this::onOrdersUpdated);
         if (newSymbols) {
-            refreshCallback.runRefreshView();
+            refreshCallback.runRefreshView(null);
         }
 
     }
@@ -68,7 +71,7 @@ public class AutoPuller {
     private void onNewBook(IBook<?> book) {
         if (rulesBySymbol.containsKey(book.getSymbol())) {
             if (createIfNewSymbol(book.getSymbol())) {
-                refreshCallback.runRefreshView();
+                refreshCallback.runRefreshView(null);
             }
         }
     }
@@ -93,7 +96,7 @@ public class AutoPuller {
         return symbolIsNew;
     }
 
-    public void addOrUpdateRule(PullRule pullRule) {
+    void addOrUpdateRule(PullRule pullRule) {
         EnabledPullRule enabledPullRule = rulesByID.computeIfAbsent(pullRule.ruleID, aLong -> new EnabledPullRule(pullRule));
         PullRule prevRule = enabledPullRule.getPullRule();
         if (null != prevRule) {
@@ -104,11 +107,11 @@ public class AutoPuller {
         rulesBySymbol.put(enabledPullRule.getPullRule().symbol, enabledPullRule);
         persistence.updateRule(pullRule);
         if (createIfNewSymbol(pullRule.symbol)) {
-            refreshCallback.runRefreshView();
+            refreshCallback.runRefreshView(null);
         }
     }
 
-    public void deleteRule(Long ruleID) {
+    void deleteRule(Long ruleID) {
         EnabledPullRule enabledPullRule = rulesByID.remove(ruleID);
         if (null != enabledPullRule) {
             rulesBySymbol.remove(enabledPullRule.getPullRule().symbol, enabledPullRule);
@@ -116,7 +119,7 @@ public class AutoPuller {
         }
     }
 
-    public EnabledPullRule enableRule(String username, Long ruleID) {
+    EnabledPullRule enableRule(String username, Long ruleID) {
         EnabledPullRule enabledPullRule = rulesByID.get(ruleID);
         if (null != enabledPullRule) {
             enabledPullRule.enable(username);
@@ -125,7 +128,7 @@ public class AutoPuller {
         return null;
     }
 
-    public EnabledPullRule disableRule(Long ruleID) {
+    EnabledPullRule disableRule(Long ruleID) {
         EnabledPullRule enabledPullRule = rulesByID.get(ruleID);
         if (null != enabledPullRule) {
             enabledPullRule.disable();
@@ -134,11 +137,11 @@ public class AutoPuller {
         return null;
     }
 
-    public Map<Long, EnabledPullRule> getRules() {
+    Map<Long, EnabledPullRule> getRules() {
         return ImmutableMap.copyOf(rulesByID);
     }
 
-    public List<String> getRelevantSymbols() {
+    List<String> getRelevantSymbols() {
         HashSet<String> symbols = new HashSet<>();
         symbols.addAll(orders.keySet());
         symbols.addAll(md.keySet());
@@ -146,18 +149,19 @@ public class AutoPuller {
         return new ArrayList<>(symbols);
     }
 
-    public void onBookUpdated(IBook<?> book) {
+    private void onBookUpdated(IBook<?> book) {
         if (!md.containsKey(book.getSymbol())) {
             md.put(book.getSymbol(), book);
         }
         runSymbol(book.getSymbol());
     }
 
-    public void onOrdersUpdated(String symbol) {
+    private void onOrdersUpdated(String symbol) {
         runSymbol(symbol);
     }
 
-    public void runSymbol(String symbol) {
+    private void runSymbol(String symbol) {
+        timeChecker();
         for (EnabledPullRule pullRule : rulesBySymbol.get(symbol)) {
             WorkingOrdersForSymbol workingOrdersForSymbol = orders.get(symbol);
             IBook<?> book = md.get(symbol);
@@ -173,7 +177,11 @@ public class AutoPuller {
 
     }
 
-    public List<Long> getMDPrices(String symbol) {
+    private boolean checkTime() {
+        return !new DateTime().isAfter(DISABLE_TIME);
+    }
+
+    List<Long> getMDPrices(String symbol) {
         TreeSet<Long> prices = new TreeSet<>(Comparator.reverseOrder());
 
         WorkingOrdersForSymbol workingOrdersForSymbol = orders.get(symbol);
@@ -216,15 +224,15 @@ public class AutoPuller {
         return new ArrayList<>(prices);
     }
 
-    public EnabledPullRule getRule(long ruleID) {
+    EnabledPullRule getRule(long ruleID) {
         return rulesByID.get(ruleID);
     }
 
-    public void setCallbacks(IAutoPullCallbacks callbacks) {
+    void setCallbacks(IAutoPullCallbacks callbacks) {
         this.refreshCallback = callbacks;
     }
 
-    public int getPullCount(EnabledPullRule enabledPullRule) {
+    int getPullCount(EnabledPullRule enabledPullRule) {
         String symbol = enabledPullRule.pullRule.symbol;
         WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
         IBook<?> book = md.get(symbol);
@@ -235,11 +243,18 @@ public class AutoPuller {
         return 0;
     }
 
-    public void disableAllRules() {
+    void disableAllRules() {
         rulesBySymbol.values().forEach(EnabledPullRule::disable);
     }
 
-    public static class EnabledPullRule {
+    public void timeChecker() {
+        if (!checkTime()) {
+            disableAllRules();
+            refreshCallback.runRefreshView("Disabled for night-time");
+        }
+    }
+
+    static class EnabledPullRule {
 
         PullRule pullRule;
         String enabledByUser;
@@ -276,27 +291,24 @@ public class AutoPuller {
             this.pullRule = pullRule;
         }
 
-        public String getEnabledByUser() {
+        String getEnabledByUser() {
             return enabledByUser;
         }
     }
 
     public interface IAutoPullCallbacks {
-        void runRefreshView();
+        void runRefreshView(String message);
 
         void ruleFired(EnabledPullRule rule);
 
         IAutoPullCallbacks DEFAULT = new IAutoPullCallbacks() {
             @Override
-            public void runRefreshView() {
-
+            public void runRefreshView(String message) {
             }
 
             @Override
             public void ruleFired(EnabledPullRule rule) {
-
             }
-
         };
     }
 

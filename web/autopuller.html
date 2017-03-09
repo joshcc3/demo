@@ -12,6 +12,16 @@
         body {
             overflow: auto;
         }
+
+        div#message {
+            color: red;
+            background-color: #ffccc6;
+            border-color: #50211f;
+            border: solid 2px;
+            padding: 2px;
+            margin: 2px;
+        }
+
         .template {
             display: none !important;
         }
@@ -77,7 +87,6 @@
             border: 1px solid #a0ff7e;
         }
 
-
         tr.alert {
             background-color: #d2a1d4;
             border: 1px solid #ff0008;
@@ -116,6 +125,8 @@
             inputRow.find("button.update").unbind('click').bind('click', function () {
                 sendWriteRule(inputRow);
             });
+            inputRow.find(".start").toggleClass("hidden", false).unbind('click').bind('click', sendStartAll);
+            inputRow.find(".stop").toggleClass("hidden", false).unbind('click').bind('click', sendStopAll);
         }
 
         function populateSelect(select, values, defaultVal) {
@@ -169,8 +180,10 @@
         function playSound() {
             Sound.play();
         }
+
         // Commands from server
 
+        //noinspection JSUnusedLocalSymbols
         function updateGlobals(symbols, symbolToWorkingPrice, symbolToMdPrice) {
             Symbols = symbols;
             WorkingPx = symbolToWorkingPrice;
@@ -183,11 +196,13 @@
             populateRowPrices(inputRow, currSymbol);
         }
 
+        //noinspection JSUnusedLocalSymbols
         function ruleFired(key) {
             playSound();
         }
 
 
+        //noinspection JSUnusedLocalSymbols
         function displayRule(key, symbol,
                              side,
                              orderPriceFrom,
@@ -214,7 +229,7 @@
                 populateSelect(symbolSelect, [symbol], symbol);
                 symbolSelect.attr('disabled', 'disabled');
 
-                symbolSelect.toggleClass("hidden",true);
+                symbolSelect.toggleClass("hidden", true);
                 row.find(".symbolDisplay").text(symbol).toggleClass("hidden", false);
 
 
@@ -259,6 +274,15 @@
             }
         }
 
+        //noinspection JSUnusedLocalSymbols
+        function showMessage(message) {
+            var div = $("#message");
+            if (message != div.text()) {
+                playSound();
+            }
+            div.text(message).toggleClass("hidden", false);
+        }
+
         function removeRule(key) {
             var row = Rows[key];
             row.remove();
@@ -301,11 +325,17 @@
         function sendStopRule(row) {
             ws.send(command("stopRule", [row.data('ruleID')]));
         }
+        function sendStartAll() {
+            ws.send(command("startAllRules", []));
+        }
+        function sendStopAll() {
+            ws.send(command("stopAllRules", []));
+        }
 
     </script>
 </head>
 <body>
-
+<div id="message" class="hidden"></div>
 <table id="rules">
     <thead>
     <td></td>

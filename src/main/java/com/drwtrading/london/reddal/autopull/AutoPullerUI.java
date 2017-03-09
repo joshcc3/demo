@@ -7,7 +7,6 @@ import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
-import org.jetlang.core.Scheduler;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -86,8 +85,22 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
     public void startRule(String ruleID, WebSocketInboundData data) {
         String username = data.getClient().getUserName();
         Long id = Long.valueOf(ruleID);
-        AutoPuller.EnabledPullRule rule = autoPuller.enableRule(username, id);
-        displayRule(views.all(), rule);
+        enableRuleIfNoInstantPull(username, id);
+    }
+
+    @FromWebSocketView
+    public void startAllRules(WebSocketInboundData data) {
+        List<Long> ids = autoPuller.getRules().values().stream().map(e -> e.pullRule.ruleID).collect(Collectors.toList());
+        String username = data.getClient().getUserName();
+        for (Long id : ids) {
+            enableRuleIfNoInstantPull(username, id);
+        }
+    }
+
+    @FromWebSocketView
+    public void stopAllRules() {
+        autoPuller.disableAllRules();
+        displayAllRules(views.all());
     }
 
     @FromWebSocketView
@@ -100,6 +113,14 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
     private void onConnected(View view) {
         updateGlobals(view);
         displayAllRules(view);
+    }
+
+    private void enableRuleIfNoInstantPull(String username, Long id) {
+        AutoPuller.EnabledPullRule rule = autoPuller.getRule(id);
+        if (0 == autoPuller.getPullCount(rule)) {
+            autoPuller.enableRule(username, id);
+        }
+        displayRule(views.all(), rule);
     }
 
     private void displayAllRules(View view) {
@@ -142,9 +163,12 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
     }
 
     @Override
-    public void runRefreshView() {
+    public void runRefreshView(String message) {
         if (!viewSet.isEmpty()) {
             onConnected(views.all());
+        }
+        if (null != message) {
+            views.all().showMessage(message);
         }
     }
 
@@ -172,6 +196,8 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
         void ruleFired(String key);
 
         void removeRule(String key);
+
+        void showMessage(String message);
     }
 
 }
