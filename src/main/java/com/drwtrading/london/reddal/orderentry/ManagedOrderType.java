@@ -163,7 +163,7 @@ public enum ManagedOrderType {
         @Override
         public OrderParameters getOrder(final long price, int qty, OrderSide orderSide) {
             return new OrderParameters(new PegToPrice(price),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    new BookParameters(false, true, false, false, true),
                     new TakingParameters(true, 0, 1, 5, false, 0),
                     Constants.NO_QUOTING,
                     new PredictionParameters(false));
