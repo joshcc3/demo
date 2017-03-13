@@ -6,6 +6,7 @@ import com.drwtrading.london.photons.eeifoe.OrderParameters;
 import com.drwtrading.london.photons.eeifoe.OrderSide;
 import com.drwtrading.london.photons.eeifoe.PegPriceToTheoOnSubmit;
 import com.drwtrading.london.photons.eeifoe.PegToBook;
+import com.drwtrading.london.photons.eeifoe.PegToPrice;
 import com.drwtrading.london.photons.eeifoe.PegToTheo;
 import com.drwtrading.london.photons.eeifoe.PredictionParameters;
 import com.drwtrading.london.photons.eeifoe.QuotingParameters;
@@ -155,7 +156,30 @@ public enum ManagedOrderType {
         public int getQty(int qty) {
             return divisible(qty, Constants.THREE);
         }
-    },;
+    },
+
+    // Raw taker at price
+    SNAGGIT {
+        @Override
+        public OrderParameters getOrder(final long price, int qty, OrderSide orderSide) {
+            return new OrderParameters(new PegToPrice(price),
+                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    new TakingParameters(true, 0, 1, 5, false, 0),
+                    Constants.NO_QUOTING,
+                    new PredictionParameters(false));
+        }
+
+        @Override
+        public boolean requiresLean() {
+            return false;
+        }
+
+        @Override
+        public int getQty(int qty) {
+            return qty;
+        }
+    },;;
+
 
     public static int divisible(int qty, int i) {
         return qty - (qty % i);
@@ -169,13 +193,12 @@ public enum ManagedOrderType {
         return qty;
     }
 
-    ;
-
     private static class Constants {
 
         public static final BookParameters ALLOW_ALL_EXCEPT_STATE_TRANSITION = new BookParameters(true, true, false, true, true);
         public static final TakingParameters TAKE_BETTER_BY_ONE = new TakingParameters(true, 0, 100, 2, true, 1);
         public static final TakingParameters NO_TAKING = new TakingParameters(false, 0, 0, 0, false, 0);
+        public static final QuotingParameters NO_QUOTING = new QuotingParameters(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false);
         public static final int NO_BETTERMENT = 0;
         public static final int BETTER_BY_ONE = 1;
         public static final int THREE = 3;

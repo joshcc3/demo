@@ -63,6 +63,7 @@ public enum CSSClass {
     HAMON3("HAMON3"),
     TRON("TRON"),
     TRON3("TRON3"),
+    SNAGGIT("SNAGGIT"),
     MARKET("MARKET"),
     MANUAL("MANUAL"),
     TAKER("TAKER"),
