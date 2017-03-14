@@ -1,30 +1,24 @@
 package com.drwtrading.london.reddal.stacks;
 
-import com.drwtrading.london.eeif.stack.transport.cache.IStackConnectionListener;
-import com.drwtrading.london.eeif.stack.transport.cache.config.IStackConfigUpdateCallback;
-import com.drwtrading.london.eeif.stack.transport.cache.stack.IStackGroupUpdateCallback;
-import com.drwtrading.london.eeif.stack.transport.cache.strategy.IStackStrategyUpdateCallback;
+import com.drwtrading.london.eeif.stack.manager.utils.StackClientAdaptor;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
-import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
-import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.SpreadContractSet;
-import com.drwtrading.london.reddal.stacks.configui.StackConfigUIRouter;
+import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.opxl.StackGroupOPXLView;
-import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesNibblerView;
+import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import org.jetlang.channels.Publisher;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class StackCallbackBatcher
-        implements IStackConnectionListener, IStackGroupUpdateCallback, IStackConfigUpdateCallback, IStackStrategyUpdateCallback {
+public class StackCallbackBatcher extends StackClientAdaptor {
 
     private final String nibblerName;
 
-    private final StackStrategiesNibblerView strategiesPresenter;
-    private final StackConfigUIRouter configPresenter;
+    private final StackStrategiesPresenter strategiesPresenter;
+    private final StackConfigPresenter configPresenter;
     private final StackGroupOPXLView stackOPXLView;
 
     private final Set<StackStrategy> strategyBatch;
@@ -33,8 +27,8 @@ public class StackCallbackBatcher
 
     private final Publisher<SpreadContractSet> stackContractSetPublisher;
 
-    public StackCallbackBatcher(final String nibblerName, final StackStrategiesNibblerView strategiesPresenter,
-            final StackConfigUIRouter configPresenter, final StackGroupOPXLView stackOPXLView,
+    public StackCallbackBatcher(final String nibblerName, final StackStrategiesPresenter strategiesPresenter,
+            final StackConfigPresenter configPresenter, final StackGroupOPXLView stackOPXLView,
             final Publisher<SpreadContractSet> stackContractSetPublisher) {
 
         this.nibblerName = nibblerName;
@@ -51,46 +45,16 @@ public class StackCallbackBatcher
     }
 
     @Override
-    public IStackGroupUpdateCallback getStackListener(final String symbol, final InstrumentID instID, final BookSide side) {
-        return this;
-    }
-
-    @Override
-    public boolean connectionEstablished(final String remoteAppName) {
-        return true;
-    }
-
-    @Override
-    public void connectionLost(final String remoteAppName) {
+    public void connectionLost() {
         configBatch.clear();
-        strategiesPresenter.serverConnectionLost(remoteAppName);
+        strategiesPresenter.serverConnectionLost(nibblerName);
         configPresenter.serverConnectionLost(nibblerName);
     }
 
     @Override
-    public IStackStrategyUpdateCallback getStrategyListener(final String symbol, final InstrumentID instID, final String leanSymbol,
-            final InstrumentID leanInstID) {
-
-        if (null == strategiesPresenter) {
-            throw new IllegalStateException("Strategy presenter has not been set.");
-        } else {
-            return this;
-        }
-    }
-
-    @Override
-    public IStackConfigUpdateCallback getConfigListener(final String symbol, final InstrumentID instID) {
-
-        if (null == configPresenter) {
-            throw new IllegalStateException("Config presenter has not been set.");
-        } else {
-            return this;
-        }
-    }
-
-    @Override
     public void strategyCreated(final StackStrategy strategy) {
-        strategiesPresenter.strategyCreated(strategy);
+
+        strategyBatch.add(strategy);
 
         final String symbol = strategy.getSymbol();
         final SpreadContractSet contractSet = new SpreadContractSet(symbol, strategy.getLeanSymbol(), symbol + ";S");
@@ -127,7 +91,7 @@ public class StackCallbackBatcher
 
         for (final StackStrategy strategy : strategyBatch) {
             try {
-                strategiesPresenter.strategyUpdated(strategy);
+                strategiesPresenter.strategyUpdated(nibblerName, strategy);
 
             } catch (final Exception e) {
                 System.out.println("Failed Strategy stack batch update.");

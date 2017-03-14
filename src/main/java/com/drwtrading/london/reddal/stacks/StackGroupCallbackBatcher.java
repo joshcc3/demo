@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.stack.transport.cache.strategy.IStackStrategyU
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
+import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -72,6 +73,11 @@ public class StackGroupCallbackBatcher
     @Override
     public void stackGroupUpdated(final StackGroup stackGroup) {
         stackBatch.add(stackGroup);
+    }
+
+    @Override
+    public void remoteFillNotification(final String source, final StackGroup stackGroup, final StackType stackType, final long qty) {
+        // no-op
     }
 
     @Override

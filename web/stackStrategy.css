@@ -13,6 +13,10 @@ body {
 	color: white;
 }
 
+.template, .hidden {
+	display: none;
+}
+
 .row {
 	white-space: nowrap;
 	display: flex;
@@ -24,13 +28,6 @@ body {
 	text-align: center;
 	align-items: center;
 	justify-content: center;
-}
-
-#createdTable .row > div {
-	min-width: 70px;
-	max-width: 70px;
-	font-size: 12px;
-	border-bottom: solid darkgrey 1px;
 }
 
 #creationRow label {
@@ -51,6 +48,35 @@ body {
 	border: 0;
 	padding: 0;
 	margin: 0;
+}
+
+.serverDetails {
+	font-size: 0;
+	white-space: nowrap;
+	border-bottom: 1px solid #555555;
+	display: inline-block;
+	cursor: pointer;
+	width: 100%;
+	padding: 15px 0 0;
+	margin: 0;
+}
+
+.serverDetails div {
+	display: inline-block;
+}
+
+.serverDetails div.nibblerName {
+	text-align: left;
+	width: 180px;
+	font-size: 20px;
+	padding-left: 10px;
+	margin: 0;
+}
+
+.serverDetails .orderCount {
+	text-align: right;
+	width: 50px;
+	font-size: 12px;
 }
 
 .row div.button {
@@ -78,6 +104,10 @@ body {
 	width: 175px;
 }
 
+#infoRow .availableNibblers {
+	width: 175px;
+}
+
 #infoRow .instrumentID div {
 
 	width: 75px;
@@ -87,18 +117,25 @@ body {
 	width: 150px;
 }
 
-#createdTable .dataRow {
+#exchanges .row > div {
+	min-width: 70px;
+	max-width: 70px;
+	font-size: 12px;
+	border-bottom: solid darkgrey 1px;
+}
+
+#exchanges .dataRow {
 	height: 37px;
 }
 
-#createdTable .dataRow .boolean.isTrue {
+#exchanges .dataRow .boolean.isTrue {
 	background-color: lightgreen;
 }
 
-#createdTable .dataRow .boolean:not(.isTrue) {
+#exchanges .dataRow .boolean:not(.isTrue) {
 	background-color: lightpink;
 }
 
-#createdTable .dataRow .symbol {
+#exchanges .dataRow .symbol {
 	cursor: pointer;
 }

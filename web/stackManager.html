@@ -1,0 +1,139 @@
+<html>
+<head>
+	<title>Stack Creation</title>
+	<link rel="stylesheet" type="text/css" href="stackManager.css">
+	<script src="http://prod-futures-ladder.eeif.drw:9045/launcher.js"></script>
+	<script src="jquery-1.8.3.js"></script>
+	<script src="js/websocket.js"></script>
+	<script src="js/websocket-ui.js"></script>
+	<script src="js/sound-files.js"></script>
+	<script src="js/sound-player.js"></script>
+	<script src="js/sounds.js"></script>
+	<script src="cell-functions.js"></script>
+	<script src="launcher-eeif.js"></script>
+	<script src="stackManager.js"></script>
+</head>
+<body>
+
+<div id="adminBlock" class="hideAdmin">
+	<div id="background"></div>
+
+	<div id="header">
+
+		<div class="headerButton adminOnly">
+			<button id="stacksCreation" class="btn link">Stacks</button>
+		</div>
+
+		<div class="headerButton adminOnly">
+			<button id="stackConfig" class="btn link">Config</button>
+		</div>
+	</div>
+
+	<div id="footer"></div>
+
+	<div id="main">
+
+		<div id="parentCreation" class="adminOnly">
+			<div class="actionType">Family Creation</div>
+			<div id="creationRow" class="row">
+
+				<label for="quoteSymbol">Family</label>
+				<input id="quoteSymbol" type="text" name="quote">
+
+				<div class="button">
+					<button type="button" id="createFamily">create</button>
+				</div>
+			</div>
+			<div id="creationInfoRow" class="row unknown">
+
+				<div class="isin"></div>
+				<div class="ccy"></div>
+				<div class="mic"></div>
+				<div class="instType"></div>
+			</div>
+		</div>
+
+		<div id="childAdoption" class="adminOnly">
+			<div class="actionType">Adoption</div>
+			<div id="adoptionRow" class="row">
+
+				<label for="familySymbol">Family</label>
+				<input id="familySymbol" type="text" name="familySymbol">
+
+				<label for="childSymbol">Child</label>
+				<input id="childSymbol" type="text" name="childSymbol">
+
+				<div class="button">
+					<button type="button" id="adoptChild">adopt</button>
+				</div>
+			</div>
+			<div id="adoptionInfoRow" class="row">
+
+				<div class="familyFound unknown">
+					<div></div>
+				</div>
+				<div class="childFound unknown">
+					<div></div>
+				</div>
+			</div>
+		</div>
+
+		<div id="families">
+		</div>
+
+		<div id="templateFamily" class="template">
+			<div class="familyDetails">
+				<button type="button" class="openStack">stack</button>
+				<button type="button" class="refreshParent">Refresh</button>
+				<div class="childCount"></div>
+				<div class="familyName"></div>
+
+				<div class="bid priceOffset">---</div>
+				<div class="bid priceOffsetButtons">
+					<button class="priceOffsetUp"></button>
+					<button class="priceOffsetDown"></button>
+				</div>
+
+				<div class="ask priceOffset">---</div>
+				<div class="ask priceOffsetButtons">
+					<button class="priceOffsetUp"></button>
+					<button class="priceOffsetDown"></button>
+				</div>
+
+				<div class="configControls">
+					<button class="default">D</button>
+					<button class="wide">W</button>
+					<button class="obligation">O</button>
+					<button class="configWindow">&#9775;</button>
+				</div>
+
+				<div class="bid stackControls">
+					<div class="picardEnabled">P</div>
+					<div class="quoterEnabled">Q</div>
+				</div>
+				<div class="ask stackControls">
+					<div class="quoterEnabled">Q</div>
+					<div class="picardEnabled">P</div>
+				</div>
+				<div class="stackControls allEnabled">All</div>
+
+			</div>
+			<div class="children hidden">
+				<div class="header row">
+
+					<div class="symbol">Child</div>
+
+					<div class="bid qtyMultiplier">Bid qty multiplier</div>
+					<div class="bid priceOffset">Bid price offset</div>
+					<div class="ask priceOffset">Ask price offset</div>
+					<div class="ask qtyMultiplier">Ask qty multiplier</div>
+
+					<input type="submit" class="submitButton hidden" value="Submit">
+					<button type="button" class="orphanButton hidden adminOnly">Orphan</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+</html>

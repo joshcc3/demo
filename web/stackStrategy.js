@@ -8,9 +8,7 @@ $(function () {
 		eval(m);
 	};
 
-	var nibblerFilter = document.location.hash;
-	var nibbler = nibblerFilter.substr(1, nibblerFilter.length);
-	ws.send("subscribe-nibbler," + nibbler);
+	ws.send("subscribe");
 
 	var creationRow = $("#creationRow");
 	creationRow.find("input").each(setupSymbolInput);
@@ -19,9 +17,10 @@ $(function () {
 	submit.off("click").click(function () {
 
 		var quoteSymbol = creationRow.find("input[name=quote]").val();
+		var forNibbler = creationRow.find("#hostNibblers").find("option:selected").text();
 		var leanInstType = creationRow.find("#leanInstID").find("option:selected").text();
 		var leanSymbol = creationRow.find("input[name=lean]").val();
-		ws.send(command("submitSymbol", [quoteSymbol, leanInstType, leanSymbol]));
+		ws.send(command("submitSymbol", [forNibbler, quoteSymbol, leanInstType, leanSymbol]));
 	});
 });
 
@@ -34,13 +33,6 @@ function setupSymbolInput(i, input) {
 		var symbol = input.val();
 		ws.send(command("checkInst", [type, symbol]));
 	});
-}
-
-function noInstID(type) {
-
-	var infoRow = $("#" + type + "Info");
-	infoRow.toggleClass("unknown", true);
-	infoRow.find("div").text("");
 }
 
 function addInstType(instTypes) {
@@ -56,6 +48,26 @@ function addInstType(instTypes) {
 	});
 }
 
+function addAvailableNibblers(nibblers) {
+
+	var nibblersCombo = $("#hostNibblers");
+	$(nibblersCombo).find("option").remove();
+	nibblers.forEach(function (nibbler) {
+
+		var option = $("<option value=\"" + nibbler + "\">" + nibbler + "</option>");
+		option.addClass(nibbler);
+		option.attr("data", nibbler);
+		nibblersCombo.append(option);
+	});
+}
+
+function noInstID(type) {
+
+	var infoRow = $("#" + type + "Info");
+	infoRow.toggleClass("unknown", true);
+	infoRow.find("div").text("");
+}
+
 function setInstID(type, isin, ccy, mic) {
 
 	var infoRow = $("#" + type + "Info");
@@ -65,19 +77,25 @@ function setInstID(type, isin, ccy, mic) {
 	infoRow.find(".mic").text(mic);
 }
 
-function removeAll() {
-	$(".dataRow").remove();
+function removeAll(nibblerName) {
+	var table = getExchangeTable(nibblerName);
+	table.find(".dataRow").remove();
+	setOrderCount(nibblerName);
 }
 
-function setRow(id, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanInstType, leanSymbol, leanISIN, leanCCY, leanMIC, isQuoteInstDefEventAvailable,
-				isQuoteBookAvailable, isLeanBookAvailable, isFXAvailable, selectedConfigType) {
+function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanInstType, leanSymbol, leanISIN, leanCCY, leanMIC,
+				isQuoteInstDefEventAvailable, isQuoteBookAvailable, isLeanBookAvailable, isFXAvailable, selectedConfigType) {
 
-	var row = $("#" + id);
+	var rowID = nibblerName + strategyID;
+	var row = $("#" + rowID);
 	if (row.length < 1) {
-		row = $("#header").clone();
-		row.attr("id", id);
+
+		var exchangeTable = getExchangeTable(nibblerName);
+		row = exchangeTable.find(".header").clone();
+		row.removeClass("header");
+		row.attr("id", rowID);
 		row.addClass("dataRow");
-		$("#createdTable").append(row);
+		exchangeTable.append(row);
 
 		row.find("div").each(function (i, d) {
 
@@ -109,6 +127,37 @@ function setRow(id, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanInstType, le
 	setBoolData(row, ".isFXAvailable", isFXAvailable);
 
 	setCellData(row, ".selectedConfigType", selectedConfigType);
+
+	setOrderCount(nibblerName);
+}
+
+function setOrderCount(nibblerName) {
+
+	var nibbler = $("#" + nibblerName);
+	var orderCountDiv = nibbler.find(".orderCount");
+	var orders = nibbler.find(".exchange .row").length - 1;
+	orderCountDiv.text(orders);
+}
+
+function getExchangeTable(nibblerName) {
+
+	var nibbler = $("#" + nibblerName);
+	if (nibbler.length < 1) {
+
+		nibbler = $("#templateNibbler").clone();
+		nibbler.attr("id", nibblerName);
+		nibbler.removeClass("template");
+
+		nibbler.find(".nibblerName").text(nibblerName);
+
+		var exchangeBlock = nibbler.find(".exchange");
+		nibbler.find(".serverDetails").unbind().bind("click", function () {
+			exchangeBlock.toggleClass("hidden", !exchangeBlock.hasClass("hidden"))
+		});
+
+		$("#exchanges").append(nibbler);
+	}
+	return nibbler.find(".exchange");
 }
 
 function setCellData(row, cellID, value) {

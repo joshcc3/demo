@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.stacks.configui;
 
-import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackFXConfig;
@@ -16,7 +15,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
-import com.drwtrading.websockets.WebSocketConnected;
+import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
@@ -27,7 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class StackConfigUIRouter {
+public class StackConfigPresenter {
 
     private static final String SOURCE = "CONFIG_UI";
 
@@ -49,7 +48,7 @@ public class StackConfigUIRouter {
     private final Map<String, LongMap<StackConfigGroup>> nibblerConfigs;
     private final Map<String, StackClientHandler> configClients;
 
-    public StackConfigUIRouter(final FiberBuilder logFiber, final UILogger uiLogger) {
+    public StackConfigPresenter(final FiberBuilder logFiber, final UILogger uiLogger) {
 
         this.logFiber = logFiber;
         this.uiLogger = uiLogger;
@@ -72,19 +71,19 @@ public class StackConfigUIRouter {
         sendLine(views.all(), nibblerName, configGroup);
     }
 
-    @Subscribe
-    public void onConnected(final WebSocketConnected connected) {
-        // no-op
+    public void webControl(final WebSocketControlMessage webMsg) {
+
+        if (webMsg instanceof WebSocketDisconnected) {
+
+            views.unregister((WebSocketDisconnected) webMsg);
+
+        } else if (webMsg instanceof WebSocketInboundData) {
+
+            inboundData((WebSocketInboundData) webMsg);
+        }
     }
 
-    @Subscribe
-    public void onDisconnected(final WebSocketDisconnected disconnected) {
-
-        views.unregister(disconnected);
-    }
-
-    @Subscribe
-    public void onMessage(final WebSocketInboundData msg) {
+    private void inboundData(final WebSocketInboundData msg) {
 
         logFiber.execute(() -> uiLogger.write("StackConfig", msg));
 

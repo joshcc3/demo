@@ -24,6 +24,10 @@
 			<label for="quoteSymbol">Quote Symbol</label>
 			<input id="quoteSymbol" type="text" name="quote">
 
+			<label for="hostNibblers">Nibbler</label>
+			<select name="hostNibbler" id="hostNibblers">
+			</select>
+
 			<label for="leanInstID">Lean Type</label>
 			<select name="leanInstID" id="leanInstID">
 			</select>
@@ -43,6 +47,8 @@
 				<div class="mic"></div>
 			</div>
 
+			<div id="availableNibblers" class="availableNibblers"></div>
+
 			<div id="leanTypeInfo" class="leanType"></div>
 
 			<div id="leanInfo" class="instrumentID unknown">
@@ -53,26 +59,35 @@
 		</div>
 	</div>
 
-	<div id="createdTable">
-		<div id="header" class="row">
+	<div id="exchanges">
+	</div>
 
-			<div class="quote symbol">Quote symbol</div>
-			<div class="quote isin">ISIN</div>
-			<div class="quote ccy">CCY</div>
-			<div class="quote mic">MIC</div>
+	<div id="templateNibbler" class="template">
+		<div class="serverDetails">
+			<div class="orderCount"></div>
+			<div class="nibblerName"></div>
+		</div>
+		<div class="exchange hidden">
+			<div class="header row">
 
-			<div class="lean instType">Lean Type</div>
-			<div class="lean symbol">Lean symbol</div>
-			<div class="lean isin">ISIN</div>
-			<div class="lean ccy">CCY</div>
-			<div class="lean mic">MIC</div>
+				<div class="quote symbol">Quote symbol</div>
+				<div class="quote isin">ISIN</div>
+				<div class="quote ccy">CCY</div>
+				<div class="quote mic">MIC</div>
 
-			<div class="isQuoteAvailable boolean">Quote InstDefEvent available</div>
-			<div class="isQuoteBookAvailable boolean">Quote book available</div>
-			<div class="isLeanBookAvailable boolean">lean book available</div>
-			<div class="isFXAvailable boolean">fx available</div>
+				<div class="lean instType">Lean Type</div>
+				<div class="lean symbol">Lean symbol</div>
+				<div class="lean isin">ISIN</div>
+				<div class="lean ccy">CCY</div>
+				<div class="lean mic">MIC</div>
 
-			<div class="selectedConfigType">Selected Config</div>
+				<div class="isQuoteAvailable boolean">Quote InstDefEvent available</div>
+				<div class="isQuoteBookAvailable boolean">Quote book available</div>
+				<div class="isLeanBookAvailable boolean">lean book available</div>
+				<div class="isFXAvailable boolean">fx available</div>
+
+				<div class="selectedConfigType">Selected Config</div>
+			</div>
 		</div>
 	</div>
 </div>
