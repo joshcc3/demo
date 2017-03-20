@@ -900,7 +900,7 @@ public class Main {
     private static void setupStackManager(final Application<ReddalComponents> app, final ReddalFibers fibers, final ReddalChannels channels,
             final WebApplication webapp, final UILogger webLog, final SelectIOFiber selectIOFiber) throws Exception {
 
-        final ConfigGroup stackConfig = app.config.getGroup("stacks");
+        final ConfigGroup stackConfig = app.config.getEnabledGroup("stacks");
         if (null != stackConfig) {
 
             final IResourceMonitor<StackManagerComponents> stackManagerMonitor =
