@@ -70,6 +70,7 @@ import com.drwtrading.london.reddal.ladders.LadderSettings;
 import com.drwtrading.london.reddal.ladders.LadderWorkspace;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.WorkspaceRequestHandler;
+import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
@@ -514,10 +515,15 @@ public class Main {
 
             setupStackManager(app, fibers, channels, webapp, webLog, selectIOFiber);
 
+            final TypedChannel<WebSocketControlMessage> historyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("history", "history", fibers.ladderRouter, webapp, historyWebSocket);
+            final HistoryPresenter historyPresenter = new HistoryPresenter(webLog);
+            fibers.ladderRouter.subscribe(historyPresenter, historyWebSocket);
+
             // Ladder router
             final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("ladder", "ladder", fibers.ladderRouter, webapp, ladderWebSocket);
-            final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(webLog, webSockets, fibers.ui);
+            final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(webLog, historyPresenter, webSockets, fibers.ui);
             fibers.ladderRouter.subscribe(ladderMessageRouter, ladderWebSocket);
 
         }
