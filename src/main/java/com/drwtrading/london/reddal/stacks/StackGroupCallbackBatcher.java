@@ -76,7 +76,8 @@ public class StackGroupCallbackBatcher
     }
 
     @Override
-    public void remoteFillNotification(final String source, final StackGroup stackGroup, final StackType stackType, final long qty) {
+    public void remoteFillNotification(final String source, final StackGroup stackGroup, final StackType stackType,
+            final int maxPullbackTicks, final long qty) {
         // no-op
     }
 

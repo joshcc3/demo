@@ -5,7 +5,6 @@ import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.transport.cache.families.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
-import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -80,14 +79,14 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     private static void updateUIData(final IStackFamilyUI view, final StackUIData uiData) {
-        view.setParentData(uiData.familyName, uiData.getBidPriceOffset(), uiData.getAskPriceOffset(), uiData.getSelectedConfigType(),
+        view.setParentData(uiData.familyName, uiData.getBidPriceOffsetBPS(), uiData.getAskPriceOffsetBPS(), uiData.getSelectedConfigType(),
                 uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
                 uiData.isStackEnabled(BookSide.ASK, StackType.PICARD), uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
     }
 
     @Override
     public boolean updateRelationship(final String source, final long relationshipID, final String childSymbol, final String parentSymbol,
-            final long bidPriceOffset, final double bidQtyMultiplier, final long askPriceOffset, final double askQtyMultiplier) {
+            final double bidPriceOffset, final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier) {
 
         final Map<String, StackUIRelationship> familyChildren = MapUtils.getNavigableMap(families, parentSymbol);
 
@@ -97,11 +96,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         children.add(childSymbol);
 
-        final double bidPriceOffsetNormalised = bidPriceOffset / (double) Constants.NORMALISING_FACTOR;
-        final double askPriceOffsetNormalised = askPriceOffset / (double) Constants.NORMALISING_FACTOR;
-
-        views.all().setChild(parentSymbol, childSymbol, bidPriceOffsetNormalised, bidQtyMultiplier, askPriceOffsetNormalised,
-                askQtyMultiplier);
+        views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier);
         return true;
     }
 
@@ -149,10 +144,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
             for (final StackUIRelationship child : family.getValue().values()) {
 
-                final double bidPriceOffset = child.bidPriceOffset / (double) Constants.NORMALISING_FACTOR;
-                final double askPriceOffset = child.askPriceOffset / (double) Constants.NORMALISING_FACTOR;
-
-                newView.setChild(familyName, child.childSymbol, bidPriceOffset, child.bidQtyMultiplier, askPriceOffset,
+                newView.setChild(familyName, child.childSymbol, child.bidPriceOffsetBPS, child.bidQtyMultiplier, child.askPriceOffsetBPS,
                         child.askQtyMultiplier);
             }
         }
@@ -252,8 +244,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final String askPriceOffsetStr, final String askQtyMultiplierText, final WebSocketInboundData data) {
 
         try {
-            final long bidPriceOffset = (long) (Double.parseDouble(bidPriceOffsetStr) * Constants.NORMALISING_FACTOR);
-            final long askPriceOffset = (long) (Double.parseDouble(askPriceOffsetStr) * Constants.NORMALISING_FACTOR);
+            final double bidPriceOffset = Double.parseDouble(bidPriceOffsetStr);
+            final double askPriceOffset = Double.parseDouble(askPriceOffsetStr);
             communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, bidPriceOffset, askPriceOffset);
 
             final double bidQtyMultiplier = Double.parseDouble(bidQtyMultiplierText);

@@ -166,7 +166,6 @@ var Handler = function (ws) {
 					var event = 'dblclick';
 					var elementId = e.target.id;
 					var button = getButton(e);
-					console.log("dblclick", elementId, button);
 					send(event, elementId, packData(elementId, {"button": button}));
 					e.stopPropagation();
 				})

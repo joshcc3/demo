@@ -82,15 +82,15 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     }
 
     @Override
-    public boolean updateStackGroup(final String source, final long stackGroupID, final long priceOffset, final long priceOffsetTickSize,
-            final int tickMultiplier) {
+    public boolean updateStackGroup(final String source, final long stackGroupID, final double priceOffsetBPS,
+            final double priceOffsetTickSize, final int tickMultiplier) {
 
         final StackUIData uiData = uiDataByStackID.get(stackGroupID);
         final BookSide side = stackSide.get(stackGroupID);
         if (BookSide.BID == side) {
-            uiData.setBidStacks(priceOffset);
+            uiData.setBidStacks(priceOffsetBPS);
         } else {
-            uiData.setAskStacks(priceOffset);
+            uiData.setAskStacks(priceOffsetBPS);
         }
         presenter.updateUIData(uiData);
         return true;
@@ -124,7 +124,8 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     }
 
     @Override
-    public boolean remoteFillNotification(final String source, final long stackGroupID, final StackType stackType, final long qty) {
+    public boolean remoteFillNotification(final String source, final long stackGroupID, final StackType stackType,
+            final int maxPullbackTicks, final long qty) {
         return true;
     }
 

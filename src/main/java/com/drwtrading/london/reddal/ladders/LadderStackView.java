@@ -2,7 +2,6 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
-import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -58,7 +57,7 @@ public class LadderStackView implements ILadderBoard {
     }
 
     private static final DecimalFormat TICK_OFFSET_FORMAT = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 0);
-    private static final DecimalFormat PRICE_OFFSET_TICK_SIZE_FORMAT = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 0, 10);
+    private static final DecimalFormat PRICE_OFFSET_TICK_SIZE_FORMAT = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2, 10);
 
     private final String username;
     private final boolean isTrader;
@@ -151,7 +150,7 @@ public class LadderStackView implements ILadderBoard {
             }
         }
 
-        this.stackTickSizeBoxValue = stackData.getPriceOffsetTickSize() / (double) Constants.NORMALISING_FACTOR;
+        this.stackTickSizeBoxValue = stackData.getPriceOffsetTickSize();
         this.stackGroupTickMultiplierBoxValue = stackData.getStackGroupTickMultiplier();
     }
 
@@ -239,7 +238,7 @@ public class LadderStackView implements ILadderBoard {
             ui.cls(htmlRow.volumeKey, CSSClass.STACK_VIEW, true);
 
             if (0 == price) {
-                ui.txt(htmlRow.bidKey, stackData.getFormattedBidPriceOffset());
+                ui.txt(htmlRow.bidKey, stackData.getFormattedBidPriceOffsetBPS());
                 ui.txt(htmlRow.askKey, stackData.getFormattedAskPriceOffset());
             } else {
                 ui.txt(htmlRow.bidKey, HTML.EMPTY);
@@ -315,7 +314,7 @@ public class LadderStackView implements ILadderBoard {
             final IBookLevel bestBid = book.getBestBid();
             if (null != bestBid) {
                 final long tickSize = book.getTickTable().getRawTickLevels().floorEntry(bestBid.getPrice()).getValue();
-                stackTickSizeBoxValue = tickSize / (double) Constants.NORMALISING_FACTOR;
+                stackTickSizeBoxValue = Math.floor(1000000 * tickSize / (double) bestBid.getPrice()) / 100;
             }
         }
     }
@@ -474,8 +473,7 @@ public class LadderStackView implements ILadderBoard {
             } else if (label.equals(HTML.STACK_ASK_PICARD_ENABLED)) {
                 stackData.setAskStackEnabled(StackType.PICARD, true);
             } else if (label.equals(HTML.STACK_SUBMIT_TICK_SIZE)) {
-                final long tickSize = (long) (stackTickSizeBoxValue * Constants.NORMALISING_FACTOR);
-                stackData.setStackGroupUpdate(tickSize, stackGroupTickMultiplierBoxValue);
+                stackData.setStackGroupUpdate(stackTickSizeBoxValue, stackGroupTickMultiplierBoxValue);
                 setCenteredPrice(centeredPrice);
             } else if (label.equals(HTML.STACK_CONFIG_BUTTON)) {
                 final String url = "/stackConfig#;" + symbol;
@@ -497,7 +495,7 @@ public class LadderStackView implements ILadderBoard {
             } else if (label.equals(HTML.STACK_ASK_PICARD_ENABLED)) {
                 stackData.setAskStackEnabled(StackType.PICARD, false);
             } else if (label.equals(HTML.STACK_TICK_SIZE)) {
-                stackTickSizeBoxValue = stackData.getPriceOffsetTickSize() / (double) Constants.NORMALISING_FACTOR;
+                stackTickSizeBoxValue = stackData.getPriceOffsetTickSize();
                 ui.txt(HTML.STACK_TICK_SIZE, stackTickSizeBoxValue);
             } else if (label.equals(HTML.STACK_GROUP_TICK_MULTIPLIER)) {
                 stackGroupTickMultiplierBoxValue = stackData.getStackGroupTickMultiplier();

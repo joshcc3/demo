@@ -45,6 +45,10 @@ function trading(clickTrading, workingOrderTags, orderTypesLeft, orderTypesRight
 
 	$("#clicktrading").toggleClass("invisible", !clickTrading);
 
+	$("input[type=text], input[type=number]").each(function (i, el) {
+		handler.updateOn(el, 'keyup');
+	});
+
 	if (!clickTrading) {
 		return;
 	}
@@ -76,14 +80,9 @@ function trading(clickTrading, workingOrderTags, orderTypesLeft, orderTypesRight
 		});
 	});
 
-	$("input[type=text], input[type=number]").each(function (i, el) {
-		handler.updateOn(el, 'keyup');
-	});
-
 	$("input[type=checkbox]").each(function (i, el) {
 		handler.updateOn(el, 'click');
 	});
-
 
 	$("select").each(function (i, el) {
 		handler.updateOn(el, 'change');

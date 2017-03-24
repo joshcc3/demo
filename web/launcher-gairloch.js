@@ -1,4 +1,5 @@
-var IN_DEV=false;
+var IN_DEV = false;
+
 function openLink(ladderHost, symbol) {
     var priceSplitPos = symbol.indexOf(';');
     var rawSymbol;

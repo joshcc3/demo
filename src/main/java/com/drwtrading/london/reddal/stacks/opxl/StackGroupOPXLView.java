@@ -4,7 +4,6 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.Stack;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
-import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -89,7 +88,7 @@ public class StackGroupOPXLView {
             final String symbol = stackGroup.getSymbol();
 
             final String[] row = getRow(symbol);
-            final long priceOffset = stackGroup.getPriceOffset();
+            final double priceOffsetBPS = stackGroup.getPriceOffsetBPS();
             final Integer pullBackTicks = getPullBackTicks(stackGroup);
 
             final String printValue;
@@ -97,10 +96,11 @@ public class StackGroupOPXLView {
                 printValue = null;
             } else {
 
+                final long priceOffset = (long) (refPriceDetail.refPrice * priceOffsetBPS / 10000d);
                 final long refPrice = refPriceDetail.refPrice + priceOffset;
 
                 final long calcPrice = refPriceDetail.tickTable.getTicksAway(stackGroup.getSide(), refPrice, pullBackTicks);
-                final double spreadSide = (calcPrice - refPrice + priceOffset) / (double) Constants.NORMALISING_FACTOR;
+                final double spreadSide = calcPrice - refPrice + priceOffset;
 
                 printValue = priceDF.format(spreadSide);
             }

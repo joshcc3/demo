@@ -159,6 +159,7 @@ body {
 	width: 100%;
 	padding: 15px 0 0;
 	margin: 0;
+	vertical-align: middle;
 }
 
 .familyDetails div {
@@ -188,17 +189,14 @@ body {
 
 .familyDetails .priceOffsetButtons {
 	white-space: normal;
-	height: 18px;
+	vertical-align: middle;
 	width: 20px;
 }
 
 .familyDetails .priceOffsetButtons button {
-	height: 7px;
+	height: 8px;
 	width: 20px;
-}
-
-.familyDetails .priceOffsetButtons button.priceOffsetDown {
-	margin-top: 2px;
+	margin-bottom: 3px;
 }
 
 .familyDetails .configControls button {

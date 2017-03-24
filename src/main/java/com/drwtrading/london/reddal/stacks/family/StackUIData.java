@@ -2,7 +2,6 @@ package com.drwtrading.london.reddal.stacks.family;
 
 import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
-import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 
@@ -24,41 +23,36 @@ class StackUIData {
 
     private String selectedConfig;
 
-    private String bidPriceOffset;
-    private String askPriceOffset;
+    private String bidPriceOffsetBPS;
+    private String askPriceOffsetBPS;
 
     StackUIData(final String familyName) {
 
         this.familyName = familyName;
 
-        this.priceOffsetDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 4, 10);
+        this.priceOffsetDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 10);
 
         this.enabledStacks = new EnumMap<>(BookSide.class);
         for (final BookSide side : BookSide.values()) {
             this.enabledStacks.put(side, EnumSet.noneOf(StackType.class));
         }
 
-        this.selectedConfig = null;
+        this.selectedConfig = StackConfigType.DEFAULT.name();
 
-        this.bidPriceOffset = NO_PRICE_OFFSET;
-        this.askPriceOffset = NO_PRICE_OFFSET;
+        this.bidPriceOffsetBPS = NO_PRICE_OFFSET;
+        this.askPriceOffsetBPS = NO_PRICE_OFFSET;
     }
 
     public void setSelectedConfig(final StackConfigType selectedConfig) {
         this.selectedConfig = selectedConfig.name();
     }
 
-    public void setBidStacks(final long priceOffset) {
-        this.bidPriceOffset = formatPriceOffset(priceOffset);
+    public void setBidStacks(final double priceOffsetBPS) {
+        this.bidPriceOffsetBPS = priceOffsetDF.format(priceOffsetBPS);
     }
 
-    public void setAskStacks(final long priceOffset) {
-        this.askPriceOffset = formatPriceOffset(priceOffset);
-    }
-
-    public String formatPriceOffset(final long priceOffset) {
-        final double decimalOffset = priceOffset / (double) Constants.NORMALISING_FACTOR;
-        return priceOffsetDF.format(decimalOffset);
+    public void setAskStacks(final double priceOffsetBPS) {
+        this.askPriceOffsetBPS = priceOffsetDF.format(priceOffsetBPS);
     }
 
     public void setStackEnabled(final BookSide side, final StackType stackType, final boolean enabled) {
@@ -71,13 +65,12 @@ class StackUIData {
         }
     }
 
-    public String getBidPriceOffset() {
-
-        return bidPriceOffset;
+    public String getBidPriceOffsetBPS() {
+        return bidPriceOffsetBPS;
     }
 
-    public String getAskPriceOffset() {
-        return askPriceOffset;
+    public String getAskPriceOffsetBPS() {
+        return askPriceOffsetBPS;
     }
 
     public String getSelectedConfigType() {

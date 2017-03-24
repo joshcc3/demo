@@ -4,21 +4,21 @@ class StackUIRelationship {
 
     final String childSymbol;
 
-    final long bidPriceOffset;
+    final double bidPriceOffsetBPS;
     final double bidQtyMultiplier;
 
-    final long askPriceOffset;
+    final double askPriceOffsetBPS;
     final double askQtyMultiplier;
 
-    StackUIRelationship(final String childSymbol, final long bidPriceOffset, final double bidQtyMultiplier, final long askPriceOffset,
-            final double askQtyMultiplier) {
+    StackUIRelationship(final String childSymbol, final double bidPriceOffsetBPS, final double bidQtyMultiplier,
+            final double askPriceOffsetBPS, final double askQtyMultiplier) {
 
         this.childSymbol = childSymbol;
 
-        this.bidPriceOffset = bidPriceOffset;
+        this.bidPriceOffsetBPS = bidPriceOffsetBPS;
         this.bidQtyMultiplier = bidQtyMultiplier;
 
-        this.askPriceOffset = askPriceOffset;
+        this.askPriceOffsetBPS = askPriceOffsetBPS;
         this.askQtyMultiplier = askQtyMultiplier;
     }
 }

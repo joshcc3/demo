@@ -6,7 +6,6 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
-import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -17,7 +16,7 @@ public class SymbolStackData {
 
     private static final String SOURCE = "LADDER_UI";
 
-    private static final DecimalFormat PRICE_DF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 1, 100);
+    private static final DecimalFormat PRICE_DF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 100);
 
     private static final int BID_PRICE_MULTIPLIER = -1;
     private static final int ASK_PRICE_MULTIPLIER = 1;
@@ -28,17 +27,17 @@ public class SymbolStackData {
 
     private final LongMap<SymbolStackPriceLevel> bidStackLevels;
     private StackGroup bidStackGroup;
-    private String bidFormattedPriceOffset;
+    private String bidFormattedPriceOffsetBPS;
     private long totalBidQty;
     private final boolean[] enabledBidStacks;
 
     private final LongMap<SymbolStackPriceLevel> askStackLevels;
     private StackGroup askStackGroup;
-    private String askFormattedPriceOffset;
+    private String askFormattedPriceOffsetBPS;
     private long totalAskQty;
     private final boolean[] enabledAskStacks;
 
-    private long priceOffsetTickSize;
+    private double priceOffsetTickSize;
     private int stackGroupTickMultiplier;
 
     public SymbolStackData(final String symbol) {
@@ -48,13 +47,13 @@ public class SymbolStackData {
         this.bidStackLevels = new LongMap<>();
         this.askStackLevels = new LongMap<>();
 
-        this.bidFormattedPriceOffset = "---";
-        this.askFormattedPriceOffset = "---";
+        this.bidFormattedPriceOffsetBPS = "---";
+        this.askFormattedPriceOffsetBPS = "---";
 
         this.enabledBidStacks = new boolean[StackType.values().length];
         this.enabledAskStacks = new boolean[StackType.values().length];
 
-        this.priceOffsetTickSize = 0L;
+        this.priceOffsetTickSize = 0d;
         this.stackGroupTickMultiplier = 1;
     }
 
@@ -73,13 +72,13 @@ public class SymbolStackData {
 
             bidStackLevels.clear();
             bidStackGroup = null;
-            bidFormattedPriceOffset = "---";
+            bidFormattedPriceOffsetBPS = "---";
 
             askStackLevels.clear();
             askStackGroup = null;
-            askFormattedPriceOffset = "---";
+            askFormattedPriceOffsetBPS = "---";
 
-            priceOffsetTickSize = 0L;
+            priceOffsetTickSize = 0d;
             stackGroupTickMultiplier = 1;
 
             for (final StackType stackType : StackType.values()) {
@@ -92,7 +91,7 @@ public class SymbolStackData {
     public void setBidGroup(final StackGroup stackGroup) {
 
         bidStackGroup = stackGroup;
-        bidFormattedPriceOffset = PRICE_DF.format(stackGroup.getPriceOffset() / (double) Constants.NORMALISING_FACTOR);
+        bidFormattedPriceOffsetBPS = PRICE_DF.format(stackGroup.getPriceOffsetBPS());
         totalBidQty = setGroup(bidStackLevels, stackGroup, BID_PRICE_MULTIPLIER);
 
         for (final StackType stackType : StackType.values()) {
@@ -107,7 +106,7 @@ public class SymbolStackData {
     public void setAskGroup(final StackGroup stackGroup) {
 
         askStackGroup = stackGroup;
-        askFormattedPriceOffset = PRICE_DF.format(stackGroup.getPriceOffset() / (double) Constants.NORMALISING_FACTOR);
+        askFormattedPriceOffsetBPS = PRICE_DF.format(stackGroup.getPriceOffsetBPS());
         totalAskQty = setGroup(askStackLevels, stackGroup, ASK_PRICE_MULTIPLIER);
 
         for (final StackType stackType : StackType.values()) {
@@ -154,11 +153,11 @@ public class SymbolStackData {
         return enabledBidStacks[stackType.ordinal()];
     }
 
-    public String getFormattedBidPriceOffset() {
-        return bidFormattedPriceOffset;
+    public String getFormattedBidPriceOffsetBPS() {
+        return bidFormattedPriceOffsetBPS;
     }
 
-    public long getPriceOffsetTickSize() {
+    public double getPriceOffsetTickSize() {
         return priceOffsetTickSize;
     }
 
@@ -187,7 +186,7 @@ public class SymbolStackData {
     }
 
     public String getFormattedAskPriceOffset() {
-        return askFormattedPriceOffset;
+        return askFormattedPriceOffsetBPS;
     }
 
     public boolean hasBestAsk() {
@@ -221,21 +220,21 @@ public class SymbolStackData {
         return priceMultiplier * mostAggressiveTick;
     }
 
-    public boolean setStackGroupUpdate(final long tickSize, final int tickMultiplier) {
+    public boolean setStackGroupUpdate(final double tickSize, final int tickMultiplier) {
 
         if (null != bidStackGroup) {
-            stackClient.updateStackGroup(SOURCE, bidStackGroup.getStackID(), bidStackGroup.getPriceOffset(), tickSize, tickMultiplier);
-            stackClient.updateStackGroup(SOURCE, askStackGroup.getStackID(), askStackGroup.getPriceOffset(), tickSize, tickMultiplier);
+            stackClient.updateStackGroup(SOURCE, bidStackGroup.getStackID(), bidStackGroup.getPriceOffsetBPS(), tickSize, tickMultiplier);
+            stackClient.updateStackGroup(SOURCE, askStackGroup.getStackID(), askStackGroup.getPriceOffsetBPS(), tickSize, tickMultiplier);
             return stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
         }
     }
 
-    public boolean improveBidStackPriceOffset(final long priceOffset) {
+    public boolean improveBidStackPriceOffset(final double priceOffset) {
 
         if (null != bidStackGroup) {
-            final long newOffset = bidStackGroup.getPriceOffset() + priceOffset;
+            final double newOffset = bidStackGroup.getPriceOffsetBPS() + priceOffset;
             stackClient.updateStackGroup(SOURCE, bidStackGroup.getStackID(), newOffset, bidStackGroup.getPriceOffsetTickSize(),
                     bidStackGroup.getTickMultiplier());
             return stackClient.batchComplete();
@@ -244,10 +243,10 @@ public class SymbolStackData {
         }
     }
 
-    public boolean improveAskStackPriceOffset(final long priceOffset) {
+    public boolean improveAskStackPriceOffset(final double priceOffset) {
 
         if (null != askStackGroup) {
-            final long newOffset = askStackGroup.getPriceOffset() + priceOffset;
+            final double newOffset = askStackGroup.getPriceOffsetBPS() + priceOffset;
             stackClient.updateStackGroup(SOURCE, askStackGroup.getStackID(), newOffset, askStackGroup.getPriceOffsetTickSize(),
                     askStackGroup.getTickMultiplier());
             return stackClient.batchComplete();
