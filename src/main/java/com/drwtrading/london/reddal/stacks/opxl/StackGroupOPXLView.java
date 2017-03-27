@@ -4,6 +4,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.Stack;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -39,7 +40,7 @@ public class StackGroupOPXLView {
     private final Map<BookSide, Map<String, StackGroup>> stackGroups;
     private final Map<String, StackRefPriceDetail> refPriceDetails;
 
-    private final NavigableMap<String, String[]> rows;
+    private final NavigableMap<String, Object[]> rows;
 
     private final DecimalFormat priceDF;
 
@@ -87,22 +88,20 @@ public class StackGroupOPXLView {
 
             final String symbol = stackGroup.getSymbol();
 
-            final String[] row = getRow(symbol);
+            final Object[] row = getRow(symbol);
             final double priceOffsetBPS = stackGroup.getPriceOffsetBPS();
             final Integer pullBackTicks = getPullBackTicks(stackGroup);
 
-            final String printValue;
+            final Double printValue;
             if (null == pullBackTicks) {
                 printValue = null;
             } else {
 
                 final long priceOffset = (long) (refPriceDetail.refPrice * priceOffsetBPS / 10000d);
                 final long refPrice = refPriceDetail.refPrice + priceOffset;
-
                 final long calcPrice = refPriceDetail.tickTable.getTicksAway(stackGroup.getSide(), refPrice, pullBackTicks);
-                final double spreadSide = calcPrice - refPrice + priceOffset;
 
-                printValue = priceDF.format(spreadSide);
+                printValue = (calcPrice - refPrice + priceOffset) / (double) Constants.NORMALISING_FACTOR;
             }
 
             if (BookSide.BID == stackGroup.getSide()) {
@@ -113,11 +112,11 @@ public class StackGroupOPXLView {
         }
     }
 
-    private String[] getRow(final String symbol) {
+    private Object[] getRow(final String symbol) {
 
-        final String[] row = rows.get(symbol);
+        final Object[] row = rows.get(symbol);
         if (null == row) {
-            final String[] result = {symbol, null, null};
+            final Object[] result = {symbol, null, null};
             rows.put(symbol, result);
             return result;
         } else {
@@ -152,7 +151,7 @@ public class StackGroupOPXLView {
         opxlTable[0] = HEADER_ROW;
         int rowIndex = 0;
 
-        for (final String[] row : rows.values()) {
+        for (final Object[] row : rows.values()) {
 
             opxlTable[++rowIndex] = row;
         }
