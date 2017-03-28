@@ -10,7 +10,7 @@ public class HTML {
     public static final String TRADE = "trade_";
     public static final String VOLUME = "volume_";
     public static final String AFTER_HOURS_WEIGHT = "after_hours_weight";
-    public static final String TEXT = "text_";
+    public static final String TEXT_PREFIX = "text_";
     public static final String STACK_CONFIG_BUTTON = "btn_stack_config";
     public static final String STACK_TICK_SIZE = "stackTickSize";
     public static final String STACK_GROUP_TICK_MULTIPLIER = "stackGroupTickMultiplier";
@@ -63,4 +63,5 @@ public class HTML {
     public static final String PRICING_RAW = "pricing_RAW";
     public static final String PRICING_EFP = "pricing_EFP";
     public static final String PRICING = "pricing_";
+    public static final String TEXT = "text";
 }

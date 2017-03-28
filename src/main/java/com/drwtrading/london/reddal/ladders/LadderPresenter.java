@@ -22,6 +22,7 @@ import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
+import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
@@ -95,15 +96,16 @@ public class LadderPresenter {
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
+    private OpxlExDateSubscriber.SymbolsGoingEx symbolsGoingEx;
 
     public LadderPresenter(final DepthBookSubscriber bookHandler, final String ewokBaseURL,
-            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-            final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
-            final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-            final Publisher<UserCycleRequest> userCycleContractPublisher,
-            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
+                           final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
+                           final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+                           final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+                           final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
+                           final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+                           final Publisher<UserCycleRequest> userCycleContractPublisher,
+                           final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
 
         this.bookHandler = bookHandler;
         this.ewokBaseURL = ewokBaseURL;
@@ -194,6 +196,9 @@ public class LadderPresenter {
                     }
                 }
                 viewsBySymbol.put(symbol, view);
+                if (symbolsGoingEx != null && symbolsGoingEx.symbols.contains(symbol)) {
+                    view.setGoingEx();
+                }
             } else {
                 view.onRawInboundData(data);
                 view.fastInputFlush();
@@ -366,6 +371,15 @@ public class LadderPresenter {
     @Subscribe
     public void on(final ServerDisconnected disconnected) {
         eeifOrdersBySymbol.forEach((s, orderUpdatesForSymbol) -> orderUpdatesForSymbol.onDisconnected(disconnected));
+    }
+
+
+    @Subscribe
+    public void on(final OpxlExDateSubscriber.SymbolsGoingEx symbolsGoingEx) {
+        this.symbolsGoingEx = symbolsGoingEx;
+        for (String symbol : symbolsGoingEx.symbols) {
+            viewsBySymbol.get(symbol).forEach(LadderView::setGoingEx);
+        }
     }
 
     public long flushAllLadders() {

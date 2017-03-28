@@ -11,10 +11,8 @@ import com.drwtrading.london.fastui.html.CSSClass;
 import com.drwtrading.london.fastui.html.HTML;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
-import eeif.execution.RemoteOrder;
 import eeif.execution.Side;
 import eeif.execution.WorkingOrderType;
-import eeif.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
@@ -29,7 +27,6 @@ import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.websockets.WebSocketClient;
@@ -144,6 +141,7 @@ public class LadderView implements UiEventHandler {
     private LadderBookView bookView;
     private ILadderBoard stackView;
     private ILadderBoard activeView;
+    private boolean goingExFlag;
 
     public LadderView(final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view, final String ewokBaseURL,
                       final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
@@ -333,6 +331,10 @@ public class LadderView implements UiEventHandler {
         ui.flush();
     }
 
+    public void setGoingEx() {
+        this.goingExFlag = true;
+    }
+
     private void drawClock() {
         ui.txt(HTML.CLOCK, SIMPLE_DATE_FORMAT.format(new Date()));
         ui.cls(HTML.CLOCK, CSSClass.SLOW, clientSpeedState == ClientSpeedState.SLOW);
@@ -406,8 +408,10 @@ public class LadderView implements UiEventHandler {
             }
             // Ladder text
             for (final LadderText ladderText : metaData.ladderTextByPosition.values()) {
-                ui.txt(HTML.TEXT + ladderText.getCell(), ladderText.getText());
+                ui.txt(HTML.TEXT_PREFIX + ladderText.getCell(), ladderText.getText());
             }
+            // Going ex
+            ui.cls(HTML.TEXT, CSSClass.GOING_EX, goingExFlag);
         }
     }
 

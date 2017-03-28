@@ -71,6 +71,7 @@ import com.drwtrading.london.reddal.ladders.LadderWorkspace;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.WorkspaceRequestHandler;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
+import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
@@ -124,6 +125,7 @@ import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.sun.jndi.toolkit.url.Uri;
@@ -451,7 +453,7 @@ public class Main {
                         channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
                         channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand,
                         channels.ladderClickTradingIssues, channels.replaceCommand, channels.userCycleContractPublisher,
-                        channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults);
+                        channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults, channels.symbolsGoingEx);
 
                 channels.pksExposure.subscribe(fiberBuilder.getFiber(), presenter::setPKSExposure);
 
@@ -798,6 +800,13 @@ public class Main {
             new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
                     new OpxlLadderTextSubscriber(channels.errorPublisher, channels.metaData)::onOpxlData, keys, fibers.metaData.getFiber(),
                     channels.error);
+        }
+
+        // Ex-dates
+        {
+            new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
+                    new OpxlExDateSubscriber(channels.errorPublisher, channels.symbolsGoingEx)::onOpxlData,
+                    ImmutableSet.of(OpxlExDateSubscriber.OPXL_KEY), fibers.opxlPosition.getFiber(), channels.errorPublisher);
         }
 
         // Error souting

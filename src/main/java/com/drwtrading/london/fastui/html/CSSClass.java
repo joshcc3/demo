@@ -102,7 +102,8 @@ public enum CSSClass {
     WORKING_ORDER_TYPE_AUTOSPREADER("working_order_type_autospreader"),
     WORKING_ORDER_TYPE_AUTOSPREADER_QUOTE("working_order_type_autospreader_quote"),
     WORKING_ORDER_TYPE_AUTOSPREAD_TAKER("working_order_type_autospread_taker"),
-    WORKING_ORDER_TYPE_HAWKEYE("working_order_type_hawkeye");
+    WORKING_ORDER_TYPE_HAWKEYE("working_order_type_hawkeye"),
+    GOING_EX("going_ex");
 
     public final String cssText;
 
