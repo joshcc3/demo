@@ -5,7 +5,6 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.utils.Constants;
-import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.reddal.ReddalComponents;
@@ -13,7 +12,6 @@ import drw.opxl.OpxlClient;
 import drw.opxl.OpxlData;
 
 import java.io.IOException;
-import java.text.DecimalFormat;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,8 +40,6 @@ public class StackGroupOPXLView {
 
     private final NavigableMap<String, Object[]> rows;
 
-    private final DecimalFormat priceDF;
-
     public StackGroupOPXLView(final IResourceMonitor<ReddalComponents> monitor, final String opxlTopic) {
 
         this.monitor = monitor;
@@ -59,8 +55,6 @@ public class StackGroupOPXLView {
         this.refPriceDetails = new HashMap<>();
 
         this.rows = new TreeMap<>();
-
-        this.priceDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2, 10);
     }
 
     public void setStackGroup(final StackGroup stackGroup) {
@@ -134,7 +128,7 @@ public class StackGroupOPXLView {
 
             if (stack.isEnabled() && null != level) {
 
-                final int pullBackTicks = level.getPullbackTicks();
+                final int pullBackTicks = level.getPullbackTicks() * stackGroup.getTickMultiplier();
                 if (null == result || pullBackTicks < result) {
                     result = pullBackTicks;
                 }
