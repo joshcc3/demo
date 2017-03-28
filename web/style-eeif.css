@@ -1,1057 +1,1063 @@
 *:not(input) {
-    -webkit-user-select: none;
-    cursor: default;
+	-webkit-user-select: none;
+	cursor: default;
 }
 
 .invisible {
-    display: none !important;
+	display: none !important;
 }
 
 .template {
-    display: none !important;
+	display: none !important;
 }
 
 body {
-    background-color: #d4d0c7;
-    color: white;;
-    font-size: 10px;
-    font-family: verdana, tahoma, arial, serif;
-    overflow: hidden;
+	background-color: #d4d0c7;
+	color: white;;
+	font-size: 10px;
+	font-family: verdana, tahoma, arial, serif;
+	overflow: hidden;
 }
 
 body#search_page {
-    overflow: auto !important;
+	overflow: auto !important;
 }
 
 #symbol.spread {
-    background-color: #bad4b1;
+	background-color: #bad4b1;
 }
 
 #symbol.back {
-    background-color: #d4d09b;
+	background-color: #d4d09b;
 }
 
 div {
-    text-spacing: allow-end;
-    -webkit-box-sizing: border-box;
+	text-spacing: allow-end;
+	-webkit-box-sizing: border-box;
 }
 
 #ladder {
-    position: absolute;
-    left: 42px;
-    top: 0;
-    width: 201px;
-    z-index: 0;
+	position: absolute;
+	left: 42px;
+	top: 0;
+	width: 201px;
+	z-index: 0;
 }
 
 #rows {
-    position: relative;
-    z-index: 1;
+	position: relative;
+	z-index: 1;
 }
 
 .total_qty {
-    position: absolute;
-    color: white;
-    height: 15px;
-    width: 40px;
-    text-align: center;
-    top: 0;
-    padding: 1px;
-    font-size: 9px;
-    vertical-align: middle;
-    z-index: 100;
+	position: absolute;
+	color: white;
+	height: 15px;
+	width: 40px;
+	text-align: center;
+	top: 0;
+	padding: 1px;
+	font-size: 9px;
+	vertical-align: middle;
+	z-index: 100;
 }
 
 #buy_qty {
-    left: 0;
-    background-color: #0000c6;
+	left: 0;
+	background-color: #0000c6;
 }
 
 #sell_qty {
-    right: 0;
-    background-color: #ac0000;
+	right: 0;
+	background-color: #ac0000;
 }
 
 #symbol {
-    position: relative;
-    height: 15px;
-    border: solid 1px black;
-    color: black;
-    text-align: center;
-    white-space: nowrap;
-    font-size: 10px;
+	position: relative;
+	height: 15px;
+	border: solid 1px black;
+	color: black;
+	text-align: center;
+	white-space: nowrap;
+	font-size: 10px;
 }
 
 .row {
-    z-index: 0;
-    position: relative;
-    height: 15px;
-    border-right: solid 1px gray;
+	z-index: 0;
+	position: relative;
+	height: 15px;
+	border-right: solid 1px gray;
 }
 
 .row:hover {
-    background-color: #a7a49d;
+	background-color: #a7a49d;
 }
 
 .column {
-    position: absolute;
-    width: 40px;
-    height: 15px;
-    border-left: solid 1px gray;
-    text-align: right;
-    border-bottom: solid 1px gray;
-    z-index: 1;
-    padding: 1px;
-    overflow: hidden;
+	position: absolute;
+	width: 40px;
+	height: 15px;
+	border-left: solid 1px gray;
+	text-align: right;
+	border-bottom: solid 1px gray;
+	z-index: 1;
+	padding: 1px;
+	overflow: hidden;
 }
 
 .column:hover {
-    overflow: visible;
-    z-index: 99;
+	overflow: visible;
+	z-index: 99;
 }
 
 .order {
-    left: 0;
-    text-align: center;
+	left: 0;
+	text-align: center;
 }
 
 .order.working_qty {
-    background-color: #3c3c3c;
+	background-color: #3c3c3c;
 }
 
 .order.working_qty.working_bid {
-    color: #c4c4ff;;
+	color: #c4c4ff;;
 }
 
 .order.working_qty.working_offer {
-    color: #f99;;
+	color: #f99;;
 }
 
 .order.eeif_order_type_managed {
-    border: solid 2px #ffbaa2 !important;
-    background-color: #757575 !important;
+	border: solid 2px #ffbaa2 !important;
+	background-color: #757575 !important;
 }
 
 .order.working_order_type_hidden_ticktaker {
-    background-color: #b4b0a9;
+	background-color: #b4b0a9;
 }
 
 .order.working_order_type_hidden_ticktaker.working_qty.working_bid {
-    color: #34357f;;
+	color: #34357f;;
 }
 
 .order.working_order_type_hidden_ticktaker.working_qty.working_offer {
-    color: #8c2629;;
+	color: #8c2629;;
 }
 
 .order.working_order_type_taker {
-    border-top: solid 1px #00bd00 !important;
-    background-color: #3c3c3c !important;
+	border-top: solid 1px #00bd00 !important;
+	background-color: #3c3c3c !important;
 }
 
 .order.working_order_type_manual {
-    border-left: solid 1px white !important;
-    background-color: #3c3c3c !important;
+	border-left: solid 1px white !important;
+	background-color: #3c3c3c !important;
 }
 
 .order.working_order_type_hawk {
-    border-bottom: solid 3px #ffa422 !important;
-    background-color: gray !important;
+	border-bottom: solid 3px #ffa422 !important;
+	background-color: gray !important;
 }
 
 .order.working_order_type_hedger {
-    border-bottom: solid 3px #5884ff !important;
-    background-color: gray !important;
+	border-bottom: solid 3px #5884ff !important;
+	background-color: gray !important;
 }
 
 .order.working_order_type_sprinter {
-    border: dotted 3px #ff0006 !important;
-    background-color: gray !important;
+	border: dotted 3px #ff0006 !important;
+	background-color: gray !important;
 }
 
 .order.working_order_type_quickdraw {
-    border: dotted 3px #ff0006 !important;
-    background-color: gray !important;
+	border: dotted 3px #ff0006 !important;
+	background-color: gray !important;
 }
 
 .order.working_order_type_mkt_close {
-    border-right: solid 1px #ff04ef !important;
-    background-color: #3c3c3c !important;
+	border-right: solid 1px #ff04ef !important;
+	background-color: #3c3c3c !important;
 }
 
 .order.working_order_type_market {
-    border: solid 2px #ffe100 !important;
-    background-color: #3c3c3c !important;
+	border: solid 2px #ffe100 !important;
+	background-color: #3c3c3c !important;
 }
 
 .order.working_order_type_gtc {
-    border: solid 1px #ffa7db !important;
-    background-color: #3c3c3c !important;
+	border: solid 1px #ffa7db !important;
+	background-color: #3c3c3c !important;
 }
 
 .order.working_order_type_quote {
-    background-color: gray;
+	background-color: gray;
 }
 
 .order.working_order_type_dark {
-    background-color: #000000 !important;
-    border: dotted 1px white;
+	background-color: #000000 !important;
+	border: dotted 1px white;
 }
 
 .order.working_order_type_hidden {
-    background-color: #0c552a !important;
-    border: dotted 1px #000288;
+	background-color: #0c552a !important;
+	border: dotted 1px #000288;
 }
 
 .order.modify_price_selected {
-    border: solid 2px red !important;
+	border: solid 2px red !important;
 }
 
 .column.stackQty {
-    padding: 0;
-    color: white;
-    text-align: center;
-    font-size: 10px;
+	padding: 0;
+	color: white;
+	text-align: center;
+	font-size: 10px;
 }
 
 .column.stackQty.PICARD {
-    background: #FB6E75;
+	background: #FB6E75;
 }
 
 .column.stackQty.QUOTER {
-    background: #5970B2;
+	background: #5970B2;
 }
 
 .column.stackQty.QUOTER.PICARD {
-    background: linear-gradient(to right, #5970B2, #FB6E75);
+	background: linear-gradient(to right, #5970B2, #FB6E75);
 }
 
 .column.stackQty.ONE_SHOT:after, .column.stackQty.AUTO_MANAGE:after, .column.stackQty.REFRESHABLE:after {
-    content: "";
-    height: 3px;
-    display: block;
-    margin-bottom: 0;
-    margin-top: 0;
+	content: "";
+	height: 3px;
+	display: block;
+	margin-bottom: 0;
+	margin-top: 0;
 }
 
 .column.stackQty.ONE_SHOT:after {
-    background: #5ACE62;
+	background: #5ACE62;
 }
 
 .column.stackQty.AUTO_MANAGE:after {
-    background: #FFCE70;
+	background: #FFCE70;
 }
 
 .column.stackQty.REFRESHABLE:after {
-    background: #9154BE;
+	background: #9154BE;
 }
 
 .column.stackQty.ONE_SHOT.AUTO_MANAGE:after {
-    background: linear-gradient(to right, #5ACE62 50%, #FFCE70 50%);
+	background: linear-gradient(to right, #5ACE62 50%, #FFCE70 50%);
 }
 
 .column.stackQty.ONE_SHOT.REFRESHABLE:after {
-    background: linear-gradient(to right, #5ACE62 50%, #9154BE 50%);
+	background: linear-gradient(to right, #5ACE62 50%, #9154BE 50%);
 }
 
 .column.stackQty.AUTO_MANAGE.REFRESHABLE:after {
-    background: linear-gradient(to right, #FFCE70 50%, #9154BE 50%);
+	background: linear-gradient(to right, #FFCE70 50%, #9154BE 50%);
 }
 
 .column.stackQty.ONE_SHOT.AUTO_MANAGE.REFRESHABLE:after {
-    background: linear-gradient(to right, #5ACE62 33%, #FFCE70 33%, #FFCE70 66%, #9154BE 66%);
+	background: linear-gradient(to right, #5ACE62 33%, #FFCE70 33%, #FFCE70 66%, #9154BE 66%);
 }
 
 .MANUAL, .MANUAL:hover {
-    background-color: white;
+	background-color: white;
 }
 
 .HAWK, .HAWK:hover {
-    background-color: #ffa422;
+	background-color: #ffa422;
 }
 
 .TAKER, .TAKER:hover {
-    background-color: #00bd00;
+	background-color: #00bd00;
 }
 
 .QUICKDRAW, .QUICKDRAW:hover {
-    background-color: #bd000a;
+	background-color: #bd000a;
 }
 
 .MKT_CLOSE, .MKT_CLOSE:hover {
-    background-color: #ff04ef;
+	background-color: #ff04ef;
 }
 
 .IOC, .IOC:hover {
-    background-color: #16ffe1;
+	background-color: #16ffe1;
 }
 
 .GTC, .GTC:hover {
-    background-color: #ffa7db;
+	background-color: #ffa7db;
 }
 
 .MARKET, .MARKET:hover {
-    background-color: #fffb00;
+	background-color: #fffb00;
 }
 
 .HAM, .HAM:hover, .HAMON, .HAMON:hover, .HAM3, .HAMON3, .YODA, .YAMON, .TRON, .TRON3,
 .HAM3:hover, .HAMON3:hover, .TRON:hover, .TRON3:hover, .SNAGGIT, .SNAGGIT:hover {
-    background-color: #ffbaa2 !important;
+	background-color: #ffbaa2 !important;
 }
 
 .BATS_PEGGED_DARK_BOOK_ONLY, .BATS_PEGGED_DARK_BOOK_ONLY:hover {
-    background-color: black;
-    color: #c5c5c5;
+	background-color: black;
+	color: #c5c5c5;
 }
 
 .HIDDEN, .HIDDEN:hover {
-    background-color: #0c552a;
-    color: #c5c5c5;
+	background-color: #0c552a;
+	color: #c5c5c5;
 }
 
 .ONE_SHOT {
-    background-color: #5ACE62;
-    color: black;
+	background-color: #5ACE62;
+	color: black;
 }
 
 .AUTO_MANAGE {
-    background-color: #FFCE70;
-    color: black;
+	background-color: #FFCE70;
+	color: black;
 }
 
 .REFRESHABLE {
-    background-color: #9154BE;
-    color: white;
+	background-color: #9154BE;
+	color: white;
 }
 
 .bid {
-    color: white;
-    background-color: #0000c6;
-    left: 40px;
+	color: white;
+	background-color: #0000c6;
+	left: 40px;
 }
 
 .bid:hover {
-    background-color: #0000b3 !important;
+	background-color: #0000b3 !important;
 }
 
 .bid.bid_active {
-    background-color: #0032ff;
+	background-color: #0032ff;
 }
 
 .bid.bid_active.impliedBid {
-    background-color: #6668ff;
+	background-color: #6668ff;
 }
 
 .offer.offer_active.impliedOffer {
-    background-color: #d0638d;
+	background-color: #d0638d;
 }
 
 .price {
-    background-color: #999;
-    color: white;
-    left: 80px;
-    width: 50px;
+	background-color: #999;
+	color: white;
+	left: 80px;
+	width: 50px;
 }
 
 .stackView.price {
-    width: 40px;
+	width: 40px;
 }
 
 .price.price_traded {
-    background-color: #737373;
+	background-color: #737373;
 }
 
 .offer {
-    color: black;
-    left: 130px;
-    background-color: #ac0000;
+	color: black;
+	left: 130px;
+	background-color: #ac0000;
 }
 
 .stackView.offer {
-    left: 120px;
+	left: 120px;
 }
 
 .offer:hover {
-    background-color: #980000 !important;
+	background-color: #980000 !important;
 }
 
 .offer.offer_active {
-    background-color: #dd0000;
+	background-color: #dd0000;
 }
 
 .volume, .trade, .text {
-    color: black;
-    left: 170px;
-    width: 30px;
+	color: black;
+	left: 170px;
+	width: 30px;
 }
 
 .stackView.volume, .stackView.trade, .stackView.text {
-    left: 160px;
-    width: 40px;
+	left: 160px;
+	width: 40px;
 }
 
 .volume {
-    font-size: 8px;
+	font-size: 8px;
 }
 
 .currency {
-    font-size: 10px;
-    font-weight: bold;
-    text-align: center;
+	font-size: 10px;
+	font-weight: bold;
+	text-align: center;
 }
 
 .trade {
-    font-size: 10px;
-    background-color: white;
-    z-index: 2;
+	font-size: 10px;
+	background-color: white;
+	z-index: 2;
 }
 
 #text {
-    position: relative;
-    height: 42px;
-    border-right: solid 1px gray;
-    text-wrap: none;
-    width: 201px;
+	position: relative;
+	height: 42px;
+	border-right: solid 1px gray;
+	text-wrap: none;
+	width: 201px;
 }
 
 .text_cell {
-    position: absolute;
-    color: black;
-    width: 40px;
-    border-left: solid 1px gray;
-    height: 14px;
-    text-align: center;
-    padding: 1px;
-    border-bottom: solid 1px gray;
+	position: absolute;
+	color: black;
+	width: 40px;
+	border-left: solid 1px gray;
+	height: 14px;
+	text-align: center;
+	padding: 1px;
+	border-bottom: solid 1px gray;
 
 }
 
 #text_r1c1 {
-    left: 0;
+	left: 0;
 }
 
 #text_r1c2 {
-    left: 40px;
+	left: 40px;
 }
 
 #text_r1c3 {
-    left: 80px;
+	left: 80px;
 }
 
 #text_r1c4 {
-    left: 120px;
+	left: 120px;
 }
 
 #after_hours_weight {
-    left: 160px;
+	left: 160px;
 }
 
 #text_execution {
-    left: 0;
+	left: 0;
 }
 
 #text_r2c1 {
-    left: 0;
-    top: 14px;
+	left: 0;
+	top: 14px;
 }
 
 #text_r2c2 {
-    left: 40px;
-    top: 14px;
+	left: 40px;
+	top: 14px;
 }
 
 #text_r2c3 {
-    left: 80px;
-    top: 14px;
+	left: 80px;
+	top: 14px;
 }
 
 #text_r2c4 {
-    left: 120px;
-    top: 14px;
+	left: 120px;
+	top: 14px;
 }
 
 #text_r2c5 {
-    left: 160px;
-    top: 14px;
+	left: 160px;
+	top: 14px;
 }
 
 #pks_exposure {
-    left: 0;
-    top: 28px;
+	left: 0;
+	top: 28px;
 }
 
 #text_r3c2 {
-    left: 40px;
-    top: 28px;
+	left: 40px;
+	top: 28px;
 }
 
 #text_r3c3 {
-    left: 80px;
-    top: 28px;
+	left: 80px;
+	top: 28px;
 }
 
 #text_r3c4 {
-    left: 120px;
-    top: 28px;
+	left: 120px;
+	top: 28px;
 }
 
 #pks_position {
-    left: 160px;
-    top: 28px;
+	left: 160px;
+	top: 28px;
 }
 
 .text_cell_execution {
-    position: absolute;
-    background-color: white;
-    color: #008b8b;
-    font-weight: bold;
-    height: 14px;
-    top: -12px;
-    text-align: center;
-    z-index: 3;
-    white-space: nowrap;
+	position: absolute;
+	background-color: white;
+	color: #008b8b;
+	font-weight: bold;
+	height: 14px;
+	top: -12px;
+	text-align: center;
+	z-index: 3;
+	white-space: nowrap;
 }
 
 .last_buy {
-    background-color: #7b97ff !important;
+	background-color: #7b97ff !important;
 }
 
 .last_sell {
-    background-color: #b76c58 !important;
+	background-color: #b76c58 !important;
 }
 
 .last_buy.last_sell {
-    background-color: #9982AC !important;
+	background-color: #9982AC !important;
 }
 
 .traded_up {
-    background-color: #00ff00 !important;
+	background-color: #00ff00 !important;
 }
 
 .traded_up.traded_again {
-    background-color: #99ff22 !important;
+	background-color: #99ff22 !important;
 }
 
 .traded_down {
-    background-color: #f29106 !important;
-    color: white !important;
+	background-color: #f29106 !important;
+	color: white !important;
 }
 
 .traded_down.traded_again {
-    background-color: #c77706 !important;
-    color: white !important;
+	background-color: #c77706 !important;
+	color: white !important;
 }
 
 .bid_color {
-    border-bottom: solid 1px blue;
+	border-bottom: solid 1px blue;
 }
 
 .offer_color {
-    border-bottom: solid 1px red;
+	border-bottom: solid 1px red;
 }
 
 .green_color {
-    border-bottom: solid 1px #00ff1b;
+	border-bottom: solid 1px #00ff1b;
 }
 
 .positive {
-    background-color: #00b000;
+	background-color: #00b000;
 }
 
 .negative {
-    background-color: #f29106;
-    color: white;
+	background-color: #f29106;
+	color: white;
 }
 
 .recentering {
-    background-color: #ff41f7;
-    opacity: 0.7;
+	background-color: #ff41f7;
+	opacity: 0.7;
 }
 
 .laser {
-    position: absolute;
-    height: 1px;
-    width: 50px;
-    top: 0;
-    left: 80px;
-    z-index: 3;
+	position: absolute;
+	height: 1px;
+	width: 50px;
+	top: 0;
+	left: 80px;
+	z-index: 3;
 }
 
 /*    information    */
 
 #information {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 42px;
-    border: 0;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 42px;
+	border: 0;
 }
 
 #information * {
-    font-size: 10px;
-    position: absolute;
-    margin: 0;
-    padding: 0;
-    text-align: center !important;
-    height: 12px;
-    color: black;
-    width: 100%;
+	font-size: 10px;
+	position: absolute;
+	margin: 0;
+	padding: 0;
+	text-align: center !important;
+	height: 12px;
+	color: black;
+	width: 100%;
 }
 
 #bookViewButton {
-    top: 0;
-    left: 0;
-    font-size: 8px;
-    height: 12px;
-    width: 50%;
-    text-align: center;
+	top: 0;
+	left: 0;
+	font-size: 8px;
+	height: 12px;
+	width: 50%;
+	text-align: center;
 }
 
 #stackViewButton {
-    top: 0;
-    left: 21px;
-    font-size: 8px;
-    height: 12px;
-    width: 50%;
-    text-align: center;
+	top: 0;
+	left: 21px;
+	font-size: 8px;
+	height: 12px;
+	width: 50%;
+	text-align: center;
 }
 
 #clock {
-    top: 12px;
-    font-size: 9px;
-    height: 12px;
-    text-align: center;
-    letter-spacing: -2px;
+	top: 12px;
+	font-size: 9px;
+	height: 12px;
+	text-align: center;
+	letter-spacing: -2px;
 }
 
 #desk_position {
-    top: 24px;
+	top: 24px;
 }
 
 #last_trade_cod {
-    top: 36px;
+	top: 36px;
 }
 
 #yesterday_settle {
-    top: 36px;
+	top: 36px;
 }
 
 #total_traded_volume {
-    top: 48px;
+	top: 48px;
 }
 
 #position {
-    top: 60px;
+	top: 60px;
 }
 
 #totalTraded {
-    top: 60px;
-    background-color: white;
-    color: black;
+	top: 60px;
+	background-color: white;
+	color: black;
 }
 
 #position.positive {
-    background-color: #534efa;
-    color: white;
+	background-color: #534efa;
+	color: white;
 }
 
 #position.negative {
-    background-color: #ff7369;
-    color: white;
+	background-color: #ff7369;
+	color: white;
 }
 
 /*   click trading   */
 
 #clicktrading {
-    position: absolute;
-    left: 0;
-    top: 72px;
-    width: 42px;
-    border: 0;
+	position: absolute;
+	left: 0;
+	top: 72px;
+	width: 42px;
+	border: 0;
 }
 
 #clicktrading * {
-    position: absolute;
-    font-size: 9px;
-    margin: 0;
-    padding: 0;
-    text-align: center;
+	position: absolute;
+	font-size: 9px;
+	margin: 0;
+	padding: 0;
+	text-align: center;
 }
 
 #working_order_tags {
 
-    -webkit-appearance: none;
-    width: 40px;
-    height: 16px;
-    background: #5970B2;
-    color: #FFF;
+	-webkit-appearance: none;
+	width: 40px;
+	height: 16px;
+	background: #5970B2;
+	color: #FFF;
 }
 
 #working_order_tags.QUOTER, #working_order_tags .QUOTER {
-    background: #5970B2;
+	background: #5970B2;
 }
 
 #working_order_tags.PICARD, #working_order_tags .PICARD {
-    background: #FB6E75;
+	background: #FB6E75;
 }
 
 #inp_qty {
-    width: 40px;
-    top: 16px;
-    height: 16px;
+	width: 40px;
+	top: 16px;
+	height: 16px;
 }
 
 #clicktrading .quantity_button {
-    width: 20px;
-    height: 14px;
+	width: 20px;
+	height: 14px;
 }
 
 #clicktrading .quantity_button.col_1 {
-    left: 0;
+	left: 0;
 }
 
 #clicktrading .quantity_button.col_2 {
-    left: 21px;
+	left: 21px;
 }
 
 #clicktrading .quantity_button.row_1 {
-    top: 32px;
+	top: 32px;
 }
 
 #clicktrading .quantity_button.row_2 {
-    top: 48px;
+	top: 48px;
 }
 
 #clicktrading .quantity_button.row_3 {
-    top: 64px;
+	top: 64px;
 }
 
 #btn_clear {
-    width: 40px;
-    height: 16px;
-    top: 80px;
+	width: 40px;
+	height: 16px;
+	top: 80px;
 }
 
 #inp_reload {
-    top: 96px;
-    width: 40px;
-    height: 16px;
+	top: 96px;
+	width: 40px;
+	height: 16px;
 }
 
 .order_type {
-    height: 16px;
-    width: 30px;
-    margin: 0;
-    font-size: 9px;
-    -webkit-appearance: none;
-    -moz-appearance: none;
+	height: 16px;
+	width: 30px;
+	margin: 0;
+	font-size: 9px;
+	-webkit-appearance: none;
+	-moz-appearance: none;
 }
 
 .order_type.fullWidth {
-    width: 40px;
+	width: 40px;
 }
 
 #order_type_left {
-    top: 112px;
+	top: 112px;
 }
 
 #chk_auto_hedge_left {
-    top: 112px;
-    height: 16px;
-    left: 30px;
-    width: 10px;
+	top: 112px;
+	height: 16px;
+	left: 30px;
+	width: 10px;
 }
 
 #order_type_right {
-    top: 128px;
+	top: 128px;
 }
 
 #chk_auto_hedge_right {
-    top: 128px;
-    height: 16px;
-    left: 30px;
-    width: 10px;
+	top: 128px;
+	height: 16px;
+	left: 30px;
+	width: 10px;
 }
 
 #random_reload {
-    color: black;
-    top: 144px;
-    width: 30px;
-    right: 5px;
+	color: black;
+	top: 144px;
+	width: 30px;
+	right: 5px;
 }
 
 #random_reload #chk_random_reload {
-    width: 10px;
+	width: 10px;
 }
 
 .slow {
-    background-color: orange;
+	background-color: orange;
 }
 
 .very-slow {
-    background-color: darkred !important;
-    color: white;
+	background-color: darkred !important;
+	color: white;
 }
 
 .offset_button {
-    height: 12px;
-    width: 18px;
-    font-size: 6px;
+	height: 12px;
+	width: 18px;
+	font-size: 6px;
 
 }
 
 #buy_offset_up {
-    top: 156px;
-    left: 0;
-    background-color: #b6f7ff;
+	top: 156px;
+	left: 0;
+	background-color: #b6f7ff;
 }
 
 #buy_offset_down {
-    top: 172px;
-    left: 0;
-    background-color: #b6f7ff;
+	top: 172px;
+	left: 0;
+	background-color: #b6f7ff;
 }
 
 #sell_offset_up {
-    top: 156px;
-    left: 20px;
-    background-color: #ffd5cd;
+	top: 156px;
+	left: 20px;
+	background-color: #ffd5cd;
 }
 
 #sell_offset_down {
-    top: 171px;
-    left: 20px;
-    background-color: #ffd5cd;
+	top: 171px;
+	left: 20px;
+	background-color: #ffd5cd;
 }
 
 #start_buy {
-    top: 186px;
-    left: 00px;
-    background-color: #c4ffbe;
+	top: 186px;
+	left: 00px;
+	background-color: #c4ffbe;
 }
 
 #stop_buy {
-    top: 201px;
-    left: 0;
-    background-color: #ff9999;
+	top: 201px;
+	left: 0;
+	background-color: #ff9999;
 }
 
 #start_sell {
-    top: 186px;
-    left: 20px;
-    background-color: #c4ffbe;
+	top: 186px;
+	left: 20px;
+	background-color: #c4ffbe;
 }
 
 #stop_sell {
-    top: 201px;
-    left: 20px;
-    background-color: #ff9999;
+	top: 201px;
+	left: 20px;
+	background-color: #ff9999;
 }
 
 #stacks_control {
-    position: absolute;
-    left: 0;
-    top: 288px;
-    width: 42px;
-    border: 0;
+	position: absolute;
+	left: 0;
+	top: 288px;
+	width: 42px;
+	border: 0;
 }
 
 #stacks_control * {
-    position: absolute;
-    font-size: 9px;
-    margin: 0;
-    padding: 0;
-    text-align: center;
+	position: absolute;
+	font-size: 9px;
+	margin: 0;
+	padding: 0;
+	text-align: center;
 }
 
 #stackBidQuoterEnabled, #stackBidPicardEnabled, #stackAskQuoterEnabled, #stackAskPicardEnabled {
-    width: 19px;
-    height: 15px;
-    text-align: center;
-    color: white;
-    border: 3px solid red;
+	width: 19px;
+	height: 15px;
+	text-align: center;
+	color: white;
+	border: 3px solid red;
 }
 
 #stackBidQuoterEnabled, #stackAskQuoterEnabled {
-    top: 0;
-    background: #5970B2;
+	top: 0;
+	background: #5970B2;
 }
 
 #stackBidPicardEnabled, #stackAskPicardEnabled {
-    top: 17px;
-    background: #FB6E75;
+	top: 17px;
+	background: #FB6E75;
 }
 
 #stackBidQuoterEnabled, #stackBidPicardEnabled {
-    left: 1px;
+	left: 1px;
 }
 
 #stackAskQuoterEnabled, #stackAskPicardEnabled {
-    left: 22px;
+	left: 22px;
 }
 
 #stackBidQuoterEnabled.enabled, #stackBidPicardEnabled.enabled, #stackAskQuoterEnabled.enabled, #stackAskPicardEnabled.enabled {
-    border: 3px solid green;
+	border: 3px solid green;
 }
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button,
 input::-webkit-outer-spin-button:hover,
 input::-webkit-inner-spin-button:hover {
-    -webkit-appearance: none;
+	-webkit-appearance: none;
 }
 
 #btn_stack_config {
-    position: absolute;
-    font-size: 9px;
-    margin: 0;
-    padding: 0;
-    text-align: center;
-    top: 216px;
-    left: 0;
-    width: 40px;
-    height: 12px;
+	position: absolute;
+	font-size: 9px;
+	margin: 0;
+	padding: 0;
+	text-align: center;
+	top: 216px;
+	left: 0;
+	width: 40px;
+	height: 12px;
 }
 
 #stackTickSize {
-    top: 34px;
-    left: 0;
-    width: 42px;
+	top: 34px;
+	left: 0;
+	width: 42px;
 }
 
 #stackGroupTickMultiplier {
-    top: 49px;
-    left: 0;
-    width: 42px;
+	top: 49px;
+	left: 0;
+	width: 42px;
+}
+
+#stackAlignmentTickToBPS {
+	top: 64px;
+	left: 0;
+	width: 42px;
 }
 
 #btn_submitStackTickSize {
-    top: 64px;
-    left: 0;
-    width: 42px;
+	top: 79px;
+	left: 0;
+	width: 42px;
 }
 
 .pricing_button {
-    width: 38px;
-    height: 15px;
-    font-size: 10px;
-    left: 0;
-    position: absolute;
+	width: 38px;
+	height: 15px;
+	font-size: 10px;
+	left: 0;
+	position: absolute;
 }
 
 .pricing_button.modify_price_selected {
-    background-color: #787878;
+	background-color: #787878;
 }
 
 #pricing_controls {
 }
 
 #pricing_BPS {
-    top: 288px;
+	top: 288px;
 }
 
 #pricing_EFP {
-    top: 303px;
+	top: 303px;
 }
 
 #pricing_RAW {
-    top: 318px;
+	top: 318px;
 }
 
 .active_mode {
-    border: 1px solid darkgreen;
+	border: 1px solid darkgreen;
 }
 
 /* index */
 
 tr.result:nth-child(odd) {
-    background-color: #d4d0c7;
+	background-color: #d4d0c7;
 }
 
 tr.result:nth-child(even) {
-    background-color: #bab6af;
+	background-color: #bab6af;
 }
 
 tr.result {
-    font-size: 11px;
-    font-family: monospace;
-    color: black;
+	font-size: 11px;
+	font-family: monospace;
+	color: black;
 }
 
 tr.result .symbol {
-    white-space: nowrap;
-    font-size: 14px;
-    min-width: 100px;
+	white-space: nowrap;
+	font-size: 14px;
+	min-width: 100px;
 }
 
 tr.result .display {
-    min-width: 50px;
-    white-space: nowrap;
+	min-width: 50px;
+	white-space: nowrap;
 }
 
 tr.result .description {
-    font-size: 10px;
-    -webkit-user-select: text;
+	font-size: 10px;
+	-webkit-user-select: text;
 
 }
 
 tr.result .worm {
-    width: 20px;
-    font-size: 10px;
+	width: 20px;
+	font-size: 10px;
 }
 
 #search_results_container {
-    top: 35px;
-    left: 0;
-    position: absolute;
-    margin: 0;
-    width: 100%;
+	top: 35px;
+	left: 0;
+	position: absolute;
+	margin: 0;
+	width: 100%;
 }
 
 #search_results {
-    width: 100%;
+	width: 100%;
 }
 
 tr.result.highlight {
-    background-color: #fdd3bb !important;
+	background-color: #fdd3bb !important;
 }
 
 #search_box {
-    background-color: #e8e8e8;
-    margin: 0;
-    width: 400px;
+	background-color: #e8e8e8;
+	margin: 0;
+	width: 400px;
 }
 
 #search {
-    left: 0;
-    top: 0;
-    position: absolute;;
-    margin: 0;
-    height: 30px;
-    font-size: 15px;
-    font-family: monospace;
-    background-color: #292929;
-    color: white;
-    border: 1px dotted white;
-    width: 100%;
+	left: 0;
+	top: 0;
+	position: absolute;;
+	margin: 0;
+	height: 30px;
+	font-size: 15px;
+	font-family: monospace;
+	background-color: #292929;
+	color: white;
+	border: 1px dotted white;
+	width: 100%;
 
 }
 
 #symbol.AUCTION {
-    background-color: AQUA;
+	background-color: AQUA;
 }
 
 .NO_BOOK_STATE {
 }
 
 #click_trading_issues {
-    background-color: #ff7300;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    z-index: 10;
+	background-color: #ff7300;
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	z-index: 10;
 }
 
 div#text.going_ex {
-    background-color: yellow;
+	background-color: yellow;
 }

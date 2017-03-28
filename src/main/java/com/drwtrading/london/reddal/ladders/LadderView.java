@@ -11,8 +11,6 @@ import com.drwtrading.london.fastui.html.CSSClass;
 import com.drwtrading.london.fastui.html.HTML;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
-import eeif.execution.Side;
-import eeif.execution.WorkingOrderType;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
@@ -31,6 +29,8 @@ import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.websockets.WebSocketClient;
 import drw.london.json.Jsonable;
+import eeif.execution.Side;
+import eeif.execution.WorkingOrderType;
 import org.jetlang.channels.Publisher;
 
 import java.math.BigDecimal;
@@ -210,10 +210,9 @@ public class LadderView implements UiEventHandler {
             buttonQties = INST_TYPE_BUTTON_QTIES.get(book.getInstType());
         }
 
-        final long stackCenteredPrice = null == stackView ? 0 : stackView.getCenteredPrice();
         this.stackView =
                 new LadderStackView(client.getUserName(), isTrader(), symbol, buttonQties, levels, ladderHTMLKeys, stackData, ui, view,
-                        ladderPrefsForSymbolUser, marketData, stackCenteredPrice);
+                        ladderPrefsForSymbolUser, marketData);
 
         if (wasBookView) {
             setBookView();
@@ -479,6 +478,8 @@ public class LadderView implements UiEventHandler {
                 activeView.setStackTickSize(Double.valueOf(value));
             } else if (HTML.STACK_GROUP_TICK_MULTIPLIER.equals(label)) {
                 activeView.setStackGroupTickMultiplier(Integer.valueOf(value));
+            } else if (HTML.STACK_ALIGNMENT_TICK_TO_BPS.equals(label)) {
+                activeView.setStackAlignmentTickToBPS(Double.valueOf(value));
             } else if (!activeView.setPersistencePreference(label, value)) {
                 throw new IllegalArgumentException("Update for unknown value: " + label + ' ' + dataArg);
             }

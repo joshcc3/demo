@@ -43,6 +43,11 @@ public final class LadderNoView implements ILadderBoard {
     }
 
     @Override
+    public void setStackAlignmentTickToBPS(final double stackAlignmentTickToBPS) {
+
+    }
+
+    @Override
     public void setStackTickSizeToMatchQuote() {
 
     }

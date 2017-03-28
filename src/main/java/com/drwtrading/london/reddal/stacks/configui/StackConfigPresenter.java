@@ -123,7 +123,12 @@ public class StackConfigPresenter {
         final StackPlanConfig askPlanConfig = configGroup.askPlanConfig;
         final StackStrategyConfig askStrategyConfig = configGroup.askStrategyConfig;
 
-        final String leanToQuoteRatio = Double.toString(leanConfig.getLeanToQuoteRatio());
+        final String leanToQuoteRatio;
+        if (Double.isNaN(leanConfig.getLeanToQuoteRatio())) {
+            leanToQuoteRatio = "0";
+        } else {
+            leanToQuoteRatio = Double.toString(leanConfig.getLeanToQuoteRatio());
+        }
 
         viewer.setRow(nibblerName, configGroup.configGroupID, configGroup.symbol, configGroup.configType, quoteConfig.getMaxBookAgeMillis(),
                 quoteConfig.isAuctionQuotingEnabled(), quoteConfig.isOnlyAuctionQuoting(), quoteConfig.getAuctionTheoMaxTicksThrough(),
@@ -134,8 +139,7 @@ public class StackConfigPresenter {
                 bidStrategyConfig.getMaxOrdersPerLevel(), bidStrategyConfig.isQuoteBettermentOn(),
                 bidStrategyConfig.getQuoteFlickerBufferPercent(), bidStrategyConfig.getQuotePicardMaxTicksThrough(),
                 bidStrategyConfig.getPicardMaxPerSec(), bidStrategyConfig.getPicardMaxPerMin(), bidStrategyConfig.getPicardMaxPerHour(),
-                bidStrategyConfig.getPicardMaxPerDay(), askPlanConfig.getMinLevelQty(), askPlanConfig.getMaxLevelQty(),
-                askPlanConfig.getLotSize(), askPlanConfig.getMaxLevels(), askStrategyConfig.getMaxOrdersPerLevel(),
+                bidStrategyConfig.getPicardMaxPerDay(), askPlanConfig.getMinLevelQty(), askPlanConfig.getMaxLevelQty(), askPlanConfig.getLotSize(), askPlanConfig.getMaxLevels(), askStrategyConfig.getMaxOrdersPerLevel(),
                 askStrategyConfig.isQuoteBettermentOn(), askStrategyConfig.getQuoteFlickerBufferPercent(),
                 askStrategyConfig.getQuotePicardMaxTicksThrough(), askStrategyConfig.getPicardMaxPerSec(),
                 askStrategyConfig.getPicardMaxPerMin(), askStrategyConfig.getPicardMaxPerHour(), askStrategyConfig.getPicardMaxPerDay());

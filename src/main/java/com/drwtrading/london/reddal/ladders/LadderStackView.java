@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -81,6 +82,7 @@ public class LadderStackView implements ILadderBoard {
     private int tradingBoxQty;
     private double stackTickSizeBoxValue;
     private int stackGroupTickMultiplierBoxValue;
+    private double stackAlignmentTickToBPSBoxValue;
 
     private long centeredPrice;
     private long topPrice;
@@ -88,8 +90,7 @@ public class LadderStackView implements ILadderBoard {
 
     public LadderStackView(final String username, final boolean isTrader, final String symbol, final Map<String, Integer> buttonQties,
             final int levels, final LadderHTMLTable ladderHTMLKeys, final SymbolStackData stackData, final UiPipeImpl ui,
-            final ILadderUI view, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final MDForSymbol marketData,
-            final long centeredPrice) {
+            final ILadderUI view, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final MDForSymbol marketData) {
 
         this.username = username;
         this.isTrader = isTrader;
@@ -110,8 +111,7 @@ public class LadderStackView implements ILadderBoard {
 
         this.marketData = marketData;
 
-        this.centeredPrice = centeredPrice;
-        setCenteredPrice(centeredPrice);
+        center();
         this.currentLadderTickSize = 1;
     }
 
@@ -152,6 +152,7 @@ public class LadderStackView implements ILadderBoard {
 
         this.stackTickSizeBoxValue = stackData.getPriceOffsetTickSize();
         this.stackGroupTickMultiplierBoxValue = stackData.getStackGroupTickMultiplier();
+        this.stackAlignmentTickToBPSBoxValue = stackData.getStackAlignmentTickToBPS();
     }
 
     @Override
@@ -170,6 +171,8 @@ public class LadderStackView implements ILadderBoard {
         final String priceOffsetTickSize = PRICE_OFFSET_TICK_SIZE_FORMAT.format(stackTickSizeBoxValue);
         ui.txt(HTML.STACK_TICK_SIZE, priceOffsetTickSize);
         ui.txt(HTML.STACK_GROUP_TICK_MULTIPLIER, stackGroupTickMultiplierBoxValue);
+        final String stackAlignmentTickToBPSBox = PRICE_OFFSET_TICK_SIZE_FORMAT.format(stackAlignmentTickToBPSBoxValue);
+        ui.txt(HTML.STACK_ALIGNMENT_TICK_TO_BPS, stackAlignmentTickToBPSBox);
 
         for (final PricingMode mode : PricingMode.values()) {
             ui.cls(HTML.PRICING + mode, CSSClass.INVISIBLE, true);
@@ -211,6 +214,7 @@ public class LadderStackView implements ILadderBoard {
             setCenteredPrice(centeredPrice);
         }
 
+        final double stackAlignmentTickToBPS = stackData.getStackAlignmentTickToBPS();
         for (long i = 0; i < levels; ++i) {
 
             final long price = topPrice - (i * currentLadderTickSize);
@@ -240,6 +244,10 @@ public class LadderStackView implements ILadderBoard {
             if (0 == price) {
                 ui.txt(htmlRow.bidKey, stackData.getFormattedBidPriceOffsetBPS());
                 ui.txt(htmlRow.askKey, stackData.getFormattedAskPriceOffset());
+            } else if (Constants.EPSILON < stackAlignmentTickToBPS) {
+                final double bpsOffset = price * stackAlignmentTickToBPS;
+                ui.txt(htmlRow.bidKey, stackData.getFormattedBidPriceOffsetBPS(bpsOffset));
+                ui.txt(htmlRow.askKey, stackData.getFormattedAskPriceOffsetBPS(bpsOffset));
             } else {
                 ui.txt(htmlRow.bidKey, HTML.EMPTY);
                 ui.txt(htmlRow.askKey, HTML.EMPTY);
@@ -303,7 +311,12 @@ public class LadderStackView implements ILadderBoard {
 
     @Override
     public void setStackGroupTickMultiplier(final int tickMultiplier) {
-        stackGroupTickMultiplierBoxValue = tickMultiplier;
+        stackGroupTickMultiplierBoxValue = Math.max(1, tickMultiplier);
+    }
+
+    @Override
+    public void setStackAlignmentTickToBPS(final double stackAlignmentTickToBPS) {
+        stackAlignmentTickToBPSBoxValue = Math.max(0, stackAlignmentTickToBPS);
     }
 
     @Override
@@ -352,13 +365,19 @@ public class LadderStackView implements ILadderBoard {
 
     @Override
     public long getCenteredPrice() {
-        return centeredPrice;
+
+        if (stackData.hasBestBid() && stackData.hasBestAsk()) {
+
+            return (stackData.getBestBid() + stackData.getBestAsk()) * stackData.getStackGroupTickMultiplier() / 2;
+        } else {
+            return 0;
+        }
     }
 
     @Override
     public void center() {
 
-        setCenteredPrice(0);
+        setCenteredPrice(getCenteredPrice());
     }
 
     @Override
@@ -371,7 +390,7 @@ public class LadderStackView implements ILadderBoard {
     public void setBestBidCenter() {
 
         if (stackData.hasBestBid()) {
-            setCenteredPrice(stackData.getBestBid());
+            setCenteredPrice(stackData.getBestBid() * stackData.getStackGroupTickMultiplier());
         }
     }
 
@@ -379,7 +398,7 @@ public class LadderStackView implements ILadderBoard {
     public void setBestAskCenter() {
 
         if (stackData.hasBestAsk()) {
-            setCenteredPrice(stackData.getBestAsk());
+            setCenteredPrice(stackData.getBestAsk() * stackData.getStackGroupTickMultiplier());
         }
     }
 
@@ -473,8 +492,8 @@ public class LadderStackView implements ILadderBoard {
             } else if (label.equals(HTML.STACK_ASK_PICARD_ENABLED)) {
                 stackData.setAskStackEnabled(StackType.PICARD, true);
             } else if (label.equals(HTML.STACK_SUBMIT_TICK_SIZE)) {
-                stackData.setStackGroupUpdate(stackTickSizeBoxValue, stackGroupTickMultiplierBoxValue);
-                setCenteredPrice(centeredPrice);
+                stackData.setStackGroupUpdate(stackTickSizeBoxValue, stackGroupTickMultiplierBoxValue, stackAlignmentTickToBPSBoxValue);
+                setCenteredPrice(centeredPrice * stackGroupTickMultiplierBoxValue / stackData.getStackGroupTickMultiplier());
             } else if (label.equals(HTML.STACK_CONFIG_BUTTON)) {
                 final String url = "/stackConfig#;" + symbol;
                 view.popUp(url, "stackConfig:" + symbol, 2200, 300);
@@ -500,6 +519,10 @@ public class LadderStackView implements ILadderBoard {
             } else if (label.equals(HTML.STACK_GROUP_TICK_MULTIPLIER)) {
                 stackGroupTickMultiplierBoxValue = stackData.getStackGroupTickMultiplier();
                 ui.txt(HTML.STACK_GROUP_TICK_MULTIPLIER, stackData.getStackGroupTickMultiplier());
+            } else if (label.equals(HTML.STACK_ALIGNMENT_TICK_TO_BPS)) {
+                stackAlignmentTickToBPSBoxValue = stackData.getStackAlignmentTickToBPS();
+                final String stackAlignmentTickToBPS = PRICE_OFFSET_TICK_SIZE_FORMAT.format(stackAlignmentTickToBPSBoxValue);
+                ui.txt(HTML.STACK_ALIGNMENT_TICK_TO_BPS, stackAlignmentTickToBPS);
             }
         } else if ("middle".equals(button)) {
             //            if (label.startsWith(HTML.ORDER)) {

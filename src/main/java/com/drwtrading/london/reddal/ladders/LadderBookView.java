@@ -24,14 +24,6 @@ import com.drwtrading.london.photons.reddal.Direction;
 import com.drwtrading.london.photons.reddal.ReddalCommand;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.UpdateOffset;
-import eeif.execution.RemoteModifyOrder;
-import eeif.execution.RemoteOrder;
-import eeif.execution.RemoteOrderType;
-import eeif.execution.RemoteSubmitOrder;
-import eeif.execution.Side;
-import eeif.execution.WorkingOrderState;
-import eeif.execution.WorkingOrderType;
-import eeif.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
@@ -53,6 +45,14 @@ import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.google.common.collect.ImmutableSet;
 import drw.london.json.Jsonable;
+import eeif.execution.RemoteModifyOrder;
+import eeif.execution.RemoteOrder;
+import eeif.execution.RemoteOrderType;
+import eeif.execution.RemoteSubmitOrder;
+import eeif.execution.Side;
+import eeif.execution.WorkingOrderState;
+import eeif.execution.WorkingOrderType;
+import eeif.execution.WorkingOrderUpdate;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetlang.channels.Publisher;
 
@@ -160,14 +160,14 @@ public class LadderBookView implements ILadderBoard {
     private long modifyFromPriceSelectedTime;
 
     LadderBookView(final String username, final boolean isTrader, final String symbol, final UiPipeImpl ui, final ILadderUI view,
-                   final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
-                   final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
-                   final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-                   final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
-                   final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
-                   final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
-                   final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-                   final long centeredPrice) {
+            final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+            final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
+            final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
+            final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
+            final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+            final long centeredPrice) {
 
         this.username = username;
         this.isTrader = isTrader;
@@ -261,6 +261,11 @@ public class LadderBookView implements ILadderBoard {
 
     @Override
     public void setStackGroupTickMultiplier(final int tickMultiplier) {
+        // ignored
+    }
+
+    @Override
+    public void setStackAlignmentTickToBPS(final double stackAlignmentTickToBPS) {
         // ignored
     }
 
@@ -892,7 +897,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void workingQty(final LadderHTMLRow htmlRowKeys, final int qty, final BookSide side, final Set<WorkingOrderType> orderTypes,
-                            final boolean hasEeifOEOrder) {
+            final boolean hasEeifOEOrder) {
 
         ui.txt(htmlRowKeys.orderKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.orderKey, CSSClass.WORKING_QTY, 0 < qty);
@@ -1088,7 +1093,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrderClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data,
-                                  final String orderType, final boolean autoHedge) {
+            final String orderType, final boolean autoHedge) {
 
         final long price = Long.valueOf(data.get("price"));
         final LadderBoardRow bookRow = priceRows.get(price);
@@ -1161,7 +1166,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final boolean autoHedge, final long price,
-                             final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+            final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
 
         final int sequenceNumber = orderSeqNo++;
 
@@ -1237,7 +1242,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void modifyOrder(final ClientSpeedState clientSpeedState, final boolean autoHedge, final long price,
-                             final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+            final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
 
         trace.publish(new CommandTrace("modify", username, symbol, order.value.getWorkingOrderType().toString(), autoHedge, price,
                 order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
