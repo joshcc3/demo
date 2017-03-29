@@ -96,7 +96,7 @@ public class LadderPresenter {
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
-    private OpxlExDateSubscriber.SymbolsGoingEx symbolsGoingEx;
+    private OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx;
 
     public LadderPresenter(final DepthBookSubscriber bookHandler, final String ewokBaseURL,
                            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
@@ -150,6 +150,9 @@ public class LadderPresenter {
                         tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
                         ladderClickTradingIssuePublisher, userCycleContractPublisher, orderEntryMap, orderEntryCommandToServerPublisher,
                         existingSymbols::contains);
+        if (null != isinsGoingEx) {
+            ladderView.setIsinsGoingEx(isinsGoingEx);
+        }
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
     }
@@ -196,9 +199,6 @@ public class LadderPresenter {
                     }
                 }
                 viewsBySymbol.put(symbol, view);
-                if (symbolsGoingEx != null && symbolsGoingEx.symbols.contains(symbol)) {
-                    view.setGoingEx();
-                }
             } else {
                 view.onRawInboundData(data);
                 view.fastInputFlush();
@@ -373,13 +373,10 @@ public class LadderPresenter {
         eeifOrdersBySymbol.forEach((s, orderUpdatesForSymbol) -> orderUpdatesForSymbol.onDisconnected(disconnected));
     }
 
-
     @Subscribe
-    public void on(final OpxlExDateSubscriber.SymbolsGoingEx symbolsGoingEx) {
-        this.symbolsGoingEx = symbolsGoingEx;
-        for (String symbol : symbolsGoingEx.symbols) {
-            viewsBySymbol.get(symbol).forEach(LadderView::setGoingEx);
-        }
+    public void on(final OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx) {
+        this.isinsGoingEx = isinsGoingEx;
+        viewBySocket.values().forEach(l -> l.setIsinsGoingEx(isinsGoingEx));
     }
 
     public long flushAllLadders() {

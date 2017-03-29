@@ -12,41 +12,39 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static com.google.common.collect.Sets.newHashSet;
-
 public class OpxlExDateSubscriber {
 
-    public static final String OPXL_KEY = "eeif(names_going_ex_" + new SimpleDateFormat(DateTimeUtil.DATE_FILE_FORMAT).format(new Date()) + ")";
+    public static final String OPXL_KEY = "eeif(isin_going_ex_" + new SimpleDateFormat(DateTimeUtil.DATE_FILE_FORMAT).format(new Date()) + ")";
 
     private final Publisher<Throwable> errorPublisher;
-    private final Publisher<SymbolsGoingEx> publisher;
+    private final Publisher<IsinsGoingEx> publisher;
 
-    public OpxlExDateSubscriber(final Publisher<Throwable> errorPublisher, final Publisher<SymbolsGoingEx> publisher) {
+    public OpxlExDateSubscriber(final Publisher<Throwable> errorPublisher, final Publisher<IsinsGoingEx> publisher) {
         this.errorPublisher = errorPublisher;
         this.publisher = publisher;
     }
 
     public void onOpxlData(final OpxlData opxlData) {
         String headerString = Arrays.asList(opxlData.getData()[0]).toString();
-        if (!headerString.equals("[Ticker, Ex Date]")) {
+        if (!headerString.equals("[ISIN, Ex Date]")) {
             errorPublisher.publish(new Throwable("Ex-date: bad headers " + headerString));
             return;
         }
         List<Object[]> rows = Arrays.asList(opxlData.getData()).subList(1, opxlData.getData().length);
-        HashSet<String> symbols = new HashSet<>();
+        HashSet<String> isins = new HashSet<>();
         for (final Object[] data : rows) {
-            final String symbol = data[0].toString();
+            final String isin = data[0].toString();
             final String value = data[1].toString();
-            symbols.add(symbol);
+            isins.add(isin);
         }
-        publisher.publish(new SymbolsGoingEx(symbols));
+        publisher.publish(new IsinsGoingEx(isins));
     }
 
-    public static class SymbolsGoingEx {
-        public final ImmutableSet<String> symbols;
+    public static class IsinsGoingEx {
+        public final ImmutableSet<String> isins;
 
-        public SymbolsGoingEx(Set<String> symbols) {
-            this.symbols = ImmutableSet.copyOf(symbols);
+        public IsinsGoingEx(Set<String> isins) {
+            this.isins = ImmutableSet.copyOf(isins);
         }
     }
 }

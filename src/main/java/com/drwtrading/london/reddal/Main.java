@@ -453,7 +453,7 @@ public class Main {
                         channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
                         channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand,
                         channels.ladderClickTradingIssues, channels.replaceCommand, channels.userCycleContractPublisher,
-                        channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults, channels.symbolsGoingEx);
+                        channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults, channels.isinsGoingEx);
 
                 channels.pksExposure.subscribe(fiberBuilder.getFiber(), presenter::setPKSExposure);
 
@@ -805,7 +805,7 @@ public class Main {
         // Ex-dates
         {
             new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
-                    new OpxlExDateSubscriber(channels.errorPublisher, channels.symbolsGoingEx)::onOpxlData,
+                    new OpxlExDateSubscriber(channels.errorPublisher, channels.isinsGoingEx)::onOpxlData,
                     ImmutableSet.of(OpxlExDateSubscriber.OPXL_KEY), fibers.opxlPosition.getFiber(), channels.errorPublisher);
         }
 

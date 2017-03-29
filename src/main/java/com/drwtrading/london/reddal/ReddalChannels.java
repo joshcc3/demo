@@ -70,7 +70,7 @@ public class ReddalChannels {
     public final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
     public final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
     public final TypedChannel<StackRefPriceDetail> stackRefPriceDetailChannel;
-    public final TypedChannel<OpxlExDateSubscriber.SymbolsGoingEx> symbolsGoingEx;
+    public final TypedChannel<OpxlExDateSubscriber.IsinsGoingEx> isinsGoingEx;
 
     public ReddalChannels(final ChannelFactory channelFactory) {
 
@@ -109,7 +109,7 @@ public class ReddalChannels {
         this.orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
         this.orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
         this.stackRefPriceDetailChannel = create(StackRefPriceDetail.class);
-        this.symbolsGoingEx = create(OpxlExDateSubscriber.SymbolsGoingEx.class);
+        this.isinsGoingEx = create(OpxlExDateSubscriber.IsinsGoingEx.class);
     }
 
     public <T> TypedChannel<T> create(final Class<T> clazz) {

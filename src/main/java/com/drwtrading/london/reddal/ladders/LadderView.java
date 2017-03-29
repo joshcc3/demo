@@ -11,6 +11,9 @@ import com.drwtrading.london.fastui.html.CSSClass;
 import com.drwtrading.london.fastui.html.HTML;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
+import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
+import eeif.execution.Side;
+import eeif.execution.WorkingOrderType;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
@@ -29,8 +32,6 @@ import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.websockets.WebSocketClient;
 import drw.london.json.Jsonable;
-import eeif.execution.Side;
-import eeif.execution.WorkingOrderType;
 import org.jetlang.channels.Publisher;
 
 import java.math.BigDecimal;
@@ -141,7 +142,8 @@ public class LadderView implements UiEventHandler {
     private LadderBookView bookView;
     private ILadderBoard stackView;
     private ILadderBoard activeView;
-    private boolean goingExFlag;
+    private OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx;
+    private GoingExState exState = GoingExState.Unknown;
 
     public LadderView(final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view, final String ewokBaseURL,
                       final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
@@ -330,10 +332,6 @@ public class LadderView implements UiEventHandler {
         ui.flush();
     }
 
-    public void setGoingEx() {
-        this.goingExFlag = true;
-    }
-
     private void drawClock() {
         ui.txt(HTML.CLOCK, SIMPLE_DATE_FORMAT.format(new Date()));
         ui.cls(HTML.CLOCK, CSSClass.SLOW, clientSpeedState == ClientSpeedState.SLOW);
@@ -409,8 +407,10 @@ public class LadderView implements UiEventHandler {
             for (final LadderText ladderText : metaData.ladderTextByPosition.values()) {
                 ui.txt(HTML.TEXT_PREFIX + ladderText.getCell(), ladderText.getText());
             }
+
             // Going ex
-            ui.cls(HTML.TEXT, CSSClass.GOING_EX, goingExFlag);
+            checkGoingEx();
+            ui.cls(HTML.TEXT, CSSClass.GOING_EX, exState == GoingExState.YES);
         }
     }
 
@@ -733,4 +733,32 @@ public class LadderView implements UiEventHandler {
             return MILLIONS_QTY_FORMAT.format(qty / 1000000d) + 'M';
         }
     }
+
+    public void setIsinsGoingEx(OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx) {
+        this.isinsGoingEx = isinsGoingEx;
+        this.exState = GoingExState.Unknown;
+        checkGoingEx();
+    }
+
+    private void checkGoingEx() {
+        if (this.exState != GoingExState.Unknown) {
+            return;
+        }
+        GoingExState exState = GoingExState.Unknown;
+        if (isinsGoingEx != null && marketData != null && marketData.getBook() != null) {
+            if (isinsGoingEx.isins.contains(marketData.getBook().getISIN())) {
+                exState = GoingExState.YES;
+            } else {
+                exState = GoingExState.NO;
+            }
+        }
+        this.exState = exState;
+    }
+
+    enum GoingExState {
+        YES,
+        NO,
+        Unknown
+    }
+
 }
