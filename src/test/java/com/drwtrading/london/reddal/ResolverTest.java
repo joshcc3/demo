@@ -78,19 +78,19 @@ public class ResolverTest {
         assertEquals("nibbler-ice", resolver.resolveToServerName("ZZ4", RemoteOrderType.GTC, "CHAD"));
         assertEquals("nibbler-ice", resolver.resolveToServerName("ZZ4-ZH5", RemoteOrderType.GTC, "CHAD"));
 
-        assertEquals("nibbler-eurex", resolver.resolveToServerName("FESBU4", RemoteOrderType.MANUAL, "CHAD"));
-        assertEquals("nibbler-eurex", resolver.resolveToServerName("FSTXU4", RemoteOrderType.MANUAL, "CHAD"));
-        assertEquals("nibbler-eurex", resolver.resolveToServerName("FSTCU4", RemoteOrderType.MANUAL, "CHAD"));
-        assertEquals("nibbler-eurex", resolver.resolveToServerName("FSTCU4", RemoteOrderType.HAWK, "CHAD"));
-        assertEquals("nibbler-eurex", resolver.resolveToServerName("FSTCU4", RemoteOrderType.TAKER, "CHAD"));
+        assertEquals("nibbler-eurex-1", resolver.resolveToServerName("FESBU4", RemoteOrderType.MANUAL, "CHAD"));
+        assertEquals("nibbler-eurex-1", resolver.resolveToServerName("FSTXU4", RemoteOrderType.MANUAL, "CHAD"));
+        assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FSTCU4", RemoteOrderType.MANUAL, "CHAD"));
+        assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FSTCU4", RemoteOrderType.HAWK, "CHAD"));
+        assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FSTCU4", RemoteOrderType.TAKER, "CHAD"));
 
-        assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FXXPU4", RemoteOrderType.TAKER, "CHAD"));
+        assertEquals("nibbler-eurex-1", resolver.resolveToServerName("FXXPU4", RemoteOrderType.TAKER, "CHAD"));
         assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FSTBU4", RemoteOrderType.HAWK, "CHAD"));
-        assertEquals("nibbler-eurex-3", resolver.resolveToServerName("F2MXU4", RemoteOrderType.MANUAL, "CHAD"));
-        assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FTDXU4", RemoteOrderType.HAWK, "CHAD"));
-        assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FDAXU4", RemoteOrderType.TAKER, "CHAD"));
+        assertEquals("nibbler-eurex-2", resolver.resolveToServerName("F2MXU4", RemoteOrderType.MANUAL, "CHAD"));
+        assertEquals("nibbler-eurex-2", resolver.resolveToServerName("FTDXU4", RemoteOrderType.HAWK, "CHAD"));
+        assertEquals("nibbler-eurex-1", resolver.resolveToServerName("FDAXU4", RemoteOrderType.TAKER, "CHAD"));
         assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FSMMU4", RemoteOrderType.TAKER, "CHAD"));
-        assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FSMIU4", RemoteOrderType.TAKER, "CHAD"));
+        assertEquals("nibbler-eurex-1", resolver.resolveToServerName("FSMIU4", RemoteOrderType.TAKER, "CHAD"));
         assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FSLIU4", RemoteOrderType.TAKER, "CHAD"));
         assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FSTBZ4", RemoteOrderType.MANUAL, "CHAD"));
 
