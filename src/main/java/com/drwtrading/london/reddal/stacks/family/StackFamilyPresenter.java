@@ -88,6 +88,10 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     public boolean updateRelationship(final String source, final long relationshipID, final String childSymbol, final String parentSymbol,
             final double bidPriceOffset, final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier) {
 
+        for (final Map<String, StackUIRelationship> children : families.values()) {
+            children.remove(childSymbol);
+        }
+
         final Map<String, StackUIRelationship> familyChildren = MapUtils.getNavigableMap(families, parentSymbol);
 
         final StackUIRelationship newRelationship =
