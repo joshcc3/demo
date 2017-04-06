@@ -147,7 +147,8 @@ function addConfigTypeOption(configTypeCombo, configType) {
 
 function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
 				quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis,
-				fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, bidPlanMinLevelQty,
+				fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio,
+				additiveIsEnabled, additiveMaxSignalAgeMillis, additiveMinRequiredBPS, additiveMaxBPS, bidPlanMinLevelQty,
 				bidPlanMaxLevelQty, bidPlanLotSize, bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer,
 				bidQuotePicardMaxTicksThrough, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay,
 				askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMaxOrdersPerLevel, askIsQuoteBettermentOn,
@@ -257,6 +258,11 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 		setCellData(row, ".leanInst.maxPapaWeight input", leanMaxPapaWeight);
 		setDoubleData(row, ".leanInst.leanToQuoteRatio input", leanToQuoteRatio);
 
+		setBoolData(row, ".additiveInst.isEnabled input", additiveIsEnabled);
+		setCellData(row, ".additiveInst.maxSignalAgeMillis input", additiveMaxSignalAgeMillis);
+		setCellData(row, ".additiveInst.minRequiredBPS input", additiveMinRequiredBPS);
+		setCellData(row, ".additiveInst.maxBPS input", additiveMaxBPS);
+
 		setCellData(row, ".plan.minLevelQty .bid", bidPlanMinLevelQty);
 		setCellData(row, ".plan.maxLevelQty .bid", bidPlanMaxLevelQty);
 		setCellData(row, ".plan.lotSize .bid", bidPlanLotSize);
@@ -352,6 +358,11 @@ function submitRow(row) {
 	var leanMaxPapaWeight = getCellData(row, ".leanInst.maxPapaWeight input");
 	var leanToQuoteRatio = getCellFloat(row, ".leanInst.leanToQuoteRatio input");
 
+	var additiveIsEnabled = getCellBool(row, ".additiveInst.isEnabled input");
+	var additiveMaxSignalAgeMillis = getCellData(row, ".additiveInst.maxSignalAgeMillis input");
+	var additiveMinRequiredBPS = getCellData(row, ".additiveInst.minRequiredBPS input");
+	var additiveMaxBPS = getCellData(row, ".additiveInst.maxBPS input");
+
 	var bidPlanMinLevelQty = getCellData(row, ".plan.minLevelQty .bid");
 	var bidPlanMaxLevelQty = getCellData(row, ".plan.maxLevelQty .bid");
 	var bidPlanLotSize = getCellData(row, ".plan.lotSize .bid");
@@ -382,10 +393,11 @@ function submitRow(row) {
 
 	ws.send(command("submitChange", [nibblerName, configGroupID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
 		quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS,
-		leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, bidPlanMinLevelQty, bidPlanMaxLevelQty,
-		bidPlanLotSize, bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer,
-		bidQuotePicardMaxTicksThrough, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty,
-		askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMaxOrdersPerLevel, askIsQuoteBettermentOn, askQuoteFlickerBuffer,
+		leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, additiveIsEnabled,
+		additiveMaxSignalAgeMillis, additiveMinRequiredBPS, additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
+		bidPlanMaxLevels, bidMaxOrdersPerLevel, bidIsQuoteBettermentOn, bidQuoteFlickerBuffer, bidQuotePicardMaxTicksThrough,
+		bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty,
+		askPlanLotSize, askPlanMaxLevels, askMaxOrdersPerLevel, askIsQuoteBettermentOn, askQuoteFlickerBuffer,
 		askQuotePicardMaxTicksThrough, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay]));
 }
 

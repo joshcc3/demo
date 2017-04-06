@@ -159,6 +159,17 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
+    public void refreshAllParents(final WebSocketInboundData data) {
+
+        communityManager.reestablishParentalRule();
+    }
+
+    @FromWebSocketView
+    public void cleanAllParents(final WebSocketInboundData data) {
+        communityManager.cleanParentStacks(SOURCE_UI);
+    }
+
+    @FromWebSocketView
     public void checkFamilyInst(final String family, final String resultFieldID, final WebSocketInboundData data) {
 
         final IStackFamilyUI ui = views.get(data.getOutboundChannel());
@@ -288,7 +299,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void setStackEnabled(final String familyName, final String bookSide, final String stack, final boolean isEnabled) {
+    public void setStackEnabled(final String familyName, final String bookSide, final String stack, final boolean isEnabled,
+            final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
@@ -296,12 +308,17 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void setAllStacksEnabled(final String familyName, final boolean isEnabled) {
+    public void setAllStacksEnabled(final String familyName, final boolean isEnabled, final WebSocketInboundData data) {
 
         for (final BookSide side : BookSide.values()) {
             for (final StackType stackType : StackType.values()) {
                 communityManager.setStackEnabled(SOURCE_UI, familyName, side, stackType, isEnabled);
             }
         }
+    }
+
+    @FromWebSocketView
+    public void cleanParent(final String familyName, final WebSocketInboundData data) {
+        communityManager.cleanParentStack(SOURCE_UI, familyName);
     }
 }

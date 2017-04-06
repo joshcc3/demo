@@ -76,6 +76,33 @@ body {
 	padding: 0 2px;
 }
 
+.headerSecondRow {
+	padding-top: 10px;
+}
+
+#allStart {
+    background-color: lightgreen;
+    font-size: 13px;
+    font-weight: bold;
+    width: 120px;
+    height: 40px;
+    margin: 8px;
+    padding: 2px;
+	display: none;
+}
+
+#allStop {
+    background-color: lightcoral;
+    font-size: 13px;
+    font-weight: bold;
+    width: 120px;
+    height: 40px;
+    margin: 8px;
+    padding: 2px;
+	display: none;
+}
+
+
 .btn.link {
 	color: #fff;
 	background-color: #337ab7;
@@ -160,11 +187,13 @@ body {
 	padding: 15px 0 0;
 	margin: 0;
 	vertical-align: middle;
+	-webkit-user-select: none;
 }
 
 .familyDetails div {
 	display: inline-block;
 	font-size: 12px;
+	height: 15px;
 }
 
 .familyDetails .childCount {
@@ -191,6 +220,7 @@ body {
 	white-space: normal;
 	vertical-align: middle;
 	width: 20px;
+	height: auto;
 }
 
 .familyDetails .priceOffsetButtons button {
@@ -237,6 +267,16 @@ body {
 .familyDetails .stackControls.allEnabled {
 	background-color: #9a9a9a;
 	border: 3px solid #5970B2;
+}
+
+.familyDetails .cleanParent {
+	background-color: buttonface;
+	color: buttonText;
+	border: 3px solid #5970B2;
+}
+
+.familyDetails .cleanParent:active {
+	border: 3px solid #9a9a9a;
 }
 
 #families .row > div {

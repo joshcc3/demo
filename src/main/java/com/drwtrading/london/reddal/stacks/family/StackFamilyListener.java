@@ -38,7 +38,7 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
 
     @Override
     public boolean strategyCreated(final String source, final long strategyID, final String familyName, final InstrumentID instID,
-            final InstType leanInstType, final String leanSymbol, final InstrumentID leanInstID) {
+            final InstType leanInstType, final String leanSymbol, final InstrumentID leanInstID, final String additiveSymbol) {
 
         presenter.addFamily(familyName);
 
@@ -53,7 +53,8 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
 
     @Override
     public boolean pendingRequirementsUpdated(final String source, final long strategyID, final boolean isQuoteInstDefEventAvailable,
-            final boolean isQuoteBookAvailable, final boolean isLeanBookAvailable, final boolean isFXAvailable) {
+            final boolean isQuoteBookAvailable, final boolean isLeanBookAvailable, final boolean isFXAvailable,
+            final boolean isAdditiveAvailable) {
         return true;
     }
 

@@ -496,7 +496,7 @@ public class LadderStackView implements ILadderBoard {
                 setCenteredPrice(centeredPrice * stackGroupTickMultiplierBoxValue / stackData.getStackGroupTickMultiplier());
             } else if (label.equals(HTML.STACK_CONFIG_BUTTON)) {
                 final String url = "/stackConfig#;" + symbol;
-                view.popUp(url, "stackConfig:" + symbol, 2200, 300);
+                view.popUp(url, "stackConfig:" + symbol, 2400, 300);
             }
         } else if ("right".equals(button)) {
             if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {

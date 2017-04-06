@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.stacks.configui;
 
 import com.drwtrading.jetlang.builder.FiberBuilder;
+import com.drwtrading.london.eeif.stack.transport.data.config.StackAdditiveConfig;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackFXConfig;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackLeanConfig;
@@ -116,6 +117,7 @@ public class StackConfigPresenter {
         final StackQuoteConfig quoteConfig = configGroup.quoteConfig;
         final StackFXConfig fxConfig = configGroup.fxConfig;
         final StackLeanConfig leanConfig = configGroup.leanConfig;
+        final StackAdditiveConfig additiveConfig = configGroup.additiveConfig;
 
         final StackPlanConfig bidPlanConfig = configGroup.bidPlanConfig;
         final StackStrategyConfig bidStrategyConfig = configGroup.bidStrategyConfig;
@@ -134,12 +136,14 @@ public class StackConfigPresenter {
                 quoteConfig.isAuctionQuotingEnabled(), quoteConfig.isOnlyAuctionQuoting(), quoteConfig.getAuctionTheoMaxTicksThrough(),
                 quoteConfig.getMaxJumpBPS(), quoteConfig.getBettermentQty(), quoteConfig.getBettermentTicks(),
                 fxConfig.getMaxBookAgeMillis(), fxConfig.getMaxJumpBPS(), leanConfig.getMaxBookAgeMillis(), leanConfig.getMaxJumpBPS(),
-                leanConfig.getRequiredQty(), leanConfig.getMaxPapaWeight(), leanToQuoteRatio, bidPlanConfig.getMinLevelQty(),
-                bidPlanConfig.getMaxLevelQty(), bidPlanConfig.getLotSize(), bidPlanConfig.getMaxLevels(),
+                leanConfig.getRequiredQty(), leanConfig.getMaxPapaWeight(), leanToQuoteRatio, additiveConfig.isEnabled(),
+                additiveConfig.getMaxSignalAgeMillis(), additiveConfig.getMinRequiredBPS(), additiveConfig.getMaxBPS(),
+                bidPlanConfig.getMinLevelQty(), bidPlanConfig.getMaxLevelQty(), bidPlanConfig.getLotSize(), bidPlanConfig.getMaxLevels(),
                 bidStrategyConfig.getMaxOrdersPerLevel(), bidStrategyConfig.isQuoteBettermentOn(),
                 bidStrategyConfig.getQuoteFlickerBufferPercent(), bidStrategyConfig.getQuotePicardMaxTicksThrough(),
                 bidStrategyConfig.getPicardMaxPerSec(), bidStrategyConfig.getPicardMaxPerMin(), bidStrategyConfig.getPicardMaxPerHour(),
-                bidStrategyConfig.getPicardMaxPerDay(), askPlanConfig.getMinLevelQty(), askPlanConfig.getMaxLevelQty(), askPlanConfig.getLotSize(), askPlanConfig.getMaxLevels(), askStrategyConfig.getMaxOrdersPerLevel(),
+                bidStrategyConfig.getPicardMaxPerDay(), askPlanConfig.getMinLevelQty(), askPlanConfig.getMaxLevelQty(),
+                askPlanConfig.getLotSize(), askPlanConfig.getMaxLevels(), askStrategyConfig.getMaxOrdersPerLevel(),
                 askStrategyConfig.isQuoteBettermentOn(), askStrategyConfig.getQuoteFlickerBufferPercent(),
                 askStrategyConfig.getQuotePicardMaxTicksThrough(), askStrategyConfig.getPicardMaxPerSec(),
                 askStrategyConfig.getPicardMaxPerMin(), askStrategyConfig.getPicardMaxPerHour(), askStrategyConfig.getPicardMaxPerDay());
@@ -155,13 +159,15 @@ public class StackConfigPresenter {
             final boolean quoteIsAuctionQuotingEnabled, final boolean quoteIsOnlyAuction, final int quoteAuctionTheoMaxTicksThrough,
             final int quoteMaxJumpBPS, final int quoteBettermentQty, final int quoteBettermentTicks, final int fxMaxBookAgeMillis,
             final int fxMaxJumpBPS, final int leanMaxBookAgeMillis, final int leanMaxJumpBPS, final int leanRequiredQty,
-            final int leanMaxPapaWeight, final String leanToQuoteRatioStr, final int bidPlanMinLevelQty, final int bidPlanMaxLevelQty,
-            final int bidPlanLotSize, final int bidPlanMaxLevels, final int bidMaxOrdersPerLevel, final boolean bidIsQuoteBettermentOn,
-            final int bidQuoteFlickerBufferPercent, final int bidPicardMaxTicksThrough, final int bidPicardMaxPerSec,
-            final int bidPicardMaxPerMin, final int bidPicardMaxPerHour, final int bidPicardMaxPerDay, final int askPlanMinLevelQty,
-            final int askPlanMaxLevelQty, final int askPlanLotSize, final int askPlanMaxLevels, final int askMaxOrdersPerLevel,
-            final boolean askIsQuoteBettermentOn, final int askQuoteFlickerBufferPercent, final int askPicardMaxTicksThrough,
-            final int askPicardMaxPerSec, final int askPicardMaxPerMin, final int askPicardMaxPerHour, final int askPicardMaxPerDay) {
+            final int leanMaxPapaWeight, final String leanToQuoteRatioStr, final boolean additiveIsEnabled,
+            final int additiveMaxSignalAgeMillis, final int additiveMinRequiredBPS, final int additiveMaxBPS, final int bidPlanMinLevelQty,
+            final int bidPlanMaxLevelQty, final int bidPlanLotSize, final int bidPlanMaxLevels, final int bidMaxOrdersPerLevel,
+            final boolean bidIsQuoteBettermentOn, final int bidQuoteFlickerBufferPercent, final int bidPicardMaxTicksThrough,
+            final int bidPicardMaxPerSec, final int bidPicardMaxPerMin, final int bidPicardMaxPerHour, final int bidPicardMaxPerDay,
+            final int askPlanMinLevelQty, final int askPlanMaxLevelQty, final int askPlanLotSize, final int askPlanMaxLevels,
+            final int askMaxOrdersPerLevel, final boolean askIsQuoteBettermentOn, final int askQuoteFlickerBufferPercent,
+            final int askPicardMaxTicksThrough, final int askPicardMaxPerSec, final int askPicardMaxPerMin, final int askPicardMaxPerHour,
+            final int askPicardMaxPerDay) {
 
         final double leanToQuoteRatio = Double.parseDouble(leanToQuoteRatioStr);
 
@@ -174,6 +180,9 @@ public class StackConfigPresenter {
             configClient.fxConfigUpdated(SOURCE, configGroupID, fxMaxBookAgeMillis, fxMaxJumpBPS);
             configClient.leanConfigUpdated(SOURCE, configGroupID, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty,
                     (byte) leanMaxPapaWeight, leanToQuoteRatio);
+
+            configClient.additiveConfigUpdated(SOURCE, configGroupID, additiveMaxSignalAgeMillis, additiveIsEnabled, additiveMinRequiredBPS,
+                    additiveMaxBPS);
 
             configClient.planConfigUpdated(SOURCE, configGroupID, BookSide.BID, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
                     bidPlanMaxLevels);

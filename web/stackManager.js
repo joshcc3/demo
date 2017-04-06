@@ -19,6 +19,19 @@ $(function () {
 		popUp("/stackConfig", "Configs", 2200, 800);
 	});
 
+	$("#stackParentalRule").unbind().bind("click", function () {
+		ws.send(command("refreshAllParents", []));
+	});
+	$("#allStart").unbind().bind("click", function () {
+		ws.send(command("startAll", []));
+	});
+	$("#allStop").unbind().bind("click", function () {
+		ws.send(command("stopAll", []));
+	});
+	$("#cleanAllParents").unbind().bind("click", function () {
+		ws.send(command("cleanAllParents", []));
+	});
+
 	var familyNameInput = $("#quoteSymbol");
 	familyNameInput.on("input", function () {
 		var symbol = familyNameInput.val();
@@ -156,6 +169,11 @@ function addFamily(familyName) {
 		var allEnableDiv = family.find(".stackControls.allEnabled");
 		allEnableDiv.mousedown(stackEnableAllStackChange(familyName));
 
+		var cleanFamilyDiv = family.find(".stackControls.cleanParent");
+		cleanFamilyDiv.mousedown(function () {
+			ws.send(command("cleanParent", [familyName]));
+		});
+
 		$("#families").append(family);
 		setChildCount(familyName);
 	}
@@ -253,8 +271,6 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 			d.text("");
 		});
 	} else if (row.parent().get(0) != exchangeTable.get(0)) {
-
-		console.log(row, row.parent(), "table", exchangeTable);
 
 		var oldFamily = row.parent().parent().find(".familyName").text();
 		row.remove();

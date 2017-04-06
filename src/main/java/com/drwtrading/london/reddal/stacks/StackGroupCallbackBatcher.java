@@ -39,7 +39,7 @@ public class StackGroupCallbackBatcher
 
     @Override
     public IStackStrategyUpdateCallback getStrategyListener(final String symbol, final InstrumentID instID, final String leanSymbol,
-            final InstrumentID leanInstID) {
+            final InstrumentID leanInstID, final String additiveSymbol) {
 
         return this;
     }

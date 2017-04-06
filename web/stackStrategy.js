@@ -84,7 +84,8 @@ function removeAll(nibblerName) {
 }
 
 function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanInstType, leanSymbol, leanISIN, leanCCY, leanMIC,
-				isQuoteInstDefEventAvailable, isQuoteBookAvailable, isLeanBookAvailable, isFXAvailable, selectedConfigType) {
+				isQuoteInstDefEventAvailable, isQuoteBookAvailable, isLeanBookAvailable, isFXAvailable, isAdditiveAvailable,
+				selectedConfigType) {
 
 	var rowID = nibblerName + strategyID;
 	var row = $("#" + rowID);
@@ -125,6 +126,7 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 	setBoolData(row, ".isQuoteBookAvailable", isQuoteBookAvailable);
 	setBoolData(row, ".isLeanBookAvailable", isLeanBookAvailable);
 	setBoolData(row, ".isFXAvailable", isFXAvailable);
+	setBoolData(row, ".isAdditiveAvailable", isAdditiveAvailable);
 
 	setCellData(row, ".selectedConfigType", selectedConfigType);
 
