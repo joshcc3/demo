@@ -281,7 +281,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     @FromWebSocketView
     public void refreshParent(final String parentSymbol, final WebSocketInboundData data) {
 
-        communityManager.refreshParent(parentSymbol);
+        communityManager.reestablishParentalRule(parentSymbol);
     }
 
     @FromWebSocketView
