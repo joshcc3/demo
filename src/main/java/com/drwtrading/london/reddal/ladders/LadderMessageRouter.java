@@ -3,7 +3,7 @@ package com.drwtrading.london.reddal.ladders;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.builder.FiberBuilder;
-import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
+import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketControlMessage;
@@ -24,7 +24,7 @@ public class LadderMessageRouter {
 
     private final UILogger webLog;
 
-    private final HistoryPresenter historyPresenter;
+    private final TypedChannel<SymbolSelection> symbolSelections;
 
     private final Multimap<Publisher<WebSocketOutboundData>, WebSocketControlMessage> queue = HashMultimap.create();
     private final Map<Publisher<WebSocketOutboundData>, Publisher<WebSocketControlMessage>> redirects = new HashMap<>();
@@ -32,11 +32,11 @@ public class LadderMessageRouter {
     private final List<TypedChannel<WebSocketControlMessage>> pool;
     private final FiberBuilder logFiber;
 
-    public LadderMessageRouter(final UILogger webLog, final HistoryPresenter historyPresenter,
+    public LadderMessageRouter(final UILogger webLog, final TypedChannel<SymbolSelection> symbolSelections,
             final List<TypedChannel<WebSocketControlMessage>> pool, final FiberBuilder logFiber) {
 
         this.webLog = webLog;
-        this.historyPresenter = historyPresenter;
+        this.symbolSelections = symbolSelections;
 
         this.pool = pool;
         this.logFiber = logFiber;
@@ -80,7 +80,8 @@ public class LadderMessageRouter {
                 }
                 publisher.publish(msg);
 
-                historyPresenter.addSymbol(msg.getClient().getUserName(), args);
+                final SymbolSelection symbolSelection = new SymbolSelection(msg.getClient().getUserName(), args);
+                symbolSelections.publish(symbolSelection);
             } else {
                 queue.put(msg.getOutboundChannel(), msg);
             }

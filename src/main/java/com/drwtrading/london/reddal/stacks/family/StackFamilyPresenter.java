@@ -10,6 +10,7 @@ import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
+import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -20,6 +21,7 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,6 +37,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final UILogger uiLogger;
 
     private final WebSocketViews<IStackFamilyUI> views;
+    private final Map<String, HashSet<IStackFamilyUI>> userViews;
 
     private final Map<String, NavigableMap<String, StackUIRelationship>> families;
     private final Map<String, StackUIData> parentData;
@@ -50,6 +53,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         this.uiLogger = uiLogger;
 
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
+        this.userViews = new HashMap<>();
 
         this.families = new HashMap<>();
         this.parentData = new HashMap<>();
@@ -113,11 +117,23 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         searchResults.put(searchResult.symbol, searchResult);
     }
 
+    public void symbolSelected(final SymbolSelection symbolSelection) {
+
+        final Set<IStackFamilyUI> views = userViews.get(symbolSelection.username);
+        if (null != views) {
+            for (final IStackFamilyUI view : views) {
+
+                view.showChild(symbolSelection.symbol);
+            }
+        }
+    }
+
     public void webControl(final WebSocketControlMessage webMsg) {
 
         if (webMsg instanceof WebSocketDisconnected) {
 
-            views.unregister((WebSocketDisconnected) webMsg);
+            final IStackFamilyUI oldView = views.unregister((WebSocketDisconnected) webMsg);
+            userViews.get(webMsg.getClient().getUserName()).remove(oldView);
 
         } else if (webMsg instanceof WebSocketInboundData) {
 
@@ -131,15 +147,16 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         final String data = msg.getData();
         if ("subscribe".equals(data)) {
-            addUI(msg.getOutboundChannel());
+            addUI(msg.getClient().getUserName(), msg.getOutboundChannel());
         } else {
             views.invoke(msg);
         }
     }
 
-    private void addUI(final Publisher<WebSocketOutboundData> channel) {
+    private void addUI(final String username, final Publisher<WebSocketOutboundData> channel) {
 
         final IStackFamilyUI newView = views.get(channel);
+        MapUtils.getMappedSet(userViews, username).add(newView);
 
         for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> family : families.entrySet()) {
 
@@ -320,5 +337,31 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     @FromWebSocketView
     public void cleanParent(final String familyName, final WebSocketInboundData data) {
         communityManager.cleanParentStack(SOURCE_UI, familyName);
+    }
+
+    @FromWebSocketView
+    public void startAll(final WebSocketInboundData data) {
+        communityManager.startFamilies(families.keySet(), BookSide.BID);
+        communityManager.startFamilies(families.keySet(), BookSide.ASK);
+    }
+
+    @FromWebSocketView
+    public void stopAll(final WebSocketInboundData data) {
+        communityManager.stopFamilies(families.keySet(), BookSide.BID);
+        communityManager.stopFamilies(families.keySet(), BookSide.ASK);
+    }
+
+    @FromWebSocketView
+    public void startFamily(final String family, final String bookSide, final WebSocketInboundData data) {
+
+        final BookSide side = BookSide.valueOf(bookSide);
+        communityManager.startFamilies(Collections.singleton(family), side);
+    }
+
+    @FromWebSocketView
+    public void stopFamily(final String family, final String bookSide, final WebSocketInboundData data) {
+
+        final BookSide side = BookSide.valueOf(bookSide);
+        communityManager.stopFamilies(Collections.singleton(family), side);
     }
 }

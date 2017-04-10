@@ -4,6 +4,7 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
+import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import eeif.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
@@ -72,6 +73,8 @@ public class ReddalChannels {
     public final TypedChannel<StackRefPriceDetail> stackRefPriceDetailChannel;
     public final TypedChannel<OpxlExDateSubscriber.IsinsGoingEx> isinsGoingEx;
 
+    public final TypedChannel<SymbolSelection> symbolSelections;
+
     public ReddalChannels(final ChannelFactory channelFactory) {
 
         this.channelFactory = channelFactory;
@@ -110,6 +113,8 @@ public class ReddalChannels {
         this.orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
         this.stackRefPriceDetailChannel = create(StackRefPriceDetail.class);
         this.isinsGoingEx = create(OpxlExDateSubscriber.IsinsGoingEx.class);
+
+        this.symbolSelections = create(SymbolSelection.class);
     }
 
     public <T> TypedChannel<T> create(final Class<T> clazz) {

@@ -15,6 +15,8 @@ public interface IStackFamilyUI {
     public void setChild(final String familyName, final String childSymbol, final double bidPriceOffset, final double bidQtyMultiplier,
             final double askPriceOffset, final double askQtyMultiplier);
 
+    public void showChild(final String symbol);
+
     public void displayErrorMsg(final String text);
 
     void setParentData(final String familyName, final String bidPriceOffset, final String askPriceOffset, final String selectedConfigType,

@@ -11,6 +11,7 @@
 	<script src="js/sounds.js"></script>
 	<script src="cell-functions.js"></script>
 	<script src="launcher-eeif.js"></script>
+	<script src="utils.js"></script>
 	<script src="stackManager.js"></script>
 </head>
 <body>
@@ -35,7 +36,7 @@
 			</div>
 
 			<div class="headerButton">
-				<button id="allStart" class="btn">&#x21ba;&#x21ba;&#x21ba;&nbsp;▶▶▶!</button>
+				<button id="allStart" class="btn">▶▶▶</button>
 			</div>
 
 			<div class="headerButton">
@@ -44,6 +45,17 @@
 
 			<div class="headerButton">
 				<button id="cleanAllParents" class="btn">Clean</button>
+			</div>
+
+			<div class="headerButton">
+				<button id="minimiseFamilies" class="btn link">Minimise Tables</button>
+			</div>
+		</div>
+
+		<div class="headerThirdRow">
+			<div class="headerButton">
+				<input id="symbolLookup" type="text" name="symbolLookup">
+				<button id="symbolLookupGo" class="btn link">Find</button>
 			</div>
 		</div>
 	</div>
@@ -98,58 +110,76 @@
 		</div>
 
 		<div id="families">
-		</div>
 
-		<div id="templateFamily" class="template">
-			<div class="familyDetails">
-				<button type="button" class="openStack">stack</button>
-				<button type="button" class="refreshParent">Refresh</button>
-				<div class="childCount"></div>
-				<div class="familyName"></div>
+			<div id="templateFamily" class="template family">
+				<div class="familyDetails">
+					<button type="button" class="openStack">stack</button>
+					<button type="button" class="refreshParent">Refresh</button>
 
-				<div class="bid priceOffset">---</div>
-				<div class="bid priceOffsetButtons">
-					<button class="priceOffsetUp"></button>
-					<button class="priceOffsetDown"></button>
+					<div class="childCount"></div>
+
+					<div class="bid familyRunningControls">
+						<button class="start">▶</button>
+						<button class="stop">■</button>
+					</div>
+					<div class="ask familyRunningControls">
+						<button class="start">▶</button>
+						<button class="stop">■</button>
+					</div>
+
+					<div class="familyName"></div>
+
+					<div class="bid priceOffset">---</div>
+					<div class="bid priceOffsetButtons">
+						<button class="priceOffsetUp"></button>
+						<button class="priceOffsetDown"></button>
+					</div>
+
+					<div class="ask priceOffset">---</div>
+					<div class="ask priceOffsetButtons">
+						<button class="priceOffsetUp"></button>
+						<button class="priceOffsetDown"></button>
+					</div>
+
+					<div class="configControls">
+						<button class="default">D</button>
+						<button class="wide">W</button>
+						<button class="obligation">O</button>
+						<button class="configWindow">&#9775;</button>
+					</div>
+
+					<div class="bid stackControls">
+						<div class="picardEnabled">P</div>
+						<div class="quoterEnabled">Q</div>
+					</div>
+					<div class="ask stackControls">
+						<div class="quoterEnabled">Q</div>
+						<div class="picardEnabled">P</div>
+					</div>
+					<div class="stackControls allEnabled">All</div>
+
+					<div class="stackControls cleanParent">Clean</div>
 				</div>
+				<div class="children hidden">
+					<div class="header row">
 
-				<div class="ask priceOffset">---</div>
-				<div class="ask priceOffsetButtons">
-					<button class="priceOffsetUp"></button>
-					<button class="priceOffsetDown"></button>
-				</div>
+						<div class="symbol">Child</div>
 
-				<div class="configControls">
-					<button class="default">D</button>
-					<button class="wide">W</button>
-					<button class="obligation">O</button>
-					<button class="configWindow">&#9775;</button>
-				</div>
+						<div class="bid qtyMultiplier">Bid qty multiplier</div>
+						<div class="bid priceOffset">Bid offset BPS</div>
+						<div class="ask priceOffset">Ask offset BPS</div>
+						<div class="ask qtyMultiplier">Ask qty multiplier</div>
 
-				<div class="bid stackControls">
-					<div class="picardEnabled">P</div>
-					<div class="quoterEnabled">Q</div>
-				</div>
-				<div class="ask stackControls">
-					<div class="quoterEnabled">Q</div>
-					<div class="picardEnabled">P</div>
-				</div>
-				<div class="stackControls allEnabled">All</div>
+						<input type="submit" class="submitButton hidden" value="Submit">
 
-				<div class="stackControls cleanParent">Clean</div>
-			</div>
-			<div class="children hidden">
-				<div class="header row">
-
-					<div class="symbol">Child</div>
-
-					<div class="bid qtyMultiplier">Bid qty multiplier</div>
-					<div class="bid priceOffset">Bid offset BPS</div>
-					<div class="ask priceOffset">Ask offset BPS</div>
-					<div class="ask qtyMultiplier">Ask qty multiplier</div>
-
-					<input type="submit" class="submitButton hidden" value="Submit">
-					<button type="button" class="orphanButton hidden adminOnly">Orphan</button>
+						<div class="configControls">
+							<button class="default">D</button>
+							<button class="wide">W</button>
+							<button class="obligation">O</button>
+							<button class="configWindow">&#9775;</button>
+						</div>
+						<button type="button" class="orphanButton hidden adminOnly">Orphan</button>
+					</div>
 				</div>
 			</div>
 		</div>

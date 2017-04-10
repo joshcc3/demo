@@ -31,6 +31,27 @@ $(function () {
 	$("#cleanAllParents").unbind().bind("click", function () {
 		ws.send(command("cleanAllParents", []));
 	});
+	$("#minimiseFamilies").unbind().bind("click", function () {
+		minimiseAll();
+	});
+
+	var childSymbolSearchInput = $("#symbolLookup");
+	childSymbolSearchInput.unbind("input").bind("input", function () {
+		var symbol = childSymbolSearchInput.val();
+		var child = findChild(symbol);
+		childSymbolSearchInput.toggleClass("childAvailable", 1 == child.length);
+	});
+
+	childSymbolSearchInput.bind("keypress", function (e) {
+		if (e.keyCode == 13) {
+			var symbol = childSymbolSearchInput.val();
+			showChild(symbol);
+		}
+	});
+	$("#symbolLookupGo").unbind().bind("click", function () {
+		var symbol = childSymbolSearchInput.val();
+		showChild(symbol);
+	});
 
 	var familyNameInput = $("#quoteSymbol");
 	familyNameInput.on("input", function () {
@@ -97,6 +118,30 @@ function removeAll(nibblerName) {
 	setOrderCount(nibblerName);
 }
 
+function findChild(symbol) {
+
+	var rowID = symbol.replace(/ |\/|\.|:/g, "_");
+	return $("#" + rowID);
+}
+
+function showChild(symbol) {
+	var child = findChild(symbol);
+	if (1 == child.length) {
+		minimiseAll();
+		child.parent().toggleClass("hidden", false);
+
+		$(".childSearchResult").toggleClass("childSearchResult", false);
+		child.toggleClass("childSearchResult", true);
+		window.setTimeout(function () {
+			child.toggleClass("childSearchResult", false);
+		}, 2500);
+	}
+}
+
+function minimiseAll() {
+	$(".family .children").toggleClass("hidden", true);
+}
+
 function addFamily(familyName) {
 
 	var familyID = "family_" + familyName;
@@ -114,6 +159,26 @@ function addFamily(familyName) {
 		});
 		familyDetails.find(".refreshParent").unbind().bind("click", function () {
 			ws.send(command("refreshParent", [familyName]));
+		});
+
+		var bidStartButton = family.find(".bid .start");
+		bidStartButton.unbind().bind("click", function () {
+			ws.send(command("startFamily", [familyName, "BID"]));
+		});
+
+		var bidStopButton = family.find(".bid .stop");
+		bidStopButton.unbind().bind("click", function () {
+			ws.send(command("stopFamily", [familyName, "BID"]));
+		});
+
+		var askStartButton = family.find(".ask .start");
+		askStartButton.unbind().bind("click", function () {
+			ws.send(command("startFamily", [familyName, "ASK"]));
+		});
+
+		var askStopButton = family.find(".ask .stop");
+		askStopButton.unbind().bind("click", function () {
+			ws.send(command("stopFamily", [familyName, "ASK"]));
 		});
 
 		var familyNameDiv = family.find(".familyName");
@@ -174,10 +239,19 @@ function addFamily(familyName) {
 			ws.send(command("cleanParent", [familyName]));
 		});
 
-		$("#families").append(family);
+		addSortedDiv($("#families").find(".family"), family, tableComparator);
+
 		setChildCount(familyName);
 	}
 	return family;
+}
+
+function tableComparator(a, b) {
+
+	var aSymbol = $(a).find(".familyDetails .familyName").text();
+	var bSymbol = $(b).find(".familyDetails .familyName").text();
+
+	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
 }
 
 function priceOffsetChange(cmd, familyName, side, direction) {
@@ -264,21 +338,20 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 		row.removeClass("header");
 		row.attr("id", rowID);
 		row.addClass("dataRow");
-		exchangeTable.append(row);
 
-		row.find("div").each(function (i, d) {
-			d = $(d);
-			d.text("");
-		});
+		var quoteSymbolCell = setCellData(row.find(".symbol"), childSymbol);
+
+		addSortedDiv(exchangeTable.find(".row"), row, rowComparator);
+
 	} else if (row.parent().get(0) != exchangeTable.get(0)) {
 
 		var oldFamily = row.parent().parent().find(".familyName").text();
 		row.remove();
 		setChildCount(oldFamily);
-		exchangeTable.append(row);
+
+		addSortedDiv(exchangeTable.find(".row"), row, rowComparator);
 	}
 
-	var quoteSymbolCell = setCellData(row.find(".symbol"), childSymbol);
 	quoteSymbolCell.unbind().bind("click", function () {
 		launchLadder(childSymbol);
 	});
@@ -315,6 +388,14 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 	});
 
 	setChildCount(familyName);
+}
+
+function rowComparator(a, b) {
+
+	var aSymbol = $(a).find(".symbol").text();
+	var bSymbol = $(b).find(".symbol").text();
+
+	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
 }
 
 function addNumberBox(row, selector) {

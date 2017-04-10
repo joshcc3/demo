@@ -521,11 +521,13 @@ public class Main {
             createWebPageWithWebSocket("history", "history", fibers.ladderRouter, webapp, historyWebSocket);
             final HistoryPresenter historyPresenter = new HistoryPresenter(webLog);
             fibers.ladderRouter.subscribe(historyPresenter, historyWebSocket);
+            channels.symbolSelections.subscribe(fibers.ladderRouter.getFiber(), historyPresenter::addSymbol);
 
             // Ladder router
             final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("ladder", "ladder", fibers.ladderRouter, webapp, ladderWebSocket);
-            final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(webLog, historyPresenter, webSockets, fibers.ui);
+            final LadderMessageRouter ladderMessageRouter =
+                    new LadderMessageRouter(webLog, channels.symbolSelections, webSockets, fibers.ui);
             fibers.ladderRouter.subscribe(ladderMessageRouter, ladderWebSocket);
 
         }
@@ -974,6 +976,7 @@ public class Main {
                 stackFamilyPresenter.setSearchResult(searchResult);
                 strategiesPresenter.addInstID(searchResult.symbol, searchResult.instID);
             });
+            channels.symbolSelections.subscribe(selectIOFiber, stackFamilyPresenter::symbolSelected);
 
             final TypedChannel<WebSocketControlMessage> familyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("stackManager", "stackManager", fibers.ladderRouter, webapp, familyWebSocket);

@@ -76,36 +76,46 @@ body {
 	padding: 0 2px;
 }
 
-.headerSecondRow {
-	padding-top: 10px;
+.headerSecondRow, .headerThirdRow {
+	margin-top: 10px;
+}
+
+.headerThirdRow {
+	float: right;
+	margin-right: 300px;
 }
 
 #allStart {
-    background-color: lightgreen;
-    font-size: 13px;
-    font-weight: bold;
-    width: 120px;
-    height: 40px;
-    margin: 8px;
-    padding: 2px;
-	display: none;
+	background-color: lightgreen;
+	font-size: 13px;
+	font-weight: bold;
+	width: 120px;
+	height: 40px;
+	margin: 8px;
+	padding: 2px;
 }
 
 #allStop {
-    background-color: lightcoral;
-    font-size: 13px;
-    font-weight: bold;
-    width: 120px;
-    height: 40px;
-    margin: 8px;
-    padding: 2px;
-	display: none;
+	background-color: lightcoral;
+	font-size: 13px;
+	font-weight: bold;
+	width: 120px;
+	height: 40px;
+	margin: 8px;
+	padding: 2px;
 }
-
 
 .btn.link {
 	color: #fff;
 	background-color: #337ab7;
+}
+
+.childAvailable {
+	background-color: lightgreen;
+}
+
+.childSearchResult {
+	border: solid orange 2px;
 }
 
 #main {
@@ -178,107 +188,6 @@ body {
 	left: 5px;
 }
 
-.familyDetails {
-	font-size: 12px;
-	white-space: nowrap;
-	border-bottom: 1px solid #555555;
-	display: inline-block;
-	width: 100%;
-	padding: 15px 0 0;
-	margin: 0;
-	vertical-align: middle;
-	-webkit-user-select: none;
-}
-
-.familyDetails div {
-	display: inline-block;
-	font-size: 12px;
-	height: 15px;
-}
-
-.familyDetails .childCount {
-	text-align: right;
-	width: 50px;
-}
-
-.familyDetails .familyName {
-	text-align: left;
-	width: 120px;
-	font-size: 20px;
-	padding-left: 10px;
-	margin: 0;
-	cursor: pointer;
-}
-
-.familyDetails .priceOffset {
-	text-align: right;
-	width: 75px;
-	margin: 0 2px;
-}
-
-.familyDetails .priceOffsetButtons {
-	white-space: normal;
-	vertical-align: middle;
-	width: 20px;
-	height: auto;
-}
-
-.familyDetails .priceOffsetButtons button {
-	height: 8px;
-	width: 20px;
-	margin-bottom: 3px;
-}
-
-.familyDetails .configControls button {
-	background-color: #9a9a9a;
-	text-align: center;
-	width: 14px;
-	padding: 0;
-	margin: 0;
-	border: 1px solid #989898;
-}
-
-.familyDetails .configControls button.enabled {
-    background-color: #525252;
-    color: #ffffff;
-    border: solid 1px #2d270c;
-}
-
-.familyDetails .stackControls div {
-	width: 19px;
-	height: 15px;
-	text-align: center;
-	color: white;
-	border: 3px solid red;
-}
-
-.familyDetails .stackControls div.enabled {
-	border: 3px solid green;
-}
-
-.familyDetails .quoterEnabled {
-	background: #5970B2;
-}
-
-.familyDetails .picardEnabled {
-	background: #FB6E75;
-}
-
-.familyDetails .stackControls.allEnabled {
-	background-color: #9a9a9a;
-	border: 3px solid #5970B2;
-}
-
-.familyDetails .cleanParent {
-	background-color: buttonface;
-	color: buttonText;
-	border: 3px solid #5970B2;
-}
-
-.familyDetails .cleanParent:active {
-	border: 3px solid #9a9a9a;
-}
-
 #families .row > div {
 	min-width: 100px;
 	max-width: 100px;
@@ -316,11 +225,144 @@ input::-webkit-inner-spin-button:hover {
 	background-color: lightpink;
 }
 
-input[type=Submit], #families .dataRow button {
+.familyDetails {
+	font-size: 12px;
+	white-space: nowrap;
+	border-bottom: 1px solid #555555;
+	display: inline-block;
+	width: 100%;
+	padding: 15px 0 0;
+	margin: 0;
+	vertical-align: middle;
+	-webkit-user-select: none;
+}
+
+.familyDetails div {
+	display: inline-block;
+	font-size: 12px;
+}
+
+.familyDetails .childCount {
+	text-align: right;
+	width: 50px;
+}
+
+.familyDetails .familyRunningControls .start {
+	background-color: lightgreen;
+}
+
+.familyDetails .familyRunningControls .stop {
+	background-color: lightcoral;
+}
+
+.familyDetails .familyName {
+	text-align: left;
+	width: 120px;
+	font-size: 20px;
+	padding-left: 10px;
+	margin: 0;
+	cursor: pointer;
+}
+
+.familyDetails .priceOffset {
+	text-align: right;
+	width: 75px;
+	margin: 0 2px;
+}
+
+.familyDetails .priceOffsetButtons {
+	white-space: normal;
+	vertical-align: middle;
+	width: 20px;
+	height: auto;
+}
+
+.familyDetails .priceOffsetButtons button {
+	height: 8px;
+	width: 20px;
+	margin-bottom: 3px;
+}
+
+.configControls button {
+	background-color: #9a9a9a;
+	text-align: center;
+	width: 14px;
+	padding: 0;
+	margin: 0;
+	border: 1px solid #989898;
+}
+
+.configControls button.enabled {
+	background-color: #525252;
+	color: #ffffff;
+	border: solid 1px #2d270c;
+}
+
+.familyDetails .stackControls div {
+	width: 19px;
+	height: 15px;
+	text-align: center;
+	color: white;
+	border: 3px solid red;
+}
+
+.familyDetails .stackControls div.enabled {
+	border: 3px solid green;
+}
+
+.familyDetails .quoterEnabled {
+	background: #5970B2;
+}
+
+.familyDetails .picardEnabled {
+	background: #FB6E75;
+}
+
+.familyDetails .stackControls.allEnabled {
+	background-color: #9a9a9a;
+	border: 3px solid #5970B2;
+}
+
+.familyDetails .cleanParent {
+	background-color: buttonface;
+	color: buttonText;
+	border: 3px solid #5970B2;
+}
+
+.familyDetails .cleanParent:active {
+	border: 3px solid #9a9a9a;
+}
+
+.children .row .configControls {
+	width: 65px;
+	display: inline-block;
+	height: 17px;
+	display: none;
+}
+
+.children .dataRow .configControls {
+	position: relative;
+	top: 6px;
+}
+
+input[type=Submit], #families .dataRow > button {
 	position: relative;
 	top: 5px;
 	height: 20px;
 	margin-left: 10px;
+}
+
+#families .family .children .header input[type=Submit] {
+	display: block;
+	visibility: hidden;
+}
+
+input[type=Submit].hidden {
+	display: auto;
+}
+
+#families .dataRow > button {
+
 }
 
 .notPersisted {

@@ -61,17 +61,17 @@ public class HistoryPresenter {
         views.invoke(data);
     }
 
-    public void addSymbol(final String username, final String[] subscriptionArgs) {
+    public void addSymbol(final SymbolSelection selection) {
 
-        final IHistoryView view = userViews.get(username);
+        final IHistoryView view = userViews.get(selection.username);
 
-        final LinkedHashSet<String> previousSymbols = MapUtils.getMappedLinkedSet(userHistory, username);
+        final LinkedHashSet<String> previousSymbols = MapUtils.getMappedLinkedSet(userHistory, selection.username);
 
         final String symbol;
-        if (3 < subscriptionArgs.length && "S".equals(subscriptionArgs[3])) {
-            symbol = subscriptionArgs[1] + ";S";
+        if (selection.isStackView) {
+            symbol = selection.symbol + ";S";
         } else {
-            symbol = subscriptionArgs[1];
+            symbol = selection.symbol;
         }
 
         previousSymbols.remove(symbol);
