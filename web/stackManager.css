@@ -51,6 +51,11 @@ body {
 	right: 0;
 }
 
+#main {
+	margin-top: 130px;
+	white-space: nowrap;
+}
+
 .hideAdmin #header {
 	background: url(images/ScotchPancakes.png) no-repeat right top black;
 }
@@ -116,11 +121,6 @@ body {
 
 .childSearchResult {
 	border: solid orange 2px;
-}
-
-#main {
-	margin-top: 130px;
-	white-space: nowrap;
 }
 
 #parentCreation > div.actionType, #childAdoption > div.actionType {

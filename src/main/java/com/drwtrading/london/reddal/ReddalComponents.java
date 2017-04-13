@@ -24,6 +24,7 @@ public enum ReddalComponents implements IMonitoredComponent {
 
     PKS,
     YODA,
+    BLOTTER,
 
     SAFETY_WORKING_ORDER_VIEWER;
 

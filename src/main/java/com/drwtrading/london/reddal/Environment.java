@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
-import com.drwtrading.london.fastui.html.CSSClass;
+import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.network.NetworkInterfaces;
 import eeif.execution.RemoteOrderType;
 import com.drwtrading.london.reddal.ladders.LadderOptions;

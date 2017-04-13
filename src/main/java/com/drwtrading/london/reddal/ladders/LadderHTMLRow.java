@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.ladders;
 
-import com.drwtrading.london.fastui.html.HTML;
+import com.drwtrading.london.reddal.fastui.html.HTML;
 
 public class LadderHTMLRow {
 

@@ -6,7 +6,7 @@ function addSortedDiv(tableRows, row, comparator) {
 	while (bottom < top - 1) {
 		var mid = Math.floor((bottom + top) / 2);
 
-		if (0 < comparator(row, tableRows[mid])) {
+		if (0 < comparator($(row), $(tableRows[mid]))) {
 			bottom = mid;
 		} else {
 			top = mid;

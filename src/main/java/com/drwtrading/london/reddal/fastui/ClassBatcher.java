@@ -1,7 +1,7 @@
-package com.drwtrading.london.fastui;
+package com.drwtrading.london.reddal.fastui;
 
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
-import com.drwtrading.london.fastui.html.CSSClass;
+import com.drwtrading.london.reddal.fastui.html.CSSClass;
 
 import java.util.EnumMap;
 import java.util.HashMap;

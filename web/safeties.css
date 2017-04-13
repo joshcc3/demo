@@ -1,0 +1,98 @@
+
+body {
+	color: white;
+	font-size: 12px;
+	white-space: nowrap;
+	width: 98%;
+	vertical-align: middle;
+	-webkit-user-select: none;
+}
+
+#background {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: -webkit-gradient(linear, left top, left bottom, from(#333333), to(#111111));
+	z-index: -1;
+}
+
+#header {
+
+	background: black;
+	height: 100px;
+	z-index: 1;
+	border-bottom: solid 1px gray;
+	padding: 10px;
+
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+}
+
+#nibblerList {
+	width: 200px;
+	height: 100px;
+}
+
+#main {
+	margin-top: 130px;
+	white-space: nowrap;
+}
+
+.hidden {
+	display: none;
+}
+
+#nibblers {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-collapse: collapse;
+	width: 100%;
+}
+
+#nibblers .nibblerName {
+	width: 180px;
+	font-size: 20px;
+	margin: 0;
+}
+
+#nibblers .connectionDown {
+	background-color: #DD989A;
+}
+
+#nibblers .row {
+	text-align: left;
+	padding: 0 6px;
+}
+
+#nibblers .row:not(.headerRow):hover {
+	background-color: #555555;
+}
+
+#nibblers .row div {
+	display: inline-block;
+	width: 100px;
+}
+
+#nibblers .row div.safetyName {
+	width: 250px;
+}
+
+#nibblers .row.isWarning:not(.isError) {
+	background-color: #DDA472;
+	color: black;
+}
+
+#nibblers .row.isError {
+	background-color: #DD989A;
+	color: black;
+}
+
+#nibblers .nibblerBlock .row:last-child {
+	padding-bottom: 20px;
+}

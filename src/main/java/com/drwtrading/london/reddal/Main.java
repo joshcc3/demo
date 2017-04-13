@@ -6,6 +6,10 @@ import com.drw.nns.api.NnsFactory;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
+import com.drwtrading.london.eeif.nibbler.transport.NibblerTransportComponents;
+import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerCacheFactory;
+import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerTransportCaches;
+import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
 import com.drwtrading.london.eeif.position.transport.PositionTransportComponents;
 import com.drwtrading.london.eeif.position.transport.cache.PositionCacheFactory;
@@ -61,6 +65,9 @@ import com.drwtrading.london.reddal.autopull.AutoPullPersistence;
 import com.drwtrading.london.reddal.autopull.AutoPuller;
 import com.drwtrading.london.reddal.autopull.AutoPullerUI;
 import com.drwtrading.london.reddal.autopull.PullerBookSubscriber;
+import com.drwtrading.london.reddal.blotter.BlotterClient;
+import com.drwtrading.london.reddal.blotter.MsgBlotterPresenter;
+import com.drwtrading.london.reddal.blotter.SafetiesBlotterPresenter;
 import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
@@ -516,6 +523,7 @@ public class Main {
             }
 
             setupStackManager(app, fibers, channels, webapp, webLog, selectIOFiber);
+            setupBlotter(app, fibers, webapp, webLog, selectIOFiber);
 
             final TypedChannel<WebSocketControlMessage> historyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("history", "history", fibers.ladderRouter, webapp, historyWebSocket);
@@ -990,5 +998,44 @@ public class Main {
             createWebPageWithWebSocket("stackStrategy", "stackStrategy", fibers.ladderRouter, webapp, strategiesWebSocket);
             strategiesWebSocket.subscribe(selectIOFiber, strategiesPresenter::webControl);
         }
+    }
+
+    private static void setupBlotter(final Application<ReddalComponents> app, final ReddalFibers fibers, final WebApplication webapp,
+            final UILogger webLog, final SelectIOFiber selectIOFiber) throws ConfigException {
+
+        final MsgBlotterPresenter msgBlotter = new MsgBlotterPresenter(fibers.ui, webLog);
+        final SafetiesBlotterPresenter safetiesBlotter = new SafetiesBlotterPresenter(fibers.ui, webLog);
+
+        final MultiLayeredResourceMonitor<NibblerTransportComponents> clientMonitorParent =
+                MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(app.monitor, "Blotters", app.errorLog,
+                        NibblerTransportComponents.class, ReddalComponents.BLOTTER);
+
+        final ConfigGroup blotterConfig = app.config.getGroup("blotters");
+
+        for (final ConfigGroup nibblerConfig : blotterConfig.groups()) {
+
+            final String nibbler = nibblerConfig.getKey();
+            final String connectionName = app.appName + " config";
+
+            final IResourceMonitor<NibblerTransportComponents> nibblerMonitor =
+                    clientMonitorParent.createChildResourceMonitor(connectionName);
+
+            final BlotterClient blotterClient = new BlotterClient(nibbler, msgBlotter, safetiesBlotter);
+
+            final NibblerClientHandler client =
+                    NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "blotters-" + nibbler,
+                            connectionName, blotterClient);
+
+            final NibblerTransportCaches cache = client.getCaches();
+            cache.addListener(blotterClient);
+        }
+
+        final TypedChannel<WebSocketControlMessage> msgBlotterWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+        createWebPageWithWebSocket("blotter", "blotter", fibers.ladderRouter, webapp, msgBlotterWebSocket);
+        msgBlotterWebSocket.subscribe(selectIOFiber, msgBlotter::webControl);
+
+        final TypedChannel<WebSocketControlMessage> safetiesWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+        createWebPageWithWebSocket("safeties", "safeties", fibers.ladderRouter, webapp, safetiesWebSocket);
+        safetiesWebSocket.subscribe(selectIOFiber, safetiesBlotter::webControl);
     }
 }

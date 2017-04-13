@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.ladders;
 
-import com.drwtrading.london.fastui.html.CSSClass;
+import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.Environment;
 
 import java.util.Collection;

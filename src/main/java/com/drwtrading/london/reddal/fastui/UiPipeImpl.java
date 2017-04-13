@@ -1,7 +1,7 @@
-package com.drwtrading.london.fastui;
+package com.drwtrading.london.reddal.fastui;
 
-import com.drwtrading.london.fastui.html.CSSClass;
-import com.drwtrading.london.fastui.html.DataKey;
+import com.drwtrading.london.reddal.fastui.html.CSSClass;
+import com.drwtrading.london.reddal.fastui.html.DataKey;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import com.google.common.base.Joiner;
 import org.jetlang.channels.Publisher;

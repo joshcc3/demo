@@ -248,8 +248,8 @@ function addFamily(familyName) {
 
 function tableComparator(a, b) {
 
-	var aSymbol = $(a).find(".familyDetails .familyName").text();
-	var bSymbol = $(b).find(".familyDetails .familyName").text();
+	var aSymbol = a.find(".familyDetails .familyName").text();
+	var bSymbol = b.find(".familyDetails .familyName").text();
 
 	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
 }
@@ -392,8 +392,8 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 
 function rowComparator(a, b) {
 
-	var aSymbol = $(a).find(".symbol").text();
-	var bSymbol = $(b).find(".symbol").text();
+	var aSymbol = a.find(".symbol").text();
+	var bSymbol = b.find(".symbol").text();
 
 	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
 }

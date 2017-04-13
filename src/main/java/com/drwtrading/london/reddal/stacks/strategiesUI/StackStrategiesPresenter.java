@@ -70,7 +70,7 @@ public class StackStrategiesPresenter {
 
         if (webMsg instanceof WebSocketDisconnected) {
 
-            removeUI((WebSocketDisconnected) webMsg);
+            views.unregister((WebSocketDisconnected) webMsg);
 
         } else if (webMsg instanceof WebSocketInboundData) {
 
@@ -124,10 +124,6 @@ public class StackStrategiesPresenter {
 
         nibblerStrategies.get(nibblerName).clear();
         views.all().removeAll(nibblerName);
-    }
-
-    public void removeUI(final WebSocketDisconnected disconnected) {
-        views.unregister(disconnected);
     }
 
     void onMessage(final WebSocketInboundData msg) {
