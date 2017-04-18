@@ -169,7 +169,7 @@ public class Main {
     private static final String EWOK_BASE_URL_PARAM = "ewokBaseURL";
 
     public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
-            final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
+                                                  final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
         webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
 
@@ -865,7 +865,7 @@ public class Main {
     }
 
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,
-            final AtomicBoolean multicastEnabled) {
+                                                       final AtomicBoolean multicastEnabled) {
         return new Transport() {
             @Override
             public <T> void publish(final MsgCodec<T> codec, final T msg) {
@@ -887,7 +887,7 @@ public class Main {
     }
 
     private static void setupYodaSignals(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
-            final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts)
+                                         final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts)
             throws ConfigException {
 
         final ConfigGroup yodaConfig = config.getEnabledGroup("yoda");
@@ -923,7 +923,7 @@ public class Main {
     }
 
     private static void setupStackManager(final Application<ReddalComponents> app, final ReddalFibers fibers, final ReddalChannels channels,
-            final WebApplication webapp, final UILogger webLog, final SelectIOFiber selectIOFiber) throws Exception {
+                                          final WebApplication webapp, final UILogger webLog, final SelectIOFiber selectIOFiber) throws Exception {
 
         final ConfigGroup stackConfig = app.config.getEnabledGroup("stacks");
         if (null != stackConfig) {
@@ -1001,7 +1001,12 @@ public class Main {
     }
 
     private static void setupBlotter(final Application<ReddalComponents> app, final ReddalFibers fibers, final WebApplication webapp,
-            final UILogger webLog, final SelectIOFiber selectIOFiber) throws ConfigException {
+                                     final UILogger webLog, final SelectIOFiber selectIOFiber) throws ConfigException {
+
+        final ConfigGroup blotterConfig = app.config.getEnabledGroup("blotters");
+        if (null == blotterConfig) {
+            return;
+        }
 
         final MsgBlotterPresenter msgBlotter = new MsgBlotterPresenter(fibers.ui, webLog);
         final SafetiesBlotterPresenter safetiesBlotter = new SafetiesBlotterPresenter(fibers.ui, webLog);
@@ -1010,7 +1015,6 @@ public class Main {
                 MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(app.monitor, "Blotters", app.errorLog,
                         NibblerTransportComponents.class, ReddalComponents.BLOTTER);
 
-        final ConfigGroup blotterConfig = app.config.getGroup("blotters");
 
         for (final ConfigGroup nibblerConfig : blotterConfig.groups()) {
 
