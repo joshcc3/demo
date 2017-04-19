@@ -84,7 +84,7 @@ public class LadderBookView implements ILadderBoard {
 
     private static final int AUTO_RECENTER_TICKS = 3;
 
-    private static final Set<String> TAGS = ImmutableSet.of("CHAD", "DIV", "STRING", "CLICKNOUGHT");
+    private static final Set<String> TAGS = ImmutableSet.of("CHAD", "DIV", "STRING", "CLICKNOUGHT", "GLABN");
 
     private static final EnumMap<WorkingOrderType, CSSClass> WORKING_ORDER_CSS;
 
