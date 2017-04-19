@@ -12,7 +12,7 @@ $(function () {
 
 	dogBarkSound = new Audio("sounds/quack.wav");
 	checkWarning();
-	setInterval(checkWarning, 3000);
+	setInterval(checkWarning, 60000);
 });
 
 function checkWarning() {
