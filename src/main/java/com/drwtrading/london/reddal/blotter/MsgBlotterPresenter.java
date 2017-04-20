@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.blotter;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterLine;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
+import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketControlMessage;
@@ -21,6 +22,7 @@ public class MsgBlotterPresenter {
 
     private static final int MAX_ROWS = 400;
 
+    private final long milliAtMidnightUTC;
     private final FiberBuilder logFiber;
     private final UILogger uiLogger;
 
@@ -33,8 +35,9 @@ public class MsgBlotterPresenter {
 
     private int rowCount;
 
-    public MsgBlotterPresenter(final FiberBuilder logFiber, final UILogger uiLogger) {
+    public MsgBlotterPresenter(final IClock clock, final FiberBuilder logFiber, final UILogger uiLogger) {
 
+        this.milliAtMidnightUTC = clock.getMillisAtMidnightUTC();
         this.logFiber = logFiber;
         this.uiLogger = uiLogger;
 
@@ -56,7 +59,7 @@ public class MsgBlotterPresenter {
 
     public void addLine(final String source, final BlotterLine line) {
 
-        final String time = sdf.format(line.nanoSinceMidnightUTC / DateTimeUtil.NANOS_IN_MILLIS);
+        final String time = sdf.format(milliAtMidnightUTC + line.nanoSinceMidnightUTC / DateTimeUtil.NANOS_IN_MILLIS);
         final MsgBlotterRow row = new MsgBlotterRow(++rowCount, line.nanoSinceMidnightUTC, time, source, line.text);
         rows.add(row);
 

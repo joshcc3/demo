@@ -51,7 +51,7 @@ public class SafetiesBlotterPresenter {
 
         final SafetiesBlotterBlock block = nibblers.get(nibbler);
         if (null == block) {
-            final SafetiesBlotterBlock newBlock = new SafetiesBlotterBlock(nibbler, isConnected);
+            final SafetiesBlotterBlock newBlock = new SafetiesBlotterBlock(longDF, nibbler, isConnected);
             nibblers.put(nibbler, newBlock);
         } else {
             block.isConnected = isConnected;
