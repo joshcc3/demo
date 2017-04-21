@@ -20,7 +20,7 @@ import java.util.TreeSet;
 
 public class MsgBlotterPresenter {
 
-    private static final int MAX_ROWS = 400;
+    private static final int MAX_ROWS = 1000;
 
     private final long milliAtMidnightUTC;
     private final FiberBuilder logFiber;
@@ -47,6 +47,7 @@ public class MsgBlotterPresenter {
 
         this.rows = new TreeSet<>();
         this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
+        this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
 
         this.rowCount = 0;
     }

@@ -76,11 +76,11 @@ body {
 
 #nibblers .row div {
 	display: inline-block;
-	width: 100px;
+	width: 75px;
 }
 
 #nibblers .row div.safetyName {
-	width: 250px;
+	width: 200px;
 }
 
 #nibblers .row.isWarning:not(.isError) {
