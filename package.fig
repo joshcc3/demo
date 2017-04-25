@@ -16,7 +16,7 @@ config default
 	include drw.london.eeif-md/192
 	include drw.london.eeif-nibbler-transport/0
 	include drw.london.eeif-position-transport/59
-	include drw.london.eeif-stack-transport/30
+	include drw.london.eeif-stack-transport/31
 	include drw.london.eeif-yoda-transport/33
 
 	# Libraries and containers
