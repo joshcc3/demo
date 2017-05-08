@@ -1,7 +1,7 @@
 
 body {
 	color: white;
-	font-size: 12px;
+	font-size: 11px;
 	white-space: nowrap;
 	width: 98%;
 	vertical-align: middle;
@@ -22,7 +22,7 @@ body {
 
 	background: black;
 	height: 100px;
-	z-index: 1;
+
 	border-bottom: solid 1px gray;
 	padding: 10px;
 
@@ -80,7 +80,7 @@ body {
 }
 
 #nibblers .row div.safetyName {
-	width: 200px;
+	width: 245px;
 }
 
 #nibblers .row.isWarning:not(.isError) {
