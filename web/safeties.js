@@ -17,7 +17,7 @@ $(function () {
 
 function checkWarning() {
 
-	var count = $(".isWarning, .isError").length;
+	var count = $(".isWarning, .isError .shouldQuack").length;
 	if (0 < count) {
 
 		if (!dogBarkSound.readyState) {
@@ -72,6 +72,8 @@ function setRow(id, source, safetyName, limit, warning, current, lastSymbol, isW
 
 	row.toggleClass("isWarning", isWarning);
 	row.toggleClass("isError", isError);
+	// Temporary way of limiting quacks to OTR ratios
+	row.toggleClass("shouldQuack", safetyName.indexOf("ratio") != -1);
 
 	row.find(".safetyName").text(safetyName);
 	row.find(".limit").text(limit);
