@@ -73,7 +73,7 @@ function setRow(id, source, safetyName, limit, warning, current, lastSymbol, isW
 	row.toggleClass("isWarning", isWarning);
 	row.toggleClass("isError", isError);
 	// Temporary way of limiting quacks to OTR ratios
-	row.toggleClass("shouldQuack", safetyName.indexOf("ratio") != -1);
+	row.toggleClass("shouldQuack", safetyName.indexOf("Throttle: ") == -1);
 
 	row.find(".safetyName").text(safetyName);
 	row.find(".limit").text(limit);
