@@ -74,7 +74,7 @@ public class PullRule extends Struct {
             return false;
         }
 
-        if (level.getQty() < order.value.getTotalQuantity() - order.value.getFilledQuantity()) {
+        if (level.getQty() <= order.value.getTotalQuantity() - order.value.getFilledQuantity()) {
             return false;
         }
 

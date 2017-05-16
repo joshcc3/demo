@@ -4,6 +4,8 @@ import com.drwtrading.jetlang.autosubscribe.BatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
+import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
+import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
@@ -169,6 +171,11 @@ public class AutoPuller {
                 List<Main.RemoteOrderCommandToServer> cancels = pullRule.ordersToPull(workingOrdersForSymbol, book);
                 cancels.forEach(commandPublisher::publish);
                 if (!cancels.isEmpty()) {
+                    System.out.println("---- Auto puller Fired --- " + new DateTime());
+                    System.out.println("Rule:\n" + pullRule.pullRule);
+                    System.out.println("Book:");
+                    debugPrintMdBook(book);
+                    System.out.println("Working orders: \n" + new ArrayList<>(workingOrdersForSymbol.ordersByKey.values()));
                     pullRule.disable();
                     refreshCallback.ruleFired(pullRule);
                 }
@@ -312,5 +319,26 @@ public class AutoPuller {
         };
     }
 
+
+    public void debugPrintMdBook(final IBook book) {
+        System.out.println("\t instid " + book.getInstID() + ", source " + book.getSourceExch() + " status " + book.getStatus());
+        System.out.println("\t seqno " + book.getLastPacketSeqNum() + " reftime " + book.getReferenceNanoSinceMidnightUTC());
+        System.out.println("\t valid " + book.isValid());
+        debugPrintLevels(book.getBestBid());
+        debugPrintLevels(book.getBestAsk());
+    }
+
+    public void debugPrintLevels(final IBookLevel bid) {
+        for (IBookLevel lvl = bid; lvl != null; lvl = lvl.next()) {
+            System.out.print("\t" + lvl.getSide() + "\t" + lvl.getPrice() + "\t" + lvl.getQty() + "\t");
+            if (lvl instanceof IBookLevelWithOrders) {
+                IBookLevelWithOrders lvo = (IBookLevelWithOrders) lvl;
+                for (IBookOrder o = lvo.getFirstOrder(); o != null; o = o.next()) {
+                    System.out.print("(" + o.getOrderID() + " " + o.getRemainingQty() + ")");
+                }
+            }
+            System.out.print("\n");
+        }
+    }
 
 }
