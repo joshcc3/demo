@@ -1,7 +1,7 @@
 
 body {
 	color: white;
-	font-size: 11px;
+	font-size: 12px;
 	white-space: nowrap;
 	width: 98%;
 	vertical-align: middle;
@@ -20,7 +20,7 @@ body {
 
 #header {
 
-	background: black;
+	background: url(images/pacman.png) no-repeat right top black;
 	height: 100px;
 
 	border-bottom: solid 1px gray;
@@ -43,6 +43,10 @@ body {
 	white-space: nowrap;
 }
 
+.hideAdmin .adminOnly, .hideAdmin #family_orphanage {
+	display: none;
+}
+
 .hidden {
 	display: none;
 }
@@ -55,10 +59,26 @@ body {
 	width: 100%;
 }
 
+#nibblers .nibblerDetails div {
+	display: inline-block;
+}
+
+#nibblers .enableOMSButton {
+	width: 100px;
+}
+
+#nibblers .enableOMSButton button {
+	width: 90%;
+}
+
 #nibblers .nibblerName {
 	width: 180px;
 	font-size: 20px;
 	margin: 0;
+}
+
+#nibblers .debugText {
+	width: 300px;
 }
 
 #nibblers .connectionDown {
@@ -70,6 +90,10 @@ body {
 	padding: 0 6px;
 }
 
+#nibblers .headerRow {
+	border-bottom: 1px solid #555555;
+}
+
 #nibblers .row:not(.headerRow):hover {
 	background-color: #555555;
 }
@@ -79,20 +103,43 @@ body {
 	width: 75px;
 }
 
-#nibblers .row div.safetyName {
+#nibblers .omsRow .omsName {
+	width: auto;
+}
+
+#nibblers .omsRow .stateText {
+    background-color: #ff5200;
+	width: auto;
+}
+
+
+#nibblers .omsRow div {
+	font-size: 20px;
+}
+
+#nibblers .safetyRow div.safetyName {
 	width: 245px;
 }
 
-#nibblers .row.isWarning:not(.isError) {
+#nibblers .safetyRow.isWarning:not(.isError) {
 	background-color: #DDA472;
 	color: black;
 }
 
-#nibblers .row.isError {
+#nibblers .safetyRow.isError {
 	background-color: #DD989A;
 	color: black;
 }
 
-#nibblers .nibblerBlock .row:last-child {
+#nibblers .nibblerBlock .safetyRow:last-child {
 	padding-bottom: 20px;
+}
+
+input {
+	width: 90%;
+	font-size: 11px;
+}
+
+.notPersisted {
+	background-color: lightpink;
 }

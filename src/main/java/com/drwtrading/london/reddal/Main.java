@@ -1029,6 +1029,8 @@ public class Main {
 
                 final NibblerTransportCaches cache = client.getCaches();
                 cache.addListener(blotterClient);
+
+                safetiesBlotter.setNibblerClient(nibbler, client);
             }
 
             final TypedChannel<WebSocketControlMessage> msgBlotterWebSocket = TypedChannels.create(WebSocketControlMessage.class);

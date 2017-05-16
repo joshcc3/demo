@@ -335,7 +335,6 @@ input::-webkit-inner-spin-button:hover {
 
 .children .row .configControls {
 	width: 65px;
-	display: inline-block;
 	height: 17px;
 	display: none;
 }
@@ -359,10 +358,6 @@ input[type=Submit], #families .dataRow > button {
 
 input[type=Submit].hidden {
 	display: auto;
-}
-
-#families .dataRow > button {
-
 }
 
 .notPersisted {

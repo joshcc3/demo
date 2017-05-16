@@ -6,6 +6,7 @@ import com.drwtrading.london.eeif.nibbler.transport.cache.safeties.INibblerSafet
 import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.ANibblerSafety;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerDoubleSafety;
+import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerOMSEnabledState;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerSafety;
 
 public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesListener, INibblerTransportConnectionListener {
@@ -44,6 +45,18 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
     public boolean addBlotterLine(final BlotterLine blotterLine) {
 
         msgBlotter.addLine(source, blotterLine);
+        return true;
+    }
+
+    @Override
+    public boolean addOMSEnabledState(final NibblerOMSEnabledState omsEnabledState) {
+        safetiesBlotter.addOMS(source, omsEnabledState);
+        return true;
+    }
+
+    @Override
+    public boolean updateOMSEnabledState(final NibblerOMSEnabledState omsEnabledState) {
+        safetiesBlotter.updateOMSEnabledState(source, omsEnabledState);
         return true;
     }
 

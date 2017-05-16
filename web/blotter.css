@@ -20,7 +20,7 @@ body {
 
 #header {
 
-	background: black;
+	background: url(images/ghost.png) no-repeat right top black;
 	height: 100px;
 	z-index: 1;
 	border-bottom: solid 1px gray;

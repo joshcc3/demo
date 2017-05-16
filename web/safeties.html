@@ -13,27 +13,46 @@
 	<script src="safeties.js"></script>
 </head>
 <body>
-<div id="background"></div>
+<div id="adminBlock" class="hideAdmin">
+	<div id="background"></div>
 
-<div id="header">
-</div>
+	<div id="header">
+	</div>
 
-<div id="main">
+	<div id="main">
 
-	<div id="nibblers">
-		<div id="nibblerTemplate" class="nibblerBlock hidden">
-			<div class="nibblerName"></div>
-			<div class="headerRow row">
-				<div class="safetyName">Safety</div>
-				<div class="limit">Limit</div>
-				<div class="warning">Warning</div>
-				<div class="current">Current</div>
-				<div class="lastSymbol">Last Symbol</div>
+		<div id="nibblers">
+			<div id="nibblerTemplate" class="nibblerBlock hidden">
+				<div class="nibblerDetails">
+					<div class="enableOMSButton">
+						<button type="button" class="enableOMS adminOnly">Enable OMS</button>
+					</div>
+					<div class="nibblerName"></div>
+				</div>
+				<div class="adminOnly">
+					<label for="debugger">Msg:</label>
+					<input id="debugger" type="text" name="debugger" class="debugText">
+					<button class="debugButton">Debug</button>
+				</div>
+				<div class="omsRow headerRow row hidden">
+					<div class="omsName">OMS</div>
+					<div class="stateText">Text</div>
+				</div>
+				<div class="safetyRow headerRow row">
+					<div class="safetyName">Safety</div>
+					<div class="limit">Limit</div>
+					<div class="warning">Warning</div>
+					<div class="current">Current</div>
+					<div class="lastSymbol">Last Symbol</div>
+					<div>
+						<button type="button" class="submit hidden adminOnly">submit</button>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
-</div>
 
-<div id="footer"></div>
+	<div id="footer"></div>
+</div>
 </body>
 </html>
