@@ -47,7 +47,7 @@ body {
 	display: none;
 }
 
-.hidden {
+.hidden, .minimised .row:not(.isWarning) {
 	display: none;
 }
 

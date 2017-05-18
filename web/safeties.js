@@ -15,6 +15,13 @@ $(function () {
 	setInterval(checkWarning, 60000);
 
 	$("#header").unbind("dblclick").bind("dblclick", showAdmin);
+
+	$("#minimiseAll").unbind("click").bind("click", function () {
+		$(".nibblerBlock").toggleClass("minimised", true);
+	});
+	$("#maximiseAll").unbind("click").bind("click", function () {
+		$(".nibblerBlock").toggleClass("minimised", false);
+	});
 });
 
 function checkWarning() {
@@ -38,7 +45,11 @@ function setNibblerConnected(source, isConnected) {
 		table.attr("id", source);
 		table.removeClass("hidden");
 
-		table.find(".nibblerName").text(source);
+		var nibblerName = table.find(".nibblerName");
+		nibblerName.text(source);
+		nibblerName.unbind("click").bind("click", function () {
+			table.toggleClass("minimised", !table.hasClass("minimised"));
+		});
 
 		var nibblers = $("#nibblers");
 		addSortedDiv(nibblers.find(".nibblerBlock"), table, compareNibblerRow);
@@ -84,6 +95,7 @@ function setOMS(id, source, remoteOMSID, omsName, isEnabled, stateText) {
 	}
 
 	row.toggleClass("hidden", isEnabled);
+	row.toggleClass("isWarning", !isEnabled);
 	row.find(".stateText").text(stateText);
 }
 
@@ -145,7 +157,7 @@ function setEditableCell(row, selector, value) {
 		});
 	}
 
-	if (input.val() != value) {
+	if (input.val() != value && (!input.hasClass("notPersisted") || input.val().replace(/,| /g, "") == value)) {
 		input.val(value);
 	}
 	input.attr("data", value);
@@ -157,7 +169,7 @@ function submitRow(row) {
 	if (row.find(".notPersisted").length) {
 		var nibblerName = row.parent().attr("id");
 		var rowID = row.attr("data-remoteSafetyID");
-		var limitStr = row.find(".limit input").val().replace(/,/g, "");
+		var limitStr = row.find(".limit input").val().replace(/,| /g, "");
 
 		ws.send("setLimit," + nibblerName + "," + rowID + "," + limitStr);
 	}

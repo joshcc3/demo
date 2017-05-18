@@ -17,22 +17,21 @@
 	<div id="background"></div>
 
 	<div id="header">
+		<div class="buttons">
+			<button id="minimiseAll">-</button>
+			<button id="maximiseAll">+</button>
+		</div>
 	</div>
 
 	<div id="main">
 
 		<div id="nibblers">
-			<div id="nibblerTemplate" class="nibblerBlock hidden">
+			<div id="nibblerTemplate" class="nibblerBlock hidden minimised">
 				<div class="nibblerDetails">
 					<div class="enableOMSButton">
 						<button type="button" class="enableOMS adminOnly">Enable OMS</button>
 					</div>
 					<div class="nibblerName"></div>
-				</div>
-				<div class="adminOnly">
-					<label for="debugger">Msg:</label>
-					<input id="debugger" type="text" name="debugger" class="debugText">
-					<button class="debugButton">Debug</button>
 				</div>
 				<div class="omsRow headerRow row hidden">
 					<div class="omsName">OMS</div>
@@ -47,6 +46,11 @@
 					<div>
 						<button type="button" class="submit hidden adminOnly">submit</button>
 					</div>
+				</div>
+				<div class="adminOnly">
+					<label for="debugger">Msg:</label>
+					<input id="debugger" type="text" name="debugger" class="debugText">
+					<button class="debugButton">Debug</button>
 				</div>
 			</div>
 		</div>
