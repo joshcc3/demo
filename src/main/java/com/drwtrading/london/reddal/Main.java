@@ -943,7 +943,7 @@ public class Main {
 
             final String stackOPXLTopic = stackConfig.getString("opxlSpreadTopic");
             final StackGroupOPXLView stackOPXLView = new StackGroupOPXLView(app.monitor, stackOPXLTopic);
-            channels.stackRefPriceDetailChannel.subscribe(selectIOFiber, stackOPXLView::setStackRefPrice);
+            channels.metaData.subscribe(selectIOFiber, stackOPXLView::setLaserLine);
             app.selectIO.addDelayedAction(5000, stackOPXLView::update);
 
             stackFamilyPresenter.setCommunityManager(communityManager);
@@ -965,7 +965,7 @@ public class Main {
                 final String connectionName = app.appName + " config";
 
                 final StackCallbackBatcher stackUpdateBatcher =
-                        new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, stackOPXLView, channels.contractSets);
+                        new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, channels.contractSets);
 
                 final StackNibblerClient nibblerClient = new StackNibblerClient(nibbler, communityManager, stackUpdateBatcher);
 

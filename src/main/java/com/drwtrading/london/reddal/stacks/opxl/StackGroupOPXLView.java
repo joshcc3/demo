@@ -1,21 +1,19 @@
 package com.drwtrading.london.reddal.stacks.opxl;
 
-import com.drwtrading.london.eeif.stack.transport.data.stacks.Stack;
-import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
-import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
-import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.utils.Constants;
-import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.photons.ladder.LadderMetadata;
+import com.drwtrading.photons.ladder.LaserLine;
 import drw.opxl.OpxlClient;
 import drw.opxl.OpxlData;
 
 import java.io.IOException;
-import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 
 public class StackGroupOPXLView {
@@ -35,8 +33,10 @@ public class StackGroupOPXLView {
 
     private final OpxlClient client;
 
-    private final Map<BookSide, Map<String, StackGroup>> stackGroups;
-    private final Map<String, StackRefPriceDetail> refPriceDetails;
+    private final Map<String, Long> greenLaserLines;
+    private final Map<String, Long> bidLaserLines;
+    private final Map<String, Long> askLaserLines;
+    private final Set<String> updatedSymbols;
 
     private final NavigableMap<String, Object[]> rows;
 
@@ -48,96 +48,58 @@ public class StackGroupOPXLView {
 
         this.client = new OpxlClient(OPXL_SERVER, OPXL_PORT);
 
-        this.stackGroups = new EnumMap<>(BookSide.class);
-        for (final BookSide side : BookSide.values()) {
-            this.stackGroups.put(side, new HashMap<>());
-        }
-        this.refPriceDetails = new HashMap<>();
+        this.greenLaserLines = new HashMap<>();
+        this.bidLaserLines = new HashMap<>();
+        this.askLaserLines = new HashMap<>();
+
+        this.updatedSymbols = new HashSet<>();
 
         this.rows = new TreeMap<>();
     }
 
-    public void setStackGroup(final StackGroup stackGroup) {
+    public void setLaserLine(final LadderMetadata metadata) {
 
-        this.stackGroups.get(stackGroup.getSide()).put(stackGroup.getSymbol(), stackGroup);
-        final StackRefPriceDetail refPriceDetail = refPriceDetails.get(stackGroup.getSymbol());
+        if (LadderMetadata.Type.LASER_LINE == metadata.typeEnum()) {
 
-        updateStack(stackGroup, refPriceDetail);
-    }
+            final LaserLine laserLine = (LaserLine) metadata;
 
-    public void setStackRefPrice(final StackRefPriceDetail refPriceDetail) {
-
-        this.refPriceDetails.put(refPriceDetail.symbol, refPriceDetail);
-
-        for (final Map<String, StackGroup> stacks : stackGroups.values()) {
-
-            final StackGroup stackGroup = stacks.get(refPriceDetail.symbol);
-            updateStack(stackGroup, refPriceDetail);
-        }
-    }
-
-    private void updateStack(final StackGroup stackGroup, final StackRefPriceDetail refPriceDetail) {
-
-        if (null != stackGroup && null != refPriceDetail) {
-
-            final String symbol = stackGroup.getSymbol();
-
-            final Object[] row = getRow(symbol);
-            final double priceOffsetBPS = stackGroup.getPriceOffsetBPS();
-            final Integer pullBackTicks = getPullBackTicks(stackGroup);
-
-            final Double printValue;
-            if (null == pullBackTicks) {
-                printValue = null;
-            } else {
-
-                final long priceOffset = (long) (refPriceDetail.refPrice * priceOffsetBPS / 10000d);
-                final long refPrice = refPriceDetail.refPrice + priceOffset;
-                final long calcPrice = refPriceDetail.tickTable.getTicksAway(stackGroup.getSide(), refPrice, pullBackTicks);
-
-                printValue = (calcPrice - refPrice + priceOffset) / (double) Constants.NORMALISING_FACTOR;
-            }
-
-            if (BookSide.BID == stackGroup.getSide()) {
-                row[BEST_BID_COL] = printValue;
-            } else {
-                row[BEST_ASK_COL] = printValue;
-            }
-        }
-    }
-
-    private Object[] getRow(final String symbol) {
-
-        final Object[] row = rows.get(symbol);
-        if (null == row) {
-            final Object[] result = {symbol, null, null};
-            rows.put(symbol, result);
-            return result;
-        } else {
-            return row;
-        }
-    }
-
-    private static Integer getPullBackTicks(final StackGroup stackGroup) {
-
-        Integer result = null;
-        for (final StackType type : StackType.values()) {
-
-            final Stack stack = stackGroup.getStack(type);
-            final StackLevel level = stack.getFirstLevel();
-
-            if (stack.isEnabled() && null != level) {
-
-                final int pullBackTicks = level.getPullbackTicks() * stackGroup.getTickMultiplier();
-                if (null == result || pullBackTicks < result) {
-                    result = pullBackTicks;
+            final String symbol = laserLine.getSymbol();
+            final String line = laserLine.getId();
+            final long price = laserLine.getPrice();
+            switch (line) {
+                case "green": {
+                    if (0 < price) {
+                        greenLaserLines.put(symbol, price);
+                    } else {
+                        greenLaserLines.remove(symbol);
+                    }
+                    break;
+                }
+                case "bid": {
+                    if (0 < price) {
+                        bidLaserLines.put(symbol, price);
+                    } else {
+                        bidLaserLines.remove(symbol);
+                    }
+                    break;
+                }
+                case "ask": {
+                    if (0 < price) {
+                        askLaserLines.put(symbol, price);
+                    } else {
+                        askLaserLines.remove(symbol);
+                    }
+                    break;
                 }
             }
+
+            updatedSymbols.add(symbol);
         }
-        return result;
     }
 
     public long update() {
+
+        updateOffsets();
 
         final int rowCount = rows.size() + 1;
         final Object[][] opxlTable = new Object[rowCount][];
@@ -161,5 +123,39 @@ public class StackGroupOPXLView {
             monitor.logError(ReddalComponents.STACK_OPXL_OUTPUT, "Failed to write OPXL values.", e);
         }
         return REFRESH_RATE_MILLIS;
+    }
+
+    private void updateOffsets() {
+
+        for (final String symbol : updatedSymbols) {
+
+            final Long greenLine = greenLaserLines.get(symbol);
+            final Long bidLine = bidLaserLines.get(symbol);
+            final Long askLine = askLaserLines.get(symbol);
+
+            final Object[] row = getRow(symbol);
+
+            if (null != greenLine && null != bidLine && null != askLine) {
+
+                final double mid = (bidLine + askLine) / 2d;
+                final double result = (mid - greenLine) / Constants.NORMALISING_FACTOR;
+
+                row[BEST_BID_COL] = result;
+                row[BEST_ASK_COL] = result;
+            }
+        }
+        updatedSymbols.clear();
+    }
+
+    private Object[] getRow(final String symbol) {
+
+        final Object[] row = rows.get(symbol);
+        if (null == row) {
+            final Object[] result = {symbol, null, null};
+            rows.put(symbol, result);
+            return result;
+        } else {
+            return row;
+        }
     }
 }

@@ -6,7 +6,6 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
-import com.drwtrading.london.reddal.stacks.opxl.StackGroupOPXLView;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import org.jetlang.channels.Publisher;
 
@@ -19,29 +18,24 @@ public class StackCallbackBatcher extends StackClientAdaptor {
 
     private final StackStrategiesPresenter strategiesPresenter;
     private final StackConfigPresenter configPresenter;
-    private final StackGroupOPXLView stackOPXLView;
 
     private final Set<StackStrategy> strategyBatch;
     private final Set<StackConfigGroup> configBatch;
-    private final Set<StackGroup> groupBatch;
 
     private final Publisher<SpreadContractSet> stackContractSetPublisher;
 
     public StackCallbackBatcher(final String nibblerName, final StackStrategiesPresenter strategiesPresenter,
-            final StackConfigPresenter configPresenter, final StackGroupOPXLView stackOPXLView,
-            final Publisher<SpreadContractSet> stackContractSetPublisher) {
+            final StackConfigPresenter configPresenter, final Publisher<SpreadContractSet> stackContractSetPublisher) {
 
         this.nibblerName = nibblerName;
 
         this.strategiesPresenter = strategiesPresenter;
         this.configPresenter = configPresenter;
-        this.stackOPXLView = stackOPXLView;
 
         this.stackContractSetPublisher = stackContractSetPublisher;
 
         this.strategyBatch = new HashSet<>();
         this.configBatch = new HashSet<>();
-        this.groupBatch = new HashSet<>();
     }
 
     @Override
@@ -78,12 +72,12 @@ public class StackCallbackBatcher extends StackClientAdaptor {
 
     @Override
     public void stackGroupCreated(final StackGroup stackGroup) {
-        groupBatch.add(stackGroup);
+        // no-op
     }
 
     @Override
     public void stackGroupUpdated(final StackGroup stackGroup) {
-        groupBatch.add(stackGroup);
+        // no-op
     }
 
     @Override
@@ -109,15 +103,5 @@ public class StackCallbackBatcher extends StackClientAdaptor {
             }
         }
         configBatch.clear();
-
-        for (final StackGroup group : groupBatch) {
-            try {
-                stackOPXLView.setStackGroup(group);
-            } catch (final Exception e) {
-                System.out.println("Failed Group stack batch update.");
-                e.printStackTrace();
-            }
-        }
-        groupBatch.clear();
     }
 }
