@@ -26,14 +26,26 @@ $(function () {
 
 function checkWarning() {
 
-	var count = $(".isWarning, .isError .shouldQuack").length;
-	if (0 < count) {
+	if (checkWarnedForAWhile()) {
 
 		if (!dogBarkSound.readyState) {
 			dogBarkSound.load();
 		}
 		dogBarkSound.play();
 	}
+}
+
+function checkWarnedForAWhile() {
+
+	var isLongEnough = false;
+	var minTime = new Date().getTime() - 5000;
+	$(".isWarning, .isError").each(function () {
+		var warningTime =  parseInt($(this).attr("data-warningTime"), 10);
+		if (warningTime < minTime) {
+			return isLongEnough = true;
+		}
+	});
+	return isLongEnough;
 }
 
 function setNibblerConnected(source, isConnected) {
@@ -118,10 +130,11 @@ function setRow(id, source, remoteSafetyID, safetyName, limit, warning, current,
 		addSortedDiv(table.find(".safetyRow"), row, compareBlotterRow);
 	}
 
+	if (isWarning && !row.hasClass("isWarning")) {
+		row.attr("data-warningTime", new Date().getTime());
+	}
 	row.toggleClass("isWarning", isWarning);
 	row.toggleClass("isError", isError);
-	// Temporary way of limiting quacks to OTR ratios
-	row.toggleClass("shouldQuack", safetyName.indexOf("Throttle: ") == -1);
 
 	if (isEditable) {
 		setEditableCell(row, ".limit", limit);
