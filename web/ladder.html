@@ -24,62 +24,66 @@
 	<div class="text column invisible"></div>
 </div>
 <div id="workspace">
-	<div id="information">
-		<button id="bookViewButton">book</button>
-		<button id="stackViewButton">stack</button>
-		<div id="clock" title="Clock/Switch to Chi-X"></div>
-		<div id="desk_position" title="Desk Position"></div>
-		<div id="last_trade_cod" title="Last print change on day">?</div>
-		<div id="yesterday_settle" class="invisible" title="Yesterday settle">?</div>
-		<div id="total_traded_volume" title="Total traded volume">?</div>
-		<div id="position" title="Day Position">?</div>
-		<div id="totalTraded" class="invisible" title="Day Volume">?</div>
-	</div>
-	<div id="clicktrading">
-		<select class="working_order_tags" id="working_order_tags"></select>
-		<input type="text" id="inp_qty" value="0"/>
-		<button id="btn_qty_1" class="quantity_button col_1 row_1"></button>
-		<button id="btn_qty_2" class="quantity_button col_2 row_1"></button>
-		<button id="btn_qty_3" class="quantity_button col_1 row_2"></button>
-		<button id="btn_qty_4" class="quantity_button col_2 row_2"></button>
-		<button id="btn_qty_5" class="quantity_button col_1 row_3"></button>
-		<button id="btn_qty_6" class="quantity_button col_2 row_3"></button>
-		<button id="btn_clear">CLR</button>
-		<input id="inp_reload" type="text" value="50"/>
-		<select class="order_type" id="order_type_left"></select>
-		<input type="checkbox" id="chk_auto_hedge_left" checked="checked"/>
-		<select class="order_type" id="order_type_right"></select>
-		<input type="checkbox" id="chk_auto_hedge_right" checked="checked"/>
+	<div id="leftHandPanel">
+		<div id="information">
+			<button id="bookViewButton">book</button>
+			<button id="stackViewButton">stack</button>
+			<div id="clock" title="Clock/Switch to Chi-X"></div>
+			<div id="tradingInfoCells">
+				<div id="desk_position" title="Desk Position"></div>
+				<div id="last_trade_cod" title="Last print change on day">?</div>
+				<div id="yesterday_settle" class="invisible" title="Yesterday settle">?</div>
+				<div id="total_traded_volume" title="Total traded volume">?</div>
+				<div id="position" title="Day Position">?</div>
+				<div id="totalTraded" class="invisible" title="Day Volume">?</div>
+			</div>
+		</div>
+		<div id="clicktrading">
+			<select class="working_order_tags" id="working_order_tags"></select>
+			<input type="text" id="inp_qty" value="0"/>
+			<button id="btn_qty_1" class="quantity_button col_1 row_1"></button>
+			<button id="btn_qty_2" class="quantity_button col_2 row_1"></button>
+			<button id="btn_qty_3" class="quantity_button col_1 row_2"></button>
+			<button id="btn_qty_4" class="quantity_button col_2 row_2"></button>
+			<button id="btn_qty_5" class="quantity_button col_1 row_3"></button>
+			<button id="btn_qty_6" class="quantity_button col_2 row_3"></button>
+			<button id="btn_clear">CLR</button>
+			<input id="inp_reload" type="text" value="50"/>
+			<select class="order_type" id="order_type_left"></select>
+			<input type="checkbox" id="chk_auto_hedge_left" checked="checked"/>
+			<select class="order_type" id="order_type_right"></select>
+			<input type="checkbox" id="chk_auto_hedge_right" checked="checked"/>
 
-		<div id="random_reload">
-			RR <input type="checkbox" id="chk_random_reload" checked="checked"/>
+			<div id="random_reload">
+				RR <input type="checkbox" id="chk_random_reload" checked="checked"/>
+			</div>
+			<div id="offset_control" class="invisible">
+				<button id="buy_offset_up" class="offset_button">&nbsp;</button>
+				<button id="buy_offset_down" class="offset_button">&nbsp;</button>
+				<button id="sell_offset_up" class="offset_button">&nbsp;</button>
+				<button id="sell_offset_down" class="offset_button">&nbsp;</button>
+				<button id="start_buy" class="offset_button">&nbsp;</button>
+				<button id="stop_buy" class="offset_button">&nbsp;</button>
+				<button id="start_sell" class="offset_button">&nbsp;</button>
+				<button id="stop_sell" class="offset_button">&nbsp;</button>
+			</div>
 		</div>
-		<div id="offset_control" class="invisible">
-			<button id="buy_offset_up" class="offset_button">&nbsp;</button>
-			<button id="buy_offset_down" class="offset_button">&nbsp;</button>
-			<button id="sell_offset_up" class="offset_button">&nbsp;</button>
-			<button id="sell_offset_down" class="offset_button">&nbsp;</button>
-			<button id="start_buy" class="offset_button">&nbsp;</button>
-			<button id="stop_buy" class="offset_button">&nbsp;</button>
-			<button id="start_sell" class="offset_button">&nbsp;</button>
-			<button id="stop_sell" class="offset_button">&nbsp;</button>
+		<button id="btn_stack_config" class="invisible">config</button>
+		<div id="stacks_control" class="invisible">
+			<input id="stackTickSize" type="number" value="0" title="BPS Offset Tick Size"/>
+			<input id="stackGroupTickMultiplier" type="number" value="1" title="Tick Multiplier"/>
+			<input id="stackAlignmentTickToBPS" type="number" value="0" title="Top Level BPS equivalent"/>
+			<button id="btn_submitStackTickSize">submit</button>
+			<div id="stackBidQuoterEnabled">Q</div>
+			<div id="stackBidPicardEnabled">P</div>
+			<div id="stackAskQuoterEnabled">Q</div>
+			<div id="stackAskPicardEnabled">P</div>
 		</div>
-	</div>
-	<button id="btn_stack_config" class="invisible">config</button>
-	<div id="stacks_control" class="invisible">
-		<input id="stackTickSize" type="number" value="0" title="BPS Offset Tick Size"/>
-		<input id="stackGroupTickMultiplier" type="number" value="1" title="Tick Multiplier"/>
-		<input id="stackAlignmentTickToBPS" type="number" value="0" title="Top Level BPS equivalent"/>
-		<button id="btn_submitStackTickSize">submit</button>
-		<div id="stackBidQuoterEnabled">Q</div>
-		<div id="stackBidPicardEnabled">P</div>
-		<div id="stackAskQuoterEnabled">Q</div>
-		<div id="stackAskPicardEnabled">P</div>
-	</div>
-	<div id="pricing_control">
-		<button id="pricing_BPS" class="pricing_button">BPS</button>
-		<button id="pricing_EFP" class="pricing_button">EFP</button>
-		<button id="pricing_RAW" class="pricing_button">RAW</button>
+		<div id="pricing_control">
+			<button id="pricing_BPS" class="pricing_button">BPS</button>
+			<button id="pricing_EFP" class="pricing_button">EFP</button>
+			<button id="pricing_RAW" class="pricing_button">RAW</button>
+		</div>
 	</div>
 	<div id="ladder">
 		<div id="header">

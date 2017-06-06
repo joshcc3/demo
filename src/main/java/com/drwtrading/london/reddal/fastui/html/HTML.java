@@ -65,4 +65,5 @@ public class HTML {
     public static final String PRICING_EFP = "pricing_EFP";
     public static final String PRICING = "pricing_";
     public static final String TEXT = "text";
+    public static final String LEFT_HAND_PANEL = "leftHandPanel";
 }

@@ -591,6 +591,10 @@ div {
 	border: 0;
 }
 
+.stackView #tradingInfoCells {
+	display: none;
+}
+
 #information * {
 	font-size: 10px;
 	position: absolute;
@@ -672,6 +676,10 @@ div {
 	top: 72px;
 	width: 42px;
 	border: 0;
+}
+
+.stackView #clicktrading {
+	top: 24px;
 }
 
 #clicktrading * {
@@ -852,12 +860,32 @@ div {
 	background-color: #ff9999;
 }
 
+#btn_stack_config {
+	position: absolute;
+	font-size: 9px;
+	margin: 0;
+	padding: 0;
+	text-align: center;
+	top: 216px;
+	left: 0;
+	width: 40px;
+	height: 12px;
+}
+
+.stackView #btn_stack_config {
+	top: 168px;
+}
+
 #stacks_control {
 	position: absolute;
 	left: 0;
 	top: 288px;
 	width: 42px;
 	border: 0;
+}
+
+.stackView #stacks_control {
+	top: 240px;
 }
 
 #stacks_control * {
@@ -903,18 +931,6 @@ input::-webkit-inner-spin-button,
 input::-webkit-outer-spin-button:hover,
 input::-webkit-inner-spin-button:hover {
 	-webkit-appearance: none;
-}
-
-#btn_stack_config {
-	position: absolute;
-	font-size: 9px;
-	margin: 0;
-	padding: 0;
-	text-align: center;
-	top: 216px;
-	left: 0;
-	width: 40px;
-	height: 12px;
 }
 
 #stackTickSize {

@@ -120,6 +120,8 @@ public class LadderStackView implements ILadderBoard {
 
         view.trading(isTrader, STACK_TYPES, STACK_ORDER_TYPES, STACK_ORDER_TYPES);
 
+        ui.cls(HTML.LEFT_HAND_PANEL, CSSClass.STACK_VIEW, true);
+
         ui.cls(HTML.STACK_CONFIG_BUTTON, CSSClass.INVISIBLE, false);
         ui.cls(HTML.STACKS_CONTROL, CSSClass.INVISIBLE, false);
 

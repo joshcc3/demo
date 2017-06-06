@@ -279,11 +279,13 @@ public class LadderBookView implements ILadderBoard {
     @Override
     public void switchedTo() {
 
+        ui.cls(HTML.LEFT_HAND_PANEL, CSSClass.STACK_VIEW, false);
+
         view.trading(isTrader, TAGS, filterUsableOrderTypes(ladderOptions.orderTypesLeft),
                 filterUsableOrderTypes(ladderOptions.orderTypesRight));
 
-        ui.clickable("#" + HTML.YESTERDAY_SETTLE);
-        ui.clickable("#" + HTML.LAST_TRADE_COD);
+        ui.clickable('#' + HTML.YESTERDAY_SETTLE);
+        ui.clickable('#' + HTML.LAST_TRADE_COD);
 
         ui.cls(HTML.AUTO_HEDGE_LEFT, CSSClass.INVISIBLE, false);
         ui.cls(HTML.AUTO_HEDGE_RIGHT, CSSClass.INVISIBLE, false);
