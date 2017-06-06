@@ -554,6 +554,10 @@ div {
 	border-bottom: solid 1px #00ff1b;
 }
 
+.white_colour {
+	border-bottom: solid 1px white;
+}
+
 .positive {
 	background-color: #00b000;
 }

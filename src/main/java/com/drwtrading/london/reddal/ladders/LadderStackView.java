@@ -8,14 +8,14 @@ import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
-import com.drwtrading.london.reddal.fastui.UiPipeImpl;
-import com.drwtrading.london.reddal.fastui.html.CSSClass;
-import com.drwtrading.london.reddal.fastui.html.DataKey;
-import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.SymbolStackPriceLevel;
+import com.drwtrading.london.reddal.fastui.UiPipeImpl;
+import com.drwtrading.london.reddal.fastui.html.CSSClass;
+import com.drwtrading.london.reddal.fastui.html.DataKey;
+import com.drwtrading.london.reddal.fastui.html.HTML;
 
 import java.text.DecimalFormat;
 import java.util.HashMap;
@@ -505,6 +505,22 @@ public class LadderStackView implements ILadderBoard {
                 }
             } else if (label.startsWith(HTML.ORDER)) {
                 // rightClickModify(clientSpeedState, data);
+            } else if (label.equals(HTML.BUY_OFFSET_UP)) {
+                if (!stackData.adjustBidStackLevels(-1)) {
+                    throw new IllegalStateException("Could not send msg - stack connection down.");
+                }
+            } else if (label.equals(HTML.BUY_OFFSET_DOWN)) {
+                if (!stackData.adjustBidStackLevels(1)) {
+                    throw new IllegalStateException("Could not send msg - stack connection down.");
+                }
+            } else if (label.equals(HTML.SELL_OFFSET_UP)) {
+                if (!stackData.adjustAskStackLevels(1)) {
+                    throw new IllegalStateException("Could not send msg - stack connection down.");
+                }
+            } else if (label.equals(HTML.SELL_OFFSET_DOWN)) {
+                if (!stackData.adjustAskStackLevels(-1)) {
+                    throw new IllegalStateException("Could not send msg - stack connection down.");
+                }
             } else if (label.equals(HTML.STACK_BID_QUOTE_ENABLED)) {
                 stackData.setBidStackEnabled(StackType.QUOTER, false);
             } else if (label.equals(HTML.STACK_BID_PICARD_ENABLED)) {

@@ -33,7 +33,7 @@ public class StackGroupOPXLView {
 
     private final OpxlClient client;
 
-    private final Map<String, Long> greenLaserLines;
+    private final Map<String, Long> whiteLaserLines;
     private final Map<String, Long> bidLaserLines;
     private final Map<String, Long> askLaserLines;
     private final Set<String> updatedSymbols;
@@ -48,7 +48,7 @@ public class StackGroupOPXLView {
 
         this.client = new OpxlClient(OPXL_SERVER, OPXL_PORT);
 
-        this.greenLaserLines = new HashMap<>();
+        this.whiteLaserLines = new HashMap<>();
         this.bidLaserLines = new HashMap<>();
         this.askLaserLines = new HashMap<>();
 
@@ -67,11 +67,11 @@ public class StackGroupOPXLView {
             final String line = laserLine.getId();
             final long price = laserLine.getPrice();
             switch (line) {
-                case "green": {
+                case "white": {
                     if (0 < price) {
-                        greenLaserLines.put(symbol, price);
+                        whiteLaserLines.put(symbol, price);
                     } else {
-                        greenLaserLines.remove(symbol);
+                        whiteLaserLines.remove(symbol);
                     }
                     break;
                 }
@@ -129,16 +129,16 @@ public class StackGroupOPXLView {
 
         for (final String symbol : updatedSymbols) {
 
-            final Long greenLine = greenLaserLines.get(symbol);
+            final Long theoLine = whiteLaserLines.get(symbol);
             final Long bidLine = bidLaserLines.get(symbol);
             final Long askLine = askLaserLines.get(symbol);
 
             final Object[] row = getRow(symbol);
 
-            if (null != greenLine && null != bidLine && null != askLine) {
+            if (null != theoLine && null != bidLine && null != askLine) {
 
                 final double mid = (bidLine + askLine) / 2d;
-                final double result = (mid - greenLine) / Constants.NORMALISING_FACTOR;
+                final double result = (mid - theoLine) / Constants.NORMALISING_FACTOR;
 
                 row[BEST_BID_COL] = result;
                 row[BEST_ASK_COL] = result;

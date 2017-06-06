@@ -313,20 +313,25 @@ public class SymbolStackData {
         }
     }
 
-    public boolean adjustBidStackLevels(final StackType stackType, final int tickAdjustment) {
+    public boolean adjustBidStackLevels(final int tickAdjustment) {
 
         if (null != bidStackGroup) {
-            stackClient.adjustStackLevels(SOURCE, bidStackGroup.getStackID(), stackType, tickAdjustment);
+            for (final StackType stackType : StackType.values()) {
+                stackClient.adjustStackLevels(SOURCE, bidStackGroup.getStackID(), stackType, tickAdjustment);
+            }
             return stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
         }
     }
 
-    public boolean adjustAskStackLevels(final StackType stackType, final int tickAdjustment) {
+    public boolean adjustAskStackLevels(final int tickAdjustment) {
 
         if (null != askStackGroup) {
-            stackClient.adjustStackLevels(SOURCE, askStackGroup.getStackID(), stackType, tickAdjustment);
+
+            for (final StackType stackType : StackType.values()) {
+                stackClient.adjustStackLevels(SOURCE, askStackGroup.getStackID(), stackType, tickAdjustment);
+            }
             return stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
