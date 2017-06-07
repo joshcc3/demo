@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.stacks.opxl;
 
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.ladder.LaserLine;
@@ -9,6 +10,8 @@ import drw.opxl.OpxlClient;
 import drw.opxl.OpxlData;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -44,7 +47,9 @@ public class StackGroupOPXLView {
 
         this.monitor = monitor;
 
-        this.opxlTopic = opxlTopic;
+        final SimpleDateFormat simpleDF = DateTimeUtil.getDateFormatter('_' + DateTimeUtil.DATE_FILE_FORMAT);
+        final String date = simpleDF.format(new Date());
+        this.opxlTopic = opxlTopic + date;
 
         this.client = new OpxlClient(OPXL_SERVER, OPXL_PORT);
 
