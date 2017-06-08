@@ -116,17 +116,12 @@
             return fromServer + "_" + order.chainId;
         }
         function orders(os) {
-
-            if(os.length == 0) {
-                window.close();
-            }
-
-            $("#orders").find("tr:not(.template,.header)").toggleClass("invisible", true);
+            $("#orders").find("tr:not(.template,.header,.managed)").toggleClass("invisible", true);
             $(os).each(function (i, x) {
                 var order = x.value;
                 var key = getKey(x.fromServer, order);
                 var row = getRow(key);
-                row.addClass('order');
+                row.addClass('order').addClass('regular');
                 row.toggleClass('BID', order.side == 'BID');
                 row.toggleClass('OFFER', order.side == 'OFFER');
                 row.find('.remainingQty').text(order.totalQuantity - order.filledQuantity);
@@ -144,6 +139,30 @@
                 });
             })
         }
+
+        function managedOrders(os) {
+            $("#orders").find("tr:not(.template,.header,.regular)").toggleClass("invisible", true);
+            $(os).each(function (i, x) {
+                var order = x.update;
+                var key = x.key;
+                var row = getRow(key);
+                row.addClass('order').addClass('managed');
+                row.toggleClass('BID', order.order.side == 'BUY');
+                row.toggleClass('OFFER', order.order.side == 'SELL');
+                row.find('.remainingQty').text(order.remainingQty);
+                row.find('.qtyBox').data('qty', order.remainingQty);
+                row.find('.qtyBox').attr('disabled',true);
+                row.find('.type').text("MANAGED");
+                row.find('.tag').text("MANAGED");
+                row.attr('id', key);
+                row.toggleClass('invisible', order.dead);
+                row.find('.go').toggleClass('invisible', true);
+                row.find('.cancel').unbind().bind('click', function() {
+                    ws.send(command('cancelManagedOrder', [x.symbol, key]));
+                });
+            })
+        }
+
 
         function fixQuantity(x) {
             var remainingQty = x.find('.remainingQty').text();

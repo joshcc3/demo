@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.orderentry;
 
 import com.google.common.collect.MapMaker;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -20,13 +21,17 @@ public class OrderUpdatesForSymbol {
 
     public void onUpdate(final UpdateFromServer update) {
         if (update.update.getOrder().getSymbol().equals(symbol)) {
-            updatesByKey.remove(update.key());
-            updatesByPrice.values().forEach(map -> map.remove(update.key()));
+            updatesByKey.remove(update.key);
+            updatesByPrice.values().forEach(map -> map.remove(update.key));
             if (!update.update.isDead()) {
-                updatesByKey.put(update.key(), update);
-                updatesByPrice.get(update.update.getIndicativePrice()).put(update.key(), update);
+                updatesByKey.put(update.key, update);
+                updatesByPrice.get(update.update.getIndicativePrice()).put(update.key, update);
             }
         }
+    }
+
+    public Collection<UpdateFromServer> getOrdersForPrice(long price) {
+        return updatesByPrice.get(price).values();
     }
 
     public void onDisconnected(final ServerDisconnected disconnected) {

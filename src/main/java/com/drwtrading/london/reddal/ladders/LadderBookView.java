@@ -784,12 +784,12 @@ public class LadderBookView implements ILadderBoard {
                     }
                 }
 
-                for (final UpdateFromServer update : orderUpdatesForSymbol.updatesByPrice.get(price).values()) {
+                for (final UpdateFromServer update : orderUpdatesForSymbol.getOrdersForPrice(price)) {
                     managedOrderQty += update.update.getRemainingQty();
                     side = convertSide(update.update.getOrder().getSide());
-                    keys.append(update.key());
+                    keys.append(update.key);
                     keys.append('!');
-                    eeifKeys.append(update.key());
+                    eeifKeys.append(update.key);
                     eeifKeys.append('!');
                 }
 

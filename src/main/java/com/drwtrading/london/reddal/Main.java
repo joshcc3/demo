@@ -333,8 +333,8 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("orders", "orders", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("orders", websocket);
-                final OrdersPresenter ordersPresenter = new OrdersPresenter(webLog, channels.singleOrderCommand);
-                fibers.ui.subscribe(ordersPresenter, websocket);
+                final OrdersPresenter ordersPresenter = new OrdersPresenter(webLog, channels.singleOrderCommand, channels.orderEntryCommandToServer);
+                fibers.ui.subscribe(ordersPresenter, websocket, channels.orderEntryFromServer);
                 channels.workingOrders.subscribe(
                         new BatchSubscriber<>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
             }
@@ -346,8 +346,8 @@ public class Main {
                 final Collection<String> nibblers = environment.getList(Environment.WORKING_ORDERS);
                 final WorkingOrdersPresenter presenter =
                         new WorkingOrdersPresenter(clock, monitor, webLog, fibers.ui.getFiber(), channels.stats,
-                                channels.remoteOrderCommand, nibblers);
-                fibers.ui.subscribe(presenter, ws);
+                                channels.remoteOrderCommand, nibblers, channels.orderEntryCommandToServer);
+                fibers.ui.subscribe(presenter, ws, channels.orderEntryFromServer);
                 channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
                 channels.workingOrders.subscribe(fibers.ui.getFiber(), presenter::onWorkingOrder);
                 channels.workingOrderConnectionEstablished.subscribe(fibers.ui.getFiber(), presenter::nibblerConnectionEstablished);

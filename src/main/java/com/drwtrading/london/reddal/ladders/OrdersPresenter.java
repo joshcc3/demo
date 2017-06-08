@@ -1,7 +1,13 @@
 package com.drwtrading.london.reddal.ladders;
 
+import com.drwtrading.jetlang.autosubscribe.BatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.photons.eeifoe.Cancel;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
+import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.util.Struct;
@@ -11,7 +17,6 @@ import com.drwtrading.websockets.WebSocketClient;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
-import com.google.common.base.Function;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
@@ -27,19 +32,17 @@ public class OrdersPresenter {
     private final UILogger webLog;
 
     private final Publisher<SingleOrderCommand> singleOrderCommandPublisher;
+    private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServer;
     WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
-    Map<String, WorkingOrdersForSymbol> orders = new MapMaker().makeComputingMap(new Function<String, WorkingOrdersForSymbol>() {
-        @Override
-        public WorkingOrdersForSymbol apply(final String from) {
-            return new WorkingOrdersForSymbol(from);
-        }
-    });
+
+    Map<String, WorkingOrdersForSymbol> orders = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
+    Map<String, OrderUpdatesForSymbol> managedOrders = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
     Multimap<SymbolPrice, View> subscribed = HashMultimap.create();
 
-    public OrdersPresenter(final UILogger webLog, final Publisher<SingleOrderCommand> singleOrderCommandPublisher) {
-
+    public OrdersPresenter(final UILogger webLog, final Publisher<SingleOrderCommand> singleOrderCommandPublisher, Publisher<OrderEntryCommandToServer> orderEntryCommandToServer) {
         this.webLog = webLog;
         this.singleOrderCommandPublisher = singleOrderCommandPublisher;
+        this.orderEntryCommandToServer = orderEntryCommandToServer;
     }
 
     public void onWorkingOrderBatch(final List<WorkingOrderUpdateFromServer> batch) {
@@ -47,13 +50,25 @@ public class OrdersPresenter {
     }
 
     public void onWorkingOrder(final WorkingOrderUpdateFromServer update) {
-
         final String symbol = update.value.getSymbol();
         final WorkingOrdersForSymbol orders = this.orders.get(symbol);
         final WorkingOrderUpdateFromServer prevUpdate = orders.onWorkingOrderUpdate(update);
         final long newPrice = update.value.getPrice();
         final long prevPrice = null == prevUpdate ? update.value.getPrice() : prevUpdate.value.getPrice();
         update(symbol, newPrice, prevPrice);
+    }
+
+    @BatchSubscriber
+    @Subscribe
+    public void onUpdateFromServer(final List<UpdateFromServer> updates) {
+        updates.forEach(updateFromServer -> {
+            managedOrders.get(updateFromServer.symbol).onUpdate(updateFromServer);
+        });
+    }
+
+    @Subscribe
+    public void on(final ServerDisconnected serverDisconnected) {
+        managedOrders.values().forEach(orderUpdatesForSymbol -> orderUpdatesForSymbol.onDisconnected(serverDisconnected));
     }
 
     @Subscribe
@@ -97,9 +112,17 @@ public class OrdersPresenter {
         singleOrderCommandPublisher.publish(new CancelOrder(symbol, key, client.getUserName()));
     }
 
+    @FromWebSocketView
+    public void cancelManagedOrder(final String symbol, final String key, final WebSocketClient client) {
+        UpdateFromServer updateFromServer = managedOrders.get(symbol).updatesByKey.get(key);
+        orderEntryCommandToServer.publish(new OrderEntryCommandToServer(updateFromServer.server,
+                new Cancel(updateFromServer.update.getSystemOrderId(), updateFromServer.update.getOrder())));
+    }
+
     private void update(final String symbol, final long newPrice, final long prevPrice) {
 
         final WorkingOrdersForSymbol workingOrders = this.orders.get(symbol);
+        OrderUpdatesForSymbol managed = this.managedOrders.get(symbol);
 
         for (final Map.Entry<SymbolPrice, View> entry : subscribed.entries()) {
 
@@ -107,16 +130,16 @@ public class OrdersPresenter {
             final long price = symbolPrice.price;
 
             if (symbol.equals(symbolPrice.symbol) && (newPrice == price || prevPrice == price)) {
-
                 final Collection<WorkingOrderUpdateFromServer> orders = workingOrders.ordersByPrice.get(price);
                 entry.getValue().orders(orders);
+                entry.getValue().managedOrders(managed.getOrdersForPrice(price));
             }
         }
     }
 
-    public static interface View {
-
+    public interface View {
         void orders(Collection<WorkingOrderUpdateFromServer> workingOrderUpdates);
+        void managedOrders(Collection<UpdateFromServer> stringUpdateFromServerMap);
     }
 
     public static class SymbolPrice extends Struct {

@@ -365,7 +365,7 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(final UpdateFromServer update) {
-        eeifOrdersBySymbol.get(update.getSymbol()).onUpdate(update);
+        eeifOrdersBySymbol.get(update.symbol).onUpdate(update);
     }
 
     @Subscribe
