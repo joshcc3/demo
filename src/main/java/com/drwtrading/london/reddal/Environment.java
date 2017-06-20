@@ -196,18 +196,25 @@ public class Environment {
                     tagsRaw = null;
                 }
 
+                final Collection<String> micsRaw;
+                if (remoteServerCMDs.paramExists("mics")) {
+                    micsRaw = remoteServerCMDs.getParam("mics").getSet(Pattern.compile(","));
+                } else {
+                    micsRaw = null;
+                }
+
                 System.out.println(
                         '\t' + remoteServer + ": regex '" + symbolRegex + "', order types: " + orderTypesRaw + ", tags: " + tagsRaw);
-                matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypesRaw, tagsRaw));
+                matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypesRaw, tagsRaw, micsRaw));
             }
         }
         return getRemoteOrderServerResolver(matchers);
     }
 
     public static RemoteOrderServerResolver getRemoteOrderServerResolver(final LinkedHashMap<String, RemoteOrderMatcher> matchers) {
-        return (symbol, orderType, tag) -> {
+        return (symbol, orderType, tag, mic) -> {
             for (Map.Entry<String, RemoteOrderMatcher> entry : matchers.entrySet()) {
-                if (entry.getValue().matches(symbol, orderType, tag)) {
+                if (entry.getValue().matches(symbol, orderType, tag, mic)) {
                     return entry.getKey();
                 }
             }
@@ -217,10 +224,10 @@ public class Environment {
 
     public static interface RemoteOrderServerResolver {
 
-        public String resolveToServerName(final String symbol, final String orderType, final String tag);
+        public String resolveToServerName(final String symbol, final String orderType, final String tag, String mic);
 
-        default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType, final String tag) {
-            return resolveToServerName(symbol, remoteOrderType.name(), tag);
+        default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType, final String tag, String mic) {
+            return resolveToServerName(symbol, remoteOrderType.name(), tag, mic);
         }
     }
 
@@ -229,16 +236,19 @@ public class Environment {
         public final Pattern symbolPattern;
         public final Collection<String> orderTypes;
         private final Collection<String> tags;
+        private final Collection<String> mics;
 
-        public RemoteOrderMatcher(final Pattern symbolPattern, final Collection<String> orderTypes, final Collection<String> tags) {
+        public RemoteOrderMatcher(final Pattern symbolPattern, final Collection<String> orderTypes, final Collection<String> tags, Collection<String> mics) {
             this.symbolPattern = symbolPattern;
             this.orderTypes = orderTypes;
             this.tags = tags;
+            this.mics = mics;
         }
 
-        public boolean matches(final String symbol, final String orderType, final String tag) {
+        public boolean matches(final String symbol, final String orderType, final String tag, String mic) {
             return symbolPattern.matcher(symbol).find() &&
-                    (orderTypes == null || orderTypes.contains(orderType) && (tags == null || tags.contains(tag)));
+                    (orderTypes == null || orderTypes.contains(orderType) && (tags == null || tags.contains(tag))
+                    && (mics == null || mic == null || mics.contains(mic)));
         }
     }
 

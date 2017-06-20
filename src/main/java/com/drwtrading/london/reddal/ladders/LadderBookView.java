@@ -60,6 +60,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -160,14 +161,14 @@ public class LadderBookView implements ILadderBoard {
     private long modifyFromPriceSelectedTime;
 
     LadderBookView(final String username, final boolean isTrader, final String symbol, final UiPipeImpl ui, final ILadderUI view,
-            final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-            final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
-            final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
-            final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
-            final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-            final long centeredPrice) {
+                   final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+                   final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
+                   final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+                   final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
+                   final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
+                   final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
+                   final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+                   final long centeredPrice) {
 
         this.username = username;
         this.isTrader = isTrader;
@@ -564,12 +565,17 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private Collection<String> filterUsableOrderTypes(final Collection<CSSClass> types) {
-        return types.stream().filter(input -> TAGS.stream().filter(tag -> {
-            boolean oldOrderType = ladderOptions.serverResolver.resolveToServerName(symbol, input.name(), tag) != null;
-            boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(input.name()) &&
-                    orderEntryMap.get(symbol).supportedTypes.contains(ManagedOrderType.valueOf(input.name()));
-            return oldOrderType || newOrderType;
-        }).findAny().isPresent()).map(Enum::name).collect(Collectors.toList());
+        if (null != marketData && null != marketData.getBook()) {
+            String mic = marketData.getBook().getMIC().name();
+            return types.stream().filter(input -> TAGS.stream().filter(tag -> {
+                boolean oldOrderType = ladderOptions.serverResolver.resolveToServerName(symbol, input.name(), tag, mic) != null;
+                boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(input.name()) &&
+                        orderEntryMap.get(symbol).supportedTypes.contains(ManagedOrderType.valueOf(input.name()));
+                return oldOrderType || newOrderType;
+            }).findAny().isPresent()).map(Enum::name).collect(Collectors.toList());
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     private void drawClickTrading() {
@@ -901,7 +907,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void workingQty(final LadderHTMLRow htmlRowKeys, final int qty, final BookSide side, final Set<WorkingOrderType> orderTypes,
-            final boolean hasEeifOEOrder) {
+                            final boolean hasEeifOEOrder) {
 
         ui.txt(htmlRowKeys.orderKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.orderKey, CSSClass.WORKING_QTY, 0 < qty);
@@ -1097,7 +1103,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrderClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data,
-            final String orderType, final boolean autoHedge) {
+                                  final String orderType, final boolean autoHedge) {
 
         final long price = Long.valueOf(data.get("price"));
         final LadderBoardRow bookRow = priceRows.get(price);
@@ -1170,7 +1176,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final boolean autoHedge, final long price,
-            final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+                             final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
 
         final int sequenceNumber = orderSeqNo++;
 
@@ -1184,7 +1190,7 @@ public class LadderBookView implements ILadderBoard {
             ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
         } else {
 
-            final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, orderType, tag);
+            final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, orderType, tag, marketData.getBook().getMIC().name());
 
             final RemoteOrderType remoteOrderType = WorkingOrderUpdateFromServer.getRemoteOrderType(orderType);
 
@@ -1246,7 +1252,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void modifyOrder(final ClientSpeedState clientSpeedState, final boolean autoHedge, final long price,
-            final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+                             final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
 
         trace.publish(new CommandTrace("modify", username, symbol, order.value.getWorkingOrderType().toString(), autoHedge, price,
                 order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
