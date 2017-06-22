@@ -5,15 +5,8 @@ import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
-import com.drwtrading.london.reddal.fastui.UiEventHandler;
-import com.drwtrading.london.reddal.fastui.UiPipeImpl;
-import com.drwtrading.london.reddal.fastui.html.CSSClass;
-import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
-import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
-import eeif.execution.Side;
-import eeif.execution.WorkingOrderType;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.SpreadContractSet;
@@ -25,6 +18,11 @@ import com.drwtrading.london.reddal.data.SymbolMetaData;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.fastui.UiEventHandler;
+import com.drwtrading.london.reddal.fastui.UiPipeImpl;
+import com.drwtrading.london.reddal.fastui.html.CSSClass;
+import com.drwtrading.london.reddal.fastui.html.HTML;
+import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
@@ -32,6 +30,8 @@ import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.websockets.WebSocketClient;
 import drw.london.json.Jsonable;
+import eeif.execution.Side;
+import eeif.execution.WorkingOrderType;
 import org.jetlang.channels.Publisher;
 
 import java.math.BigDecimal;
@@ -146,14 +146,14 @@ public class LadderView implements UiEventHandler {
     private GoingExState exState = GoingExState.Unknown;
 
     public LadderView(final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view, final String ewokBaseURL,
-                      final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
-                      final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
-                      final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-                      final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-                      final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-                      final Publisher<UserCycleRequest> userCycleContractPublisher,
-                      final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-                      final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher, final Predicate<String> symbolExists) {
+            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
+            final Publisher<StatsMsg> statsPublisher, final TradingStatusForAll tradingStatusForAll,
+            final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+            final Publisher<UserCycleRequest> userCycleContractPublisher,
+            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher, final Predicate<String> symbolExists) {
 
         this.client = client;
         this.view = view;
@@ -186,9 +186,9 @@ public class LadderView implements UiEventHandler {
     }
 
     public void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
-                                  final WorkingOrdersForSymbol workingOrdersForSymbol, final SymbolMetaData metaData, final ExtraDataForSymbol extraDataForSymbol,
-                                  final SymbolStackData stackData, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
-                                  final OrderUpdatesForSymbol orderUpdatesForSymbol) {
+            final WorkingOrdersForSymbol workingOrdersForSymbol, final SymbolMetaData metaData, final ExtraDataForSymbol extraDataForSymbol,
+            final SymbolStackData stackData, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+            final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
         this.symbol = symbol;
         this.levels = levels;

@@ -43,7 +43,7 @@ public class ChixInstMatcher {
             if (null != primarySymbol) {
                 updateChixPair(primarySymbol, symbol);
             }
-        } else {
+        } else if (MDSource.BATS_EUROPE != mdSource) {
 
             primaryExchSymbols.put(instID, symbol);
             final String chixSymbol = chixSymbols.get(instID);
