@@ -336,6 +336,7 @@ public class WorkingOrdersPresenter {
             monitor.setOK(ReddalComponents.SAFETY_WORKING_ORDER_VIEWER);
         }
         dirty.clear();
+        dirtyManaged.clear();
     }
 
     private void publishManagedOrderUpdate(IWorkingOrderView view, UpdateFromServer order) {
