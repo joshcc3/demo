@@ -342,9 +342,17 @@ public class SymbolStackData {
 
         if (null != bidStackGroup) {
             for (final StackType stackType : StackType.values()) {
-                for (final StackOrderType orderType : StackOrderType.values()) {
-                    stackClient.addStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType, BID_PRICE_MULTIPLIER * tickOffset,
-                            -Long.MAX_VALUE);
+                final SymbolStackPriceLevel stackPriceLevel = bidStackLevels.get(tickOffset);
+                if (null != stackPriceLevel) {
+                    final StackLevel level = stackPriceLevel.getStackType(stackType);
+                    if (null != level) {
+                        for (final StackOrderType orderType : StackOrderType.values()) {
+                            if (0 < level.getOrderTypeQty(orderType)) {
+                                stackClient.addStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType,
+                                        BID_PRICE_MULTIPLIER * tickOffset, -Long.MAX_VALUE);
+                            }
+                        }
+                    }
                 }
             }
             return stackClient.batchComplete();
@@ -357,9 +365,17 @@ public class SymbolStackData {
 
         if (null != askStackGroup) {
             for (final StackType stackType : StackType.values()) {
-                for (final StackOrderType orderType : StackOrderType.values()) {
-                    stackClient.addStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType, ASK_PRICE_MULTIPLIER * tickOffset,
-                            -Long.MAX_VALUE);
+                final SymbolStackPriceLevel stackPriceLevel = askStackLevels.get(tickOffset);
+                if (null != stackPriceLevel) {
+                    final StackLevel level = stackPriceLevel.getStackType(stackType);
+                    if (null != level) {
+                        for (final StackOrderType orderType : StackOrderType.values()) {
+                            if (0 < level.getOrderTypeQty(orderType)) {
+                                stackClient.addStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType,
+                                        ASK_PRICE_MULTIPLIER * tickOffset, -Long.MAX_VALUE);
+                            }
+                        }
+                    }
                 }
             }
             return stackClient.batchComplete();
