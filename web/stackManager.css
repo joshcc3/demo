@@ -134,15 +134,47 @@ body {
 	margin: 0;
 }
 
-#creationRow label, #childAdoption label {
+#familyLookup label, #familyCreationRow label, #childAdoption label {
 	width: 50px;
 	margin-right: 10px;
 	text-align: right;
 }
 
-#creationRow input, #childAdoption input {
+#familyLookup input, #familyCreationRow input, #childAdoption input {
 	width: 240px;
 	margin-right: 5px;
+}
+
+#parentCreation #createChildrenTable {
+	display: block;
+}
+
+#parentCreation .creationRow {
+	margin-top: 5px;
+}
+
+.childCreationRow label {
+	width: 90px;
+	margin-right: 10px;
+	text-align: right;
+}
+
+.childCreationRow input {
+	width: 200px;
+	border: 0;
+	padding: 0;
+	margin: 0;
+}
+
+.childCreationRow select {
+	width: 75px;
+	border: 0;
+	padding: 0;
+	margin: 0;
+}
+
+.childCreationRow button {
+	margin-left: 10px;
 }
 
 #childAdoption {

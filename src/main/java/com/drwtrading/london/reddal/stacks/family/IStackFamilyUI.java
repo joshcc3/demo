@@ -1,5 +1,7 @@
 package com.drwtrading.london.reddal.stacks.family;
 
+import java.util.Collection;
+
 public interface IStackFamilyUI {
 
     public void clearFieldData(final String fieldID);
@@ -9,6 +11,11 @@ public interface IStackFamilyUI {
     public void setFieldData(final String fieldID, final String text);
 
     public void removeAll(final String nibblerName);
+
+    public void setCreateFamilyRow(final String symbol);
+
+    public void addCreateChildRow(final String symbol, final Collection<String> nibblers, final Collection<String> instTypes,
+            final String leanType, final String leanSymbol);
 
     public void addFamily(final String familyName);
 

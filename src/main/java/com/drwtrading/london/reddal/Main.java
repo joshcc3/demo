@@ -168,6 +168,8 @@ public class Main {
 
     private static final String EWOK_BASE_URL_PARAM = "ewokBaseURL";
 
+    private static final String IS_STACK_MANAGER_PARAM = "isManager";
+
     public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
             final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
@@ -333,7 +335,8 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("orders", "orders", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("orders", websocket);
-                final OrdersPresenter ordersPresenter = new OrdersPresenter(webLog, channels.singleOrderCommand, channels.orderEntryCommandToServer);
+                final OrdersPresenter ordersPresenter =
+                        new OrdersPresenter(webLog, channels.singleOrderCommand, channels.orderEntryCommandToServer);
                 fibers.ui.subscribe(ordersPresenter, websocket, channels.orderEntryFromServer);
                 channels.workingOrders.subscribe(
                         new BatchSubscriber<>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
@@ -976,6 +979,9 @@ public class Main {
                                 app.env.name() + connectionName, nibblerClient);
 
                 nibblerClient.setClient(client);
+                if (!nibblerConfig.paramExists(IS_STACK_MANAGER_PARAM) || !nibblerConfig.getBoolean(IS_STACK_MANAGER_PARAM)) {
+                    stackFamilyPresenter.setStrategyClient(nibbler, client);
+                }
                 strategiesPresenter.setStrategyClient(nibbler, client);
                 stackConfigPresenter.setConfigClient(nibbler, client);
             }

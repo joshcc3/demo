@@ -53,11 +53,18 @@ $(function () {
 		showChild(symbol);
 	});
 
-	var familyNameInput = $("#quoteSymbol");
-	familyNameInput.on("input", function () {
-		var symbol = familyNameInput.val();
+	var familyIsinInput = $("#familySymbolLookup");
+	familyIsinInput.on("input", function () {
+		var symbol = familyIsinInput.val();
 		ws.send(command("checkFamilyInst", [symbol, "#creationInfoRow"]));
 	});
+	$("#findFamilyMembers").unbind().bind("click", function () {
+		var symbol = familyIsinInput.val();
+		$(".childCreationRow:not(.headerRow)").remove();
+		ws.send(command("findFamilyMembers", [symbol]));
+	});
+
+	var familyNameInput = $("#quoteSymbol");
 	$("#createFamily").unbind().bind("click", function () {
 		var symbol = familyNameInput.val();
 		ws.send(command("createFamily", [symbol]));
@@ -112,6 +119,76 @@ function setFieldData(fieldID, text) {
 	infoRow.find("div").text(text);
 }
 
+function setCreateFamilyRow(symbol) {
+
+	var familyNameInput = $("#quoteSymbol");
+	familyNameInput.val(symbol);
+}
+
+function addCreateChildRow(childSymbol, nibblers, instTypes, leanInstType, leanSymbol) {
+
+	var childTable = $("#createChildrenTable");
+	var childCreationRow = $(".childCreationRow.headerRow").clone();
+
+	childCreationRow.removeClass("headerRow");
+
+	childCreationRow.find(".childQuoteSymbol").val(childSymbol);
+
+	var nibblersCombo = childCreationRow.find(".hostNibblers");
+	nibblers.forEach(function (nibbler) {
+
+		var option = $("<option value=\"" + nibbler + "\">" + nibbler + "</option>");
+		option.addClass(nibbler);
+		option.attr("data", nibbler);
+		nibblersCombo.append(option);
+	});
+	nibblersCombo.toggleClass("notPersisted", true);
+	nibblersCombo.off("focus").focus( function () {
+		nibblersCombo.toggleClass("notPersisted", false);
+	});
+
+	var instTypeCombo = childCreationRow.find(".leanInstID");
+	instTypes.forEach(function (instType) {
+
+		var option = $("<option value=\"" + instType + "\">" + instType + "</option>");
+		option.addClass(instType);
+		option.attr("data", instType);
+		instTypeCombo.append(option);
+	});
+	instTypeCombo.val(leanInstType);
+
+	childCreationRow.find(".childLeanSymbol").val(leanSymbol);
+
+	childCreationRow.find(".viewLadder").unbind().bind("click", function () {
+		launchLadder(childSymbol);
+	});
+
+	childCreationRow.find("button.createButton").off("click").click(function () {
+
+		var quoteSymbol = childCreationRow.find("input[name=quote]").val();
+		var forNibbler = childCreationRow.find(".hostNibblers").find("option:selected").text();
+		var leanInstType = childCreationRow.find(".leanInstID").find("option:selected").text();
+		var leanSymbol = childCreationRow.find("input[name=lean]").val();
+		ws.send(command("createChildStack", [forNibbler, quoteSymbol, leanInstType, leanSymbol]));
+	});
+
+	childCreationRow.find("button.adoptButton").unbind().bind("click", function () {
+		var family = $("#quoteSymbol").val();
+		var child = childCreationRow.find("input[name=quote]").val();
+		ws.send(command("adoptChild", [family, child]));
+	});
+
+	addSortedDiv(childTable.find(".row"), childCreationRow, childCreationComparator);
+}
+
+function childCreationComparator(a, b) {
+
+	var aSymbol = a.find(".childQuoteSymbol").val();
+	var bSymbol = b.find(".childQuoteSymbol").val();
+
+	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
+}
+
 function removeAll(nibblerName) {
 	var table = getExchangeTable(nibblerName);
 	table.find(".dataRow").remove();
@@ -144,8 +221,9 @@ function minimiseAll() {
 
 function addFamily(familyName) {
 
-	var familyID = "family_" + familyName;
-	var family = $("#" + familyID);
+	var familyID = "family_" + familyName.replace(/ |\/|\.|:/g, "_");
+	;
+	var family = findChild(familyID);
 	if (family.length < 1) {
 
 		family = $("#templateFamily").clone();
@@ -332,6 +410,7 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 	var row = $("#" + rowID);
 
 	var exchangeTable = addFamily(familyName).find(".children");
+	var quoteSymbolCell;
 	if (row.length < 1) {
 
 		row = exchangeTable.find(".header").clone();
@@ -339,7 +418,7 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 		row.attr("id", rowID);
 		row.addClass("dataRow");
 
-		var quoteSymbolCell = setCellData(row.find(".symbol"), childSymbol);
+		quoteSymbolCell = setCellData(row.find(".symbol"), childSymbol);
 
 		addSortedDiv(exchangeTable.find(".row"), row, rowComparator);
 
@@ -349,7 +428,11 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 		row.remove();
 		setChildCount(oldFamily);
 
+		quoteSymbolCell = row.find(".symbol");
+
 		addSortedDiv(exchangeTable.find(".row"), row, rowComparator);
+	} else {
+		quoteSymbolCell = row.find(".symbol");
 	}
 
 	quoteSymbolCell.unbind().bind("click", function () {

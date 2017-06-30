@@ -5,6 +5,7 @@ import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.transport.cache.families.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
+import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -19,17 +20,23 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
+import com.google.common.collect.Lists;
 import org.jetlang.channels.Publisher;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 
 public class StackFamilyPresenter implements IStackRelationshipListener {
+
+    private static final Collection<String> ALLOWED_INST_TYPES =
+            Lists.newArrayList(InstType.EQUITY.name(), InstType.DR.name(), InstType.INDEX.name(), InstType.SYNTHETIC.name());
 
     private static final String SOURCE_UI = "FAMILY_ADMIN_UI";
 
@@ -44,6 +51,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Set<String> children;
 
     private final Map<String, SearchResult> searchResults;
+    private final Map<String, LinkedHashSet<String>> fungibleInsts;
+
+    private final Map<String, StackClientHandler> nibblerClients;
 
     private StackCommunityManager communityManager;
 
@@ -60,10 +70,17 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         this.children = new HashSet<>();
 
         this.searchResults = new HashMap<>();
+        this.fungibleInsts = new HashMap<>();
+
+        this.nibblerClients = new HashMap<>();
     }
 
     public void setCommunityManager(final StackCommunityManager communityManager) {
         this.communityManager = communityManager;
+    }
+
+    public void setStrategyClient(final String nibblerName, final StackClientHandler cache) {
+        this.nibblerClients.put(nibblerName, cache);
     }
 
     void addFamily(final String familyName) {
@@ -115,6 +132,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     public void setSearchResult(final SearchResult searchResult) {
         searchResults.put(searchResult.symbol, searchResult);
+        MapUtils.getMappedLinkedSet(fungibleInsts, searchResult.instID.isin).add(searchResult.symbol);
     }
 
     public void symbolSelected(final SymbolSelection symbolSelection) {
@@ -202,6 +220,22 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
+    public void findFamilyMembers(final String symbol, final WebSocketInboundData data) {
+
+        final SearchResult searchResult = searchResults.get(symbol);
+        if (null != searchResult) {
+
+            final IStackFamilyUI ui = views.get(data.getOutboundChannel());
+            ui.setCreateFamilyRow(symbol);
+
+            final Set<String> children = fungibleInsts.get(searchResult.instID.isin);
+            for (final String childSymbol : children) {
+                ui.addCreateChildRow(childSymbol, nibblerClients.keySet(), ALLOWED_INST_TYPES, InstType.INDEX.name(), childSymbol);
+            }
+        }
+    }
+
+    @FromWebSocketView
     public void checkFamilyExists(final String family, final String resultFieldID, final WebSocketInboundData data) {
 
         final IStackFamilyUI ui = views.get(data.getOutboundChannel());
@@ -212,6 +246,37 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         } else {
 
             ui.clearFieldData(resultFieldID);
+        }
+    }
+
+    @FromWebSocketView
+    public void createFamily(final String symbol, final WebSocketInboundData data) {
+
+        final SearchResult searchResult = searchResults.get(symbol);
+        if (null != searchResult) {
+
+            final String family = getFamilyName(searchResult);
+
+            final InstrumentID instID = searchResult.instID;
+            final InstType instType = searchResult.instType;
+
+            communityManager.createFamily(SOURCE_UI, family, instID, instType);
+        }
+    }
+
+    private static String getFamilyName(final SearchResult searchResult) {
+
+        switch (searchResult.instType) {
+            case FUTURE: {
+                return FutureConstant.getFutureFromSymbol(searchResult.symbol).name();
+            }
+            case FUTURE_SPREAD: {
+                final String frontMonth = searchResult.symbol.split("-")[0];
+                return FutureConstant.getFutureFromSymbol(frontMonth).name();
+            }
+            default: {
+                return searchResult.symbol.split(" ")[0];
+            }
         }
     }
 
@@ -230,44 +295,44 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void createFamily(final String symbol, final WebSocketInboundData data) {
+    public void createChildStack(final String nibblerName, final String quoteSymbol, final String leanInstrumentType,
+            final String leanSymbol) {
 
-        final SearchResult searchResult = searchResults.get(symbol);
-        if (null != searchResult) {
-            final String family;
-            switch (searchResult.instType) {
-                case FUTURE: {
-                    family = FutureConstant.getFutureFromSymbol(symbol).name();
-                    break;
-                }
-                case FUTURE_SPREAD: {
-                    final String frontMonth = symbol.split("-")[0];
-                    family = FutureConstant.getFutureFromSymbol(frontMonth).name();
-                    break;
-                }
-                default: {
-                    family = symbol.split(" ")[0];
-                }
+        final StackClientHandler strategyClient = nibblerClients.get(nibblerName);
+        if (null != strategyClient) {
+
+            final InstrumentID quoteInstId = searchResults.get(quoteSymbol).instID;
+            final InstType leanInstType = InstType.getInstType(leanInstrumentType);
+            final InstrumentID leanInstID = searchResults.get(leanSymbol).instID;
+
+            if (null != quoteInstId && null != leanInstType && null != leanInstID) {
+                strategyClient.createStrategy(quoteSymbol, quoteInstId, leanInstType, leanSymbol, leanInstID, "");
+                strategyClient.batchComplete();
             }
-            final InstrumentID instID = searchResult.instID;
-            final InstType instType = searchResult.instType;
-
-            communityManager.createFamily(SOURCE_UI, family, instID, instType);
         }
     }
 
     @FromWebSocketView
     public void adoptChild(final String family, final String child, final WebSocketInboundData data) {
 
+        final String familyName;
         if (!families.containsKey(family)) {
 
-            throw new IllegalArgumentException("Parent [" + family + "] is not known. Should it be created first?");
-        } else if (!children.contains(child)) {
+            final SearchResult searchResult = searchResults.get(family);
+            familyName = getFamilyName(searchResult);
+            if (!families.containsKey(familyName)) {
+                throw new IllegalArgumentException("Parent [" + family + "] is not known. Should it be created first?");
+            }
+        } else {
+            familyName = family;
+        }
+
+        if (!children.contains(child)) {
 
             throw new IllegalArgumentException("Child [" + child + "] is not known. Has it been created in nibbler?");
         } else {
 
-            communityManager.setRelationship(SOURCE_UI, family, child);
+            communityManager.setRelationship(SOURCE_UI, familyName, child);
         }
     }
 

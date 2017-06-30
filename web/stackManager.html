@@ -66,13 +66,14 @@
 
 		<div id="parentCreation" class="adminOnly">
 			<div class="actionType">Family Creation</div>
-			<div id="creationRow" class="row">
 
-				<label for="quoteSymbol">Family</label>
-				<input id="quoteSymbol" type="text" name="quote">
+			<div id="familyLookup" class="row">
+
+				<label for="familySymbolLookup">Family</label>
+				<input id="familySymbolLookup" type="text" name="quote">
 
 				<div class="button">
-					<button type="button" id="createFamily">create</button>
+					<button type="button" id="findFamilyMembers">find</button>
 				</div>
 			</div>
 			<div id="creationInfoRow" class="row unknown">
@@ -81,6 +82,47 @@
 				<div class="ccy"></div>
 				<div class="mic"></div>
 				<div class="instType"></div>
+			</div>
+
+			<div id="familyCreationRow" class="creationRow row">
+
+				<label for="quoteSymbol">Family</label>
+				<input id="quoteSymbol" type="text" name="quote">
+
+				<div class="button">
+					<button type="button" id="createFamily">create</button>
+				</div>
+			</div>
+
+			<div id="createChildrenTable">
+				<div class="childCreationRow creationRow headerRow row">
+
+					<label for="childQuoteSymbol">Quote Symbol</label>
+					<input id="childQuoteSymbol" type="text" name="quote" class="childQuoteSymbol">
+
+					<label for="hostNibblers">Nibbler</label>
+					<select name="hostNibbler" id="hostNibblers" class="hostNibblers">
+					</select>
+
+					<label for="leanInstID">Lean Type</label>
+					<select name="leanInstID" id="leanInstID" class="leanInstID">
+					</select>
+
+					<label for="leanSymbol">Lean Symbol</label>
+					<input id="leanSymbol" type="text" name="lean" class="childLeanSymbol">
+
+					<div class="button">
+						<button class="viewLadder" type="button">view</button>
+					</div>
+
+					<div class="button">
+						<button class="createButton" type="button">create</button>
+					</div>
+
+					<div class="button">
+						<button class="adoptButton" type="button">adopt</button>
+					</div>
+				</div>
 			</div>
 		</div>
 
