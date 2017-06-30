@@ -106,14 +106,6 @@ public class ResolverTest {
         assertEquals("nibbler-eurex-3", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.MANUAL, "CHAD", null));
         assertEquals("nibbler-eurex-gtc", resolver.resolveToServerName("FEXDZ4-FEXDZ0", RemoteOrderType.GTC, "CHAD", null));
     }
-
-    @Test
-    public void test_tag_resolver() throws IOException, ConfigException {
-        Environment environment = new Environment(new Config(Paths.get("etc/prod-equities.properties")).getRoot());
-        Environment.RemoteOrderServerResolver resolver = environment.getServerResolver();
-        assertEquals("nibbler-xetra", resolver.resolveToServerName("FOO GY", RemoteOrderType.MANUAL, "CHAD", null));
-        assertEquals("xetra-spreader", resolver.resolveToServerName("FOO GY", RemoteOrderType.MANUAL, "CLICKNOUGHT", null));
-    }
 }
 
 
