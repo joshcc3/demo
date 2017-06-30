@@ -62,7 +62,8 @@ public class SymbolStackData {
     public void setStackClientHandler(final StackClientHandler stackClient) {
 
         if (null != this.stackClient && !this.stackClient.equals(stackClient)) {
-            throw new IllegalStateException("Two stack clients are providing stacks for the same instrument.");
+            throw new IllegalStateException("Two stack clients [" + this.stackClient.getRemoteUser() + "] and [" + stackClient.getRemoteUser() +
+                    "] are providing stacks for the same instrument [" + symbol + "].");
         } else {
             this.stackClient = stackClient;
         }
