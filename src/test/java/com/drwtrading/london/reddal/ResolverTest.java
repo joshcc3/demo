@@ -57,13 +57,12 @@ public class ResolverTest {
         assertEquals("nibbler-chix", resolver.resolveToServerName("FOO GY IX", RemoteOrderType.HAWK, "CHAD", null));
         assertEquals("nibbler-euronext", resolver.resolveToServerName("FOO FP", RemoteOrderType.HAWK, "CHAD", null));
         assertEquals("nibbler-euronext", resolver.resolveToServerName("FOO FP", RemoteOrderType.MANUAL, "CHAD", null));
-        assertEquals("nibbler-baml", resolver.resolveToServerName("FOO FP", RemoteOrderType.MKT_CLOSE, "CHAD", null));
+        assertEquals("nibbler-euronext", resolver.resolveToServerName("FOO FP", RemoteOrderType.MKT_CLOSE, "CHAD", null));
         assertEquals("nibbler-xetra", resolver.resolveToServerName("FOO GY", RemoteOrderType.MKT_CLOSE, "CHAD", null));
         assertEquals("nibbler-euronext", resolver.resolveToServerName("UNA NA", RemoteOrderType.MANUAL, "CHAD", null));
         assertEquals("nibbler-euronext", resolver.resolveToServerName("FP FP", RemoteOrderType.MANUAL, "CHAD", null));
         assertEquals("nibbler-baml", resolver.resolveToServerName("SAN SQ", RemoteOrderType.MANUAL, "CHAD", null));
         assertEquals("nibbler-baml", resolver.resolveToServerName("SAN SQ", RemoteOrderType.HAWK, "CHAD", null));
-        assertEquals("nibbler-baml", resolver.resolveToServerName("FOO GA", RemoteOrderType.MKT_CLOSE, "CHAD", null));
     }
 
     @Test
