@@ -230,7 +230,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
             final Set<String> children = fungibleInsts.get(searchResult.instID.isin);
             for (final String childSymbol : children) {
-                ui.addCreateChildRow(childSymbol, nibblerClients.keySet(), ALLOWED_INST_TYPES, InstType.INDEX.name(), childSymbol);
+                final boolean isChildAlreadyCreated = this.children.contains(childSymbol);
+                ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), ALLOWED_INST_TYPES, InstType.INDEX.name(),
+                        childSymbol);
             }
         }
     }

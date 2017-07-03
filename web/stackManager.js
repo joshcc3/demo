@@ -125,14 +125,16 @@ function setCreateFamilyRow(symbol) {
 	familyNameInput.val(symbol);
 }
 
-function addCreateChildRow(childSymbol, nibblers, instTypes, leanInstType, leanSymbol) {
+function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, instTypes, leanInstType, leanSymbol) {
 
 	var childTable = $("#createChildrenTable");
 	var childCreationRow = $(".childCreationRow.headerRow").clone();
 
 	childCreationRow.removeClass("headerRow");
 
-	childCreationRow.find(".childQuoteSymbol").val(childSymbol);
+	var childQuoteSymbolInput = childCreationRow.find(".childQuoteSymbol");
+	childQuoteSymbolInput.val(childSymbol);
+	childQuoteSymbolInput.toggleClass("childAvailable", isChildAlreadyCreated);
 
 	var nibblersCombo = childCreationRow.find(".hostNibblers");
 	nibblers.forEach(function (nibbler) {
@@ -143,7 +145,7 @@ function addCreateChildRow(childSymbol, nibblers, instTypes, leanInstType, leanS
 		nibblersCombo.append(option);
 	});
 	nibblersCombo.toggleClass("notPersisted", true);
-	nibblersCombo.off("focus").focus( function () {
+	nibblersCombo.off("focus").focus(function () {
 		nibblersCombo.toggleClass("notPersisted", false);
 	});
 
