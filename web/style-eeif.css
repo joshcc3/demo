@@ -591,10 +591,6 @@ div {
 	border: 0;
 }
 
-.stackView #tradingInfoCells {
-	display: none;
-}
-
 #information * {
 	font-size: 10px;
 	position: absolute;
@@ -632,28 +628,36 @@ div {
 	letter-spacing: -2px;
 }
 
-#desk_position {
+.stackView #tradingInfoCells {
+	display: none;
+}
+
+#tradingInfoCells {
 	top: 24px;
 }
 
+#desk_position {
+	top: 0;
+}
+
 #last_trade_cod {
-	top: 36px;
+	top: 12px;
 }
 
 #yesterday_settle {
-	top: 36px;
+	top: 12px;
 }
 
 #total_traded_volume {
-	top: 48px;
+	top: 24px;
 }
 
 #position {
-	top: 60px;
+	top: 36px;
 }
 
 #totalTraded {
-	top: 60px;
+	top: 36px;
 	background-color: white;
 	color: black;
 }
