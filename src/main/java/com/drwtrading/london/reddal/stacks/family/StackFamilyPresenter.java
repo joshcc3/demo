@@ -226,7 +226,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         if (null != searchResult) {
 
             final IStackFamilyUI ui = views.get(data.getOutboundChannel());
-            ui.setCreateFamilyRow(symbol);
+            final String family = getFamilyName(searchResult);
+            final boolean isFamilyExists = families.containsKey(family);
+            ui.setCreateFamilyRow(symbol, isFamilyExists);
 
             final Set<String> children = fungibleInsts.get(searchResult.instID.isin);
             for (final String childSymbol : children) {

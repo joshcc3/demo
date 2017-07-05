@@ -12,7 +12,7 @@ public interface IStackFamilyUI {
 
     public void removeAll(final String nibblerName);
 
-    public void setCreateFamilyRow(final String symbol);
+    public void setCreateFamilyRow(final String symbol, final boolean isFamilyExists);
 
     public void addCreateChildRow(final String symbol, final boolean isChildAlreadyCreated, final Collection<String> nibblers,
             final Collection<String> instTypes, final String leanType, final String leanSymbol);

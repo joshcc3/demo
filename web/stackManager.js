@@ -119,10 +119,11 @@ function setFieldData(fieldID, text) {
 	infoRow.find("div").text(text);
 }
 
-function setCreateFamilyRow(symbol) {
+function setCreateFamilyRow(symbol, isFamilyExists) {
 
 	var familyNameInput = $("#quoteSymbol");
 	familyNameInput.val(symbol);
+	familyNameInput.toggleClass("childAvailable", isFamilyExists);
 }
 
 function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, instTypes, leanInstType, leanSymbol) {
