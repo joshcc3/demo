@@ -72,7 +72,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         this.searchResults = new HashMap<>();
         this.fungibleInsts = new HashMap<>();
 
-        this.nibblerClients = new HashMap<>();
+        this.nibblerClients = new TreeMap<>();
     }
 
     public void setCommunityManager(final StackCommunityManager communityManager) {
