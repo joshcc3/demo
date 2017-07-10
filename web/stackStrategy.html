@@ -15,83 +15,84 @@
 </head>
 <body>
 
-<div id="background"></div>
+<div id="adminBlock" class="hideAdmin">
+	<div id="background"></div>
 
-<div>
-	<div id="creationTable">
-		<div id="creationRow" class="row">
+	<div>
+		<div id="creationTable">
+			<div id="creationRow" class="row adminOnly">
 
-			<label for="quoteSymbol">Quote Symbol</label>
-			<input id="quoteSymbol" type="text" name="quote">
+				<label for="quoteSymbol">Quote Symbol</label>
+				<input id="quoteSymbol" type="text" name="quote">
 
-			<label for="hostNibblers">Nibbler</label>
-			<select name="hostNibbler" id="hostNibblers">
-			</select>
+				<label for="hostNibblers">Nibbler</label>
+				<select name="hostNibbler" id="hostNibblers">
+				</select>
 
-			<label for="leanInstID">Lean Type</label>
-			<select name="leanInstID" id="leanInstID">
-			</select>
+				<label for="leanInstID">Lean Type</label>
+				<select name="leanInstID" id="leanInstID">
+				</select>
 
-			<label for="leanSymbol">Lean Symbol</label>
-			<input id="leanSymbol" type="text" name="lean">
+				<label for="leanSymbol">Lean Symbol</label>
+				<input id="leanSymbol" type="text" name="lean">
 
-			<div class="button">
-				<button type="button">submit</button>
+				<div class="button">
+					<button type="button">submit</button>
+				</div>
+			</div>
+			<div id="infoRow" class="row adminOnly">
+
+				<div id="quoteInfo" class="instrumentID unknown">
+					<div class="isin"></div>
+					<div class="ccy"></div>
+					<div class="mic"></div>
+				</div>
+
+				<div id="availableNibblers" class="availableNibblers"></div>
+
+				<div id="leanTypeInfo" class="leanType"></div>
+
+				<div id="leanInfo" class="instrumentID unknown">
+					<div class="isin"></div>
+					<div class="ccy"></div>
+					<div class="mic"></div>
+				</div>
 			</div>
 		</div>
-		<div id="infoRow" class="row">
 
-			<div id="quoteInfo" class="instrumentID unknown">
-				<div class="isin"></div>
-				<div class="ccy"></div>
-				<div class="mic"></div>
-			</div>
-
-			<div id="availableNibblers" class="availableNibblers"></div>
-
-			<div id="leanTypeInfo" class="leanType"></div>
-
-			<div id="leanInfo" class="instrumentID unknown">
-				<div class="isin"></div>
-				<div class="ccy"></div>
-				<div class="mic"></div>
-			</div>
+		<div id="exchanges">
 		</div>
-	</div>
 
-	<div id="exchanges">
-	</div>
+		<div id="templateNibbler" class="template">
+			<div class="serverDetails">
+				<div class="orderCount"></div>
+				<div class="nibblerName"></div>
+			</div>
+			<div class="exchange hidden">
+				<div class="header row">
 
-	<div id="templateNibbler" class="template">
-		<div class="serverDetails">
-			<div class="orderCount"></div>
-			<div class="nibblerName"></div>
-		</div>
-		<div class="exchange hidden">
-			<div class="header row">
+					<div class="quote symbol">Quote symbol</div>
+					<div class="quote isin">ISIN</div>
+					<div class="quote ccy">CCY</div>
+					<div class="quote mic">MIC</div>
 
-				<div class="quote symbol">Quote symbol</div>
-				<div class="quote isin">ISIN</div>
-				<div class="quote ccy">CCY</div>
-				<div class="quote mic">MIC</div>
+					<div class="lean instType">Lean Type</div>
+					<div class="lean symbol">Lean symbol</div>
+					<div class="lean isin">ISIN</div>
+					<div class="lean ccy">CCY</div>
+					<div class="lean mic">MIC</div>
 
-				<div class="lean instType">Lean Type</div>
-				<div class="lean symbol">Lean symbol</div>
-				<div class="lean isin">ISIN</div>
-				<div class="lean ccy">CCY</div>
-				<div class="lean mic">MIC</div>
+					<div class="isQuoteAvailable boolean">Quote InstDefEvent available</div>
+					<div class="isQuoteBookAvailable boolean">Quote book available</div>
+					<div class="isLeanBookAvailable boolean">Lean book available</div>
+					<div class="isFXAvailable boolean">FX available</div>
+					<div class="isAdditiveAvailable boolean">Additive available</div>
 
-				<div class="isQuoteAvailable boolean">Quote InstDefEvent available</div>
-				<div class="isQuoteBookAvailable boolean">Quote book available</div>
-				<div class="isLeanBookAvailable boolean">Lean book available</div>
-				<div class="isFXAvailable boolean">FX available</div>
-				<div class="isAdditiveAvailable boolean">Additive available</div>
-
-				<div class="selectedConfigType">Selected Config</div>
+					<div class="selectedConfigType">Selected Config</div>
+				</div>
 			</div>
 		</div>
 	</div>
 </div>
-
 </body>
 </html>

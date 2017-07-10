@@ -22,6 +22,8 @@ $(function () {
 		var leanSymbol = creationRow.find("input[name=lean]").val();
 		ws.send(command("submitSymbol", [forNibbler, quoteSymbol, leanInstType, leanSymbol]));
 	});
+
+	$("body").unbind("dblclick").bind("dblclick", showAdmin);
 });
 
 function setupSymbolInput(i, input) {
@@ -179,4 +181,14 @@ function setBoolData(row, cellID, value) {
 
 	var input = row.find(cellID);
 	input.toggleClass("isTrue", value);
+}
+
+function showAdmin(event) {
+	var adminDiv = $("#adminBlock");
+	if (event.ctrlKey) {
+		adminDiv.toggleClass("hideAdmin", !adminDiv.hasClass("hideAdmin"));
+	} else {
+		adminDiv.toggleClass("hideAdmin", true);
+	}
+	window.getSelection().removeAllRanges();
 }

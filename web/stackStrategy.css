@@ -9,6 +9,14 @@
 	z-index: -1;
 }
 
+.hideAdmin #header {
+	background: url(images/ScotchPancakes.png) no-repeat right top black;
+}
+
+.hideAdmin .adminOnly, .hideAdmin #family_orphanage {
+	display: none;
+}
+
 body {
 	color: white;
 }
