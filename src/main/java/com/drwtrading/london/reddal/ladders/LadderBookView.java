@@ -83,6 +83,8 @@ public class LadderBookView implements ILadderBoard {
 
     private static final Metadata LADDER_SOURCE_METADATA = new Metadata("SOURCE", "LADDER");
 
+    private static final String WHITE_LASER_LINE_ID = "white";
+
     private static final int AUTO_RECENTER_TICKS = 3;
 
     private static final Set<String> TAGS = ImmutableSet.of("CHAD", "DIV", "STRING", "CLICKNOUGHT", "GLABN");
@@ -161,14 +163,14 @@ public class LadderBookView implements ILadderBoard {
     private long modifyFromPriceSelectedTime;
 
     LadderBookView(final String username, final boolean isTrader, final String symbol, final UiPipeImpl ui, final ILadderUI view,
-                   final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
-                   final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
-                   final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-                   final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
-                   final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
-                   final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
-                   final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-                   final long centeredPrice) {
+            final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+            final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
+            final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
+            final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
+            final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+            final long centeredPrice) {
 
         this.username = username;
         this.isTrader = isTrader;
@@ -496,10 +498,12 @@ public class LadderBookView implements ILadderBoard {
 
         if (!pendingRefDataAndSettle) {
             final LaserLine theo;
-            if (null != dataForSymbol && dataForSymbol.laserLineByName.containsKey(ladderOptions.theoLaserLine)) {
-                theo = dataForSymbol.laserLineByName.get(ladderOptions.theoLaserLine);
+            if (null != dataForSymbol && dataForSymbol.laserLineByName.containsKey(WHITE_LASER_LINE_ID)) {
+                theo = dataForSymbol.laserLineByName.get(WHITE_LASER_LINE_ID);
+            } else if (null != dataForSymbol && dataForSymbol.laserLineByName.containsKey(ladderOptions.theoLaserLineID)) {
+                theo = dataForSymbol.laserLineByName.get(ladderOptions.theoLaserLineID);
             } else {
-                theo = new LaserLine(null, ladderOptions.theoLaserLine, Long.MIN_VALUE, false, "");
+                theo = new LaserLine(null, ladderOptions.theoLaserLineID, Long.MIN_VALUE, false, "");
             }
             for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
                 final long price = priceNode.key;
@@ -907,7 +911,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void workingQty(final LadderHTMLRow htmlRowKeys, final int qty, final BookSide side, final Set<WorkingOrderType> orderTypes,
-                            final boolean hasEeifOEOrder) {
+            final boolean hasEeifOEOrder) {
 
         ui.txt(htmlRowKeys.orderKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.orderKey, CSSClass.WORKING_QTY, 0 < qty);
@@ -1103,7 +1107,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrderClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data,
-                                  final String orderType, final boolean autoHedge) {
+            final String orderType, final boolean autoHedge) {
 
         final long price = Long.valueOf(data.get("price"));
         final LadderBoardRow bookRow = priceRows.get(price);
@@ -1176,7 +1180,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final boolean autoHedge, final long price,
-                             final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+            final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
 
         final int sequenceNumber = orderSeqNo++;
 
@@ -1190,7 +1194,8 @@ public class LadderBookView implements ILadderBoard {
             ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
         } else {
 
-            final String serverName = ladderOptions.serverResolver.resolveToServerName(symbol, orderType, tag, marketData.getBook().getMIC().name());
+            final String serverName =
+                    ladderOptions.serverResolver.resolveToServerName(symbol, orderType, tag, marketData.getBook().getMIC().name());
 
             final RemoteOrderType remoteOrderType = WorkingOrderUpdateFromServer.getRemoteOrderType(orderType);
 
@@ -1252,7 +1257,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void modifyOrder(final ClientSpeedState clientSpeedState, final boolean autoHedge, final long price,
-                             final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+            final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
 
         trace.publish(new CommandTrace("modify", username, symbol, order.value.getWorkingOrderType().toString(), autoHedge, price,
                 order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
