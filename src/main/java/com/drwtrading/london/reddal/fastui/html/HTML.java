@@ -28,8 +28,6 @@ public class HTML {
     public static final String INP_QTY = "inp_qty";
     public static final String ORDER_TYPE_LEFT = "order_type_left";
     public static final String ORDER_TYPE_RIGHT = "order_type_right";
-    public static final String AUTO_HEDGE_LEFT = "chk_auto_hedge_left";
-    public static final String AUTO_HEDGE_RIGHT = "chk_auto_hedge_right";
     public static final String BUTTONS = "button";
     public static final String RANDOM_RELOAD = "random_reload";
     public static final String RANDOM_RELOAD_CHECK = "chk_random_reload";

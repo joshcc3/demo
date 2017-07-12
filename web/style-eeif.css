@@ -756,7 +756,7 @@ div {
 
 .order_type {
 	height: 16px;
-	width: 30px;
+	width: 40px;
 	margin: 0;
 	font-size: 9px;
 	-webkit-appearance: none;
@@ -771,22 +771,8 @@ div {
 	top: 112px;
 }
 
-#chk_auto_hedge_left {
-	top: 112px;
-	height: 16px;
-	left: 30px;
-	width: 10px;
-}
-
 #order_type_right {
 	top: 128px;
-}
-
-#chk_auto_hedge_right {
-	top: 128px;
-	height: 16px;
-	left: 30px;
-	width: 10px;
 }
 
 #random_reload {

@@ -104,8 +104,6 @@ public class LadderBookView implements ILadderBoard {
     static {
         PERSISTENT_PREFS.add(HTML.WORKING_ORDER_TAG);
         PERSISTENT_PREFS.add(HTML.INP_RELOAD);
-        PERSISTENT_PREFS.add(HTML.AUTO_HEDGE_LEFT);
-        PERSISTENT_PREFS.add(HTML.AUTO_HEDGE_RIGHT);
         PERSISTENT_PREFS.add(HTML.ORDER_TYPE_LEFT);
         PERSISTENT_PREFS.add(HTML.ORDER_TYPE_RIGHT);
         PERSISTENT_PREFS.add(HTML.RANDOM_RELOAD_CHECK);
@@ -192,8 +190,6 @@ public class LadderBookView implements ILadderBoard {
         } else {
             this.defaultPrefs.put(HTML.INP_RELOAD, "50");
         }
-        this.defaultPrefs.put(HTML.AUTO_HEDGE_LEFT, "true");
-        this.defaultPrefs.put(HTML.AUTO_HEDGE_RIGHT, "true");
         this.defaultPrefs.put(HTML.ORDER_TYPE_LEFT, "HAWK");
         this.defaultPrefs.put(HTML.ORDER_TYPE_RIGHT, "MANUAL");
         this.defaultPrefs.put(HTML.RANDOM_RELOAD_CHECK, "true");
@@ -290,8 +286,6 @@ public class LadderBookView implements ILadderBoard {
         ui.clickable('#' + HTML.YESTERDAY_SETTLE);
         ui.clickable('#' + HTML.LAST_TRADE_COD);
 
-        ui.cls(HTML.AUTO_HEDGE_LEFT, CSSClass.INVISIBLE, false);
-        ui.cls(HTML.AUTO_HEDGE_RIGHT, CSSClass.INVISIBLE, false);
         ui.cls(HTML.RANDOM_RELOAD, CSSClass.INVISIBLE, false);
 
         ui.cls(HTML.ORDER_TYPE_LEFT, CSSClass.FULL_WIDTH, false);
@@ -1092,22 +1086,18 @@ public class LadderBookView implements ILadderBoard {
 
     private void submitOrderLeftClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data) {
 
-        final boolean autoHedge = shouldAutoHedge(HTML.AUTO_HEDGE_LEFT);
         final String orderType = getPref(HTML.ORDER_TYPE_LEFT);
-
-        submitOrderClick(clientSpeedState, label, data, orderType, autoHedge);
+        submitOrderClick(clientSpeedState, label, data, orderType);
     }
 
     private void submitOrderRightClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data) {
 
-        final boolean autoHedge = shouldAutoHedge(HTML.AUTO_HEDGE_RIGHT);
         final String orderType = getPref(HTML.ORDER_TYPE_RIGHT);
-
-        submitOrderClick(clientSpeedState, label, data, orderType, autoHedge);
+        submitOrderClick(clientSpeedState, label, data, orderType);
     }
 
     private void submitOrderClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data,
-            final String orderType, final boolean autoHedge) {
+            final String orderType) {
 
         final long price = Long.valueOf(data.get("price"));
         final LadderBoardRow bookRow = priceRows.get(price);
@@ -1129,9 +1119,9 @@ public class LadderBookView implements ILadderBoard {
 
             if (orderType != null && clickTradingBoxQty > 0) {
                 if (managedOrderTypes.contains(orderType)) {
-                    submitManagedOrder(orderType, autoHedge, price, side, tag);
+                    submitManagedOrder(orderType, price, side, tag);
                 } else if (oldOrderTypes.contains(orderType)) {
-                    submitOrder(clientSpeedState, orderType, autoHedge, price, side, tag, ladderClickTradingIssuesPublisher);
+                    submitOrder(clientSpeedState, orderType, price, side, tag, ladderClickTradingIssuesPublisher);
                 } else {
                     LadderView.clickTradingIssue(ui, new LadderClickTradingIssue(symbol, "Unknown order type: " + orderType));
                     return;
@@ -1149,10 +1139,10 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private void submitManagedOrder(final String orderType, final boolean autoHedge, final long price, final Side side, final String tag) {
+    private void submitManagedOrder(final String orderType, final long price, final Side side, final String tag) {
 
         int tradingBoxQty = this.clickTradingBoxQty;
-        trace.publish(new CommandTrace("submitManaged", username, symbol, orderType, autoHedge, price, side.toString(), tag, tradingBoxQty,
+        trace.publish(new CommandTrace("submitManaged", username, symbol, orderType, true, price, side.toString(), tag, tradingBoxQty,
                 orderSeqNo++));
         final OrderEntryClient.SymbolOrderChannel symbolOrderChannel = orderEntryMap.get(symbol);
         if (null != symbolOrderChannel) {
@@ -1179,12 +1169,12 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final boolean autoHedge, final long price,
-            final Side side, final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+    private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final long price, final Side side,
+            final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
 
         final int sequenceNumber = orderSeqNo++;
 
-        trace.publish(new CommandTrace("submit", username, symbol, orderType, autoHedge, price, side.toString(), tag, clickTradingBoxQty,
+        trace.publish(new CommandTrace("submit", username, symbol, orderType, true, price, side.toString(), tag, clickTradingBoxQty,
                 sequenceNumber));
 
         if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
@@ -1220,7 +1210,7 @@ public class LadderBookView implements ILadderBoard {
                 } else {
 
                     final RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(serverName, username, sequenceNumber,
-                            new RemoteOrder(symbol, side, price, clickTradingBoxQty, remoteOrderType, autoHedge, tag));
+                            new RemoteOrder(symbol, side, price, clickTradingBoxQty, remoteOrderType, true, tag));
 
                     remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
                 }
@@ -1235,10 +1225,9 @@ public class LadderBookView implements ILadderBoard {
             if (null != modifyFromPrice) {
                 if (modifyFromPrice != price) {
 
-                    final boolean autoHedge = shouldAutoHedge(HTML.AUTO_HEDGE_LEFT);
                     for (final WorkingOrderUpdateFromServer order : workingOrdersForSymbol.ordersByPrice.get(modifyFromPrice)) {
                         final WorkingOrderUpdate workingOrderUpdate = order.value;
-                        modifyOrder(clientSpeedState, autoHedge, price, order, workingOrderUpdate, workingOrderUpdate.getTotalQuantity());
+                        modifyOrder(clientSpeedState, price, order, workingOrderUpdate, workingOrderUpdate.getTotalQuantity());
                     }
                 }
                 modifyFromPrice = null;
@@ -1256,10 +1245,10 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private void modifyOrder(final ClientSpeedState clientSpeedState, final boolean autoHedge, final long price,
-            final WorkingOrderUpdateFromServer order, final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+    private void modifyOrder(final ClientSpeedState clientSpeedState, final long price, final WorkingOrderUpdateFromServer order,
+            final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
 
-        trace.publish(new CommandTrace("modify", username, symbol, order.value.getWorkingOrderType().toString(), autoHedge, price,
+        trace.publish(new CommandTrace("modify", username, symbol, order.value.getWorkingOrderType().toString(), true, price,
                 order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
 
         if (isTrader) {
@@ -1277,8 +1266,8 @@ public class LadderBookView implements ILadderBoard {
 
                 final RemoteModifyOrder remoteModifyOrder =
                         new RemoteModifyOrder(order.fromServer, username, workingOrderUpdate.getChainId(),
-                                order.toRemoteOrder(autoHedge, workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity()),
-                                order.toRemoteOrder(autoHedge, price, totalQuantity));
+                                order.toRemoteOrder(workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity()),
+                                order.toRemoteOrder(price, totalQuantity));
 
                 remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(order.fromServer, remoteModifyOrder));
             }
@@ -1359,10 +1348,8 @@ public class LadderBookView implements ILadderBoard {
             final int totalQuantity = orderUpdateFromServer.value.getFilledQuantity() +
                     ((OrdersPresenter.ModifyOrderQuantity) singleOrderCommand).newRemainingQuantity;
 
-            final boolean autoHedge = shouldAutoHedge(HTML.AUTO_HEDGE_LEFT);
-            modifyOrder(clientSpeedState, autoHedge, orderUpdateFromServer.value.getPrice(), orderUpdateFromServer,
-                    orderUpdateFromServer.value, totalQuantity);
+            modifyOrder(clientSpeedState, orderUpdateFromServer.value.getPrice(), orderUpdateFromServer, orderUpdateFromServer.value,
+                    totalQuantity);
         }
     }
-
 }

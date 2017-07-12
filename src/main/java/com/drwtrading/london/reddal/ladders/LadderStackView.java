@@ -125,8 +125,6 @@ public class LadderStackView implements ILadderBoard {
         ui.cls(HTML.STACK_CONFIG_BUTTON, CSSClass.INVISIBLE, false);
         ui.cls(HTML.STACKS_CONTROL, CSSClass.INVISIBLE, false);
 
-        ui.cls(HTML.AUTO_HEDGE_LEFT, CSSClass.INVISIBLE, true);
-        ui.cls(HTML.AUTO_HEDGE_RIGHT, CSSClass.INVISIBLE, true);
         ui.cls(HTML.RANDOM_RELOAD, CSSClass.INVISIBLE, true);
 
         ui.cls(HTML.ORDER_TYPE_LEFT, CSSClass.FULL_WIDTH, true);

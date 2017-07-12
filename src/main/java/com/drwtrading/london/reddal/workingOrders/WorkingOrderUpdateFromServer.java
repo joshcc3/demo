@@ -1,13 +1,13 @@
 package com.drwtrading.london.reddal.workingOrders;
 
+import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.util.Struct;
 import eeif.execution.RemoteAutoCancelOrder;
 import eeif.execution.RemoteCancelOrder;
 import eeif.execution.RemoteOrder;
 import eeif.execution.RemoteOrderType;
 import eeif.execution.WorkingOrderType;
 import eeif.execution.WorkingOrderUpdate;
-import com.drwtrading.london.reddal.Main;
-import com.drwtrading.london.util.Struct;
 
 public class WorkingOrderUpdateFromServer extends Struct {
 
@@ -19,7 +19,7 @@ public class WorkingOrderUpdateFromServer extends Struct {
         this.value = value;
     }
 
-    public Main.RemoteOrderCommandToServer buildCancelCommand(String username) {
+    public Main.RemoteOrderCommandToServer buildCancelCommand(final String username) {
         final WorkingOrderUpdate workingOrderUpdate = this.value;
         final String orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
         final RemoteOrder remoteOrder =
@@ -29,7 +29,7 @@ public class WorkingOrderUpdateFromServer extends Struct {
                 new RemoteCancelOrder(workingOrderUpdate.getServerName(), username, workingOrderUpdate.getChainId(), remoteOrder));
     }
 
-    public Main.RemoteOrderCommandToServer buildAutoCancel(String username) {
+    public Main.RemoteOrderCommandToServer buildAutoCancel(final String username) {
         final WorkingOrderUpdate workingOrderUpdate = this.value;
         final String orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
         final RemoteOrder remoteOrder =
@@ -47,12 +47,11 @@ public class WorkingOrderUpdateFromServer extends Struct {
         }
     }
 
-    public RemoteOrder toRemoteOrder(final boolean autoHedge, final long price,
-                                     final int totalQuantity) {
+    public RemoteOrder toRemoteOrder(final long price, final int totalQuantity) {
 
         final RemoteOrderType remoteOrderType = getRemoteOrderType(this.value.getWorkingOrderType().toString());
-        return new RemoteOrder(this.value.getSymbol(), this.value.getSide(), price, totalQuantity, remoteOrderType,
-                autoHedge, this.value.getTag());
+        return new RemoteOrder(this.value.getSymbol(), this.value.getSide(), price, totalQuantity, remoteOrderType, true,
+                this.value.getTag());
     }
 
     public static RemoteOrderType getRemoteOrderType(final String orderType) {
@@ -64,7 +63,7 @@ public class WorkingOrderUpdateFromServer extends Struct {
         }
         return RemoteOrderType.MANUAL;
     }
-    
+
     public boolean isLikelyGTC() {
         return this.fromServer.toUpperCase().contains("GTC") ||
                 this.value.getTag().toUpperCase().contains("GTC") ||
