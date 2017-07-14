@@ -13,104 +13,115 @@
 	<script src="ladder.js"></script>
 </head>
 <body>
-<div id="click_trading_issues" title="Ladder Click Trading Issues"></div>
-<div id="row_template" class="row template">
-	<div class="order column"></div>
-	<div class="bid column"></div>
-	<div class="price column"></div>
-	<div class="offer column"></div>
-	<div class="trade column invisible"></div>
-	<div class="volume column"></div>
-	<div class="text column invisible"></div>
-</div>
-<div id="workspace">
-	<div id="leftHandPanel">
-		<div id="information">
-			<button id="bookViewButton">book</button>
-			<button id="stackViewButton">stack</button>
-			<div id="clock" title="Clock/Switch to Chi-X"></div>
-			<div id="tradingInfoCells">
-				<div id="desk_position" title="Desk Position"></div>
-				<div id="last_trade_cod" title="Last print change on day">?</div>
-				<div id="yesterday_settle" class="invisible" title="Yesterday settle">?</div>
-				<div id="total_traded_volume" title="Total traded volume">?</div>
-				<div id="position" title="Day Position">?</div>
-				<div id="totalTraded" class="invisible" title="Day Volume">?</div>
-			</div>
-		</div>
-		<div id="clicktrading">
-			<select class="working_order_tags" id="working_order_tags"></select>
-			<input type="text" id="inp_qty" value="0"/>
-			<button id="btn_qty_1" class="quantity_button col_1 row_1"></button>
-			<button id="btn_qty_2" class="quantity_button col_2 row_1"></button>
-			<button id="btn_qty_3" class="quantity_button col_1 row_2"></button>
-			<button id="btn_qty_4" class="quantity_button col_2 row_2"></button>
-			<button id="btn_qty_5" class="quantity_button col_1 row_3"></button>
-			<button id="btn_qty_6" class="quantity_button col_2 row_3"></button>
-			<button id="btn_clear">CLR</button>
-			<input id="inp_reload" type="text" value="50"/>
-			<select class="order_type" id="order_type_left"></select>
-			<select class="order_type" id="order_type_right"></select>
-
-			<div id="random_reload">
-				RR <input type="checkbox" id="chk_random_reload" checked="checked"/>
-			</div>
-			<div id="offset_control" class="invisible">
-				<button id="buy_offset_up" class="offset_button">&nbsp;</button>
-				<button id="buy_offset_down" class="offset_button">&nbsp;</button>
-				<button id="sell_offset_up" class="offset_button">&nbsp;</button>
-				<button id="sell_offset_down" class="offset_button">&nbsp;</button>
-				<button id="start_buy" class="offset_button">&nbsp;</button>
-				<button id="stop_buy" class="offset_button">&nbsp;</button>
-				<button id="start_sell" class="offset_button">&nbsp;</button>
-				<button id="stop_sell" class="offset_button">&nbsp;</button>
-			</div>
-		</div>
-		<button id="btn_stack_config" class="invisible">config</button>
-		<div id="stacks_control" class="invisible">
-			<input id="stackTickSize" type="number" value="0" title="BPS Offset Tick Size"/>
-			<input id="stackGroupTickMultiplier" type="number" value="1" title="Tick Multiplier"/>
-			<input id="stackAlignmentTickToBPS" type="number" value="0" title="Top Level BPS equivalent"/>
-			<button id="btn_submitStackTickSize">submit</button>
-			<div id="stackBidQuoterEnabled">Q</div>
-			<div id="stackBidPicardEnabled">P</div>
-			<div id="stackAskQuoterEnabled">Q</div>
-			<div id="stackAskPicardEnabled">P</div>
-		</div>
-		<div id="pricing_control">
-			<button id="pricing_BPS" class="pricing_button">BPS</button>
-			<button id="pricing_EFP" class="pricing_button">EFP</button>
-			<button id="pricing_RAW" class="pricing_button">RAW</button>
-		</div>
+<div id="ladderDiv">
+	<div id="click_trading_issues" title="Ladder Click Trading Issues"></div>
+	<div id="row_template" class="book row template">
+		<div class="order column"></div>
+		<div class="bid column"></div>
+		<div class="price column"></div>
+		<div class="offer column"></div>
+		<div class="trade column invisible"></div>
+		<div class="volume column"></div>
+		<div class="text column invisible"></div>
 	</div>
-	<div id="ladder">
-		<div id="header">
-			<div id="buy_qty" class="total_qty invisible"></div>
-			<div id="symbol"></div>
-			<div id="sell_qty" class="total_qty invisible"></div>
+	<div id="stack_row_template" class="stack row template">
+		<div class="bid quote column"></div>
+		<div class="bid picard column"></div>
+		<div class="bid offset column"></div>
+		<div class="divider column"></div>
+		<div class="ask offset column"></div>
+		<div class="ask picard column"></div>
+		<div class="ask quote column"></div>
+	</div>
+	<div id="workspace">
+		<div id="leftHandPanel">
+			<div id="information">
+				<button id="bookViewButton">book</button>
+				<button id="stackViewButton">stack</button>
+				<div id="clock" title="Clock/Switch to Chi-X"></div>
+				<div id="tradingInfoCells">
+					<div id="desk_position" title="Desk Position"></div>
+					<div id="last_trade_cod" title="Last print change on day">?</div>
+					<div id="yesterday_settle" class="invisible" title="Yesterday settle">?</div>
+					<div id="total_traded_volume" title="Total traded volume">?</div>
+					<div id="position" title="Day Position">?</div>
+					<div id="totalTraded" class="invisible" title="Day Volume">?</div>
+				</div>
+			</div>
+			<div id="clicktrading">
+				<select class="working_order_tags" id="working_order_tags"></select>
+				<input type="text" id="inp_qty" value="0"/>
+				<button id="btn_qty_1" class="quantity_button col_1 row_1"></button>
+				<button id="btn_qty_2" class="quantity_button col_2 row_1"></button>
+				<button id="btn_qty_3" class="quantity_button col_1 row_2"></button>
+				<button id="btn_qty_4" class="quantity_button col_2 row_2"></button>
+				<button id="btn_qty_5" class="quantity_button col_1 row_3"></button>
+				<button id="btn_qty_6" class="quantity_button col_2 row_3"></button>
+				<button id="btn_clear">CLR</button>
+				<input id="inp_reload" type="text" value="50"/>
+				<select class="order_type" id="order_type_left"></select>
+				<select class="order_type" id="order_type_right"></select>
+
+				<div id="random_reload">
+					RR <input type="checkbox" id="chk_random_reload" checked="checked"/>
+				</div>
+				<div id="offset_control" class="invisible">
+					<button id="buy_offset_up" class="offset_button">&nbsp;</button>
+					<button id="buy_offset_down" class="offset_button">&nbsp;</button>
+					<button id="sell_offset_up" class="offset_button">&nbsp;</button>
+					<button id="sell_offset_down" class="offset_button">&nbsp;</button>
+					<button id="start_buy" class="offset_button">&nbsp;</button>
+					<button id="stop_buy" class="offset_button">&nbsp;</button>
+					<button id="start_sell" class="offset_button">&nbsp;</button>
+					<button id="stop_sell" class="offset_button">&nbsp;</button>
+				</div>
+			</div>
+			<button id="btn_stack_config" class="invisible">config</button>
+			<div id="stacks_control" class="invisible">
+				<input id="stackTickSize" type="number" value="0" title="BPS Offset Tick Size"/>
+				<input id="stackGroupTickMultiplier" type="number" value="1" title="Tick Multiplier"/>
+				<input id="stackAlignmentTickToBPS" type="number" value="0" title="Top Level BPS equivalent"/>
+				<button id="btn_submitStackTickSize">submit</button>
+				<div id="stackBidQuoterEnabled">Q</div>
+				<div id="stackBidPicardEnabled">P</div>
+				<div id="stackAskQuoterEnabled">Q</div>
+				<div id="stackAskPicardEnabled">P</div>
+			</div>
+			<div id="pricing_control">
+				<button id="pricing_BPS" class="pricing_button">BPS</button>
+				<button id="pricing_EFP" class="pricing_button">EFP</button>
+				<button id="pricing_RAW" class="pricing_button">RAW</button>
+			</div>
 		</div>
-		<div id="text">
-			<div id="text_r1c1" class="text_cell"></div>
-			<div id="text_r1c2" class="text_cell"></div>
-			<div id="text_r1c3" class="text_cell"></div>
-			<div id="text_r1c4" class="text_cell"></div>
-			<div id="after_hours_weight" class="text_cell" title="AH weight"></div>
-			<div id="text_r2c1" class="text_cell"></div>
-			<div id="text_r2c2" class="text_cell"></div>
-			<div id="text_r2c3" class="text_cell"></div>
-			<div id="text_r2c4" class="text_cell"></div>
-			<div id="text_r2c5" class="text_cell"></div>
-			<div id="pks_exposure" class="text_cell" title="PKS Exposure"></div>
-			<div id="text_r3c2" class="text_cell"></div>
-			<div id="text_r3c3" class="text_cell"></div>
-			<div id="text_r3c4" class="text_cell"></div>
-			<div id="pks_position" class="text_cell" title="PKS Position"></div>
-		</div>
-		<div id="rows">
-			<div id="laser_bid" class="laser bid_color invisible"></div>
-			<div id="laser_ask" class="laser ask_color invisible"></div>
-			<div id="laser_green" class="laser green_color invisible"></div>
-			<div id="laser_white" class="laser white_colour invisible"></div>
+		<div id="ladder">
+			<div id="header">
+				<div id="buy_qty" class="total_qty invisible"></div>
+				<div id="symbol"></div>
+				<div id="sell_qty" class="total_qty invisible"></div>
+			</div>
+			<div id="text">
+				<div id="text_r1c1" class="text_cell"></div>
+				<div id="text_r1c2" class="text_cell"></div>
+				<div id="text_r1c3" class="text_cell"></div>
+				<div id="text_r1c4" class="text_cell"></div>
+				<div id="after_hours_weight" class="text_cell" title="AH weight"></div>
+				<div id="text_r2c1" class="text_cell"></div>
+				<div id="text_r2c2" class="text_cell"></div>
+				<div id="text_r2c3" class="text_cell"></div>
+				<div id="text_r2c4" class="text_cell"></div>
+				<div id="text_r2c5" class="text_cell"></div>
+				<div id="pks_exposure" class="text_cell" title="PKS Exposure"></div>
+				<div id="text_r3c2" class="text_cell"></div>
+				<div id="text_r3c3" class="text_cell"></div>
+				<div id="text_r3c4" class="text_cell"></div>
+				<div id="pks_position" class="text_cell" title="PKS Position"></div>
+			</div>
+			<div id="rows">
+				<div id="laser_bid" class="laser bid_color invisible"></div>
+				<div id="laser_ask" class="laser ask_color invisible"></div>
+				<div id="laser_green" class="laser green_color invisible"></div>
+				<div id="laser_white" class="laser white_colour invisible"></div>
+			</div>
 		</div>
 	</div>
 </div>

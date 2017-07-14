@@ -278,7 +278,7 @@ public class LadderBookView implements ILadderBoard {
     @Override
     public void switchedTo() {
 
-        ui.cls(HTML.LEFT_HAND_PANEL, CSSClass.STACK_VIEW, false);
+        ui.cls(HTML.LADDER_DIV, CSSClass.STACK_VIEW, false);
 
         view.trading(isTrader, TAGS, filterUsableOrderTypes(ladderOptions.orderTypesLeft),
                 filterUsableOrderTypes(ladderOptions.orderTypesRight));
@@ -504,25 +504,25 @@ public class LadderBookView implements ILadderBoard {
                 final LadderHTMLRow htmlRowKeys = priceNode.getValue().htmlKeys;
                 if (pricingModes.get() == PricingMode.BPS && theo.isValid()) {
                     final double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
-                    ui.txt(htmlRowKeys.priceKey, BASIS_POINT_DECIMAL_FORMAT.format(points));
+                    ui.txt(htmlRowKeys.bookPriceKey, BASIS_POINT_DECIMAL_FORMAT.format(points));
                 } else if (pricingModes.get() == PricingMode.BPS && isCashEquityOrFX && hasBestBid() && null != marketData) {
                     final long basePrice = marketData.getBook().getBestBid().getPrice();
                     final double points = (10000.0 * (price - basePrice)) / basePrice;
-                    ui.txt(htmlRowKeys.priceKey, BASIS_POINT_DECIMAL_FORMAT.format(points));
+                    ui.txt(htmlRowKeys.bookPriceKey, BASIS_POINT_DECIMAL_FORMAT.format(points));
                 } else if (PricingMode.EFP == pricingModes.get() && null != marketData && theo.isValid()) {
                     final double efp = Math.round((price - theo.getPrice()) * 100d / Constants.NORMALISING_FACTOR) / 100d;
-                    ui.txt(htmlRowKeys.priceKey, EFP_DECIMAL_FORMAT.format(efp));
+                    ui.txt(htmlRowKeys.bookPriceKey, EFP_DECIMAL_FORMAT.format(efp));
                 } else if (PricingMode.EFP == pricingModes.get() && null != marketData && marketData.isPriceInverted()) {
                     final double invertedPrice = Constants.NORMALISING_FACTOR / (double) price;
-                    ui.txt(htmlRowKeys.priceKey, FX_DECIMAL_FORMAT.format(invertedPrice));
+                    ui.txt(htmlRowKeys.bookPriceKey, FX_DECIMAL_FORMAT.format(invertedPrice));
                 } else {
                     final LadderBoardRow priceRow = priceRows.get(price);
-                    ui.txt(htmlRowKeys.priceKey, priceRow.formattedPrice);
+                    ui.txt(htmlRowKeys.bookPriceKey, priceRow.formattedPrice);
                 }
 
-                ui.data(htmlRowKeys.bidKey, DataKey.PRICE, price);
-                ui.data(htmlRowKeys.askKey, DataKey.PRICE, price);
-                ui.data(htmlRowKeys.orderKey, DataKey.PRICE, price);
+                ui.data(htmlRowKeys.bookBidKey, DataKey.PRICE, price);
+                ui.data(htmlRowKeys.bookAskKey, DataKey.PRICE, price);
+                ui.data(htmlRowKeys.bookOrderKey, DataKey.PRICE, price);
             }
         }
     }
@@ -555,7 +555,7 @@ public class LadderBookView implements ILadderBoard {
 
             for (final LongMapNode<LadderBoardRow> entry : priceRows) {
                 final long price = entry.key;
-                final String priceKey = entry.getValue().htmlKeys.priceKey;
+                final String priceKey = entry.getValue().htmlKeys.bookPriceKey;
                 ui.cls(priceKey, CSSClass.LAST_BID, dataForSymbol.lastBuy != null && dataForSymbol.lastBuy.getPrice() == price);
                 ui.cls(priceKey, CSSClass.LAST_ASK, dataForSymbol.lastSell != null && dataForSymbol.lastSell.getPrice() == price);
             }
@@ -564,16 +564,21 @@ public class LadderBookView implements ILadderBoard {
 
     private Collection<String> filterUsableOrderTypes(final Collection<CSSClass> types) {
         if (null != marketData && null != marketData.getBook()) {
-            String mic = marketData.getBook().getMIC().name();
-            return types.stream().filter(input -> TAGS.stream().filter(tag -> {
-                boolean oldOrderType = ladderOptions.serverResolver.resolveToServerName(symbol, input.name(), tag, mic) != null;
-                boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(input.name()) &&
-                        orderEntryMap.get(symbol).supportedTypes.contains(ManagedOrderType.valueOf(input.name()));
-                return oldOrderType || newOrderType;
-            }).findAny().isPresent()).map(Enum::name).collect(Collectors.toList());
+            final String mic = marketData.getBook().getMIC().name();
+            return types.stream().filter(orderType -> isOrderTypeSupported(orderType, mic)).map(Enum::name).collect(Collectors.toList());
         } else {
             return Collections.emptyList();
         }
+    }
+
+    private boolean isOrderTypeSupported(final CSSClass orderType, final String mic) {
+
+        return TAGS.stream().filter(tag -> {
+            boolean oldOrderType = ladderOptions.serverResolver.resolveToServerName(symbol, orderType.name(), tag, mic) != null;
+            boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(orderType.name()) &&
+                    orderEntryMap.get(symbol).supportedTypes.contains(ManagedOrderType.valueOf(orderType.name()));
+            return oldOrderType || newOrderType;
+        }).findAny().isPresent();
     }
 
     private void drawClickTrading() {
@@ -601,7 +606,7 @@ public class LadderBookView implements ILadderBoard {
             for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
                 final long price = priceNode.key;
                 final LadderHTMLRow htmlRowKeys = priceNode.getValue().htmlKeys;
-                ui.cls(htmlRowKeys.orderKey, CSSClass.MODIFY_PRICE_SELECTED, null != modifyFromPrice && price == modifyFromPrice);
+                ui.cls(htmlRowKeys.bookOrderKey, CSSClass.MODIFY_PRICE_SELECTED, null != modifyFromPrice && price == modifyFromPrice);
             }
         }
 
@@ -643,10 +648,10 @@ public class LadderBookView implements ILadderBoard {
 
                     if (topPrice < laserLine.getPrice()) {
                         final LadderBoardRow priceRow = priceRows.get(topPrice);
-                        ui.height(laserKey, priceRow.htmlKeys.priceKey, 0.5);
+                        ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, 0.5);
                     } else if (laserLine.getPrice() < bottomPrice) {
                         final LadderBoardRow priceRow = priceRows.get(bottomPrice);
-                        ui.height(laserKey, priceRow.htmlKeys.priceKey, -0.5);
+                        ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, -0.5);
                     } else {
                         long price = bottomPrice;
                         while (price <= topPrice) {
@@ -655,7 +660,7 @@ public class LadderBookView implements ILadderBoard {
                                 final long fractionalPrice = laserLine.getPrice() - price;
                                 final double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
                                 final LadderBoardRow priceRow = priceRows.get(price);
-                                ui.height(laserKey, priceRow.htmlKeys.priceKey, tickFraction);
+                                ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, tickFraction);
                                 break;
                             }
                             price = priceAbove;
@@ -731,18 +736,18 @@ public class LadderBookView implements ILadderBoard {
 
                     if (null == bidLevel) {
                         bidQty(bookRow.htmlKeys, 0);
-                        ui.cls(bookRow.htmlKeys.bidKey, CSSClass.IMPLIED_BID, false);
+                        ui.cls(bookRow.htmlKeys.bookBidKey, CSSClass.IMPLIED_BID, false);
                     } else {
                         bidQty(bookRow.htmlKeys, bidLevel.getQty());
-                        ui.cls(bookRow.htmlKeys.bidKey, CSSClass.IMPLIED_BID, 0 < bidLevel.getImpliedQty());
+                        ui.cls(bookRow.htmlKeys.bookBidKey, CSSClass.IMPLIED_BID, 0 < bidLevel.getImpliedQty());
                     }
 
                     if (null == askLevel) {
                         askQty(bookRow.htmlKeys, 0);
-                        ui.cls(bookRow.htmlKeys.askKey, CSSClass.IMPLIED_ASK, false);
+                        ui.cls(bookRow.htmlKeys.bookAskKey, CSSClass.IMPLIED_ASK, false);
                     } else {
                         askQty(bookRow.htmlKeys, askLevel.getQty());
-                        ui.cls(bookRow.htmlKeys.askKey, CSSClass.IMPLIED_ASK, 0 < askLevel.getImpliedQty());
+                        ui.cls(bookRow.htmlKeys.bookAskKey, CSSClass.IMPLIED_ASK, 0 < askLevel.getImpliedQty());
                     }
                 }
             }
@@ -807,8 +812,8 @@ public class LadderBookView implements ILadderBoard {
                     eeifKeys.setLength(eeifKeys.length() - 1);
                 }
 
-                ui.data(htmlRowKey.orderKey, DataKey.ORDER, keys);
-                ui.data(htmlRowKey.orderKey, DataKey.EEIF, eeifKeys);
+                ui.data(htmlRowKey.bookOrderKey, DataKey.ORDER, keys);
+                ui.data(htmlRowKey.bookOrderKey, DataKey.EEIF, eeifKeys);
             }
             int buyQty = 0;
             int sellQty = 0;
@@ -866,28 +871,28 @@ public class LadderBookView implements ILadderBoard {
 
                 final Long qty = tradeTracker.getTotalQtyTradedAtPrice(price);
                 if (null != qty) {
-                    ui.txt(htmlRowKeys.volumeKey, formatMktQty(qty));
+                    ui.txt(htmlRowKeys.bookVolumeKey, formatMktQty(qty));
                 } else {
-                    ui.txt(htmlRowKeys.volumeKey, HTML.EMPTY);
+                    ui.txt(htmlRowKeys.bookVolumeKey, HTML.EMPTY);
                 }
 
                 final boolean withinTradedRange = tradeTracker.getMinTradedPrice() <= price && price <= tradeTracker.getMaxTradedPrice();
-                ui.cls(htmlRowKeys.priceKey, CSSClass.PRICE_TRADED, withinTradedRange);
+                ui.cls(htmlRowKeys.bookPriceKey, CSSClass.PRICE_TRADED, withinTradedRange);
 
                 if (tradeTracker.hasTrade() && price == tradeTracker.getLastPrice()) {
-                    ui.txt(htmlRowKeys.tradeKey, formatMktQty(lastTradePrice));
-                    ui.cls(htmlRowKeys.tradeKey, CSSClass.INVISIBLE, false);
-                    ui.cls(htmlRowKeys.volumeKey, CSSClass.INVISIBLE, true);
-                    ui.cls(htmlRowKeys.tradeKey, CSSClass.TRADED_UP, tradeTracker.isLastTickUp());
-                    ui.cls(htmlRowKeys.tradeKey, CSSClass.TRADED_DOWN, tradeTracker.isLastTickDown());
-                    ui.cls(htmlRowKeys.tradeKey, CSSClass.TRADED_AGAIN, tradeTracker.isLastTradeSameLevel());
+                    ui.txt(htmlRowKeys.bookTradeKey, formatMktQty(lastTradePrice));
+                    ui.cls(htmlRowKeys.bookTradeKey, CSSClass.INVISIBLE, false);
+                    ui.cls(htmlRowKeys.bookVolumeKey, CSSClass.INVISIBLE, true);
+                    ui.cls(htmlRowKeys.bookTradeKey, CSSClass.TRADED_UP, tradeTracker.isLastTickUp());
+                    ui.cls(htmlRowKeys.bookTradeKey, CSSClass.TRADED_DOWN, tradeTracker.isLastTickDown());
+                    ui.cls(htmlRowKeys.bookTradeKey, CSSClass.TRADED_AGAIN, tradeTracker.isLastTradeSameLevel());
                 } else {
-                    ui.txt(htmlRowKeys.tradeKey, HTML.EMPTY);
-                    ui.cls(htmlRowKeys.tradeKey, CSSClass.INVISIBLE, true);
-                    ui.cls(htmlRowKeys.volumeKey, CSSClass.INVISIBLE, false);
-                    ui.cls(htmlRowKeys.tradeKey, CSSClass.TRADED_UP, false);
-                    ui.cls(htmlRowKeys.tradeKey, CSSClass.TRADED_DOWN, false);
-                    ui.cls(htmlRowKeys.tradeKey, CSSClass.TRADED_AGAIN, false);
+                    ui.txt(htmlRowKeys.bookTradeKey, HTML.EMPTY);
+                    ui.cls(htmlRowKeys.bookTradeKey, CSSClass.INVISIBLE, true);
+                    ui.cls(htmlRowKeys.bookVolumeKey, CSSClass.INVISIBLE, false);
+                    ui.cls(htmlRowKeys.bookTradeKey, CSSClass.TRADED_UP, false);
+                    ui.cls(htmlRowKeys.bookTradeKey, CSSClass.TRADED_DOWN, false);
+                    ui.cls(htmlRowKeys.bookTradeKey, CSSClass.TRADED_AGAIN, false);
                 }
             }
 
@@ -907,15 +912,15 @@ public class LadderBookView implements ILadderBoard {
     private void workingQty(final LadderHTMLRow htmlRowKeys, final int qty, final BookSide side, final Set<WorkingOrderType> orderTypes,
             final boolean hasEeifOEOrder) {
 
-        ui.txt(htmlRowKeys.orderKey, formatMktQty(qty));
-        ui.cls(htmlRowKeys.orderKey, CSSClass.WORKING_QTY, 0 < qty);
-        ui.cls(htmlRowKeys.orderKey, CSSClass.WORKING_BID, BookSide.BID == side);
-        ui.cls(htmlRowKeys.orderKey, CSSClass.WORKING_OFFER, BookSide.ASK == side);
+        ui.txt(htmlRowKeys.bookOrderKey, formatMktQty(qty));
+        ui.cls(htmlRowKeys.bookOrderKey, CSSClass.WORKING_QTY, 0 < qty);
+        ui.cls(htmlRowKeys.bookOrderKey, CSSClass.WORKING_BID, BookSide.BID == side);
+        ui.cls(htmlRowKeys.bookOrderKey, CSSClass.WORKING_OFFER, BookSide.ASK == side);
         for (final WorkingOrderType workingOrderType : WorkingOrderType.values()) {
             final CSSClass cssClass = WORKING_ORDER_CSS.get(workingOrderType);
-            ui.cls(htmlRowKeys.orderKey, cssClass, !hasEeifOEOrder && orderTypes.contains(workingOrderType));
+            ui.cls(htmlRowKeys.bookOrderKey, cssClass, !hasEeifOEOrder && orderTypes.contains(workingOrderType));
         }
-        ui.cls(htmlRowKeys.orderKey, CSSClass.EEIF_ORDER_TYPE, hasEeifOEOrder);
+        ui.cls(htmlRowKeys.bookOrderKey, CSSClass.EEIF_ORDER_TYPE, hasEeifOEOrder);
     }
 
     @Override
@@ -977,10 +982,10 @@ public class LadderBookView implements ILadderBoard {
             } else if (label.startsWith(HTML.ORDER)) {
                 final long price = Long.valueOf(data.get("price"));
                 final LadderHTMLRow htmlRowKeys = priceRows.get(price).htmlKeys;
-                if (label.equals(htmlRowKeys.orderKey)) {
+                if (label.equals(htmlRowKeys.bookOrderKey)) {
                     cancelWorkingOrders(price);
                 } else {
-                    System.out.println("Mismatched label: " + data.get("price") + ' ' + htmlRowKeys.orderKey + ' ' + label);
+                    System.out.println("Mismatched label: " + data.get("price") + ' ' + htmlRowKeys.bookOrderKey + ' ' + label);
                 }
             } else if (label.equals(HTML.BUY_OFFSET_UP)) {
                 commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.UP));
@@ -1060,13 +1065,13 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void bidQty(final LadderHTMLRow htmlRowKeys, final long qty) {
-        ui.txt(htmlRowKeys.bidKey, formatMktQty(qty));
-        ui.cls(htmlRowKeys.bidKey, CSSClass.BID_ACTIVE, 0 < qty);
+        ui.txt(htmlRowKeys.bookBidKey, formatMktQty(qty));
+        ui.cls(htmlRowKeys.bookBidKey, CSSClass.BID_ACTIVE, 0 < qty);
     }
 
     private void askQty(final LadderHTMLRow htmlRowKeys, final long qty) {
-        ui.txt(htmlRowKeys.askKey, formatMktQty(qty));
-        ui.cls(htmlRowKeys.askKey, CSSClass.ASK_ACTIVE, 0 < qty);
+        ui.txt(htmlRowKeys.bookAskKey, formatMktQty(qty));
+        ui.cls(htmlRowKeys.bookAskKey, CSSClass.ASK_ACTIVE, 0 < qty);
     }
 
     private static String formatMktQty(final long qty) {
@@ -1103,9 +1108,9 @@ public class LadderBookView implements ILadderBoard {
         final LadderBoardRow bookRow = priceRows.get(price);
 
         final Side side;
-        if (label.equals(bookRow.htmlKeys.bidKey)) {
+        if (label.equals(bookRow.htmlKeys.bookBidKey)) {
             side = Side.BID;
-        } else if (label.equals(bookRow.htmlKeys.askKey)) {
+        } else if (label.equals(bookRow.htmlKeys.bookAskKey)) {
             side = Side.OFFER;
         } else {
             throw new IllegalArgumentException("Price " + price + " did not match key " + label);

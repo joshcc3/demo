@@ -71,7 +71,7 @@ public class LadderStackView implements ILadderBoard {
 
     private final Map<String, Integer> buttonQties;
 
-    private final long levels;
+    private final int levels;
     private final LadderHTMLTable ladderHTMLKeys;
     private final LongMap<LadderBoardRow> priceRows;
 
@@ -120,7 +120,7 @@ public class LadderStackView implements ILadderBoard {
 
         view.trading(isTrader, STACK_TYPES, STACK_ORDER_TYPES, STACK_ORDER_TYPES);
 
-        ui.cls(HTML.LEFT_HAND_PANEL, CSSClass.STACK_VIEW, true);
+        ui.cls(HTML.LADDER_DIV, CSSClass.STACK_VIEW, true);
 
         ui.cls(HTML.STACK_CONFIG_BUTTON, CSSClass.INVISIBLE, false);
         ui.cls(HTML.STACKS_CONTROL, CSSClass.INVISIBLE, false);
@@ -223,34 +223,38 @@ public class LadderStackView implements ILadderBoard {
             final LadderHTMLRow htmlRow = boardRow.htmlKeys;
 
             final SymbolStackPriceLevel bidPriceLevel = stackData.getBidPriceLevel(tickOffset);
-            setQty(htmlRow.orderKey, CSSClass.WORKING_BID, bidPriceLevel);
-            ui.data(htmlRow.orderKey, DataKey.PRICE, boardRow.formattedPrice);
-            ui.cls(htmlRow.orderKey, CSSClass.STACK_VIEW, true);
+            setQty(htmlRow.stackBidPicardKey, htmlRow.stackBidQuoteKey, bidPriceLevel);
 
-            ui.data(htmlRow.bidKey, DataKey.PRICE, boardRow.formattedPrice);
-            ui.cls(htmlRow.bidKey, CSSClass.STACK_VIEW, true);
-
-            ui.txt(htmlRow.priceKey, price);
-            ui.cls(htmlRow.priceKey, CSSClass.STACK_VIEW, true);
-
-            ui.data(htmlRow.askKey, DataKey.PRICE, boardRow.formattedPrice);
-            ui.cls(htmlRow.askKey, CSSClass.STACK_VIEW, true);
+            ui.data(htmlRow.stackBidPicardKey, DataKey.PRICE, boardRow.formattedPrice);
+            ui.data(htmlRow.stackBidQuoteKey, DataKey.PRICE, boardRow.formattedPrice);
+            ui.data(htmlRow.stackBidOffsetKey, DataKey.PRICE, boardRow.formattedPrice);
 
             final SymbolStackPriceLevel askPriceLevel = stackData.getAskPriceLevel(tickOffset);
-            setQty(htmlRow.volumeKey, CSSClass.WORKING_OFFER, askPriceLevel);
-            ui.data(htmlRow.volumeKey, DataKey.PRICE, boardRow.formattedPrice);
-            ui.cls(htmlRow.volumeKey, CSSClass.STACK_VIEW, true);
+            setQty(htmlRow.stackAskPicardKey, htmlRow.stackAskQuoteKey, askPriceLevel);
+
+            ui.data(htmlRow.stackAskPicardKey, DataKey.PRICE, boardRow.formattedPrice);
+            ui.data(htmlRow.stackAskQuoteKey, DataKey.PRICE, boardRow.formattedPrice);
+            ui.data(htmlRow.stackAskOffsetKey, DataKey.PRICE, boardRow.formattedPrice);
 
             if (0 == price) {
-                ui.txt(htmlRow.bidKey, stackData.getFormattedBidPriceOffsetBPS());
-                ui.txt(htmlRow.askKey, stackData.getFormattedAskPriceOffset());
+                ui.txt(htmlRow.stackBidOffsetKey, stackData.getFormattedBidPriceOffsetBPS());
+                ui.cls(htmlRow.stackBidOffsetKey, CSSClass.STACK_OFFSET, true);
+
+                ui.txt(htmlRow.stackAskOffsetKey, stackData.getFormattedAskPriceOffset());
+                ui.cls(htmlRow.stackAskOffsetKey, CSSClass.STACK_OFFSET, true);
             } else if (Constants.EPSILON < stackAlignmentTickToBPS) {
                 final double bpsOffset = price * stackAlignmentTickToBPS;
-                ui.txt(htmlRow.bidKey, stackData.getFormattedBidPriceOffsetBPS(bpsOffset));
-                ui.txt(htmlRow.askKey, stackData.getFormattedAskPriceOffsetBPS(bpsOffset));
+                ui.txt(htmlRow.stackBidOffsetKey, stackData.getFormattedBidPriceOffsetBPS(bpsOffset));
+                ui.cls(htmlRow.stackBidOffsetKey, CSSClass.STACK_OFFSET, false);
+
+                ui.txt(htmlRow.stackAskOffsetKey, stackData.getFormattedAskPriceOffsetBPS(bpsOffset));
+                ui.cls(htmlRow.stackAskOffsetKey, CSSClass.STACK_OFFSET, false);
             } else {
-                ui.txt(htmlRow.bidKey, HTML.EMPTY);
-                ui.txt(htmlRow.askKey, HTML.EMPTY);
+                ui.txt(htmlRow.stackBidOffsetKey, HTML.EMPTY);
+                ui.cls(htmlRow.stackBidOffsetKey, CSSClass.STACK_OFFSET, false);
+
+                ui.txt(htmlRow.stackAskOffsetKey, HTML.EMPTY);
+                ui.cls(htmlRow.stackAskOffsetKey, CSSClass.STACK_OFFSET, false);
             }
         }
     }
@@ -272,30 +276,44 @@ public class LadderStackView implements ILadderBoard {
         return ladderPrefsForSymbolUser.get(stackPrefID, DEFAULT_PREFS.get(id));
     }
 
-    private void setQty(final String htmlKey, final CSSClass cssSideClass, final SymbolStackPriceLevel level) {
+    private void setQty(final String picardKey, final String quoteKey, final SymbolStackPriceLevel level) {
 
-        if (null != level && 0 < level.getTotalQty()) {
-            ui.txt(htmlKey, level.getFormattedTotalQty());
-            ui.cls(htmlKey, cssSideClass, true);
-            ui.cls(htmlKey, CSSClass.STACK_QTY, true);
+        if (null != level) {
 
-            ui.cls(htmlKey, CSSClass.QUOTER, level.isQuoterPresent());
-            ui.cls(htmlKey, CSSClass.PICARD, level.isPicardPresent());
+            final boolean isPicardPresent = level.isStackPresent(StackType.PICARD);
+            if (isPicardPresent) {
+                ui.txt(picardKey, level.getFormattedTotalQty(StackType.PICARD));
+            } else {
+                ui.txt(picardKey, HTML.EMPTY);
+            }
+            ui.cls(picardKey, CSSClass.STACK_QTY, isPicardPresent);
+            ui.cls(picardKey, CSSClass.ONE_SHOT, level.isOrderTypePresent(StackType.PICARD, StackOrderType.ONE_SHOT));
+            ui.cls(picardKey, CSSClass.AUTO_MANAGE, level.isOrderTypePresent(StackType.PICARD, StackOrderType.AUTO_MANAGE));
+            ui.cls(picardKey, CSSClass.REFRESHABLE, level.isOrderTypePresent(StackType.PICARD, StackOrderType.REFRESHABLE));
 
-            ui.cls(htmlKey, CSSClass.ONE_SHOT, level.isOneShotPresent());
-            ui.cls(htmlKey, CSSClass.AUTO_MANAGE, level.isAutoMangePresent());
-            ui.cls(htmlKey, CSSClass.REFRESHABLE, level.isRefreshablePresent());
+            final boolean isQuotePresent = level.isStackPresent(StackType.QUOTER);
+            if (isQuotePresent) {
+                ui.txt(quoteKey, level.getFormattedTotalQty(StackType.QUOTER));
+            } else {
+                ui.txt(quoteKey, HTML.EMPTY);
+            }
+            ui.cls(quoteKey, CSSClass.STACK_QTY, isQuotePresent);
+            ui.cls(quoteKey, CSSClass.ONE_SHOT, level.isOrderTypePresent(StackType.QUOTER, StackOrderType.ONE_SHOT));
+            ui.cls(quoteKey, CSSClass.AUTO_MANAGE, level.isOrderTypePresent(StackType.QUOTER, StackOrderType.AUTO_MANAGE));
+            ui.cls(quoteKey, CSSClass.REFRESHABLE, level.isOrderTypePresent(StackType.QUOTER, StackOrderType.REFRESHABLE));
+
         } else {
-            ui.txt(htmlKey, HTML.EMPTY);
-            ui.cls(htmlKey, cssSideClass, false);
-            ui.cls(htmlKey, CSSClass.STACK_QTY, false);
+            ui.txt(picardKey, HTML.EMPTY);
+            ui.cls(picardKey, CSSClass.STACK_QTY, false);
+            ui.cls(picardKey, CSSClass.ONE_SHOT, false);
+            ui.cls(picardKey, CSSClass.AUTO_MANAGE, false);
+            ui.cls(picardKey, CSSClass.REFRESHABLE, false);
 
-            ui.cls(htmlKey, CSSClass.QUOTER, false);
-            ui.cls(htmlKey, CSSClass.PICARD, false);
-
-            ui.cls(htmlKey, CSSClass.ONE_SHOT, false);
-            ui.cls(htmlKey, CSSClass.AUTO_MANAGE, false);
-            ui.cls(htmlKey, CSSClass.REFRESHABLE, false);
+            ui.txt(quoteKey, HTML.EMPTY);
+            ui.cls(quoteKey, CSSClass.STACK_QTY, false);
+            ui.cls(quoteKey, CSSClass.ONE_SHOT, false);
+            ui.cls(quoteKey, CSSClass.AUTO_MANAGE, false);
+            ui.cls(quoteKey, CSSClass.REFRESHABLE, false);
         }
     }
 
@@ -431,34 +449,34 @@ public class LadderStackView implements ILadderBoard {
                 tradingBoxQty += qtyChange;
             } else if (HTML.BUTTON_CLR.equals(label)) {
                 tradingBoxQty = 0;
-            } else if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
+            } else if (label.startsWith(HTML.STACK_BID_OFFSET) || label.startsWith(HTML.STACK_ASK_OFFSET)) {
                 if (null != ladderPrefsForSymbolUser) {
                     submitOrderLeftClick(clientSpeedState, label, data);
                 }
-            } else if (label.startsWith(HTML.ORDER)) {
+            } else if (label.startsWith(HTML.STACK_BID_PICARD)) {
 
                 final int price = Integer.valueOf(data.get("price"));
-                final LadderHTMLRow htmlRowKeys = priceRows.get(price).htmlKeys;
-                if (label.equals(htmlRowKeys.orderKey)) {
-                    final long tickOffset = price / currentLadderTickSize;
-                    if (!stackData.clearBidStackPrice((int) tickOffset)) {
-                        throw new IllegalStateException("Could not send msg - stack connection down.");
-                    }
-                } else {
-                    System.out.println("Mismatched label: " + data.get("price") + ' ' + htmlRowKeys.orderKey + ' ' + label);
-                }
-            } else if (label.startsWith(HTML.VOLUME)) {
+                final String expectedLabel = priceRows.get(price).htmlKeys.stackBidPicardKey;
+                cancelBidStackOrders(price, label, expectedLabel, StackType.PICARD);
+
+            } else if (label.startsWith(HTML.STACK_BID_QUOTE)) {
 
                 final int price = Integer.valueOf(data.get("price"));
-                final LadderHTMLRow htmlRowKeys = priceRows.get(price).htmlKeys;
-                if (label.equals(htmlRowKeys.volumeKey)) {
-                    final long tickOffset = price / currentLadderTickSize;
-                    if (!stackData.clearAskStackPrice((int) tickOffset)) {
-                        throw new IllegalStateException("Could not send msg - stack connection down.");
-                    }
-                } else {
-                    System.out.println("Mismatched label: " + data.get("price") + ' ' + htmlRowKeys.orderKey + ' ' + label);
-                }
+                final String expectedLabel = priceRows.get(price).htmlKeys.stackBidQuoteKey;
+                cancelBidStackOrders(price, label, expectedLabel, StackType.QUOTER);
+
+            } else if (label.startsWith(HTML.STACK_ASK_PICARD)) {
+
+                final int price = Integer.valueOf(data.get("price"));
+                final String expectedLabel = priceRows.get(price).htmlKeys.stackAskPicardKey;
+                cancelAskStackOrders(price, label, expectedLabel, StackType.PICARD);
+
+            } else if (label.startsWith(HTML.STACK_ASK_QUOTE)) {
+
+                final int price = Integer.valueOf(data.get("price"));
+                final String expectedLabel = priceRows.get(price).htmlKeys.stackAskQuoteKey;
+                cancelAskStackOrders(price, label, expectedLabel, StackType.QUOTER);
+
             } else if (label.equals(HTML.BUY_OFFSET_UP)) {
                 if (!stackData.improveBidStackPriceOffset(stackData.getPriceOffsetTickSize())) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
@@ -499,7 +517,7 @@ public class LadderStackView implements ILadderBoard {
                 view.popUp(url, "stackConfig:" + symbol, 2400, 300);
             }
         } else if ("right".equals(button)) {
-            if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
+            if (label.startsWith(HTML.STACK_BID_OFFSET) || label.startsWith(HTML.STACK_ASK_OFFSET)) {
                 if (ladderPrefsForSymbolUser != null) {
                     submitOrderRightClick(clientSpeedState, label, data);
                 }
@@ -552,6 +570,30 @@ public class LadderStackView implements ILadderBoard {
         }
     }
 
+    private void cancelBidStackOrders(final int price, final String label, final String expectedLabel, final StackType stackType) {
+
+        if (label.equals(expectedLabel)) {
+            final long tickOffset = price / currentLadderTickSize;
+            if (!stackData.clearBidStackPrice(stackType, (int) tickOffset)) {
+                throw new IllegalStateException("Could not send msg - stack connection down.");
+            }
+        } else {
+            System.out.println("Mismatched label: " + price + ' ' + expectedLabel + ' ' + label);
+        }
+    }
+
+    private void cancelAskStackOrders(final int price, final String label, final String expectedLabel, final StackType stackType) {
+
+        if (label.equals(expectedLabel)) {
+            final long tickOffset = price / currentLadderTickSize;
+            if (!stackData.clearAskStackPrice(stackType, (int) tickOffset)) {
+                throw new IllegalStateException("Could not send msg - stack connection down.");
+            }
+        } else {
+            System.out.println("Mismatched label: " + price + ' ' + expectedLabel + ' ' + label);
+        }
+    }
+
     private void submitOrderLeftClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data) {
 
         final String orderType = getPref(HTML.ORDER_TYPE_LEFT);
@@ -583,13 +625,13 @@ public class LadderStackView implements ILadderBoard {
             throw new IllegalArgumentException("No order type [" + orderTypePref + "] provided.");
         } else if (null == stackType) {
             throw new IllegalArgumentException("No stack type [" + stackTypePref + "] provided.");
-        } else if (label.equals(bookRow.htmlKeys.bidKey)) {
+        } else if (label.equals(bookRow.htmlKeys.stackBidOffsetKey)) {
 
             if (!stackData.setBidStackQty(stackType, orderType, ticks, tradingBoxQty)) {
                 throw new IllegalStateException("Could not send msg - stack connection down.");
             }
 
-        } else if (label.equals(bookRow.htmlKeys.askKey)) {
+        } else if (label.equals(bookRow.htmlKeys.stackAskOffsetKey)) {
 
             if (!stackData.setAskStackQty(stackType, orderType, ticks, tradingBoxQty)) {
                 throw new IllegalStateException("Could not send msg - stack connection down.");

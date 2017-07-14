@@ -24,20 +24,34 @@ $(function () {
 });
 
 function draw(levels) {
-	var ladder = $("#ladder");
+
 	var rows = $("#rows");
 	rows.find(".row").remove();
+
 	for (var i = 0; i < levels; i++) {
-		var row = $("#row_template").clone().removeClass("template");
-		row.attr('id', 'row_' + i);
-		row.find('.order').attr('id', 'order_' + i).text(' ');
-		row.find('.bid').attr('id', 'bid_' + i).text(' ');
-		row.find('.price').attr('id', 'price_' + i).text(' ');
-		row.find('.offer').attr('id', 'offer_' + i).text(' ');
-		row.find('.trade').attr('id', 'trade_' + i).text(' ');
-		row.find('.volume').attr('id', 'volume_' + i).text(' ');
-		row.find('.text').attr('id', 'text_' + i).text(' ');
-		rows.append(row);
+		var bookRow = $("#row_template").clone().removeClass("template");
+		bookRow.attr('id', 'row_' + i);
+		bookRow.find('.order').attr('id', 'order_' + i).text(' ');
+		bookRow.find('.bid').attr('id', 'bid_' + i).text(' ');
+		bookRow.find('.price').attr('id', 'price_' + i).text(' ');
+		bookRow.find('.offer').attr('id', 'offer_' + i).text(' ');
+		bookRow.find('.trade').attr('id', 'trade_' + i).text(' ');
+		bookRow.find('.volume').attr('id', 'volume_' + i).text(' ');
+		bookRow.find('.text').attr('id', 'text_' + i).text(' ');
+		rows.append(bookRow);
+	}
+
+	for (var j = 0; j < levels; j++) {
+		var stackRow = $("#stack_row_template").clone().removeClass("template");
+		stackRow.attr("id", "stack_row_" + j);
+		stackRow.find(".bid.quote").attr("id", "bid_quote_" + j).text(" ");
+		stackRow.find(".bid.picard").attr("id", "bid_picard_" + j).text(" ");
+		stackRow.find(".bid.offset").attr("id", "bid_offset_" + j).text(" ");
+
+		stackRow.find(".ask.offset").attr("id", "ask_offset_" + j).text(" ");
+		stackRow.find(".ask.picard").attr("id", "ask_picard_" + j).text(" ");
+		stackRow.find(".ask.quote").attr("id", "ask_quote_" + j).text(" ");
+		rows.append(stackRow);
 	}
 }
 

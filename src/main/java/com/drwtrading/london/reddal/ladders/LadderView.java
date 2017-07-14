@@ -292,6 +292,14 @@ public class LadderView implements UiEventHandler {
                 ui.clickable('#' + HTML.BID + i);
                 ui.clickable('#' + HTML.OFFER + i);
                 ui.clickable('#' + HTML.ORDER + i);
+
+                ui.clickable('#' + HTML.STACK_BID_PICARD + i);
+                ui.clickable('#' + HTML.STACK_BID_QUOTE + i);
+                ui.clickable('#' + HTML.STACK_BID_OFFSET + i);
+
+                ui.clickable('#' + HTML.STACK_ASK_PICARD + i);
+                ui.clickable('#' + HTML.STACK_ASK_QUOTE + i);
+                ui.clickable('#' + HTML.STACK_ASK_OFFSET + i);
             }
 
             ui.clickable('#' + HTML.BUY_QTY);
@@ -594,8 +602,11 @@ public class LadderView implements UiEventHandler {
             if ("left".equals(button)) {
                 openEwokView();
             }
-        } else if (label.startsWith(HTML.PRICE) && "middle".equals(button)) {
+        } else if ("middle".equals(button) &&
+                (label.startsWith(HTML.PRICE) || label.startsWith(HTML.STACK_BID_OFFSET) || label.startsWith(HTML.STACK_ASK_OFFSET))) {
+
             recenterLaddersForUser.publish(new RecenterLaddersForUser(client.getUserName()));
+
         } else if (label.equals(HTML.POSITION) || label.equals(HTML.TOTAL_TRADED)) {
             showTotalTraded = !showTotalTraded;
         } else {

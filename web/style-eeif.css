@@ -207,61 +207,6 @@ div {
 	border: solid 2px red !important;
 }
 
-.column.stackQty {
-	padding: 0;
-	color: white;
-	text-align: center;
-	font-size: 10px;
-}
-
-.column.stackQty.PICARD {
-	background: #FB6E75;
-}
-
-.column.stackQty.QUOTER {
-	background: #5970B2;
-}
-
-.column.stackQty.QUOTER.PICARD {
-	background: linear-gradient(to right, #5970B2, #FB6E75);
-}
-
-.column.stackQty.ONE_SHOT:after, .column.stackQty.AUTO_MANAGE:after, .column.stackQty.REFRESHABLE:after {
-	content: "";
-	height: 3px;
-	display: block;
-	margin-bottom: 0;
-	margin-top: 0;
-}
-
-.column.stackQty.ONE_SHOT:after {
-	background: #5ACE62;
-}
-
-.column.stackQty.AUTO_MANAGE:after {
-	background: #FFCE70;
-}
-
-.column.stackQty.REFRESHABLE:after {
-	background: #9154BE;
-}
-
-.column.stackQty.ONE_SHOT.AUTO_MANAGE:after {
-	background: linear-gradient(to right, #5ACE62 50%, #FFCE70 50%);
-}
-
-.column.stackQty.ONE_SHOT.REFRESHABLE:after {
-	background: linear-gradient(to right, #5ACE62 50%, #9154BE 50%);
-}
-
-.column.stackQty.AUTO_MANAGE.REFRESHABLE:after {
-	background: linear-gradient(to right, #FFCE70 50%, #9154BE 50%);
-}
-
-.column.stackQty.ONE_SHOT.AUTO_MANAGE.REFRESHABLE:after {
-	background: linear-gradient(to right, #5ACE62 33%, #FFCE70 33%, #FFCE70 66%, #9154BE 66%);
-}
-
 .MANUAL, .MANUAL:hover {
 	background-color: white;
 }
@@ -324,70 +269,168 @@ div {
 	color: white;
 }
 
-.bid {
+.book .bid {
 	color: white;
 	background-color: #0000c6;
 	left: 40px;
 }
 
-.bid:hover {
+.book .bid:hover {
 	background-color: #0000b3 !important;
 }
 
-.bid.bid_active {
+.book .bid.bid_active {
 	background-color: #0032ff;
 }
 
-.bid.bid_active.impliedBid {
+.book .bid.bid_active.impliedBid {
 	background-color: #6668ff;
 }
 
-.offer.offer_active.impliedOffer {
+.book .offer.offer_active.impliedOffer {
 	background-color: #d0638d;
 }
 
-.price {
+.book .price {
 	background-color: #999;
 	color: white;
 	left: 80px;
 	width: 50px;
 }
 
-.stackView.price {
-	width: 40px;
-}
-
-.price.price_traded {
+.book .price.price_traded {
 	background-color: #737373;
 }
 
-.offer {
+.book .offer {
 	color: black;
 	left: 130px;
 	background-color: #ac0000;
 }
 
-.stackView.offer {
-	left: 120px;
-}
-
-.offer:hover {
+.book .offer:hover {
 	background-color: #980000 !important;
 }
 
-.offer.offer_active {
+.book .offer.offer_active {
 	background-color: #dd0000;
 }
 
-.volume, .trade, .text {
+.book .volume, .trade, .text {
 	color: black;
 	left: 170px;
 	width: 30px;
 }
 
-.stackView.volume, .stackView.trade, .stackView.text {
-	left: 160px;
-	width: 40px;
+#ladderDiv:not(.stackView) .stack.row {
+	display: none;
+}
+
+#ladderDiv.stackView .book.row {
+	display: none;
+}
+
+#ladderDiv.stackView .stack.row div {
+	font-size: 8px;
+}
+
+#ladderDiv.stackView .stack.row .stackOffset {
+	border: 1px solid white;
+}
+
+#ladderDiv.stackView .stack.row .quote.stackQty {
+	background: #5970B2;
+}
+
+#ladderDiv.stackView .stack.row .picard.stackQty {
+	background: #FB6E75;
+}
+
+#ladderDiv.stackView .stack.row .bid.quote {
+	left: 0;
+	width: 35px;
+}
+
+#ladderDiv.stackView .stack.row .bid.picard {
+	left: 35px;
+	width: 35px;
+}
+
+#ladderDiv.stackView .stack.row .bid.offset {
+	left: 70px;
+	width: 28px;
+	background-color: #0000b3;
+	color: white;
+}
+
+#ladderDiv.stackView .stack.row .divider {
+	left: 98px;
+	width: 4px;
+	background-color: #999;
+}
+
+#ladderDiv.stackView .stack.row .ask.offset {
+	left: 102px;
+	width: 28px;
+	background-color: #ac0000;
+	color: white;
+}
+
+#ladderDiv.stackView .stack.row .ask.picard {
+	left: 130px;
+	width: 35px;
+}
+
+#ladderDiv.stackView .stack.row .ask.quote {
+	left: 165px;
+	width: 35px;
+}
+
+.column.stackQty {
+	padding: 0;
+	color: white;
+	text-align: center;
+	font-size: 10px;
+}
+
+.column.stackQty.QUOTER.PICARD {
+	background: linear-gradient(to right, #5970B2, #FB6E75);
+}
+
+.column.stackQty.ONE_SHOT:after, .column.stackQty.AUTO_MANAGE:after, .column.stackQty.REFRESHABLE:after {
+	content: "";
+	height: 3px;
+	display: block;
+	margin-bottom: 0;
+	margin-top: 0;
+}
+
+.column.stackQty.ONE_SHOT:after {
+	background: #5ACE62;
+}
+
+.column.stackQty.AUTO_MANAGE:after {
+	background: #FFCE70;
+}
+
+.column.stackQty.REFRESHABLE:after {
+	background: #9154BE;
+}
+
+.column.stackQty.ONE_SHOT.AUTO_MANAGE:after {
+	background: linear-gradient(to right, #5ACE62 50%, #FFCE70 50%);
+}
+
+.column.stackQty.ONE_SHOT.REFRESHABLE:after {
+	background: linear-gradient(to right, #5ACE62 50%, #9154BE 50%);
+}
+
+.column.stackQty.AUTO_MANAGE.REFRESHABLE:after {
+	background: linear-gradient(to right, #FFCE70 50%, #9154BE 50%);
+}
+
+.column.stackQty.ONE_SHOT.AUTO_MANAGE.REFRESHABLE:after {
+	background: linear-gradient(to right, #5ACE62 33%, #FFCE70 33%, #FFCE70 66%, #9154BE 66%);
 }
 
 .volume {

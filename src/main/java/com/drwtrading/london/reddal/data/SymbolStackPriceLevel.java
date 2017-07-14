@@ -10,77 +10,34 @@ public class SymbolStackPriceLevel {
 
     private final StackLevel[] stackTypes;
 
-    private long totalQty;
-    private String totalQtyString;
-
-    private boolean isQuoterPresent;
-    private boolean isPicardPresent;
-
-    private boolean isOneShotPresent;
-    private boolean isAutoMangePresent;
-    private boolean isRefreshablePresent;
+    private final String[] totalQtyString;
 
     public SymbolStackPriceLevel() {
 
         this.stackTypes = new StackLevel[STACK_TYPES];
-
-        this.totalQty = 0;
+        this.totalQtyString = new String[STACK_TYPES];
     }
 
     public void setStackLevel(final StackType stackType, final StackLevel stackLevel) {
 
-        final StackLevel oldLevel = stackTypes[stackType.ordinal()];
-        if (null != oldLevel) {
-            totalQty -= oldLevel.getRemainingQty();
-        }
-
         stackTypes[stackType.ordinal()] = stackLevel;
-        this.totalQty += stackLevel.getRemainingQty();
 
-        this.totalQtyString = Long.toString(totalQty);
-
-        switch (stackType) {
-            case PICARD: {
-                isPicardPresent = 0 < stackLevel.getRemainingQty();
-                break;
-            }
-            case QUOTER: {
-                isQuoterPresent = 0 < stackLevel.getRemainingQty();
-                break;
-            }
-        }
-
-        isOneShotPresent |= 0 < stackLevel.getOrderTypeQty(StackOrderType.ONE_SHOT);
-        isAutoMangePresent |= 0 < stackLevel.getOrderTypeQty(StackOrderType.AUTO_MANAGE);
-        isRefreshablePresent |= 0 < stackLevel.getOrderTypeQty(StackOrderType.REFRESHABLE);
+        final String formattedQty = Long.toString(stackLevel.getRemainingQty());
+        totalQtyString[stackType.ordinal()] = formattedQty;
     }
 
-    public long getTotalQty() {
-        return totalQty;
+    public String getFormattedTotalQty(final StackType stackType) {
+        return totalQtyString[stackType.ordinal()];
     }
 
-    public String getFormattedTotalQty() {
-        return totalQtyString;
+    public boolean isStackPresent(final StackType stackType) {
+        final StackLevel stackLevel = stackTypes[stackType.ordinal()];
+        return null != stackLevel && 0 < stackLevel.getRemainingQty();
     }
 
-    public boolean isQuoterPresent() {
-        return isQuoterPresent;
-    }
-
-    public boolean isPicardPresent() {
-        return isPicardPresent;
-    }
-
-    public boolean isOneShotPresent() {
-        return isOneShotPresent;
-    }
-
-    public boolean isAutoMangePresent() {
-        return isAutoMangePresent;
-    }
-
-    public boolean isRefreshablePresent() {
-        return isRefreshablePresent;
+    public boolean isOrderTypePresent(final StackType stackType, final StackOrderType orderType) {
+        final StackLevel stackLevel = stackTypes[stackType.ordinal()];
+        return null != stackLevel && 0 < stackLevel.getOrderTypeQty(orderType);
     }
 
     public StackLevel getStackType(final StackType stackType) {

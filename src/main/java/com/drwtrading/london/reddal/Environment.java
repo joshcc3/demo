@@ -2,10 +2,10 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
-import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.network.NetworkInterfaces;
-import eeif.execution.RemoteOrderType;
+import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.ladders.LadderOptions;
+import eeif.execution.RemoteOrderType;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -224,9 +224,9 @@ public class Environment {
 
     public static interface RemoteOrderServerResolver {
 
-        public String resolveToServerName(final String symbol, final String orderType, final String tag, String mic);
+        public String resolveToServerName(final String symbol, final String orderType, final String tag, final String mic);
 
-        default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType, final String tag, String mic) {
+        default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType, final String tag, final String mic) {
             return resolveToServerName(symbol, remoteOrderType.name(), tag, mic);
         }
     }
@@ -238,17 +238,18 @@ public class Environment {
         private final Collection<String> tags;
         private final Collection<String> mics;
 
-        public RemoteOrderMatcher(final Pattern symbolPattern, final Collection<String> orderTypes, final Collection<String> tags, Collection<String> mics) {
+        public RemoteOrderMatcher(final Pattern symbolPattern, final Collection<String> orderTypes, final Collection<String> tags,
+                final Collection<String> mics) {
             this.symbolPattern = symbolPattern;
             this.orderTypes = orderTypes;
             this.tags = tags;
             this.mics = mics;
         }
 
-        public boolean matches(final String symbol, final String orderType, final String tag, String mic) {
-            return symbolPattern.matcher(symbol).find() &&
-                    (orderTypes == null || orderTypes.contains(orderType) && (tags == null || tags.contains(tag))
-                    && (mics == null || mic == null || mics.contains(mic)));
+        public boolean matches(final String symbol, final String orderType, final String tag, final String mic) {
+            return symbolPattern.matcher(symbol).find() && (orderTypes == null ||
+                    orderTypes.contains(orderType) && (tags == null || tags.contains(tag)) &&
+                            (mics == null || mic == null || mics.contains(mic)));
         }
     }
 

@@ -2,6 +2,8 @@ package com.drwtrading.london.reddal.fastui.html;
 
 public class HTML {
 
+    public static final String LADDER_DIV = "ladderDiv";
+
     public static final String EMPTY = " "; /* Key prefixes*/
     public static final String BID = "bid_";
     public static final String OFFER = "offer_";
@@ -11,6 +13,15 @@ public class HTML {
     public static final String VOLUME = "volume_";
     public static final String AFTER_HOURS_WEIGHT = "after_hours_weight";
     public static final String TEXT_PREFIX = "text_";
+
+    public static final String STACK_BID_QUOTE = "bid_quote_";
+    public static final String STACK_BID_PICARD = "bid_picard_";
+    public static final String STACK_BID_OFFSET = "bid_offset_";
+
+    public static final String STACK_ASK_OFFSET = "ask_offset_";
+    public static final String STACK_ASK_PICARD = "ask_picard_";
+    public static final String STACK_ASK_QUOTE = "ask_quote_";
+
     public static final String STACK_CONFIG_BUTTON = "btn_stack_config";
     public static final String STACK_TICK_SIZE = "stackTickSize";
     public static final String STACK_GROUP_TICK_MULTIPLIER = "stackGroupTickMultiplier";

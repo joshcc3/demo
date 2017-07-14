@@ -62,8 +62,9 @@ public class SymbolStackData {
     public void setStackClientHandler(final StackClientHandler stackClient) {
 
         if (null != this.stackClient && !this.stackClient.equals(stackClient)) {
-            throw new IllegalStateException("Two stack clients [" + this.stackClient.getRemoteUser() + "] and [" + stackClient.getRemoteUser() +
-                    "] are providing stacks for the same instrument [" + symbol + "].");
+            throw new IllegalStateException(
+                    "Two stack clients [" + this.stackClient.getRemoteUser() + "] and [" + stackClient.getRemoteUser() +
+                            "] are providing stacks for the same instrument [" + symbol + "].");
         } else {
             this.stackClient = stackClient;
         }
@@ -339,19 +340,17 @@ public class SymbolStackData {
         }
     }
 
-    public boolean clearBidStackPrice(final int tickOffset) {
+    public boolean clearBidStackPrice(final StackType stackType, final int tickOffset) {
 
         if (null != bidStackGroup) {
-            for (final StackType stackType : StackType.values()) {
-                final SymbolStackPriceLevel stackPriceLevel = bidStackLevels.get(tickOffset);
-                if (null != stackPriceLevel) {
-                    final StackLevel level = stackPriceLevel.getStackType(stackType);
-                    if (null != level) {
-                        for (final StackOrderType orderType : StackOrderType.values()) {
-                            if (0 < level.getOrderTypeQty(orderType)) {
-                                stackClient.addStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType,
-                                        BID_PRICE_MULTIPLIER * tickOffset, -Long.MAX_VALUE);
-                            }
+            final SymbolStackPriceLevel stackPriceLevel = bidStackLevels.get(tickOffset);
+            if (null != stackPriceLevel) {
+                final StackLevel level = stackPriceLevel.getStackType(stackType);
+                if (null != level) {
+                    for (final StackOrderType orderType : StackOrderType.values()) {
+                        if (0 < level.getOrderTypeQty(orderType)) {
+                            stackClient.addStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType,
+                                    BID_PRICE_MULTIPLIER * tickOffset, -Long.MAX_VALUE);
                         }
                     }
                 }
@@ -362,19 +361,17 @@ public class SymbolStackData {
         }
     }
 
-    public boolean clearAskStackPrice(final int tickOffset) {
+    public boolean clearAskStackPrice(final StackType stackType, final int tickOffset) {
 
         if (null != askStackGroup) {
-            for (final StackType stackType : StackType.values()) {
-                final SymbolStackPriceLevel stackPriceLevel = askStackLevels.get(tickOffset);
-                if (null != stackPriceLevel) {
-                    final StackLevel level = stackPriceLevel.getStackType(stackType);
-                    if (null != level) {
-                        for (final StackOrderType orderType : StackOrderType.values()) {
-                            if (0 < level.getOrderTypeQty(orderType)) {
-                                stackClient.addStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType,
-                                        ASK_PRICE_MULTIPLIER * tickOffset, -Long.MAX_VALUE);
-                            }
+            final SymbolStackPriceLevel stackPriceLevel = askStackLevels.get(tickOffset);
+            if (null != stackPriceLevel) {
+                final StackLevel level = stackPriceLevel.getStackType(stackType);
+                if (null != level) {
+                    for (final StackOrderType orderType : StackOrderType.values()) {
+                        if (0 < level.getOrderTypeQty(orderType)) {
+                            stackClient.addStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType,
+                                    ASK_PRICE_MULTIPLIER * tickOffset, -Long.MAX_VALUE);
                         }
                     }
                 }

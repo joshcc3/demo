@@ -48,8 +48,10 @@ public enum CSSClass {
     WORKING_OFFER("working_offer"),
     WORKING_ORDER_TYPE("working_order_type_"),
 
+    BOOK_VIEW("bookView"),
     STACK_VIEW("stackView"),
     STACK_QTY("stackQty"),
+    STACK_OFFSET("stackOffset"),
 
     EEIF_ORDER_TYPE("eeif_order_type_managed"),
 
