@@ -1,7 +1,10 @@
 package com.drwtrading.london.reddal.stacks.family;
 
+import com.drwtrading.london.eeif.stack.manager.persistence.StackNoOpCacheListener;
 import com.drwtrading.london.eeif.stack.transport.cache.stack.IStackGroupCacheListener;
 import com.drwtrading.london.eeif.stack.transport.cache.strategy.IStackStrategyCacheListener;
+import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
+import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroupFactory;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
@@ -22,7 +25,9 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     private final LongMap<StackUIData> uiDataByStrategyID;
 
     private final LongMap<StackUIData> uiDataByStackID;
-    private final LongMap<BookSide> stackSide;
+    private final LongMap<StackGroup> stackGroups;
+
+    private final StackGroupFactory stackGroupFactory;
 
     public StackFamilyListener(final StackFamilyPresenter presenter) {
 
@@ -33,7 +38,9 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
         this.uiDataByStrategyID = new LongMap<>();
 
         this.uiDataByStackID = new LongMap<>();
-        this.stackSide = new LongMap<>();
+        this.stackGroups = new LongMap<>();
+
+        this.stackGroupFactory = new StackGroupFactory();
     }
 
     @Override
@@ -73,12 +80,20 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
 
         final StackUIData uiData = uiDataBySymbol.get(symbol);
         uiDataByStackID.put(stackGroupID, uiData);
-        stackSide.put(stackGroupID, side);
+
+        final StackGroup stackGroup =
+                stackGroupFactory.createStackGroup(stackGroupID, symbol, instID, side, StackNoOpCacheListener.INSTANCE, uiData);
+        stackGroups.put(stackGroupID, stackGroup);
+
+        uiData.stackGroupCreated(stackGroup);
         return true;
     }
 
     @Override
     public boolean stackCleared(final String source, final long stackGroupID) {
+
+        final StackGroup stackGroup = stackGroups.get(stackGroupID);
+        stackGroup.clear(source);
         return true;
     }
 
@@ -86,47 +101,64 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     public boolean updateStackGroup(final String source, final long stackGroupID, final double priceOffsetBPS,
             final double priceOffsetTickSize, final int tickMultiplier, final double stackAlignmentTickToBPS) {
 
-        final StackUIData uiData = uiDataByStackID.get(stackGroupID);
-        final BookSide side = stackSide.get(stackGroupID);
-        if (BookSide.BID == side) {
-            uiData.setBidStacks(priceOffsetBPS);
-        } else {
-            uiData.setAskStacks(priceOffsetBPS);
-        }
-        presenter.updateUIData(uiData);
-        return true;
+        final StackGroup stackGroup = stackGroups.get(stackGroupID);
+        stackGroup.setGroupData(source, priceOffsetBPS, priceOffsetTickSize, tickMultiplier, stackAlignmentTickToBPS);
+
+        return updateUI(stackGroupID);
     }
 
     @Override
     public boolean setStackEnabled(final String source, final long stackGroupID, final StackType stackType, final boolean isEnabled) {
 
-        final StackUIData uiData = uiDataByStackID.get(stackGroupID);
-        final BookSide side = stackSide.get(stackGroupID);
-        uiData.setStackEnabled(side, stackType, isEnabled);
-        presenter.updateUIData(uiData);
-        return true;
+        final StackGroup stackGroup = stackGroups.get(stackGroupID);
+        stackGroup.setStackEnabled(source, stackType, isEnabled);
+
+        return updateUI(stackGroupID);
     }
 
     @Override
     public boolean adjustStackLevels(final String source, final long stackGroupID, final StackType stackType, final int tickAdjustment) {
-        return true;
+
+        final StackGroup stackGroup = stackGroups.get(stackGroupID);
+        stackGroup.adjustStackLevels(source, stackType, tickAdjustment);
+
+        return updateUI(stackGroupID);
     }
 
     @Override
     public boolean setStackQty(final String source, final long stackGroupID, final StackType stackType, final StackOrderType orderType,
             final int pullbackTicks, final long qty) {
-        return true;
+
+        final StackGroup stackGroup = stackGroups.get(stackGroupID);
+        stackGroup.setStackQty(source, stackType, orderType, pullbackTicks, qty);
+
+        return updateUI(stackGroupID);
     }
 
     @Override
     public boolean addStackQty(final String source, final long stackGroupID, final StackType stackType, final StackOrderType orderType,
             final int pullbackTicks, final long qty) {
-        return true;
+
+        final StackGroup stackGroup = stackGroups.get(stackGroupID);
+        stackGroup.addStackQty(source, stackType, orderType, pullbackTicks, qty);
+
+        return updateUI(stackGroupID);
     }
 
     @Override
     public boolean remoteFillNotification(final String source, final long stackGroupID, final StackType stackType,
             final int maxPullbackTicks, final long qty) {
+
+        final StackGroup stackGroup = stackGroups.get(stackGroupID);
+        stackGroup.remoteFillNotification(source, stackType, maxPullbackTicks, qty);
+
+        return updateUI(stackGroupID);
+    }
+
+    private boolean updateUI(final long stackGroupID) {
+
+        final StackUIData uiData = uiDataByStackID.get(stackGroupID);
+        presenter.updateUIData(uiData);
         return true;
     }
 
@@ -134,5 +166,4 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     public boolean batchComplete() {
         return true;
     }
-
 }
