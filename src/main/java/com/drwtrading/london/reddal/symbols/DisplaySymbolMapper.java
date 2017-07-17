@@ -1,8 +1,8 @@
 package com.drwtrading.london.reddal.symbols;
 
+import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import org.jetlang.channels.Publisher;
 
 import java.text.SimpleDateFormat;
@@ -14,14 +14,26 @@ import java.util.Set;
 
 public class DisplaySymbolMapper {
 
-    private final Multimap<String, String> mdSymbolsByIsin = HashMultimap.create();
-    private final Map<String, String> bbgByIsin = new HashMap<>();
-    private final Set<DisplaySymbol> displaySymbols = new HashSet<>();
-
     private final Publisher<DisplaySymbol> displaySymbolPublisher;
 
+    private final Map<String, HashSet<String>> mdSymbolsByIsin;
+    private final Map<String, String> bbgByIsin;
+    private final Set<DisplaySymbol> displaySymbols;
+
+    private final Map<String, String> ultimateParents;
+
+    private final Map<String, String> ultimateParentBBG;
+
     public DisplaySymbolMapper(final Publisher<DisplaySymbol> displaySymbolPublisher) {
+
         this.displaySymbolPublisher = displaySymbolPublisher;
+
+        this.mdSymbolsByIsin = new HashMap<>();
+        this.bbgByIsin = new HashMap<>();
+        this.displaySymbols = new HashSet<>();
+
+        this.ultimateParents = new HashMap<>();
+        this.ultimateParentBBG = new HashMap<>();
     }
 
     public void setSearchResult(final SearchResult searchResult) {
@@ -30,11 +42,9 @@ public class DisplaySymbolMapper {
             case EQUITY:
             case DR:
             case ETF: {
-                mdSymbolsByIsin.put(searchResult.instID.isin, searchResult.symbol);
-                final String bbgCode = bbgByIsin.get(searchResult.instID.isin);
-                if (null != bbgCode) {
-                    makeDisplaySymbol(searchResult.symbol, bbgCode);
-                }
+                final Set<String> symbols = MapUtils.getMappedSet(mdSymbolsByIsin, searchResult.instID.isin);
+                symbols.add(searchResult.symbol);
+                makeDisplaySymbol(searchResult.instID.isin);
                 break;
             }
             case FUTURE: {
@@ -55,22 +65,52 @@ public class DisplaySymbolMapper {
 
         if (instDef.isPrimary) {
             bbgByIsin.put(instDef.instID.isin, instDef.bbgCode);
-            for (final String marketDataSymbol : mdSymbolsByIsin.get(instDef.instID.isin)) {
-                makeDisplaySymbol(marketDataSymbol, instDef.bbgCode);
+
+            for (final Map.Entry<String, String> ultimateParent : ultimateParents.entrySet()) {
+
+                if (ultimateParent.getValue().equals(instDef.instID.isin)) {
+                    ultimateParentBBG.put(ultimateParent.getKey(), instDef.bbgCode);
+                }
             }
+
+            if (!ultimateParents.containsKey(instDef.instID.isin)) {
+                ultimateParentBBG.put(instDef.instID.isin, instDef.bbgCode);
+            }
+            makeDisplaySymbol(instDef.instID.isin);
         }
     }
 
-    private void makeDisplaySymbol(final String symbol, final String bbgCode) {
+    public void setUltimateParent(final UltimateParentMapping ultimateParent) {
 
-        final String display;
-        if (bbgCode.contains(symbol)) {
-            display = bbgCode;
-        } else {
-            display = bbgCode + " (" + symbol + ')';
+        ultimateParents.put(ultimateParent.isin, ultimateParent.parentID.isin);
+
+        final String parentBBGCode = bbgByIsin.get(ultimateParent.parentID.isin);
+        if (null != parentBBGCode) {
+            ultimateParentBBG.put(ultimateParent.isin, parentBBGCode);
+            makeDisplaySymbol(ultimateParent.isin);
         }
-        final DisplaySymbol displaySymbol = new DisplaySymbol(symbol, display);
-        publishIfNew(displaySymbol);
+    }
+
+    private void makeDisplaySymbol(final String isin) {
+
+        final Set<String> symbols = mdSymbolsByIsin.get(isin);
+
+        if (null != symbols) {
+            final String ultimateBBG = ultimateParentBBG.get(isin);
+
+            for (final String symbol : mdSymbolsByIsin.get(isin)) {
+
+                final String display;
+                if (null == ultimateBBG || ultimateBBG.contains(symbol)) {
+                    display = symbol;
+                } else {
+                    display = ultimateBBG + " (" + symbol + ')';
+                }
+
+                final DisplaySymbol displaySymbol = new DisplaySymbol(symbol, display);
+                publishIfNew(displaySymbol);
+            }
+        }
     }
 
     private void publishIfNew(final DisplaySymbol displaySymbol) {

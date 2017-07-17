@@ -26,7 +26,9 @@ public enum ReddalComponents implements IMonitoredComponent {
     YODA,
     BLOTTER,
 
-    SAFETY_WORKING_ORDER_VIEWER;
+    SAFETY_WORKING_ORDER_VIEWER,
+
+    OPXL_ULTIMATE_PARENT;
 
     @Override
     public String getMnemonic() {

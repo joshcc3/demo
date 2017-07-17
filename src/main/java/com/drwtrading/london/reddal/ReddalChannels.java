@@ -6,6 +6,7 @@ import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
+import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import eeif.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
@@ -74,6 +75,7 @@ public class ReddalChannels {
     public final TypedChannel<OpxlExDateSubscriber.IsinsGoingEx> isinsGoingEx;
 
     public final TypedChannel<SymbolSelection> symbolSelections;
+    public final TypedChannel<UltimateParentMapping> ultimateParents;
 
     public ReddalChannels(final ChannelFactory channelFactory) {
 
@@ -115,10 +117,10 @@ public class ReddalChannels {
         this.isinsGoingEx = create(OpxlExDateSubscriber.IsinsGoingEx.class);
 
         this.symbolSelections = create(SymbolSelection.class);
+        this.ultimateParents = create(UltimateParentMapping.class);
     }
 
     public <T> TypedChannel<T> create(final Class<T> clazz) {
         return channelFactory.createChannel(clazz, clazz.getSimpleName());
     }
-
 }

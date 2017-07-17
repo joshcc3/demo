@@ -81,6 +81,7 @@ import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
+import com.drwtrading.london.reddal.opxl.UltimateParentOPXL;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryFromServer;
 import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
@@ -760,6 +761,7 @@ public class Main {
             final DisplaySymbolMapper displaySymbolMapper = new DisplaySymbolMapper(channels.displaySymbol);
             channels.instDefs.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setInstDef);
             channels.searchResults.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setSearchResult);
+            channels.ultimateParents.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setUltimateParent);
         }
 
         // Indy
@@ -814,6 +816,9 @@ public class Main {
                     new OpxlLadderTextSubscriber(channels.errorPublisher, channels.metaData)::onOpxlData, keys, fibers.metaData.getFiber(),
                     channels.error);
         }
+
+        final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(selectIO, monitor, channels.ultimateParents, logDir);
+        app.addStartUpAction(ultimateParentOPXL::connectToOpxl);
 
         // Ex-dates
         {
