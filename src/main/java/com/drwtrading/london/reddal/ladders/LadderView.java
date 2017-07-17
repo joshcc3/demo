@@ -603,7 +603,8 @@ public class LadderView implements UiEventHandler {
                 openEwokView();
             }
         } else if ("middle".equals(button) &&
-                (label.startsWith(HTML.PRICE) || label.startsWith(HTML.STACK_BID_OFFSET) || label.startsWith(HTML.STACK_ASK_OFFSET))) {
+                (label.startsWith(HTML.PRICE) || label.startsWith(HTML.STACK_BID_OFFSET) || label.startsWith(HTML.STACK_ASK_OFFSET) ||
+                        label.startsWith(HTML.STACK_DIVIDER))) {
 
             recenterLaddersForUser.publish(new RecenterLaddersForUser(client.getUserName()));
 

@@ -144,10 +144,8 @@ public class LadderStackView implements ILadderBoard {
         ui.clickable('#' + HTML.STACK_ASK_QUOTE_ENABLED);
         ui.clickable('#' + HTML.STACK_ASK_PICARD_ENABLED);
 
-        if (isTrader) {
-            for (int i = 0; i < levels; i++) {
-                ui.clickable('#' + HTML.VOLUME + i);
-            }
+        for (int i = 0; i < levels; i++) {
+            ui.clickable('#' + HTML.STACK_DIVIDER + i);
         }
 
         this.stackTickSizeBoxValue = stackData.getPriceOffsetTickSize();

@@ -48,6 +48,8 @@ function draw(levels) {
 		stackRow.find(".bid.picard").attr("id", "bid_picard_" + j).text(" ");
 		stackRow.find(".bid.offset").attr("id", "bid_offset_" + j).text(" ");
 
+		stackRow.find(".divider").attr("id", "stack_divider_" + j).text(" ");
+
 		stackRow.find(".ask.offset").attr("id", "ask_offset_" + j).text(" ");
 		stackRow.find(".ask.picard").attr("id", "ask_picard_" + j).text(" ");
 		stackRow.find(".ask.quote").attr("id", "ask_quote_" + j).text(" ");

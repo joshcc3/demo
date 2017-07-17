@@ -706,49 +706,47 @@ public class LadderBookView implements ILadderBoard {
             }
             ui.title(symbol);
 
+            for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
+
+                final long price = priceNode.key;
+                final LadderBoardRow bookRow = priceNode.getValue();
+
+                final IBookLevel bidLevel = marketData.getBook().getBidLevel(price);
+                final IBookLevel askLevel = marketData.getBook().getAskLevel(price);
+
+                if (null == bidLevel) {
+                    bidQty(bookRow.htmlKeys, 0);
+                    ui.cls(bookRow.htmlKeys.bookBidKey, CSSClass.IMPLIED_BID, false);
+                } else {
+                    bidQty(bookRow.htmlKeys, bidLevel.getQty());
+                    ui.cls(bookRow.htmlKeys.bookBidKey, CSSClass.IMPLIED_BID, 0 < bidLevel.getImpliedQty());
+                }
+
+                if (null == askLevel) {
+                    askQty(bookRow.htmlKeys, 0);
+                    ui.cls(bookRow.htmlKeys.bookAskKey, CSSClass.IMPLIED_ASK, false);
+                } else {
+                    askQty(bookRow.htmlKeys, askLevel.getQty());
+                    ui.cls(bookRow.htmlKeys.bookAskKey, CSSClass.IMPLIED_ASK, 0 < askLevel.getImpliedQty());
+                }
+            }
+
+            ui.cls(HTML.BOOK_TABLE, CSSClass.AUCTION, BookMarketState.AUCTION == marketData.getBook().getStatus());
+
             if (BookMarketState.AUCTION == marketData.getBook().getStatus()) {
 
                 final IBookReferencePrice auctionIndicative = marketData.getBook().getRefPriceData(ReferencePoint.AUCTION_INDICATIVE);
-                final long auctionQty = auctionIndicative.isValid() ? auctionIndicative.getQty() : 0;
+                final LadderBoardRow bookRow = priceRows.get(auctionIndicative.getPrice());
 
-                for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
+                if (auctionIndicative.isValid() && null != bookRow) {
 
-                    final long price = priceNode.key;
-                    final LadderBoardRow bookRow = priceNode.getValue();
+                    final long auctionQty = auctionIndicative.getQty();
 
-                    if (price == auctionIndicative.getPrice()) {
-                        bidQty(bookRow.htmlKeys, auctionQty);
-                        askQty(bookRow.htmlKeys, auctionQty);
-                    } else {
-                        bidQty(bookRow.htmlKeys, 0);
-                        askQty(bookRow.htmlKeys, 0);
-                    }
-                }
-            } else {
+                    bidQty(bookRow.htmlKeys, auctionQty);
+                    askQty(bookRow.htmlKeys, auctionQty);
 
-                for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
-
-                    final long price = priceNode.key;
-                    final LadderBoardRow bookRow = priceNode.getValue();
-
-                    final IBookLevel bidLevel = marketData.getBook().getBidLevel(price);
-                    final IBookLevel askLevel = marketData.getBook().getAskLevel(price);
-
-                    if (null == bidLevel) {
-                        bidQty(bookRow.htmlKeys, 0);
-                        ui.cls(bookRow.htmlKeys.bookBidKey, CSSClass.IMPLIED_BID, false);
-                    } else {
-                        bidQty(bookRow.htmlKeys, bidLevel.getQty());
-                        ui.cls(bookRow.htmlKeys.bookBidKey, CSSClass.IMPLIED_BID, 0 < bidLevel.getImpliedQty());
-                    }
-
-                    if (null == askLevel) {
-                        askQty(bookRow.htmlKeys, 0);
-                        ui.cls(bookRow.htmlKeys.bookAskKey, CSSClass.IMPLIED_ASK, false);
-                    } else {
-                        askQty(bookRow.htmlKeys, askLevel.getQty());
-                        ui.cls(bookRow.htmlKeys.bookAskKey, CSSClass.IMPLIED_ASK, 0 < askLevel.getImpliedQty());
-                    }
+                    ui.cls(bookRow.htmlKeys.bookBidKey, CSSClass.AUCTION, true);
+                    ui.cls(bookRow.htmlKeys.bookAskKey, CSSClass.AUCTION, true);
                 }
             }
         }
@@ -1067,11 +1065,13 @@ public class LadderBookView implements ILadderBoard {
     private void bidQty(final LadderHTMLRow htmlRowKeys, final long qty) {
         ui.txt(htmlRowKeys.bookBidKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.bookBidKey, CSSClass.BID_ACTIVE, 0 < qty);
+        ui.cls(htmlRowKeys.bookBidKey, CSSClass.AUCTION, false);
     }
 
     private void askQty(final LadderHTMLRow htmlRowKeys, final long qty) {
         ui.txt(htmlRowKeys.bookAskKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.bookAskKey, CSSClass.ASK_ACTIVE, 0 < qty);
+        ui.cls(htmlRowKeys.bookAskKey, CSSClass.AUCTION, false);
     }
 
     private static String formatMktQty(final long qty) {

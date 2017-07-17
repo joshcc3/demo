@@ -4,6 +4,8 @@ public class HTML {
 
     public static final String LADDER_DIV = "ladderDiv";
 
+    public static final String BOOK_TABLE = "rows";
+
     public static final String EMPTY = " "; /* Key prefixes*/
     public static final String BID = "bid_";
     public static final String OFFER = "offer_";
@@ -17,6 +19,8 @@ public class HTML {
     public static final String STACK_BID_QUOTE = "bid_quote_";
     public static final String STACK_BID_PICARD = "bid_picard_";
     public static final String STACK_BID_OFFSET = "bid_offset_";
+
+    public static final String STACK_DIVIDER = "stack_divider_";
 
     public static final String STACK_ASK_OFFSET = "ask_offset_";
     public static final String STACK_ASK_PICARD = "ask_picard_";

@@ -120,11 +120,11 @@ div {
 }
 
 .order.working_qty.working_bid {
-	color: #c4c4ff;;
+	color: #c4c4ff;
 }
 
 .order.working_qty.working_offer {
-	color: #f99;;
+	color: #f99;
 }
 
 .order.eeif_order_type_managed {
@@ -275,6 +275,14 @@ div {
 	left: 40px;
 }
 
+.AUCTION .book .bid {
+	color: #c4c4ff;
+}
+
+.AUCTION .book .bid.AUCTION {
+	color: lawngreen;
+}
+
 .book .bid:hover {
 	background-color: #0000b3 !important;
 }
@@ -304,8 +312,16 @@ div {
 
 .book .offer {
 	color: black;
-	left: 130px;
 	background-color: #ac0000;
+	left: 130px;
+}
+
+.AUCTION .book .offer {
+	color: #f99;
+}
+
+.AUCTION .book .offer.AUCTION {
+	color: lawngreen;
 }
 
 .book .offer:hover {
