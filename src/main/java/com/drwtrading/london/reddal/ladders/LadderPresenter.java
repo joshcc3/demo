@@ -5,7 +5,9 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import com.drwtrading.london.reddal.fastui.UiPipeImpl;
+import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
+import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
@@ -22,6 +24,7 @@ import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
+import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
@@ -87,6 +90,7 @@ public class LadderPresenter {
     private final Set<String> existingSymbols = new HashSet<>();
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
+    private final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher;
     private final Publisher<HeartbeatRoundtrip> roundTripPublisher;
     private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
@@ -113,6 +117,7 @@ public class LadderPresenter {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
         this.statsPublisher = statsPublisher;
+        this.storeLadderPrefPublisher = storeLadderPrefPublisher;
         this.roundTripPublisher = roundTripPublisher;
         this.commandPublisher = commandPublisher;
         this.recenterLaddersForUser = recenterLaddersForUser;
@@ -121,8 +126,7 @@ public class LadderPresenter {
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
         this.orderEntryCommandToServerPublisher = orderEntryCommandToServerPublisher;
-        this.ladderPrefsForUserBySymbol = new MapMaker().makeComputingMap(
-                symbol -> new MapMaker().makeComputingMap(user -> new LadderPrefsForSymbolUser(symbol, user, storeLadderPrefPublisher)));
+        this.ladderPrefsForUserBySymbol = new HashMap<>();
         this.marketDataForSymbolMap = new MapMaker().makeComputingMap(this::subscribeToMarketDataForSymbol);
     }
 
@@ -183,9 +187,10 @@ public class LadderPresenter {
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
                 mdForSymbol.subscribeForMD();
+                String userName = msg.getClient().getUserName();
                 view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), metaDataBySymbol.get(symbol),
                         dataBySymbol.get(symbol), stackBySymbol.get(symbol),
-                        ladderPrefsForUserBySymbol.get(symbol).get(msg.getClient().getUserName()), eeifOrdersBySymbol.get(symbol));
+                        getLadderPrefsForSymbolUser(symbol, userName), eeifOrdersBySymbol.get(symbol));
                 if (3 < args.length) {
                     if ("S".equals(args[3])) {
                         view.setStackView();
@@ -208,6 +213,60 @@ public class LadderPresenter {
             trace.publish(
                     new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
         }
+    }
+
+    private LadderPrefsForSymbolUser getLadderPrefsForSymbolUser(String symbol, String userName) {
+        Map<String, LadderPrefsForSymbolUser> symbolToPrefs = ladderPrefsForUserBySymbol.computeIfAbsent(userName, k -> new HashMap<>());
+        LadderPrefsForSymbolUser prefs = symbolToPrefs.get(symbol);
+        if (null == prefs) {
+            MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
+            if (null != mdForSymbol && null != mdForSymbol.getBook()) {
+                if (mdForSymbol.getBook().getInstType() == InstType.FUTURE) {
+                    FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);
+                    FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
+                    for (int i = 0; i > -3; i--) {
+                        String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, i);
+                        LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
+                        if (null != existingPrefs) {
+                            prefs = existingPrefs.withSymbol(symbol);
+                            break;
+                        }
+                    }
+                } else if (mdForSymbol.getBook().getInstType() == InstType.FUTURE_SPREAD) {
+                    String[] legs = symbol.split("-");
+                    FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(legs[0]);
+                    FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
+                    int firstExp = getRollsHence(legs[0], futureFromSymbol, expiryCalc);
+                    int secondExp = getRollsHence(legs[1], futureFromSymbol, expiryCalc);
+                    if (firstExp >= 0 && secondExp >= 0) {
+                        for (int i = 0; i < 3; i++) {
+                            String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp - i) +
+                                    "-" + expiryCalc.getFutureCode(futureFromSymbol, secondExp - i);
+                            LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
+                            if (null != existingPrefs) {
+                                prefs = existingPrefs.withSymbol(symbol);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if (null == prefs) {
+                prefs = new LadderPrefsForSymbolUser(symbol, userName, storeLadderPrefPublisher);
+            }
+            symbolToPrefs.put(symbol, prefs);
+        }
+        return prefs;
+    }
+
+    private int getRollsHence(String leg, FutureConstant futureFromSymbol, FutureExpiryCalc expiryCalc) {
+        for (int firstExp = 0; firstExp < 8; firstExp++) {
+            String firstSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp);
+            if (firstSymbol.equals(leg)) {
+                return firstExp;
+            }
+        }
+        return -1;
     }
 
     @Subscribe
@@ -309,7 +368,7 @@ public class LadderPresenter {
     @Subscribe
     public void on(final LadderSettings.LadderPrefLoaded ladderPrefLoaded) {
         final LadderSettings.LadderPref pref = ladderPrefLoaded.pref;
-        ladderPrefsForUserBySymbol.get(pref.symbol).get(pref.user).on(ladderPrefLoaded);
+        getLadderPrefsForSymbolUser(pref.symbol, pref.user).on(ladderPrefLoaded);
     }
 
     @Subscribe

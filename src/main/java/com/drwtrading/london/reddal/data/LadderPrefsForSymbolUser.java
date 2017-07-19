@@ -28,7 +28,7 @@ public class LadderPrefsForSymbolUser {
     public final Map<String, String> symbolPrefs = newFastMap();
 
     public LadderPrefsForSymbolUser(final String symbol, final String user,
-            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher) {
+                                    final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher) {
         this.symbol = symbol;
         this.user = user;
         this.storeLadderPrefPublisher = storeLadderPrefPublisher;
@@ -70,6 +70,15 @@ public class LadderPrefsForSymbolUser {
     public void set(final String id, final Object value) {
         storeLadderPrefPublisher.publish(
                 new LadderSettings.StoreLadderPref(new LadderSettings.LadderPref(user, symbol, id, value.toString())));
+    }
+
+    public LadderPrefsForSymbolUser withSymbol(String newSymbol) {
+        LadderPrefsForSymbolUser ladderPrefsForSymbolUser = new LadderPrefsForSymbolUser(newSymbol, user, storeLadderPrefPublisher);
+        symbolPrefs.forEach(ladderPrefsForSymbolUser::set);
+        ladderPrefsForSymbolUser.symbolPrefs.putAll(symbolPrefs);
+        ladderPrefsForSymbolUser.userPrefs.putAll(userPrefs);
+        ladderPrefsForSymbolUser.globalPrefs.putAll(globalPrefs);
+        return ladderPrefsForSymbolUser;
     }
 
 }
