@@ -223,29 +223,33 @@ public class LadderPresenter {
             if (null != mdForSymbol && null != mdForSymbol.getBook()) {
                 if (mdForSymbol.getBook().getInstType() == InstType.FUTURE) {
                     FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);
-                    FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
-                    for (int i = 0; i > -3; i--) {
-                        String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, i);
-                        LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
-                        if (null != existingPrefs) {
-                            prefs = existingPrefs.withSymbol(symbol);
-                            break;
+                    if (null != futureFromSymbol) {
+                        FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
+                        for (int i = 0; i > -3; i--) {
+                            String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, i);
+                            LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
+                            if (null != existingPrefs) {
+                                prefs = existingPrefs.withSymbol(symbol);
+                                break;
+                            }
                         }
                     }
                 } else if (mdForSymbol.getBook().getInstType() == InstType.FUTURE_SPREAD) {
                     String[] legs = symbol.split("-");
                     FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(legs[0]);
-                    FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
-                    int firstExp = getRollsHence(legs[0], futureFromSymbol, expiryCalc);
-                    int secondExp = getRollsHence(legs[1], futureFromSymbol, expiryCalc);
-                    if (firstExp >= 0 && secondExp >= 0) {
-                        for (int i = 0; i < 3; i++) {
-                            String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp - i) +
-                                    "-" + expiryCalc.getFutureCode(futureFromSymbol, secondExp - i);
-                            LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
-                            if (null != existingPrefs) {
-                                prefs = existingPrefs.withSymbol(symbol);
-                                break;
+                    if (null != futureFromSymbol) {
+                        FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
+                        int firstExp = getRollsHence(legs[0], futureFromSymbol, expiryCalc);
+                        int secondExp = getRollsHence(legs[1], futureFromSymbol, expiryCalc);
+                        if (firstExp >= 0 && secondExp >= 0) {
+                            for (int i = 0; i < 3; i++) {
+                                String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp - i) +
+                                        "-" + expiryCalc.getFutureCode(futureFromSymbol, secondExp - i);
+                                LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
+                                if (null != existingPrefs) {
+                                    prefs = existingPrefs.withSymbol(symbol);
+                                    break;
+                                }
                             }
                         }
                     }
