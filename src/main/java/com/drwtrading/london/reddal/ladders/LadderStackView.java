@@ -151,6 +151,14 @@ public class LadderStackView implements ILadderBoard {
         this.stackTickSizeBoxValue = stackData.getPriceOffsetTickSize();
         this.stackGroupTickMultiplierBoxValue = stackData.getStackGroupTickMultiplier();
         this.stackAlignmentTickToBPSBoxValue = stackData.getStackAlignmentTickToBPS();
+
+        final String priceOffsetTickSize = PRICE_OFFSET_TICK_SIZE_FORMAT.format(stackTickSizeBoxValue);
+        ui.txt(HTML.STACK_TICK_SIZE, priceOffsetTickSize);
+
+        ui.txt(HTML.STACK_GROUP_TICK_MULTIPLIER, stackGroupTickMultiplierBoxValue);
+
+        final String stackAlignmentTickToBPSBox = PRICE_OFFSET_TICK_SIZE_FORMAT.format(stackAlignmentTickToBPSBoxValue);
+        ui.txt(HTML.STACK_ALIGNMENT_TICK_TO_BPS, stackAlignmentTickToBPSBox);
     }
 
     @Override
@@ -166,11 +174,6 @@ public class LadderStackView implements ILadderBoard {
         ui.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, true);
 
         ui.txt(HTML.INP_QTY, tradingBoxQty);
-        final String priceOffsetTickSize = PRICE_OFFSET_TICK_SIZE_FORMAT.format(stackTickSizeBoxValue);
-        ui.txt(HTML.STACK_TICK_SIZE, priceOffsetTickSize);
-        ui.txt(HTML.STACK_GROUP_TICK_MULTIPLIER, stackGroupTickMultiplierBoxValue);
-        final String stackAlignmentTickToBPSBox = PRICE_OFFSET_TICK_SIZE_FORMAT.format(stackAlignmentTickToBPSBoxValue);
-        ui.txt(HTML.STACK_ALIGNMENT_TICK_TO_BPS, stackAlignmentTickToBPSBox);
 
         for (final PricingMode mode : PricingMode.values()) {
             ui.cls(HTML.PRICING + mode, CSSClass.INVISIBLE, true);
