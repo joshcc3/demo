@@ -107,18 +107,18 @@ public class LadderWorkspace {
 
     public boolean openLadderForUser(final String user, String symbol) {
 
-        boolean openedSomething = false;
+        boolean openedWorkspace = false;
         if (workspacesByHost.containsKey(user)) {
 
             final ArrayDeque<View> viewsList = new ArrayDeque<>(workspacesByHost.get(user));
 
-            while (!openedSomething && !viewsList.isEmpty()) {
+            while (!openedWorkspace && !viewsList.isEmpty()) {
 
                 final View view = viewsList.pollLast();
 
                 if (!lockedViews.contains(view)) {
                     view.addSymbol(symbol);
-                    openedSomething = true;
+                    openedWorkspace = true;
                 }
             }
         }
@@ -130,11 +130,13 @@ public class LadderWorkspace {
         final SpreadContractSet contractSet = contractSets.get(symbol);
         final Collection<View> views = setsByHost.get(user);
 
+        boolean openedSpreadWorkspace = false;
         if (null != views && null != contractSet) {
 
             final ArrayDeque<View> viewsList = new ArrayDeque<>(views);
 
-            while (!openedSomething && !viewsList.isEmpty()) {
+
+            while (!openedSpreadWorkspace && !viewsList.isEmpty()) {
 
                 final View view = viewsList.pollLast();
 
@@ -142,12 +144,12 @@ public class LadderWorkspace {
                     view.addSymbol(contractSet.back);
                     view.addSymbol(contractSet.spread);
                     view.addSymbol(contractSet.front);
-                    openedSomething = true;
+                    openedSpreadWorkspace = true;
                 }
             }
         }
 
-        return openedSomething;
+        return openedWorkspace || openedSpreadWorkspace;
     }
 
     public static interface View {
