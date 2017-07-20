@@ -149,14 +149,6 @@ public class Environment {
                 NetworkInterfaces.find(nic));
     }
 
-    public String getEntity() throws ConfigException {
-        if (config.paramExists("entity")) {
-            return config.getString("entity");
-        } else {
-            return "eeif";
-        }
-    }
-
     /**
      * Remote commands server are matched in order.
      * If the symbol matches the regex AND (no order types are specified OR the order is among the types specified) THEN it matches

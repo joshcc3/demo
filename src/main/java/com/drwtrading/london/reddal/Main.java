@@ -315,7 +315,6 @@ public class Main {
 
             fibers.onStart(() -> fibers.ui.execute(() -> {
                 try {
-                    setupEntityAliases(environment, webapp);
                     webapp.serveStaticContent("web");
                     webapp.start();
                 } catch (final Exception e) {
@@ -551,7 +550,6 @@ public class Main {
 
             fibers.onStart(() -> fibers.ui.execute(() -> {
                 try {
-                    setupEntityAliases(environment, webapp);
                     webapp.serveStaticContent("web");
                     webapp.start();
                 } catch (final Exception e) {
@@ -865,11 +863,6 @@ public class Main {
 
         app.addStartUpAction(fibers::start);
         app.run();
-    }
-
-    private static void setupEntityAliases(final Environment environment, final WebApplication webapp) throws ConfigException {
-        webapp.alias("/style.css", "/style-" + environment.getEntity() + ".css");
-        webapp.alias("/launcher.js", "/launcher-" + environment.getEntity() + ".js");
     }
 
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,

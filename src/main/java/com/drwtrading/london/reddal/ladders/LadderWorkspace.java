@@ -10,13 +10,14 @@ import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class LadderWorkspace {
@@ -28,12 +29,16 @@ public class LadderWorkspace {
     private final Multimap<String, View> workspacesByHost = ArrayListMultimap.create();
     private final Multimap<String, View> setsByHost = ArrayListMultimap.create();
     private final Set<View> lockedViews = new HashSet<>();
-    private final HashMultimap<String, String> contractSets = HashMultimap.create();
+
+    private final Map<String, SpreadContractSet> contractSets;
 
     public LadderWorkspace(final UILogger webLog, final Publisher<ReplaceCommand> replaceCommand) {
+
         this.webLog = webLog;
 
         this.replaceCommand = replaceCommand;
+
+        this.contractSets = new HashMap<>();
     }
 
     @Subscribe
@@ -58,17 +63,11 @@ public class LadderWorkspace {
 
     @Subscribe
     public void on(final SpreadContractSet contractSet) {
-        contractSets.put(contractSet.back, contractSet.back);
-        contractSets.put(contractSet.back, contractSet.front);
-        contractSets.put(contractSet.back, contractSet.spread);
 
-        contractSets.put(contractSet.front, contractSet.back);
-        contractSets.put(contractSet.front, contractSet.front);
-        contractSets.put(contractSet.front, contractSet.spread);
+        contractSets.put(contractSet.front, contractSet);
 
-        contractSets.put(contractSet.spread, contractSet.back);
-        contractSets.put(contractSet.spread, contractSet.front);
-        contractSets.put(contractSet.spread, contractSet.spread);
+        contractSets.putIfAbsent(contractSet.spread, contractSet);
+        contractSets.putIfAbsent(contractSet.back, contractSet);
     }
 
     @FromWebSocketView
@@ -110,13 +109,16 @@ public class LadderWorkspace {
 
         boolean openedSomething = false;
         if (workspacesByHost.containsKey(user)) {
+
             final ArrayDeque<View> viewsList = new ArrayDeque<>(workspacesByHost.get(user));
-            View view;
-            while ((view = viewsList.pollLast()) != null) {
+
+            while (!openedSomething && !viewsList.isEmpty()) {
+
+                final View view = viewsList.pollLast();
+
                 if (!lockedViews.contains(view)) {
                     view.addSymbol(symbol);
                     openedSomething = true;
-                    break;
                 }
             }
         }
@@ -125,21 +127,22 @@ public class LadderWorkspace {
             symbol = symbol.split(";")[0];
         }
 
-        if (setsByHost.containsKey(user)) {
+        final SpreadContractSet contractSet = contractSets.get(symbol);
+        final Collection<View> views = setsByHost.get(user);
 
-            final Collection<String> contractSet = contractSets.get(symbol);
-            if (!contractSet.isEmpty()) {
-                View view;
-                final ArrayDeque<View> viewsList = new ArrayDeque<>(setsByHost.get(user));
-                while ((view = viewsList.pollLast()) != null) {
-                    if (!lockedViews.contains(view)) {
-                        final HashSet<String> symbols = new HashSet<>(contractSet);
-                        symbols.remove(symbol);
-                        contractSet.forEach(view::addSymbol);
-                        view.addSymbol(symbol);
-                        openedSomething = true;
-                        break;
-                    }
+        if (null != views && null != contractSet) {
+
+            final ArrayDeque<View> viewsList = new ArrayDeque<>(views);
+
+            while (!openedSomething && !viewsList.isEmpty()) {
+
+                final View view = viewsList.pollLast();
+
+                if (!lockedViews.contains(view)) {
+                    view.addSymbol(contractSet.back);
+                    view.addSymbol(contractSet.spread);
+                    view.addSymbol(contractSet.front);
+                    openedSomething = true;
                 }
             }
         }
