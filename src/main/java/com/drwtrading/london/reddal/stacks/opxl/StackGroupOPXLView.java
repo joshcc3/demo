@@ -14,6 +14,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -62,43 +63,42 @@ public class StackGroupOPXLView {
         this.rows = new TreeMap<>();
     }
 
-    public void setLaserLine(final LadderMetadata metadata) {
-
-        if (LadderMetadata.Type.LASER_LINE == metadata.typeEnum()) {
-
-            final LaserLine laserLine = (LaserLine) metadata;
-
-            final String symbol = laserLine.getSymbol();
-            final String line = laserLine.getId();
-            final long price = laserLine.getPrice();
-            switch (line) {
-                case "white": {
-                    if (0 < price) {
-                        whiteLaserLines.put(symbol, price);
-                    } else {
-                        whiteLaserLines.remove(symbol);
+    public void setLaserLines(final List<LadderMetadata> laserLines) {
+        for (LadderMetadata laserLine : laserLines) {
+            if (LadderMetadata.Type.LASER_LINE == laserLine.typeEnum()) {
+                final LaserLine laserLine1 = (LaserLine) laserLine;
+                final String symbol = laserLine1.getSymbol();
+                final String line = laserLine1.getId();
+                final long price = laserLine1.getPrice();
+                switch (line) {
+                    case "white": {
+                        if (0 < price) {
+                            whiteLaserLines.put(symbol, price);
+                        } else {
+                            whiteLaserLines.remove(symbol);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case "bid": {
-                    if (0 < price) {
-                        bidLaserLines.put(symbol, price);
-                    } else {
-                        bidLaserLines.remove(symbol);
+                    case "bid": {
+                        if (0 < price) {
+                            bidLaserLines.put(symbol, price);
+                        } else {
+                            bidLaserLines.remove(symbol);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case "ask": {
-                    if (0 < price) {
-                        askLaserLines.put(symbol, price);
-                    } else {
-                        askLaserLines.remove(symbol);
+                    case "ask": {
+                        if (0 < price) {
+                            askLaserLines.put(symbol, price);
+                        } else {
+                            askLaserLines.remove(symbol);
+                        }
+                        break;
                     }
-                    break;
                 }
+
+                updatedSymbols.add(symbol);
             }
-
-            updatedSymbols.add(symbol);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.ladders;
 
+import com.drwtrading.jetlang.autosubscribe.KeyedBatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
@@ -289,9 +290,12 @@ public class LadderPresenter {
         ordersBySymbol.get(workingOrderUpdate.value.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
     }
 
+    @KeyedBatchSubscriber(converter = LaserLineStringConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
-    public void on(final LaserLine laserLine) {
-        dataBySymbol.get(laserLine.getSymbol()).onLaserLine(laserLine);
+    public void on(final Map<String, LaserLine> laserLines) {
+        for (LaserLine laserLine : laserLines.values()) {
+            dataBySymbol.get(laserLine.getSymbol()).onLaserLine(laserLine);
+        }
     }
 
     @Subscribe
@@ -487,4 +491,5 @@ public class LadderPresenter {
             stackData.setAskGroup(stackGroup);
         }
     }
+
 }

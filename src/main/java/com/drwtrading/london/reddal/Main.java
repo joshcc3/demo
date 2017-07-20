@@ -944,7 +944,9 @@ public class Main {
 
             final String stackOPXLTopic = stackConfig.getString("opxlSpreadTopic");
             final StackGroupOPXLView stackOPXLView = new StackGroupOPXLView(app.monitor, stackOPXLTopic);
-            channels.metaData.subscribe(selectIOFiber, stackOPXLView::setLaserLine);
+
+            channels.metaData.subscribe(new BatchSubscriber<LadderMetadata>(selectIOFiber, stackOPXLView::setLaserLines, 100, TimeUnit.MILLISECONDS));
+
             app.selectIO.addDelayedAction(5000, stackOPXLView::update);
 
             stackFamilyPresenter.setCommunityManager(communityManager);
