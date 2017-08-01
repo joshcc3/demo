@@ -280,7 +280,8 @@ div {
 }
 
 .AUCTION .book .bid.AUCTION {
-	color: lawngreen;
+	background-color: darkgreen;
+	color: white;
 }
 
 .book .bid:hover {
@@ -321,7 +322,7 @@ div {
 }
 
 .AUCTION .book .offer.AUCTION {
-	color: lawngreen;
+	background-color: darkgreen;
 }
 
 .book .offer:hover {

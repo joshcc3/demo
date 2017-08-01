@@ -1,41 +1,53 @@
 package com.drwtrading.london.reddal.stacks;
 
-import com.drwtrading.london.eeif.stack.manager.utils.StackClientAdaptor;
+import com.drwtrading.london.eeif.stack.manager.utils.IStackClientListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
+import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
+import com.drwtrading.london.reddal.stacks.family.StackChildListener;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import org.jetlang.channels.Publisher;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class StackCallbackBatcher extends StackClientAdaptor {
+public class StackCallbackBatcher implements IStackClientListener {
 
     private final String nibblerName;
 
     private final StackStrategiesPresenter strategiesPresenter;
     private final StackConfigPresenter configPresenter;
+    private final StackChildListener childListener;
 
     private final Set<StackStrategy> strategyBatch;
+    private final Set<StackGroup> stackGroupBatch;
     private final Set<StackConfigGroup> configBatch;
 
     private final Publisher<SpreadContractSet> stackContractSetPublisher;
 
     public StackCallbackBatcher(final String nibblerName, final StackStrategiesPresenter strategiesPresenter,
-            final StackConfigPresenter configPresenter, final Publisher<SpreadContractSet> stackContractSetPublisher) {
+            final StackConfigPresenter configPresenter, final StackChildListener childListener,
+            final Publisher<SpreadContractSet> stackContractSetPublisher) {
 
         this.nibblerName = nibblerName;
 
         this.strategiesPresenter = strategiesPresenter;
         this.configPresenter = configPresenter;
+        this.childListener = childListener;
 
         this.stackContractSetPublisher = stackContractSetPublisher;
 
         this.strategyBatch = new HashSet<>();
+        this.stackGroupBatch = new HashSet<>();
         this.configBatch = new HashSet<>();
+    }
+
+    @Override
+    public void connectionEstablished() {
+        // no-op
     }
 
     @Override
@@ -43,6 +55,7 @@ public class StackCallbackBatcher extends StackClientAdaptor {
         configBatch.clear();
         strategiesPresenter.serverConnectionLost(nibblerName);
         configPresenter.serverConnectionLost(nibblerName);
+        childListener.serverConnectionLost();
     }
 
     @Override
@@ -53,6 +66,8 @@ public class StackCallbackBatcher extends StackClientAdaptor {
         final String symbol = strategy.getSymbol();
         final SpreadContractSet contractSet = new SpreadContractSet(symbol, strategy.getLeanSymbol(), symbol + ";S");
         stackContractSetPublisher.publish(contractSet);
+
+        childListener.strategyCreated(strategy);
     }
 
     @Override
@@ -71,13 +86,23 @@ public class StackCallbackBatcher extends StackClientAdaptor {
     }
 
     @Override
-    public void stackGroupCreated(final StackGroup stackGroup) {
+    public void remoteFillNotification(final String source, final StackGroup stackGroup, final StackType stackType, final long qty) {
         // no-op
     }
 
     @Override
+    public void stackGroupCreated(final StackGroup stackGroup) {
+        childListener.stackGroupCreated(stackGroup);
+    }
+
+    @Override
     public void stackGroupUpdated(final StackGroup stackGroup) {
-        // no-op
+        stackGroupBatch.add(stackGroup);
+    }
+
+    @Override
+    public void stackGroupInfoUpdated(final StackGroup stackGroup) {
+        stackGroupBatch.add(stackGroup);
     }
 
     @Override
@@ -86,13 +111,23 @@ public class StackCallbackBatcher extends StackClientAdaptor {
         for (final StackStrategy strategy : strategyBatch) {
             try {
                 strategiesPresenter.strategyUpdated(nibblerName, strategy);
-
+                childListener.strategyUpdated(strategy);
             } catch (final Exception e) {
                 System.out.println("Failed Strategy stack batch update.");
                 e.printStackTrace();
             }
         }
         strategyBatch.clear();
+
+        for (final StackGroup stackGroup : stackGroupBatch) {
+            try {
+                childListener.stackGroupUpdated(stackGroup);
+            } catch (final Exception e) {
+                System.out.println("Failed Stack Group batch update.");
+                e.printStackTrace();
+            }
+        }
+        stackGroupBatch.clear();
 
         for (final StackConfigGroup config : configBatch) {
             try {

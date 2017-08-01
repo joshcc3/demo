@@ -17,6 +17,8 @@ import com.drwtrading.london.eeif.position.transport.io.PositionClientHandler;
 import com.drwtrading.london.eeif.stack.manager.StackManagerComponents;
 import com.drwtrading.london.eeif.stack.manager.io.StackManagerServer;
 import com.drwtrading.london.eeif.stack.manager.io.StackNibblerClient;
+import com.drwtrading.london.eeif.stack.manager.persistence.StackPersistenceComponents;
+import com.drwtrading.london.eeif.stack.manager.persistence.StackPersistenceWriter;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.transport.StackTransportComponents;
 import com.drwtrading.london.eeif.stack.transport.cache.StackCacheFactory;
@@ -92,6 +94,7 @@ import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
+import com.drwtrading.london.reddal.stacks.family.StackChildListener;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyListener;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyPresenter;
 import com.drwtrading.london.reddal.stacks.opxl.StackGroupOPXLView;
@@ -284,9 +287,9 @@ public class Main {
         final LowTrafficMulticastTransport lowTrafficMulticastTransport =
                 new LowTrafficMulticastTransport(statsGroup.getAddress(), statsGroup.getPort(), environment.getStatsInterface());
         final AtomicBoolean multicastEnabled = new AtomicBoolean(false);
-        final Transport enableableMulticastTransport = createEnableAbleTransport(lowTrafficMulticastTransport, multicastEnabled);
+        final Transport enableMulticastTransport = createEnableAbleTransport(lowTrafficMulticastTransport, multicastEnabled);
         final StatsPublisher statsPublisher =
-                new StatsPublisher(environment.getStatsName(), new MultiplexTransport(fileTransport, enableableMulticastTransport));
+                new StatsPublisher(environment.getStatsName(), new MultiplexTransport(fileTransport, enableMulticastTransport));
 
         final MonitoredJetlangFactory monitoredJetlangFactory = new MonitoredJetlangFactory(statsPublisher, ERROR_CHANNEL);
         final ReddalChannels channels = new ReddalChannels(monitoredJetlangFactory);
@@ -945,7 +948,7 @@ public class Main {
             final String stackOPXLTopic = stackConfig.getString("opxlSpreadTopic");
             final StackGroupOPXLView stackOPXLView = new StackGroupOPXLView(app.monitor, stackOPXLTopic);
 
-            channels.metaData.subscribe(new BatchSubscriber<LadderMetadata>(selectIOFiber, stackOPXLView::setLaserLines, 100, TimeUnit.MILLISECONDS));
+            channels.metaData.subscribe(new BatchSubscriber<>(selectIOFiber, stackOPXLView::setLaserLines, 100, TimeUnit.MILLISECONDS));
 
             app.selectIO.addDelayedAction(5000, stackOPXLView::update);
 
@@ -955,6 +958,13 @@ public class Main {
             server.addStrategyListener(familyListener);
             server.addStacksListener(familyListener);
             server.addRelationshipListener(stackFamilyPresenter);
+
+            final Path logPath = app.logDir.resolve("stackLog.csv");
+            final IResourceMonitor<StackPersistenceComponents> logMonitor =
+                    new ExpandedDetailResourceMonitor<>(stackManagerMonitor, "Stacks log", app.errorLog, StackPersistenceComponents.class,
+                            StackManagerComponents.LOGGER);
+
+            final StackPersistenceWriter stackLogger = new StackPersistenceWriter(app.selectIO, logMonitor, logPath);
 
             final MultiLayeredResourceMonitor<StackTransportComponents> clientMonitorParent =
                     MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(stackManagerMonitor, "Stacks", app.errorLog,
@@ -967,8 +977,10 @@ public class Main {
                 final String nibbler = nibblerConfig.getKey();
                 final String connectionName = app.appName + " config";
 
+                final StackChildListener childListener = new StackChildListener(nibbler, stackFamilyPresenter);
+
                 final StackCallbackBatcher stackUpdateBatcher =
-                        new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, channels.contractSets);
+                        new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, childListener, channels.contractSets);
 
                 final StackNibblerClient nibblerClient = new StackNibblerClient(nibbler, communityManager, stackUpdateBatcher);
 
@@ -977,6 +989,7 @@ public class Main {
                 final StackClientHandler client =
                         StackCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "Stacks-" + nibbler,
                                 app.env.name() + connectionName, nibblerClient);
+                client.addLogger(stackLogger);
 
                 nibblerClient.setClient(client);
                 if (!nibblerConfig.paramExists(IS_STACK_MANAGER_PARAM) || !nibblerConfig.getBoolean(IS_STACK_MANAGER_PARAM)) {

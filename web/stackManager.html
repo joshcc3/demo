@@ -10,7 +10,7 @@
 	<script src="js/sound-player.js"></script>
 	<script src="js/sounds.js"></script>
 	<script src="cell-functions.js"></script>
-	<script src="launcher-eeif.js"></script>
+	<script src="launcher.js"></script>
 	<script src="utils.js"></script>
 	<script src="stackManager.js"></script>
 </head>
@@ -160,11 +160,11 @@
 
 					<div class="childCount"></div>
 
-					<div class="bid familyRunningControls">
+					<div class="bid runningControls">
 						<button class="start">▶</button>
 						<button class="stop">■</button>
 					</div>
-					<div class="ask familyRunningControls">
+					<div class="ask runningControls">
 						<button class="start">▶</button>
 						<button class="stop">■</button>
 					</div>
@@ -205,22 +205,50 @@
 				<div class="children hidden">
 					<div class="header row">
 
-						<div class="symbol">Child</div>
+						<div class="relationship">
+							<div class="symbol childDetail"></div>
 
-						<div class="bid qtyMultiplier">Bid qty multiplier</div>
-						<div class="bid priceOffset">Bid offset BPS</div>
-						<div class="ask priceOffset">Ask offset BPS</div>
-						<div class="ask qtyMultiplier">Ask qty multiplier</div>
+							<div class="bid qtyMultiplier childDetail">Qty multiplier</div>
+							<div class="bid priceOffset childDetail">Offset BPS</div>
+							<div class="ask priceOffset childDetail">Offset BPS</div>
+							<div class="ask qtyMultiplier childDetail">Qty multiplier</div>
 
-						<input type="submit" class="submitButton hidden" value="Submit">
-
-						<div class="configControls">
-							<button class="default">D</button>
-							<button class="wide">W</button>
-							<button class="obligation">O</button>
-							<button class="configWindow">&#9775;</button>
+							<input type="submit" class="submitButton hidden childDetail" value="Submit">
+							<button type="button" class="orphanButton hidden adminOnly">Orphan</button>
 						</div>
-						<button type="button" class="orphanButton hidden adminOnly">Orphan</button>
+
+						<div class="childControls">
+							<div class="configControls">
+								<button class="default">D</button>
+								<button class="wide">W</button>
+								<button class="obligation">O</button>
+								<button class="configWindow">&#9775;</button>
+							</div>
+
+							<div class="bid stackControls">
+								<div class="picardEnabled">P</div>
+								<div class="quoterEnabled">Q</div>
+							</div>
+
+							<div class="bid runningControls">
+								<button class="start">▶</button>
+								<button class="stop">■</button>
+							</div>
+
+							<div class="ask stackControls">
+								<div class="picardEnabled">P</div>
+								<div class="quoterEnabled">Q</div>
+							</div>
+
+							<div class="ask runningControls">
+								<button class="start">▶</button>
+								<button class="stop">■</button>
+							</div>
+
+							<div class="nibblerName leftInfo"></div>
+							<div class="bid strategyInfo leftInfo"></div>
+							<div class="ask strategyInfo"></div>
+						</div>
 					</div>
 				</div>
 			</div>

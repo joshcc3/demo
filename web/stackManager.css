@@ -19,27 +19,23 @@ body {
 }
 
 .row {
-	display: flex;
+	display: block;
+}
+
+.relationship, .relationship div {
+	display: inline-block;
 }
 
 .row > div {
 	white-space: normal;
-	display: flex;
 	text-align: center;
 	align-items: center;
 	justify-content: center;
 }
 
-#exchanges .row > div {
-	min-width: 70px;
-	max-width: 70px;
-	font-size: 12px;
-	border-bottom: solid darkgrey 1px;
-}
-
 #header {
 	background: url(images/pancakeRecipe.png) no-repeat right top black;
-	height: 100px;
+	height: 80px;
 	z-index: 1;
 	border-bottom: solid 1px gray;
 	padding: 10px;
@@ -82,7 +78,7 @@ body {
 }
 
 .headerSecondRow, .headerThirdRow {
-	margin-top: 10px;
+	margin-top: 5px;
 }
 
 .headerThirdRow {
@@ -220,23 +216,6 @@ body {
 	left: 5px;
 }
 
-#families .row > div {
-	min-width: 100px;
-	max-width: 100px;
-	font-size: 12px;
-}
-
-#families .row > div {
-	min-width: 100px;
-	max-width: 100px;
-	font-size: 12px;
-}
-
-#families .row div input {
-	width: 80px;
-	text-align: center;
-}
-
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button,
 input::-webkit-outer-spin-button:hover,
@@ -263,7 +242,7 @@ input::-webkit-inner-spin-button:hover {
 	border-bottom: 1px solid #555555;
 	display: inline-block;
 	width: 100%;
-	padding: 15px 0 0;
+	padding: 0;
 	margin: 0;
 	vertical-align: middle;
 	-webkit-user-select: none;
@@ -279,11 +258,11 @@ input::-webkit-inner-spin-button:hover {
 	width: 50px;
 }
 
-.familyDetails .familyRunningControls .start {
+.runningControls .start {
 	background-color: lightgreen;
 }
 
-.familyDetails .familyRunningControls .stop {
+.runningControls .stop {
 	background-color: lightcoral;
 }
 
@@ -330,7 +309,7 @@ input::-webkit-inner-spin-button:hover {
 	border: solid 1px #2d270c;
 }
 
-.familyDetails .stackControls div {
+#families .stackControls div {
 	width: 19px;
 	height: 15px;
 	text-align: center;
@@ -338,53 +317,92 @@ input::-webkit-inner-spin-button:hover {
 	border: 3px solid red;
 }
 
-.familyDetails .stackControls div.enabled {
+#families .stackControls div.enabled {
 	border: 3px solid green;
 }
 
-.familyDetails .quoterEnabled {
+#families .quoterEnabled {
 	background: #5970B2;
 }
 
-.familyDetails .picardEnabled {
+#families .picardEnabled {
 	background: #FB6E75;
 }
 
-.familyDetails .stackControls.allEnabled {
+#families .stackControls.allEnabled {
 	background-color: #9a9a9a;
 	border: 3px solid #5970B2;
 }
 
-.familyDetails .cleanParent {
+#families .cleanParent {
 	background-color: buttonface;
 	color: buttonText;
 	border: 3px solid #5970B2;
 }
 
-.familyDetails .cleanParent:active {
+#families .cleanParent:active {
 	border: 3px solid #9a9a9a;
 }
 
-.children .row .configControls {
-	width: 65px;
-	height: 17px;
+.children .header .childControls {
 	display: none;
 }
 
-.children .dataRow .configControls {
-	position: relative;
-	top: 6px;
+#exchanges .relationship > div {
+	min-width: 70px;
+	max-width: 70px;
+	font-size: 11px;
+	border-bottom: solid darkgrey 1px;
+}
+
+#families .relationship > div.childDetail {
+	min-width: 75px;
+	max-width: 75px;
+	font-size: 12px;
+}
+
+#families .relationship div input {
+	width: 70px;
+	text-align: center;
+}
+
+.children .relationship .bid input {
+	background: lightcyan;
+}
+
+.children .relationship .ask input {
+	background: mistyrose;
+}
+
+.children .row .configControls {
+	width: 70px;
+	height: 17px;
+}
+
+.children .childControls .runningControls {
+	border: 2px solid #ff3852;
+}
+
+.children .childControls .runningControls.enabled {
+	border: 2px solid #62ff58;
+}
+
+.children .childControls .leftInfo {
+	padding-right: 5px;
+	border-right: solid lightslategrey 2px;
+}
+
+.row .childControls, .row .childControls div {
+	display: inline-block;
+	vertical-align: middle;
 }
 
 input[type=Submit], #families .dataRow > button {
 	position: relative;
-	top: 5px;
 	height: 20px;
-	margin-left: 10px;
 }
 
 #families .family .children .header input[type=Submit] {
-	display: block;
 	visibility: hidden;
 }
 

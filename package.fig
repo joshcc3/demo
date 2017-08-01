@@ -13,10 +13,10 @@ config default
 	include :scripts
 
 	include drw.london.eeif-utils/188
-	include drw.london.eeif-md/218
-	include drw.london.eeif-nibbler-transport/8
+	include drw.london.eeif-md/219
+	include drw.london.eeif-nibbler-transport/10
 	include drw.london.eeif-position-transport/67
-	include drw.london.eeif-stack-transport/42
+	include drw.london.eeif-stack-transport/43
 	include drw.london.eeif-yoda-transport/41
 
 	# Libraries and containers

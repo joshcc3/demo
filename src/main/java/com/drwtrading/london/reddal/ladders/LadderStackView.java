@@ -558,16 +558,20 @@ public class LadderStackView implements ILadderBoard {
                 stackAlignmentTickToBPSBoxValue = stackData.getStackAlignmentTickToBPS();
                 final String stackAlignmentTickToBPS = PRICE_OFFSET_TICK_SIZE_FORMAT.format(stackAlignmentTickToBPSBoxValue);
                 ui.txt(HTML.STACK_ALIGNMENT_TICK_TO_BPS, stackAlignmentTickToBPS);
+            } else if (label.equals(HTML.BUY_QTY)) {
+                stackData.clearBidStack(StackType.QUOTER, StackOrderType.ONE_SHOT);
+            } else if (label.equals(HTML.SELL_QTY)) {
+                stackData.clearAskStack(StackType.QUOTER, StackOrderType.ONE_SHOT);
             }
         } else if ("middle".equals(button)) {
-            //            if (label.startsWith(HTML.ORDER)) {
+            //if (label.startsWith(HTML.ORDER)) {
             //final String price = data.get("price");
             //final String url = String.format("/orders#%s,%s", symbol, price);
             //final Collection<WorkingOrderUpdateFromServer> orders = workingOrdersForSymbol.ordersByPrice.get(Long.valueOf(price));
             //if (!orders.isEmpty()) {
             //    view.popUp(url, "orders", 270, 20 * (1 + orders.size()));
             //}
-            //            }
+            //}
         }
     }
 

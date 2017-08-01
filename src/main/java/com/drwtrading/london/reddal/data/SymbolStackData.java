@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
+import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 
@@ -305,10 +306,50 @@ public class SymbolStackData {
         }
     }
 
+    public boolean clearBidStack(final StackType stackType, final StackOrderType orderType) {
+
+        if (null != bidStackGroup) {
+            for (final LongMapNode<SymbolStackPriceLevel> stackPriceLevelNode : bidStackLevels) {
+
+                final SymbolStackPriceLevel stackPriceLevel = stackPriceLevelNode.getValue();
+                final StackLevel level = stackPriceLevel.getStackType(stackType);
+                if (null != level) {
+                    if (0 < level.getOrderTypeQty(orderType)) {
+                        stackClient.addStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType, level.getPullbackTicks(),
+                                -Long.MAX_VALUE);
+                    }
+                }
+            }
+            return stackClient.batchComplete();
+        } else {
+            throw new IllegalStateException("No stack for symbol.");
+        }
+    }
+
     public boolean clearAskStack() {
 
         if (null != askStackGroup) {
             stackClient.stackCleared(SOURCE, askStackGroup.getStackID());
+            return stackClient.batchComplete();
+        } else {
+            throw new IllegalStateException("No stack for symbol.");
+        }
+    }
+
+    public boolean clearAskStack(final StackType stackType, final StackOrderType orderType) {
+
+        if (null != askStackGroup) {
+            for (final LongMapNode<SymbolStackPriceLevel> stackPriceLevelNode : askStackLevels) {
+
+                final SymbolStackPriceLevel stackPriceLevel = stackPriceLevelNode.getValue();
+                final StackLevel level = stackPriceLevel.getStackType(stackType);
+                if (null != level) {
+                    if (0 < level.getOrderTypeQty(orderType)) {
+                        stackClient.addStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType, level.getPullbackTicks(),
+                                -Long.MAX_VALUE);
+                    }
+                }
+            }
             return stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");

@@ -49,12 +49,12 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
 
         presenter.addFamily(familyName);
 
-        final StackUIData uiData = new StackUIData(familyName);
+        final StackUIData uiData = new StackUIData(source, familyName);
 
         uiDataBySymbol.put(familyName, uiData);
         uiDataByStrategyID.put(strategyID, uiData);
 
-        presenter.addUIData(uiData);
+        presenter.addFamilyUIData(uiData);
         return true;
     }
 
@@ -70,7 +70,7 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
 
         final StackUIData uiData = uiDataByStrategyID.get(strategyID);
         uiData.setSelectedConfig(selectedConfigType);
-        presenter.updateUIData(uiData);
+        presenter.updateFamilyUIData(uiData);
         return true;
     }
 
@@ -146,6 +146,16 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     }
 
     @Override
+    public boolean stackGroupInfoUpdated(final String source, final long stackGroupID, final boolean isStrategyRunning,
+            final String strategyInfo) {
+
+        final StackGroup stackGroup = stackGroups.get(stackGroupID);
+        stackGroup.setStackGroupInfo(source, isStrategyRunning, strategyInfo);
+
+        return updateUI(stackGroupID);
+    }
+
+    @Override
     public boolean remoteFillNotification(final String source, final long stackGroupID, final StackType stackType,
             final int maxPullbackTicks, final long qty) {
 
@@ -158,7 +168,7 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     private boolean updateUI(final long stackGroupID) {
 
         final StackUIData uiData = uiDataByStackID.get(stackGroupID);
-        presenter.updateUIData(uiData);
+        presenter.updateFamilyUIData(uiData);
         return true;
     }
 

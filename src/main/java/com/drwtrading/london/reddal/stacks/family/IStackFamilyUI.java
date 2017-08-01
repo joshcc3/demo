@@ -28,4 +28,8 @@ public interface IStackFamilyUI {
 
     void setParentData(final String familyName, final String bidPriceOffset, final String askPriceOffset, final String selectedConfigType,
             final boolean bidPicardEnabled, final boolean bidQuoterEnabled, final boolean askPicardEnabled, final boolean askQuoterEnabled);
+
+    void setChildData(final String symbol, final String nibblerName, final String selectedConfigType, final boolean isBidStrategyOn,
+            final String bidInfo, final boolean bidPicardEnabled, final boolean bidQuoterEnabled, final boolean isAskStrategyOn,
+            final String askInfo, final boolean askPicardEnabled, final boolean askQuoterEnabled);
 }

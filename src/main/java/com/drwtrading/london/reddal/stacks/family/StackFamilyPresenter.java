@@ -49,6 +49,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Map<String, NavigableMap<String, StackUIRelationship>> families;
     private final Map<String, StackUIData> parentData;
     private final Set<String> children;
+    private final Map<String, StackUIData> childData;
 
     private final Map<String, SearchResult> searchResults;
     private final Map<String, LinkedHashSet<String>> fungibleInsts;
@@ -68,6 +69,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         this.families = new HashMap<>();
         this.parentData = new HashMap<>();
         this.children = new HashSet<>();
+        this.childData = new HashMap<>();
 
         this.searchResults = new HashMap<>();
         this.fungibleInsts = new HashMap<>();
@@ -89,20 +91,38 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         views.all().addFamily(familyName);
     }
 
-    void addUIData(final StackUIData uiData) {
+    void addFamilyUIData(final StackUIData uiData) {
 
-        parentData.put(uiData.familyName, uiData);
-        updateUIData(views.all(), uiData);
+        parentData.put(uiData.symbol, uiData);
+        updateFamilyUIData(views.all(), uiData);
     }
 
-    void updateUIData(final StackUIData uiData) {
-        updateUIData(views.all(), uiData);
+    void updateFamilyUIData(final StackUIData uiData) {
+        updateFamilyUIData(views.all(), uiData);
     }
 
-    private static void updateUIData(final IStackFamilyUI view, final StackUIData uiData) {
-        view.setParentData(uiData.familyName, uiData.getBidPriceOffsetBPS(), uiData.getAskPriceOffsetBPS(), uiData.getSelectedConfigType(),
+    private static void updateFamilyUIData(final IStackFamilyUI view, final StackUIData uiData) {
+        view.setParentData(uiData.symbol, uiData.getBidPriceOffsetBPS(), uiData.getAskPriceOffsetBPS(), uiData.getSelectedConfigType(),
                 uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
                 uiData.isStackEnabled(BookSide.ASK, StackType.PICARD), uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
+    }
+
+    void addChildUIData(final StackUIData uiData) {
+
+        childData.put(uiData.symbol, uiData);
+        updateChildUIData(views.all(), uiData);
+    }
+
+    void updateChildUIData(final StackUIData uiData) {
+        updateChildUIData(views.all(), uiData);
+    }
+
+    private static void updateChildUIData(final IStackFamilyUI view, final StackUIData uiData) {
+        view.setChildData(uiData.symbol, uiData.source, uiData.getSelectedConfigType(), uiData.isStrategyOn(BookSide.BID),
+                uiData.getRunningInfo(BookSide.BID), uiData.isStackEnabled(BookSide.BID, StackType.PICARD),
+                uiData.isStackEnabled(BookSide.BID, StackType.QUOTER), uiData.isStrategyOn(BookSide.ASK),
+                uiData.getRunningInfo(BookSide.ASK), uiData.isStackEnabled(BookSide.ASK, StackType.PICARD),
+                uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
     }
 
     @Override
@@ -189,7 +209,11 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         }
 
         for (final StackUIData uiData : parentData.values()) {
-            updateUIData(newView, uiData);
+            updateFamilyUIData(newView, uiData);
+        }
+
+        for (final StackUIData uiData : childData.values()) {
+            updateChildUIData(newView, uiData);
         }
     }
 
@@ -385,6 +409,13 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
+    public void setChildSelectedConfig(final String familyName, final String childSymbol, final String configType) {
+
+        final StackConfigType stackConfigType = StackConfigType.valueOf(configType);
+        communityManager.setChildSelectedConfig(SOURCE_UI, familyName, childSymbol, stackConfigType);
+    }
+
+    @FromWebSocketView
     public void setStackEnabled(final String familyName, final String bookSide, final String stack, final boolean isEnabled,
             final WebSocketInboundData data) {
 
@@ -401,6 +432,15 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
                 communityManager.setStackEnabled(SOURCE_UI, familyName, side, stackType, isEnabled);
             }
         }
+    }
+
+    @FromWebSocketView
+    public void setChildStackEnabled(final String familyName, final String childSymbol, final String bookSide, final String stack,
+            final boolean isEnabled, final WebSocketInboundData data) {
+
+        final BookSide side = BookSide.valueOf(bookSide);
+        final StackType stackType = StackType.valueOf(stack);
+        communityManager.setChildStackEnabled(SOURCE_UI, familyName, childSymbol, side, stackType, isEnabled);
     }
 
     @FromWebSocketView
@@ -428,9 +468,23 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
+    public void startChild(final String family, final String childSymbol, final String bookSide, final WebSocketInboundData data) {
+
+        final BookSide side = BookSide.valueOf(bookSide);
+        communityManager.startChild(family, childSymbol, side);
+    }
+
+    @FromWebSocketView
     public void stopFamily(final String family, final String bookSide, final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         communityManager.stopFamilies(Collections.singleton(family), side);
+    }
+
+    @FromWebSocketView
+    public void stopChild(final String family, final String childSymbol, final String bookSide, final WebSocketInboundData data) {
+
+        final BookSide side = BookSide.valueOf(bookSide);
+        communityManager.stopChild(family, childSymbol, side);
     }
 }

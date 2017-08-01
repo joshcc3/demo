@@ -225,7 +225,6 @@ function minimiseAll() {
 function addFamily(familyName) {
 
 	var familyID = "family_" + familyName.replace(/ |\/|\.|:/g, "_");
-	;
 	var family = findChild(familyID);
 	if (family.length < 1) {
 
@@ -242,22 +241,22 @@ function addFamily(familyName) {
 			ws.send(command("refreshParent", [familyName]));
 		});
 
-		var bidStartButton = family.find(".bid .start");
+		var bidStartButton = family.find(".familyDetails .bid .start");
 		bidStartButton.unbind().bind("click", function () {
 			ws.send(command("startFamily", [familyName, "BID"]));
 		});
 
-		var bidStopButton = family.find(".bid .stop");
+		var bidStopButton = family.find(".familyDetails .bid .stop");
 		bidStopButton.unbind().bind("click", function () {
 			ws.send(command("stopFamily", [familyName, "BID"]));
 		});
 
-		var askStartButton = family.find(".ask .start");
+		var askStartButton = family.find(".familyDetails .ask .start");
 		askStartButton.unbind().bind("click", function () {
 			ws.send(command("startFamily", [familyName, "ASK"]));
 		});
 
-		var askStopButton = family.find(".ask .stop");
+		var askStopButton = family.find(".familyDetails .ask .stop");
 		askStopButton.unbind().bind("click", function () {
 			ws.send(command("stopFamily", [familyName, "ASK"]));
 		});
@@ -297,7 +296,11 @@ function addFamily(familyName) {
 
 		var openConfigWindowDiv = family.find(".configControls .configWindow");
 		openConfigWindowDiv.unbind().bind("click", function () {
-			popUp("/stackConfig#;" + familyName, "Configs", 2200, 400);
+			var configs = familyName;
+			family.find(".children .row:not(.header)").each(function () {
+				configs = configs + "," + $(this).attr("id").replace("_", " ");
+			});
+			popUp("/stackConfig#;" + configs, "Configs", 2200, 400);
 		});
 
 		var bidPicardDiv = family.find(".bid .picardEnabled");
@@ -365,6 +368,24 @@ function stackEnableStackChange(familyName, side, stack) {
 			case 3:
 			{
 				ws.send(command("setStackEnabled", [familyName, side, stack, false]));
+				break;
+			}
+		}
+	}
+}
+
+function stackChildEnableStackChange(familyName, childSymbol, side, stack) {
+	return function (event) {
+		event.preventDefault();
+		switch (event.which) {
+			case 1:
+			{
+				ws.send(command("setChildStackEnabled", [familyName, childSymbol, side, stack, true]));
+				break;
+			}
+			case 3:
+			{
+				ws.send(command("setChildStackEnabled", [familyName, childSymbol, side, stack, false]));
 				break;
 			}
 		}
@@ -443,10 +464,10 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 	});
 
 	var bidPriceOffsetDiv = addNumberBox(row, ".bid.priceOffset");
-	var bidQtyMultiplierDiv = addNumberBox(row, ".bid.qtyMultiplier", bidQtyMultiplier);
+	var bidQtyMultiplierDiv = addNumberBox(row, ".bid.qtyMultiplier");
 
-	var askPriceOffsetDiv = addNumberBox(row, ".ask.priceOffset", askPriceOffset);
-	var askQtyMultiplierDiv = addNumberBox(row, ".ask.qtyMultiplier", askQtyMultiplier);
+	var askPriceOffsetDiv = addNumberBox(row, ".ask.priceOffset");
+	var askQtyMultiplierDiv = addNumberBox(row, ".ask.qtyMultiplier");
 
 	setDoubleData(bidPriceOffsetDiv, bidPriceOffset);
 	setDoubleData(bidQtyMultiplierDiv, bidQtyMultiplier);
@@ -473,7 +494,81 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 		ws.send(command("orphanChild", [childSymbol]));
 	});
 
+	var defaultConfigButton = row.find(".childControls .default");
+	defaultConfigButton.unbind().bind("click", function () {
+		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "DEFAULT"]));
+	});
+
+	var wideConfigButton = row.find(".childControls .wide");
+	wideConfigButton.unbind().bind("click", function () {
+		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "WIDE"]));
+	});
+
+	var obligationConfigButton = row.find(".childControls .obligation");
+	obligationConfigButton.unbind().bind("click", function () {
+		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "OBLIGATION"]));
+	});
+
+	var openConfigWindowDiv = row.find(".childControls .configWindow");
+	openConfigWindowDiv.unbind().bind("click", function () {
+		popUp("/stackConfig#;" + childSymbol, "Configs", 2200, 400);
+	});
+
+	var bidPicardButton = row.find(".childControls .bid .picardEnabled");
+	var bidQuoterButton = row.find(".childControls .bid .quoterEnabled");
+	var askQuoterButton = row.find(".childControls .ask .quoterEnabled");
+	var askPicardButton = row.find(".childControls .ask .picardEnabled");
+	bidPicardButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "BID", "PICARD"));
+	bidQuoterButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "BID", "QUOTER"));
+	askQuoterButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "ASK", "QUOTER"));
+	askPicardButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "ASK", "PICARD"));
+
+	var bidStartConfigWindowDiv = row.find(".childControls .bid .start");
+	bidStartConfigWindowDiv.unbind().bind("click", function () {
+		ws.send(command("startChild", [familyName, childSymbol, "BID"]));
+	});
+
+	var bidStopConfigWindowDiv = row.find(".childControls .bid .stop");
+	bidStopConfigWindowDiv.unbind().bind("click", function () {
+		ws.send(command("stopChild", [familyName, childSymbol, "BID"]));
+	});
+
+	var askStartConfigWindowDiv = row.find(".childControls .ask .start");
+	askStartConfigWindowDiv.unbind().bind("click", function () {
+		ws.send(command("startChild", [familyName, childSymbol, "ASK"]));
+	});
+
+	var askStopConfigWindowDiv = row.find(".childControls .ask .stop");
+	askStopConfigWindowDiv.unbind().bind("click", function () {
+		ws.send(command("stopChild", [familyName, childSymbol, "ASK"]));
+	});
+
 	setChildCount(familyName);
+}
+
+function setChildData(childSymbol, nibblerName, selectedConfigType, isBidStrategyOn, bidInfo, bidPicardEnabled, bidQuoterEnabled, isAskStrategyOn,
+					  askInfo, askPicardEnabled, askQuoterEnabled) {
+
+	var rowID = childSymbol.replace(/ |\/|\.|:/g, "_");
+	var row = $("#" + rowID);
+
+	if (row) {
+
+		row.find(".childControls .configControls button").removeClass("enabled");
+		row.find(".childControls .configControls ." + selectedConfigType.toLowerCase()).addClass("enabled");
+
+		row.find(".childControls .nibblerName").text(nibblerName);
+
+		row.find(".childControls .bid.runningControls").toggleClass("enabled", isBidStrategyOn);
+		row.find(".childControls .bid .picardEnabled").toggleClass("enabled", bidPicardEnabled);
+		row.find(".childControls .bid .quoterEnabled").toggleClass("enabled", bidQuoterEnabled);
+		row.find(".childControls .bid.strategyInfo").text(bidInfo);
+
+		row.find(".childControls .ask.runningControls").toggleClass("enabled", isAskStrategyOn);
+		row.find(".childControls .ask .picardEnabled").toggleClass("enabled", askPicardEnabled);
+		row.find(".childControls .ask .quoterEnabled").toggleClass("enabled", askQuoterEnabled);
+		row.find(".childControls .ask.strategyInfo").text(askInfo);
+	}
 }
 
 function rowComparator(a, b) {

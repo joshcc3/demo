@@ -18,7 +18,8 @@ class StackUIData implements IStackGroupUpdateCallback {
     private static final String NO_PRICE_OFFSET = "---";
     private static final StackType[] STACK_TYPES = StackType.values();
 
-    public final String familyName;
+    public final String source;
+    public final String symbol;
 
     private final DecimalFormat priceOffsetDF;
 
@@ -29,9 +30,10 @@ class StackUIData implements IStackGroupUpdateCallback {
     private String bidPriceOffsetBPS;
     private String askPriceOffsetBPS;
 
-    StackUIData(final String familyName) {
+    StackUIData(final String source, final String symbol) {
 
-        this.familyName = familyName;
+        this.source = source;
+        this.symbol = symbol;
 
         this.priceOffsetDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 10);
 
@@ -62,6 +64,12 @@ class StackUIData implements IStackGroupUpdateCallback {
         } else {
             setBestAskOffset(stackGroup);
         }
+    }
+
+    @Override
+    public void stackGroupInfoUpdated(final StackGroup stackGroup) {
+
+        // no-op
     }
 
     private void setBestBidOffset(final StackGroup stackGroup) {
@@ -124,21 +132,45 @@ class StackUIData implements IStackGroupUpdateCallback {
         // no-op
     }
 
-    public String getBidPriceOffsetBPS() {
+    String getBidPriceOffsetBPS() {
         return bidPriceOffsetBPS;
     }
 
-    public String getAskPriceOffsetBPS() {
+    String getAskPriceOffsetBPS() {
         return askPriceOffsetBPS;
     }
 
-    public String getSelectedConfigType() {
+    String getSelectedConfigType() {
         return selectedConfig;
     }
 
-    public boolean isStackEnabled(final BookSide side, final StackType stackType) {
+    boolean isStackEnabled(final BookSide side, final StackType stackType) {
 
         final StackGroup group = stackGroups.get(side);
         return null != group && group.getStack(stackType).isEnabled();
+    }
+
+    boolean isStrategyOn(final BookSide side) {
+        final StackGroup group = stackGroups.get(side);
+        return null != group && group.getStackGroupInfo().isStrategyRunning();
+    }
+
+    String getRunningInfo(final BookSide side) {
+        final StackGroup group = stackGroups.get(side);
+        if (null == group) {
+            return "NO INFO";
+        } else {
+            return group.getStackGroupInfo().getStrategyInfo();
+        }
+    }
+
+    void clear() {
+
+        this.stackGroups.clear();
+
+        this.selectedConfig = StackConfigType.DEFAULT.name();
+
+        this.bidPriceOffsetBPS = NO_PRICE_OFFSET;
+        this.askPriceOffsetBPS = NO_PRICE_OFFSET;
     }
 }
