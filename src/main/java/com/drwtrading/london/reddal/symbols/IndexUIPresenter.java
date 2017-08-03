@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.symbols;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.util.FastUtilCollections;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -15,6 +16,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,19 +24,27 @@ import java.util.stream.Collectors;
 
 public class IndexUIPresenter {
 
+    private static final EnumSet<InstType> FUTURE_INST_TYPES = EnumSet.of(InstType.FUTURE, InstType.FUTURE_SPREAD);
+
     private static final int MIN_TERM_LENGTH = 2;
     private static final int MAX_RESULTS = 100;
 
     private final UILogger webLog;
+
+    private final boolean isEquitiesSearchable;
+    private final boolean isFuturesSearchable;
 
     private final SuffixTree<String> suffixTree;
     private final WebSocketViews<IndexUIView> views;
     private final Map<String, DisplaySymbol> symbolToDisplay;
     private final Map<String, SearchResult> searchResultBySymbol;
 
-    public IndexUIPresenter(final UILogger webLog) {
+    public IndexUIPresenter(final UILogger webLog, final boolean isEquitiesSearchable, final boolean isFuturesSearchable) {
 
         this.webLog = webLog;
+
+        this.isEquitiesSearchable = isEquitiesSearchable;
+        this.isFuturesSearchable = isFuturesSearchable;
 
         this.suffixTree = new SuffixTree<>();
         this.views = WebSocketViews.create(IndexUIView.class, this);
@@ -44,19 +54,30 @@ public class IndexUIPresenter {
 
     public void addSearchResult(final SearchResult searchResult) {
 
-        final String symbol = searchResult.symbol;
-        final DisplaySymbol displaySymbol = symbolToDisplay.get(symbol);
+        if (isIncludeInstrument(searchResult.instType)) {
+            final String symbol = searchResult.symbol;
+            final DisplaySymbol displaySymbol = symbolToDisplay.get(symbol);
 
-        if (null == displaySymbol) {
-            setSearchResult(searchResult);
+            if (null == displaySymbol) {
+                setSearchResult(searchResult);
+            } else {
+
+                final Collection<String> keywords = new ArrayList<>(searchResult.keywords);
+                keywords.add(displaySymbol.displaySymbol);
+                final SearchResult newResult =
+                        new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType, searchResult.description,
+                                searchResult.mdSource, keywords, searchResult.expiry, searchResult.tickTable);
+                setSearchResult(newResult);
+            }
+        }
+    }
+
+    private boolean isIncludeInstrument(final InstType instType) {
+
+        if (FUTURE_INST_TYPES.contains(instType)) {
+            return isFuturesSearchable;
         } else {
-
-            final Collection<String> keywords = new ArrayList<>(searchResult.keywords);
-            keywords.add(displaySymbol.displaySymbol);
-            final SearchResult newResult =
-                    new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType, searchResult.description,
-                            searchResult.mdSource, keywords, searchResult.expiry, searchResult.tickTable);
-            setSearchResult(newResult);
+            return isEquitiesSearchable;
         }
     }
 

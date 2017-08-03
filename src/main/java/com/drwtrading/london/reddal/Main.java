@@ -171,6 +171,8 @@ public class Main {
     public static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     private static final String EWOK_BASE_URL_PARAM = "ewokBaseURL";
+    private static final String IS_EQUITIES_SEARCHABLE_PARAM = "isEquitiesSearchable";
+    private static final String IS_FUTURES_SEARCHABLE_PARAM = "isFuturesSearchable";
 
     private static final String IS_STACK_MANAGER_PARAM = "isManager";
 
@@ -309,6 +311,10 @@ public class Main {
 
         final UILogger webLog = new UILogger(new SystemClock(), logDir);
 
+        final boolean isEquitiesSearchable = !root.paramExists(IS_EQUITIES_SEARCHABLE_PARAM) || root.getBoolean(
+                IS_EQUITIES_SEARCHABLE_PARAM);
+        final boolean isFuturesSearchable = !root.paramExists(IS_FUTURES_SEARCHABLE_PARAM) || root.getBoolean(IS_FUTURES_SEARCHABLE_PARAM);
+
         final Map<String, TypedChannel<WebSocketControlMessage>> websocketsForLogging = Maps.newHashMap();
         { // WebApp
 
@@ -329,7 +335,7 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("/", "index", fibers.ui, webapp, websocket);
                 websocketsForLogging.put("index", websocket);
-                final IndexUIPresenter indexPresenter = new IndexUIPresenter(webLog);
+                final IndexUIPresenter indexPresenter = new IndexUIPresenter(webLog, isEquitiesSearchable, isFuturesSearchable);
                 fibers.ui.subscribe(indexPresenter, channels.displaySymbol, websocket);
                 channels.searchResults.subscribe(fibers.ui.getFiber(), indexPresenter::addSearchResult);
             }

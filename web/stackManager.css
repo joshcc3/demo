@@ -149,6 +149,10 @@ body {
 	margin-top: 5px;
 }
 
+.childCreationRow div {
+	display: inline-block;
+}
+
 .childCreationRow label {
 	width: 90px;
 	margin-right: 10px;

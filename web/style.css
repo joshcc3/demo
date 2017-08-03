@@ -279,9 +279,13 @@ div {
 	color: #c4c4ff;
 }
 
-.AUCTION .book .bid.AUCTION {
-	background-color: darkgreen;
-	color: white;
+.AUCTION .book .offer {
+	color: #f99;
+}
+
+.AUCTION .book div.AUCTION {
+	background-color: #DDA472;;
+	color: black;
 }
 
 .book .bid:hover {
@@ -317,13 +321,6 @@ div {
 	left: 130px;
 }
 
-.AUCTION .book .offer {
-	color: #f99;
-}
-
-.AUCTION .book .offer.AUCTION {
-	background-color: darkgreen;
-}
 
 .book .offer:hover {
 	background-color: #980000 !important;

@@ -347,6 +347,8 @@ public class LadderStackView implements ILadderBoard {
             if (null != bestBid) {
                 final long tickSize = book.getTickTable().getRawTickLevels().floorEntry(bestBid.getPrice()).getValue();
                 stackTickSizeBoxValue = Math.floor(1000000 * tickSize / (double) bestBid.getPrice()) / 100;
+                final String priceOffsetTickSize = PRICE_OFFSET_TICK_SIZE_FORMAT.format(stackTickSizeBoxValue);
+                ui.txt(HTML.STACK_TICK_SIZE, priceOffsetTickSize);
             }
         }
     }
