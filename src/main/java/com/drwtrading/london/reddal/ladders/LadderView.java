@@ -597,7 +597,16 @@ public class LadderView implements UiEventHandler {
         } else if (label.equals(HTML.BOOK_VIEW_BUTTON)) {
             setBookView();
         } else if (label.equals(HTML.STACK_VIEW_BUTTON)) {
-            setStackView();
+            switch (button) {
+                case "right": {
+                    view.popUp("/ladder#" + symbol + ";S", symbol + " stack", 245, 600);
+                    break;
+                }
+                default: {
+                    setStackView();
+                    break;
+                }
+            }
         } else if (label.equals(HTML.AFTER_HOURS_WEIGHT)) {
             if ("left".equals(button)) {
                 openEwokView();
