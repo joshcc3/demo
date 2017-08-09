@@ -36,7 +36,7 @@ public class WorkspaceRequestHandler implements HttpHandler {
             if (symbol == null) {
                 content = "fail";
             } else if (!ladderWorkspace.openLadderForUser(user, symbol)) {
-                content = host + ":" + webPort + "/ladder#" + symbol;
+                content = host + ':' + webPort + "/ladder#" + symbol;
             } else {
                 content = "success";
             }

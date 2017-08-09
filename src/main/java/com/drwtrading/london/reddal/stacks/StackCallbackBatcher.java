@@ -28,7 +28,7 @@ public class StackCallbackBatcher implements IStackClientListener {
     private final SpreadContractSetGenerator contractSetGenerator;
 
     public StackCallbackBatcher(final String nibblerName, final StackStrategiesPresenter strategiesPresenter,
-            final StackConfigPresenter configPresenter, final StackChildListener childListener,
+            final StackConfigPresenter configPresenter, final StackChildListener childListener, final boolean isStackManager,
             final SpreadContractSetGenerator contractSetGenerator) {
 
         this.nibblerName = nibblerName;
@@ -37,7 +37,11 @@ public class StackCallbackBatcher implements IStackClientListener {
         this.configPresenter = configPresenter;
         this.childListener = childListener;
 
-        this.contractSetGenerator = contractSetGenerator;
+        if (isStackManager) {
+            this.contractSetGenerator = null;
+        } else {
+            this.contractSetGenerator = contractSetGenerator;
+        }
 
         this.strategyBatch = new HashSet<>();
         this.stackGroupBatch = new HashSet<>();
@@ -63,8 +67,9 @@ public class StackCallbackBatcher implements IStackClientListener {
         strategyBatch.add(strategy);
 
         final String symbol = strategy.getSymbol();
-        contractSetGenerator.setStackRelationship(symbol, strategy.getLeanSymbol());
-
+        if (null != contractSetGenerator) {
+            contractSetGenerator.setStackRelationship(symbol, strategy.getLeanSymbol());
+        }
         childListener.strategyCreated(strategy);
     }
 

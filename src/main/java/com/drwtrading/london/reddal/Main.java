@@ -979,8 +979,11 @@ public class Main {
 
                 final StackChildListener childListener = new StackChildListener(nibbler, stackFamilyPresenter);
 
+                final boolean isStackManager =
+                        nibblerConfig.paramExists(IS_STACK_MANAGER_PARAM) && nibblerConfig.getBoolean(IS_STACK_MANAGER_PARAM);
                 final StackCallbackBatcher stackUpdateBatcher =
-                        new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, childListener, contractSetGenerator);
+                        new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, childListener, isStackManager,
+                                contractSetGenerator);
 
                 final StackNibblerClient nibblerClient = new StackNibblerClient(nibbler, communityManager, stackUpdateBatcher);
 
@@ -992,7 +995,7 @@ public class Main {
                 client.addLogger(stackLogger);
 
                 nibblerClient.setClient(client);
-                if (!nibblerConfig.paramExists(IS_STACK_MANAGER_PARAM) || !nibblerConfig.getBoolean(IS_STACK_MANAGER_PARAM)) {
+                if (!isStackManager) {
                     stackFamilyPresenter.setStrategyClient(nibbler, client);
                 }
                 strategiesPresenter.setStrategyClient(nibbler, client);
