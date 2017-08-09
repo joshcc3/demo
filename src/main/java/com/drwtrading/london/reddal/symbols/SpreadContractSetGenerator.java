@@ -52,7 +52,7 @@ public class SpreadContractSetGenerator {
 
     public void setParentStack(final String quoteSymbol, final String parentStackSymbol) {
         if (!"orphanage".equals(parentStackSymbol)) {
-            this.parentStackSymbols.put(quoteSymbol, parentStackSymbol);
+            this.parentStackSymbols.put(quoteSymbol, parentStackSymbol + ";S");
             publishContractSet(quoteSymbol);
         }
     }
@@ -82,7 +82,7 @@ public class SpreadContractSetGenerator {
                 if (!EXCLUDED_MARKETS.contains(contract)) {
 
                     final String prevBackLeg = frontLegToBackLeg.get(legs[0]);
-                    if (null == prevBackLeg || isNewSpreadCloser(legs[1], prevBackLeg)) {
+                    if (isSpreadChosen(legs[0], legs[1], prevBackLeg)) {
                         this.frontLegToBackLeg.put(legs[0], legs[1]);
                         publishContractSet(legs[0]);
                     }
@@ -92,20 +92,27 @@ public class SpreadContractSetGenerator {
         }
     }
 
-    private boolean isNewSpreadCloser(final String newBackLeg, final String prevBackLeg) {
+    private boolean isSpreadChosen(final String frontLeg, final String newBackLeg, final String prevBackLeg) {
 
-        final FutureConstant future = FutureConstant.getFutureFromSymbol(newBackLeg);
+        final FutureConstant future = FutureConstant.getFutureFromSymbol(frontLeg);
 
         if (null == future) {
             return false;
         } else {
-            expiryCalc.setToRollDate(cal, newBackLeg);
-            final long newLegExpiry = cal.getTimeInMillis();
+            final String expectedFrontLeg = expiryCalc.getFutureCode(future);
+            if (!expectedFrontLeg.equals(frontLeg)) {
+                return false;
+            } else if (null == prevBackLeg) {
+                return true;
+            } else {
+                expiryCalc.setToRollDate(cal, newBackLeg);
+                final long newLegExpiry = cal.getTimeInMillis();
 
-            expiryCalc.setToRollDate(cal, prevBackLeg);
-            final long prevLegExpiry = cal.getTimeInMillis();
+                expiryCalc.setToRollDate(cal, prevBackLeg);
+                final long prevLegExpiry = cal.getTimeInMillis();
 
-            return newLegExpiry < prevLegExpiry;
+                return newLegExpiry < prevLegExpiry;
+            }
         }
     }
 
