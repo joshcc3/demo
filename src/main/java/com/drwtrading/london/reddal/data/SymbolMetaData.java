@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.data;
 
-import com.drwtrading.london.reddal.SpreadContractSet;
+import com.drwtrading.london.reddal.symbols.SpreadContractSet;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.util.FastUtilCollections;
@@ -57,7 +57,7 @@ public class SymbolMetaData {
         this.chixSwitchSymbol = chixSwitchSymbol;
     }
 
-    public void onFuturesContractSet(final SpreadContractSet spreadContractSet) {
+    public void onSpreadContractSet(final SpreadContractSet spreadContractSet) {
         this.spreadContractSet = spreadContractSet;
     }
 }

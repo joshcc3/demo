@@ -12,10 +12,10 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
-import com.drwtrading.london.reddal.ChixSymbolPair;
+import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
-import com.drwtrading.london.reddal.SpreadContractSet;
+import com.drwtrading.london.reddal.symbols.SpreadContractSet;
 import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
@@ -104,13 +104,13 @@ public class LadderPresenter {
     private OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx;
 
     public LadderPresenter(final DepthBookSubscriber bookHandler, final String ewokBaseURL,
-                           final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-                           final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
-                           final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-                           final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
-                           final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-                           final Publisher<UserCycleRequest> userCycleContractPublisher,
-                           final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
+            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
+            final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+            final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+            final Publisher<UserCycleRequest> userCycleContractPublisher,
+            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
 
         this.bookHandler = bookHandler;
         this.ewokBaseURL = ewokBaseURL;
@@ -188,10 +188,10 @@ public class LadderPresenter {
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
                 mdForSymbol.subscribeForMD();
-                String userName = msg.getClient().getUserName();
+                final String userName = msg.getClient().getUserName();
                 view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), metaDataBySymbol.get(symbol),
-                        dataBySymbol.get(symbol), stackBySymbol.get(symbol),
-                        getLadderPrefsForSymbolUser(symbol, userName), eeifOrdersBySymbol.get(symbol));
+                        dataBySymbol.get(symbol), stackBySymbol.get(symbol), getLadderPrefsForSymbolUser(symbol, userName),
+                        eeifOrdersBySymbol.get(symbol));
                 if (3 < args.length) {
                     if ("S".equals(args[3])) {
                         view.setStackView();
@@ -216,19 +216,20 @@ public class LadderPresenter {
         }
     }
 
-    private LadderPrefsForSymbolUser getLadderPrefsForSymbolUser(String symbol, String userName) {
-        Map<String, LadderPrefsForSymbolUser> symbolToPrefs = ladderPrefsForUserBySymbol.computeIfAbsent(userName, k -> new HashMap<>());
+    private LadderPrefsForSymbolUser getLadderPrefsForSymbolUser(final String symbol, final String userName) {
+        final Map<String, LadderPrefsForSymbolUser> symbolToPrefs =
+                ladderPrefsForUserBySymbol.computeIfAbsent(userName, k -> new HashMap<>());
         LadderPrefsForSymbolUser prefs = symbolToPrefs.get(symbol);
         if (null == prefs) {
-            MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
+            final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
             if (null != mdForSymbol && null != mdForSymbol.getBook()) {
                 if (mdForSymbol.getBook().getInstType() == InstType.FUTURE) {
-                    FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);
+                    final FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);
                     if (null != futureFromSymbol) {
-                        FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
+                        final FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
                         for (int i = 0; i > -3; i--) {
-                            String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, i);
-                            LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
+                            final String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, i);
+                            final LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
                             if (null != existingPrefs) {
                                 prefs = existingPrefs.withSymbol(symbol);
                                 break;
@@ -236,17 +237,17 @@ public class LadderPresenter {
                         }
                     }
                 } else if (mdForSymbol.getBook().getInstType() == InstType.FUTURE_SPREAD) {
-                    String[] legs = symbol.split("-");
-                    FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(legs[0]);
+                    final String[] legs = symbol.split("-");
+                    final FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(legs[0]);
                     if (null != futureFromSymbol) {
-                        FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
-                        int firstExp = getRollsHence(legs[0], futureFromSymbol, expiryCalc);
-                        int secondExp = getRollsHence(legs[1], futureFromSymbol, expiryCalc);
+                        final FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
+                        final int firstExp = getRollsHence(legs[0], futureFromSymbol, expiryCalc);
+                        final int secondExp = getRollsHence(legs[1], futureFromSymbol, expiryCalc);
                         if (firstExp >= 0 && secondExp >= 0) {
                             for (int i = 0; i < 3; i++) {
-                                String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp - i) +
-                                        "-" + expiryCalc.getFutureCode(futureFromSymbol, secondExp - i);
-                                LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
+                                final String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp - i) +
+                                        '-' + expiryCalc.getFutureCode(futureFromSymbol, secondExp - i);
+                                final LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
                                 if (null != existingPrefs) {
                                     prefs = existingPrefs.withSymbol(symbol);
                                     break;
@@ -264,9 +265,9 @@ public class LadderPresenter {
         return prefs;
     }
 
-    private int getRollsHence(String leg, FutureConstant futureFromSymbol, FutureExpiryCalc expiryCalc) {
+    private static int getRollsHence(final String leg, final FutureConstant futureFromSymbol, final FutureExpiryCalc expiryCalc) {
         for (int firstExp = 0; firstExp < 8; firstExp++) {
-            String firstSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp);
+            final String firstSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp);
             if (firstSymbol.equals(leg)) {
                 return firstExp;
             }
@@ -293,7 +294,7 @@ public class LadderPresenter {
     @KeyedBatchSubscriber(converter = LaserLineStringConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
     public void on(final Map<String, LaserLine> laserLines) {
-        for (LaserLine laserLine : laserLines.values()) {
+        for (final LaserLine laserLine : laserLines.values()) {
             dataBySymbol.get(laserLine.getSymbol()).onLaserLine(laserLine);
         }
     }
@@ -325,12 +326,12 @@ public class LadderPresenter {
     @Subscribe
     public void on(final SpreadContractSet spreadContractSet) {
 
-        metaDataBySymbol.get(spreadContractSet.front).onFuturesContractSet(spreadContractSet);
-        if (spreadContractSet.back != null) {
-            metaDataBySymbol.get(spreadContractSet.back).onFuturesContractSet(spreadContractSet);
+        metaDataBySymbol.get(spreadContractSet.symbol).onSpreadContractSet(spreadContractSet);
+        if (spreadContractSet.backMonth != null) {
+            metaDataBySymbol.get(spreadContractSet.backMonth).onSpreadContractSet(spreadContractSet);
         }
         if (spreadContractSet.spread != null) {
-            metaDataBySymbol.get(spreadContractSet.spread).onFuturesContractSet(spreadContractSet);
+            metaDataBySymbol.get(spreadContractSet.spread).onSpreadContractSet(spreadContractSet);
         }
     }
 

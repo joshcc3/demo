@@ -9,7 +9,7 @@ import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
-import com.drwtrading.london.reddal.SpreadContractSet;
+import com.drwtrading.london.reddal.symbols.SpreadContractSet;
 import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
@@ -379,7 +379,7 @@ public class LadderView implements UiEventHandler {
             if (metaData.spreadContractSet != null) {
                 final SpreadContractSet contracts = metaData.spreadContractSet;
                 ui.cls(HTML.SYMBOL, CSSClass.SPREAD, symbol.equals(contracts.spread));
-                ui.cls(HTML.SYMBOL, CSSClass.BACK, symbol.equals(contracts.back));
+                ui.cls(HTML.SYMBOL, CSSClass.BACK, symbol.equals(contracts.backMonth));
             }
             // Desk position
             if (null != metaData.deskPosition && null != metaData.deskPosition.getPosition() &&

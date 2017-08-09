@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.reddal.ReplaceCommand;
-import com.drwtrading.london.reddal.SpreadContractSet;
+import com.drwtrading.london.reddal.symbols.SpreadContractSet;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
@@ -64,10 +64,10 @@ public class LadderWorkspace {
     @Subscribe
     public void on(final SpreadContractSet contractSet) {
 
-        contractSets.put(contractSet.front, contractSet);
+        contractSets.put(contractSet.symbol, contractSet);
 
         contractSets.putIfAbsent(contractSet.spread, contractSet);
-        contractSets.putIfAbsent(contractSet.back, contractSet);
+        contractSets.putIfAbsent(contractSet.backMonth, contractSet);
     }
 
     @FromWebSocketView
@@ -135,15 +135,27 @@ public class LadderWorkspace {
 
             final ArrayDeque<View> viewsList = new ArrayDeque<>(views);
 
-
             while (!openedSpreadWorkspace && !viewsList.isEmpty()) {
 
                 final View view = viewsList.pollLast();
 
                 if (!lockedViews.contains(view)) {
-                    view.addSymbol(contractSet.back);
+
+                    if (null != contractSet.parentSymbol) {
+                        view.addSymbol(contractSet.parentSymbol);
+                    }
+
+                    view.addSymbol(contractSet.backMonth);
                     view.addSymbol(contractSet.spread);
-                    view.addSymbol(contractSet.front);
+
+                    if (null != contractSet.leanSymbol) {
+                        view.addSymbol(contractSet.leanSymbol);
+                    }
+                    if (null != contractSet.stackSymbol) {
+                        view.addSymbol(contractSet.stackSymbol);
+                    }
+                    view.addSymbol(contractSet.symbol);
+                    view.addSymbol(symbol);
                     openedSpreadWorkspace = true;
                 }
             }

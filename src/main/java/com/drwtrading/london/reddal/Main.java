@@ -104,9 +104,11 @@ import com.drwtrading.london.reddal.stockAlerts.StockAlertPresenter;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaRestingOrderClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaSweepClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaTWAPClient;
+import com.drwtrading.london.reddal.symbols.ChixInstMatcher;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
+import com.drwtrading.london.reddal.symbols.SpreadContractSetGenerator;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.FileLogger;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
@@ -311,271 +313,270 @@ public class Main {
 
         final UILogger webLog = new UILogger(new SystemClock(), logDir);
 
-        final boolean isEquitiesSearchable = !root.paramExists(IS_EQUITIES_SEARCHABLE_PARAM) || root.getBoolean(
-                IS_EQUITIES_SEARCHABLE_PARAM);
+        final boolean isEquitiesSearchable =
+                !root.paramExists(IS_EQUITIES_SEARCHABLE_PARAM) || root.getBoolean(IS_EQUITIES_SEARCHABLE_PARAM);
         final boolean isFuturesSearchable = !root.paramExists(IS_FUTURES_SEARCHABLE_PARAM) || root.getBoolean(IS_FUTURES_SEARCHABLE_PARAM);
 
         final Map<String, TypedChannel<WebSocketControlMessage>> websocketsForLogging = Maps.newHashMap();
-        { // WebApp
 
-            final WebApplication webapp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
-            System.out.println("http://localhost:" + environment.getWebPort());
-            webapp.enableSingleSignOn();
+        final WebApplication webapp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
+        System.out.println("http://localhost:" + environment.getWebPort());
+        webapp.enableSingleSignOn();
 
-            fibers.onStart(() -> fibers.ui.execute(() -> {
-                try {
-                    webapp.serveStaticContent("web");
-                    webapp.start();
-                } catch (final Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }));
-
-            { // Index presenter
-                final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("/", "index", fibers.ui, webapp, websocket);
-                websocketsForLogging.put("index", websocket);
-                final IndexUIPresenter indexPresenter = new IndexUIPresenter(webLog, isEquitiesSearchable, isFuturesSearchable);
-                fibers.ui.subscribe(indexPresenter, channels.displaySymbol, websocket);
-                channels.searchResults.subscribe(fibers.ui.getFiber(), indexPresenter::addSearchResult);
+        fibers.onStart(() -> fibers.ui.execute(() -> {
+            try {
+                webapp.serveStaticContent("web");
+                webapp.start();
+            } catch (final Exception e) {
+                throw new RuntimeException(e);
             }
+        }));
 
-            { // Orders presenter
-                final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("orders", "orders", fibers.ui, webapp, websocket);
-                websocketsForLogging.put("orders", websocket);
-                final OrdersPresenter ordersPresenter =
-                        new OrdersPresenter(webLog, channels.singleOrderCommand, channels.orderEntryCommandToServer);
-                fibers.ui.subscribe(ordersPresenter, websocket, channels.orderEntryFromServer);
-                channels.workingOrders.subscribe(
-                        new BatchSubscriber<>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
-            }
+        { // Index presenter
+            final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("/", "index", fibers.ui, webapp, websocket);
+            websocketsForLogging.put("index", websocket);
+            final IndexUIPresenter indexPresenter = new IndexUIPresenter(webLog, isEquitiesSearchable, isFuturesSearchable);
+            fibers.ui.subscribe(indexPresenter, channels.displaySymbol, websocket);
+            channels.searchResults.subscribe(fibers.ui.getFiber(), indexPresenter::addSearchResult);
+        }
 
-            { // Working orders screen
-                final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
+        { // Orders presenter
+            final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("orders", "orders", fibers.ui, webapp, websocket);
+            websocketsForLogging.put("orders", websocket);
+            final OrdersPresenter ordersPresenter =
+                    new OrdersPresenter(webLog, channels.singleOrderCommand, channels.orderEntryCommandToServer);
+            fibers.ui.subscribe(ordersPresenter, websocket, channels.orderEntryFromServer);
+            channels.workingOrders.subscribe(
+                    new BatchSubscriber<>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
+        }
 
-                final Collection<String> nibblers = environment.getList(Environment.WORKING_ORDERS);
-                final WorkingOrdersPresenter presenter =
-                        new WorkingOrdersPresenter(clock, monitor, webLog, fibers.ui.getFiber(), channels.stats,
-                                channels.remoteOrderCommand, nibblers, channels.orderEntryCommandToServer);
-                fibers.ui.subscribe(presenter, ws, channels.orderEntryFromServer);
-                channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
-                channels.workingOrders.subscribe(fibers.ui.getFiber(), presenter::onWorkingOrder);
-                channels.workingOrderConnectionEstablished.subscribe(fibers.ui.getFiber(), presenter::nibblerConnectionEstablished);
-            }
+        { // Working orders screen
+            final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
 
-            { // Stock alert screen
-                final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("stockalerts", "stockalerts", fibers.ui, webapp, ws);
+            final Collection<String> nibblers = environment.getList(Environment.WORKING_ORDERS);
+            final WorkingOrdersPresenter presenter =
+                    new WorkingOrdersPresenter(clock, monitor, webLog, fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand,
+                            nibblers, channels.orderEntryCommandToServer);
+            fibers.ui.subscribe(presenter, ws, channels.orderEntryFromServer);
+            channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
+            channels.workingOrders.subscribe(fibers.ui.getFiber(), presenter::onWorkingOrder);
+            channels.workingOrderConnectionEstablished.subscribe(fibers.ui.getFiber(), presenter::nibblerConnectionEstablished);
+        }
 
-                final StockAlertPresenter presenter = new StockAlertPresenter(webLog);
-                fibers.ui.subscribe(presenter, ws);
-                channels.stockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
-            }
+        { // Stock alert screen
+            final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("stockalerts", "stockalerts", fibers.ui, webapp, ws);
 
-            // Ladder presenters
-            final MultiLayeredResourceMonitor<ReddalComponents> parentMonitor =
-                    new MultiLayeredResourceMonitor<>(monitor, ReddalComponents.class, errorLog);
+            final StockAlertPresenter presenter = new StockAlertPresenter(webLog);
+            fibers.ui.subscribe(presenter, ws);
+            channels.stockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
+        }
 
-            final ConfigGroup mdConfig = root.getEnabledGroup("md");
-            final ConfigGroup stackConfig = root.getEnabledGroup("stacks", "nibblers");
+        // Ladder presenters
+        final MultiLayeredResourceMonitor<ReddalComponents> parentMonitor =
+                new MultiLayeredResourceMonitor<>(monitor, ReddalComponents.class, errorLog);
 
-            final List<TypedChannel<WebSocketControlMessage>> webSockets = Lists.newArrayList();
-            for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
+        final ConfigGroup mdConfig = root.getEnabledGroup("md");
+        final ConfigGroup stackConfig = root.getEnabledGroup("stacks", "nibblers");
 
-                final String name = "Ladder-" + i;
-                final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
-                final IResourceMonitor<SelectIOComponents> selectIOMonitor =
-                        new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class,
-                                ReddalComponents.UI_SELECT_IO);
+        final List<TypedChannel<WebSocketControlMessage>> webSockets = Lists.newArrayList();
+        for (int i = 0; i < NUM_DISPLAY_THREADS; i++) {
 
-                final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
+            final String name = "Ladder-" + i;
+            final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
+            final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+                    new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class,
+                            ReddalComponents.UI_SELECT_IO);
 
-                final TypedChannel<WebSocketControlMessage> webSocket = TypedChannels.create(WebSocketControlMessage.class);
-                webSockets.add(webSocket);
-                final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
+            final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
 
-                final boolean isPrimary = 0 == i;
-                final LevelThreeBookSubscriber l3BookHandler =
-                        new LevelThreeBookSubscriber(isPrimary, displayMonitor, channels.searchResults, channels.stockAlerts,
-                                channels.stackRefPriceDetailChannel);
-                final LevelTwoBookSubscriber l2BookHandler =
-                        new LevelTwoBookSubscriber(isPrimary, displayMonitor, channels.searchResults, channels.stockAlerts,
-                                channels.stackRefPriceDetailChannel);
+            final TypedChannel<WebSocketControlMessage> webSocket = TypedChannels.create(WebSocketControlMessage.class);
+            webSockets.add(webSocket);
+            final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
 
-                final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
-                        MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Thread MD", errorLog,
-                                MDTransportComponents.class, ReddalComponents.MD_TRANSPORT);
+            final boolean isPrimary = 0 == i;
+            final LevelThreeBookSubscriber l3BookHandler =
+                    new LevelThreeBookSubscriber(isPrimary, displayMonitor, channels.searchResults, channels.stockAlerts,
+                            channels.stackRefPriceDetailChannel);
+            final LevelTwoBookSubscriber l2BookHandler =
+                    new LevelTwoBookSubscriber(isPrimary, displayMonitor, channels.searchResults, channels.stockAlerts,
+                            channels.stackRefPriceDetailChannel);
 
-                final String localAppName = app.env.name() + ':' + app.appName + '-' + i;
+            final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
+                    MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Thread MD", errorLog,
+                            MDTransportComponents.class, ReddalComponents.MD_TRANSPORT);
 
-                int mdCount = 0;
-                for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
+            final String localAppName = app.env.name() + ':' + app.appName + '-' + i;
 
-                    final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
-                    if (null == mdSource) {
-                        throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
-                    }
+            int mdCount = 0;
+            for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
 
-                    final IResourceMonitor<MDTransportComponents> mdClientMonitor =
-                            mdParentMonitor.createChildResourceMonitor(mdSource.name());
-
-                    final MDTransportClient mdClient =
-                            MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource, localAppName,
-                                    l3BookHandler, l2BookHandler, MD_SERVER_TIMEOUT, true);
-                    l3BookHandler.setMDClient(mdSource, mdClient);
-                    l2BookHandler.setMDClient(mdSource, mdClient);
-
-                    final TransportTCPKeepAliveConnection<?, ?> connection =
-                            MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
-
-                    final long staggeringDelay = 250L * ++mdCount;
-                    displaySelectIO.execute(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
-                        connection.restart();
-                        return -1;
-                    }));
+                final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
+                if (null == mdSource) {
+                    throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
                 }
 
-                final DepthBookSubscriber depthBookSubscriber = new DepthBookSubscriber(l3BookHandler, l2BookHandler);
-                final String ewokBaseURL = root.getString(EWOK_BASE_URL_PARAM);
+                final IResourceMonitor<MDTransportComponents> mdClientMonitor = mdParentMonitor.createChildResourceMonitor(mdSource.name());
 
-                final LadderPresenter presenter =
-                        new LadderPresenter(depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand, environment.ladderOptions(),
-                                channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
-                                channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
-                                channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
+                final MDTransportClient mdClient =
+                        MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource, localAppName, l3BookHandler,
+                                l2BookHandler, MD_SERVER_TIMEOUT, true);
+                l3BookHandler.setMDClient(mdSource, mdClient);
+                l2BookHandler.setMDClient(mdSource, mdClient);
 
-                if (null != stackConfig) {
+                final TransportTCPKeepAliveConnection<?, ?> connection =
+                        MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
 
-                    final MultiLayeredResourceMonitor<StackTransportComponents> stackParentMonitor =
-                            MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Stacks", errorLog,
-                                    StackTransportComponents.class, ReddalComponents.STACK_GROUP_CLIENT);
-
-                    for (final ConfigGroup stackConnectionConfig : stackConfig.groups()) {
-
-                        final String connectionName = localAppName + "-stack-" + stackConnectionConfig.getKey();
-                        final IResourceMonitor<StackTransportComponents> stackMonitor =
-                                stackParentMonitor.createChildResourceMonitor(connectionName);
-
-                        final StackGroupCallbackBatcher stackUpdateBatcher = new StackGroupCallbackBatcher(presenter);
-                        final StackClientHandler clientHandler =
-                                StackCacheFactory.createClientCache(displaySelectIO, stackConnectionConfig, stackMonitor, connectionName,
-                                        localAppName, stackUpdateBatcher);
-
-                        stackUpdateBatcher.setStackClient(clientHandler);
-                    }
-                }
-
-                final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
-                fiberBuilder.subscribe(presenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
-                        channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
-                        channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand,
-                        channels.ladderClickTradingIssues, channels.replaceCommand, channels.userCycleContractPublisher,
-                        channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults, channels.isinsGoingEx);
-
-                channels.pksExposure.subscribe(fiberBuilder.getFiber(), presenter::setPKSExposure);
-
-                final long initialDelay = 10 + i * (LadderPresenter.BATCH_FLUSH_INTERVAL_MS / webSockets.size());
-                displaySelectIO.addDelayedAction(initialDelay, presenter::flushAllLadders);
-                displaySelectIO.addDelayedAction(initialDelay, presenter::sendAllHeartbeats);
-
+                final long staggeringDelay = 250L * ++mdCount;
+                displaySelectIO.execute(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
+                    connection.restart();
+                    return -1;
+                }));
             }
 
-            // Auto-puller thread
-            {
-                final String name = "AutoPuller";
-                final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
-                final IResourceMonitor<SelectIOComponents> selectIOMonitor =
-                        new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class,
-                                ReddalComponents.AUTO_PULLER_SELECT_IO);
-                final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
-                final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
-                        MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Thread MD", errorLog,
-                                MDTransportComponents.class, ReddalComponents.MD_TRANSPORT);
+            final DepthBookSubscriber depthBookSubscriber = new DepthBookSubscriber(l3BookHandler, l2BookHandler);
+            final String ewokBaseURL = root.getString(EWOK_BASE_URL_PARAM);
 
-                final PullerBookSubscriber subscriber = new PullerBookSubscriber();
+            final LadderPresenter presenter =
+                    new LadderPresenter(depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand, environment.ladderOptions(),
+                            channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
+                            channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
+                            channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
 
-                for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
+            if (null != stackConfig) {
 
-                    final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
-                    if (null == mdSource) {
-                        throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
-                    }
+                final MultiLayeredResourceMonitor<StackTransportComponents> stackParentMonitor =
+                        MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Stacks", errorLog,
+                                StackTransportComponents.class, ReddalComponents.STACK_GROUP_CLIENT);
 
-                    final IResourceMonitor<MDTransportComponents> mdClientMonitor =
-                            mdParentMonitor.createChildResourceMonitor(mdSource.name());
+                for (final ConfigGroup stackConnectionConfig : stackConfig.groups()) {
 
-                    final MDTransportClient mdClient =
-                            MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource, app.appName + "-pull",
-                                    subscriber.getL3(), subscriber.getL2(), MD_SERVER_TIMEOUT, true);
+                    final String connectionName = localAppName + "-stack-" + stackConnectionConfig.getKey();
+                    final IResourceMonitor<StackTransportComponents> stackMonitor =
+                            stackParentMonitor.createChildResourceMonitor(connectionName);
 
-                    final TransportTCPKeepAliveConnection<?, ?> connection =
-                            MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
-                    subscriber.setClient(mdSource, mdClient);
-                    final long staggeringDelay = 300L * NUM_DISPLAY_THREADS;
-                    displaySelectIO.execute(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
-                        connection.restart();
-                        return -1;
-                    }));
+                    final StackGroupCallbackBatcher stackUpdateBatcher = new StackGroupCallbackBatcher(presenter);
+                    final StackClientHandler clientHandler =
+                            StackCacheFactory.createClientCache(displaySelectIO, stackConnectionConfig, stackMonitor, connectionName,
+                                    localAppName, stackUpdateBatcher);
+
+                    stackUpdateBatcher.setStackClient(clientHandler);
                 }
-
-                final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
-                final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
-
-                final AutoPullPersistence persistence =
-                        new AutoPullPersistence(Paths.get("/site/drw/reddal/data/").resolve("autopull.json"));
-                final AutoPuller puller = new AutoPuller(channels.remoteOrderCommand, subscriber, persistence);
-                fiberBuilder.subscribe(puller, channels.workingOrders);
-                fiberBuilder.getFiber().scheduleWithFixedDelay(puller::timeChecker, 1, 1, TimeUnit.MINUTES);
-                final AutoPullerUI autoPullerUI = new AutoPullerUI(puller);
-                final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("autopuller", "autopuller", fiberBuilder, webapp, ws);
-                fiberBuilder.subscribe(autoPullerUI, ws);
             }
 
-            setupStackManager(app, fibers, channels, webapp, webLog, selectIOFiber);
-            setupBlotter(app, fibers, webapp, webLog, selectIOFiber);
+            final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
+            fiberBuilder.subscribe(presenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
+                    channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
+                    channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand,
+                    channels.ladderClickTradingIssues, channels.replaceCommand, channels.userCycleContractPublisher,
+                    channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults, channels.isinsGoingEx);
 
-            final TypedChannel<WebSocketControlMessage> historyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("history", "history", fibers.ladderRouter, webapp, historyWebSocket);
-            final HistoryPresenter historyPresenter = new HistoryPresenter(webLog);
-            fibers.ladderRouter.subscribe(historyPresenter, historyWebSocket);
-            channels.symbolSelections.subscribe(fibers.ladderRouter.getFiber(), historyPresenter::addSymbol);
+            channels.pksExposure.subscribe(fiberBuilder.getFiber(), presenter::setPKSExposure);
 
-            // Ladder router
-            final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("ladder", "ladder", fibers.ladderRouter, webapp, ladderWebSocket);
-            final LadderMessageRouter ladderMessageRouter =
-                    new LadderMessageRouter(webLog, channels.symbolSelections, webSockets, fibers.ui);
-            fibers.ladderRouter.subscribe(ladderMessageRouter, ladderWebSocket);
+            final long initialDelay = 10 + i * (LadderPresenter.BATCH_FLUSH_INTERVAL_MS / webSockets.size());
+            displaySelectIO.addDelayedAction(initialDelay, presenter::flushAllLadders);
+            displaySelectIO.addDelayedAction(initialDelay, presenter::sendAllHeartbeats);
 
         }
+
+        // Auto-puller thread
+        {
+            final String name = "AutoPuller";
+            final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
+            final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+                    new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class,
+                            ReddalComponents.AUTO_PULLER_SELECT_IO);
+            final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
+            final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
+                    MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Thread MD", errorLog,
+                            MDTransportComponents.class, ReddalComponents.MD_TRANSPORT);
+
+            final PullerBookSubscriber subscriber = new PullerBookSubscriber();
+
+            for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
+
+                final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
+                if (null == mdSource) {
+                    throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
+                }
+
+                final IResourceMonitor<MDTransportComponents> mdClientMonitor = mdParentMonitor.createChildResourceMonitor(mdSource.name());
+
+                final MDTransportClient mdClient =
+                        MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource, app.appName + "-pull",
+                                subscriber.getL3(), subscriber.getL2(), MD_SERVER_TIMEOUT, true);
+
+                final TransportTCPKeepAliveConnection<?, ?> connection =
+                        MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
+                subscriber.setClient(mdSource, mdClient);
+                final long staggeringDelay = 300L * NUM_DISPLAY_THREADS;
+                displaySelectIO.execute(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
+                    connection.restart();
+                    return -1;
+                }));
+            }
+
+            final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
+            final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
+
+            final AutoPullPersistence persistence = new AutoPullPersistence(Paths.get("/site/drw/reddal/data/").resolve("autopull.json"));
+            final AutoPuller puller = new AutoPuller(channels.remoteOrderCommand, subscriber, persistence);
+            fiberBuilder.subscribe(puller, channels.workingOrders);
+            fiberBuilder.getFiber().scheduleWithFixedDelay(puller::timeChecker, 1, 1, TimeUnit.MINUTES);
+            final AutoPullerUI autoPullerUI = new AutoPullerUI(puller);
+            final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("autopuller", "autopuller", fiberBuilder, webapp, ws);
+            fiberBuilder.subscribe(autoPullerUI, ws);
+        }
+
+        final SpreadContractSetGenerator contractSetGenerator = new SpreadContractSetGenerator(channels.contractSets);
+        channels.searchResults.subscribe(selectIOFiber, contractSetGenerator::setSearchResult);
+
+        setupStackManager(app, fibers, channels, webapp, webLog, selectIOFiber, contractSetGenerator);
+        setupBlotter(app, fibers, webapp, webLog, selectIOFiber);
+
+        final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
+        channels.searchResults.subscribe(fibers.contracts.getFiber(), chixInstMatcher::setSearchResult);
+
+        final TypedChannel<WebSocketControlMessage> historyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+        createWebPageWithWebSocket("history", "history", fibers.ladderRouter, webapp, historyWebSocket);
+        final HistoryPresenter historyPresenter = new HistoryPresenter(webLog);
+        fibers.ladderRouter.subscribe(historyPresenter, historyWebSocket);
+        channels.symbolSelections.subscribe(fibers.ladderRouter.getFiber(), historyPresenter::addSymbol);
+
+        // Ladder router
+        final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+        createWebPageWithWebSocket("ladder", "ladder", fibers.ladderRouter, webapp, ladderWebSocket);
+        final LadderMessageRouter ladderMessageRouter = new LadderMessageRouter(webLog, channels.symbolSelections, webSockets, fibers.ui);
+        fibers.ladderRouter.subscribe(ladderMessageRouter, ladderWebSocket);
 
         // Non SSO-protected web App to allow AJAX requests
         {
 
-            final WebApplication webapp = new WebApplication(environment.getWebPort() + 1, channels.errorPublisher);
+            final WebApplication nonSSOWebapp = new WebApplication(environment.getWebPort() + 1, channels.errorPublisher);
 
             fibers.onStart(() -> fibers.ui.execute(() -> {
                 try {
-                    webapp.serveStaticContent("web");
-                    webapp.start();
+                    nonSSOWebapp.serveStaticContent("web");
+                    nonSSOWebapp.start();
                 } catch (final Exception e) {
                     throw new RuntimeException(e);
                 }
             }));
 
-            webapp.webServer();
+            nonSSOWebapp.webServer();
 
             // Workspace
             final TypedChannel<WebSocketControlMessage> workspaceSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("workspace", "workspace", fibers.ui, webapp, workspaceSocket);
+            createWebPageWithWebSocket("workspace", "workspace", fibers.ui, nonSSOWebapp, workspaceSocket);
 
             final LadderWorkspace ladderWorkspace = new LadderWorkspace(webLog, channels.replaceCommand);
             fibers.ui.subscribe(ladderWorkspace, workspaceSocket, channels.contractSets);
-            webapp.addHandler("/open",
-                    new WorkspaceRequestHandler(ladderWorkspace, new Uri(webapp.getBaseUri()).getHost(), environment.getWebPort()));
+            nonSSOWebapp.addHandler("/open",
+                    new WorkspaceRequestHandler(ladderWorkspace, new Uri(nonSSOWebapp.getBaseUri()).getHost(), environment.getWebPort()));
         }
 
         // Settings
@@ -583,14 +584,6 @@ public class Main {
             final LadderSettings ladderSettings = new LadderSettings(environment.getSettingsFile(), channels.ladderPrefsLoaded);
             fibers.settings.subscribe(ladderSettings, channels.storeLadderPref);
             fibers.onStart(() -> fibers.settings.execute(ladderSettings::load));
-        }
-
-        { // Contract sets
-            final FuturesContractSetGenerator futuresContractSetGenerator = new FuturesContractSetGenerator(channels.contractSets);
-            channels.searchResults.subscribe(fibers.contracts.getFiber(), futuresContractSetGenerator::setSearchResult);
-
-            final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
-            channels.searchResults.subscribe(fibers.contracts.getFiber(), chixInstMatcher::setSearchResult);
         }
 
         // EEIF-OE
@@ -933,7 +926,8 @@ public class Main {
     }
 
     private static void setupStackManager(final Application<ReddalComponents> app, final ReddalFibers fibers, final ReddalChannels channels,
-            final WebApplication webapp, final UILogger webLog, final SelectIOFiber selectIOFiber) throws Exception {
+            final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
+            final SpreadContractSetGenerator contractSetGenerator) throws Exception {
 
         final ConfigGroup stackConfig = app.config.getEnabledGroup("stacks");
         if (null != stackConfig) {
@@ -947,7 +941,7 @@ public class Main {
                             app.logDir);
             final StackCommunityManager communityManager = server.getCommunityManager();
 
-            final StackFamilyPresenter stackFamilyPresenter = new StackFamilyPresenter(fibers.ui, webLog);
+            final StackFamilyPresenter stackFamilyPresenter = new StackFamilyPresenter(fibers.ui, webLog, contractSetGenerator);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(fibers.ui, webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(fibers.ui, webLog);
 
@@ -986,7 +980,7 @@ public class Main {
                 final StackChildListener childListener = new StackChildListener(nibbler, stackFamilyPresenter);
 
                 final StackCallbackBatcher stackUpdateBatcher =
-                        new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, childListener, channels.contractSets);
+                        new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, childListener, contractSetGenerator);
 
                 final StackNibblerClient nibblerClient = new StackNibblerClient(nibbler, communityManager, stackUpdateBatcher);
 
@@ -1012,15 +1006,15 @@ public class Main {
             channels.symbolSelections.subscribe(selectIOFiber, stackFamilyPresenter::symbolSelected);
 
             final TypedChannel<WebSocketControlMessage> familyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("stackManager", "stackManager", fibers.ladderRouter, webapp, familyWebSocket);
+            createWebPageWithWebSocket("stackManager", "stackManager", fibers.ladderRouter, webApp, familyWebSocket);
             familyWebSocket.subscribe(selectIOFiber, stackFamilyPresenter::webControl);
 
             final TypedChannel<WebSocketControlMessage> configWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("stackConfig", "stackConfig", fibers.ladderRouter, webapp, configWebSocket);
+            createWebPageWithWebSocket("stackConfig", "stackConfig", fibers.ladderRouter, webApp, configWebSocket);
             configWebSocket.subscribe(selectIOFiber, stackConfigPresenter::webControl);
 
             final TypedChannel<WebSocketControlMessage> strategiesWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("stackStrategy", "stackStrategy", fibers.ladderRouter, webapp, strategiesWebSocket);
+            createWebPageWithWebSocket("stackStrategy", "stackStrategy", fibers.ladderRouter, webApp, strategiesWebSocket);
             strategiesWebSocket.subscribe(selectIOFiber, strategiesPresenter::webControl);
         }
     }

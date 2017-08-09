@@ -5,11 +5,10 @@ import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
-import com.drwtrading.london.reddal.SpreadContractSet;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.family.StackChildListener;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
-import org.jetlang.channels.Publisher;
+import com.drwtrading.london.reddal.symbols.SpreadContractSetGenerator;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -26,11 +25,11 @@ public class StackCallbackBatcher implements IStackClientListener {
     private final Set<StackGroup> stackGroupBatch;
     private final Set<StackConfigGroup> configBatch;
 
-    private final Publisher<SpreadContractSet> stackContractSetPublisher;
+    private final SpreadContractSetGenerator contractSetGenerator;
 
     public StackCallbackBatcher(final String nibblerName, final StackStrategiesPresenter strategiesPresenter,
             final StackConfigPresenter configPresenter, final StackChildListener childListener,
-            final Publisher<SpreadContractSet> stackContractSetPublisher) {
+            final SpreadContractSetGenerator contractSetGenerator) {
 
         this.nibblerName = nibblerName;
 
@@ -38,7 +37,7 @@ public class StackCallbackBatcher implements IStackClientListener {
         this.configPresenter = configPresenter;
         this.childListener = childListener;
 
-        this.stackContractSetPublisher = stackContractSetPublisher;
+        this.contractSetGenerator = contractSetGenerator;
 
         this.strategyBatch = new HashSet<>();
         this.stackGroupBatch = new HashSet<>();
@@ -64,8 +63,7 @@ public class StackCallbackBatcher implements IStackClientListener {
         strategyBatch.add(strategy);
 
         final String symbol = strategy.getSymbol();
-        final SpreadContractSet contractSet = new SpreadContractSet(symbol, strategy.getLeanSymbol(), symbol + ";S");
-        stackContractSetPublisher.publish(contractSet);
+        contractSetGenerator.setStackRelationship(symbol, strategy.getLeanSymbol());
 
         childListener.strategyCreated(strategy);
     }

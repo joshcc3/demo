@@ -1,8 +1,7 @@
-package com.drwtrading.london.reddal;
+package com.drwtrading.london.reddal.symbols;
 
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
-import com.drwtrading.london.reddal.symbols.SearchResult;
 import org.jetlang.channels.Channel;
 
 import java.util.HashMap;

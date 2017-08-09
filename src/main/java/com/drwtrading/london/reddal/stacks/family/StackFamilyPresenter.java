@@ -13,6 +13,7 @@ import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.symbols.SpreadContractSetGenerator;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
@@ -42,6 +43,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     private final FiberBuilder logFiber;
     private final UILogger uiLogger;
+    private final SpreadContractSetGenerator contractSetGenerator;
 
     private final WebSocketViews<IStackFamilyUI> views;
     private final Map<String, HashSet<IStackFamilyUI>> userViews;
@@ -58,10 +60,12 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     private StackCommunityManager communityManager;
 
-    public StackFamilyPresenter(final FiberBuilder logFiber, final UILogger uiLogger) {
+    public StackFamilyPresenter(final FiberBuilder logFiber, final UILogger uiLogger,
+            final SpreadContractSetGenerator contractSetGenerator) {
 
         this.logFiber = logFiber;
         this.uiLogger = uiLogger;
+        this.contractSetGenerator = contractSetGenerator;
 
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
         this.userViews = new HashMap<>();
@@ -118,6 +122,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     private static void updateChildUIData(final IStackFamilyUI view, final StackUIData uiData) {
+
         view.setChildData(uiData.symbol, uiData.source, uiData.getSelectedConfigType(), uiData.isStrategyOn(BookSide.BID),
                 uiData.getRunningInfo(BookSide.BID), uiData.isStackEnabled(BookSide.BID, StackType.PICARD),
                 uiData.isStackEnabled(BookSide.BID, StackType.QUOTER), uiData.isStrategyOn(BookSide.ASK),
@@ -142,6 +147,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         children.add(childSymbol);
 
         views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier);
+
+        contractSetGenerator.setParentStack(childSymbol, parentSymbol);
         return true;
     }
 
