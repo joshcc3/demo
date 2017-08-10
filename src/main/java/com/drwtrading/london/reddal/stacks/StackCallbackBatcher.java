@@ -8,7 +8,7 @@ import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.family.StackChildListener;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
-import com.drwtrading.london.reddal.symbols.SpreadContractSetGenerator;
+import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 
 import java.util.HashSet;
 import java.util.Set;

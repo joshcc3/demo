@@ -76,9 +76,8 @@ import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
 import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
-import com.drwtrading.london.reddal.ladders.LadderWorkspace;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
-import com.drwtrading.london.reddal.ladders.WorkspaceRequestHandler;
+import com.drwtrading.london.reddal.workspace.WorkspaceRequestHandler;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
@@ -108,7 +107,6 @@ import com.drwtrading.london.reddal.symbols.ChixInstMatcher;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
-import com.drwtrading.london.reddal.symbols.SpreadContractSetGenerator;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.FileLogger;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
@@ -119,6 +117,8 @@ import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablis
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
+import com.drwtrading.london.reddal.workspace.LadderWorkspace;
+import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.MsgCodec;
@@ -444,7 +444,7 @@ public class Main {
                     new LadderPresenter(depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand, environment.ladderOptions(),
                             channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
                             channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
-                            channels.userCycleContractPublisher, channels.orderEntryCommandToServer);
+                            channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
 
             if (null != stackConfig) {
 
@@ -574,7 +574,9 @@ public class Main {
             createWebPageWithWebSocket("workspace", "workspace", fibers.ui, nonSSOWebapp, workspaceSocket);
 
             final LadderWorkspace ladderWorkspace = new LadderWorkspace(webLog, channels.replaceCommand);
-            fibers.ui.subscribe(ladderWorkspace, workspaceSocket, channels.contractSets);
+            fibers.ui.subscribe(ladderWorkspace, workspaceSocket);
+            channels.contractSets.subscribe(fibers.ui.getFiber(), ladderWorkspace::setContractSet);
+            channels.userWorkspaceRequests.subscribe(fibers.ui.getFiber(), ladderWorkspace::openLadder);
             nonSSOWebapp.addHandler("/open",
                     new WorkspaceRequestHandler(ladderWorkspace, new Uri(nonSSOWebapp.getBaseUri()).getHost(), environment.getWebPort()));
         }

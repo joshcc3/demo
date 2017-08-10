@@ -9,7 +9,6 @@ import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
-import com.drwtrading.london.reddal.symbols.SpreadContractSet;
 import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
@@ -26,6 +25,8 @@ import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.workspace.SpreadContractSet;
+import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.websockets.WebSocketClient;
@@ -124,6 +125,7 @@ public class LadderView implements UiEventHandler {
     private final TradingStatusForAll tradingStatusForAll;
     private final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
+    private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
     private final Predicate<String> symbolExists;
     private final LadderHTMLTable ladderHTMLKeys;
 
@@ -151,7 +153,7 @@ public class LadderView implements UiEventHandler {
             final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-            final Publisher<UserCycleRequest> userCycleContractPublisher,
+            final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher, final Predicate<String> symbolExists) {
 
@@ -171,6 +173,7 @@ public class LadderView implements UiEventHandler {
         this.tradingStatusForAll = tradingStatusForAll;
         this.heartbeatRoundTripPublisher = heartbeatRoundTripPublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
+        this.userWorkspaceRequests = userWorkspaceRequests;
         this.symbolExists = symbolExists;
         this.ladderHTMLKeys = new LadderHTMLTable();
         this.ui.setHandler(this);
@@ -180,7 +183,6 @@ public class LadderView implements UiEventHandler {
 
     public void replaceSymbol(final ReplaceCommand replaceCommand) {
         if (null != view) {
-            System.out.println("Replacing: " + symbol + " -> " + symbol.replace(replaceCommand.from, replaceCommand.to));
             view.replace(replaceCommand.from, replaceCommand.to);
         }
     }
@@ -595,7 +597,16 @@ public class LadderView implements UiEventHandler {
                 switchChixSymbol();
             }
         } else if (label.equals(HTML.BOOK_VIEW_BUTTON)) {
-            setBookView();
+            switch (button) {
+                case "right": {
+                    userWorkspaceRequests.publish(new HostWorkspaceRequest(client.getHost(), symbol));
+                    break;
+                }
+                default: {
+                    setBookView();
+                    break;
+                }
+            }
         } else if (label.equals(HTML.STACK_VIEW_BUTTON)) {
             switch (button) {
                 case "right": {
@@ -756,7 +767,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    public void setIsinsGoingEx(OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx) {
+    public void setIsinsGoingEx(final OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx) {
         this.isinsGoingEx = isinsGoingEx;
         this.exState = GoingExState.Unknown;
         checkGoingEx();

@@ -8,7 +8,8 @@ import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
-import com.drwtrading.london.reddal.symbols.SpreadContractSet;
+import com.drwtrading.london.reddal.workspace.SpreadContractSet;
+import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import eeif.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
@@ -64,6 +65,7 @@ public class ReddalChannels {
     public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
     public final TypedChannel<RecenterLaddersForUser> recenterLaddersForUser;
     public final TypedChannel<SpreadContractSet> contractSets;
+    public final TypedChannel<HostWorkspaceRequest> userWorkspaceRequests;
     public final TypedChannel<ChixSymbolPair> chixSymbolPairs;
     public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
     public final TypedChannel<Jsonable> trace;
@@ -106,6 +108,7 @@ public class ReddalChannels {
         this.reddalCommandSymbolAvailable = create(ReddalMessage.class);
         this.recenterLaddersForUser = create(RecenterLaddersForUser.class);
         this.contractSets = create(SpreadContractSet.class);
+        this.userWorkspaceRequests = create(HostWorkspaceRequest.class);
         this.chixSymbolPairs = create(ChixSymbolPair.class);
         this.singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
         this.trace = create(Jsonable.class);

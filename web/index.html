@@ -1,118 +1,120 @@
 <html>
 <head>
-    <title>names</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <script src="js/jquery-1.4.2.js"></script>
-    <script src="js/websocket.js"></script>
-    <script src="js/websocket-ui.js"></script>
-    <script src="js/sound-files.js"></script>
-    <script src="js/sound-player.js"></script>
-    <script src="js/sounds.js"></script>
-    <script src="cell-functions.js"></script>
-    <script src="launcher.js"></script>
-    <script src="popup.js"></script>
-    <script type="text/javascript">
-        var ws;
-        var search;
-        var topResult;
-        ws = connect("ws://" + document.location.host + "/index/ws/");
-        ws.logToConsole = false;
-        ws.onmessage = function(x){  eval(x); };
-        $(function () {
-            setInterval(function () {
-                var val = $("#search").val();
-                if (val != search) {
-                    search = val;
-                    ws.send(command("search", [search]));
-                }
-            }, 200);
-            $("#search").keyup(function (e) {
-                if (e.keyCode == 13 && topResult) {
-                    window.open("/ladder#" + topResult.symbol, topResult.symbol, "dialog=yes,width=245,height=600");
-                }
-            });
-            $("#search").focus();
+	<title>names</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<script src="js/jquery-1.4.2.js"></script>
+	<script src="js/websocket.js"></script>
+	<script src="js/websocket-ui.js"></script>
+	<script src="js/sound-files.js"></script>
+	<script src="js/sound-player.js"></script>
+	<script src="js/sounds.js"></script>
+	<script src="cell-functions.js"></script>
+	<script src="launcher.js"></script>
+	<script src="popup.js"></script>
+	<script type="text/javascript">
+		var ws;
+		var search;
+		var topResult;
+		ws = connect("ws://" + document.location.host + "/index/ws/");
+		ws.logToConsole = false;
+		ws.onmessage = function (x) {
+			eval(x);
+		};
+		$(function () {
+			setInterval(function () {
+				var val = $("#search").val();
+				if (val != search) {
+					search = val;
+					ws.send(command("search", [search]));
+				}
+			}, 200);
+			$("#search").keyup(function (e) {
+				if (e.keyCode == 13 && topResult) {
+					window.open("/ladder#" + topResult.symbol, topResult.symbol, "dialog=yes,width=245,height=600");
+				}
+			});
+			$("#search").focus();
 
-            $(document).bind('focus',function(event){
-                $("#search").focus();
-            }, false);
-        });
-        function display(results, toomany) {
-            topResult = undefined;
-            $("#too_many").toggleClass("invisible",!toomany);
-            if(results) {
-                $(".result").remove();
-                results.forEach(function(x,i) {
+			$(document).bind('focus', function (event) {
+				$("#search").focus();
+			}, false);
+		});
+		function display(results, toomany) {
+			topResult = undefined;
+			$("#too_many").toggleClass("invisible", !toomany);
+			if (results) {
+				$(".result").remove();
+				results.forEach(function (x, i) {
 
-                    var row = $("#search_results tr.template.row").clone().removeClass("template").addClass('result');
-                    row.find('.symbol').text(x.symbol);
-                    row.find('.display').text(x.displaySymbol);
-                    row.find('.description').text(x.description);
-                    var link = x.link;
-                    var symbol = x.symbol;
-                    row.find('.symbol').bind('click', function(){
-                        launchLadder(x.symbol);
-                    });
-                    row.toggleClass('highlight', i==0);
-                    $("#search_results").append(row);
-                    if(i == 0) {
-                        topResult = x;
-                    }
-                    row.find('.worm').bind('click', function() {
-                        webwormLink([{symbol:x.symbol,exchange:x.mdSource}]);
-                    });
-                })
-            }
-        }
+					var row = $("#search_results tr.template.row").clone().removeClass("template").addClass('result');
+					row.find('.symbol').text(x.symbol);
+					row.find('.display').text(x.displaySymbol);
+					row.find('.description').text(x.description);
+					var link = x.link;
+					var symbol = x.symbol;
+					row.find('.symbol').bind('click', function () {
+						launchLadder(x.symbol);
+					});
+					row.toggleClass('highlight', i == 0);
+					$("#search_results").append(row);
+					if (i == 0) {
+						topResult = x;
+					}
+					row.find('.worm').bind('click', function () {
+						webwormLink([{symbol: x.symbol, exchange: x.mdSource}]);
+					});
+				})
+			}
+		}
 
-        function webwormLink(symbols, date) {
+		function webwormLink(symbols, date) {
 
-            var d = date || new Date();
+			var d = date || new Date();
 
-            var symbolTemplate = "(exchange:{{EXCHANGE}},name:{{SYMBOL}})";
-            var linkTemplate = "http://webworm/?date:%27{{DATE}}%27,symbols:!({{SYMBOLS}})";
+			var symbolTemplate = "(exchange:{{EXCHANGE}},name:{{SYMBOL}})";
+			var linkTemplate = "http://webworm/?date:%27{{DATE}}%27,symbols:!({{SYMBOLS}})";
 
-            var symbolList = symbols.map(function(s) {
-                var symbol = s.symbol;
-                var exchange = s.exchange.toUpperCase();
-                var parts = symbol.split(" ");
-                if(parts.length == 2) {
-                    symbol = parts[0];
+			var symbolList = symbols.map(function (s) {
+				var symbol = s.symbol;
+				var exchange = s.exchange.toUpperCase();
+				var parts = symbol.split(" ");
+				if (parts.length == 2) {
+					symbol = parts[0];
 
-                }
-                return symbolTemplate
-                        .split("{{EXCHANGE}}").join(exchange)
-                        .split("{{SYMBOL}}").join(symbol);
-            }).join(",");
+				}
+				return symbolTemplate
+						.split("{{EXCHANGE}}").join(exchange)
+						.split("{{SYMBOL}}").join(symbol);
+			}).join(",");
 
-            var link = linkTemplate
-                    .split("{{SYMBOLS}}").join(symbolList)
-                    .split("{{DATE}}").join(d.toISOString().split("T")[0]);
+			var link = linkTemplate
+					.split("{{SYMBOLS}}").join(symbolList)
+					.split("{{DATE}}").join(d.toISOString().split("T")[0]);
 
-            popUp(link,  undefined, 1400, 1000);
+			popUp(link, undefined, 1400, 1000);
 
-        }
+		}
 
 
-    </script>
+	</script>
 </head>
 <body id="search_page">
 
 <div id="search_box">
-    <input id="search" type="text"/>
+	<input id="search" type="text"/>
 </div>
 
 
 <div id="search_results_container">
-    <div id="too_many" class="invisible">(too many results...)</div>
-    <table id="search_results">
-        <tr class="template row">
-            <td class="symbol"></td>
-            <td class="display"></td>
-            <td class="description"></td>
-            <td class="worm"> worm </td>
-        </tr>
-    </table>
+	<div id="too_many" class="invisible">(too many results...)</div>
+	<table id="search_results">
+		<tr class="template row">
+			<td class="symbol"></td>
+			<td class="display"></td>
+			<td class="description"></td>
+			<td class="worm"> worm</td>
+		</tr>
+	</table>
 </div>
 
 </body>

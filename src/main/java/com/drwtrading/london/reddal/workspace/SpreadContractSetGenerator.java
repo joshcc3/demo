@@ -1,8 +1,9 @@
-package com.drwtrading.london.reddal.symbols;
+package com.drwtrading.london.reddal.workspace;
 
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
+import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.google.common.collect.ImmutableSet;
 import org.jetlang.channels.Publisher;
 

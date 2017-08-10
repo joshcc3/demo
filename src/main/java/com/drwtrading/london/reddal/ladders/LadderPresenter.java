@@ -12,10 +12,8 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
-import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReplaceCommand;
-import com.drwtrading.london.reddal.symbols.SpreadContractSet;
 import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
@@ -34,9 +32,12 @@ import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
 import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
+import com.drwtrading.london.reddal.workspace.SpreadContractSet;
+import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
@@ -101,6 +102,7 @@ public class LadderPresenter {
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
+    private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
     private OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx;
 
     public LadderPresenter(final DepthBookSubscriber bookHandler, final String ewokBaseURL,
@@ -110,7 +112,8 @@ public class LadderPresenter {
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher,
-            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher) {
+            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
+            final Publisher<HostWorkspaceRequest> userWorkspaceRequests) {
 
         this.bookHandler = bookHandler;
         this.ewokBaseURL = ewokBaseURL;
@@ -127,6 +130,7 @@ public class LadderPresenter {
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
         this.orderEntryCommandToServerPublisher = orderEntryCommandToServerPublisher;
+        this.userWorkspaceRequests = userWorkspaceRequests;
         this.ladderPrefsForUserBySymbol = new HashMap<>();
         this.marketDataForSymbolMap = new MapMaker().makeComputingMap(this::subscribeToMarketDataForSymbol);
     }
@@ -153,8 +157,8 @@ public class LadderPresenter {
         final LadderView ladderView =
                 new LadderView(connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions, statsPublisher,
                         tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
-                        ladderClickTradingIssuePublisher, userCycleContractPublisher, orderEntryMap, orderEntryCommandToServerPublisher,
-                        existingSymbols::contains);
+                        ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
+                        orderEntryCommandToServerPublisher, existingSymbols::contains);
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }

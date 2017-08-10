@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.symbols;
+package com.drwtrading.london.reddal.workspace;
 
 import com.drwtrading.london.util.Struct;
 

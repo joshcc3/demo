@@ -1,8 +1,7 @@
-package com.drwtrading.london.reddal.ladders;
+package com.drwtrading.london.reddal.workspace;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.reddal.ReplaceCommand;
-import com.drwtrading.london.reddal.symbols.SpreadContractSet;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
@@ -25,10 +24,10 @@ public class LadderWorkspace {
     private final UILogger webLog;
 
     private final Publisher<ReplaceCommand> replaceCommand;
-    private final WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
-    private final Multimap<String, View> workspacesByHost = ArrayListMultimap.create();
-    private final Multimap<String, View> setsByHost = ArrayListMultimap.create();
-    private final Set<View> lockedViews = new HashSet<>();
+    private final WebSocketViews<WorkspaceView> views = new WebSocketViews<>(WorkspaceView.class, this);
+    private final Multimap<String, WorkspaceView> workspacesByHost = ArrayListMultimap.create();
+    private final Multimap<String, WorkspaceView> setsByHost = ArrayListMultimap.create();
+    private final Set<WorkspaceView> lockedViews = new HashSet<>();
 
     private final Map<String, SpreadContractSet> contractSets;
 
@@ -43,13 +42,13 @@ public class LadderWorkspace {
 
     @Subscribe
     public void on(final WebSocketConnected webSocketConnected) {
-        final View view = views.register(webSocketConnected);
+        final WorkspaceView view = views.register(webSocketConnected);
         workspacesByHost.put(webSocketConnected.getClient().getHost(), view);
     }
 
     @Subscribe
     public void on(final WebSocketDisconnected webSocketDisconnected) {
-        final View view = views.unregister(webSocketDisconnected);
+        final WorkspaceView view = views.unregister(webSocketDisconnected);
         workspacesByHost.remove(webSocketDisconnected.getClient().getHost(), view);
         lockedViews.remove(view);
         setsByHost.remove(webSocketDisconnected.getClient().getHost(), view);
@@ -61,8 +60,7 @@ public class LadderWorkspace {
         views.invoke(msg);
     }
 
-    @Subscribe
-    public void on(final SpreadContractSet contractSet) {
+    public void setContractSet(final SpreadContractSet contractSet) {
 
         contractSets.put(contractSet.symbol, contractSet);
 
@@ -72,37 +70,41 @@ public class LadderWorkspace {
 
     @FromWebSocketView
     public void setify(final WebSocketInboundData data) {
-        final View view = views.get(data.getOutboundChannel());
+        final WorkspaceView view = views.get(data.getOutboundChannel());
         workspacesByHost.remove(data.getClient().getHost(), view);
         setsByHost.put(data.getClient().getHost(), view);
     }
 
     @FromWebSocketView
     public void unsetify(final WebSocketInboundData data) {
-        final View view = views.get(data.getOutboundChannel());
+        final WorkspaceView view = views.get(data.getOutboundChannel());
         setsByHost.remove(data.getClient().getHost(), view);
         workspacesByHost.put(data.getClient().getHost(), view);
     }
 
     @FromWebSocketView
     public void lock(final WebSocketInboundData data) {
-        final View view = views.get(data.getOutboundChannel());
+        final WorkspaceView view = views.get(data.getOutboundChannel());
         lockedViews.add(view);
     }
 
     @FromWebSocketView
     public void unlock(final WebSocketInboundData data) {
-        final View view = views.get(data.getOutboundChannel());
+        final WorkspaceView view = views.get(data.getOutboundChannel());
         lockedViews.remove(view);
     }
 
     @FromWebSocketView
     public void replace(final String from, final String to, final WebSocketInboundData data) {
-        for (final View view : workspacesByHost.values()) {
+        for (final WorkspaceView view : workspacesByHost.values()) {
             view.replace(from, to);
         }
         final ReplaceCommand command = new ReplaceCommand(data.getClient().getUserName(), from, to);
         replaceCommand.publish(command);
+    }
+
+    public void openLadder(final HostWorkspaceRequest userRequest) {
+        openLadderForUser(userRequest.host, userRequest.symbol);
     }
 
     public boolean openLadderForUser(final String user, String symbol) {
@@ -110,11 +112,11 @@ public class LadderWorkspace {
         boolean openedWorkspace = false;
         if (workspacesByHost.containsKey(user)) {
 
-            final ArrayDeque<View> viewsList = new ArrayDeque<>(workspacesByHost.get(user));
+            final ArrayDeque<WorkspaceView> viewsList = new ArrayDeque<>(workspacesByHost.get(user));
 
             while (!openedWorkspace && !viewsList.isEmpty()) {
 
-                final View view = viewsList.pollLast();
+                final WorkspaceView view = viewsList.pollLast();
 
                 if (!lockedViews.contains(view)) {
                     view.addSymbol(symbol);
@@ -128,16 +130,16 @@ public class LadderWorkspace {
         }
 
         final SpreadContractSet contractSet = contractSets.get(symbol);
-        final Collection<View> views = setsByHost.get(user);
+        final Collection<WorkspaceView> views = setsByHost.get(user);
 
         boolean openedSpreadWorkspace = false;
         if (null != views && null != contractSet) {
 
-            final ArrayDeque<View> viewsList = new ArrayDeque<>(views);
+            final ArrayDeque<WorkspaceView> viewsList = new ArrayDeque<>(views);
 
             while (!openedSpreadWorkspace && !viewsList.isEmpty()) {
 
-                final View view = viewsList.pollLast();
+                final WorkspaceView view = viewsList.pollLast();
 
                 if (!lockedViews.contains(view)) {
 
@@ -160,15 +162,6 @@ public class LadderWorkspace {
                 }
             }
         }
-
         return openedWorkspace || openedSpreadWorkspace;
     }
-
-    public static interface View {
-
-        public void addSymbol(String symbol);
-
-        public void replace(String from, String to);
-    }
-
 }
