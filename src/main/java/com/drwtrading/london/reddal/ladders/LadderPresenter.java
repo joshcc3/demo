@@ -6,6 +6,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
@@ -13,6 +14,7 @@ import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.SymbolAvailable;
 import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
@@ -36,11 +38,9 @@ import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
-import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
+import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
-import com.drwtrading.monitoring.stats.StatsMsg;
-import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.photons.ladder.DeskPosition;
 import com.drwtrading.photons.ladder.InfoOnLadder;
 import com.drwtrading.photons.ladder.LadderText;
@@ -71,12 +71,12 @@ public class LadderPresenter {
     public static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 5;
     public static final long HEARTBEAT_INTERVAL_MS = 1000;
 
+    private final IResourceMonitor<ReddalComponents> monitor;
     private final DepthBookSubscriber bookHandler;
     private final String ewokBaseURL;
 
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
-    private final Publisher<StatsMsg> statsPublisher;
 
     private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<>();
     private final Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
@@ -105,9 +105,9 @@ public class LadderPresenter {
     private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
     private OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx;
 
-    public LadderPresenter(final DepthBookSubscriber bookHandler, final String ewokBaseURL,
-            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-            final Publisher<StatsMsg> statsPublisher, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+    public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final DepthBookSubscriber bookHandler,
+            final String ewokBaseURL, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer,
+            final LadderOptions ladderOptions, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
@@ -115,12 +115,12 @@ public class LadderPresenter {
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
             final Publisher<HostWorkspaceRequest> userWorkspaceRequests) {
 
+        this.monitor = monitor;
         this.bookHandler = bookHandler;
         this.ewokBaseURL = ewokBaseURL;
 
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
-        this.statsPublisher = statsPublisher;
         this.storeLadderPrefPublisher = storeLadderPrefPublisher;
         this.roundTripPublisher = roundTripPublisher;
         this.commandPublisher = commandPublisher;
@@ -155,7 +155,7 @@ public class LadderPresenter {
         final UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         final ILadderUI view = new WebSocketOutputDispatcher<>(ILadderUI.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final LadderView ladderView =
-                new LadderView(connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions, statsPublisher,
+                new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions,
                         tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
                         ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
                         orderEntryCommandToServerPublisher, existingSymbols::contains);
@@ -280,17 +280,6 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(final LadderClickTradingIssue ladderClickTradingIssue) {
-        final Collection<LadderView> views = viewsBySymbol.get(ladderClickTradingIssue.symbol);
-        for (final LadderView view : views) {
-            view.clickTradingIssue(ladderClickTradingIssue);
-            fiber.schedule(() -> view.clickTradingIssue(new LadderClickTradingIssue(ladderClickTradingIssue.symbol, "")), 5000,
-                    TimeUnit.MILLISECONDS);
-        }
-
-    }
-
-    @Subscribe
     public void on(final WorkingOrderUpdateFromServer workingOrderUpdate) {
         ordersBySymbol.get(workingOrderUpdate.value.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
     }
@@ -316,9 +305,18 @@ public class LadderPresenter {
     @Subscribe
     public void on(final LadderText ladderText) {
         if ("execution".equals(ladderText.getCell())) {
-            on(new LadderClickTradingIssue(ladderText.getSymbol(), ladderText.getText()));
+            displayTradeIssue(new LadderClickTradingIssue(ladderText.getSymbol(), ladderText.getText()));
         } else {
             metaDataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
+        }
+    }
+
+    public void displayTradeIssue(final LadderClickTradingIssue ladderClickTradingIssue) {
+        final Collection<LadderView> views = viewsBySymbol.get(ladderClickTradingIssue.symbol);
+        for (final LadderView view : views) {
+            view.clickTradingIssue(ladderClickTradingIssue);
+            fiber.schedule(() -> view.clickTradingIssue(new LadderClickTradingIssue(ladderClickTradingIssue.symbol, "")), 5000,
+                    TimeUnit.MILLISECONDS);
         }
     }
 
@@ -456,9 +454,9 @@ public class LadderPresenter {
             for (final LadderView ladderView : viewBySocket.values()) {
                 ladderView.timedRefresh();
             }
+            monitor.setOK(ReddalComponents.LADDER_PRESENTER);
         } catch (final Throwable t) {
-            statsPublisher.publish(new AdvisoryStat("Reddal", AdvisoryStat.Level.WARNING, "Failed to flush [" + t.getMessage() + "]."));
-            t.printStackTrace();
+            monitor.logError(ReddalComponents.LADDER_PRESENTER, "Failed to flush.", t);
         }
         return BATCH_FLUSH_INTERVAL_MS;
     }

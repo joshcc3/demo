@@ -18,8 +18,6 @@ import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
-import com.drwtrading.monitoring.stats.StatsMsg;
-import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
@@ -45,13 +43,12 @@ import java.util.stream.Collectors;
 public class WorkingOrdersPresenter {
 
     private static final long HEART_BEAT_TIMEOUT_NANOS = 5 * DateTimeUtil.NANOS_IN_SECS;
-    public static final Predicate<WorkingOrderUpdateFromServer> NON_GTC_FILTER = (order) -> !order.isLikelyGTC();
+    public static final Predicate<WorkingOrderUpdateFromServer> NON_GTC_FILTER = order -> !order.isLikelyGTC();
 
     private final IClock clock;
     private final IResourceMonitor<ReddalComponents> monitor;
     private final UILogger webLog;
 
-    private final Publisher<StatsMsg> statsMsgPublisher;
     private final Publisher<Main.RemoteOrderCommandToServer> commands;
     private final Publisher<OrderEntryCommandToServer> managedOrderCommands;
 
@@ -71,15 +68,13 @@ public class WorkingOrdersPresenter {
     private long lastViewerHeartbeatNanoSinceMidnight;
 
     public WorkingOrdersPresenter(final IClock clock, final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
-            final Scheduler scheduler, final Publisher<StatsMsg> statsMsgPublisher,
-            final Publisher<Main.RemoteOrderCommandToServer> commands, final Collection<String> nibblers,
-            Publisher<OrderEntryCommandToServer> managedOrderCommands) {
+            final Scheduler scheduler, final Publisher<Main.RemoteOrderCommandToServer> commands, final Collection<String> nibblers,
+            final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
 
         this.clock = clock;
         this.monitor = monitor;
         this.webLog = webLog;
 
-        this.statsMsgPublisher = statsMsgPublisher;
         this.commands = commands;
         this.managedOrderCommands = managedOrderCommands;
 
@@ -119,7 +114,7 @@ public class WorkingOrdersPresenter {
     @BatchSubscriber
     @Subscribe
     public void on(final List<UpdateFromServer> updates) {
-        for (UpdateFromServer update : updates) {
+        for (final UpdateFromServer update : updates) {
             if (update.update.isDead()) {
                 managedOrders.remove(update.key);
             } else {
@@ -130,10 +125,10 @@ public class WorkingOrdersPresenter {
     }
 
     @Subscribe
-    public void on(ServerDisconnected serverDisconnected) {
-        List<UpdateFromServer> collect = managedOrders.values().stream().filter(
+    public void on(final ServerDisconnected serverDisconnected) {
+        final List<UpdateFromServer> collect = managedOrders.values().stream().filter(
                 updateFromServer -> serverDisconnected.server.equals(updateFromServer.server)).collect(Collectors.toList());
-        for (UpdateFromServer updateFromServer : collect) {
+        for (final UpdateFromServer updateFromServer : collect) {
             managedOrders.remove(updateFromServer.key);
             dirtyManaged.remove(updateFromServer.key);
         }
@@ -236,7 +231,7 @@ public class WorkingOrdersPresenter {
         for (final String nibbler : nibblersStatus.keySet()) {
             stopAllStrategies(nibbler, user, reason);
         }
-        managedOrders.values().forEach(order -> cancel(user, order));
+        managedOrders.values().forEach(this::cancel);
     }
 
     @FromWebSocketView
@@ -244,8 +239,7 @@ public class WorkingOrdersPresenter {
         final String user = data.getClient().getUserName();
         workingOrders.values().stream().filter(order -> nibbler.equals(order.fromServer)).filter(NON_GTC_FILTER).forEach(
                 order -> cancel(user, order));
-        managedOrders.values().stream().filter(order -> nibbler.equals(order.server)).forEach(
-                updateFromServer -> cancel(user, updateFromServer));
+        managedOrders.values().stream().filter(order -> nibbler.equals(order.server)).forEach(this::cancel);
         stopAllStrategies(nibbler, user, "Working orders - Cancel exchange non-gtc.");
     }
 
@@ -253,7 +247,7 @@ public class WorkingOrdersPresenter {
     public void cancelAll(final WebSocketInboundData data) {
         final String user = data.getClient().getUserName();
         workingOrders.values().forEach(order -> cancel(user, order));
-        managedOrders.values().forEach(order -> cancel(user, order));
+        managedOrders.values().forEach(this::cancel);
         for (final String nibbler : nibblersStatus.keySet()) {
             stopAllStrategies(nibbler, user, "Working orders - Cancel ALL exchange.");
         }
@@ -263,8 +257,7 @@ public class WorkingOrdersPresenter {
     public void cancelExchange(final WebSocketInboundData data, final String nibbler) {
         final String user = data.getClient().getUserName();
         workingOrders.values().stream().filter(order -> nibbler.equals(order.fromServer)).forEach(order -> cancel(user, order));
-        managedOrders.values().stream().filter(order -> nibbler.equals(order.server)).forEach(
-                updateFromServer -> cancel(user, updateFromServer));
+        managedOrders.values().stream().filter(order -> nibbler.equals(order.server)).forEach(this::cancel);
         stopAllStrategies(nibbler, user, "Working orders - Cancel ALL.");
     }
 
@@ -276,25 +269,18 @@ public class WorkingOrdersPresenter {
 
     @FromWebSocketView
     public void cancelOrder(final String key, final WebSocketInboundData data) {
-        final String user = data.getClient().getUserName();
-        if (!cancelKey(key, user)) {
-            statsMsgPublisher.publish(
-                    new AdvisoryStat("Reddal Working Orders", AdvisoryStat.Level.INFO, "Tried to cancel non-existent order [" + key + ']'));
-        }
-    }
 
-    private boolean cancelKey(String key, String user) {
-        UpdateFromServer updateFromServer = managedOrders.get(key);
+        final String user = data.getClient().getUserName();
+
+        final UpdateFromServer updateFromServer = managedOrders.get(key);
         if (null != updateFromServer) {
-            cancel(user, updateFromServer);
-            return true;
+            cancel(updateFromServer);
+        } else {
+            final WorkingOrderUpdateFromServer order = workingOrders.get(key);
+            if (null != order) {
+                cancel(user, order);
+            }
         }
-        final WorkingOrderUpdateFromServer order = workingOrders.get(key);
-        if (null != order) {
-            cancel(user, order);
-            return true;
-        }
-        return false;
     }
 
     // -----------------
@@ -305,7 +291,7 @@ public class WorkingOrdersPresenter {
                         order.toRemoteOrder(order.value.getPrice(), order.value.getTotalQuantity()))));
     }
 
-    private void cancel(final String user, final UpdateFromServer order) {
+    private void cancel(final UpdateFromServer order) {
         managedOrderCommands.publish(
                 new OrderEntryCommandToServer(order.server, new Cancel(order.update.getSystemOrderId(), order.update.getOrder())));
     }
@@ -316,7 +302,7 @@ public class WorkingOrdersPresenter {
             for (final WorkingOrderUpdateFromServer workingOrderUpdate : dirty.values()) {
                 publishWorkingOrderUpdate(views.all(), workingOrderUpdate);
             }
-            for (UpdateFromServer updateFromServer : dirtyManaged.values()) {
+            for (final UpdateFromServer updateFromServer : dirtyManaged.values()) {
                 publishManagedOrderUpdate(views.all(), updateFromServer);
             }
         }
@@ -333,7 +319,7 @@ public class WorkingOrdersPresenter {
         dirtyManaged.clear();
     }
 
-    private void publishManagedOrderUpdate(IWorkingOrderView view, UpdateFromServer order) {
+    private void publishManagedOrderUpdate(final IWorkingOrderView view, final UpdateFromServer order) {
         final SearchResult searchResult = searchResults.get(order.symbol);
         final String price;
         if (null != searchResult) {
@@ -345,7 +331,7 @@ public class WorkingOrdersPresenter {
         }
 
         final String chainID = Integer.toString(order.update.getSystemOrderId());
-        OrderSide side = order.update.getOrder().getSide();
+        final OrderSide side = order.update.getOrder().getSide();
 
         view.updateWorkingOrder(order.key, chainID, order.symbol, side == OrderSide.BUY ? Side.BID.toString() : Side.OFFER.toString(),
                 price, order.update.getFilledQty(), order.update.getFilledQty() + order.update.getRemainingQty(), order.update.getState(),

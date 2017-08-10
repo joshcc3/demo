@@ -18,6 +18,8 @@ public enum ReddalComponents implements IMonitoredComponent {
 
     MD_TRANSPORT,
 
+    LADDER_PRESENTER,
+
     STACK_GROUP_CLIENT,
     STACK_OPXL_OUTPUT,
     STACK_MANAGER,

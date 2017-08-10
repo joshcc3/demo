@@ -70,7 +70,7 @@ public class LadderMessageRouter {
         } else {
             final String[] args = data.split("\0");
             final String cmd = args[0];
-            if (cmd.equals("ladder-subscribe")) {
+            if ("ladder-subscribe".equals(cmd)) {
                 final String symbol = args[1];
                 publisher = pool.get(getShard(symbol, pool.size()));
                 redirects.put(msg.getOutboundChannel(), publisher);

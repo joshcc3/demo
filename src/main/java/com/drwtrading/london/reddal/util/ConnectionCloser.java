@@ -30,5 +30,4 @@ public class ConnectionCloser implements Notifier {
                     "Disconnected " + name + ", idle for " + millisSinceLastMessage + "ms"));
         }
     }
-
 }

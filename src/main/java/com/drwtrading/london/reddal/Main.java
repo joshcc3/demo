@@ -34,6 +34,7 @@ import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.MDTransportComponents;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClientFactory;
+import com.drwtrading.london.eeif.utils.monitoring.ConcurrentMultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -77,7 +78,6 @@ import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
-import com.drwtrading.london.reddal.workspace.WorkspaceRequestHandler;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
@@ -119,6 +119,7 @@ import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.LadderWorkspace;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
+import com.drwtrading.london.reddal.workspace.WorkspaceRequestHandler;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.MsgCodec;
@@ -303,13 +304,22 @@ public class Main {
 
         final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER = (t, e) -> channels.errorPublisher.publish(e);
 
-        { // Monitoring
-            fibers.stats.subscribe(statsPublisher::publish, channels.stats);
-            fibers.stats.getFiber().schedule(() -> {
-                statsPublisher.start();
-                multicastEnabled.set(true);
-            }, 10, TimeUnit.SECONDS);
-        }
+        channels.stats.subscribe(fibers.stats.getFiber(), statsPublisher::publish);
+        fibers.stats.getFiber().schedule(() -> {
+            statsPublisher.start();
+            multicastEnabled.set(true);
+        }, 10, TimeUnit.SECONDS);
+
+        channels.error.subscribe(fibers.logging.getFiber(), message -> {
+            System.out.println(new Date());
+            message.printStackTrace();
+        });
+        channels.stats.subscribe(fibers.logging.getFiber(), message -> {
+            if (message instanceof AdvisoryStat) {
+                System.out.println(new Date());
+                System.out.println(message);
+            }
+        });
 
         final UILogger webLog = new UILogger(new SystemClock(), logDir);
 
@@ -358,8 +368,8 @@ public class Main {
 
             final Collection<String> nibblers = environment.getList(Environment.WORKING_ORDERS);
             final WorkingOrdersPresenter presenter =
-                    new WorkingOrdersPresenter(clock, monitor, webLog, fibers.ui.getFiber(), channels.stats, channels.remoteOrderCommand,
-                            nibblers, channels.orderEntryCommandToServer);
+                    new WorkingOrdersPresenter(clock, monitor, webLog, fibers.ui.getFiber(), channels.remoteOrderCommand, nibblers,
+                            channels.orderEntryCommandToServer);
             fibers.ui.subscribe(presenter, ws, channels.orderEntryFromServer);
             channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
             channels.workingOrders.subscribe(fibers.ui.getFiber(), presenter::onWorkingOrder);
@@ -377,7 +387,7 @@ public class Main {
 
         // Ladder presenters
         final MultiLayeredResourceMonitor<ReddalComponents> parentMonitor =
-                new MultiLayeredResourceMonitor<>(monitor, ReddalComponents.class, errorLog);
+                new ConcurrentMultiLayeredResourceMonitor<>(monitor, ReddalComponents.class, errorLog);
 
         final ConfigGroup mdConfig = root.getEnabledGroup("md");
         final ConfigGroup stackConfig = root.getEnabledGroup("stacks", "nibblers");
@@ -431,7 +441,7 @@ public class Main {
                         MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
 
                 final long staggeringDelay = 250L * ++mdCount;
-                displaySelectIO.execute(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
+                app.addStartUpAction(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
                     connection.restart();
                     return -1;
                 }));
@@ -441,8 +451,8 @@ public class Main {
             final String ewokBaseURL = root.getString(EWOK_BASE_URL_PARAM);
 
             final LadderPresenter presenter =
-                    new LadderPresenter(depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand, environment.ladderOptions(),
-                            channels.stats, channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
+                    new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
+                            environment.ladderOptions(), channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
                             channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
                             channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
 
@@ -471,10 +481,11 @@ public class Main {
             fiberBuilder.subscribe(presenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
                     channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
                     channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand,
-                    channels.ladderClickTradingIssues, channels.replaceCommand, channels.userCycleContractPublisher,
-                    channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults, channels.isinsGoingEx);
+                    channels.replaceCommand, channels.userCycleContractPublisher, channels.orderEntrySymbols, channels.orderEntryFromServer,
+                    channels.searchResults, channels.isinsGoingEx);
 
-            channels.pksExposure.subscribe(fiberBuilder.getFiber(), presenter::setPKSExposure);
+            channels.ladderClickTradingIssues.subscribe(displaySelectIOFiber, presenter::displayTradeIssue);
+            channels.pksExposure.subscribe(displaySelectIOFiber, presenter::setPKSExposure);
 
             final long initialDelay = 10 + i * (LadderPresenter.BATCH_FLUSH_INTERVAL_MS / webSockets.size());
             displaySelectIO.addDelayedAction(initialDelay, presenter::flushAllLadders);
@@ -602,11 +613,12 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
                         OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
                                 OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
-                cmdClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("order-entry." + server + ".log").toFile(),
-                        fibers.logging.getFiber(), true).handler(
-                        new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10)).handler(
-                        new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
-                                new ConnectionCloser(channels.stats, server + " OE Commands"), SERVER_TIMEOUT)).handler(client);
+                cmdClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
+                cmdClient.logFile(logDir.resolve("order-entry." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+                cmdClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10));
+                cmdClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
+                        new ConnectionCloser(channels.stats, server + " OE Commands"), SERVER_TIMEOUT));
+                cmdClient.handler(client);
                 fibers.remoteOrders.subscribe(client, channels.orderEntryCommandToServer);
                 fibers.remoteOrders.execute(cmdClient::start);
                 System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
@@ -615,11 +627,12 @@ public class Main {
                 final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
                         OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
                                 fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
-                updateClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("order-update." + server + ".log").toFile(),
-                        fibers.logging.getFiber(), true).handler(
-                        new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10)).handler(
-                        new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
-                                new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT)).handler(
+                updateClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
+                updateClient.logFile(logDir.resolve("order-update." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+                updateClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10));
+                updateClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
+                        new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT));
+                updateClient.handler(
                         new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(Constants::NO_OP,
                                 channels.orderEntryFromServer, evt -> {
                             if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
@@ -827,20 +840,6 @@ public class Main {
             new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
                     new OpxlExDateSubscriber(channels.errorPublisher, channels.isinsGoingEx)::onOpxlData,
                     ImmutableSet.of(OpxlExDateSubscriber.OPXL_KEY), fibers.opxlPosition.getFiber(), channels.errorPublisher);
-        }
-
-        // Error souting
-        {
-            channels.error.subscribe(fibers.logging.getFiber(), message -> {
-                System.out.println(new Date());
-                message.printStackTrace();
-            });
-            channels.stats.subscribe(fibers.logging.getFiber(), message -> {
-                if (message instanceof AdvisoryStat) {
-                    System.out.println(new Date());
-                    System.out.println(message);
-                }
-            });
         }
 
         // Logging

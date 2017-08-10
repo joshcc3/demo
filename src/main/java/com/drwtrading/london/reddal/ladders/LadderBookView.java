@@ -10,6 +10,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
+import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.photons.eeifoe.Cancel;
 import com.drwtrading.london.photons.eeifoe.Metadata;
@@ -21,6 +22,7 @@ import com.drwtrading.london.photons.reddal.ReddalCommand;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.UpdateOffset;
 import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MDForSymbol;
@@ -40,8 +42,6 @@ import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
-import com.drwtrading.monitoring.stats.StatsMsg;
-import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.google.common.collect.ImmutableSet;
 import drw.london.json.Jsonable;
@@ -109,6 +109,8 @@ public class LadderBookView implements ILadderBoard {
         PERSISTENT_PREFS.add(HTML.RANDOM_RELOAD_CHECK);
     }
 
+    private final IResourceMonitor<ReddalComponents> monitor;
+
     private final String username;
     private final boolean isTrader;
     private final String symbol;
@@ -123,7 +125,6 @@ public class LadderBookView implements ILadderBoard {
 
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher;
     private final Publisher<ReddalMessage> commandPublisher;
-    private final Publisher<StatsMsg> statsPublisher;
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final Publisher<OrderEntryCommandToServer> eeifCommandToServer;
     private final TradingStatusForAll tradingStatusForAll;
@@ -160,15 +161,18 @@ public class LadderBookView implements ILadderBoard {
     private Long modifyFromPrice;
     private long modifyFromPriceSelectedTime;
 
-    LadderBookView(final String username, final boolean isTrader, final String symbol, final UiPipeImpl ui, final ILadderUI view,
-            final LadderOptions ladderOptions, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+    LadderBookView(final IResourceMonitor<ReddalComponents> monitor, final String username, final boolean isTrader, final String symbol,
+            final UiPipeImpl ui, final ILadderUI view, final LadderOptions ladderOptions,
+            final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<StatsMsg> statsPublisher, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
             final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
             final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
             final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
             final Publisher<Jsonable> trace, final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
             final long centeredPrice) {
+
+        this.monitor = monitor;
 
         this.username = username;
         this.isTrader = isTrader;
@@ -196,7 +200,6 @@ public class LadderBookView implements ILadderBoard {
 
         this.ladderClickTradingIssuesPublisher = ladderClickTradingIssuesPublisher;
         this.commandPublisher = commandPublisher;
-        this.statsPublisher = statsPublisher;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.eeifCommandToServer = eeifCommandToServer;
         this.tradingStatusForAll = tradingStatusForAll;
@@ -983,7 +986,8 @@ public class LadderBookView implements ILadderBoard {
                 if (label.equals(htmlRowKeys.bookOrderKey)) {
                     cancelWorkingOrders(price);
                 } else {
-                    System.out.println("Mismatched label: " + data.get("price") + ' ' + htmlRowKeys.bookOrderKey + ' ' + label);
+                    monitor.logError(ReddalComponents.LADDER_PRESENTER,
+                            "Mismatched label: " + data.get("price") + ' ' + htmlRowKeys.bookOrderKey + ' ' + label);
                 }
             } else if (label.equals(HTML.BUY_OFFSET_UP)) {
                 commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.UP));
@@ -1085,10 +1089,6 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private boolean shouldAutoHedge(final String autoHedgePref) {
-        return null != ladderPrefsForSymbolUser && "true".equals(getPref(autoHedgePref));
-    }
-
     private void submitOrderLeftClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data) {
 
         final String orderType = getPref(HTML.ORDER_TYPE_LEFT);
@@ -1126,7 +1126,7 @@ public class LadderBookView implements ILadderBoard {
                 if (managedOrderTypes.contains(orderType)) {
                     submitManagedOrder(orderType, price, side, tag);
                 } else if (oldOrderTypes.contains(orderType)) {
-                    submitOrder(clientSpeedState, orderType, price, side, tag, ladderClickTradingIssuesPublisher);
+                    submitOrder(clientSpeedState, orderType, price, side, tag);
                 } else {
                     LadderView.clickTradingIssue(ui, new LadderClickTradingIssue(symbol, "Unknown order type: " + orderType));
                     return;
@@ -1175,7 +1175,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final long price, final Side side,
-            final String tag, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+            final String tag) {
 
         final int sequenceNumber = orderSeqNo++;
 
@@ -1185,8 +1185,8 @@ public class LadderBookView implements ILadderBoard {
         if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
             final String message = "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", client " + username +
                     " is " + clientSpeedState;
-            statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, message));
-            ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
+            monitor.logError(ReddalComponents.LADDER_PRESENTER, message);
+            ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
         } else {
 
             final String serverName =
@@ -1197,11 +1197,9 @@ public class LadderBookView implements ILadderBoard {
             if (null == serverName) {
                 final String message = "Cannot submit order " + orderType + ' ' + side + ' ' + clickTradingBoxQty + " for " + symbol +
                         ", no valid server found.";
-                statsPublisher.publish(new AdvisoryStat("Click-Trading", AdvisoryStat.Level.WARNING, message));
-                ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
+                monitor.logError(ReddalComponents.LADDER_PRESENTER, message);
+                ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
             } else {
-
-                System.out.println("Order: " + symbol + ' ' + remoteOrderType.toString() + " resolved to " + serverName);
 
                 final TradingStatusWatchdog.ServerTradingStatus serverTradingStatus =
                         tradingStatusForAll.serverTradingStatusMap.get(serverName);
@@ -1210,8 +1208,8 @@ public class LadderBookView implements ILadderBoard {
                     final String message =
                             "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", server " + serverName +
                                     " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString());
-                    statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING, message));
-                    ladderClickTradingIssues.publish(new LadderClickTradingIssue(symbol, message));
+                    monitor.logError(ReddalComponents.LADDER_PRESENTER, message);
+                    ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
                 } else {
 
                     final RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(serverName, username, sequenceNumber,
@@ -1261,12 +1259,10 @@ public class LadderBookView implements ILadderBoard {
             final TradingStatusWatchdog.ServerTradingStatus serverTradingStatus =
                     tradingStatusForAll.serverTradingStatusMap.get(order.fromServer);
             if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
-                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING,
-                        "Cannot modify order , client " + username + " is " + clientSpeedState));
+                monitor.logError(ReddalComponents.LADDER_PRESENTER, "Cannot modify order , client " + username + " is " + clientSpeedState);
             } else if (serverTradingStatus == null || serverTradingStatus.tradingStatus != TradingStatusWatchdog.Status.OK) {
-                statsPublisher.publish(new AdvisoryStat("Click-trading", AdvisoryStat.Level.WARNING,
-                        "Cannot modify order: server " + order.fromServer + " has status " +
-                                (serverTradingStatus == null ? null : serverTradingStatus.toString())));
+                monitor.logError(ReddalComponents.LADDER_PRESENTER, "Cannot modify order: server " + order.fromServer + " has status " +
+                        (serverTradingStatus == null ? null : serverTradingStatus.toString()));
             } else {
 
                 final RemoteModifyOrder remoteModifyOrder =
@@ -1336,7 +1332,7 @@ public class LadderBookView implements ILadderBoard {
                         order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
 
         if (isTrader) {
-            Main.RemoteOrderCommandToServer cancel = order.buildCancelCommand(username);
+            final Main.RemoteOrderCommandToServer cancel = order.buildCancelCommand(username);
             remoteOrderCommandToServerPublisher.publish(cancel);
         }
     }
@@ -1345,8 +1341,8 @@ public class LadderBookView implements ILadderBoard {
 
         final WorkingOrderUpdateFromServer orderUpdateFromServer = workingOrdersForSymbol.ordersByKey.get(singleOrderCommand.getOrderKey());
         if (orderUpdateFromServer == null) {
-            statsPublisher.publish(
-                    new AdvisoryStat("Reddal", AdvisoryStat.Level.WARNING, "Could not find order for command: " + singleOrderCommand));
+
+            monitor.logError(ReddalComponents.LADDER_PRESENTER, "Could not find order for command: " + singleOrderCommand);
         } else if (singleOrderCommand instanceof OrdersPresenter.CancelOrder) {
             cancelOrder(orderUpdateFromServer);
         } else if (singleOrderCommand instanceof OrdersPresenter.ModifyOrderQuantity) {

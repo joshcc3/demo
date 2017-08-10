@@ -75,11 +75,9 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
         if (null != listener) {
             bookSubscribe(listener, book);
         }
-
         if (isPrimary) {
             final SearchResult searchResult = new SearchResult(book);
             searchResults.publish(searchResult);
-
         }
     }
 
