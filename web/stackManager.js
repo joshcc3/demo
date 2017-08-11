@@ -305,7 +305,15 @@ function addFamily(familyName) {
 
 		openConfigWindowDiv.mousedown(function (e) {
 			if (e.button == 2) {
-				popUp("/stackConfig#;" + familyName, "Configs", 2200, 400);
+				var children = family.find(".children .row:not(.header)");
+				if (children.length) {
+					var configs = "";
+					children.each(function () {
+						configs = configs + $(this).attr("id").replace("_", " ")  + ",";
+					});
+					configs = configs.substr(0, configs.length - 1);
+					popUp("/stackConfig#;" + configs, "Configs", 2200, 400);
+				}
 			}
 		});
 
