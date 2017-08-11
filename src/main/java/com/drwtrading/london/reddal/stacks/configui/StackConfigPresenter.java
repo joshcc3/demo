@@ -128,7 +128,7 @@ public class StackConfigPresenter {
 
         final String leanToQuoteRatio;
         if (Double.isNaN(leanConfig.getLeanToQuoteRatio())) {
-            leanToQuoteRatio = "0";
+            leanToQuoteRatio = "1";
         } else {
             leanToQuoteRatio = Double.toString(leanConfig.getLeanToQuoteRatio());
         }
@@ -143,13 +143,13 @@ public class StackConfigPresenter {
                 additiveConfig.isEnabled(), additiveConfig.getMaxSignalAgeMillis(), additiveConfig.getMinRequiredBPS(),
                 additiveConfig.getMaxBPS(), bidPlanConfig.getMinLevelQty(), bidPlanConfig.getMaxLevelQty(), bidPlanConfig.getLotSize(),
                 bidPlanConfig.getMaxLevels(), bidPlanConfig.getMinPicardQty(), bidStrategyConfig.getMaxOrdersPerLevel(),
-                bidStrategyConfig.isOnlySubmitBestLevel(), bidStrategyConfig.isQuoteBettermentOn(),
+                bidStrategyConfig.isOnlySubmitBestLevel(), bidStrategyConfig.isQuoteBettermentOn(), bidStrategyConfig.getModTicks(),
                 bidStrategyConfig.getQuoteFlickerBufferPercent(), bidStrategyConfig.getQuotePicardMaxTicksThrough(),
                 bidStrategyConfig.getPicardMaxPerSec(), bidStrategyConfig.getPicardMaxPerMin(), bidStrategyConfig.getPicardMaxPerHour(),
                 bidStrategyConfig.getPicardMaxPerDay(), askPlanConfig.getMinLevelQty(), askPlanConfig.getMaxLevelQty(),
                 askPlanConfig.getLotSize(), askPlanConfig.getMaxLevels(), askPlanConfig.getMinPicardQty(),
                 askStrategyConfig.getMaxOrdersPerLevel(), askStrategyConfig.isOnlySubmitBestLevel(),
-                askStrategyConfig.isQuoteBettermentOn(), askStrategyConfig.getQuoteFlickerBufferPercent(),
+                askStrategyConfig.isQuoteBettermentOn(), askStrategyConfig.getModTicks(), askStrategyConfig.getQuoteFlickerBufferPercent(),
                 askStrategyConfig.getQuotePicardMaxTicksThrough(), askStrategyConfig.getPicardMaxPerSec(),
                 askStrategyConfig.getPicardMaxPerMin(), askStrategyConfig.getPicardMaxPerHour(), askStrategyConfig.getPicardMaxPerDay());
     }
@@ -168,12 +168,13 @@ public class StackConfigPresenter {
             final boolean additiveIsEnabled, final int additiveMaxSignalAgeMillis, final int additiveMinRequiredBPS,
             final int additiveMaxBPS, final int bidPlanMinLevelQty, final int bidPlanMaxLevelQty, final int bidPlanLotSize,
             final int bidPlanMaxLevels, final int bidMinPicardQty, final int bidMaxOrdersPerLevel, final boolean bidIsOnlySubmitBestLevel,
-            final boolean bidIsQuoteBettermentOn, final int bidQuoteFlickerBufferPercent, final int bidPicardMaxTicksThrough,
-            final int bidPicardMaxPerSec, final int bidPicardMaxPerMin, final int bidPicardMaxPerHour, final int bidPicardMaxPerDay,
-            final int askPlanMinLevelQty, final int askPlanMaxLevelQty, final int askPlanLotSize, final int askPlanMaxLevels,
-            final int askMinPicardQty, final int askMaxOrdersPerLevel, final boolean askIsOnlySubmitBestLevel,
-            final boolean askIsQuoteBettermentOn, final int askQuoteFlickerBufferPercent, final int askPicardMaxTicksThrough,
-            final int askPicardMaxPerSec, final int askPicardMaxPerMin, final int askPicardMaxPerHour, final int askPicardMaxPerDay) {
+            final boolean bidIsQuoteBettermentOn, final int bidModTicks, final int bidQuoteFlickerBufferPercent,
+            final int bidPicardMaxTicksThrough, final int bidPicardMaxPerSec, final int bidPicardMaxPerMin, final int bidPicardMaxPerHour,
+            final int bidPicardMaxPerDay, final int askPlanMinLevelQty, final int askPlanMaxLevelQty, final int askPlanLotSize,
+            final int askPlanMaxLevels, final int askMinPicardQty, final int askMaxOrdersPerLevel, final boolean askIsOnlySubmitBestLevel,
+            final boolean askIsQuoteBettermentOn, final int askModTicks, final int askQuoteFlickerBufferPercent,
+            final int askPicardMaxTicksThrough, final int askPicardMaxPerSec, final int askPicardMaxPerMin, final int askPicardMaxPerHour,
+            final int askPicardMaxPerDay) {
 
         final double leanToQuoteRatio = Double.parseDouble(leanToQuoteRatioStr);
         final long leanPriceAdjustment = (long) (Double.parseDouble(leanPriceAdjustmentRawStr) * Constants.NORMALISING_FACTOR);
@@ -194,13 +195,13 @@ public class StackConfigPresenter {
             configClient.planConfigUpdated(SOURCE, configGroupID, BookSide.BID, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
                     bidPlanMaxLevels, bidMinPicardQty);
             configClient.strategyConfigUpdated(SOURCE, configGroupID, BookSide.BID, bidMaxOrdersPerLevel, bidIsOnlySubmitBestLevel,
-                    bidIsQuoteBettermentOn, (byte) bidQuoteFlickerBufferPercent, bidPicardMaxTicksThrough, bidPicardMaxPerSec,
+                    bidIsQuoteBettermentOn, bidModTicks, (byte) bidQuoteFlickerBufferPercent, bidPicardMaxTicksThrough, bidPicardMaxPerSec,
                     bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay);
 
             configClient.planConfigUpdated(SOURCE, configGroupID, BookSide.ASK, askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize,
                     askPlanMaxLevels, askMinPicardQty);
             configClient.strategyConfigUpdated(SOURCE, configGroupID, BookSide.ASK, askMaxOrdersPerLevel, askIsOnlySubmitBestLevel,
-                    askIsQuoteBettermentOn, (byte) askQuoteFlickerBufferPercent, askPicardMaxTicksThrough, askPicardMaxPerSec,
+                    askIsQuoteBettermentOn, askModTicks, (byte) askQuoteFlickerBufferPercent, askPicardMaxTicksThrough, askPicardMaxPerSec,
                     askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay);
 
             configClient.batchComplete();

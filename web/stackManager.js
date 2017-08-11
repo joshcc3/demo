@@ -303,6 +303,12 @@ function addFamily(familyName) {
 			popUp("/stackConfig#;" + configs, "Configs", 2200, 400);
 		});
 
+		openConfigWindowDiv.mousedown(function (e) {
+			if (e.button == 2) {
+				popUp("/stackConfig#;" + familyName, "Configs", 2200, 400);
+			}
+		});
+
 		var bidPicardDiv = family.find(".bid .picardEnabled");
 		bidPicardDiv.mousedown(stackEnableStackChange(familyName, "BID", "PICARD"));
 

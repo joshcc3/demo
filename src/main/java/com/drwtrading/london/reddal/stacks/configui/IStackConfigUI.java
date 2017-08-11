@@ -18,11 +18,11 @@ public interface IStackConfigUI {
             final double leanPriceAdjustmentRaw, final boolean additiveIsEnabled, final long additiveMaxSignalAgeMillis,
             final int additiveMinRequiredBPS, final int additiveMaxBPS, final int bidPlanMinLevelQty, final int bidPlanMaxLevelQty,
             final int bidPlanLotSize, final int bidPlanMaxLevels, final int bidMinPicardQty, final int bidMaxOrdersPerLevel,
-            final boolean bidIsOnlySubmitBestLevel, final boolean bidIsQuoteBettermentOn, final byte bidQuoteFlickerBufferPercent,
-            final int bidQuotePicardMaxTicksThrough, final int bidPicardMaxPerSec, final int bidPicardMaxPerMin,
-            final int bidPicardMaxPerHour, final int bidPicardMaxPerDay, final int askPlanMinLevelQty, final int askPlanMaxLevelQty,
-            final int askPlanLotSize, final int askPlanMaxLevels, final int askMinPicardQty, final int askMaxOrdersPerLevel,
-            final boolean askIsOnlySubmitBestLevel, final boolean askIsQuoteBettermentOn, final byte askQuoteFlickerBufferPercent,
-            final int askQuotePicardMaxTicksThrough, final int askPicardMaxPerSec, final int askPicardMaxPerMin,
-            final int askPicardMaxPerHour, final int askPicardMaxPerDay);
+            final boolean bidIsOnlySubmitBestLevel, final boolean bidIsQuoteBettermentOn, final int bidModTicks,
+            final byte bidQuoteFlickerBufferPercent, final int bidQuotePicardMaxTicksThrough, final int bidPicardMaxPerSec,
+            final int bidPicardMaxPerMin, final int bidPicardMaxPerHour, final int bidPicardMaxPerDay, final int askPlanMinLevelQty,
+            final int askPlanMaxLevelQty, final int askPlanLotSize, final int askPlanMaxLevels, final int askMinPicardQty,
+            final int askMaxOrdersPerLevel, final boolean askIsOnlySubmitBestLevel, final boolean askIsQuoteBettermentOn,
+            final int askModTicks, final byte askQuoteFlickerBufferPercent, final int askQuotePicardMaxTicksThrough,
+            final int askPicardMaxPerSec, final int askPicardMaxPerMin, final int askPicardMaxPerHour, final int askPicardMaxPerDay);
 }

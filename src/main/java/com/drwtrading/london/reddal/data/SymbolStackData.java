@@ -39,7 +39,6 @@ public class SymbolStackData {
     private final boolean[] enabledAskStacks;
 
     private double priceOffsetTickSize;
-    private int stackGroupTickMultiplier;
     private double stackAlignmentTickToBPS;
 
     public SymbolStackData(final String symbol) {
@@ -56,7 +55,6 @@ public class SymbolStackData {
         this.enabledAskStacks = new boolean[StackType.values().length];
 
         this.priceOffsetTickSize = 0d;
-        this.stackGroupTickMultiplier = 1;
         this.stackAlignmentTickToBPS = 0d;
     }
 
@@ -84,7 +82,6 @@ public class SymbolStackData {
             askFormattedPriceOffsetBPS = "---";
 
             priceOffsetTickSize = 0d;
-            stackGroupTickMultiplier = 1;
             stackAlignmentTickToBPS = 0d;
 
             for (final StackType stackType : StackType.values()) {
@@ -106,7 +103,6 @@ public class SymbolStackData {
         }
 
         priceOffsetTickSize = stackGroup.getPriceOffsetTickSize();
-        stackGroupTickMultiplier = stackGroup.getTickMultiplier();
         stackAlignmentTickToBPS = stackGroup.getStackAlignmentTickToBPS();
     }
 
@@ -172,10 +168,6 @@ public class SymbolStackData {
         return priceOffsetTickSize;
     }
 
-    public int getStackGroupTickMultiplier() {
-        return stackGroupTickMultiplier;
-    }
-
     public double getStackAlignmentTickToBPS() {
         return stackAlignmentTickToBPS;
     }
@@ -239,12 +231,12 @@ public class SymbolStackData {
         return priceMultiplier * mostAggressiveTick;
     }
 
-    public boolean setStackGroupUpdate(final double tickSize, final int tickMultiplier, final double stackAlignmentTickToBPS) {
+    public boolean setStackGroupUpdate(final double tickSize, final double stackAlignmentTickToBPS) {
 
         if (null != bidStackGroup) {
-            stackClient.updateStackGroup(SOURCE, bidStackGroup.getStackID(), bidStackGroup.getPriceOffsetBPS(), tickSize, tickMultiplier,
+            stackClient.updateStackGroup(SOURCE, bidStackGroup.getStackID(), bidStackGroup.getPriceOffsetBPS(), tickSize,
                     stackAlignmentTickToBPS);
-            stackClient.updateStackGroup(SOURCE, askStackGroup.getStackID(), askStackGroup.getPriceOffsetBPS(), tickSize, tickMultiplier,
+            stackClient.updateStackGroup(SOURCE, askStackGroup.getStackID(), askStackGroup.getPriceOffsetBPS(), tickSize,
                     stackAlignmentTickToBPS);
             return stackClient.batchComplete();
         } else {
@@ -257,7 +249,7 @@ public class SymbolStackData {
         if (null != bidStackGroup) {
             final double newOffset = bidStackGroup.getPriceOffsetBPS() + priceOffset;
             stackClient.updateStackGroup(SOURCE, bidStackGroup.getStackID(), newOffset, bidStackGroup.getPriceOffsetTickSize(),
-                    bidStackGroup.getTickMultiplier(), bidStackGroup.getStackAlignmentTickToBPS());
+                    bidStackGroup.getStackAlignmentTickToBPS());
             return stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
@@ -269,7 +261,7 @@ public class SymbolStackData {
         if (null != askStackGroup) {
             final double newOffset = askStackGroup.getPriceOffsetBPS() + priceOffset;
             stackClient.updateStackGroup(SOURCE, askStackGroup.getStackID(), newOffset, askStackGroup.getPriceOffsetTickSize(),
-                    askStackGroup.getTickMultiplier(), askStackGroup.getStackAlignmentTickToBPS());
+                    askStackGroup.getStackAlignmentTickToBPS());
             return stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");

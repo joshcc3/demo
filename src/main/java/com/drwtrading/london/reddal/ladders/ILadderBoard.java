@@ -16,8 +16,6 @@ public interface ILadderBoard {
 
     public void setStackTickSize(final double tickSize);
 
-    public void setStackGroupTickMultiplier(final int tickMultiplier);
-
     public void setStackAlignmentTickToBPS(final double stackAlignmentTickToBPS);
 
     public void setStackTickSizeToMatchQuote();

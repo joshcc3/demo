@@ -85,8 +85,7 @@ class StackUIData implements IStackGroupUpdateCallback {
                 final StackLevel bestLevel = stack.getFirstLevel();
                 if (null != bestLevel) {
                     isContainingEnabledStack = true;
-                    final double levelOffset = baseOffset -
-                            stackGroup.getTickMultiplier() * stackGroup.getStackAlignmentTickToBPS() * bestLevel.getPullbackTicks();
+                    final double levelOffset = baseOffset - stackGroup.getStackAlignmentTickToBPS() * bestLevel.getPullbackTicks();
                     bestOffset = Math.max(bestOffset, levelOffset);
                 }
             }
@@ -112,8 +111,7 @@ class StackUIData implements IStackGroupUpdateCallback {
                 final StackLevel bestLevel = stack.getFirstLevel();
                 if (null != bestLevel) {
                     isContainingEnabledStack = true;
-                    final double levelOffset = baseOffset +
-                            stackGroup.getTickMultiplier() * stackGroup.getStackAlignmentTickToBPS() * bestLevel.getPullbackTicks();
+                    final double levelOffset = baseOffset + stackGroup.getStackAlignmentTickToBPS() * bestLevel.getPullbackTicks();
                     bestOffset = Math.min(bestOffset, levelOffset);
                 }
             }

@@ -28,7 +28,6 @@ public class HTML {
 
     public static final String STACK_CONFIG_BUTTON = "btn_stack_config";
     public static final String STACK_TICK_SIZE = "stackTickSize";
-    public static final String STACK_GROUP_TICK_MULTIPLIER = "stackGroupTickMultiplier";
     public static final String STACK_ALIGNMENT_TICK_TO_BPS = "stackAlignmentTickToBPS";
     public static final String STACK_SUBMIT_TICK_SIZE = "btn_submitStackTickSize";
     public static final String STACK_BID_QUOTE_ENABLED = "stackBidQuoterEnabled";

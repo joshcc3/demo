@@ -986,20 +986,14 @@ input::-webkit-inner-spin-button:hover {
 	width: 42px;
 }
 
-#stackGroupTickMultiplier {
+#stackAlignmentTickToBPS {
 	top: 49px;
 	left: 0;
 	width: 42px;
 }
 
-#stackAlignmentTickToBPS {
-	top: 64px;
-	left: 0;
-	width: 42px;
-}
-
 #btn_submitStackTickSize {
-	top: 79px;
+	top: 64px;
 	left: 0;
 	width: 42px;
 }

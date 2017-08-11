@@ -99,10 +99,10 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
 
     @Override
     public boolean updateStackGroup(final String source, final long stackGroupID, final double priceOffsetBPS,
-            final double priceOffsetTickSize, final int tickMultiplier, final double stackAlignmentTickToBPS) {
+            final double priceOffsetTickSize, final double stackAlignmentTickToBPS) {
 
         final StackGroup stackGroup = stackGroups.get(stackGroupID);
-        stackGroup.setGroupData(source, priceOffsetBPS, priceOffsetTickSize, tickMultiplier, stackAlignmentTickToBPS);
+        stackGroup.setGroupData(source, priceOffsetBPS, priceOffsetTickSize, stackAlignmentTickToBPS);
 
         return updateUI(stackGroupID);
     }

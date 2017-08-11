@@ -491,8 +491,6 @@ public class LadderView implements UiEventHandler {
                 activeView.setTradingBoxQty(Integer.valueOf(value));
             } else if (HTML.STACK_TICK_SIZE.equals(label)) {
                 activeView.setStackTickSize(Double.valueOf(value));
-            } else if (HTML.STACK_GROUP_TICK_MULTIPLIER.equals(label)) {
-                activeView.setStackGroupTickMultiplier(Integer.valueOf(value));
             } else if (HTML.STACK_ALIGNMENT_TICK_TO_BPS.equals(label)) {
                 activeView.setStackAlignmentTickToBPS(Double.valueOf(value));
             } else if (!activeView.setPersistencePreference(label, value)) {

@@ -264,11 +264,6 @@ public class LadderBookView implements ILadderBoard {
     }
 
     @Override
-    public void setStackGroupTickMultiplier(final int tickMultiplier) {
-        // ignored
-    }
-
-    @Override
     public void setStackAlignmentTickToBPS(final double stackAlignmentTickToBPS) {
         // ignored
     }
