@@ -4,14 +4,18 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
+import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
+import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
+import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
+import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
+import com.drwtrading.london.reddal.workspace.SpreadContractSet;
+import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
+import eeif.execution.RemoteOrderManagementCommand;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
-import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
-import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
-import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
 import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderentry.OrderEntryFromServer;
@@ -19,73 +23,65 @@ import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.stacks.opxl.StackRefPriceDetail;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
-import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
-import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
-import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.mrphil.Position;
 import com.google.common.collect.MapMaker;
 import drw.london.json.Jsonable;
-import eeif.execution.RemoteOrderManagementCommand;
 import org.jetlang.channels.Publisher;
 
 import java.util.Map;
 
-class ReddalChannels {
+public class ReddalChannels {
 
+    public final TypedChannel<Throwable> error;
+    public final Publisher<Throwable> errorPublisher;
+    public final TypedChannel<LadderMetadata> metaData;
+    public final TypedChannel<Position> position;
+    public final TypedChannel<PKSExposure> pksExposure;
+    public final TypedChannel<TradingStatusWatchdog.ServerTradingStatus> tradingStatus;
+    public final TypedChannel<WorkingOrderUpdateFromServer> workingOrders;
+    public final TypedChannel<WorkingOrderConnectionEstablished> workingOrderConnectionEstablished;
+    public final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents;
+    public final TypedChannel<Main.RemoteOrderEventFromServer> remoteOrderEvents;
+    public final TypedChannel<StatsMsg> stats;
+    public final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommand;
+    public final Map<String, TypedChannel<RemoteOrderManagementCommand>> remoteOrderCommandByServer;
+    public final TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded;
+    public final TypedChannel<LadderSettings.StoreLadderPref> storeLadderPref;
+    public final TypedChannel<InstrumentDef> instDefs;
+    public final TypedChannel<DisplaySymbol> displaySymbol;
+    public final TypedChannel<SearchResult> searchResults;
+    public final TypedChannel<StockAlert> stockAlerts;
+    public final TypedChannel<HeartbeatRoundtrip> heartbeatRoundTrips;
     private final ChannelFactory channelFactory;
+    public final TypedChannel<ReddalMessage> reddalCommand;
+    public final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
+    public final TypedChannel<RecenterLaddersForUser> recenterLaddersForUser;
+    public final TypedChannel<SpreadContractSet> contractSets;
+    public final TypedChannel<HostWorkspaceRequest> userWorkspaceRequests;
+    public final TypedChannel<ChixSymbolPair> chixSymbolPairs;
+    public final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
+    public final TypedChannel<Jsonable> trace;
+    public final TypedChannel<ReplaceCommand> replaceCommand;
+    public final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
+    public final TypedChannel<UserCycleRequest> userCycleContractPublisher;
+    public final TypedChannel<OrderEntryFromServer> orderEntryFromServer;
+    public final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
+    public final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
+    public final TypedChannel<StackRefPriceDetail> stackRefPriceDetailChannel;
+    public final TypedChannel<OpxlExDateSubscriber.IsinsGoingEx> isinsGoingEx;
 
-    final TypedChannel<Throwable> error;
-    final Publisher<Throwable> errorPublisher;
-    final TypedChannel<LadderMetadata> metaData;
-    final TypedChannel<Position> position;
-    final TypedChannel<PKSExposure> pksExposure;
-    final TypedChannel<TradingStatusWatchdog.ServerTradingStatus> tradingStatus;
-    final TypedChannel<WorkingOrderUpdateFromServer> workingOrders;
-    final TypedChannel<WorkingOrderConnectionEstablished> workingOrderConnectionEstablished;
-    final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents;
-    final TypedChannel<Main.RemoteOrderEventFromServer> remoteOrderEvents;
-    final TypedChannel<StatsMsg> stats;
-    final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommand;
-    final Map<String, TypedChannel<RemoteOrderManagementCommand>> remoteOrderCommandByServer;
-    final TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded;
-    final TypedChannel<LadderSettings.StoreLadderPref> storeLadderPref;
-    final TypedChannel<InstrumentDef> instDefs;
-    final TypedChannel<DisplaySymbol> displaySymbol;
-    final TypedChannel<SearchResult> searchResults;
-    final TypedChannel<StockAlert> stockAlerts;
-    final TypedChannel<HeartbeatRoundtrip> heartbeatRoundTrips;
+    public final TypedChannel<SymbolSelection> symbolSelections;
+    public final TypedChannel<UltimateParentMapping> ultimateParents;
 
-    final TypedChannel<ReddalMessage> reddalCommand;
-    final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
-    final TypedChannel<RecenterLaddersForUser> recenterLaddersForUser;
-    final TypedChannel<SpreadContractSet> contractSets;
-    final TypedChannel<HostWorkspaceRequest> userWorkspaceRequests;
-    final TypedChannel<ChixSymbolPair> chixSymbolPairs;
-    final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
-    final TypedChannel<Jsonable> trace;
-    final TypedChannel<ReplaceCommand> replaceCommand;
-    final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
-    final TypedChannel<UserCycleRequest> userCycleContractPublisher;
-    final TypedChannel<OrderEntryFromServer> orderEntryFromServer;
-    final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
-    final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
-    final TypedChannel<StackRefPriceDetail> stackRefPriceDetailChannel;
-    final TypedChannel<OpxlExDateSubscriber.IsinsGoingEx> isinsGoingEx;
-
-    final TypedChannel<SymbolSelection> symbolSelections;
-    final TypedChannel<UltimateParentMapping> ultimateParents;
-
-    final TypedChannel<String> stackParentSymbolPublisher;
-
-    ReddalChannels(final ChannelFactory channelFactory) {
+    public ReddalChannels(final ChannelFactory channelFactory) {
 
         this.channelFactory = channelFactory;
         this.error = Main.ERROR_CHANNEL;
@@ -127,11 +123,9 @@ class ReddalChannels {
 
         this.symbolSelections = create(SymbolSelection.class);
         this.ultimateParents = create(UltimateParentMapping.class);
-
-        this.stackParentSymbolPublisher = create(String.class);
     }
 
-    <T> TypedChannel<T> create(final Class<T> clazz) {
+    public <T> TypedChannel<T> create(final Class<T> clazz) {
         return channelFactory.createChannel(clazz, clazz.getSimpleName());
     }
 }

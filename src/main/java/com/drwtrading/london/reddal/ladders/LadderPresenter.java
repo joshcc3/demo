@@ -24,7 +24,7 @@ import com.drwtrading.london.reddal.data.SymbolMetaData;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
+import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
@@ -72,7 +72,7 @@ public class LadderPresenter {
     public static final long HEARTBEAT_INTERVAL_MS = 1000;
 
     private final IResourceMonitor<ReddalComponents> monitor;
-    private final IMDSubscriber bookSubscriber;
+    private final DepthBookSubscriber bookHandler;
     private final String ewokBaseURL;
 
     private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer;
@@ -105,9 +105,9 @@ public class LadderPresenter {
     private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
     private OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx;
 
-    public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
-            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+    public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final DepthBookSubscriber bookHandler,
+            final String ewokBaseURL, final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandByServer,
+            final LadderOptions ladderOptions, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
@@ -116,7 +116,7 @@ public class LadderPresenter {
             final Publisher<HostWorkspaceRequest> userWorkspaceRequests) {
 
         this.monitor = monitor;
-        this.bookSubscriber = bookSubscriber;
+        this.bookHandler = bookHandler;
         this.ewokBaseURL = ewokBaseURL;
 
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
@@ -136,7 +136,7 @@ public class LadderPresenter {
     }
 
     private MDForSymbol subscribeToMarketDataForSymbol(final String symbol) {
-        return new MDForSymbol(bookSubscriber, symbol);
+        return new MDForSymbol(bookHandler, symbol);
     }
 
     private void unsubscribeFromMarketDataForSymbol(final String symbol) {

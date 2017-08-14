@@ -23,6 +23,8 @@ import java.util.Map;
 
 public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
 
+    private final boolean isPrimary;
+
     private final IResourceMonitor<ReddalComponents> monitor;
 
     private final Map<MDSource, MDTransportClient> mdClients;
@@ -36,8 +38,11 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
     private final SimpleDateFormat sdf;
     private final long timezoneOffsetMillis;
 
-    public LevelThreeBookSubscriber(final IResourceMonitor<ReddalComponents> monitor, final Channel<SearchResult> searchResults,
-            final Channel<StockAlert> stockAlertChannel, final Channel<StackRefPriceDetail> stackRefPriceDetails) {
+    public LevelThreeBookSubscriber(final boolean isPrimary, final IResourceMonitor<ReddalComponents> monitor,
+            final Channel<SearchResult> searchResults, final Channel<StockAlert> stockAlertChannel,
+            final Channel<StackRefPriceDetail> stackRefPriceDetails) {
+
+        this.isPrimary = isPrimary;
 
         this.monitor = monitor;
         this.searchResults = searchResults;
@@ -70,14 +75,16 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
         if (null != listener) {
             bookSubscribe(listener, book);
         }
-        final SearchResult searchResult = new SearchResult(book);
-        searchResults.publish(searchResult);
+        if (isPrimary) {
+            final SearchResult searchResult = new SearchResult(book);
+            searchResults.publish(searchResult);
+        }
     }
 
     @Override
     public void referencePrice(final IBook<IBookLevelWithOrders> book, final IBookReferencePrice refPrice) {
 
-        if (refPrice.isValid()) {
+        if (isPrimary && refPrice.isValid()) {
             switch (refPrice.getReferencePoint()) {
                 case RFQ: {
                     if (book.isValid()) {
