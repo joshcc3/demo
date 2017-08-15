@@ -21,6 +21,7 @@ public class SpreadContractSetGenerator {
 
     private final Set<String> futureSymbols;
     private final Map<String, String> frontLegToBackLeg;
+    private final Map<String, String> backLegToFrontLeg;
 
     private final Map<String, String> stackLeanSymbols;
     private final Map<String, String> parentStackSymbols;
@@ -36,6 +37,7 @@ public class SpreadContractSetGenerator {
 
         this.futureSymbols = new HashSet<>();
         this.frontLegToBackLeg = new HashMap<>();
+        this.backLegToFrontLeg = new HashMap<>();
 
         this.stackLeanSymbols = new HashMap<>();
         this.parentStackSymbols = new HashMap<>();
@@ -82,9 +84,9 @@ public class SpreadContractSetGenerator {
 
                 if (!EXCLUDED_MARKETS.contains(contract)) {
 
-                    final String prevBackLeg = frontLegToBackLeg.get(legs[0]);
-                    if (isSpreadChosen(legs[0], legs[1], prevBackLeg)) {
+                    if (isSpreadChosen(legs[0], legs[1])) {
                         this.frontLegToBackLeg.put(legs[0], legs[1]);
+                        this.backLegToFrontLeg.put(legs[1], legs[0]);
                         publishContractSet(legs[0]);
                     }
                 }
@@ -93,7 +95,7 @@ public class SpreadContractSetGenerator {
         }
     }
 
-    private boolean isSpreadChosen(final String frontLeg, final String newBackLeg, final String prevBackLeg) {
+    private boolean isSpreadChosen(final String frontLeg, final String backLeg) {
 
         final FutureConstant future = FutureConstant.getFutureFromSymbol(frontLeg);
 
@@ -101,19 +103,8 @@ public class SpreadContractSetGenerator {
             return false;
         } else {
             final String expectedFrontLeg = expiryCalc.getFutureCode(future);
-            if (!expectedFrontLeg.equals(frontLeg)) {
-                return false;
-            } else if (null == prevBackLeg) {
-                return true;
-            } else {
-                expiryCalc.setToRollDate(cal, newBackLeg);
-                final long newLegExpiry = cal.getTimeInMillis();
-
-                expiryCalc.setToRollDate(cal, prevBackLeg);
-                final long prevLegExpiry = cal.getTimeInMillis();
-
-                return newLegExpiry < prevLegExpiry;
-            }
+            final String expectedBackLeg = expiryCalc.getFutureCode(future, 1);
+            return expectedFrontLeg.equals(frontLeg) && expectedBackLeg.equals(backLeg);
         }
     }
 
@@ -129,15 +120,21 @@ public class SpreadContractSetGenerator {
 
         final boolean isFuture = futureSymbols.contains(symbol);
         final String backLeg = frontLegToBackLeg.get(symbol);
+        final String frontLeg = backLegToFrontLeg.get(symbol);
 
-        if (isFuture && null != backLeg) {
+        if (isFuture) {
 
-            return getSpreadSet(true, symbol, backLeg, symbol + '-' + backLeg);
+            if (null != backLeg) {
+                return getSpreadSet(true, symbol, backLeg, symbol + '-' + backLeg);
+            } else if (null != frontLeg) {
+                return getSpreadSet(true, symbol, frontLeg, frontLeg + '-' + symbol);
+            } else {
+                return getSpreadSet(false, symbol, symbol, symbol);
+            }
+
         } else {
             return getSpreadSet(false, symbol, symbol, symbol);
-
         }
-
     }
 
     private SpreadContractSet getSpreadSet(final boolean isFutureSpread, final String symbol, final String backMonthSymbol,
