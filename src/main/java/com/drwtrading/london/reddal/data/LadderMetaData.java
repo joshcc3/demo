@@ -1,9 +1,9 @@
 package com.drwtrading.london.reddal.data;
 
-import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.util.FastUtilCollections;
+import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.photons.ladder.DeskPosition;
 import com.drwtrading.photons.ladder.InfoOnLadder;
 import com.drwtrading.photons.ladder.LadderText;
@@ -11,7 +11,7 @@ import com.drwtrading.photons.mrphil.Position;
 
 import java.util.Map;
 
-public class SymbolMetaData {
+public class LadderMetaData {
 
     public final String symbol;
     public String displaySymbol;
@@ -23,7 +23,7 @@ public class SymbolMetaData {
     public String chixSwitchSymbol;
     public SpreadContractSet spreadContractSet;
 
-    public SymbolMetaData(final String symbol) {
+    public LadderMetaData(final String symbol) {
         this.symbol = symbol;
         this.displaySymbol = symbol;
         this.deskPosition = new DeskPosition(symbol, "");
@@ -58,6 +58,9 @@ public class SymbolMetaData {
     }
 
     public void onSpreadContractSet(final SpreadContractSet spreadContractSet) {
-        this.spreadContractSet = spreadContractSet;
+
+        if (null == this.spreadContractSet || spreadContractSet.symbol.equals(symbol)) {
+            this.spreadContractSet = spreadContractSet;
+        }
     }
 }

@@ -11,12 +11,12 @@ public class LadderOptions {
     public final Collection<CSSClass> orderTypesRight;
     public final Collection<String> traders;
     public final String theoLaserLineID;
-    public final Environment.RemoteOrderServerResolver serverResolver;
+    public final Environment.IRemoteOrderServerResolver serverResolver;
     public final double randomReloadFraction;
     public final String basketUrl;
 
     public LadderOptions(final Collection<CSSClass> orderTypesLeft, final Collection<CSSClass> orderTypesRight,
-            final Collection<String> traders, final String theoLaserLineID, final Environment.RemoteOrderServerResolver serverResolver,
+            final Collection<String> traders, final String theoLaserLineID, final Environment.IRemoteOrderServerResolver serverResolver,
             final double randomReloadFraction, final String basketUrl) {
 
         this.orderTypesLeft = orderTypesLeft;

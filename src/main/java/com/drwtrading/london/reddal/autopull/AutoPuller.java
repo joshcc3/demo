@@ -6,7 +6,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
-import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.google.common.collect.HashMultimap;
@@ -29,7 +29,7 @@ import java.util.TreeSet;
 public class AutoPuller {
     private final Instant DISABLE_TIME = new DateTime().withHourOfDay(20).withMinuteOfHour(57).withSecondOfMinute(00).toInstant();
 
-    private final Publisher<Main.RemoteOrderCommandToServer> commandPublisher;
+    private final Publisher<RemoteOrderCommandToServer> commandPublisher;
     private final PullerBookSubscriber bookSubscriber;
     private final Map<String, WorkingOrdersForSymbol> orders = new HashMap<>();
     private final Map<String, IBook<?>> md = new HashMap<>();
@@ -38,7 +38,7 @@ public class AutoPuller {
     private final AutoPullPersistence persistence;
     private IAutoPullCallbacks refreshCallback = IAutoPullCallbacks.DEFAULT;
 
-    public AutoPuller(Publisher<Main.RemoteOrderCommandToServer> commandPublisher, PullerBookSubscriber bookSubscriber, AutoPullPersistence persistence) {
+    public AutoPuller(Publisher<RemoteOrderCommandToServer> commandPublisher, PullerBookSubscriber bookSubscriber, AutoPullPersistence persistence) {
         this.commandPublisher = commandPublisher;
         this.bookSubscriber = bookSubscriber;
         this.persistence = persistence;
@@ -56,7 +56,7 @@ public class AutoPuller {
                 continue;
             }
 
-            String symbol = e.value.getSymbol();
+            String symbol = e.workingOrderUpdate.getSymbol();
             newSymbols |= createIfNewSymbol(symbol);
 
             orders.get(symbol).onWorkingOrderUpdate(e);
@@ -168,7 +168,7 @@ public class AutoPuller {
             WorkingOrdersForSymbol workingOrdersForSymbol = orders.get(symbol);
             IBook<?> book = md.get(symbol);
             if (pullRule.isEnabled() && null != book && null != workingOrdersForSymbol) {
-                List<Main.RemoteOrderCommandToServer> cancels = pullRule.ordersToPull(workingOrdersForSymbol, book);
+                List<RemoteOrderCommandToServer> cancels = pullRule.ordersToPull(workingOrdersForSymbol, book);
                 cancels.forEach(commandPublisher::publish);
                 if (!cancels.isEmpty()) {
                     System.out.println("---- Auto puller Fired --- " + new DateTime());
@@ -244,7 +244,7 @@ public class AutoPuller {
         WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
         IBook<?> book = md.get(symbol);
         if (null != book && null != ordersForSymbol) {
-            List<Main.RemoteOrderCommandToServer> example = enabledPullRule.pullRule.ordersToPull("example", ordersForSymbol, book);
+            List<RemoteOrderCommandToServer> example = enabledPullRule.pullRule.ordersToPull("example", ordersForSymbol, book);
             return example.size();
         }
         return 0;
@@ -282,7 +282,7 @@ public class AutoPuller {
             return pullRule;
         }
 
-        List<Main.RemoteOrderCommandToServer> ordersToPull(WorkingOrdersForSymbol workingOrders, IBook<?> book) {
+        List<RemoteOrderCommandToServer> ordersToPull(WorkingOrdersForSymbol workingOrders, IBook<?> book) {
             if (isEnabled()) {
                 return this.pullRule.ordersToPull(enabledByUser, workingOrders, book);
             } else {

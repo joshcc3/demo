@@ -4,10 +4,13 @@ import com.drwtrading.london.eeif.nibbler.transport.INibblerTransportConnectionL
 import com.drwtrading.london.eeif.nibbler.transport.cache.blotter.INibblerBlotterListener;
 import com.drwtrading.london.eeif.nibbler.transport.cache.safeties.INibblerSafetiesListener;
 import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterLine;
+import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterSymbolLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.ANibblerSafety;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerDoubleSafety;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerOMSEnabledState;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerSafety;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
+import org.jetlang.channels.Publisher;
 
 public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesListener, INibblerTransportConnectionListener {
 
@@ -16,12 +19,22 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
     private final MsgBlotterPresenter msgBlotter;
     private final SafetiesBlotterPresenter safetiesBlotter;
 
-    public BlotterClient(final String source, final MsgBlotterPresenter msgBlotter, final SafetiesBlotterPresenter safetiesBlotter) {
+    private final Publisher<NibblerTransportConnected> connectedNibblerChannel;
+
+    private final NibblerTransportConnected nibblerConnected;
+    private final NibblerTransportConnected nibblerdisconnected;
+
+    public BlotterClient(final String source, final MsgBlotterPresenter msgBlotter, final SafetiesBlotterPresenter safetiesBlotter,
+            final Publisher<NibblerTransportConnected> connectedNibblerChannel, final String nibblerName) {
 
         this.source = source;
 
         this.msgBlotter = msgBlotter;
         this.safetiesBlotter = safetiesBlotter;
+
+        this.connectedNibblerChannel = connectedNibblerChannel;
+        this.nibblerConnected = new NibblerTransportConnected(nibblerName, true);
+        this.nibblerdisconnected = new NibblerTransportConnected(nibblerName, false);
 
         connectionLost(null);
     }
@@ -31,6 +44,7 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
 
         msgBlotter.setNibblerConnected(source, true);
         safetiesBlotter.setNibblerConnected(source, true);
+        connectedNibblerChannel.publish(nibblerConnected);
         return true;
     }
 
@@ -39,10 +53,18 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
 
         msgBlotter.setNibblerConnected(source, false);
         safetiesBlotter.setNibblerConnected(source, false);
+        connectedNibblerChannel.publish(nibblerdisconnected);
     }
 
     @Override
     public boolean addBlotterLine(final BlotterLine blotterLine) {
+
+        msgBlotter.addLine(source, blotterLine);
+        return true;
+    }
+
+    @Override
+    public boolean addBlotterSymbolLine(final BlotterSymbolLine blotterLine) {
 
         msgBlotter.addLine(source, blotterLine);
         return true;

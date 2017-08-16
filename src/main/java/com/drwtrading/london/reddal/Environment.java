@@ -5,7 +5,7 @@ import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.ladders.LadderOptions;
-import eeif.execution.RemoteOrderType;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderType;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -124,20 +124,17 @@ public class Environment {
     public HostAndNic getHostAndNic(final String prefix, final String server) throws SocketException, ConfigException {
 
         final ConfigGroup serverConfig = config.getGroup(prefix).getGroup(server);
-        final String address = serverConfig.getString("address");
-        final String nic;
-        if (serverConfig.paramExists("nic")) {
-            nic = serverConfig.getString("nic");
-        } else {
-            nic = "0.0.0.0";
-        }
-        return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])),
-                NetworkInterfaces.find(nic));
+        return getHostAndNic(serverConfig);
     }
 
     public HostAndNic getHostAndNic(final String prefix) throws SocketException, ConfigException {
 
         final ConfigGroup serverConfig = config.getGroup(prefix);
+        return getHostAndNic(serverConfig);
+    }
+
+    public static HostAndNic getHostAndNic(final ConfigGroup serverConfig) throws ConfigException, SocketException {
+
         final String address = serverConfig.getString("address");
         final String nic;
         if (serverConfig.paramExists("nic")) {
@@ -153,7 +150,7 @@ public class Environment {
      * Remote commands server are matched in order.
      * If the symbol matches the regex AND (no order types are specified OR the order is among the types specified) THEN it matches
      */
-    public RemoteOrderServerResolver getServerResolver() throws ConfigException {
+    public IRemoteOrderServerResolver getServerResolver() throws ConfigException {
 
         System.out.println("Loading server resolver:");
         final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<>();
@@ -162,11 +159,12 @@ public class Environment {
         final String[] orderedServers = config.getString(REMOTE_COMMANDS).trim().split(",");
         for (final String orderedServer : orderedServers) {
             final String remoteServer = orderedServer.trim();
-            if (!"".equals(remoteServer)) {
-                final ConfigGroup remoteServerCMDs = remoteCommands.getGroup(remoteServer);
+            if (!remoteServer.isEmpty()) {
+
+                final ConfigGroup remoteServerCMDs = remoteCommands.getEnabledGroup(remoteServer);
 
                 final String symbolRegex;
-                if (remoteServerCMDs.paramExists("symbolRegex")) {
+                if (null != remoteServerCMDs && remoteServerCMDs.paramExists("symbolRegex")) {
                     symbolRegex = remoteServerCMDs.getString("symbolRegex");
                 } else {
                     symbolRegex = ".*";
@@ -175,21 +173,21 @@ public class Environment {
                 final Pattern pattern = Pattern.compile(symbolRegex);
 
                 final Collection<String> orderTypesRaw;
-                if (remoteServerCMDs.paramExists("orderTypes")) {
+                if (null != remoteServerCMDs && remoteServerCMDs.paramExists("orderTypes")) {
                     orderTypesRaw = remoteServerCMDs.getParam("orderTypes").getSet(Pattern.compile(","));
                 } else {
                     orderTypesRaw = null;
                 }
 
                 final Collection<String> tagsRaw;
-                if (remoteServerCMDs.paramExists("tags")) {
+                if (null != remoteServerCMDs && remoteServerCMDs.paramExists("tags")) {
                     tagsRaw = remoteServerCMDs.getParam("tags").getSet(Pattern.compile(","));
                 } else {
                     tagsRaw = null;
                 }
 
                 final Collection<String> micsRaw;
-                if (remoteServerCMDs.paramExists("mics")) {
+                if (null != remoteServerCMDs && remoteServerCMDs.paramExists("mics")) {
                     micsRaw = remoteServerCMDs.getParam("mics").getSet(Pattern.compile(","));
                 } else {
                     micsRaw = null;
@@ -203,7 +201,7 @@ public class Environment {
         return getRemoteOrderServerResolver(matchers);
     }
 
-    public static RemoteOrderServerResolver getRemoteOrderServerResolver(final LinkedHashMap<String, RemoteOrderMatcher> matchers) {
+    public static IRemoteOrderServerResolver getRemoteOrderServerResolver(final LinkedHashMap<String, RemoteOrderMatcher> matchers) {
         return (symbol, orderType, tag, mic) -> {
             for (Map.Entry<String, RemoteOrderMatcher> entry : matchers.entrySet()) {
                 if (entry.getValue().matches(symbol, orderType, tag, mic)) {
@@ -214,34 +212,12 @@ public class Environment {
         };
     }
 
-    public static interface RemoteOrderServerResolver {
+    public static interface IRemoteOrderServerResolver {
 
         public String resolveToServerName(final String symbol, final String orderType, final String tag, final String mic);
 
         default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType, final String tag, final String mic) {
             return resolveToServerName(symbol, remoteOrderType.name(), tag, mic);
-        }
-    }
-
-    public static class RemoteOrderMatcher {
-
-        public final Pattern symbolPattern;
-        public final Collection<String> orderTypes;
-        private final Collection<String> tags;
-        private final Collection<String> mics;
-
-        public RemoteOrderMatcher(final Pattern symbolPattern, final Collection<String> orderTypes, final Collection<String> tags,
-                final Collection<String> mics) {
-            this.symbolPattern = symbolPattern;
-            this.orderTypes = orderTypes;
-            this.tags = tags;
-            this.mics = mics;
-        }
-
-        public boolean matches(final String symbol, final String orderType, final String tag, final String mic) {
-            return symbolPattern.matcher(symbol).find() && (orderTypes == null ||
-                    orderTypes.contains(orderType) && (tags == null || tags.contains(tag)) &&
-                            (mics == null || mic == null || mics.contains(mic)));
         }
     }
 

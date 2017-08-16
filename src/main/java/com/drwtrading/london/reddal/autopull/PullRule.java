@@ -3,12 +3,10 @@ package com.drwtrading.london.reddal.autopull;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
-import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.util.Struct;
-import org.joda.time.DateTime;
-import org.joda.time.Instant;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -31,7 +29,7 @@ public class PullRule extends Struct {
         this.mktCondition = mktCondition;
     }
 
-    public List<Main.RemoteOrderCommandToServer> ordersToPull(String username, WorkingOrdersForSymbol workingOrdersForSymbol, IBook<?> book) {
+    public List<RemoteOrderCommandToServer> ordersToPull(String username, WorkingOrdersForSymbol workingOrdersForSymbol, IBook<?> book) {
         if (mktCondition.conditionMet(workingOrdersForSymbol, book)) {
             return workingOrdersForSymbol.ordersByKey.values().stream()
                     .filter(workingOrderUpdateFromServer -> orderIsInMarketData(workingOrderUpdateFromServer, book))
@@ -45,7 +43,7 @@ public class PullRule extends Struct {
 
     public boolean orderIsInMarketData(WorkingOrderUpdateFromServer order, IBook<?> book) {
 
-        if (!order.value.getSymbol().equals(book.getSymbol())) {
+        if (!order.workingOrderUpdate.getSymbol().equals(book.getSymbol())) {
             return false;
         }
 
@@ -58,12 +56,12 @@ public class PullRule extends Struct {
         }
 
         final IBookLevel level;
-        switch (order.value.getSide()) {
+        switch (order.workingOrderUpdate.getSide()) {
             case BID:
-                level = book.getBidLevel(order.value.getPrice());
+                level = book.getBidLevel(order.workingOrderUpdate.getPrice());
                 break;
             case OFFER:
-                level = book.getAskLevel(order.value.getPrice());
+                level = book.getAskLevel(order.workingOrderUpdate.getPrice());
                 break;
             default:
                 level = null;
@@ -74,7 +72,7 @@ public class PullRule extends Struct {
             return false;
         }
 
-        if (level.getQty() <= order.value.getTotalQuantity() - order.value.getFilledQuantity()) {
+        if (level.getQty() <= order.workingOrderUpdate.getTotalQuantity() - order.workingOrderUpdate.getFilledQuantity()) {
             return false;
         }
 

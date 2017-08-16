@@ -9,11 +9,14 @@ import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.photons.eeifoe.Cancel;
 import com.drwtrading.london.photons.eeifoe.OrderSide;
-import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReddalComponents;
-import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
-import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
-import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
+import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
+import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.ShutdownOMSCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.StopAllStrategiesCmd;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -21,9 +24,6 @@ import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
-import eeif.execution.RemoteCancelOrder;
-import eeif.execution.RemoteShutdownOms;
-import eeif.execution.RemoteStopAllStrategy;
 import eeif.execution.Side;
 import eeif.execution.WorkingOrderState;
 import eeif.execution.WorkingOrderUpdate;
@@ -49,7 +49,7 @@ public class WorkingOrdersPresenter {
     private final IResourceMonitor<ReddalComponents> monitor;
     private final UILogger webLog;
 
-    private final Publisher<Main.RemoteOrderCommandToServer> commands;
+    private final Publisher<RemoteOrderCommandToServer> commands;
     private final Publisher<OrderEntryCommandToServer> managedOrderCommands;
 
     private final Map<String, Boolean> nibblersStatus;
@@ -68,7 +68,7 @@ public class WorkingOrdersPresenter {
     private long lastViewerHeartbeatNanoSinceMidnight;
 
     public WorkingOrdersPresenter(final IClock clock, final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
-            final Scheduler scheduler, final Publisher<Main.RemoteOrderCommandToServer> commands, final Collection<String> nibblers,
+            final Scheduler scheduler, final Publisher<RemoteOrderCommandToServer> commands, final Collection<String> nibblers,
             final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
 
         this.clock = clock;
@@ -103,7 +103,7 @@ public class WorkingOrdersPresenter {
 
     public void onWorkingOrder(final WorkingOrderUpdateFromServer order) {
 
-        if (order.value.getWorkingOrderState() == WorkingOrderState.DEAD) {
+        if (order.workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
             workingOrders.remove(order.key());
         } else {
             workingOrders.put(order.key(), order);
@@ -150,7 +150,7 @@ public class WorkingOrdersPresenter {
             for (final WorkingOrderUpdateFromServer update : removed) {
                 workingOrders.remove(update.key());
 
-                final WorkingOrderUpdate prev = update.value;
+                final WorkingOrderUpdate prev = update.workingOrderUpdate;
                 final WorkingOrderUpdate delete =
                         new WorkingOrderUpdate(prev.getServerName(), prev.getSymbol(), prev.getTag(), prev.getChainId(), prev.getPrice(),
                                 prev.getTotalQuantity(), prev.getFilledQuantity(), prev.getSide(), WorkingOrderState.DEAD,
@@ -214,8 +214,8 @@ public class WorkingOrdersPresenter {
 
     private void shutdownOMS(final String nibbler, final String user, final String reason) {
 
-        final RemoteShutdownOms remoteCommand = new RemoteShutdownOms(nibbler, user, reason);
-        final Main.RemoteOrderCommandToServer command = new Main.RemoteOrderCommandToServer(nibbler, remoteCommand);
+        final IOrderCmd remoteCommand = new ShutdownOMSCmd(reason, nibbler, user);
+        final RemoteOrderCommandToServer command = new RemoteOrderCommandToServer(nibbler, remoteCommand);
         commands.publish(command);
     }
 
@@ -262,8 +262,9 @@ public class WorkingOrdersPresenter {
     }
 
     private void stopAllStrategies(final String nibbler, final String user, final String reason) {
-        final RemoteStopAllStrategy stopCommand = new RemoteStopAllStrategy(nibbler, user, reason);
-        final Main.RemoteOrderCommandToServer command = new Main.RemoteOrderCommandToServer(nibbler, stopCommand);
+
+        final IOrderCmd cmd = new StopAllStrategiesCmd(reason, nibbler, user);
+        final RemoteOrderCommandToServer command = new RemoteOrderCommandToServer(nibbler, cmd);
         commands.publish(command);
     }
 
@@ -285,10 +286,10 @@ public class WorkingOrdersPresenter {
 
     // -----------------
 
-    private void cancel(final String user, final WorkingOrderUpdateFromServer order) {
-        commands.publish(new Main.RemoteOrderCommandToServer(order.fromServer,
-                new RemoteCancelOrder(order.fromServer, user, order.value.getChainId(),
-                        order.toRemoteOrder(order.value.getPrice(), order.value.getTotalQuantity()))));
+    private void cancel(final String username, final WorkingOrderUpdateFromServer order) {
+
+        final RemoteOrderCommandToServer cmd = order.buildCancelCommand(username);
+        commands.publish(cmd);
     }
 
     private void cancel(final UpdateFromServer order) {
@@ -339,7 +340,7 @@ public class WorkingOrdersPresenter {
     }
 
     private void publishWorkingOrderUpdate(final IWorkingOrderView view, final WorkingOrderUpdateFromServer order) {
-        final WorkingOrderUpdate update = order.value;
+        final WorkingOrderUpdate update = order.workingOrderUpdate;
         final SearchResult searchResult = searchResults.get(update.getSymbol());
         final String price;
         if (null != searchResult) {
@@ -350,7 +351,7 @@ public class WorkingOrdersPresenter {
             price = update.getPrice() + " (raw)";
         }
 
-        final String chainID = Integer.toString(order.value.getChainId());
+        final String chainID = Integer.toString(order.workingOrderUpdate.getChainId());
         view.updateWorkingOrder(order.key(), chainID, update.getSymbol(), update.getSide().toString(), price, update.getFilledQuantity(),
                 update.getTotalQuantity(), update.getWorkingOrderState().toString(), update.getWorkingOrderType().toString(),
                 update.getTag(), order.fromServer, update.getWorkingOrderState() == WorkingOrderState.DEAD);

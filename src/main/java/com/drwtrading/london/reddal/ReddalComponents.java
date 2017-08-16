@@ -18,6 +18,7 @@ public enum ReddalComponents implements IMonitoredComponent {
 
     MD_TRANSPORT,
 
+    LADDER_ROUTER,
     LADDER_PRESENTER,
 
     STACK_GROUP_CLIENT,
@@ -27,6 +28,7 @@ public enum ReddalComponents implements IMonitoredComponent {
     PKS,
     YODA,
     BLOTTER,
+    TRADING_DATA,
 
     SAFETY_WORKING_ORDER_VIEWER,
 

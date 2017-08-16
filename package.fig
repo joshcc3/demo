@@ -13,8 +13,8 @@ config default
 	include :scripts
 
 	include drw.london.eeif-utils/193
-	include drw.london.eeif-md/230
-	include drw.london.eeif-nibbler-transport/15
+	include drw.london.eeif-md/232
+	include drw.london.eeif-nibbler-transport/16
 	include drw.london.eeif-position-transport/72
 	include drw.london.eeif-stack-transport/49
 	include drw.london.eeif-yoda-transport/46
@@ -61,9 +61,6 @@ config default
 	# Execution
 	include eeif.execution/0
 	include com.drwtrading.photons.ladder/38
-
-	# Testing
-	include junit/4.10
 
 	# Research
 	include joda.time/1.6

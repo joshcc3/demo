@@ -20,7 +20,7 @@ public class WorkingOrdersForSymbol {
     }
 
     public WorkingOrderUpdateFromServer onWorkingOrderUpdate(final WorkingOrderUpdateFromServer workingOrderUpdateFromServer) {
-        final WorkingOrderUpdate workingOrderUpdate = workingOrderUpdateFromServer.value;
+        final WorkingOrderUpdate workingOrderUpdate = workingOrderUpdateFromServer.workingOrderUpdate;
         if (workingOrderUpdate.getSymbol().equals(symbol)) {
             final WorkingOrderUpdateFromServer previous;
             if (workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
@@ -32,7 +32,7 @@ public class WorkingOrdersForSymbol {
             // Need the .equals() because HashMultimap doesn't store duplicates, so we would delete the only
             // copy of this working order otherwise.
             if (previous != null && !workingOrderUpdateFromServer.equals(previous)) {
-                ordersByPrice.remove(previous.value.getPrice(), previous);
+                ordersByPrice.remove(previous.workingOrderUpdate.getPrice(), previous);
             }
             return previous;
         } else {

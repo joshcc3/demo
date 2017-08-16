@@ -1,41 +1,31 @@
 package com.drwtrading.london.reddal.util;
 
 import com.drwtrading.london.reddal.ladders.PricingMode;
-import org.junit.Test;
-
-import java.util.EnumSet;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 public class EnumSwitcherTest {
 
     @Test
-    public void test_works() {
+    public void worksTest() {
         final EnumSwitcher<PricingMode> switcher = new EnumSwitcher<>(PricingMode.class, PricingMode.values());
-        assertEquals(PricingMode.BPS, switcher.get());
-        assertEquals(PricingMode.EFP, switcher.next());
-        assertEquals(PricingMode.RAW, switcher.next());
-        assertEquals(PricingMode.BPS, switcher.next());
+        Assert.assertEquals(switcher.get(), PricingMode.BPS, "Pricing mode.");
+        Assert.assertEquals(switcher.next(), PricingMode.EFP, "Pricing mode.");
+        Assert.assertEquals(switcher.next(), PricingMode.RAW, "Pricing mode.");
+        Assert.assertEquals(switcher.next(), PricingMode.BPS, "Pricing mode.");
     }
 
     @Test
-    public void test_skips_some() {
+    public void skipsSomeTest() {
         final EnumSwitcher<PricingMode> switcher = new EnumSwitcher<>(PricingMode.class, PricingMode.BPS, PricingMode.RAW);
-        assertEquals(PricingMode.BPS, switcher.get());
-        assertEquals(PricingMode.RAW, switcher.next());
-        assertEquals(PricingMode.BPS, switcher.next());
-        assertEquals(PricingMode.BPS, switcher.get());
+        Assert.assertEquals(switcher.get(), PricingMode.BPS, "Pricing mode.");
+        Assert.assertEquals(switcher.next(), PricingMode.RAW, "Pricing mode.");
+        Assert.assertEquals(switcher.next(), PricingMode.BPS, "Pricing mode.");
+        Assert.assertEquals(switcher.get(), PricingMode.BPS, "Pricing mode.");
     }
 
-    @Test
-    public void test_refuses_empty() {
-        try {
-            final EnumSwitcher<PricingMode> switcher = new EnumSwitcher<>(PricingMode.class);
-        } catch (final IllegalArgumentException ignored) {
-            return;
-        }
-        assertFalse("Should have thrown an exception", true);
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void refusesEmptyTest() {
+        new EnumSwitcher<>(PricingMode.class);
     }
-
 }

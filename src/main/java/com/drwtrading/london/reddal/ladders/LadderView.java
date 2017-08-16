@@ -1,5 +1,8 @@
 package com.drwtrading.london.reddal.ladders;
 
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SymbolMetaData;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
@@ -8,14 +11,13 @@ import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
-import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
+import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MDForSymbol;
-import com.drwtrading.london.reddal.data.SymbolMetaData;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
@@ -24,9 +26,10 @@ import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
-import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
-import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
-import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.photons.ladder.LadderText;
@@ -115,7 +118,7 @@ public class LadderView implements UiEventHandler {
     private final WebSocketClient client;
     private final ILadderUI view;
     private final String ewokBaseURL;
-    private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
+    private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final LadderOptions ladderOptions;
     private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
@@ -130,12 +133,15 @@ public class LadderView implements UiEventHandler {
     private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
     private final Predicate<String> symbolExists;
     private final LadderHTMLTable ladderHTMLKeys;
+    private final DecimalFormat twoDF;
 
     public String symbol;
     private int levels;
     private MDForSymbol marketData;
     private long lastCenteredTime = 0;
-    private SymbolMetaData metaData;
+    private LadderMetaData metaData;
+    private ExtraDataForSymbol extraDataForSymbol;
+
     private ClientSpeedState clientSpeedState = ClientSpeedState.FINE;
 
     private boolean showTotalTraded = false;
@@ -150,11 +156,11 @@ public class LadderView implements UiEventHandler {
     private GoingExState exState = GoingExState.Unknown;
 
     public LadderView(final IResourceMonitor<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui,
-            final ILadderUI view, final String ewokBaseURL,
-            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
-            final TradingStatusForAll tradingStatusForAll, final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher,
-            final Publisher<ReddalMessage> commandPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
-            final Publisher<Jsonable> trace, final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+            final ILadderUI view, final String ewokBaseURL, final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+            final LadderOptions ladderOptions, final TradingStatusForAll tradingStatusForAll,
+            final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher, final Predicate<String> symbolExists) {
@@ -179,8 +185,9 @@ public class LadderView implements UiEventHandler {
         this.userWorkspaceRequests = userWorkspaceRequests;
         this.symbolExists = symbolExists;
         this.ladderHTMLKeys = new LadderHTMLTable();
-        this.ui.setHandler(this);
+        this.twoDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2);
 
+        this.ui.setHandler(this);
         this.activeView = LadderNoView.SINGLETON;
     }
 
@@ -191,7 +198,7 @@ public class LadderView implements UiEventHandler {
     }
 
     public void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
-            final WorkingOrdersForSymbol workingOrdersForSymbol, final SymbolMetaData metaData, final ExtraDataForSymbol extraDataForSymbol,
+            final WorkingOrdersForSymbol workingOrdersForSymbol, final LadderMetaData metaData, final ExtraDataForSymbol extraDataForSymbol,
             final SymbolStackData stackData, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
@@ -200,6 +207,7 @@ public class LadderView implements UiEventHandler {
         this.ladderHTMLKeys.extendToLevels(levels);
         this.marketData = marketData;
         this.metaData = metaData;
+        this.extraDataForSymbol = extraDataForSymbol;
 
         final boolean wasBookView = null == bookView || activeView == bookView;
 
@@ -270,10 +278,10 @@ public class LadderView implements UiEventHandler {
         view.draw(levels);
         ui.txt(HTML.SYMBOL, symbol);
 
-        ui.cls(HTML.LASER + "bid", CSSClass.INVISIBLE, true);
+        ui.cls(HTML.LASER + "BID", CSSClass.INVISIBLE, true);
         ui.cls(HTML.LASER + "green", CSSClass.INVISIBLE, true);
         ui.cls(HTML.LASER + "white", CSSClass.INVISIBLE, true);
-        ui.cls(HTML.LASER + "ask", CSSClass.INVISIBLE, true);
+        ui.cls(HTML.LASER + "ASK", CSSClass.INVISIBLE, true);
 
         activeView.switchedTo();
 
@@ -381,11 +389,10 @@ public class LadderView implements UiEventHandler {
         ui.cls(HTML.BOOK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == bookView);
         ui.cls(HTML.STACK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == stackView);
 
-        if (null != metaData) {
+        if (null != metaData && null != extraDataForSymbol) {
             if (metaData.spreadContractSet != null) {
-                final SpreadContractSet contracts = metaData.spreadContractSet;
-                ui.cls(HTML.SYMBOL, CSSClass.SPREAD, symbol.equals(contracts.spread));
-                ui.cls(HTML.SYMBOL, CSSClass.BACK, symbol.equals(contracts.backMonth));
+                ui.cls(HTML.SYMBOL, CSSClass.SPREAD, symbol.equals(metaData.spreadContractSet.spread));
+                ui.cls(HTML.SYMBOL, CSSClass.BACK, symbol.equals(metaData.spreadContractSet.backMonth));
             }
             // Desk position
             if (null != metaData.deskPosition && null != metaData.deskPosition.getPosition() &&
@@ -415,17 +422,53 @@ public class LadderView implements UiEventHandler {
                 ui.txt(HTML.PKS_POSITION, pksPosition);
             }
             // Ladder info
-            if (metaData.infoOnLadder != null) {
+            if (null != metaData.infoOnLadder) {
                 ui.txt(HTML.AFTER_HOURS_WEIGHT, metaData.infoOnLadder.getValue());
             }
+
             // Ladder text
             for (final LadderText ladderText : metaData.ladderTextByPosition.values()) {
                 ui.txt(HTML.TEXT_PREFIX + ladderText.getCell(), ladderText.getText());
             }
 
+            final SymbolMetaData symbolMetaData = extraDataForSymbol.getMetaData();
+            if (null != extraDataForSymbol.getMetaData()) {
+                setCellTest("r2c2", symbolMetaData.getBidStrategyOffset());
+                setCellTest("r2c4", symbolMetaData.getAskStrategyOffset());
+                setCellTest("r1c1", symbolMetaData.getFixedRateFraction());
+            }
+
+            if (null != extraDataForSymbol.getTheoValue()) {
+
+                final TheoValue theoValue = extraDataForSymbol.getTheoValue();
+                if (!theoValue.isValid()) {
+                    ui.txt(HTML.AFTER_HOURS_WEIGHT, "XXX");
+                    ui.txt(HTML.TEXT_PREFIX + "r2c3", "XXX");
+                    ui.txt(HTML.TEXT_PREFIX + "r2c5", "XXX");
+                } else {
+                    if (theoValue.getAfterHoursPct() < Constants.EPSILON) {
+                        ui.txt(HTML.AFTER_HOURS_WEIGHT, "0");
+                    } else if (theoValue.getAfterHoursPct() < 0.0001) {
+                        ui.txt(HTML.AFTER_HOURS_WEIGHT, Math.ceil(theoValue.getAfterHoursPct()));
+                    }
+                    ui.txt(HTML.TEXT_PREFIX + "r2c3", twoDF.format(theoValue.getMomentumComponent()));
+                    ui.txt(HTML.TEXT_PREFIX + "r2c5", (int) Math.ceil(theoValue.getRawAfterHoursPct()));
+                }
+            }
+
             // Going ex
             checkGoingEx();
             ui.cls(HTML.TEXT, CSSClass.GOING_EX, exState == GoingExState.YES);
+        }
+    }
+
+    private void setCellTest(final String cellID, final double value) {
+
+        if (Double.isNaN(value)) {
+            ui.txt(HTML.TEXT_PREFIX + cellID, "---");
+        } else {
+            ui.txt(HTML.TEXT_PREFIX + cellID, twoDF.format(value));
+
         }
     }
 

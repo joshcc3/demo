@@ -3,13 +3,13 @@ package com.drwtrading.london.reddal.data;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
-import com.drwtrading.london.reddal.data.ibook.DepthBookSubscriber;
+import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 
 import java.text.DecimalFormat;
 
 public class MDForSymbol {
 
-    private final DepthBookSubscriber bookHandler;
+    private final IMDSubscriber bookSubscriber;
     private final String symbol;
 
     private final boolean isPriceInverted;
@@ -19,9 +19,9 @@ public class MDForSymbol {
     private DecimalFormat df;
     private DecimalFormat nonTrailingDF;
 
-    public MDForSymbol(final DepthBookSubscriber bookHandler, final String symbol) {
+    public MDForSymbol(final IMDSubscriber bookSubscriber, final String symbol) {
 
-        this.bookHandler = bookHandler;
+        this.bookSubscriber = bookSubscriber;
         this.symbol = symbol;
 
         this.isPriceInverted = symbol.startsWith("6R");
@@ -29,7 +29,7 @@ public class MDForSymbol {
     }
 
     public void subscribeForMD() {
-        bookHandler.subscribeForMD(symbol, this);
+        bookSubscriber.subscribeForMD(symbol, this);
     }
 
     public void setBook(final IBook<?> book) {
@@ -56,7 +56,7 @@ public class MDForSymbol {
     }
 
     public void unsubscribeForMD() {
-        bookHandler.unsubscribeForMD(symbol);
+        bookSubscriber.unsubscribeForMD(symbol);
         tradeTracker.clear();
     }
 
@@ -79,6 +79,5 @@ public class MDForSymbol {
     public String formatPriceWithoutTrailingZeroes(final long price) {
         return nonTrailingDF.format(price / (double) Constants.NORMALISING_FACTOR);
     }
-
 
 }

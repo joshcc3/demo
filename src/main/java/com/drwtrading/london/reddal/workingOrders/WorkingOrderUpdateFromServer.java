@@ -1,57 +1,64 @@
 package com.drwtrading.london.reddal.workingOrders;
 
-import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.CancelOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.ModifyOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderType;
 import com.drwtrading.london.util.Struct;
-import eeif.execution.RemoteAutoCancelOrder;
-import eeif.execution.RemoteCancelOrder;
-import eeif.execution.RemoteOrder;
-import eeif.execution.RemoteOrderType;
+import eeif.execution.Side;
 import eeif.execution.WorkingOrderType;
 import eeif.execution.WorkingOrderUpdate;
 
 public class WorkingOrderUpdateFromServer extends Struct {
 
     public final String fromServer;
-    public final WorkingOrderUpdate value;
+    public final WorkingOrderUpdate workingOrderUpdate;
 
-    public WorkingOrderUpdateFromServer(final String fromServer, final WorkingOrderUpdate value) {
+    public WorkingOrderUpdateFromServer(final String fromServer, final WorkingOrderUpdate workingOrderUpdate) {
         this.fromServer = fromServer;
-        this.value = value;
+        this.workingOrderUpdate = workingOrderUpdate;
     }
 
-    public Main.RemoteOrderCommandToServer buildCancelCommand(final String username) {
-        final WorkingOrderUpdate workingOrderUpdate = this.value;
-        final String orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
-        final RemoteOrder remoteOrder =
-                new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(),
-                        workingOrderUpdate.getTotalQuantity(), getRemoteOrderType(orderType), false, workingOrderUpdate.getTag());
-        return new Main.RemoteOrderCommandToServer(this.fromServer,
-                new RemoteCancelOrder(workingOrderUpdate.getServerName(), username, workingOrderUpdate.getChainId(), remoteOrder));
+    public RemoteOrderCommandToServer buildModify(final String username, final long toPrice, final int toQty) {
+
+        final BookSide side = Side.BID == workingOrderUpdate.getSide() ? BookSide.BID : BookSide.ASK;
+        final RemoteOrderType orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
+
+        final IOrderCmd cmd = new ModifyOrderCmd(username, workingOrderUpdate.getChainId(), workingOrderUpdate.getSymbol(), side, orderType,
+                workingOrderUpdate.getTag(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity(), toPrice, toQty);
+
+        return new RemoteOrderCommandToServer(this.fromServer, cmd);
     }
 
-    public Main.RemoteOrderCommandToServer buildAutoCancel(final String username) {
-        final WorkingOrderUpdate workingOrderUpdate = this.value;
-        final String orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
-        final RemoteOrder remoteOrder =
-                new RemoteOrder(workingOrderUpdate.getSymbol(), workingOrderUpdate.getSide(), workingOrderUpdate.getPrice(),
-                        workingOrderUpdate.getTotalQuantity(), getRemoteOrderType(orderType), false, workingOrderUpdate.getTag());
-        return new Main.RemoteOrderCommandToServer(this.fromServer,
-                new RemoteAutoCancelOrder(workingOrderUpdate.getServerName(), username, workingOrderUpdate.getChainId(), remoteOrder));
+    public RemoteOrderCommandToServer buildCancelCommand(final String username) {
+        return buildCancel(username, true);
     }
 
-    static String getOrderType(final WorkingOrderType workingOrderType) {
-        if (workingOrderType == WorkingOrderType.MARKET) {
-            return "MKT_CLOSE";
+    public RemoteOrderCommandToServer buildAutoCancel(final String username) {
+        return buildCancel(username, false);
+    }
+
+    private RemoteOrderCommandToServer buildCancel(final String username, final boolean isUserLogin) {
+
+        final BookSide side = Side.BID == workingOrderUpdate.getSide() ? BookSide.BID : BookSide.ASK;
+        final RemoteOrderType orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
+
+        final IOrderCmd cmd =
+                new CancelOrderCmd(username, isUserLogin, workingOrderUpdate.getChainId(), workingOrderUpdate.getSymbol(), side, orderType,
+                        workingOrderUpdate.getTag(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity());
+
+        return new RemoteOrderCommandToServer(this.fromServer, cmd);
+    }
+
+    private static RemoteOrderType getOrderType(final WorkingOrderType workingOrderType) {
+
+        if (WorkingOrderType.MARKET == workingOrderType) {
+            return RemoteOrderType.MKT_CLOSE;
         } else {
-            return workingOrderType.name();
+            return getRemoteOrderType(workingOrderType.name());
         }
-    }
-
-    public RemoteOrder toRemoteOrder(final long price, final int totalQuantity) {
-
-        final RemoteOrderType remoteOrderType = getRemoteOrderType(this.value.getWorkingOrderType().toString());
-        return new RemoteOrder(this.value.getSymbol(), this.value.getSide(), price, totalQuantity, remoteOrderType, true,
-                this.value.getTag());
     }
 
     public static RemoteOrderType getRemoteOrderType(final String orderType) {
@@ -66,11 +73,11 @@ public class WorkingOrderUpdateFromServer extends Struct {
 
     public boolean isLikelyGTC() {
         return this.fromServer.toUpperCase().contains("GTC") ||
-                this.value.getTag().toUpperCase().contains("GTC") ||
-                this.value.getWorkingOrderType().name().toUpperCase().contains("GTC");
+                this.workingOrderUpdate.getTag().toUpperCase().contains("GTC") ||
+                this.workingOrderUpdate.getWorkingOrderType().name().toUpperCase().contains("GTC");
     }
 
     public String key() {
-        return fromServer + '_' + value.getChainId();
+        return fromServer + '_' + workingOrderUpdate.getChainId();
     }
 }

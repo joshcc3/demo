@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.data;
 
-import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 
 import java.util.Map;
 
@@ -8,9 +8,12 @@ import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
 
 public class TradingStatusForAll {
 
-    public Map<String, TradingStatusWatchdog.ServerTradingStatus> serverTradingStatusMap = newFastMap();
+    public Map<String, ServerTradingStatus> serverTradingStatusMap = newFastMap();
 
-    public void on(final TradingStatusWatchdog.ServerTradingStatus tradingStatus) {
+    public TradingStatusForAll() {
+    }
+
+    public void on(final ServerTradingStatus tradingStatus) {
         serverTradingStatusMap.put(tradingStatus.server, tradingStatus);
     }
 }

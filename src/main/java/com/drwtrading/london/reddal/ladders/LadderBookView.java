@@ -1,5 +1,7 @@
 package com.drwtrading.london.reddal.ladders;
 
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
@@ -21,7 +23,6 @@ import com.drwtrading.london.photons.reddal.Direction;
 import com.drwtrading.london.photons.reddal.ReddalCommand;
 import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.photons.reddal.UpdateOffset;
-import com.drwtrading.london.reddal.Main;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
@@ -33,22 +34,21 @@ import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.fastui.html.DataKey;
 import com.drwtrading.london.reddal.fastui.html.HTML;
-import com.drwtrading.london.reddal.orderentry.ManagedOrderType;
-import com.drwtrading.london.reddal.orderentry.OrderEntryClient;
-import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
-import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
-import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
-import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.ManagedOrderType;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderType;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.SubmitOrderCmd;
+import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
-import com.drwtrading.photons.ladder.LaserLine;
 import com.google.common.collect.ImmutableSet;
 import drw.london.json.Jsonable;
-import eeif.execution.RemoteModifyOrder;
-import eeif.execution.RemoteOrder;
-import eeif.execution.RemoteOrderType;
-import eeif.execution.RemoteSubmitOrder;
 import eeif.execution.Side;
 import eeif.execution.WorkingOrderState;
 import eeif.execution.WorkingOrderType;
@@ -125,7 +125,7 @@ public class LadderBookView implements ILadderBoard {
 
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher;
     private final Publisher<ReddalMessage> commandPublisher;
-    private final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
+    private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final Publisher<OrderEntryCommandToServer> eeifCommandToServer;
     private final TradingStatusForAll tradingStatusForAll;
 
@@ -165,7 +165,7 @@ public class LadderBookView implements ILadderBoard {
             final UiPipeImpl ui, final ILadderUI view, final LadderOptions ladderOptions,
             final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<Main.RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+            final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
             final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
             final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
             final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
@@ -468,7 +468,7 @@ public class LadderBookView implements ILadderBoard {
                 final long n = workingOrdersForSymbol.ordersByKey.size();
                 long avgPrice = 0L;
                 for (final WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
-                    avgPrice += orderUpdateFromServer.value.getPrice() / n;
+                    avgPrice += orderUpdateFromServer.workingOrderUpdate.getPrice() / n;
                 }
                 center = avgPrice;
             } else if (auctionSummaryPrice.isValid()) {
@@ -489,26 +489,44 @@ public class LadderBookView implements ILadderBoard {
     private void drawPriceLevels() {
 
         if (!pendingRefDataAndSettle) {
-            final LaserLine theo;
-            if (null != dataForSymbol && dataForSymbol.laserLineByName.containsKey(WHITE_LASER_LINE_ID)) {
-                theo = dataForSymbol.laserLineByName.get(WHITE_LASER_LINE_ID);
-            } else if (null != dataForSymbol && dataForSymbol.laserLineByName.containsKey(ladderOptions.theoLaserLineID)) {
-                theo = dataForSymbol.laserLineByName.get(ladderOptions.theoLaserLineID);
+            final boolean isTheoValid;
+            final double theoPrice;
+            if (null != dataForSymbol.getTheoValue() && dataForSymbol.getTheoValue().isValid()) {
+
+                isTheoValid = true;
+                theoPrice = dataForSymbol.getTheoValue().getOriginalValue();
+
+            } else if (dataForSymbol.laserLineByName.containsKey(WHITE_LASER_LINE_ID)) {
+
+                final com.drwtrading.photons.ladder.LaserLine laserLine = dataForSymbol.laserLineByName.get(WHITE_LASER_LINE_ID);
+                isTheoValid = laserLine.isValid();
+                theoPrice = laserLine.getPrice();
+
+            } else if (dataForSymbol.laserLineByName.containsKey(ladderOptions.theoLaserLineID)) {
+
+                final com.drwtrading.photons.ladder.LaserLine laserLine = dataForSymbol.laserLineByName.get(ladderOptions.theoLaserLineID);
+                isTheoValid = laserLine.isValid();
+                theoPrice = laserLine.getPrice();
+
             } else {
-                theo = new LaserLine(null, ladderOptions.theoLaserLineID, Long.MIN_VALUE, false, "");
+
+                isTheoValid = false;
+                theoPrice = Long.MIN_VALUE;
+
             }
+
             for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
                 final long price = priceNode.key;
                 final LadderHTMLRow htmlRowKeys = priceNode.getValue().htmlKeys;
-                if (pricingModes.get() == PricingMode.BPS && theo.isValid()) {
-                    final double points = (10000.0 * (price - theo.getPrice())) / theo.getPrice();
+                if (pricingModes.get() == PricingMode.BPS && isTheoValid) {
+                    final double points = (10000.0 * (price - theoPrice)) / theoPrice;
                     ui.txt(htmlRowKeys.bookPriceKey, BASIS_POINT_DECIMAL_FORMAT.format(points));
                 } else if (pricingModes.get() == PricingMode.BPS && isCashEquityOrFX && hasBestBid() && null != marketData) {
                     final long basePrice = marketData.getBook().getBestBid().getPrice();
                     final double points = (10000.0 * (price - basePrice)) / basePrice;
                     ui.txt(htmlRowKeys.bookPriceKey, BASIS_POINT_DECIMAL_FORMAT.format(points));
-                } else if (PricingMode.EFP == pricingModes.get() && null != marketData && theo.isValid()) {
-                    final double efp = Math.round((price - theo.getPrice()) * 100d / Constants.NORMALISING_FACTOR) / 100d;
+                } else if (PricingMode.EFP == pricingModes.get() && null != marketData && isTheoValid) {
+                    final double efp = Math.round((price - theoPrice) * 100d / Constants.NORMALISING_FACTOR) / 100d;
                     ui.txt(htmlRowKeys.bookPriceKey, EFP_DECIMAL_FORMAT.format(efp));
                 } else if (PricingMode.EFP == pricingModes.get() && null != marketData && marketData.isPriceInverted()) {
                     final double invertedPrice = Constants.NORMALISING_FACTOR / (double) price;
@@ -554,8 +572,8 @@ public class LadderBookView implements ILadderBoard {
             for (final LongMapNode<LadderBoardRow> entry : priceRows) {
                 final long price = entry.key;
                 final String priceKey = entry.getValue().htmlKeys.bookPriceKey;
-                ui.cls(priceKey, CSSClass.LAST_BID, dataForSymbol.lastBuy != null && dataForSymbol.lastBuy.getPrice() == price);
-                ui.cls(priceKey, CSSClass.LAST_ASK, dataForSymbol.lastSell != null && dataForSymbol.lastSell.getPrice() == price);
+                ui.cls(priceKey, CSSClass.LAST_BID, dataForSymbol.isLastBuy(price));
+                ui.cls(priceKey, CSSClass.LAST_ASK, dataForSymbol.isLastSell(price));
             }
         }
     }
@@ -572,7 +590,7 @@ public class LadderBookView implements ILadderBoard {
     private boolean isOrderTypeSupported(final CSSClass orderType, final String mic) {
 
         return TAGS.stream().filter(tag -> {
-            boolean oldOrderType = ladderOptions.serverResolver.resolveToServerName(symbol, orderType.name(), tag, mic) != null;
+            boolean oldOrderType = null != ladderOptions.serverResolver.resolveToServerName(symbol, orderType.name(), tag, mic);
             boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(orderType.name()) &&
                     orderEntryMap.get(symbol).supportedTypes.contains(ManagedOrderType.valueOf(orderType.name()));
             return oldOrderType || newOrderType;
@@ -638,38 +656,64 @@ public class LadderBookView implements ILadderBoard {
     private void drawLaserLines() {
 
         if (null != marketData.getBook() && marketData.getBook().isValid()) {
-            for (final LaserLine laserLine : dataForSymbol.laserLineByName.values()) {
 
-                final String laserKey = HTML.LASER + ("offer".equals(laserLine.getId()) ? "ask" : laserLine.getId());
+            for (final com.drwtrading.photons.ladder.LaserLine laserLine : dataForSymbol.laserLineByName.values()) {
+                final String laserKey = HTML.LASER + ("offer".equals(laserLine.getId()) ? "ask" : laserLine.getId()).toUpperCase();
+                setLaserLine(laserKey, laserLine.isValid(), laserLine.getPrice());
+            }
 
-                if (laserLine.isValid() && 0 < levels) {
+            for (final LaserLine laserLine : dataForSymbol.getLaserLines()) {
+                setLaserLine(HTML.LASER + laserLine.getType().name(), laserLine.isValid(), laserLine.getPrice());
+            }
 
-                    if (topPrice < laserLine.getPrice()) {
-                        final LadderBoardRow priceRow = priceRows.get(topPrice);
-                        ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, 0.5);
-                    } else if (laserLine.getPrice() < bottomPrice) {
-                        final LadderBoardRow priceRow = priceRows.get(bottomPrice);
-                        ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, -0.5);
-                    } else {
-                        long price = bottomPrice;
-                        while (price <= topPrice) {
-                            final long priceAbove = marketData.getBook().getTickTable().addTicks(price, 1);
-                            if (price <= laserLine.getPrice() && laserLine.getPrice() <= priceAbove && priceRows.containsKey(price)) {
-                                final long fractionalPrice = laserLine.getPrice() - price;
-                                final double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
-                                final LadderBoardRow priceRow = priceRows.get(price);
-                                ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, tickFraction);
-                                break;
-                            }
-                            price = priceAbove;
-                        }
+            if (null != dataForSymbol.getTheoValue()) {
+
+                final TheoValue theoValue = dataForSymbol.getTheoValue();
+                final String laserKey;
+                switch (theoValue.getTheoType()) {
+                    case SPREADNOUGHT: {
+                        laserKey = HTML.LASER + "white";
+                        break;
                     }
+                    default: {
+                        laserKey = HTML.LASER + "green";
+                        break;
+                    }
+                }
 
-                    ui.cls(laserKey, CSSClass.INVISIBLE, false);
-                } else {
-                    ui.cls(laserKey, CSSClass.INVISIBLE, true);
+                setLaserLine(laserKey, theoValue.isValid(), theoValue.getTheoreticalValue());
+            }
+        }
+    }
+
+    private void setLaserLine(final String laserKey, final boolean isValid, final long laserLinePrice) {
+
+        if (isValid && 0 < levels) {
+
+            if (topPrice < laserLinePrice) {
+                final LadderBoardRow priceRow = priceRows.get(topPrice);
+                ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, 0.5);
+            } else if (laserLinePrice < bottomPrice) {
+                final LadderBoardRow priceRow = priceRows.get(bottomPrice);
+                ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, -0.5);
+            } else {
+                long price = bottomPrice;
+                while (price <= topPrice) {
+                    final long priceAbove = marketData.getBook().getTickTable().addTicks(price, 1);
+                    if (price <= laserLinePrice && laserLinePrice <= priceAbove && priceRows.containsKey(price)) {
+                        final long fractionalPrice = laserLinePrice - price;
+                        final double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
+                        final LadderBoardRow priceRow = priceRows.get(price);
+                        ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, tickFraction);
+                        break;
+                    }
+                    price = priceAbove;
                 }
             }
+
+            ui.cls(laserKey, CSSClass.INVISIBLE, false);
+        } else {
+            ui.cls(laserKey, CSSClass.INVISIBLE, true);
         }
     }
 
@@ -774,13 +818,13 @@ public class LadderBookView implements ILadderBoard {
                 BookSide side = null;
 
                 for (final WorkingOrderUpdateFromServer orderFromServer : w.ordersByPrice.get(price)) {
-                    final WorkingOrderUpdate order = orderFromServer.value;
+                    final WorkingOrderUpdate order = orderFromServer.workingOrderUpdate;
                     final int orderQty = order.getTotalQuantity() - order.getFilledQuantity();
                     side = LadderView.convertSide(order.getSide());
                     keys.append(orderFromServer.key());
                     keys.append('!');
                     if (0 < orderQty) {
-                        orderTypes.add(orderFromServer.value.getWorkingOrderType());
+                        orderTypes.add(orderFromServer.workingOrderUpdate.getWorkingOrderType());
                     }
                     if (WorkingOrderType.HIDDEN_TICKTAKER == order.getWorkingOrderType()) {
                         hiddenTickTakerQty += orderQty;
@@ -818,17 +862,17 @@ public class LadderBookView implements ILadderBoard {
             int buyManagedQty = 0;
             int sellManagedQty = 0;
             for (final WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByKey.values()) {
-                if (orderUpdateFromServer.value.getWorkingOrderState() != WorkingOrderState.DEAD) {
-                    final int remainingQty =
-                            orderUpdateFromServer.value.getTotalQuantity() - orderUpdateFromServer.value.getFilledQuantity();
-                    if (orderUpdateFromServer.value.getSide() == Side.BID) {
-                        if (orderUpdateFromServer.value.getWorkingOrderType() == WorkingOrderType.HIDDEN_TICKTAKER) {
+                if (orderUpdateFromServer.workingOrderUpdate.getWorkingOrderState() != WorkingOrderState.DEAD) {
+                    final int remainingQty = orderUpdateFromServer.workingOrderUpdate.getTotalQuantity() -
+                            orderUpdateFromServer.workingOrderUpdate.getFilledQuantity();
+                    if (orderUpdateFromServer.workingOrderUpdate.getSide() == Side.BID) {
+                        if (orderUpdateFromServer.workingOrderUpdate.getWorkingOrderType() == WorkingOrderType.HIDDEN_TICKTAKER) {
                             buyHiddenTTQty += remainingQty;
                         } else {
                             buyQty += remainingQty;
                         }
                     } else {
-                        if (orderUpdateFromServer.value.getWorkingOrderType() == WorkingOrderType.HIDDEN_TICKTAKER) {
+                        if (orderUpdateFromServer.workingOrderUpdate.getWorkingOrderType() == WorkingOrderType.HIDDEN_TICKTAKER) {
                             sellHiddenTTQty += remainingQty;
                         } else {
                             sellQty += remainingQty;
@@ -1102,11 +1146,11 @@ public class LadderBookView implements ILadderBoard {
         final long price = Long.valueOf(data.get("price"));
         final LadderBoardRow bookRow = priceRows.get(price);
 
-        final Side side;
+        final BookSide side;
         if (label.equals(bookRow.htmlKeys.bookBidKey)) {
-            side = Side.BID;
+            side = BookSide.BID;
         } else if (label.equals(bookRow.htmlKeys.bookAskKey)) {
-            side = Side.OFFER;
+            side = BookSide.ASK;
         } else {
             throw new IllegalArgumentException("Price " + price + " did not match key " + label);
         }
@@ -1139,11 +1183,11 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private void submitManagedOrder(final String orderType, final long price, final Side side, final String tag) {
+    private void submitManagedOrder(final String orderType, final long price, final BookSide side, final String tag) {
 
         int tradingBoxQty = this.clickTradingBoxQty;
-        trace.publish(new CommandTrace("submitManaged", username, symbol, orderType, true, price, side.toString(), tag, tradingBoxQty,
-                orderSeqNo++));
+        trace.publish(
+                new CommandTrace("submitManaged", username, symbol, orderType, true, price, side.name(), tag, tradingBoxQty, orderSeqNo++));
         final OrderEntryClient.SymbolOrderChannel symbolOrderChannel = orderEntryMap.get(symbol);
         if (null != symbolOrderChannel) {
             final ManagedOrderType managedOrderType = ManagedOrderType.valueOf(orderType);
@@ -1156,7 +1200,7 @@ public class LadderBookView implements ILadderBoard {
             if (0 == tradingBoxQty) {
                 tradingBoxQty = clickTradingBoxQty;
             }
-            final OrderSide orderSide = side == Side.BID ? OrderSide.BUY : OrderSide.SELL;
+            final OrderSide orderSide = BookSide.BID == side ? OrderSide.BUY : OrderSide.SELL;
             final com.drwtrading.london.photons.eeifoe.RemoteOrder remoteOrder =
                     new com.drwtrading.london.photons.eeifoe.RemoteOrder(symbol, orderSide, price, tradingBoxQty, username,
                             managedOrderType.getOrder(price, tradingBoxQty, orderSide),
@@ -1169,13 +1213,13 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final long price, final Side side,
+    private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final long price, final BookSide side,
             final String tag) {
 
         final int sequenceNumber = orderSeqNo++;
 
-        trace.publish(new CommandTrace("submit", username, symbol, orderType, true, price, side.toString(), tag, clickTradingBoxQty,
-                sequenceNumber));
+        trace.publish(
+                new CommandTrace("submit", username, symbol, orderType, true, price, side.name(), tag, clickTradingBoxQty, sequenceNumber));
 
         if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
             final String message = "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", client " + username +
@@ -1187,8 +1231,6 @@ public class LadderBookView implements ILadderBoard {
             final String serverName =
                     ladderOptions.serverResolver.resolveToServerName(symbol, orderType, tag, marketData.getBook().getMIC().name());
 
-            final RemoteOrderType remoteOrderType = WorkingOrderUpdateFromServer.getRemoteOrderType(orderType);
-
             if (null == serverName) {
                 final String message = "Cannot submit order " + orderType + ' ' + side + ' ' + clickTradingBoxQty + " for " + symbol +
                         ", no valid server found.";
@@ -1196,10 +1238,9 @@ public class LadderBookView implements ILadderBoard {
                 ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
             } else {
 
-                final TradingStatusWatchdog.ServerTradingStatus serverTradingStatus =
-                        tradingStatusForAll.serverTradingStatusMap.get(serverName);
+                final ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(serverName);
 
-                if (serverTradingStatus == null || serverTradingStatus.tradingStatus != TradingStatusWatchdog.Status.OK) {
+                if (serverTradingStatus == null || !serverTradingStatus.isTradingConnection) {
                     final String message =
                             "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", server " + serverName +
                                     " has status " + (serverTradingStatus == null ? null : serverTradingStatus.toString());
@@ -1207,10 +1248,10 @@ public class LadderBookView implements ILadderBoard {
                     ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
                 } else {
 
-                    final RemoteSubmitOrder remoteSubmitOrder = new RemoteSubmitOrder(serverName, username, sequenceNumber,
-                            new RemoteOrder(symbol, side, price, clickTradingBoxQty, remoteOrderType, true, tag));
+                    final RemoteOrderType remoteOrderType = WorkingOrderUpdateFromServer.getRemoteOrderType(orderType);
+                    final IOrderCmd submit = new SubmitOrderCmd(username, symbol, side, remoteOrderType, tag, price, clickTradingBoxQty);
 
-                    remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(serverName, remoteSubmitOrder));
+                    remoteOrderCommandToServerPublisher.publish(new RemoteOrderCommandToServer(serverName, submit));
                 }
             }
         }
@@ -1224,8 +1265,8 @@ public class LadderBookView implements ILadderBoard {
                 if (modifyFromPrice != price) {
 
                     for (final WorkingOrderUpdateFromServer order : workingOrdersForSymbol.ordersByPrice.get(modifyFromPrice)) {
-                        final WorkingOrderUpdate workingOrderUpdate = order.value;
-                        modifyOrder(clientSpeedState, price, order, workingOrderUpdate, workingOrderUpdate.getTotalQuantity());
+                        final WorkingOrderUpdate workingOrderUpdate = order.workingOrderUpdate;
+                        modifyOrder(clientSpeedState, price, order, workingOrderUpdate.getTotalQuantity());
                     }
                 }
                 modifyFromPrice = null;
@@ -1244,28 +1285,24 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void modifyOrder(final ClientSpeedState clientSpeedState, final long price, final WorkingOrderUpdateFromServer order,
-            final WorkingOrderUpdate workingOrderUpdate, final int totalQuantity) {
+            final int totalQuantity) {
 
-        trace.publish(new CommandTrace("modify", username, symbol, order.value.getWorkingOrderType().toString(), true, price,
-                order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
+        trace.publish(new CommandTrace("modify", username, symbol, order.workingOrderUpdate.getWorkingOrderType().toString(), true, price,
+                order.workingOrderUpdate.getSide().toString(), order.workingOrderUpdate.getTag(), clickTradingBoxQty,
+                order.workingOrderUpdate.getChainId()));
 
         if (isTrader) {
 
-            final TradingStatusWatchdog.ServerTradingStatus serverTradingStatus =
-                    tradingStatusForAll.serverTradingStatusMap.get(order.fromServer);
+            final ServerTradingStatus serverTradingStatus = tradingStatusForAll.serverTradingStatusMap.get(order.fromServer);
             if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
                 monitor.logError(ReddalComponents.LADDER_PRESENTER, "Cannot modify order , client " + username + " is " + clientSpeedState);
-            } else if (serverTradingStatus == null || serverTradingStatus.tradingStatus != TradingStatusWatchdog.Status.OK) {
+            } else if (serverTradingStatus == null || !serverTradingStatus.isTradingConnection) {
                 monitor.logError(ReddalComponents.LADDER_PRESENTER, "Cannot modify order: server " + order.fromServer + " has status " +
                         (serverTradingStatus == null ? null : serverTradingStatus.toString()));
             } else {
 
-                final RemoteModifyOrder remoteModifyOrder =
-                        new RemoteModifyOrder(order.fromServer, username, workingOrderUpdate.getChainId(),
-                                order.toRemoteOrder(workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity()),
-                                order.toRemoteOrder(price, totalQuantity));
-
-                remoteOrderCommandToServerPublisher.publish(new Main.RemoteOrderCommandToServer(order.fromServer, remoteModifyOrder));
+                final RemoteOrderCommandToServer cmd = order.buildModify(username, price, totalQuantity);
+                remoteOrderCommandToServerPublisher.publish(cmd);
             }
 
         }
@@ -1301,7 +1338,7 @@ public class LadderBookView implements ILadderBoard {
 
         if (null != workingOrdersForSymbol) {
             for (final WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
-                if (LadderView.convertSide(orderUpdateFromServer.value.getSide()) == side) {
+                if (LadderView.convertSide(orderUpdateFromServer.workingOrderUpdate.getSide()) == side) {
                     cancelOrder(orderUpdateFromServer);
                 }
             }
@@ -1322,12 +1359,12 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void cancelOrder(final WorkingOrderUpdateFromServer order) {
-        trace.publish(
-                new CommandTrace("cancel", username, symbol, order.value.getWorkingOrderType().toString(), false, order.value.getPrice(),
-                        order.value.getSide().toString(), order.value.getTag(), clickTradingBoxQty, order.value.getChainId()));
+        trace.publish(new CommandTrace("cancel", username, symbol, order.workingOrderUpdate.getWorkingOrderType().toString(), false,
+                order.workingOrderUpdate.getPrice(), order.workingOrderUpdate.getSide().toString(), order.workingOrderUpdate.getTag(),
+                clickTradingBoxQty, order.workingOrderUpdate.getChainId()));
 
         if (isTrader) {
-            final Main.RemoteOrderCommandToServer cancel = order.buildCancelCommand(username);
+            final RemoteOrderCommandToServer cancel = order.buildCancelCommand(username);
             remoteOrderCommandToServerPublisher.publish(cancel);
         }
     }
@@ -1341,11 +1378,10 @@ public class LadderBookView implements ILadderBoard {
         } else if (singleOrderCommand instanceof OrdersPresenter.CancelOrder) {
             cancelOrder(orderUpdateFromServer);
         } else if (singleOrderCommand instanceof OrdersPresenter.ModifyOrderQuantity) {
-            final int totalQuantity = orderUpdateFromServer.value.getFilledQuantity() +
+            final int totalQuantity = orderUpdateFromServer.workingOrderUpdate.getFilledQuantity() +
                     ((OrdersPresenter.ModifyOrderQuantity) singleOrderCommand).newRemainingQuantity;
 
-            modifyOrder(clientSpeedState, orderUpdateFromServer.value.getPrice(), orderUpdateFromServer, orderUpdateFromServer.value,
-                    totalQuantity);
+            modifyOrder(clientSpeedState, orderUpdateFromServer.workingOrderUpdate.getPrice(), orderUpdateFromServer, totalQuantity);
         }
     }
 }

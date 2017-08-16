@@ -38,12 +38,12 @@ public interface OrderSelection extends Jsonable {
 
         @Override
         public boolean selectionMet(WorkingOrderUpdateFromServer order) {
-            WorkingOrderUpdate update = order.value;
+            WorkingOrderUpdate update = order.workingOrderUpdate;
             return update.getSymbol().equals(symbol) &&
                     (update.getSide() == Side.BID && side == BookSide.BID ||
                             update.getSide() == Side.OFFER && side == BookSide.ASK)
-                    && fromPrice <= order.value.getPrice()
-                    && toPrice >= order.value.getPrice();
+                    && fromPrice <= order.workingOrderUpdate.getPrice()
+                    && toPrice >= order.workingOrderUpdate.getPrice();
         }
 
         public static PriceRangeSelection fromJSON(JSONObject object) throws JSONException {

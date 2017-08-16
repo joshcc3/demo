@@ -4,10 +4,10 @@ import com.drwtrading.jetlang.autosubscribe.BatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.photons.eeifoe.Cancel;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
-import com.drwtrading.london.reddal.orderentry.OrderEntryCommandToServer;
-import com.drwtrading.london.reddal.orderentry.OrderUpdatesForSymbol;
-import com.drwtrading.london.reddal.orderentry.ServerDisconnected;
-import com.drwtrading.london.reddal.orderentry.UpdateFromServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
+import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.util.Struct;
@@ -50,11 +50,11 @@ public class OrdersPresenter {
     }
 
     public void onWorkingOrder(final WorkingOrderUpdateFromServer update) {
-        final String symbol = update.value.getSymbol();
+        final String symbol = update.workingOrderUpdate.getSymbol();
         final WorkingOrdersForSymbol orders = this.orders.get(symbol);
         final WorkingOrderUpdateFromServer prevUpdate = orders.onWorkingOrderUpdate(update);
-        final long newPrice = update.value.getPrice();
-        final long prevPrice = null == prevUpdate ? update.value.getPrice() : prevUpdate.value.getPrice();
+        final long newPrice = update.workingOrderUpdate.getPrice();
+        final long prevPrice = null == prevUpdate ? update.workingOrderUpdate.getPrice() : prevUpdate.workingOrderUpdate.getPrice();
         update(symbol, newPrice, prevPrice);
     }
 

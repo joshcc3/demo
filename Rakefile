@@ -4,10 +4,12 @@ CLOBBER.include('dist', 'rake', 'lib')
 CLEAN.include('tmp', 'build')
 
 PROJECT="reddal"
-
-JAR = "dist/#{PROJECT}.jar"
-TESTS_JAR="build/#{PROJECT}-tests.jar"
-TEST_DIR='src/test/java'
+PACKAGE_NAME = "drw.london.reddal"
+TEST_JAR = "build/tmp/tests.jar"
+TMP_DIR="build/tmp"
+LIB="lib"
+JAR = "dist/#{PACKAGE_NAME}.jar"
+JAR_SRC = "dist/#{PACKAGE_NAME}-src.jar"
 TARBALL="dist/#{PROJECT}-#{ENV["BUILD_NUMBER"] || "dev"}.tgz"
 
 ##### Wire in external functions
@@ -19,7 +21,16 @@ load "rake/pkg.rake"
 
 ##### Tasks
 
+task :javalib => [:test, JAR_SRC]
 task :default => :dist
+
+desc 'Run tests'
+task :test => [TEST_JAR, JAR] do |task|
+	  tests = classnames('src/test/java', FileList['src/test/java/**/*Test.java'])
+	  puts "Testing #{tests}"
+	  classpath = os_classpath(jars(LIB) + [JAR, TEST_JAR])
+	  sh "fig -c test -m -- java -classpath '#{TEST_JAR}:#{JAR}:#{classpath}' org.testng.TestNG -verbose 1 -testjar '#{TEST_JAR}'"
+end
 
 task :dist => [:clobber, :test, TARBALL] do
   puts '===================================================================='
@@ -31,20 +42,13 @@ task :run => [:dist] do
     sh "cd build/#{PROJECT} && ./bin/run #{PROJECT} run"
 end
 
-task :test => [JAR, TESTS_JAR] do |task|
-  tests = classnames(TEST_DIR, FileList[TEST_DIR+'/**/*Test.java'])
-  puts
-  puts "Testing #{tests}"
-  puts
-  junit :tests => tests, :jar=>JAR, :fig_config=>'test', :classpath=>[TESTS_JAR, JAR]
-end
-
 file JAR => FileList['src/main/java/**/*.java'] do |task|
   build_java_jar :src=>task.prerequisites, :dest=>task.name, :fig_config=>'build', :repo_info => 'none'
 end
 
-file TESTS_JAR => FileList[TEST_DIR  + '/**/*.java', JAR] do |task|
-  build_java_jar :src=>task.prerequisites, :dest=>task.name, :classpath => [JAR], :fig_config=>'test', :repo_info => 'none'
+file TEST_JAR => FileList[JAR, 'src/test/java/**/*.java'] do |task|
+	mkdir_p TMP_DIR
+	build_java_jar :src=>task.prerequisites, :dest=>task.name, :fig_config=>'test', :classpath=>[JAR]
 end
 
 file TARBALL => FileList['bin/**/*', 'lib/**/*', 'web/**/*', 'etc/**/*', JAR] do

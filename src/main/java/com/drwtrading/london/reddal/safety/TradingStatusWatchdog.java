@@ -1,34 +1,46 @@
 package com.drwtrading.london.reddal.safety;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.london.reddal.Main;
+import com.drwtrading.london.reddal.RemoteOrderEventFromServer;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.time.Clock;
-import com.drwtrading.london.util.Struct;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.status.StatusStat;
 import org.jetlang.channels.Publisher;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-
-import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
+import java.util.Set;
 
 public class TradingStatusWatchdog {
 
     private final Publisher<ServerTradingStatus> tradingStatusPublisher;
-    private final Map<String, Long> lastWorkingOrderEventFromServer = newFastMap();
-    private final Map<String, Long> lastRemoteOrderEventFromServer = newFastMap();
-    private final Map<String, ServerTradingStatus> tradingStatusMap = newFastMap();
+
     private final long maxAgeMillis;
     private final Clock clock;
     private final Publisher<StatsMsg> statsPublisher;
 
+    private final Map<String, Long> lastWorkingOrderEventFromServer;
+    private final Map<String, Long> lastRemoteOrderEventFromServer;
+    private final Set<String> connectedNibblerTransports;
+
+    private final Map<String, ServerTradingStatus> tradingStatusMap;
+
     public TradingStatusWatchdog(final Publisher<ServerTradingStatus> tradingStatusPublisher, final long maxAgeMillis, final Clock clock,
             final Publisher<StatsMsg> statsPublisher) {
+
         this.tradingStatusPublisher = tradingStatusPublisher;
         this.maxAgeMillis = maxAgeMillis;
         this.clock = clock;
         this.statsPublisher = statsPublisher;
+
+        this.lastWorkingOrderEventFromServer = new HashMap<>();
+        this.lastRemoteOrderEventFromServer = new HashMap<>();
+        this.connectedNibblerTransports = new HashSet<>();
+
+        this.tradingStatusMap = new HashMap<>();
     }
 
     @Subscribe
@@ -37,55 +49,49 @@ public class TradingStatusWatchdog {
     }
 
     @Subscribe
-    public void on(final Main.RemoteOrderEventFromServer managementServerHeartbeat) {
+    public void on(final RemoteOrderEventFromServer managementServerHeartbeat) {
         lastRemoteOrderEventFromServer.put(managementServerHeartbeat.fromServer, clock.now());
     }
 
-    public void checkHeartbeats() {
-        final long now = clock.now();
-        for (final Map.Entry<String, Long> entry : lastWorkingOrderEventFromServer.entrySet()) {
-            final Long workingOrderTime = entry.getValue();
-            final Long remoteOrderTime = lastRemoteOrderEventFromServer.get(entry.getKey());
-            final Status workingStatus = workingOrderTime != null && now - workingOrderTime < maxAgeMillis ? Status.OK : Status.NOT_OK;
-            final Status remoteStatus = remoteOrderTime != null && now - remoteOrderTime < maxAgeMillis ? Status.OK : Status.NOT_OK;
-            final Status tradingStatus = workingStatus == Status.OK && remoteStatus == Status.OK ? Status.OK : Status.NOT_OK;
-            final ServerTradingStatus serverTradingStatus =
-                    new ServerTradingStatus(entry.getKey(), workingStatus, remoteStatus, tradingStatus);
-            if (!serverTradingStatus.equals(tradingStatusMap.put(serverTradingStatus.server, serverTradingStatus))) {
-                tradingStatusPublisher.publish(serverTradingStatus);
-            }
-            if (workingStatus == Status.OK) {
-                statsPublisher.publish(
-                        new StatusStat(entry.getKey() + ": working order status", StatusStat.State.GREEN, (int) maxAgeMillis));
-            }
-            if (remoteStatus == Status.OK) {
-                statsPublisher.publish(
-                        new StatusStat(entry.getKey() + ": remote order status", StatusStat.State.GREEN, (int) maxAgeMillis));
-            }
-            if (tradingStatus == Status.OK) {
-                statsPublisher.publish(new StatusStat(entry.getKey() + ": trading status", StatusStat.State.GREEN, (int) maxAgeMillis));
-            }
+    public void setNibblerTransportConnected(final NibblerTransportConnected connectedNibbler) {
+
+        if (connectedNibbler.isConnected) {
+            connectedNibblerTransports.add(connectedNibbler.nibblerName);
+        } else {
+            connectedNibblerTransports.remove(connectedNibbler.nibblerName);
         }
     }
 
-    public static enum Status {
-        OK,
-        NOT_OK
-    }
+    public void checkHeartbeats() {
 
-    public static class ServerTradingStatus extends Struct {
+        final long now = clock.now();
 
-        public final String server;
-        public final Status workingOrderStatus;
-        public final Status remoteCommandStatus;
-        public final Status tradingStatus;
+        for (final Map.Entry<String, Long> entry : lastWorkingOrderEventFromServer.entrySet()) {
 
-        public ServerTradingStatus(final String server, final Status workingOrderStatus, final Status remoteCommandStatus,
-                final Status tradingStatus) {
-            this.server = server;
-            this.workingOrderStatus = workingOrderStatus;
-            this.remoteCommandStatus = remoteCommandStatus;
-            this.tradingStatus = tradingStatus;
+            final Long workingOrderTime = entry.getValue();
+            final Long remoteOrderTime = lastRemoteOrderEventFromServer.get(entry.getKey());
+            final boolean nibblerTransportConnected = connectedNibblerTransports.contains(entry.getKey());
+
+            final boolean workingStatus = null != workingOrderTime && now - workingOrderTime < maxAgeMillis;
+            final boolean remoteStatus = nibblerTransportConnected || (null != remoteOrderTime && now - remoteOrderTime < maxAgeMillis);
+            final boolean tradingStatus = workingStatus && remoteStatus;
+
+            final ServerTradingStatus serverTradingStatus = new ServerTradingStatus(entry.getKey(), workingStatus, tradingStatus);
+
+            if (!serverTradingStatus.equals(tradingStatusMap.put(serverTradingStatus.server, serverTradingStatus))) {
+                tradingStatusPublisher.publish(serverTradingStatus);
+            }
+            if (workingStatus) {
+                statsPublisher.publish(
+                        new StatusStat(entry.getKey() + ": working order status", StatusStat.State.GREEN, (int) maxAgeMillis));
+            }
+            if (remoteStatus) {
+                statsPublisher.publish(
+                        new StatusStat(entry.getKey() + ": remote order status", StatusStat.State.GREEN, (int) maxAgeMillis));
+            }
+            if (tradingStatus) {
+                statsPublisher.publish(new StatusStat(entry.getKey() + ": trading status", StatusStat.State.GREEN, (int) maxAgeMillis));
+            }
         }
     }
 }

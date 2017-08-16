@@ -55,6 +55,11 @@ public class StackGroupCallbackBatcher
     }
 
     @Override
+    public IStackConfigUpdateCallback getConfigListener(final String symbol, final InstrumentID instID) {
+        return this;
+    }
+
+    @Override
     public boolean connectionEstablished(final String remoteAppName) {
         return true;
     }
@@ -84,11 +89,6 @@ public class StackGroupCallbackBatcher
     public void remoteFillNotification(final String source, final StackGroup stackGroup, final StackType stackType,
             final int maxPullbackTicks, final long qty) {
         // no-op
-    }
-
-    @Override
-    public IStackConfigUpdateCallback getConfigListener(final String symbol, final InstrumentID instID) {
-        return this;
     }
 
     @Override
