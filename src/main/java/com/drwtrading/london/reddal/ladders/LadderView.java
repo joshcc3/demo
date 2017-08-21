@@ -448,7 +448,7 @@ public class LadderView implements UiEventHandler {
                 } else {
                     if (theoValue.getAfterHoursPct() < Constants.EPSILON) {
                         ui.txt(HTML.AFTER_HOURS_WEIGHT, "0");
-                    } else if (theoValue.getAfterHoursPct() < 0.0001) {
+                    } else {
                         ui.txt(HTML.AFTER_HOURS_WEIGHT, Math.ceil(theoValue.getAfterHoursPct()));
                     }
                     ui.txt(HTML.TEXT_PREFIX + "r2c3", twoDF.format(theoValue.getMomentumComponent()));
