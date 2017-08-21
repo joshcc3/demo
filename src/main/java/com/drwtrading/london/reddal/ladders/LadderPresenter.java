@@ -241,8 +241,7 @@ public class LadderPresenter {
             }
         }
         if (!"heartbeat".equals(cmd)) {
-            trace.publish(
-                    new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
+            trace.publish(new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
         }
     }
 
@@ -331,17 +330,23 @@ public class LadderPresenter {
     @Subscribe
     public void on(final LadderText ladderText) {
         if ("execution".equals(ladderText.getCell())) {
-            displayTradeIssue(new LadderClickTradingIssue(ladderText.getSymbol(), ladderText.getText()));
+            displayTradeIssue(ladderText.getSymbol(), ladderText.getText());
         } else {
             metaDataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
         }
     }
 
-    public void displayTradeIssue(final LadderClickTradingIssue ladderClickTradingIssue) {
-        final Collection<LadderView> views = viewsBySymbol.get(ladderClickTradingIssue.symbol);
+    public void displayTradeIssue(final LadderClickTradingIssue issue) {
+        displayTradeIssue(issue.symbol, issue.issue);
+    }
+
+    public void displayTradeIssue(final String symbol, final String text) {
+
+        final LadderClickTradingIssue ladderClickTradingIssue = new LadderClickTradingIssue(symbol, text);
+        final Collection<LadderView> views = viewsBySymbol.get(symbol);
         for (final LadderView view : views) {
             view.clickTradingIssue(ladderClickTradingIssue);
-            fiber.schedule(() -> view.clickTradingIssue(new LadderClickTradingIssue(ladderClickTradingIssue.symbol, "")), 5000,
+            fiber.schedule(() -> view.clickTradingIssue(new LadderClickTradingIssue(symbol, "")), 5000,
                     TimeUnit.MILLISECONDS);
         }
     }

@@ -78,7 +78,7 @@ import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
-import com.drwtrading.london.reddal.ladders.tradingData.TheoValueListener;
+import com.drwtrading.london.reddal.ladders.tradingData.LadderInfoListener;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
@@ -406,12 +406,14 @@ public class Main {
                         final IResourceMonitor<NibblerTransportComponents> childMonitor =
                                 nibblerParentMonitor.createChildResourceMonitor(nibblerConfig.getKey());
 
-                        final TheoValueListener theoValueListener = new TheoValueListener(ladderPresenter);
-                        final NibblerClientHandler client = NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, childMonitor,
-                                threadName + "-transport-" + nibblerConfig.getKey(), localAppName + mdSource.name(), true,
-                                theoValueListener);
+                        final LadderInfoListener ladderInfoListener = new LadderInfoListener(ladderPresenter);
+                        final NibblerClientHandler client =
+                                NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
+                                        threadName + "-transport-" + nibblerConfig.getKey(), localAppName + mdSource.name(), true,
+                                        ladderInfoListener);
 
-                        client.getCaches().tradingDataCache.addListener(theoValueListener);
+                        client.getCaches().tradingDataCache.addListener(ladderInfoListener);
+                        client.getCaches().blotterCache.addListener(ladderInfoListener);
                     }
                 }
             }

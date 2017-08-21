@@ -1,18 +1,21 @@
 package com.drwtrading.london.reddal.ladders.tradingData;
 
 import com.drwtrading.london.eeif.nibbler.transport.INibblerTransportConnectionListener;
+import com.drwtrading.london.eeif.nibbler.transport.cache.blotter.INibblerBlotterListener;
 import com.drwtrading.london.eeif.nibbler.transport.cache.tradingData.INibblerTradingDataListener;
+import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterLine;
+import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterSymbolLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SymbolMetaData;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 
-public class TheoValueListener implements INibblerTradingDataListener, INibblerTransportConnectionListener {
+public class LadderInfoListener implements INibblerTradingDataListener, INibblerTransportConnectionListener, INibblerBlotterListener {
 
     private final LadderPresenter ladderPresenter;
 
-    public TheoValueListener(final LadderPresenter ladderPresenter) {
+    public LadderInfoListener(final LadderPresenter ladderPresenter) {
 
         this.ladderPresenter = ladderPresenter;
     }
@@ -75,5 +78,16 @@ public class TheoValueListener implements INibblerTradingDataListener, INibblerT
     @Override
     public void connectionLost(final String remoteAppName) {
 
+    }
+
+    @Override
+    public boolean addBlotterLine(final BlotterLine blotterLine) {
+        return true;
+    }
+
+    @Override
+    public boolean addBlotterSymbolLine(final BlotterSymbolLine blotterLine) {
+        ladderPresenter.displayTradeIssue(blotterLine.symbol, blotterLine.text);
+        return true;
     }
 }

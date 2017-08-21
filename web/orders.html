@@ -91,7 +91,7 @@
             ws = connect();
             ws.logToConsole = true;
             ws.onmessage = function (x) {
-                eval(x)
+                eval(x);
             };
             var hash = document.location.hash.substr(1);
             var symbol = hash.split(",")[0];
@@ -118,7 +118,7 @@
         function orders(os) {
             $("#orders").find("tr:not(.template,.header,.managed)").toggleClass("invisible", true);
             $(os).each(function (i, x) {
-                var order = x.value;
+                var order = x.workingOrderUpdate;
                 var key = getKey(x.fromServer, order);
                 var row = getRow(key);
                 row.addClass('order').addClass('regular');

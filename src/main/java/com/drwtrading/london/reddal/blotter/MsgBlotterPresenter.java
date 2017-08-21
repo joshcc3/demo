@@ -58,10 +58,10 @@ public class MsgBlotterPresenter {
         views.all().setNibblerConnected(source, isConnected);
     }
 
-    public void addLine(final String source, final BlotterLine line) {
+    public void addLine(final String source, final long nanoSinceMidnightUTC, final String text) {
 
-        final String time = sdf.format(milliAtMidnightUTC + line.nanoSinceMidnightUTC / DateTimeUtil.NANOS_IN_MILLIS);
-        final MsgBlotterRow row = new MsgBlotterRow(++rowCount, line.nanoSinceMidnightUTC, time, source, line.text);
+        final String time = sdf.format(milliAtMidnightUTC + nanoSinceMidnightUTC / DateTimeUtil.NANOS_IN_MILLIS);
+        final MsgBlotterRow row = new MsgBlotterRow(++rowCount, nanoSinceMidnightUTC, time, source, text);
         rows.add(row);
 
         if (MAX_ROWS < rows.size()) {

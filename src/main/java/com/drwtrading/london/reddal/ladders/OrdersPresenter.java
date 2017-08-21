@@ -39,7 +39,7 @@ public class OrdersPresenter {
     Map<String, OrderUpdatesForSymbol> managedOrders = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
     Multimap<SymbolPrice, View> subscribed = HashMultimap.create();
 
-    public OrdersPresenter(final UILogger webLog, final Publisher<SingleOrderCommand> singleOrderCommandPublisher, Publisher<OrderEntryCommandToServer> orderEntryCommandToServer) {
+    public OrdersPresenter(final UILogger webLog, final Publisher<SingleOrderCommand> singleOrderCommandPublisher, final Publisher<OrderEntryCommandToServer> orderEntryCommandToServer) {
         this.webLog = webLog;
         this.singleOrderCommandPublisher = singleOrderCommandPublisher;
         this.orderEntryCommandToServer = orderEntryCommandToServer;
@@ -114,7 +114,7 @@ public class OrdersPresenter {
 
     @FromWebSocketView
     public void cancelManagedOrder(final String symbol, final String key, final WebSocketClient client) {
-        UpdateFromServer updateFromServer = managedOrders.get(symbol).updatesByKey.get(key);
+        final UpdateFromServer updateFromServer = managedOrders.get(symbol).updatesByKey.get(key);
         orderEntryCommandToServer.publish(new OrderEntryCommandToServer(updateFromServer.server,
                 new Cancel(updateFromServer.update.getSystemOrderId(), updateFromServer.update.getOrder())));
     }
@@ -122,7 +122,7 @@ public class OrdersPresenter {
     private void update(final String symbol, final long newPrice, final long prevPrice) {
 
         final WorkingOrdersForSymbol workingOrders = this.orders.get(symbol);
-        OrderUpdatesForSymbol managed = this.managedOrders.get(symbol);
+        final OrderUpdatesForSymbol managed = this.managedOrders.get(symbol);
 
         for (final Map.Entry<SymbolPrice, View> entry : subscribed.entries()) {
 
