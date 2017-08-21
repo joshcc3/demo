@@ -127,7 +127,7 @@ public class SpreadContractSetGenerator {
             if (null != backLeg) {
                 return getSpreadSet(true, symbol, backLeg, symbol + '-' + backLeg);
             } else if (null != frontLeg) {
-                return getSpreadSet(true, symbol, frontLeg, frontLeg + '-' + symbol);
+                return getSpreadSet(true, symbol, frontLeg + '-' + symbol, frontLeg);
             } else {
                 return getSpreadSet(false, symbol, symbol, symbol);
             }
