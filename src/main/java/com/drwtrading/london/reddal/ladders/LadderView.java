@@ -279,8 +279,8 @@ public class LadderView implements UiEventHandler {
         ui.txt(HTML.SYMBOL, symbol);
 
         ui.cls(HTML.LASER + "BID", CSSClass.INVISIBLE, true);
-        ui.cls(HTML.LASER + "green", CSSClass.INVISIBLE, true);
-        ui.cls(HTML.LASER + "white", CSSClass.INVISIBLE, true);
+        ui.cls(HTML.LASER + "GREEN", CSSClass.INVISIBLE, true);
+        ui.cls(HTML.LASER + "WHITE", CSSClass.INVISIBLE, true);
         ui.cls(HTML.LASER + "ASK", CSSClass.INVISIBLE, true);
 
         activeView.switchedTo();

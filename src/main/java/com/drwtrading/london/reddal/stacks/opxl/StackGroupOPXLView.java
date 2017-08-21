@@ -64,7 +64,8 @@ public class StackGroupOPXLView {
     }
 
     public void setLaserLines(final List<LadderMetadata> laserLines) {
-        for (LadderMetadata laserLine : laserLines) {
+
+        for (final LadderMetadata laserLine : laserLines) {
             if (LadderMetadata.Type.LASER_LINE == laserLine.typeEnum()) {
                 final LaserLine laserLine1 = (LaserLine) laserLine;
                 final String symbol = laserLine1.getSymbol();

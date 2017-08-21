@@ -672,11 +672,11 @@ public class LadderBookView implements ILadderBoard {
                 final String laserKey;
                 switch (theoValue.getTheoType()) {
                     case SPREADNOUGHT: {
-                        laserKey = HTML.LASER + "white";
+                        laserKey = HTML.LASER + "WHITE";
                         break;
                     }
                     default: {
-                        laserKey = HTML.LASER + "green";
+                        laserKey = HTML.LASER + "GREEN";
                         break;
                     }
                 }

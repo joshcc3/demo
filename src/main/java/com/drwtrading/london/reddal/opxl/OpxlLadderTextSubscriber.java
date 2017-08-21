@@ -44,7 +44,7 @@ public class OpxlLadderTextSubscriber {
                         } else if ("offer".equals(color)) {
                             laserColor = "offer";
                         } else {
-                            laserColor = "green";
+                            laserColor = "GREEN";
                         }
 
                         if (value.trim().isEmpty() || "#ERR".equals(value.trim())) {
