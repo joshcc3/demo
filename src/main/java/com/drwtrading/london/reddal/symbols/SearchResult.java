@@ -39,7 +39,6 @@ public class SearchResult extends Struct {
 
         final long smallestTick = tickTable.getRawTickLevels().firstEntry().getValue();
         this.decimalPlaces = Math.max(0, 10 - Long.toString(smallestTick).length());
-
     }
 
     public SearchResult(final IBook<?> book) {

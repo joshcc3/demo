@@ -35,6 +35,69 @@ $(function () {
 		minimiseAll();
 	});
 
+	var footer = $("#footer");
+	var closeFooter = footer.find("#closeFooter");
+	closeFooter.unbind().bind("click", function () {
+		footer.toggleClass("hidden", true);
+		updateSelectedFilters();
+	});
+	var clearFilters = footer.find("#clearFilters");
+	clearFilters.unbind().bind("click", function () {
+		$("#filterList").find(".filterName.selected").toggleClass("selected", false);
+	});
+
+	var filteringRow = $("#filteringBlock");
+	var filterSelection = $("#filterButton");
+	filterSelection.unbind().bind("click", function () {
+		footer.toggleClass("hidden", !footer.hasClass("hidden"));
+	});
+
+	var filteredBidStartButton = filteringRow.find(".bid.runningControls .start");
+	filteredBidStartButton.unbind().bind("click", function () {
+		ws.send(command("startFiltered", [filterSelection.text(), "BID"]));
+	});
+	var filteredBidStopButton = filteringRow.find(".bid.runningControls .stop");
+	filteredBidStopButton.unbind().bind("click", function () {
+		ws.send(command("stopFiltered", [filterSelection.text(), "BID"]));
+	});
+
+	var filteredAskStartButton = filteringRow.find(".ask.runningControls .start");
+	filteredAskStartButton.unbind().bind("click", function () {
+		ws.send(command("startFiltered", [filterSelection.text(), "ASK"]));
+	});
+	var filteredAskStopButton = filteringRow.find(".ask.runningControls .stop");
+	filteredAskStopButton.unbind().bind("click", function () {
+		ws.send(command("stopFiltered", [filterSelection.text(), "ASK"]));
+	});
+
+	var defaultConfigButton = filteringRow.find(".configControls .default");
+	defaultConfigButton.unbind().bind("click", function () {
+		ws.send(command("setFilteredSelectedConfig", [filterSelection.text(), "DEFAULT"]));
+	});
+	var wideConfigButton = filteringRow.find(".configControls .wide");
+	wideConfigButton.unbind().bind("click", function () {
+		ws.send(command("setFilteredSelectedConfig", [filterSelection.text(), "WIDE"]));
+	});
+	var obligationConfigButton = filteringRow.find(".configControls .obligation");
+	obligationConfigButton.unbind().bind("click", function () {
+		ws.send(command("setFilteredSelectedConfig", [filterSelection.text(), "OBLIGATION"]));
+	});
+
+	var bidPicardDiv = filteringRow.find(".bid .picardEnabled");
+	bidPicardDiv.mousedown(stackEnableFilteredStackChange(filterSelection, "BID", "PICARD"));
+
+	var bidQuoterDiv = filteringRow.find(".bid .quoterEnabled");
+	bidQuoterDiv.mousedown(stackEnableFilteredStackChange(filterSelection, "BID", "QUOTER"));
+
+	var askQuoterDiv = filteringRow.find(".ask .quoterEnabled");
+	askQuoterDiv.mousedown(stackEnableFilteredStackChange(filterSelection, "ASK", "QUOTER"));
+
+	var askPicardDiv = filteringRow.find(".ask .picardEnabled");
+	askPicardDiv.mousedown(stackEnableFilteredStackChange(filterSelection, "ASK", "PICARD"));
+
+	var allEnableDiv = filteringRow.find(".stackControls.allEnabled");
+	allEnableDiv.mousedown(stackEnableFilteredAllStackChange(filterSelection));
+
 	var childSymbolSearchInput = $("#symbolLookup");
 	childSymbolSearchInput.unbind("input").bind("input", function () {
 		var symbol = childSymbolSearchInput.val();
@@ -87,12 +150,85 @@ $(function () {
 	});
 
 	$("#header").unbind("dblclick").bind("dblclick", showAdmin);
+	footer.unbind("dblclick").bind("dblclick", function (event) {
+		event.preventDefault();
+	});
 });
 
 function popUp(url, name, width, height) {
 
 	window.open(url, name, 'width=' + width + ',height=' + height);
 	window.focus();
+}
+
+function setFilters(filters) {
+
+	var filterList = $("#filterList");
+	filterList.find(".filterGroup:not(.template)").remove();
+
+	var templateFilter = filterList.find(".filterGroup.template");
+
+	for (var filterName in filters) {
+
+		if (filters.hasOwnProperty(filterName)) {
+
+			var filterGroupName = filters[filterName];
+
+			var filterGroupID = "FILTER_GROUP_" + filterGroupName;
+			var filterGroup = findChild(filterGroupID);
+
+			if (filterGroup.length < 1) {
+				filterGroup = templateFilter.clone();
+				filterGroup.attr("id", filterGroupID);
+				filterGroup.removeClass("template");
+				filterGroup.find(".filterGroupName").text(filterGroupName);
+
+				addSortedDiv(filterList.find(".filterGroup"), filterGroup, filterComparator);
+			}
+
+			var filterNameCell = filterGroup.find(".template.filterName").clone();
+
+			filterNameCell.removeClass("template");
+			filterNameCell.text(filterName);
+
+			filterNameCell.unbind().bind("click", getFilterSelectionFunction(filterNameCell));
+
+			addSortedDiv(filterGroup.find(".filterName"), filterNameCell, filterComparator);
+		}
+	}
+}
+
+function getFilterSelectionFunction(filterNameCell) {
+	return function () {
+		filterNameCell.toggleClass("selected", !filterNameCell.hasClass("selected"));
+	};
+}
+
+function updateSelectedFilters() {
+
+	var filterList = $("#filterList");
+	var selectedFilters = filterList.find(".filterName.selected");
+
+	var filterButton = $("#filterButton");
+
+	if (selectedFilters.length < 1) {
+		filterButton.text("None");
+	} else {
+		var selectedFilterNames = "";
+		selectedFilters.each(function () {
+			selectedFilterNames = selectedFilterNames + " | " + $(this).text();
+		});
+		selectedFilterNames = selectedFilterNames.substr(3, selectedFilterNames.length - 3);
+		filterButton.text(selectedFilterNames);
+	}
+}
+
+function filterComparator(a, b) {
+
+	var aSymbol = a.find(".orderingName").text();
+	var bSymbol = b.find(".orderingName").text();
+
+	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
 }
 
 function clearFieldData(fieldID) {
@@ -309,7 +445,7 @@ function addFamily(familyName) {
 				if (children.length) {
 					var configs = "";
 					children.each(function () {
-						configs = configs + $(this).attr("id").replace("_", " ")  + ",";
+						configs = configs + $(this).attr("id").replace("_", " ") + ",";
 					});
 					configs = configs.substr(0, configs.length - 1);
 					popUp("/stackConfig#;" + configs, "Configs", 2200, 400);
@@ -370,6 +506,24 @@ function priceOffsetChange(cmd, familyName, side, direction) {
 	}
 }
 
+function stackEnableFilteredStackChange(filters, side, stack) {
+	return function (event) {
+		event.preventDefault();
+		switch (event.which) {
+			case 1:
+			{
+				ws.send(command("setFilteredStackEnabled", [filters.text(), side, stack, true]));
+				break;
+			}
+			case 3:
+			{
+				ws.send(command("setFilteredStackEnabled", [filters.text(), side, stack, false]));
+				break;
+			}
+		}
+	}
+}
+
 function stackEnableStackChange(familyName, side, stack) {
 	return function (event) {
 		event.preventDefault();
@@ -406,6 +560,23 @@ function stackChildEnableStackChange(familyName, childSymbol, side, stack) {
 	}
 }
 
+function stackEnableFilteredAllStackChange(filters) {
+	return function (event) {
+		event.preventDefault();
+		switch (event.which) {
+			case 1:
+			{
+				ws.send(command("setFilteredAllStacksEnabled", [filters.text(), true]));
+				break;
+			}
+			case 3:
+			{
+				ws.send(command("setFilteredAllStacksEnabled", [filters.text(), false]));
+				break;
+			}
+		}
+	}
+}
 function stackEnableAllStackChange(familyName) {
 	return function (event) {
 		event.preventDefault();

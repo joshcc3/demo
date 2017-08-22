@@ -22,10 +22,6 @@ body {
 	display: block;
 }
 
-.relationship, .relationship div {
-	display: inline-block;
-}
-
 .row > div {
 	white-space: normal;
 	text-align: center;
@@ -35,7 +31,7 @@ body {
 
 #header {
 	background: url(images/pancakeRecipe.png) no-repeat right top black;
-	height: 80px;
+	height: 85px;
 	z-index: 1;
 	border-bottom: solid 1px gray;
 	padding: 10px;
@@ -60,17 +56,6 @@ body {
 	display: none;
 }
 
-#footer {
-	background-color: #ff7300;
-	color: white;
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	width: 100%;
-	z-index: 10;
-	text-align: center;
-}
-
 .headerButton {
 	display: inline-block;
 	vertical-align: middle;
@@ -81,7 +66,8 @@ body {
 	margin-top: 5px;
 }
 
-.headerThirdRow {
+.headerThirdRow .right {
+
 	float: right;
 	margin-right: 300px;
 }
@@ -109,6 +95,42 @@ body {
 .btn.link {
 	color: #fff;
 	background-color: #337ab7;
+}
+
+#filteringBlock div {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+#filterButton {
+	width: 200px;
+	height: 30px;
+	text-align: center;
+	font-size: 10px;
+	white-space: normal;
+}
+
+.stackControls div {
+	font-size: 12px;
+	width: 19px;
+	height: 15px;
+	text-align: center;
+	color: white;
+	border: 3px solid #5970B2;
+}
+
+.quoterEnabled {
+	background: #5970B2;
+}
+
+.picardEnabled {
+	background: #FB6E75;
+}
+
+.stackControls.allEnabled {
+	font-size: 12px;
+	background-color: #9a9a9a;
+	border: 3px solid #5970B2;
 }
 
 .childAvailable {
@@ -314,28 +336,11 @@ input::-webkit-inner-spin-button:hover {
 }
 
 #families .stackControls div {
-	width: 19px;
-	height: 15px;
-	text-align: center;
-	color: white;
 	border: 3px solid red;
 }
 
 #families .stackControls div.enabled {
 	border: 3px solid green;
-}
-
-#families .quoterEnabled {
-	background: #5970B2;
-}
-
-#families .picardEnabled {
-	background: #FB6E75;
-}
-
-#families .stackControls.allEnabled {
-	background-color: #9a9a9a;
-	border: 3px solid #5970B2;
 }
 
 #families .cleanParent {
@@ -346,6 +351,10 @@ input::-webkit-inner-spin-button:hover {
 
 #families .cleanParent:active {
 	border: 3px solid #9a9a9a;
+}
+
+.relationship, .relationship div {
+	display: inline-block;
 }
 
 .children .header .childControls {
@@ -416,4 +425,57 @@ input[type=Submit].hidden {
 
 .notPersisted {
 	background-color: lightpink;
+}
+
+#footer {
+	background-color: #ff7300;
+	color: white;
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	width: 100%;
+	z-index: 10;
+	text-align: center;
+
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+}
+
+#footer .footerControls {
+	font-size: 0;
+}
+
+#footer .footerControls div {
+	display: inline-block;
+	width: 50%;
+	padding: 0;
+	margin: 0;
+	border: 1px solid black;
+	font-size: 15px;
+}
+
+#clearFilters {
+	background: #b6701e;
+}
+
+#footer .filters {
+	text-align: left;
+}
+
+#footer .filterGroupName {
+	background-color: #8b7765;
+	font-weight: bold;
+	font-size: 12px;
+}
+
+#footer .filterName {
+	background-color: #cdaf95;
+	text-indent: 50px;
+	color: black;
+}
+
+#footer .filterName.selected {
+	color: green;
 }

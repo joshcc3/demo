@@ -155,13 +155,12 @@ public class Environment {
         System.out.println("Loading server resolver:");
         final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<>();
 
-        final ConfigGroup remoteCommands = config.getGroup(REMOTE_COMMANDS);
         final String[] orderedServers = config.getString(REMOTE_COMMANDS).trim().split(",");
         for (final String orderedServer : orderedServers) {
             final String remoteServer = orderedServer.trim();
             if (!remoteServer.isEmpty()) {
 
-                final ConfigGroup remoteServerCMDs = remoteCommands.getEnabledGroup(remoteServer);
+                final ConfigGroup remoteServerCMDs = config.getEnabledGroup(REMOTE_COMMANDS, remoteServer);
 
                 final String symbolRegex;
                 if (null != remoteServerCMDs && remoteServerCMDs.paramExists("symbolRegex")) {

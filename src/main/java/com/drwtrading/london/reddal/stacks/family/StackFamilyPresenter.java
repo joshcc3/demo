@@ -13,8 +13,8 @@ import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.symbols.SearchResult;
-import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.london.reddal.util.UILogger;
+import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketControlMessage;
@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 public class StackFamilyPresenter implements IStackRelationshipListener {
 
@@ -40,6 +41,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             Lists.newArrayList(InstType.EQUITY.name(), InstType.DR.name(), InstType.INDEX.name(), InstType.SYNTHETIC.name());
 
     private static final String SOURCE_UI = "FAMILY_ADMIN_UI";
+
+    private static final String MD_SOURCE_FILTER_GROUP = "Trading Venue";
+    private static final Pattern FILTER_SPLITTER = Pattern.compile("\\|");
 
     private final FiberBuilder logFiber;
     private final UILogger uiLogger;
@@ -50,13 +54,16 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     private final Map<String, NavigableMap<String, StackUIRelationship>> families;
     private final Map<String, StackUIData> parentData;
-    private final Set<String> children;
+    private final Map<String, String> childrenToFamily;
     private final Map<String, StackUIData> childData;
 
     private final Map<String, SearchResult> searchResults;
     private final Map<String, LinkedHashSet<String>> fungibleInsts;
 
     private final Map<String, StackClientHandler> nibblerClients;
+
+    private final Map<String, String> filterGroups;
+    private final Map<String, StackChildFilter> filters;
 
     private StackCommunityManager communityManager;
 
@@ -72,13 +79,80 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         this.families = new HashMap<>();
         this.parentData = new HashMap<>();
-        this.children = new HashSet<>();
+        this.childrenToFamily = new HashMap<>();
         this.childData = new HashMap<>();
 
         this.searchResults = new HashMap<>();
         this.fungibleInsts = new HashMap<>();
 
         this.nibblerClients = new TreeMap<>();
+
+        this.filterGroups = new HashMap<>();
+        this.filters = new HashMap<>();
+    }
+
+    public void setFilter(final StackChildFilter newFilter) {
+
+        filters.put(newFilter.filterName, newFilter);
+        filterGroups.put(newFilter.filterName, newFilter.groupName);
+
+        views.all().setFilters(filterGroups);
+    }
+
+    private void updateSymbolFilters(final String symbol) {
+
+        final SearchResult searchResult = searchResults.get(symbol);
+        if (null != searchResult && InstType.ETF == searchResult.instType && childData.containsKey(symbol)) {
+
+            final String filterName = searchResult.mdSource.name();
+            final StackChildFilter filter = getFilter(filterName.trim(), MD_SOURCE_FILTER_GROUP);
+            filter.addSymbol(symbol);
+        }
+    }
+
+    private StackChildFilter getFilter(final String filterName, final String filterGroup) {
+
+        final StackChildFilter filter = filters.get(filterName);
+        if (null == filter) {
+
+            final StackChildFilter result = new StackChildFilter(filterGroup, filterName);
+
+            filters.put(filterName, result);
+            filterGroups.put(filterName, filterGroup);
+            views.all().setFilters(filterGroups);
+
+            return result;
+        } else {
+            return filter;
+        }
+    }
+
+    private Set<String> getFilteredSymbols(final String filters) {
+
+        final String[] filterSet = FILTER_SPLITTER.split(filters);
+
+        final Map<String, HashSet<String>> unionSets = new HashMap<>();
+
+        for (final String filterName : filterSet) {
+
+            final StackChildFilter filter = this.filters.get(filterName.trim());
+            if (null != filter) {
+                final Set<String> groupInsts = MapUtils.getMappedSet(unionSets, filter.groupName);
+                groupInsts.addAll(filter.symbols);
+            } else {
+                unionSets.put("empty_set", new HashSet<>());
+            }
+        }
+
+        final Set<String> result = new HashSet<>(childrenToFamily.keySet());
+        result.removeAll(families.keySet());
+        result.retainAll(childData.keySet());
+
+        for (final Set<String> filterGroup : unionSets.values()) {
+            result.retainAll(filterGroup);
+        }
+
+        return result;
     }
 
     public void setCommunityManager(final StackCommunityManager communityManager) {
@@ -106,6 +180,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     private static void updateFamilyUIData(final IStackFamilyUI view, final StackUIData uiData) {
+
         view.setParentData(uiData.symbol, uiData.getBidPriceOffsetBPS(), uiData.getAskPriceOffsetBPS(), uiData.getSelectedConfigType(),
                 uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
                 uiData.isStackEnabled(BookSide.ASK, StackType.PICARD), uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
@@ -115,6 +190,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         childData.put(uiData.symbol, uiData);
         updateChildUIData(views.all(), uiData);
+
+        updateSymbolFilters(uiData.symbol);
     }
 
     void updateChildUIData(final StackUIData uiData) {
@@ -144,7 +221,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
                 new StackUIRelationship(childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier);
         familyChildren.put(childSymbol, newRelationship);
 
-        children.add(childSymbol);
+        childrenToFamily.put(childSymbol, parentSymbol);
 
         views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier);
 
@@ -158,8 +235,11 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     public void setSearchResult(final SearchResult searchResult) {
+
         searchResults.put(searchResult.symbol, searchResult);
         MapUtils.getMappedLinkedSet(fungibleInsts, searchResult.instID.isin).add(searchResult.symbol);
+
+        updateSymbolFilters(searchResult.symbol);
     }
 
     public void symbolSelected(final SymbolSelection symbolSelection) {
@@ -202,6 +282,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         final IStackFamilyUI newView = views.get(channel);
         MapUtils.getMappedSet(userViews, username).add(newView);
+
+        newView.setFilters(filterGroups);
 
         for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> family : families.entrySet()) {
 
@@ -263,7 +345,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
             final Set<String> children = fungibleInsts.get(searchResult.instID.isin);
             for (final String childSymbol : children) {
-                final boolean isChildAlreadyCreated = this.children.contains(childSymbol);
+                final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(childSymbol);
                 ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), ALLOWED_INST_TYPES, InstType.INDEX.name(),
                         childSymbol);
             }
@@ -320,7 +402,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         final IStackFamilyUI ui = views.get(data.getOutboundChannel());
 
-        if (children.contains(child)) {
+        if (childrenToFamily.containsKey(child)) {
 
             ui.setFieldData(resultFieldID, "Child available.");
         } else {
@@ -362,7 +444,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             familyName = family;
         }
 
-        if (!children.contains(child)) {
+        if (!childrenToFamily.containsKey(child)) {
 
             throw new IllegalArgumentException("Child [" + child + "] is not known. Has it been created in nibbler?");
         } else {
@@ -409,6 +491,19 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
+    public void setFilteredSelectedConfig(final String filters, final String configType, final WebSocketInboundData data) {
+
+        final StackConfigType stackConfigType = StackConfigType.valueOf(configType);
+
+        final Collection<String> affectedChildren = getFilteredSymbols(filters);
+        for (final String childSymbol : affectedChildren) {
+
+            final String family = childrenToFamily.get(childSymbol);
+            communityManager.setChildSelectedConfig(SOURCE_UI, family, childSymbol, stackConfigType);
+        }
+    }
+
+    @FromWebSocketView
     public void selectConfig(final String familyName, final String configType) {
 
         final StackConfigType stackConfigType = StackConfigType.valueOf(configType);
@@ -416,7 +511,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void setChildSelectedConfig(final String familyName, final String childSymbol, final String configType) {
+    public void setChildSelectedConfig(final String familyName, final String childSymbol, final String configType,
+            final WebSocketInboundData data) {
 
         final StackConfigType stackConfigType = StackConfigType.valueOf(configType);
         communityManager.setChildSelectedConfig(SOURCE_UI, familyName, childSymbol, stackConfigType);
@@ -438,6 +534,37 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             for (final StackType stackType : StackType.values()) {
                 communityManager.setStackEnabled(SOURCE_UI, familyName, side, stackType, isEnabled);
             }
+        }
+    }
+
+    @FromWebSocketView
+    public void setFilteredAllStacksEnabled(final String filters, final boolean isEnabled, final WebSocketInboundData data) {
+
+        final Collection<String> affectedChildren = getFilteredSymbols(filters);
+
+        for (final String childSymbol : affectedChildren) {
+            for (final BookSide side : BookSide.values()) {
+                for (final StackType stackType : StackType.values()) {
+
+                    final String family = childrenToFamily.get(childSymbol);
+                    communityManager.setChildStackEnabled(SOURCE_UI, family, childSymbol, side, stackType, isEnabled);
+                }
+            }
+        }
+    }
+
+    @FromWebSocketView
+    public void setFilteredStackEnabled(final String filters, final String bookSide, final String stack, final boolean isEnabled,
+            final WebSocketInboundData data) {
+
+        final BookSide side = BookSide.valueOf(bookSide);
+        final StackType stackType = StackType.valueOf(stack);
+
+        final Collection<String> affectedChildren = getFilteredSymbols(filters);
+        for (final String childSymbol : affectedChildren) {
+
+            final String family = childrenToFamily.get(childSymbol);
+            communityManager.setChildStackEnabled(SOURCE_UI, family, childSymbol, side, stackType, isEnabled);
         }
     }
 
@@ -465,6 +592,32 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     public void stopAll(final WebSocketInboundData data) {
         communityManager.stopFamilies(families.keySet(), BookSide.BID);
         communityManager.stopFamilies(families.keySet(), BookSide.ASK);
+    }
+
+    @FromWebSocketView
+    public void startFiltered(final String filters, final String bookSide, final WebSocketInboundData data) {
+
+        final BookSide side = BookSide.valueOf(bookSide);
+
+        final Collection<String> affectedChildren = getFilteredSymbols(filters);
+        for (final String childSymbol : affectedChildren) {
+
+            final String family = childrenToFamily.get(childSymbol);
+            communityManager.startChild(family, childSymbol, side);
+        }
+    }
+
+    @FromWebSocketView
+    public void stopFiltered(final String filters, final String bookSide, final WebSocketInboundData data) {
+
+        final BookSide side = BookSide.valueOf(bookSide);
+
+        final Collection<String> affectedChildren = getFilteredSymbols(filters);
+        for (final String childSymbol : affectedChildren) {
+
+            final String family = childrenToFamily.get(childSymbol);
+            communityManager.stopChild(family, childSymbol, side);
+        }
     }
 
     @FromWebSocketView

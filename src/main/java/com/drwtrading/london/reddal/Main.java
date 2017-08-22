@@ -82,6 +82,7 @@ import com.drwtrading.london.reddal.ladders.tradingData.LadderInfoListener;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
+import com.drwtrading.london.reddal.opxl.StackManagerFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.UltimateParentOPXL;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
@@ -769,12 +770,14 @@ public class Main {
         final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(selectIO, monitor, channels.ultimateParents, logDir);
         app.addStartUpAction(ultimateParentOPXL::connectToOpxl);
 
+        final StackManagerFiltersOPXL etfStackFiltersOPXL =
+                new StackManagerFiltersOPXL(selectIO, monitor, channels.etfOPXLStackFilters, logDir);
+        app.addStartUpAction(etfStackFiltersOPXL::connectToOpxl);
+
         // Ex-dates
-        {
-            new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
-                    new OpxlExDateSubscriber(channels.errorPublisher, channels.isinsGoingEx)::onOpxlData,
-                    ImmutableSet.of(OpxlExDateSubscriber.OPXL_KEY), fibers.opxlPosition.getFiber(), channels.errorPublisher);
-        }
+        new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
+                new OpxlExDateSubscriber(channels.errorPublisher, channels.isinsGoingEx)::onOpxlData,
+                ImmutableSet.of(OpxlExDateSubscriber.OPXL_KEY), fibers.opxlPosition.getFiber(), channels.errorPublisher);
 
         // Logging
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "remote-order.json", channels.errorPublisher),
@@ -1025,6 +1028,7 @@ public class Main {
                 strategiesPresenter.addInstID(searchResult.symbol, searchResult.instID);
             });
             channels.symbolSelections.subscribe(selectIOFiber, stackFamilyPresenter::symbolSelected);
+            channels.etfOPXLStackFilters.subscribe(selectIOFiber, stackFamilyPresenter::setFilter);
 
             final TypedChannel<WebSocketControlMessage> familyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("stackManager", "stackManager", fibers.ladderRouter, webApp, familyWebSocket);
