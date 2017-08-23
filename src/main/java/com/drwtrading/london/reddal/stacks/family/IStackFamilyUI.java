@@ -9,7 +9,7 @@ public interface IStackFamilyUI {
 
     public void clearFieldData(final String fieldID);
 
-    public void setInstID(final String isin, final String ccy, final String mic, final String instType);
+    public void setInstID(final String resultFieldID, final String isin, final String ccy, final String mic, final String instType);
 
     public void setFieldData(final String fieldID, final String text);
 

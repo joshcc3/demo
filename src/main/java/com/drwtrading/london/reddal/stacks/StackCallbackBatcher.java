@@ -81,6 +81,7 @@ public class StackCallbackBatcher implements IStackClientListener {
     @Override
     public void configGroupCreated(final StackConfigGroup configGroup) {
         configPresenter.configUpdated(nibblerName, configGroup);
+        childListener.setConfig(configGroup);
     }
 
     @Override

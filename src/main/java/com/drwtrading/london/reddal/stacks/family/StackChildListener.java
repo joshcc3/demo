@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.stacks.family;
 
+import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
@@ -70,6 +71,10 @@ public class StackChildListener {
         uiData.stackGroupUpdated(stackGroup);
 
         presenter.updateChildUIData(uiData);
+    }
+
+    public void setConfig(final StackConfigGroup config) {
+        presenter.setConfig(config);
     }
 
     public void serverConnectionLost() {

@@ -180,6 +180,60 @@
 			</div>
 		</div>
 
+		<div id="stackCopy" class="adminOnly">
+
+			<div class="actionType">Copy Setup</div>
+
+			<div id="monthlyFutures">
+				<div class="button">
+					<button type="button" id="createMonthlyFutures">Create Monthly</button>
+				</div>
+				<div class="button">
+					<button type="button" id="rollMonthlyFutures">Copy Monthly</button>
+				</div>
+			</div>
+			<div id="quarterlyFutures">
+				<div class="button">
+					<button type="button" id="createQuaterlyFutures">Create Quarterly</button>
+				</div>
+				<div class="button">
+					<button type="button" id="rollQuaterlyFutures">Copy Quarterly</button>
+				</div>
+			</div>
+			<div id="ExpiredFutures">
+				<div class="button">
+					<button type="button" id="killExpiredFutures">Kill Expired</button>
+				</div>
+			</div>
+
+			<div id="stackCopyRow" class="row">
+
+				<label for="copyFromSymbol">From</label>
+				<input id="copyFromSymbol" type="text" name="copyFromSymbol">
+
+				<label for="copyToSymbol">To</label>
+				<input id="copyToSymbol" type="text" name="copyToSymbol">
+
+				<div class="button">
+					<button type="button" id="copyStackData">copy</button>
+				</div>
+			</div>
+			<div id="stackCopyInfoRow">
+				<div class="stackCopyFeedback fromFound unknown row">
+					<div class="isin"></div>
+					<div class="ccy"></div>
+					<div class="mic"></div>
+					<div class="instType"></div>
+				</div>
+				<div class="stackCopyFeedback toFound unknown row">
+					<div class="isin"></div>
+					<div class="ccy"></div>
+					<div class="mic"></div>
+					<div class="instType"></div>
+				</div>
+			</div>
+		</div>
+
 		<div id="families">
 
 			<div id="templateFamily" class="template family">
@@ -244,6 +298,7 @@
 
 							<input type="submit" class="submitButton hidden childDetail" value="Submit">
 							<button type="button" class="orphanButton hidden adminOnly">Orphan</button>
+							<button type="button" class="killSymbolButton hidden adminOnly">Kill</button>
 						</div>
 
 						<div class="childControls">

@@ -3,14 +3,24 @@ package com.drwtrading.london.reddal.stacks.family;
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.transport.cache.families.IStackRelationshipListener;
+import com.drwtrading.london.eeif.stack.transport.data.config.StackAdditiveConfig;
+import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
+import com.drwtrading.london.eeif.stack.transport.data.config.StackFXConfig;
+import com.drwtrading.london.eeif.stack.transport.data.config.StackLeanConfig;
+import com.drwtrading.london.eeif.stack.transport.data.config.StackPlanConfig;
+import com.drwtrading.london.eeif.stack.transport.data.config.StackQuoteConfig;
+import com.drwtrading.london.eeif.stack.transport.data.config.StackStrategyConfig;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.staticData.ExpiryPeriod;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
+import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
+import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -24,8 +34,10 @@ import com.drwtrading.websockets.WebSocketOutboundData;
 import com.google.common.collect.Lists;
 import org.jetlang.channels.Publisher;
 
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -52,6 +64,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final WebSocketViews<IStackFamilyUI> views;
     private final Map<String, HashSet<IStackFamilyUI>> userViews;
 
+    private final FutureExpiryCalc expiryCalc;
+
     private final Map<String, NavigableMap<String, StackUIRelationship>> families;
     private final Map<String, StackUIData> parentData;
     private final Map<String, String> childrenToFamily;
@@ -61,6 +75,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Map<String, LinkedHashSet<String>> fungibleInsts;
 
     private final Map<String, StackClientHandler> nibblerClients;
+    private final Map<String, EnumMap<StackConfigType, StackConfigGroup>> stackConfigs;
 
     private final Map<String, String> filterGroups;
     private final Map<String, StackChildFilter> filters;
@@ -77,6 +92,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
         this.userViews = new HashMap<>();
 
+        this.expiryCalc = new FutureExpiryCalc(0);
+
         this.families = new HashMap<>();
         this.parentData = new HashMap<>();
         this.childrenToFamily = new HashMap<>();
@@ -86,9 +103,18 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         this.fungibleInsts = new HashMap<>();
 
         this.nibblerClients = new TreeMap<>();
+        this.stackConfigs = new HashMap<>();
 
         this.filterGroups = new HashMap<>();
         this.filters = new HashMap<>();
+    }
+
+    public void setCommunityManager(final StackCommunityManager communityManager) {
+        this.communityManager = communityManager;
+    }
+
+    public void setStrategyClient(final String nibblerName, final StackClientHandler cache) {
+        this.nibblerClients.put(nibblerName, cache);
     }
 
     public void setFilter(final StackChildFilter newFilter) {
@@ -155,14 +181,6 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         return result;
     }
 
-    public void setCommunityManager(final StackCommunityManager communityManager) {
-        this.communityManager = communityManager;
-    }
-
-    public void setStrategyClient(final String nibblerName, final StackClientHandler cache) {
-        this.nibblerClients.put(nibblerName, cache);
-    }
-
     void addFamily(final String familyName) {
 
         families.put(familyName, new TreeMap<>());
@@ -205,6 +223,13 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
                 uiData.isStackEnabled(BookSide.BID, StackType.QUOTER), uiData.isStrategyOn(BookSide.ASK),
                 uiData.getRunningInfo(BookSide.ASK), uiData.isStackEnabled(BookSide.ASK, StackType.PICARD),
                 uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
+    }
+
+    void setConfig(final StackConfigGroup stackConfig) {
+
+        final Map<StackConfigType, StackConfigGroup> stackTypeConfigs =
+                MapUtils.getMappedEnumMap(stackConfigs, stackConfig.getSymbol(), StackConfigType.class);
+        stackTypeConfigs.put(stackConfig.configType, stackConfig);
     }
 
     @Override
@@ -328,7 +353,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             ui.clearFieldData(resultFieldID);
         } else {
             final InstrumentID instID = searchResult.instID;
-            ui.setInstID(instID.isin, instID.ccy.name(), instID.mic.name(), searchResult.instType.name());
+            ui.setInstID(resultFieldID, instID.isin, instID.ccy.name(), instID.mic.name(), searchResult.instType.name());
         }
     }
 
@@ -343,11 +368,30 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final boolean isFamilyExists = families.containsKey(family);
             ui.setCreateFamilyRow(symbol, isFamilyExists);
 
-            final Set<String> children = fungibleInsts.get(searchResult.instID.isin);
-            for (final String childSymbol : children) {
-                final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(childSymbol);
-                ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), ALLOWED_INST_TYPES, InstType.INDEX.name(),
-                        childSymbol);
+            if (InstType.FUTURE == searchResult.instType) {
+
+                final FutureConstant future = FutureConstant.getFutureFromSymbol(symbol);
+                if (null != future) {
+                    for (int i = 0; i < 3; ++i) {
+
+                        final String expirySymbol = expiryCalc.getFutureCode(future, i);
+                        final SearchResult expirySearchResult = searchResults.get(expirySymbol);
+
+                        if (null != expirySearchResult) {
+
+                            final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(expirySymbol);
+                            ui.addCreateChildRow(expirySymbol, isChildAlreadyCreated, nibblerClients.keySet(), ALLOWED_INST_TYPES,
+                                    InstType.INDEX.name(), expirySymbol);
+                        }
+                    }
+                }
+            } else {
+                final Set<String> children = fungibleInsts.get(searchResult.instID.isin);
+                for (final String childSymbol : children) {
+                    final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(childSymbol);
+                    ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), ALLOWED_INST_TYPES,
+                            InstType.INDEX.name(), childSymbol);
+                }
             }
         }
     }
@@ -413,7 +457,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void createChildStack(final String nibblerName, final String quoteSymbol, final String leanInstrumentType,
-            final String leanSymbol) {
+            final String leanSymbol, final WebSocketInboundData data) {
 
         final StackClientHandler strategyClient = nibblerClients.get(nibblerName);
         if (null != strategyClient) {
@@ -425,6 +469,135 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             if (null != quoteInstId && null != leanInstType && null != leanInstID) {
                 strategyClient.createStrategy(quoteSymbol, quoteInstId, leanInstType, leanSymbol, leanInstID, "");
                 strategyClient.batchComplete();
+            }
+        }
+    }
+
+    @FromWebSocketView
+    public void createMonthlyFutures(final WebSocketInboundData data) {
+        createFutures(ExpiryPeriod.MONTHLY);
+    }
+
+    @FromWebSocketView
+    public void rollMonthlyFutures(final WebSocketInboundData data) {
+        rollFutures(ExpiryPeriod.MONTHLY);
+    }
+
+    @FromWebSocketView
+    public void createQuaterlyFutures(final WebSocketInboundData data) {
+        createFutures(ExpiryPeriod.QUARTERLY);
+    }
+
+    @FromWebSocketView
+    public void rollQuaterlyFutures(final WebSocketInboundData data) {
+        rollFutures(ExpiryPeriod.QUARTERLY);
+    }
+
+    private void createFutures(final ExpiryPeriod expiryPeriod) {
+
+        for (final FutureConstant future : FutureConstant.values()) {
+
+            if (expiryPeriod == future.expiryPeriod) {
+
+                final String frontMonthSymbol = expiryCalc.getFutureCode(future, 0);
+                final StackUIData frontMonthData = childData.get(frontMonthSymbol);
+
+                final String backMonthSymbol = expiryCalc.getFutureCode(future, 1);
+                final SearchResult backMonthSearchResult = searchResults.get(backMonthSymbol);
+                final StackUIData backMonthData = childData.get(backMonthSymbol);
+
+                if (null != frontMonthData && null == backMonthData && null != backMonthSearchResult) {
+
+                    final StackClientHandler strategyClient = nibblerClients.get(frontMonthData.source);
+
+                    if (null != strategyClient) {
+                        strategyClient.createStrategy(backMonthSymbol, backMonthSearchResult.instID, InstType.INDEX, backMonthSymbol,
+                                backMonthSearchResult.instID, "");
+                        strategyClient.batchComplete();
+                    }
+                }
+            }
+        }
+    }
+
+    private void rollFutures(final ExpiryPeriod expiryPeriod) {
+
+        for (final FutureConstant future : FutureConstant.values()) {
+
+            if (expiryPeriod == future.expiryPeriod) {
+
+                final String fromSymbol = expiryCalc.getFutureCode(future, 0);
+                final String toSymbol = expiryCalc.getFutureCode(future, 1);
+
+                copyChildSetup(fromSymbol, toSymbol, null);
+            }
+        }
+    }
+
+    @FromWebSocketView
+    public void copyChildSetup(final String fromSymbol, final String toSymbol, final WebSocketInboundData data) {
+
+        final String family = childrenToFamily.get(toSymbol);
+        communityManager.stopChild(family, toSymbol, BookSide.BID);
+        communityManager.stopChild(family, toSymbol, BookSide.ASK);
+
+        communityManager.copyChildStacks(SOURCE_UI, fromSymbol, toSymbol);
+
+        final Map<StackConfigType, StackConfigGroup> fromConfigs = stackConfigs.get(fromSymbol);
+        final Map<StackConfigType, StackConfigGroup> toConfigs = stackConfigs.get(toSymbol);
+        final StackUIData toChildUIData = childData.get(fromSymbol);
+        final StackClientHandler configClient = nibblerClients.get(toChildUIData.source);
+
+        if (null != fromConfigs && null != toConfigs) {
+
+            for (final StackConfigType configType : StackConfigType.values()) {
+
+                final StackConfigGroup fromConfig = fromConfigs.get(configType);
+                final StackConfigGroup toConfig = toConfigs.get(configType);
+
+                final StackQuoteConfig quoteConfig = fromConfig.quoteConfig;
+                configClient.quoteConfigUpdated(SOURCE_UI, toConfig.configGroupID, quoteConfig.getMaxBookAgeMillis(),
+                        quoteConfig.isAuctionQuotingEnabled(), quoteConfig.isOnlyAuctionQuoting(),
+                        quoteConfig.getAuctionTheoMaxTicksThrough(), quoteConfig.getMaxJumpBPS(), quoteConfig.getBettermentQty(),
+                        quoteConfig.getBettermentTicks());
+
+                final StackFXConfig fxConfig = fromConfig.fxConfig;
+                configClient.fxConfigUpdated(SOURCE_UI, toConfig.configGroupID, fxConfig.getMaxBookAgeMillis(), fxConfig.getMaxJumpBPS());
+
+                final StackLeanConfig leanConfig = fromConfig.leanConfig;
+                configClient.leanConfigUpdated(SOURCE_UI, toConfig.configGroupID, leanConfig.getMaxBookAgeMillis(),
+                        leanConfig.getMaxJumpBPS(), leanConfig.getRequiredQty(), leanConfig.getMaxPapaWeight(),
+                        leanConfig.getLeanToQuoteRatio(), leanConfig.getPriceAdjustment());
+
+                final StackAdditiveConfig additiveConfig = fromConfig.additiveConfig;
+                configClient.additiveConfigUpdated(SOURCE_UI, toConfig.configGroupID, additiveConfig.getMaxSignalAgeMillis(),
+                        additiveConfig.isEnabled(), additiveConfig.getMinRequiredBPS(), additiveConfig.getMaxBPS());
+
+                final StackPlanConfig bidPlanConfig = fromConfig.bidPlanConfig;
+                configClient.planConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.BID, bidPlanConfig.getMinLevelQty(),
+                        bidPlanConfig.getMaxLevelQty(), bidPlanConfig.getLotSize(), bidPlanConfig.getMaxLevels(),
+                        bidPlanConfig.getMinPicardQty());
+
+                final StackStrategyConfig bidStratConfig = fromConfig.bidStrategyConfig;
+                configClient.strategyConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.BID, bidStratConfig.getMaxOrdersPerLevel(),
+                        bidStratConfig.isOnlySubmitBestLevel(), bidStratConfig.isQuoteBettermentOn(), bidStratConfig.getModTicks(),
+                        bidStratConfig.getQuoteFlickerBufferPercent(), bidStratConfig.getQuotePicardMaxTicksThrough(),
+                        bidStratConfig.getPicardMaxPerSec(), bidStratConfig.getPicardMaxPerMin(), bidStratConfig.getPicardMaxPerHour(),
+                        bidStratConfig.getPicardMaxPerDay());
+
+                final StackPlanConfig askPlanConfig = fromConfig.askPlanConfig;
+                configClient.planConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.ASK, askPlanConfig.getMinLevelQty(),
+                        askPlanConfig.getMaxLevelQty(), askPlanConfig.getLotSize(), askPlanConfig.getMaxLevels(),
+                        askPlanConfig.getMinPicardQty());
+
+                final StackStrategyConfig askStratConfig = fromConfig.askStrategyConfig;
+                configClient.strategyConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.ASK, askStratConfig.getMaxOrdersPerLevel(),
+                        askStratConfig.isOnlySubmitBestLevel(), askStratConfig.isQuoteBettermentOn(), askStratConfig.getModTicks(),
+                        askStratConfig.getQuoteFlickerBufferPercent(), askStratConfig.getQuotePicardMaxTicksThrough(),
+                        askStratConfig.getPicardMaxPerSec(), askStratConfig.getPicardMaxPerMin(), askStratConfig.getPicardMaxPerHour(),
+                        askStratConfig.getPicardMaxPerDay());
+
+                configClient.batchComplete();
             }
         }
     }
@@ -475,6 +648,52 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     public void orphanChild(final String childSymbol, final WebSocketInboundData data) {
 
         communityManager.orphanChild(SOURCE_UI, childSymbol);
+    }
+
+    @FromWebSocketView
+    public void killChild(final String childSymbol, final WebSocketInboundData data) {
+
+        killStrategy(childSymbol);
+    }
+
+    @FromWebSocketView
+    public void killExpiredFutures(final WebSocketInboundData data) {
+
+        final Calendar cal = DateTimeUtil.getCalendar();
+        cal.setTimeInMillis(System.currentTimeMillis());
+        DateTimeUtil.setToMidnight(cal);
+
+        final long midnight = cal.getTimeInMillis();
+
+        for (final StackUIData stackData : childData.values()) {
+
+            final FutureConstant future = FutureConstant.getFutureFromSymbol(stackData.symbol);
+            if (null != future) {
+
+                expiryCalc.setToRollDate(cal, stackData.symbol);
+
+                if (cal.getTimeInMillis() < midnight) {
+                    killStrategy(stackData.symbol);
+                }
+            }
+        }
+    }
+
+    private void killStrategy(final String childSymbol) {
+
+        if (childrenToFamily.containsKey(childSymbol)) {
+            communityManager.orphanChild(SOURCE_UI, childSymbol);
+        }
+        
+        final StackUIData stackData = childData.get(childSymbol);
+        if (null != stackData) {
+
+            final StackClientHandler configClient = nibblerClients.get(stackData.source);
+            if (null != configClient) {
+                configClient.killStrategy(childSymbol);
+                configClient.batchComplete();
+            }
+        }
     }
 
     @FromWebSocketView

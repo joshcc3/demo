@@ -149,6 +149,38 @@ $(function () {
 		ws.send(command("adoptChild", [family, child]));
 	});
 
+	$("#createMonthlyFutures").unbind().bind("click", function () {
+		ws.send(command("createMonthlyFutures"));
+	});
+	$("#rollMonthlyFutures").unbind().bind("click", function () {
+		ws.send(command("rollMonthlyFutures"));
+	});
+	$("#createQuaterlyFutures").unbind().bind("click", function () {
+		ws.send(command("createQuaterlyFutures"));
+	});
+	$("#rollQuaterlyFutures").unbind().bind("click", function () {
+		ws.send(command("rollQuaterlyFutures"));
+	});
+	$("#killExpiredFutures").unbind().bind("click", function () {
+		ws.send(command("killExpiredFutures"));
+	});
+
+	var copyFromSymbolInput = $("#copyFromSymbol");
+	copyFromSymbolInput.on("input", function () {
+		var symbol = copyFromSymbolInput.val();
+		ws.send(command("checkFamilyInst", [symbol, ".stackCopyFeedback.fromFound"]));
+	});
+	var copyToSymbolInput = $("#copyToSymbol");
+	copyToSymbolInput.on("input", function () {
+		var symbol = copyToSymbolInput.val();
+		ws.send(command("checkFamilyInst", [symbol, ".stackCopyFeedback.toFound"]));
+	});
+	$("#copyStackData").unbind().bind("click", function () {
+		var fromSymbol = copyFromSymbolInput.val();
+		var toSymbol = copyToSymbolInput.val();
+		ws.send(command("copyChildSetup", [fromSymbol, toSymbol]));
+	});
+
 	$("#header").unbind("dblclick").bind("dblclick", showAdmin);
 	footer.unbind("dblclick").bind("dblclick", function (event) {
 		event.preventDefault();
@@ -174,7 +206,7 @@ function setFilters(filters) {
 
 			var filterGroupName = filters[filterName];
 
-			var filterGroupID = "FILTER_GROUP_" + filterGroupName;
+			var filterGroupID = cleanID("FILTER_GROUP_" + filterGroupName);
 			var filterGroup = findChild(filterGroupID);
 
 			if (filterGroup.length < 1) {
@@ -238,9 +270,9 @@ function clearFieldData(fieldID) {
 	infoRow.find("div").text("");
 }
 
-function setInstID(isin, ccy, mic, instType) {
+function setInstID(infoRowSelector, isin, ccy, mic, instType) {
 
-	var infoRow = $("#creationInfoRow");
+	var infoRow = $(infoRowSelector);
 	infoRow.toggleClass("unknown", false);
 	infoRow.find(".isin").text(isin);
 	infoRow.find(".ccy").text(ccy);
@@ -336,8 +368,12 @@ function removeAll(nibblerName) {
 
 function findChild(symbol) {
 
-	var rowID = symbol.replace(/ |\/|\.|:/g, "_");
+	var rowID = cleanID(symbol);
 	return $("#" + rowID);
+}
+
+function cleanID(symbol) {
+	return symbol.replace(/ |\/|\.|:/g, "_");
 }
 
 function showChild(symbol) {
@@ -360,7 +396,7 @@ function minimiseAll() {
 
 function addFamily(familyName) {
 
-	var familyID = "family_" + familyName.replace(/ |\/|\.|:/g, "_");
+	var familyID = "family_" + cleanID(familyName);
 	var family = findChild(familyID);
 	if (family.length < 1) {
 
@@ -615,7 +651,7 @@ function setParentData(familyName, bidPriceOffset, askPriceOffset, selectedConfi
 
 function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier) {
 
-	var rowID = childSymbol.replace(/ |\/|\.|:/g, "_");
+	var rowID = cleanID(childSymbol);
 	var row = $("#" + rowID);
 
 	var exchangeTable = addFamily(familyName).find(".children");
@@ -674,9 +710,14 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 
 	var orphanButton = row.find(".orphanButton");
 	orphanButton.removeClass("hidden");
-
 	orphanButton.unbind().bind("click", function () {
 		ws.send(command("orphanChild", [childSymbol]));
+	});
+
+	var killSymbolButton = row.find(".killSymbolButton");
+	killSymbolButton.removeClass("hidden");
+	killSymbolButton.unbind().bind("click", function () {
+		ws.send(command("killChild", [childSymbol]));
 	});
 
 	var defaultConfigButton = row.find(".childControls .default");
@@ -734,7 +775,7 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 function setChildData(childSymbol, nibblerName, selectedConfigType, isBidStrategyOn, bidInfo, bidPicardEnabled, bidQuoterEnabled, isAskStrategyOn,
 					  askInfo, askPicardEnabled, askQuoterEnabled) {
 
-	var rowID = childSymbol.replace(/ |\/|\.|:/g, "_");
+	var rowID = cleanID(childSymbol);
 	var row = $("#" + rowID);
 
 	if (row) {
