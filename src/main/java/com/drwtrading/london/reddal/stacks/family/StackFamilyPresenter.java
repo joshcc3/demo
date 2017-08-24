@@ -801,7 +801,11 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         final StackUIData childUIData = childData.get(childSymbol);
         if (null != childUIData) {
-            communityManager.setChildStackEnabled(SOURCE_UI, familyName, childSymbol, side, stackType, isEnabled);
+            try {
+                communityManager.setChildStackEnabled(SOURCE_UI, familyName, childSymbol, side, stackType, isEnabled);
+            } catch (final NullPointerException ignored) {
+                // ignored
+            }
         }
     }
 
