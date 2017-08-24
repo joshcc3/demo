@@ -22,7 +22,7 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
     private final Publisher<NibblerTransportConnected> connectedNibblerChannel;
 
     private final NibblerTransportConnected nibblerConnected;
-    private final NibblerTransportConnected nibblerdisconnected;
+    private final NibblerTransportConnected nibblerDisconnected;
 
     public BlotterClient(final String source, final MsgBlotterPresenter msgBlotter, final SafetiesBlotterPresenter safetiesBlotter,
             final Publisher<NibblerTransportConnected> connectedNibblerChannel, final String nibblerName) {
@@ -34,7 +34,7 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
 
         this.connectedNibblerChannel = connectedNibblerChannel;
         this.nibblerConnected = new NibblerTransportConnected(nibblerName, true);
-        this.nibblerdisconnected = new NibblerTransportConnected(nibblerName, false);
+        this.nibblerDisconnected = new NibblerTransportConnected(nibblerName, false);
 
         connectionLost(null);
     }
@@ -53,7 +53,7 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
 
         msgBlotter.setNibblerConnected(source, false);
         safetiesBlotter.setNibblerConnected(source, false);
-        connectedNibblerChannel.publish(nibblerdisconnected);
+        connectedNibblerChannel.publish(nibblerDisconnected);
     }
 
     @Override

@@ -1,10 +1,6 @@
 package com.drwtrading.london.reddal.orderManagement.remoteOrder;
 
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import eeif.execution.RemoteOrder;
-import eeif.execution.RemoteOrderManagementCommand;
-import eeif.execution.RemoteSubmitOrder;
-import eeif.execution.Side;
 
 public class SubmitOrderCmd implements IOrderCmd {
 
@@ -32,13 +28,5 @@ public class SubmitOrderCmd implements IOrderCmd {
     public void execute(final NibblerTransportOrderEntry client) {
 
         client.submitOrder(username, symbol, side, orderType.orderType, orderType.algoType, tag, price, qty);
-    }
-
-    @Override
-    public RemoteOrderManagementCommand createRemoteOrderManager(final String serverName) {
-
-        final Side execSide = BookSide.BID == side ? Side.BID : Side.OFFER;
-        final RemoteOrder remoteOrder = new RemoteOrder(symbol, execSide, price, qty, orderType.remoteOrderType, true, tag);
-        return new RemoteSubmitOrder(serverName, username, 0, remoteOrder);
     }
 }

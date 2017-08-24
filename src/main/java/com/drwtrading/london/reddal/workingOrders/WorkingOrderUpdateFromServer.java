@@ -42,13 +42,7 @@ public class WorkingOrderUpdateFromServer extends Struct {
 
     private RemoteOrderCommandToServer buildCancel(final String username, final boolean isUserLogin) {
 
-        final BookSide side = Side.BID == workingOrderUpdate.getSide() ? BookSide.BID : BookSide.ASK;
-        final RemoteOrderType orderType = getOrderType(workingOrderUpdate.getWorkingOrderType());
-
-        final IOrderCmd cmd =
-                new CancelOrderCmd(username, isUserLogin, workingOrderUpdate.getChainId(), workingOrderUpdate.getSymbol(), side, orderType,
-                        workingOrderUpdate.getTag(), workingOrderUpdate.getPrice(), workingOrderUpdate.getTotalQuantity());
-
+        final IOrderCmd cmd = new CancelOrderCmd(username, isUserLogin, workingOrderUpdate.getChainId(), workingOrderUpdate.getSymbol());
         return new RemoteOrderCommandToServer(this.fromServer, cmd);
     }
 

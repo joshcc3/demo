@@ -168,7 +168,6 @@ public class Environment {
                 } else {
                     symbolRegex = ".*";
                 }
-
                 final Pattern pattern = Pattern.compile(symbolRegex);
 
                 final Collection<String> orderTypesRaw;

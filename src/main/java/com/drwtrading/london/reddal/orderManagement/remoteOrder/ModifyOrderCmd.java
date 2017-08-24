@@ -1,10 +1,6 @@
 package com.drwtrading.london.reddal.orderManagement.remoteOrder;
 
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import eeif.execution.RemoteModifyOrder;
-import eeif.execution.RemoteOrder;
-import eeif.execution.RemoteOrderManagementCommand;
-import eeif.execution.Side;
 
 public class ModifyOrderCmd implements IOrderCmd {
 
@@ -44,14 +40,5 @@ public class ModifyOrderCmd implements IOrderCmd {
 
         client.modifyOrder(username, chainID, symbol, side, orderType.orderType, orderType.algoType, tag, fromPrice, fromQty, toPrice,
                 toQty);
-    }
-
-    @Override
-    public RemoteOrderManagementCommand createRemoteOrderManager(final String serverName) {
-
-        final Side execSide = BookSide.BID == side ? Side.BID : Side.OFFER;
-        final RemoteOrder fromOrder = new RemoteOrder(symbol, execSide, fromPrice, fromQty, orderType.remoteOrderType, true, tag);
-        final RemoteOrder toOrder = new RemoteOrder(symbol, execSide, toPrice, toQty, orderType.remoteOrderType, true, tag);
-        return new RemoteModifyOrder(serverName, username, 0, fromOrder, toOrder);
     }
 }

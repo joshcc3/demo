@@ -199,22 +199,20 @@ public class WorkingOrdersPresenter {
     @FromWebSocketView
     public void shutdownAll(final WebSocketInboundData data) {
 
-        final String user = data.getClient().getUserName();
         for (final String nibbler : nibblersStatus.keySet()) {
-            shutdownOMS(nibbler, user, "Working orders - Shutdown ALL exchanges.");
+            shutdownOMS(nibbler, "Working orders - Shutdown ALL exchanges.");
         }
     }
 
     @FromWebSocketView
     public void shutdownExchange(final WebSocketInboundData data, final String nibbler) {
 
-        final String user = data.getClient().getUserName();
-        shutdownOMS(nibbler, user, "Working orders - Shutdown exchange.");
+        shutdownOMS(nibbler, "Working orders - Shutdown exchange.");
     }
 
-    private void shutdownOMS(final String nibbler, final String user, final String reason) {
+    private void shutdownOMS(final String nibbler, final String reason) {
 
-        final IOrderCmd remoteCommand = new ShutdownOMSCmd(reason, nibbler, user);
+        final IOrderCmd remoteCommand = new ShutdownOMSCmd(reason);
         final RemoteOrderCommandToServer command = new RemoteOrderCommandToServer(nibbler, remoteCommand);
         commands.publish(command);
     }
@@ -229,7 +227,7 @@ public class WorkingOrdersPresenter {
     private void cancelAllNoneGTC(final String user, final String reason) {
         workingOrders.values().stream().filter(NON_GTC_FILTER).forEach(order -> cancel(user, order));
         for (final String nibbler : nibblersStatus.keySet()) {
-            stopAllStrategies(nibbler, user, reason);
+            stopAllStrategies(nibbler, reason);
         }
         managedOrders.values().forEach(this::cancel);
     }
@@ -240,7 +238,7 @@ public class WorkingOrdersPresenter {
         workingOrders.values().stream().filter(order -> nibbler.equals(order.fromServer)).filter(NON_GTC_FILTER).forEach(
                 order -> cancel(user, order));
         managedOrders.values().stream().filter(order -> nibbler.equals(order.server)).forEach(this::cancel);
-        stopAllStrategies(nibbler, user, "Working orders - Cancel exchange non-gtc.");
+        stopAllStrategies(nibbler, "Working orders - Cancel exchange non-gtc.");
     }
 
     @FromWebSocketView
@@ -249,7 +247,7 @@ public class WorkingOrdersPresenter {
         workingOrders.values().forEach(order -> cancel(user, order));
         managedOrders.values().forEach(this::cancel);
         for (final String nibbler : nibblersStatus.keySet()) {
-            stopAllStrategies(nibbler, user, "Working orders - Cancel ALL exchange.");
+            stopAllStrategies(nibbler, "Working orders - Cancel ALL exchange.");
         }
     }
 
@@ -258,12 +256,12 @@ public class WorkingOrdersPresenter {
         final String user = data.getClient().getUserName();
         workingOrders.values().stream().filter(order -> nibbler.equals(order.fromServer)).forEach(order -> cancel(user, order));
         managedOrders.values().stream().filter(order -> nibbler.equals(order.server)).forEach(this::cancel);
-        stopAllStrategies(nibbler, user, "Working orders - Cancel ALL.");
+        stopAllStrategies(nibbler, "Working orders - Cancel ALL.");
     }
 
-    private void stopAllStrategies(final String nibbler, final String user, final String reason) {
+    private void stopAllStrategies(final String nibbler, final String reason) {
 
-        final IOrderCmd cmd = new StopAllStrategiesCmd(reason, nibbler, user);
+        final IOrderCmd cmd = new StopAllStrategiesCmd(reason);
         final RemoteOrderCommandToServer command = new RemoteOrderCommandToServer(nibbler, cmd);
         commands.publish(command);
     }

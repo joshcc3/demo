@@ -1,7 +1,5 @@
 package com.drwtrading.london.reddal.safety;
 
-import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.london.reddal.RemoteOrderEventFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.time.Clock;
@@ -23,7 +21,6 @@ public class TradingStatusWatchdog {
     private final Publisher<StatsMsg> statsPublisher;
 
     private final Map<String, Long> lastWorkingOrderEventFromServer;
-    private final Map<String, Long> lastRemoteOrderEventFromServer;
     private final Set<String> connectedNibblerTransports;
 
     private final Map<String, ServerTradingStatus> tradingStatusMap;
@@ -37,20 +34,13 @@ public class TradingStatusWatchdog {
         this.statsPublisher = statsPublisher;
 
         this.lastWorkingOrderEventFromServer = new HashMap<>();
-        this.lastRemoteOrderEventFromServer = new HashMap<>();
         this.connectedNibblerTransports = new HashSet<>();
 
         this.tradingStatusMap = new HashMap<>();
     }
 
-    @Subscribe
-    public void on(final WorkingOrderEventFromServer serverHeartbeat) {
+    public void setWorkingOrderHeartbeat(final WorkingOrderEventFromServer serverHeartbeat) {
         lastWorkingOrderEventFromServer.put(serverHeartbeat.fromServer, clock.now());
-    }
-
-    @Subscribe
-    public void on(final RemoteOrderEventFromServer managementServerHeartbeat) {
-        lastRemoteOrderEventFromServer.put(managementServerHeartbeat.fromServer, clock.now());
     }
 
     public void setNibblerTransportConnected(final NibblerTransportConnected connectedNibbler) {
@@ -69,11 +59,8 @@ public class TradingStatusWatchdog {
         for (final Map.Entry<String, Long> entry : lastWorkingOrderEventFromServer.entrySet()) {
 
             final Long workingOrderTime = entry.getValue();
-            final Long remoteOrderTime = lastRemoteOrderEventFromServer.get(entry.getKey());
-            final boolean nibblerTransportConnected = connectedNibblerTransports.contains(entry.getKey());
-
             final boolean workingStatus = null != workingOrderTime && now - workingOrderTime < maxAgeMillis;
-            final boolean remoteStatus = nibblerTransportConnected || (null != remoteOrderTime && now - remoteOrderTime < maxAgeMillis);
+            final boolean remoteStatus = connectedNibblerTransports.contains(entry.getKey());
             final boolean tradingStatus = workingStatus && remoteStatus;
 
             final ServerTradingStatus serverTradingStatus = new ServerTradingStatus(entry.getKey(), workingStatus, tradingStatus);

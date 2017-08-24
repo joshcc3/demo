@@ -146,13 +146,12 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.sun.jndi.toolkit.url.Uri;
-import eeif.execution.RemoteOrderManagementCommand;
-import eeif.execution.RemoteOrderManagementEvent;
 import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Publisher;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -591,36 +590,6 @@ public class Main {
             fibers.onStart(client::start);
         }
 
-        // Remote commands
-        for (final String server : environment.getList(Environment.REMOTE_COMMANDS)) {
-
-            final ConfigGroup remoteCmdsConfig = root.getEnabledGroup(Environment.REMOTE_COMMANDS, server);
-
-            if (null != remoteCmdsConfig && remoteCmdsConfig.paramExists("address")) {
-
-                final Environment.HostAndNic hostAndNic = Environment.getHostAndNic(remoteCmdsConfig);
-
-                final TypedChannel<IOrderCmd> remoteCmds = channels.remoteOrderCommandByServer.get(server);
-                final TypedChannel<RemoteOrderManagementCommand> sendCmds = channels.create(RemoteOrderManagementCommand.class);
-                remoteCmds.subscribe(fibers.remoteOrders.getFiber(), cmd -> sendCmds.publish(cmd.createRemoteOrderManager(server)));
-
-                final OnHeapBufferPhotocolsNioClient<RemoteOrderManagementEvent, RemoteOrderManagementCommand> client =
-                        OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic),
-                                RemoteOrderManagementEvent.class, RemoteOrderManagementCommand.class, fibers.workingOrders.getFiber(),
-                                EXCEPTION_HANDLER);
-
-                client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
-                client.logFile(logDir.resolve("remote-commands." + server + ".log").toFile(), fibers.logging.getFiber(), true);
-                client.handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10));
-                client.handler(
-                        new JetlangChannelHandler<>(msg -> channels.remoteOrderEvents.publish(new RemoteOrderEventFromServer(server, msg)),
-                                sendCmds, fibers.remoteOrders.getFiber()));
-                client.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
-                        new ConnectionCloser(channels.stats, "Remote order: " + server), SERVER_TIMEOUT));
-                fibers.onStart(client::start);
-            }
-        }
-
         // Reddal server
         {
             final Photocols<ReddalMessage, ReddalMessage> commandServer =
@@ -690,7 +659,7 @@ public class Main {
         // Working orders and remote commands watchdog
         final TradingStatusWatchdog watchdog =
                 new TradingStatusWatchdog(channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM, channels.stats);
-        fibers.watchdog.subscribe(watchdog, channels.workingOrderEvents, channels.remoteOrderEvents);
+        channels.workingOrderEvents.subscribe(fibers.watchdog.getFiber(), watchdog::setWorkingOrderHeartbeat);
         fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog::checkHeartbeats, HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS,
                 TimeUnit.MILLISECONDS);
         channels.nibblerTransportConnected.subscribe(fibers.watchdog.getFiber(), watchdog::setNibblerTransportConnected);
@@ -780,8 +749,8 @@ public class Main {
                 ImmutableSet.of(OpxlExDateSubscriber.OPXL_KEY), fibers.opxlPosition.getFiber(), channels.errorPublisher);
 
         // Logging
-        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "remote-order.json", channels.errorPublisher),
-                channels.workingOrderEvents, channels.remoteOrderEvents);
+        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "working-orders.json", channels.errorPublisher),
+                channels.workingOrderEvents);
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trading-status.json", channels.errorPublisher),
                 channels.tradingStatus);
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "preferences.json", channels.errorPublisher),
@@ -1046,7 +1015,7 @@ public class Main {
 
     private static Map<MDSource, LinkedList<ConfigGroup>> setupNibblerTransport(final Application<ReddalComponents> app,
             final ReddalFibers fibers, final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
-            final ReddalChannels channels) throws ConfigException {
+            final ReddalChannels channels) throws ConfigException, IOException {
 
         final Map<MDSource, LinkedList<ConfigGroup>> result = new EnumMap<>(MDSource.class);
 
@@ -1056,14 +1025,15 @@ public class Main {
             final MsgBlotterPresenter msgBlotter = new MsgBlotterPresenter(app.selectIO, fibers.ui, webLog);
             final SafetiesBlotterPresenter safetiesBlotter = new SafetiesBlotterPresenter(fibers.ui, webLog);
 
-            final MultiLayeredResourceMonitor<NibblerTransportComponents> clientMonitorParent =
-                    MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(app.monitor, "Nibbler Transport", app.errorLog,
-                            NibblerTransportComponents.class, ReddalComponents.BLOTTER);
+            final MultiLayeredResourceMonitor<ReddalComponents> clientMonitorParent =
+                    new MultiLayeredResourceMonitor<>(app.monitor, ReddalComponents.class, app.errorLog);
 
             for (final ConfigGroup nibblerConfig : nibblerConfigs.groups()) {
 
                 final String nibbler = nibblerConfig.getKey();
                 final String connectionName = app.appName + " config";
+
+                final IResourceMonitor<ReddalComponents> childMonitor = clientMonitorParent.createChildResourceMonitor(connectionName);
 
                 if (nibblerConfig.paramExists(MD_SOURCES_PARAM)) {
                     final Set<MDSource> mdSources = nibblerConfig.getEnumSet(MD_SOURCES_PARAM, MDSource.class);
@@ -1072,9 +1042,6 @@ public class Main {
                         nibblerConnectionConfigs.add(nibblerConfig);
                     }
                 }
-
-                final IResourceMonitor<NibblerTransportComponents> nibblerMonitor =
-                        clientMonitorParent.createChildResourceMonitor(connectionName);
 
                 final boolean isTransportForTrading = nibblerConfig.paramExists(TRANSPORT_REMOTE_CMDS_NAME_PARAM);
                 final Publisher<NibblerTransportConnected> connectedNibblerChannel;
@@ -1087,11 +1054,15 @@ public class Main {
                     remoteOrderNibblerName = null;
                 }
 
+                final IResourceMonitor<NibblerTransportComponents> nibblerMonitor =
+                        new ExpandedDetailResourceMonitor<>(childMonitor, "Nibbler Transport", app.errorLog,
+                                NibblerTransportComponents.class, ReddalComponents.BLOTTER_CONNECTION);
+
                 final BlotterClient blotterClient =
                         new BlotterClient(nibbler, msgBlotter, safetiesBlotter, connectedNibblerChannel, remoteOrderNibblerName);
 
                 final NibblerClientHandler client =
-                        NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "blotters-" + nibbler,
+                        NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,
                                 connectionName, false, blotterClient);
 
                 final NibblerTransportCaches cache = client.getCaches();
@@ -1102,7 +1073,8 @@ public class Main {
                 if (isTransportForTrading) {
 
                     final TypedChannel<IOrderCmd> sendCmds = channels.remoteOrderCommandByServer.get(remoteOrderNibblerName);
-                    final NibblerTransportOrderEntry orderEntry = new NibblerTransportOrderEntry(client);
+                    final NibblerTransportOrderEntry orderEntry =
+                            new NibblerTransportOrderEntry(app.selectIO, childMonitor, client, app.logDir);
                     sendCmds.subscribe(selectIOFiber, orderEntry::submit);
                 }
             }

@@ -54,7 +54,6 @@ class ReddalChannels {
     final TypedChannel<WorkingOrderUpdateFromServer> workingOrders;
     final TypedChannel<WorkingOrderConnectionEstablished> workingOrderConnectionEstablished;
     final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents;
-    final TypedChannel<RemoteOrderEventFromServer> remoteOrderEvents;
     final TypedChannel<NibblerTransportConnected> nibblerTransportConnected;
     final TypedChannel<StatsMsg> stats;
     final Publisher<RemoteOrderCommandToServer> remoteOrderCommand;
@@ -102,7 +101,6 @@ class ReddalChannels {
         this.workingOrders = create(WorkingOrderUpdateFromServer.class);
         this.workingOrderConnectionEstablished = create(WorkingOrderConnectionEstablished.class);
         this.workingOrderEvents = create(WorkingOrderEventFromServer.class);
-        this.remoteOrderEvents = create(RemoteOrderEventFromServer.class);
         this.nibblerTransportConnected = create(NibblerTransportConnected.class);
         this.stats = create(StatsMsg.class);
         this.remoteOrderCommandByServer = new MapMaker().makeComputingMap(from -> create(IOrderCmd.class));
