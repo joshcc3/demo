@@ -765,8 +765,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             for (final BookSide side : BookSide.values()) {
                 for (final StackType stackType : StackType.values()) {
 
-                    final String family = childrenToFamily.get(childSymbol);
-                    communityManager.setChildStackEnabled(SOURCE_UI, family, childSymbol, side, stackType, isEnabled);
+                    final String familyName = childrenToFamily.get(childSymbol);
+                    setChildStackEnabled(familyName, childSymbol, side, stackType, isEnabled);
                 }
             }
         }
@@ -782,8 +782,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         final Collection<String> affectedChildren = getFilteredSymbols(filters);
         for (final String childSymbol : affectedChildren) {
 
-            final String family = childrenToFamily.get(childSymbol);
-            communityManager.setChildStackEnabled(SOURCE_UI, family, childSymbol, side, stackType, isEnabled);
+            final String familyName = childrenToFamily.get(childSymbol);
+            setChildStackEnabled(familyName, childSymbol, side, stackType, isEnabled);
         }
     }
 
@@ -793,7 +793,16 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
-        communityManager.setChildStackEnabled(SOURCE_UI, familyName, childSymbol, side, stackType, isEnabled);
+        setChildStackEnabled(familyName, childSymbol, side, stackType, isEnabled);
+    }
+
+    private void setChildStackEnabled(final String familyName, final String childSymbol, final BookSide side, final StackType stackType,
+            final boolean isEnabled) {
+
+        final StackUIData childUIData = childData.get(childSymbol);
+        if (null != childUIData) {
+            communityManager.setChildStackEnabled(SOURCE_UI, familyName, childSymbol, side, stackType, isEnabled);
+        }
     }
 
     @FromWebSocketView
