@@ -684,14 +684,14 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         if (childrenToFamily.containsKey(childSymbol)) {
             communityManager.orphanChild(SOURCE_UI, childSymbol);
         }
-        
+
         final StackUIData stackData = childData.get(childSymbol);
         if (null != stackData) {
 
-            final StackClientHandler configClient = nibblerClients.get(stackData.source);
-            if (null != configClient) {
-                configClient.killStrategy(childSymbol);
-                configClient.batchComplete();
+            final StackClientHandler stackClient = nibblerClients.get(stackData.source);
+            if (null != stackClient) {
+                stackClient.killStrategy(childSymbol);
+                stackClient.batchComplete();
             }
         }
     }
