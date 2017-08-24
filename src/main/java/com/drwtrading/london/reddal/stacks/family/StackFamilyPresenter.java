@@ -541,14 +541,14 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         communityManager.stopChild(family, toSymbol, BookSide.BID);
         communityManager.stopChild(family, toSymbol, BookSide.ASK);
 
-        communityManager.copyChildStacks(SOURCE_UI, fromSymbol, toSymbol);
-
         final Map<StackConfigType, StackConfigGroup> fromConfigs = stackConfigs.get(fromSymbol);
         final Map<StackConfigType, StackConfigGroup> toConfigs = stackConfigs.get(toSymbol);
         final StackUIData toChildUIData = childData.get(fromSymbol);
-        final StackClientHandler configClient = nibblerClients.get(toChildUIData.source);
 
         if (null != fromConfigs && null != toConfigs) {
+
+            communityManager.copyChildStacks(SOURCE_UI, fromSymbol, toSymbol);
+            final StackClientHandler configClient = nibblerClients.get(toChildUIData.source);
 
             for (final StackConfigType configType : StackConfigType.values()) {
 
