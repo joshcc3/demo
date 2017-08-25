@@ -125,10 +125,10 @@ public class NibblerTransportOrderEntry {
 
         try {
 
-            final String timestamp = sdf.format(clock.getMillisAtMidnightUTC());
+            final String timestamp = sdf.format(clock.nowMilliUTC());
             row.set(timestampCol, timestamp);
 
-            log.writeRow(row, false);
+            log.writeRow(row, true);
 
         } catch (final Exception e) {
             monitor.logError(ReddalComponents.BLOTTER_CONNECTION_LOG, "Failed to log [" + row.getTableName() + "] row.", e);

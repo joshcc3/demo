@@ -39,11 +39,11 @@ $(function () {
 	var closeFooter = footer.find("#closeFooter");
 	closeFooter.unbind().bind("click", function () {
 		footer.toggleClass("hidden", true);
-		updateSelectedFilters();
 	});
 	var clearFilters = footer.find("#clearFilters");
 	clearFilters.unbind().bind("click", function () {
 		$("#filterList").find(".filterName.selected").toggleClass("selected", false);
+		updateSelectedFilters();
 	});
 
 	var filteringRow = $("#filteringBlock");
@@ -233,6 +233,7 @@ function setFilters(filters) {
 function getFilterSelectionFunction(filterNameCell) {
 	return function () {
 		filterNameCell.toggleClass("selected", !filterNameCell.hasClass("selected"));
+		updateSelectedFilters();
 	};
 }
 
