@@ -659,7 +659,19 @@ public class LadderView implements UiEventHandler {
         } else if (label.equals(HTML.STACK_VIEW_BUTTON)) {
             switch (button) {
                 case "right": {
-                    view.popUp("/ladder#" + symbol + ";S", symbol + " stack", 245, 600);
+
+                    final String popUpSymbol;
+                    if (null != metaData && null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
+                        popUpSymbol = metaData.spreadContractSet.parentSymbol;
+                    } else {
+                        popUpSymbol = symbol + ";S";
+                    }
+
+                    if (popUpSymbol.equals(symbol + ";S")) {
+                        setStackView();
+                    } else {
+                        view.popUp("/ladder#" + popUpSymbol, symbol + " stack", 245, 600);
+                    }
                     break;
                 }
                 default: {

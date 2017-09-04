@@ -945,9 +945,11 @@ public class Main {
             stackFamilyPresenter.setCommunityManager(communityManager);
 
             final StackFamilyListener familyListener = new StackFamilyListener(stackFamilyPresenter);
-            server.addStrategyListener(familyListener);
-            server.addStacksListener(familyListener);
-            server.addRelationshipListener(stackFamilyPresenter);
+            app.addStartUpAction(() -> {
+                server.addStrategyListener(familyListener);
+                server.addStacksListener(familyListener);
+                server.addRelationshipListener(stackFamilyPresenter);
+            });
 
             final Path logPath = app.logDir.resolve("stackLog.csv");
             final IResourceMonitor<StackPersistenceComponents> logMonitor =
