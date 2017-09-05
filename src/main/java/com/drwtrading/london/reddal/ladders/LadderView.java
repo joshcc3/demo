@@ -72,12 +72,12 @@ public class LadderView implements UiEventHandler {
         INST_TYPE_BUTTON_QTIES = new EnumMap<>(InstType.class);
 
         final Map<String, Integer> defaultQties = new HashMap<>();
-        defaultQties.put("btn_qty_1", 0);
-        defaultQties.put("btn_qty_2", 0);
-        defaultQties.put("btn_qty_3", 0);
-        defaultQties.put("btn_qty_4", 0);
-        defaultQties.put("btn_qty_5", 0);
-        defaultQties.put("btn_qty_6", 0);
+        defaultQties.put("btn_qty_1", 1);
+        defaultQties.put("btn_qty_2", 5);
+        defaultQties.put("btn_qty_3", 10);
+        defaultQties.put("btn_qty_4", 50);
+        defaultQties.put("btn_qty_5", 100);
+        defaultQties.put("btn_qty_6", 500);
         for (final InstType instType : InstType.values()) {
             INST_TYPE_BUTTON_QTIES.put(instType, defaultQties);
         }

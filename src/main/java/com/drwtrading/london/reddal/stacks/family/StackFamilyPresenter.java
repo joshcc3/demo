@@ -128,7 +128,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private void updateSymbolFilters(final String symbol) {
 
         final SearchResult searchResult = searchResults.get(symbol);
-        if (null != searchResult && InstType.ETF == searchResult.instType && childData.containsKey(symbol)) {
+        if (null != searchResult && (InstType.ETF == searchResult.instType || InstType.FUTURE == searchResult.instType) &&
+                childData.containsKey(symbol)) {
 
             final String filterName = searchResult.mdSource.name();
             final StackChildFilter filter = getFilter(filterName.trim(), MD_SOURCE_FILTER_GROUP);

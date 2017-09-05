@@ -143,19 +143,19 @@ public class LadderWorkspace {
 
                 if (!lockedViews.contains(view)) {
 
-                    if (null != contractSet.parentSymbol) {
-                        view.addSymbol(contractSet.parentSymbol);
-                    }
-
                     view.addSymbol(contractSet.backMonth);
                     view.addSymbol(contractSet.spread);
 
                     if (null != contractSet.leanSymbol) {
                         view.addSymbol(contractSet.leanSymbol);
                     }
-                    if (null != contractSet.stackSymbol) {
+
+                    if (null != contractSet.parentSymbol) {
+                        view.addSymbol(contractSet.parentSymbol);
+                    } else if (null != contractSet.stackSymbol) {
                         view.addSymbol(contractSet.stackSymbol);
                     }
+
                     view.addSymbol(contractSet.symbol);
                     view.addSymbol(symbol);
                     openedSpreadWorkspace = true;

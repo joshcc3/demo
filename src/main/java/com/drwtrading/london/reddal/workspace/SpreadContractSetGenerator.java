@@ -1,13 +1,12 @@
 package com.drwtrading.london.reddal.workspace;
 
+import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
-import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.google.common.collect.ImmutableSet;
 import org.jetlang.channels.Publisher;
 
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -28,7 +27,6 @@ public class SpreadContractSetGenerator {
 
     private final Map<String, SpreadContractSet> existingSets;
 
-    private final Calendar cal;
     private final FutureExpiryCalc expiryCalc;
 
     public SpreadContractSetGenerator(final Publisher<SpreadContractSet> publisher) {
@@ -44,7 +42,6 @@ public class SpreadContractSetGenerator {
 
         this.existingSets = new HashMap<>();
 
-        this.cal = DateTimeUtil.getCalendar();
         this.expiryCalc = new FutureExpiryCalc(0);
     }
 
@@ -54,10 +51,13 @@ public class SpreadContractSetGenerator {
     }
 
     public void setParentStack(final String quoteSymbol, final String parentStackSymbol) {
-        if (!"orphanage".equals(parentStackSymbol)) {
+
+        if (StackOrphanage.ORPHANAGE.equals(parentStackSymbol)) {
+            this.parentStackSymbols.remove(quoteSymbol);
+        } else {
             this.parentStackSymbols.put(quoteSymbol, parentStackSymbol + ";S");
-            publishContractSet(quoteSymbol);
         }
+        publishContractSet(quoteSymbol);
     }
 
     public void setSearchResult(final SearchResult searchResult) {
