@@ -951,12 +951,9 @@ public class Main {
                 server.addRelationshipListener(stackFamilyPresenter);
             });
 
-            final Path logPath = app.logDir.resolve("stackLog.csv");
             final IResourceMonitor<StackPersistenceComponents> logMonitor =
                     new ExpandedDetailResourceMonitor<>(stackManagerMonitor, "Stacks log", app.errorLog, StackPersistenceComponents.class,
                             StackManagerComponents.LOGGER);
-
-            final StackPersistenceWriter stackLogger = new StackPersistenceWriter(app.selectIO, logMonitor, logPath);
 
             final MultiLayeredResourceMonitor<StackTransportComponents> clientMonitorParent =
                     MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(stackManagerMonitor, "Stacks", app.errorLog,
@@ -984,6 +981,9 @@ public class Main {
                 final StackClientHandler client =
                         StackCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "Stacks-" + nibbler,
                                 app.env.name() + connectionName, nibblerClient);
+
+                final Path logPath = app.logDir.resolve("stackLog-" + nibbler + ".csv");
+                final StackPersistenceWriter stackLogger = new StackPersistenceWriter(app.selectIO, logMonitor, logPath);
                 client.addLogger(stackLogger);
 
                 nibblerClient.setClient(client);
