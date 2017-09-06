@@ -100,13 +100,12 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 		row.addClass("dataRow");
 		exchangeTable.append(row);
 
-		row.find("div").each(function (i, d) {
+		row.find("div:not(.killStrategy)").each(function (i, d) {
 			d = $(d);
 			d.text("");
 		});
 
 		var killSymbol = row.find(".killStrategy button");
-
 		killSymbol.off("click").click(function () {
 			ws.send(command("killSymbol", [nibblerName, quoteSymbol]));
 		});
@@ -165,6 +164,13 @@ function getExchangeTable(nibblerName) {
 		});
 
 		$("#exchanges").append(nibbler);
+
+		var headerRow = nibbler.find(".header.row");
+		var killSymbol = headerRow.find(".killStrategy button");
+		killSymbol.text("kill inactive");
+		killSymbol.off("click").click(function () {
+			ws.send(command("killInactiveSymbols", [nibblerName]));
+		});
 	}
 	return nibbler.find(".exchange");
 }

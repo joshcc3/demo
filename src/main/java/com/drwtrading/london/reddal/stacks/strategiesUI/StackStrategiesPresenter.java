@@ -170,4 +170,22 @@ public class StackStrategiesPresenter {
             strategyClient.batchComplete();
         }
     }
+
+    @FromWebSocketView
+    public void killInactiveSymbols(final String nibblerName) {
+
+        final StackClientHandler strategyClient = strategyClients.get(nibblerName);
+        if (null != strategyClient) {
+
+            final LongMap<StackStrategy> stacks = nibblerStrategies.get(nibblerName);
+            for (final LongMapNode<StackStrategy> stackNode : stacks) {
+
+                final StackStrategy stackStrategy = stackNode.getValue();
+                if (!stackStrategy.isQuoteInstDefEventAvailable() && !stackStrategy.isQuoteBookAvailable()) {
+                    strategyClient.killStrategy(stackStrategy.getSymbol());
+                    strategyClient.batchComplete();
+                }
+            }
+        }
+    }
 }
