@@ -88,6 +88,7 @@ public class SpreadContractSetGenerator {
                         this.frontLegToBackLeg.put(legs[0], legs[1]);
                         this.backLegToFrontLeg.put(legs[1], legs[0]);
                         publishContractSet(legs[0]);
+                        publishContractSet(legs[1]);
                     }
                 }
                 break;
