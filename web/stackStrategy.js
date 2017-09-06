@@ -101,9 +101,14 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 		exchangeTable.append(row);
 
 		row.find("div").each(function (i, d) {
-
 			d = $(d);
 			d.text("");
+		});
+
+		var killSymbol = row.find(".killStrategy button");
+
+		killSymbol.off("click").click(function () {
+			ws.send(command("killSymbol", [nibblerName, quoteSymbol]));
 		});
 	}
 

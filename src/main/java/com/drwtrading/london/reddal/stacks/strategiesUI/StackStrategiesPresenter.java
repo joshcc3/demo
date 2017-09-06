@@ -160,4 +160,14 @@ public class StackStrategiesPresenter {
             ui.setInstID(type, instID.isin, instID.ccy.name(), instID.mic.name());
         }
     }
+
+    @FromWebSocketView
+    public void killSymbol(final String nibblerName, final String quoteSymbol) {
+
+        final StackClientHandler strategyClient = strategyClients.get(nibblerName);
+        if (null != strategyClient) {
+            strategyClient.killStrategy(quoteSymbol);
+            strategyClient.batchComplete();
+        }
+    }
 }
