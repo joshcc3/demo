@@ -106,6 +106,7 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 		});
 
 		var killSymbol = row.find(".killStrategy button");
+		killSymbol.text("kill");
 		killSymbol.off("click").click(function () {
 			ws.send(command("killSymbol", [nibblerName, quoteSymbol]));
 		});
