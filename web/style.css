@@ -457,6 +457,12 @@ div {
 	text-align: center;
 }
 
+.mic {
+	font-size: 9px;
+	font-weight: bold;
+	text-align: center;
+}
+
 .trade {
 	font-size: 10px;
 	background-color: white;

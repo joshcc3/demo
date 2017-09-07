@@ -938,6 +938,12 @@ public class LadderBookView implements ILadderBoard {
 
             ui.txt(HTML.VOLUME + '0', marketData.getBook().getCCY().name());
             ui.cls(HTML.VOLUME + '0', CSSClass.CCY, true);
+
+            if (isCashEquityOrFX) {
+                ui.txt(HTML.VOLUME + '1', marketData.getBook().getMIC().toString());
+                ui.cls(HTML.VOLUME + '1', CSSClass.MIC, true);
+            }
+
             final long quantityTraded = tradeTracker.getTotalQtyTraded();
             if (1000000 < quantityTraded) {
                 ui.txt(HTML.TOTAL_TRADED_VOLUME, BASIS_POINT_DECIMAL_FORMAT.format(1.0 / 1000000 * quantityTraded) + 'M');
