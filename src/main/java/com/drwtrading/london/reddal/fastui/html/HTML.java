@@ -2,7 +2,8 @@ package com.drwtrading.london.reddal.fastui.html;
 
 public class HTML {
 
-    public static final String LADDER_DIV = "ladderDiv"; // bam merge conflict
+    public static final String LADDER_DIV = "ladderDiv";
+
 
     public static final String BOOK_TABLE = "rows";
 
