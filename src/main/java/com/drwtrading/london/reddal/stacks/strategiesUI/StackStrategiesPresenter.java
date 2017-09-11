@@ -181,7 +181,7 @@ public class StackStrategiesPresenter {
             for (final LongMapNode<StackStrategy> stackNode : stacks) {
 
                 final StackStrategy stackStrategy = stackNode.getValue();
-                if (!stackStrategy.isQuoteInstDefEventAvailable() && !stackStrategy.isQuoteBookAvailable()) {
+                if (!stackStrategy.isQuoteInstDefEventAvailable()) {
                     strategyClient.killStrategy(stackStrategy.getSymbol());
                     strategyClient.batchComplete();
                 }
