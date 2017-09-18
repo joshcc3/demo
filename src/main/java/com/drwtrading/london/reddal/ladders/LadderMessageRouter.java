@@ -8,6 +8,7 @@ import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
+import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -70,11 +71,13 @@ public class LadderMessageRouter {
         System.out.println("LMR received command + " + replaceCommand);
         for (HashSet<Publisher<WebSocketOutboundData>> publishers : unknownSymbolSubscriptions.values()) {
             for (Publisher<WebSocketOutboundData> publisher : publishers) {
-                publisher.publish(new WebSocketOutboundData("replace(\"" + replaceCommand.from + "\",\"" + replaceCommand.to + "\")"));
+                UiPipeImpl uiPipe = new UiPipeImpl(publisher);
+                uiPipe.eval("replace(\"" + replaceCommand.from + "\",\"" + replaceCommand.to + "\")");
             }
         }
         for (Publisher<WebSocketOutboundData> publisher : redirects.keySet()) {
-            publisher.publish(new WebSocketOutboundData("replace(\"" + replaceCommand.from + "\",\"" + replaceCommand.to + "\")"));
+            UiPipeImpl uiPipe = new UiPipeImpl(publisher);
+            uiPipe.eval("replace(\"" + replaceCommand.from + "\",\"" + replaceCommand.to + "\")");
         }
     }
 
