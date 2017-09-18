@@ -67,10 +67,14 @@ public class LadderMessageRouter {
 
     @Subscribe
     public void on(ReplaceCommand replaceCommand) {
+        System.out.println("LMR received command + " + replaceCommand);
         for (HashSet<Publisher<WebSocketOutboundData>> publishers : unknownSymbolSubscriptions.values()) {
             for (Publisher<WebSocketOutboundData> publisher : publishers) {
                 publisher.publish(new WebSocketOutboundData("replace(\"" + replaceCommand.from + "\",\"" + replaceCommand.to + "\")"));
             }
+        }
+        for (Publisher<WebSocketOutboundData> publisher : redirects.keySet()) {
+            publisher.publish(new WebSocketOutboundData("replace(\"" + replaceCommand.from + "\",\"" + replaceCommand.to + "\")"));
         }
     }
 
