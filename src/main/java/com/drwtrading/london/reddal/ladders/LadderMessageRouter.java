@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -44,8 +45,8 @@ public class LadderMessageRouter {
     private final Map<Publisher<WebSocketOutboundData>, LinkedList<WebSocketControlMessage>> queue;
 
     public LadderMessageRouter(final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
-            final TypedChannel<SymbolSelection> symbolSelections, final TypedChannel<WebSocketControlMessage> stackManagerLadderPresenter,
-            final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderPresenters, final FiberBuilder logFiber) {
+                               final TypedChannel<SymbolSelection> symbolSelections, final TypedChannel<WebSocketControlMessage> stackManagerLadderPresenter,
+                               final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderPresenters, final FiberBuilder logFiber) {
 
         this.monitor = monitor;
 
@@ -62,6 +63,17 @@ public class LadderMessageRouter {
         this.redirects = new HashMap<>();
         this.queue = new HashMap<>();
     }
+
+
+    @Subscribe
+    public void on(ReplaceCommand replaceCommand) {
+        for (HashSet<Publisher<WebSocketOutboundData>> publishers : unknownSymbolSubscriptions.values()) {
+            for (Publisher<WebSocketOutboundData> publisher : publishers) {
+                publisher.publish(new WebSocketOutboundData("replace(\"" + replaceCommand.from + "\",\"" + replaceCommand.to + "\")"));
+            }
+        }
+    }
+
 
     public void setParentStackSymbol(final String symbol) {
         setLadderPresenter(symbol, stackManagerLadderPresenter);
@@ -94,7 +106,7 @@ public class LadderMessageRouter {
     }
 
     private void replayQueuedMsgs(final Publisher<WebSocketControlMessage> ladderPresenter,
-            final Publisher<WebSocketOutboundData> outChannel) {
+                                  final Publisher<WebSocketOutboundData> outChannel) {
 
         final Collection<WebSocketControlMessage> queued = queue.remove(outChannel);
         for (final WebSocketControlMessage queuedMsg : queued) {

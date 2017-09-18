@@ -483,7 +483,7 @@ public class Main {
         createWebPageWithWebSocket("ladder", "ladder", fibers.ladderRouter, webapp, ladderWebSocket);
         final LadderMessageRouter ladderMessageRouter =
                 new LadderMessageRouter(monitor, webLog, channels.symbolSelections, stackManagerWebSocket, webSockets, fibers.ui);
-        fibers.ladderRouter.subscribe(ladderMessageRouter, ladderWebSocket);
+        fibers.ladderRouter.subscribe(ladderMessageRouter, ladderWebSocket, channels.replaceCommand);
         channels.searchResults.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setSearchResult);
         channels.stackParentSymbolPublisher.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setParentStackSymbol);
 
