@@ -78,7 +78,8 @@ import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
-import com.drwtrading.london.reddal.ladders.tradingData.LadderInfoListener;
+import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
+import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
@@ -412,7 +413,7 @@ public class Main {
                                         threadName + "-transport-" + nibblerConfig.getKey(), localAppName + mdSource.name(), true,
                                         ladderInfoListener);
 
-                        client.getCaches().tradingDataCache.addListener(ladderInfoListener);
+                        client.getCaches().addTradingDataListener(ladderInfoListener);
                         client.getCaches().blotterCache.addListener(ladderInfoListener);
                     }
                 }
@@ -1078,6 +1079,10 @@ public class Main {
                     final NibblerTransportOrderEntry orderEntry =
                             new NibblerTransportOrderEntry(app.selectIO, childMonitor, client, app.logDir);
                     sendCmds.subscribe(selectIOFiber, orderEntry::submit);
+
+                    final NibblerMetaDataLogger logger =
+                            new NibblerMetaDataLogger(app.selectIO, app.monitor, app.logDir, remoteOrderNibblerName);
+                    cache.addTradingDataListener(logger);
                 }
             }
 

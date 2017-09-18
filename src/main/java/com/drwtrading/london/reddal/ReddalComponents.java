@@ -30,6 +30,7 @@ public enum ReddalComponents implements IMonitoredComponent {
     BLOTTER_CONNECTION,
     BLOTTER_CONNECTION_LOG,
     TRADING_DATA,
+    META_DATA_LOG,
 
     SAFETY_WORKING_ORDER_VIEWER,
 

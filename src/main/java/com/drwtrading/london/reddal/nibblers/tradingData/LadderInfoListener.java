@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.ladders.tradingData;
+package com.drwtrading.london.reddal.nibblers.tradingData;
 
 import com.drwtrading.london.eeif.nibbler.transport.INibblerTransportConnectionListener;
 import com.drwtrading.london.eeif.nibbler.transport.cache.blotter.INibblerBlotterListener;
