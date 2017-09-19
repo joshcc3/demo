@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.nibblers;
 
 public enum NibblerTheoValueColumns {
 
+    timestamp,
     SYMBOL,
     TIME,
 

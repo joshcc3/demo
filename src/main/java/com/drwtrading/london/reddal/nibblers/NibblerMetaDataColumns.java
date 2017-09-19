@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.nibblers;
 
 public enum NibblerMetaDataColumns {
 
+    timestamp,
     SYMBOL,
     TIME,
 
