@@ -1066,7 +1066,7 @@ public class Main {
 
                 final NibblerClientHandler client =
                         NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,
-                                connectionName, false, blotterClient);
+                                connectionName, true, blotterClient);
 
                 final NibblerTransportCaches cache = client.getCaches();
                 cache.addListener(blotterClient);

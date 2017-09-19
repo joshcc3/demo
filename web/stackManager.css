@@ -303,8 +303,8 @@ input::-webkit-inner-spin-button:hover {
 }
 
 .familyDetails .childCount {
-	text-align: right;
-	width: 50px;
+	text-align: center;
+	width: 25px;
 }
 
 .runningControls .start {
@@ -313,6 +313,22 @@ input::-webkit-inner-spin-button:hover {
 
 .runningControls .stop {
 	background-color: lightcoral;
+}
+
+.activeCount div {
+	text-align: center;
+	width: 14px;
+	padding: 0;
+	margin: 0;
+
+}
+
+.activeCount .on {
+	color: lightgreen;
+}
+
+.activeCount .off {
+	color: lightcoral;
 }
 
 .familyDetails .familyName {

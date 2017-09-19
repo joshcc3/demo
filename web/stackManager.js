@@ -771,6 +771,7 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 	});
 
 	setChildCount(familyName);
+	setActiveChildCounts(row);
 }
 
 function setChildData(childSymbol, nibblerName, selectedConfigType, isBidStrategyOn, bidInfo, bidPicardEnabled, bidQuoterEnabled, isAskStrategyOn,
@@ -795,6 +796,8 @@ function setChildData(childSymbol, nibblerName, selectedConfigType, isBidStrateg
 		row.find(".childControls .ask .picardEnabled").toggleClass("enabled", askPicardEnabled);
 		row.find(".childControls .ask .quoterEnabled").toggleClass("enabled", askQuoterEnabled);
 		row.find(".childControls .ask.strategyInfo").text(askInfo);
+
+		setActiveChildCounts(row);
 	}
 }
 
@@ -849,10 +852,30 @@ function setDoubleData(input, value) {
 
 function setChildCount(familyName) {
 
-	var nibbler = addFamily(familyName);
-	var orderCountDiv = nibbler.find(".childCount");
-	var orders = nibbler.find(".children .row").length - 1;
+	var family = addFamily(familyName);
+	var orderCountDiv = family.find(".childCount");
+	var orders = family.find(".children .row").length - 1;
 	orderCountDiv.text(orders);
+}
+
+function setActiveChildCounts(child) {
+
+	var family = child.parent().parent();
+	var childControls = family.find(".children .row .childControls");
+
+	var onBids = childControls.find(".bid.runningControls.enabled").length;
+	var offBids = childControls.find(".bid.runningControls:not(.enabled)").length - 1;
+
+	var onAsks = childControls.find(".ask.runningControls.enabled").length;
+	var offAsks = childControls.find(".ask.runningControls:not(.enabled)").length - 1;
+
+	var bidCounts = family.find(".familyDetails .bid.activeCount");
+	bidCounts.find(".on").text(onBids);
+	bidCounts.find(".off").text(offBids);
+
+	var askCounts = family.find(".familyDetails .ask.activeCount");
+	askCounts.find(".on").text(onAsks);
+	askCounts.find(".off").text(offAsks);
 }
 
 function displayErrorMsg(text) {
