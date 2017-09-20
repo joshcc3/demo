@@ -5,13 +5,12 @@ import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 import drw.opxl.OpxlData;
 import org.jetlang.channels.Publisher;
 
 import java.math.BigDecimal;
 import java.util.Set;
-
-import static com.google.common.collect.Sets.newHashSet;
 
 public class OpxlLadderTextSubscriber {
 
@@ -21,7 +20,8 @@ public class OpxlLadderTextSubscriber {
     public final DoOnce latch = new DoOnce();
 
     private final Set<String> validCells =
-            newHashSet("r1c1", "r1c2", "r1c3", "r1c4", "r2c1", "r2c2", "r2c3", "r2c4", "r3c2", "r3c3", "r3c4");
+            Sets.newHashSet("r1c1", "r1c2", "r1c3", "r1c4", "r2c1", "r2c2", "r2c3", "r2c4", "r3c2", "r3c3", "r3c4", "r4c1", "r4c2", "r4c3",
+                    "r4c4", "r4c5");
 
     public OpxlLadderTextSubscriber(final Publisher<Throwable> errorPublisher, final Publisher<LadderMetadata> publisher) {
         this.errorPublisher = errorPublisher;
