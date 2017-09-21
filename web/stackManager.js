@@ -721,57 +721,61 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 		ws.send(command("killChild", [childSymbol]));
 	});
 
-	var defaultConfigButton = row.find(".childControls .default");
+	var childControls = row.find(".childControls");
+
+	var defaultConfigButton = childControls.find(".default");
 	defaultConfigButton.unbind().bind("click", function () {
 		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "DEFAULT"]));
 	});
 
-	var wideConfigButton = row.find(".childControls .wide");
+	var wideConfigButton = childControls.find(".wide");
 	wideConfigButton.unbind().bind("click", function () {
 		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "WIDE"]));
 	});
 
-	var obligationConfigButton = row.find(".childControls .obligation");
+	var obligationConfigButton = childControls.find(".obligation");
 	obligationConfigButton.unbind().bind("click", function () {
 		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "OBLIGATION"]));
 	});
 
-	var openConfigWindowDiv = row.find(".childControls .configWindow");
+	var openConfigWindowDiv = childControls.find(".configWindow");
 	openConfigWindowDiv.unbind().bind("click", function () {
 		popUp("/stackConfig#;" + childSymbol, "Configs", 2200, 400);
 	});
 
-	var bidPicardButton = row.find(".childControls .bid .picardEnabled");
-	var bidQuoterButton = row.find(".childControls .bid .quoterEnabled");
-	var askQuoterButton = row.find(".childControls .ask .quoterEnabled");
-	var askPicardButton = row.find(".childControls .ask .picardEnabled");
+	var bidControls = childControls.find(".bid");
+	var askControls = childControls.find(".ask");
+
+	var bidPicardButton = bidControls.find(".picardEnabled");
+	var bidQuoterButton = bidControls.find(".quoterEnabled");
+	var askQuoterButton = askControls.find(".quoterEnabled");
+	var askPicardButton = askControls.find(".picardEnabled");
 	bidPicardButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "BID", "PICARD"));
 	bidQuoterButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "BID", "QUOTER"));
 	askQuoterButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "ASK", "QUOTER"));
 	askPicardButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "ASK", "PICARD"));
 
-	var bidStartConfigWindowDiv = row.find(".childControls .bid .start");
+	var bidStartConfigWindowDiv = bidControls.find(".start");
 	bidStartConfigWindowDiv.unbind().bind("click", function () {
 		ws.send(command("startChild", [familyName, childSymbol, "BID"]));
 	});
 
-	var bidStopConfigWindowDiv = row.find(".childControls .bid .stop");
+	var bidStopConfigWindowDiv = bidControls.find(".stop");
 	bidStopConfigWindowDiv.unbind().bind("click", function () {
 		ws.send(command("stopChild", [familyName, childSymbol, "BID"]));
 	});
 
-	var askStartConfigWindowDiv = row.find(".childControls .ask .start");
+	var askStartConfigWindowDiv = askControls.find(".start");
 	askStartConfigWindowDiv.unbind().bind("click", function () {
 		ws.send(command("startChild", [familyName, childSymbol, "ASK"]));
 	});
 
-	var askStopConfigWindowDiv = row.find(".childControls .ask .stop");
+	var askStopConfigWindowDiv = askControls.find(".stop");
 	askStopConfigWindowDiv.unbind().bind("click", function () {
 		ws.send(command("stopChild", [familyName, childSymbol, "ASK"]));
 	});
 
 	setChildCount(familyName);
-	setActiveChildCounts(row);
 }
 
 function setChildData(childSymbol, nibblerName, selectedConfigType, isBidStrategyOn, bidInfo, bidPicardEnabled, bidQuoterEnabled, isAskStrategyOn,
@@ -782,20 +786,23 @@ function setChildData(childSymbol, nibblerName, selectedConfigType, isBidStrateg
 
 	if (row) {
 
-		row.find(".childControls .configControls button").removeClass("enabled");
-		row.find(".childControls .configControls ." + selectedConfigType.toLowerCase()).addClass("enabled");
+		var childControls = row.find(".childControls");
+		childControls.find(".configControls button").removeClass("enabled");
+		childControls.find(".configControls ." + selectedConfigType.toLowerCase()).addClass("enabled");
 
-		row.find(".childControls .nibblerName").text(nibblerName);
+		childControls.find(".nibblerName").text(nibblerName);
 
-		row.find(".childControls .bid.runningControls").toggleClass("enabled", isBidStrategyOn);
-		row.find(".childControls .bid .picardEnabled").toggleClass("enabled", bidPicardEnabled);
-		row.find(".childControls .bid .quoterEnabled").toggleClass("enabled", bidQuoterEnabled);
-		row.find(".childControls .bid.strategyInfo").text(bidInfo);
+		var bidControls = childControls.find(".bid");
+		bidControls.filter(".runningControls").toggleClass("enabled", isBidStrategyOn);
+		bidControls.find(".picardEnabled").toggleClass("enabled", bidPicardEnabled);
+		bidControls.find(".quoterEnabled").toggleClass("enabled", bidQuoterEnabled);
+		bidControls.filter(".strategyInfo").text(bidInfo);
 
-		row.find(".childControls .ask.runningControls").toggleClass("enabled", isAskStrategyOn);
-		row.find(".childControls .ask .picardEnabled").toggleClass("enabled", askPicardEnabled);
-		row.find(".childControls .ask .quoterEnabled").toggleClass("enabled", askQuoterEnabled);
-		row.find(".childControls .ask.strategyInfo").text(askInfo);
+		var askControls = childControls.find(".ask");
+		askControls.filter(".runningControls").toggleClass("enabled", isAskStrategyOn);
+		askControls.find(".picardEnabled").toggleClass("enabled", askPicardEnabled);
+		askControls.find(".quoterEnabled").toggleClass("enabled", askQuoterEnabled);
+		askControls.filter(".strategyInfo").text(askInfo);
 
 		setActiveChildCounts(row);
 	}
@@ -861,19 +868,23 @@ function setChildCount(familyName) {
 function setActiveChildCounts(child) {
 
 	var family = child.parent().parent();
-	var childControls = family.find(".children .row .childControls");
+	var childControls = family.find(".childControls");
 
-	var onBids = childControls.find(".bid.runningControls.enabled").length;
-	var offBids = childControls.find(".bid.runningControls:not(.enabled)").length - 1;
+	var runningControls = childControls.find(".runningControls");
+	var bidControls = runningControls.filter(".bid");
+	var onBids = bidControls.filter(".enabled").length;
+	var offBids = bidControls.length - onBids - 1;
 
-	var onAsks = childControls.find(".ask.runningControls.enabled").length;
-	var offAsks = childControls.find(".ask.runningControls:not(.enabled)").length - 1;
+	var askControls = runningControls.filter(".ask");
+	var onAsks = askControls.filter(".enabled").length;
+	var offAsks = askControls.length - onAsks - 1;
 
-	var bidCounts = family.find(".familyDetails .bid.activeCount");
+	var familyDetails = family.find(".activeCount");
+	var bidCounts = familyDetails.filter(".bid");
 	bidCounts.find(".on").text(onBids);
 	bidCounts.find(".off").text(offBids);
 
-	var askCounts = family.find(".familyDetails .ask.activeCount");
+	var askCounts = familyDetails.filter(".ask");
 	askCounts.find(".on").text(onAsks);
 	askCounts.find(".off").text(offAsks);
 }
