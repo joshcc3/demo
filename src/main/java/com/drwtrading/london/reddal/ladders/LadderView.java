@@ -30,6 +30,7 @@ import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.photons.ladder.LadderText;
@@ -131,6 +132,7 @@ public class LadderView implements UiEventHandler {
     private final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
+    private final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher;
     private final Predicate<String> symbolExists;
     private final LadderHTMLTable ladderHTMLKeys;
     private final DecimalFormat twoDF;
@@ -163,7 +165,8 @@ public class LadderView implements UiEventHandler {
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher, final Predicate<String> symbolExists) {
+            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
+            final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher, final Predicate<String> symbolExists) {
 
         this.monitor = monitor;
 
@@ -178,6 +181,7 @@ public class LadderView implements UiEventHandler {
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.orderEntryMap = orderEntryMap;
         this.eeifCommandToServer = orderEntryCommandToServerPublisher;
+        this.increaseParentOffsetPublisher = increaseParentOffsetPublisher;
         this.ui = ui;
         this.tradingStatusForAll = tradingStatusForAll;
         this.heartbeatRoundTripPublisher = heartbeatRoundTripPublisher;
@@ -216,7 +220,7 @@ public class LadderView implements UiEventHandler {
                 new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ui, view, ladderOptions, ladderPrefsForSymbolUser,
                         ladderClickTradingIssuePublisher, commandPublisher, remoteOrderCommandToServerPublisher, eeifCommandToServer,
                         tradingStatusForAll, marketData, workingOrdersForSymbol, extraDataForSymbol, orderUpdatesForSymbol, levels,
-                        ladderHTMLKeys, trace, orderEntryMap, bookCenteredPrice);
+                        ladderHTMLKeys, stackData, metaData, increaseParentOffsetPublisher, trace, orderEntryMap, bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
         final Map<String, Integer> buttonQties;

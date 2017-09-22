@@ -38,6 +38,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
+import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -99,6 +100,7 @@ public class LadderPresenter {
     private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
+    private final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher;
 
     private final Fiber fiber;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
@@ -112,6 +114,7 @@ public class LadderPresenter {
             final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
+            final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
@@ -129,6 +132,8 @@ public class LadderPresenter {
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.fiber = fiber;
         this.trace = trace;
+        this.increaseParentOffsetPublisher = increaseParentOffsetPublisher;
+
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
         this.orderEntryCommandToServerPublisher = orderEntryCommandToServerPublisher;
@@ -184,7 +189,7 @@ public class LadderPresenter {
                 new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions,
                         tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
                         ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
-                        orderEntryCommandToServerPublisher, existingSymbols::contains);
+                        orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, existingSymbols::contains);
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }
@@ -241,7 +246,8 @@ public class LadderPresenter {
             }
         }
         if (!"heartbeat".equals(cmd)) {
-            trace.publish(new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
+            trace.publish(
+                    new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
         }
     }
 
@@ -346,8 +352,7 @@ public class LadderPresenter {
         final Collection<LadderView> views = viewsBySymbol.get(symbol);
         for (final LadderView view : views) {
             view.clickTradingIssue(ladderClickTradingIssue);
-            fiber.schedule(() -> view.clickTradingIssue(new LadderClickTradingIssue(symbol, "")), 5000,
-                    TimeUnit.MILLISECONDS);
+            fiber.schedule(() -> view.clickTradingIssue(new LadderClickTradingIssue(symbol, "")), 5000, TimeUnit.MILLISECONDS);
         }
     }
 

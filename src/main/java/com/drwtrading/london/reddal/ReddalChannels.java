@@ -20,6 +20,7 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
+import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.stacks.family.StackChildFilter;
 import com.drwtrading.london.reddal.stacks.opxl.StackRefPriceDetail;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
@@ -88,6 +89,7 @@ class ReddalChannels {
 
     final TypedChannel<String> stackParentSymbolPublisher;
     final TypedChannel<StackChildFilter> etfOPXLStackFilters;
+    final TypedChannel<StackIncreaseParentOffsetCmd> increaseParentOffset;
 
     ReddalChannels(final ChannelFactory channelFactory) {
 
@@ -134,6 +136,7 @@ class ReddalChannels {
 
         this.stackParentSymbolPublisher = create(String.class);
         this.etfOPXLStackFilters = create(StackChildFilter.class);
+        this.increaseParentOffset = create(StackIncreaseParentOffsetCmd.class);
     }
 
     <T> TypedChannel<T> create(final Class<T> clazz) {

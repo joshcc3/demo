@@ -166,6 +166,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 public class Main {
 
@@ -183,6 +184,7 @@ public class Main {
     private static final String MD_SOURCES_PARAM = "mdSources";
 
     private static final String TRANSPORT_REMOTE_CMDS_NAME_PARAM = "remoteCommands";
+    private static final Pattern PARENT_STACK_SUFFIX = Pattern.compile(";S", Pattern.LITERAL);
 
     public static void main(final String[] args) throws Exception {
 
@@ -813,8 +815,9 @@ public class Main {
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
                         environment.ladderOptions(), channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
-                        channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.ladderClickTradingIssues,
-                        channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
+                        channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.increaseParentOffset,
+                        channels.ladderClickTradingIssues, channels.userCycleContractPublisher, channels.orderEntryCommandToServer,
+                        channels.userWorkspaceRequests);
 
         final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
         fiberBuilder.subscribe(ladderPresenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
@@ -944,6 +947,10 @@ public class Main {
             app.selectIO.addDelayedAction(5000, stackOPXLView::update);
 
             stackFamilyPresenter.setCommunityManager(communityManager);
+            channels.increaseParentOffset.subscribe(selectIOFiber, msg -> {
+                final String parentSymbol = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
+                communityManager.increaseOffset(msg.source, parentSymbol, msg.side, msg.multiplier);
+            });
 
             final StackFamilyListener familyListener = new StackFamilyListener(stackFamilyPresenter);
             app.addStartUpAction(() -> {

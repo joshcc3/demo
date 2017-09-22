@@ -252,7 +252,7 @@ public class SymbolStackData {
                     bidStackGroup.getStackAlignmentTickToBPS());
             return stackClient.batchComplete();
         } else {
-            throw new IllegalStateException("No stack for symbol.");
+            return false;
         }
     }
 
@@ -264,7 +264,7 @@ public class SymbolStackData {
                     askStackGroup.getStackAlignmentTickToBPS());
             return stackClient.batchComplete();
         } else {
-            throw new IllegalStateException("No stack for symbol.");
+            return false;
         }
     }
 
@@ -440,7 +440,7 @@ public class SymbolStackData {
             stackClient.startStrategy(bidStackGroup.getSymbol(), BookSide.BID);
             return stackClient.batchComplete();
         } else {
-            throw new IllegalStateException("No stack for symbol.");
+            return false;
         }
     }
 
@@ -449,7 +449,7 @@ public class SymbolStackData {
             stackClient.stopStrategy(bidStackGroup.getSymbol(), BookSide.BID);
             return stackClient.batchComplete();
         } else {
-            throw new IllegalStateException("No stack for symbol.");
+            return false;
         }
     }
 
@@ -458,7 +458,7 @@ public class SymbolStackData {
             stackClient.startStrategy(askStackGroup.getSymbol(), BookSide.ASK);
             return stackClient.batchComplete();
         } else {
-            throw new IllegalStateException("No stack for symbol.");
+            return false;
         }
     }
 
@@ -467,7 +467,7 @@ public class SymbolStackData {
             stackClient.stopStrategy(askStackGroup.getSymbol(), BookSide.ASK);
             return stackClient.batchComplete();
         } else {
-            throw new IllegalStateException("No stack for symbol.");
+            return false;
         }
     }
 }
