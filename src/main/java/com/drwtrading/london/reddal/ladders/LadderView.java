@@ -447,7 +447,6 @@ public class LadderView implements UiEventHandler {
                 final TheoValue theoValue = extraDataForSymbol.getTheoValue();
                 if (!theoValue.isValid()) {
                     ui.txt(HTML.AFTER_HOURS_WEIGHT, "XXX");
-                    ui.txt(HTML.TEXT_PREFIX + "r2c3", "XXX");
                     ui.txt(HTML.TEXT_PREFIX + "r2c5", "XXX");
                 } else {
                     if (theoValue.getAfterHoursPct() < Constants.EPSILON) {
@@ -455,7 +454,6 @@ public class LadderView implements UiEventHandler {
                     } else {
                         ui.txt(HTML.AFTER_HOURS_WEIGHT, Math.ceil(theoValue.getAfterHoursPct()));
                     }
-                    ui.txt(HTML.TEXT_PREFIX + "r2c3", twoDF.format(theoValue.getMomentumComponent()));
                     ui.txt(HTML.TEXT_PREFIX + "r2c5", (int) Math.ceil(theoValue.getRawAfterHoursPct()));
                 }
             }
