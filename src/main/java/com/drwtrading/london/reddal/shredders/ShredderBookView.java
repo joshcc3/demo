@@ -47,7 +47,6 @@ class ShredderBookView {
 
     private long centeredPrice = 0;
     private long topPrice = Long.MIN_VALUE;
-    private long bottomPrice = Long.MAX_VALUE;
     private boolean initialDisplay = false;
 
     ShredderBookView(final UiPipeImpl uiPipe, final IShredderUI view, final MDForSymbol marketData, final String symbol, final int levels,
@@ -272,7 +271,6 @@ class ShredderBookView {
 
                 priceRows.put(price, ladderBookRow);
 
-                bottomPrice = price;
                 price = marketData.getBook().getTickTable().addTicks(price, -1);
             }
         }
