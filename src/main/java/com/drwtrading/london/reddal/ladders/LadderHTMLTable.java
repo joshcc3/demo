@@ -2,16 +2,16 @@ package com.drwtrading.london.reddal.ladders;
 
 import java.util.ArrayList;
 
-class LadderHTMLTable {
+public class LadderHTMLTable {
 
     private final ArrayList<LadderHTMLRow> ladderHTMLRows;
 
-    LadderHTMLTable() {
+    public LadderHTMLTable() {
 
         this.ladderHTMLRows = new ArrayList<>();
     }
 
-    void extendToLevels(final int levels) {
+    public void extendToLevels(final int levels) {
 
         for (int i = ladderHTMLRows.size(); i < levels; ++i) {
 
@@ -20,7 +20,7 @@ class LadderHTMLTable {
         }
     }
 
-    LadderHTMLRow getRow(final int level) {
+    public LadderHTMLRow getRow(final int level) {
         return ladderHTMLRows.get(level);
     }
 }

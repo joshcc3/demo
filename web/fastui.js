@@ -143,6 +143,14 @@ var Handler = function (ws) {
 		}
 	};
 
+	self.width = function (args) {
+		for (var i = 1; i < args.length - 1; i += 2) {
+			var moveId = args[i];
+			var width = args[i + 1];
+			$(q(moveId)).css({width: width});
+		}
+	};
+
 	self.data = function (args) {
 		for (var i = 1; i < args.length - 2; i += 3) {
 			var elementId = args[i];

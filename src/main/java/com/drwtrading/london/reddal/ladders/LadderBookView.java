@@ -78,19 +78,19 @@ public class LadderBookView implements ILadderBoard {
 
     private static final int MODIFY_TIMEOUT_MILLI = 5000;
 
-    private static final int REALLY_BIG_NUMBER_THRESHOLD = 100000;
+    public static final int REALLY_BIG_NUMBER_THRESHOLD = 100000;
     private static final double DEFAULT_EQUITY_NOTIONAL_EUR = 100000.0;
 
     private static final DecimalFormat BASIS_POINT_DECIMAL_FORMAT = NumberFormatUtil.getDF(".0");
     private static final DecimalFormat EFP_DECIMAL_FORMAT = NumberFormatUtil.getDF("0.00");
     private static final DecimalFormat FX_DECIMAL_FORMAT = NumberFormatUtil.getDF(".0");
-    private static final NumberFormat BIG_NUMBER_DF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE + 'M', 0, 2);
+    public static final NumberFormat BIG_NUMBER_DF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE + 'M', 0, 2);
 
     private static final Metadata LADDER_SOURCE_METADATA = new Metadata("SOURCE", "LADDER");
 
     private static final String WHITE_LASER_LINE_ID = "white";
 
-    private static final int AUTO_RECENTER_TICKS = 3;
+    public static final int AUTO_RECENTER_TICKS = 3;
 
     private static final Set<String> TAGS = ImmutableSet.of("CHAD", "DIV", "STRING", "CLICKNOUGHT", "GLABN");
 
@@ -1112,6 +1112,8 @@ public class LadderBookView implements ILadderBoard {
                 }
             } else if (label.startsWith(HTML.ORDER)) {
                 rightClickModify(clientSpeedState, data);
+            } else if (label.equals(HTML.PRICING_RAW)) {
+                view.popUp("/shredder#" + symbol, "shredder " + symbol, 500, 500);
             }
         } else if ("middle".equals(button)) {
             if (label.startsWith(HTML.ORDER)) {
@@ -1270,8 +1272,9 @@ public class LadderBookView implements ILadderBoard {
                 new CommandTrace("submit", username, symbol, orderType, true, price, side.name(), tag, clickTradingBoxQty, sequenceNumber));
 
         if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
-            final String message = "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", client " + username +
-                    " is " + clientSpeedState;
+            final String message =
+                    "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", client " + username + " is " +
+                            clientSpeedState;
             monitor.logError(ReddalComponents.LADDER_PRESENTER, message);
             ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
         } else {
@@ -1383,7 +1386,6 @@ public class LadderBookView implements ILadderBoard {
 
     @Override
     public void cancelAllForSide(final BookSide side) {
-
         if (null != workingOrdersForSymbol) {
             for (final WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
                 if (LadderView.convertSide(orderUpdateFromServer.workingOrderUpdate.getSide()) == side) {

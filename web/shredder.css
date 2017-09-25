@@ -1,0 +1,118 @@
+*:not(input) {
+	-webkit-user-select: none;
+	cursor: default;
+}
+
+.invisible {
+	display: none !important;
+}
+
+.template {
+	display: none !important;
+}
+
+body {
+	background-color: #d4d0c7;
+	color: white;;
+	font-size: 10px;
+	font-family: verdana, tahoma, arial, serif;
+	overflow: hidden;
+}
+
+body#search_page {
+	overflow: auto !important;
+}
+
+#ladder {
+	top: 0;
+	z-index: 0;
+}
+
+#rows {
+	position: relative;
+	z-index: 1;
+}
+
+#symbol {
+	position: relative;
+	height: 15px;
+	color: black;
+	text-align: left;
+	white-space: nowrap;
+	font-size: 14px;
+}
+
+.row {
+	z-index: 0;
+	height: 15px;
+	white-space: nowrap;
+}
+
+.row:hover {
+	background-color: #a7a49d;
+}
+
+.column {
+	width: 40px;
+	text-align: right;
+	padding: 1px;
+	overflow: hidden;
+	display: inline-block;
+}
+
+.shredded {
+	white-space: nowrap;
+	display: inline-block;
+	vertical-align: top;
+	width: 100%;
+}
+
+.order {
+	text-align: center;
+	border-left: solid 1px black;
+	height: auto;
+	overflow: hidden;
+	background-color: slategray;
+	display: inline-block;
+	padding-top: 1px;
+	padding-bottom: 1px;
+}
+
+.blank_order {
+	display: none;
+}
+
+.our_order {
+	background-color: yellow !important;
+	color: black !important;
+}
+
+
+.side.bid_active {
+	background-color: #0032ff;
+	border-bottom: 1px solid slategray;
+}
+
+.side.offer_active{
+	background-color: #dd0000;
+	border-bottom: 1px solid slategray;
+}
+
+.book .price {
+	background-color: #999;
+	color: white;
+	width: 50px;
+	border-bottom: 1px solid slategray;
+}
+
+
+.book .side {
+	color: white;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button,
+input::-webkit-outer-spin-button:hover,
+input::-webkit-inner-spin-button:hover {
+	-webkit-appearance: none;
+}

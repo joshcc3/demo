@@ -21,6 +21,9 @@ public enum ReddalComponents implements IMonitoredComponent {
     LADDER_ROUTER,
     LADDER_PRESENTER,
 
+    SHREDDER_ROUTER,
+    SHREDDER_PRESENTER,
+
     STACK_GROUP_CLIENT,
     STACK_OPXL_OUTPUT,
     STACK_MANAGER,

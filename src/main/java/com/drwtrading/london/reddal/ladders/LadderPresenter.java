@@ -222,7 +222,6 @@ public class LadderPresenter {
                 final String symbol = args[1];
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
-                mdForSymbol.subscribeForMD();
                 final String userName = msg.getClient().getUserName();
                 view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), metaDataBySymbol.get(symbol),
                         dataBySymbol.get(symbol), stackBySymbol.get(symbol), getLadderPrefsForSymbolUser(symbol, userName),

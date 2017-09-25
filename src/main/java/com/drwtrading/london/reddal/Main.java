@@ -95,6 +95,8 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransport
 import com.drwtrading.london.reddal.pks.PKSPositionClient;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.shredders.ShredderMessageRouter;
+import com.drwtrading.london.reddal.shredders.ShredderPresenter;
 import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackManagerGroupCallbackBatcher;
@@ -315,9 +317,11 @@ public class Main {
         final SelectIO stackManagerSelectIO = new SelectIO(stackManagerSelectIOMonitor);
         final IMDSubscriber noBookSubscription = new NoMDSubscriptions();
         final TypedChannel<WebSocketControlMessage> stackManagerWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+        final SelectIOFiber selectIOFiber1 = new SelectIOFiber(stackManagerSelectIO, errorLog, stackManagerThreadName);
         final LadderPresenter stackManagerLadderPresenter =
-                getLadderPresenter(errorLog, stackManagerMonitor, stackManagerSelectIO, stackManagerThreadName, channels, environment,
-                        noBookSubscription, ewokBaseURL, stackManagerWebSocket, fibers);
+                getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment,
+                        noBookSubscription, ewokBaseURL, stackManagerWebSocket,
+                        fibers.fiberGroup.wrap(selectIOFiber1, stackManagerThreadName));
 
         final Map<MDSource, LinkedList<ConfigGroup>> stackConfigs = new EnumMap<>(MDSource.class);
 
@@ -350,6 +354,7 @@ public class Main {
         final Map<MDSource, LinkedList<ConfigGroup>> nibblers = setupNibblerTransport(app, fibers, webapp, webLog, selectIOFiber, channels);
 
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> webSockets = new EnumMap<>(MDSource.class);
+        final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderWebSockets = new EnumMap<>(MDSource.class);
 
         final ConfigGroup mdConfig = root.getGroup("md");
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
@@ -374,9 +379,18 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> webSocket = TypedChannels.create(WebSocketControlMessage.class);
                 webSockets.put(mdSource, webSocket);
 
+                FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(new SelectIOFiber(displaySelectIO, errorLog, threadName), threadName);
+
                 final LadderPresenter ladderPresenter =
-                        getLadderPresenter(errorLog, displayMonitor, displaySelectIO, threadName, channels, environment,
-                                depthBookSubscriber, ewokBaseURL, webSocket, fibers);
+                        getLadderPresenter(displayMonitor, displaySelectIO, channels, environment,
+                                depthBookSubscriber, ewokBaseURL, webSocket, fiberBuilder);
+
+                final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
+                final ShredderPresenter shredderPresenter = new ShredderPresenter(depthBookSubscriber);
+                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus);
+                displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
+                displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
 
                 final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
                 if (null != mdSourceStackConfigs) {
@@ -489,6 +503,18 @@ public class Main {
         fibers.ladderRouter.subscribe(ladderMessageRouter, ladderWebSocket, channels.replaceCommand);
         channels.searchResults.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setSearchResult);
         channels.stackParentSymbolPublisher.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setParentStackSymbol);
+
+
+        // Shredder router
+        {
+            final TypedChannel<WebSocketControlMessage> shredderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("shredder", "shredder", fibers.shredderRouter, webapp, shredderWebSocket);
+
+            final ShredderMessageRouter shredderMessageRouter =
+                    new ShredderMessageRouter(monitor, webLog, shredderWebSockets, fibers.ui);
+            fibers.shredderRouter.subscribe(shredderMessageRouter, shredderWebSocket);
+            channels.searchResults.subscribe(fibers.shredderRouter.getFiber(), shredderMessageRouter::setSearchResult);
+        }
 
         // Non SSO-protected web App to allow AJAX requests
         {
@@ -805,29 +831,27 @@ public class Main {
         return new DepthBookSubscriber(l3BookHandler, l2BookHandler);
     }
 
-    private static LadderPresenter getLadderPresenter(final IErrorLogger errorLog, final IResourceMonitor<ReddalComponents> displayMonitor,
-            final SelectIO displaySelectIO, final String name, final ReddalChannels channels, final Environment environment,
+    private static LadderPresenter getLadderPresenter(final IResourceMonitor<ReddalComponents> displayMonitor,
+            final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment,
             final IMDSubscriber depthBookSubscriber, final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket,
-            final ReddalFibers fibers) throws ConfigException {
-
-        final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
+            final FiberBuilder fiberBuilder) throws ConfigException {
 
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
                         environment.ladderOptions(), channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
-                        channels.recenterLaddersForUser, displaySelectIOFiber, channels.trace, channels.increaseParentOffset,
+                        channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffset,
                         channels.ladderClickTradingIssues, channels.userCycleContractPublisher, channels.orderEntryCommandToServer,
                         channels.userWorkspaceRequests);
 
-        final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
+
         fiberBuilder.subscribe(ladderPresenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
                 channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
                 channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand,
                 channels.replaceCommand, channels.userCycleContractPublisher, channels.orderEntrySymbols, channels.orderEntryFromServer,
                 channels.searchResults, channels.isinsGoingEx);
 
-        channels.ladderClickTradingIssues.subscribe(displaySelectIOFiber, ladderPresenter::displayTradeIssue);
-        channels.pksExposure.subscribe(displaySelectIOFiber, ladderPresenter::setPKSExposure);
+        channels.ladderClickTradingIssues.subscribe(fiberBuilder.getFiber(), ladderPresenter::displayTradeIssue);
+        channels.pksExposure.subscribe(fiberBuilder.getFiber(), ladderPresenter::setPKSExposure);
 
         displaySelectIO.addDelayedAction(1000, ladderPresenter::flushAllLadders);
         displaySelectIO.addDelayedAction(1500, ladderPresenter::sendAllHeartbeats);

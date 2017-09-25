@@ -21,6 +21,7 @@ public class UiPipeImpl {
     private static final String CLS_CMD = "cls";
     private static final String DATA_CMD = "data";
     private static final String HEIGHT_CMD = "height";
+    private static final String WIDTH_CMD = "width";
     private static final String EVAL_CMD = "eval";
     private static final String CLICKABLE_CMD = "clickable";
     private static final String SCROLLABLE_CMD = "scrollable";
@@ -33,6 +34,7 @@ public class UiPipeImpl {
     private final ClassBatcher classes = new ClassBatcher(CLS_CMD);
     private final DataBatcher<DataKey> data = new DataBatcher<>(DATA_CMD, DataKey.class);
     private final KeyedBatcher height = new KeyedBatcher(HEIGHT_CMD);
+    private final KeyedBatcher width = new KeyedBatcher(WIDTH_CMD);
 
     private final ListBatcher clickable = new ListBatcher(CLICKABLE_CMD);
     private final ListBatcher scrollable = new ListBatcher(SCROLLABLE_CMD);
@@ -65,6 +67,10 @@ public class UiPipeImpl {
         height.put(moveId, value);
     }
 
+    public void width(final String moveId, final double widthPct) {
+        this.width.put(moveId, String.format("%.2f%%", widthPct));
+    }
+
     public void eval(final String eval) {
         flush();
         send(cmd(EVAL_CMD, eval));
@@ -89,6 +95,7 @@ public class UiPipeImpl {
         classes.clear();
         data.clear();
         height.clear();
+        width.clear();
         clickable.clear();
         scrollable.clear();
         titleBatcher.clear();
@@ -101,6 +108,7 @@ public class UiPipeImpl {
         data.flushPendingIntoCommandList(commands);
         classes.flushPendingIntoCommandList(commands);
         height.flushPendingIntoCommandList(commands);
+        width.flushPendingIntoCommandList(commands);
         clickable.flushPendingIntoCommandList(commands);
         scrollable.flushPendingIntoCommandList(commands);
         titleBatcher.flushPendingIntoCommandList(commands);

@@ -100,15 +100,14 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
     public void subscribeForMD(final String symbol, final MDForSymbol listener) {
 
         listeners.put(symbol, listener);
-        final IBook<?> book = books.get(symbol);
+        final IBook<IBookLevelWithOrders> book = books.get(symbol);
         if (null != book) {
             bookSubscribe(listener, book);
         }
     }
 
-    private void bookSubscribe(final MDForSymbol listener, final IBook<?> book) {
-
-        listener.setBook(book);
+    private void bookSubscribe(final MDForSymbol listener, final IBook<IBookLevelWithOrders> book) {
+        listener.setL3Book(book);
         final MDTransportClient client = mdClients.get(book.getSourceExch());
         client.subscribeToInst(book.getLocalID());
         monitor.setOK(ReddalComponents.MD_L3_HANDLER);

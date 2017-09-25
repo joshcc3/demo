@@ -83,6 +83,12 @@ public enum CSSClass {
     AUTO_MANAGE("AUTO_MANAGE"),
     REFRESHABLE("REFRESHABLE"),
 
+    ORDER("order"),
+    BLANK_ORDER("blank_order"),
+    OUR_ORDER("our_order"),
+    ASK_ORDER("ask_order"),
+    BID_ORDER("bid_order"),
+
     WORKING_ORDER_TYPE_HIDDEN_TICKTAKER("working_order_type_hidden_ticktaker"),
     WORKING_ORDER_TYPE_TICKTAKER("working_order_type_ticktaker"),
     WORKING_ORDER_TYPE_TAKER("working_order_type_taker"),
@@ -106,8 +112,7 @@ public enum CSSClass {
     WORKING_ORDER_TYPE_AUTOSPREADER_QUOTE("working_order_type_autospreader_quote"),
     WORKING_ORDER_TYPE_AUTOSPREAD_TAKER("working_order_type_autospread_taker"),
     WORKING_ORDER_TYPE_HAWKEYE("working_order_type_hawkeye"),
-    GOING_EX("going_ex"),
-    ;
+    GOING_EX("going_ex");
 
     public final String cssText;
 

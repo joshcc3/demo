@@ -10,6 +10,7 @@ public class HTML {
     public static final String EMPTY = " "; /* Key prefixes*/
     public static final String BID = "bid_";
     public static final String OFFER = "offer_";
+    public static final String SIDE = "side_";
     public static final String PRICE = "price_";
     public static final String ORDER = "order_";
     public static final String TRADE = "trade_";
