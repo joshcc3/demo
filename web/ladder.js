@@ -114,7 +114,7 @@ function setData(elementId, key, value) {
 }
 
 function calcLevels() {
-	return parseInt(($(window).height() - 72) / 15);
+	return parseInt(($(window).height() - 58) / 15);
 }
 
 var NumLevels = 0;
