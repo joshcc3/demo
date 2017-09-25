@@ -350,7 +350,7 @@ public class Main {
         final SpreadContractSetGenerator contractSetGenerator = new SpreadContractSetGenerator(channels.contractSets);
         channels.searchResults.subscribe(selectIOFiber, contractSetGenerator::setSearchResult);
 
-        setupStackManager(app, fibers, channels, webapp, webLog, selectIOFiber, contractSetGenerator);
+        setupStackManager(app, fibers, channels, webapp, webLog, selectIOFiber, contractSetGenerator, isEquitiesSearchable);
         final Map<MDSource, LinkedList<ConfigGroup>> nibblers = setupNibblerTransport(app, fibers, webapp, webLog, selectIOFiber, channels);
 
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> webSockets = new EnumMap<>(MDSource.class);
@@ -945,7 +945,7 @@ public class Main {
 
     private static void setupStackManager(final Application<ReddalComponents> app, final ReddalFibers fibers, final ReddalChannels channels,
             final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
-            final SpreadContractSetGenerator contractSetGenerator) throws Exception {
+            final SpreadContractSetGenerator contractSetGenerator, final boolean isForETF) throws Exception {
 
         final ConfigGroup stackConfig = app.config.getEnabledGroup("stacks");
         if (null != stackConfig) {
@@ -1031,7 +1031,10 @@ public class Main {
                 strategiesPresenter.addInstID(searchResult.symbol, searchResult.instID);
             });
             channels.symbolSelections.subscribe(selectIOFiber, stackFamilyPresenter::symbolSelected);
-            channels.etfOPXLStackFilters.subscribe(selectIOFiber, stackFamilyPresenter::setFilter);
+
+            if (isForETF) {
+                channels.etfOPXLStackFilters.subscribe(selectIOFiber, stackFamilyPresenter::setFilter);
+            }
 
             final TypedChannel<WebSocketControlMessage> familyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("stackManager", "stackManager", fibers.ladderRouter, webApp, familyWebSocket);

@@ -57,6 +57,10 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private static final String MD_SOURCE_FILTER_GROUP = "Trading Venue";
     private static final Pattern FILTER_SPLITTER = Pattern.compile("\\|");
 
+    private static final String EXPIRY_FILTER_GROUP = "Expiries";
+    private static final String EXPIRY_FRONT_MONTH_FILTER = "Front months";
+    private static final String EXPIRY_BACK_MONTH_FILTER = "Back months";
+
     private final FiberBuilder logFiber;
     private final UILogger uiLogger;
     private final SpreadContractSetGenerator contractSetGenerator;
@@ -134,6 +138,22 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final String filterName = searchResult.mdSource.name();
             final StackChildFilter filter = getFilter(filterName.trim(), MD_SOURCE_FILTER_GROUP);
             filter.addSymbol(symbol);
+
+            if (InstType.FUTURE == searchResult.instType) {
+
+                final FutureConstant future = FutureConstant.getFutureFromSymbol(symbol);
+
+                if (symbol.equals(expiryCalc.getFutureCode(future))) {
+
+                    final StackChildFilter frontMonths = getFilter(EXPIRY_FRONT_MONTH_FILTER, EXPIRY_FILTER_GROUP);
+                    frontMonths.addSymbol(symbol);
+
+                } else if (symbol.equals(expiryCalc.getFutureCode(future, 1))) {
+
+                    final StackChildFilter backMonths = getFilter(EXPIRY_BACK_MONTH_FILTER, EXPIRY_FILTER_GROUP);
+                    backMonths.addSymbol(symbol);
+                }
+            }
         }
     }
 
