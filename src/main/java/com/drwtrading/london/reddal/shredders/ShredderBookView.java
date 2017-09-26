@@ -60,8 +60,6 @@ class ShredderBookView {
         this.workingOrdersForSymbol = workingOrdersForSymbol;
 
         ladderHTMLKeys.extendToLevels(levels);
-
-        setCenteredPrice(getCenterPrice());
     }
 
     void refresh() {
@@ -116,19 +114,19 @@ class ShredderBookView {
         }
     }
 
-    private boolean isOurOrder(IBookOrder order) {
-        boolean isOurs = false;
+    boolean isOurOrder(final IBookOrder order) {
+        for (final WorkingOrderUpdateFromServer workingOrderUpdateFromServer : workingOrdersForSymbol.ordersByPrice.get(order.getPrice())) {
+            final WorkingOrderUpdate ourOrder = workingOrderUpdateFromServer.workingOrderUpdate;
 
-        for (WorkingOrderUpdateFromServer workingOrderUpdateFromServer : workingOrdersForSymbol.ordersByPrice.get(order.getPrice())) {
-            WorkingOrderUpdate ourOrder = workingOrderUpdateFromServer.workingOrderUpdate;
+            final boolean sameSide = sameSide(order.getSide(), ourOrder.getSide());
+            final boolean sameSize = ourOrder.getTotalQuantity() - ourOrder.getFilledQuantity() == order.getRemainingQty();
 
-            boolean sameSide = sameSide(order.getSide(), ourOrder.getSide());
-            boolean sameSize = ourOrder.getTotalQuantity() - ourOrder.getFilledQuantity() == order.getRemainingQty();
-
-            isOurs = sameSide && sameSize;
+            if (sameSide && sameSize) {
+                return true;
+            }
         }
 
-        return isOurs;
+        return false;
     }
 
     private boolean sameSide(BookSide bookSide, Side side) {
