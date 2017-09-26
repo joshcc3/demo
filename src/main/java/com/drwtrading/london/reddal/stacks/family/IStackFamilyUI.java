@@ -23,7 +23,7 @@ public interface IStackFamilyUI {
     public void addFamily(final String familyName);
 
     public void setChild(final String familyName, final String childSymbol, final double bidPriceOffset, final double bidQtyMultiplier,
-            final double askPriceOffset, final double askQtyMultiplier);
+            final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio);
 
     public void showChild(final String symbol);
 

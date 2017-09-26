@@ -286,7 +286,6 @@ input::-webkit-inner-spin-button:hover {
 }
 
 .familyDetails {
-	font-size: 12px;
 	white-space: nowrap;
 	border-bottom: 1px solid #555555;
 	display: inline-block;
@@ -320,7 +319,6 @@ input::-webkit-inner-spin-button:hover {
 	width: 14px;
 	padding: 0;
 	margin: 0;
-
 }
 
 .activeCount .on {
@@ -463,10 +461,10 @@ input[type=Submit].hidden {
 }
 
 .notPersisted {
-	background-color: lightpink;
+	border: 3px solid red;
 }
 
-#footer {
+#footer, #errorMsg {
 	background-color: #ff7300;
 	color: white;
 	position: fixed;

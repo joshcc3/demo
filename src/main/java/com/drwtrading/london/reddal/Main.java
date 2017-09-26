@@ -319,9 +319,8 @@ public class Main {
         final TypedChannel<WebSocketControlMessage> stackManagerWebSocket = TypedChannels.create(WebSocketControlMessage.class);
         final SelectIOFiber selectIOFiber1 = new SelectIOFiber(stackManagerSelectIO, errorLog, stackManagerThreadName);
         final LadderPresenter stackManagerLadderPresenter =
-                getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment,
-                        noBookSubscription, ewokBaseURL, stackManagerWebSocket,
-                        fibers.fiberGroup.wrap(selectIOFiber1, stackManagerThreadName));
+                getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment, noBookSubscription, ewokBaseURL,
+                        stackManagerWebSocket, fibers.fiberGroup.wrap(selectIOFiber1, stackManagerThreadName));
 
         final Map<MDSource, LinkedList<ConfigGroup>> stackConfigs = new EnumMap<>(MDSource.class);
 
@@ -379,14 +378,16 @@ public class Main {
                 final TypedChannel<WebSocketControlMessage> webSocket = TypedChannels.create(WebSocketControlMessage.class);
                 webSockets.put(mdSource, webSocket);
 
-                FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(new SelectIOFiber(displaySelectIO, errorLog, threadName), threadName);
+                final FiberBuilder fiberBuilder =
+                        fibers.fiberGroup.wrap(new SelectIOFiber(displaySelectIO, errorLog, threadName), threadName);
 
                 final LadderPresenter ladderPresenter =
-                        getLadderPresenter(displayMonitor, displaySelectIO, channels, environment,
-                                depthBookSubscriber, ewokBaseURL, webSocket, fiberBuilder);
+                        getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, depthBookSubscriber, ewokBaseURL,
+                                webSocket, fiberBuilder);
 
                 {
-                    final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                    final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket =
+                            TypedChannels.create(WebSocketControlMessage.class);
                     shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
                     final ShredderPresenter shredderPresenter = new ShredderPresenter(depthBookSubscriber);
                     fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus);
@@ -506,14 +507,12 @@ public class Main {
         channels.searchResults.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setSearchResult);
         channels.stackParentSymbolPublisher.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setParentStackSymbol);
 
-
         // Shredder router
         {
             final TypedChannel<WebSocketControlMessage> shredderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("shredder", "shredder", fibers.shredderRouter, webapp, shredderWebSocket);
 
-            final ShredderMessageRouter shredderMessageRouter =
-                    new ShredderMessageRouter(monitor, webLog, shredderWebSockets, fibers.ui);
+            final ShredderMessageRouter shredderMessageRouter = new ShredderMessageRouter(monitor, webLog, shredderWebSockets, fibers.ui);
             fibers.shredderRouter.subscribe(shredderMessageRouter, shredderWebSocket);
             channels.searchResults.subscribe(fibers.shredderRouter.getFiber(), shredderMessageRouter::setSearchResult);
         }
@@ -841,10 +840,9 @@ public class Main {
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
                         environment.ladderOptions(), channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
-                        channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffset,
-                        channels.ladderClickTradingIssues, channels.userCycleContractPublisher, channels.orderEntryCommandToServer,
-                        channels.userWorkspaceRequests);
-
+                        channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffsetCmds,
+                        channels.increaseChildOffsetBPSCmds, channels.ladderClickTradingIssues, channels.userCycleContractPublisher,
+                        channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
 
         fiberBuilder.subscribe(ladderPresenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
                 channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
@@ -973,9 +971,13 @@ public class Main {
             app.selectIO.addDelayedAction(5000, stackOPXLView::update);
 
             stackFamilyPresenter.setCommunityManager(communityManager);
-            channels.increaseParentOffset.subscribe(selectIOFiber, msg -> {
+            channels.increaseParentOffsetCmds.subscribe(selectIOFiber, msg -> {
                 final String parentSymbol = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
                 communityManager.increaseOffset(msg.source, parentSymbol, msg.side, msg.multiplier);
+            });
+            channels.increaseChildOffsetBPSCmds.subscribe(selectIOFiber, msg -> {
+                final String parentSymbol = PARENT_STACK_SUFFIX.matcher(msg.childName).replaceAll("");
+                communityManager.increaseChildPriceOffset(msg.source, parentSymbol, msg.side, msg.offsetIncreaseBPS);
             });
 
             final StackFamilyListener familyListener = new StackFamilyListener(stackFamilyPresenter);

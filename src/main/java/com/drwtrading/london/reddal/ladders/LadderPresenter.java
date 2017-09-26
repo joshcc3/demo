@@ -38,6 +38,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
+import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
@@ -63,10 +64,8 @@ import org.jetlang.fibers.Fiber;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class LadderPresenter {
@@ -101,6 +100,7 @@ public class LadderPresenter {
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
     private final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher;
+    private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
 
     private final Fiber fiber;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
@@ -115,6 +115,7 @@ public class LadderPresenter {
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
             final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
+            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
@@ -133,6 +134,7 @@ public class LadderPresenter {
         this.fiber = fiber;
         this.trace = trace;
         this.increaseParentOffsetPublisher = increaseParentOffsetPublisher;
+        this.increaseChildOffsetCmdPublisher = increaseChildOffsetCmdPublisher;
 
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
@@ -188,7 +190,8 @@ public class LadderPresenter {
                 new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions,
                         tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
                         ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
-                        orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, refData::containsKey);
+                        orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
+                        refData::containsKey);
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }
@@ -251,12 +254,13 @@ public class LadderPresenter {
     }
 
     private LadderPrefsForSymbolUser getLadderPrefsForSymbolUser(final String symbol, final String userName) {
+
         final Map<String, LadderPrefsForSymbolUser> symbolToPrefs =
                 ladderPrefsForUserBySymbol.computeIfAbsent(userName, k -> new HashMap<>());
         LadderPrefsForSymbolUser prefs = symbolToPrefs.get(symbol);
         if (null == prefs) {
 
-            SearchResult searchResult = refData.get(symbol);
+            final SearchResult searchResult = refData.get(symbol);
             if (null != searchResult) {
                 if (searchResult.instType == InstType.FUTURE) {
                     final FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);

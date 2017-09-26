@@ -255,7 +255,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     @Override
     public boolean updateRelationship(final String source, final long relationshipID, final String childSymbol, final String parentSymbol,
-            final double bidPriceOffset, final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier) {
+            final double bidPriceOffset, final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier,
+            final int familyToChildRatio) {
 
         for (final Map<String, StackUIRelationship> children : families.values()) {
             children.remove(childSymbol);
@@ -264,12 +265,14 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         final Map<String, StackUIRelationship> familyChildren = MapUtils.getNavigableMap(families, parentSymbol);
 
         final StackUIRelationship newRelationship =
-                new StackUIRelationship(childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier);
+                new StackUIRelationship(childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
+                        familyToChildRatio);
         familyChildren.put(childSymbol, newRelationship);
 
         childrenToFamily.put(childSymbol, parentSymbol);
 
-        views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier);
+        views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
+                familyToChildRatio);
 
         contractSetGenerator.setParentStack(childSymbol, parentSymbol);
         return true;
@@ -339,7 +342,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             for (final StackUIRelationship child : family.getValue().values()) {
 
                 newView.setChild(familyName, child.childSymbol, child.bidPriceOffsetBPS, child.bidQtyMultiplier, child.askPriceOffsetBPS,
-                        child.askQtyMultiplier);
+                        child.askQtyMultiplier, child.familyToChildRatio);
             }
         }
 
@@ -649,7 +652,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void setRelationship(final String childSymbol, final String bidPriceOffsetStr, final String bidQtyMultiplierText,
-            final String askPriceOffsetStr, final String askQtyMultiplierText, final WebSocketInboundData data) {
+            final String askPriceOffsetStr, final String askQtyMultiplierText, final String familyToChildRatioText,
+            final WebSocketInboundData data) {
 
         try {
             final double bidPriceOffset = Double.parseDouble(bidPriceOffsetStr);
@@ -659,6 +663,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final double bidQtyMultiplier = Double.parseDouble(bidQtyMultiplierText);
             final double askQtyMultiplier = Double.parseDouble(askQtyMultiplierText);
             communityManager.setChildQtyMultipliers(SOURCE_UI, childSymbol, bidQtyMultiplier, askQtyMultiplier);
+
+            final int familyToChildRatio = Integer.parseInt(familyToChildRatioText);
+            communityManager.setFamilyToChildRatio(SOURCE_UI, childSymbol, familyToChildRatio);
         } catch (final Exception e) {
             final IStackFamilyUI ui = views.get(data.getOutboundChannel());
             ui.displayErrorMsg(e.getMessage());

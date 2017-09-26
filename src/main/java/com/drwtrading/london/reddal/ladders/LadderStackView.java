@@ -8,6 +8,7 @@ import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
+import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
@@ -16,6 +17,9 @@ import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.fastui.html.DataKey;
 import com.drwtrading.london.reddal.fastui.html.HTML;
+import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
+import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
+import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
 import java.util.HashMap;
@@ -24,6 +28,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class LadderStackView implements ILadderBoard {
+
+    private static final String STACK_SOURCE = "StackLadder";
 
     private static final Map<String, String> DEFAULT_PREFS;
     private static final Map<String, String> STACK_PREFS;
@@ -65,6 +71,9 @@ public class LadderStackView implements ILadderBoard {
 
     private final String symbol;
     private final SymbolStackData stackData;
+    private final LadderMetaData metaData;
+    private final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher;
+    private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
 
     private final UiPipeImpl ui;
     private final ILadderUI view;
@@ -87,14 +96,19 @@ public class LadderStackView implements ILadderBoard {
     private long topPrice;
 
     public LadderStackView(final String username, final boolean isTrader, final String symbol, final Map<String, Integer> buttonQties,
-            final int levels, final LadderHTMLTable ladderHTMLKeys, final SymbolStackData stackData, final UiPipeImpl ui,
-            final ILadderUI view, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final MDForSymbol marketData) {
+            final int levels, final LadderHTMLTable ladderHTMLKeys, final SymbolStackData stackData, final LadderMetaData metaData,
+            final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
+            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher, final UiPipeImpl ui, final ILadderUI view,
+            final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final MDForSymbol marketData) {
 
         this.username = username;
         this.isTrader = isTrader;
 
         this.symbol = symbol;
         this.stackData = stackData;
+        this.metaData = metaData;
+        this.stackParentCmdPublisher = stackParentCmdPublisher;
+        this.increaseChildOffsetCmdPublisher = increaseChildOffsetCmdPublisher;
 
         this.ui = ui;
         this.view = view;
@@ -457,19 +471,31 @@ public class LadderStackView implements ILadderBoard {
                 cancelAskStackOrders(price, label, expectedLabel, StackType.QUOTER);
 
             } else if (label.equals(HTML.BUY_OFFSET_UP)) {
-                if (!stackData.improveBidStackPriceOffset(stackData.getPriceOffsetTickSize())) {
+                if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
+                    stackParentCmdPublisher.publish(
+                            new StackIncreaseParentOffsetCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, 1));
+                } else if (!stackData.improveBidStackPriceOffset(stackData.getPriceOffsetTickSize())) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.BUY_OFFSET_DOWN)) {
-                if (!stackData.improveBidStackPriceOffset(-stackData.getPriceOffsetTickSize())) {
+                if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
+                    stackParentCmdPublisher.publish(
+                            new StackIncreaseParentOffsetCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, -1));
+                } else if (!stackData.improveBidStackPriceOffset(-stackData.getPriceOffsetTickSize())) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.SELL_OFFSET_UP)) {
-                if (!stackData.improveAskStackPriceOffset(stackData.getPriceOffsetTickSize())) {
+                if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
+                    stackParentCmdPublisher.publish(
+                            new StackIncreaseParentOffsetCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, 1));
+                } else if (!stackData.improveAskStackPriceOffset(stackData.getPriceOffsetTickSize())) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.SELL_OFFSET_DOWN)) {
-                if (!stackData.improveAskStackPriceOffset(-stackData.getPriceOffsetTickSize())) {
+                if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
+                    stackParentCmdPublisher.publish(
+                            new StackIncreaseParentOffsetCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, -1));
+                } else if (!stackData.improveAskStackPriceOffset(-stackData.getPriceOffsetTickSize())) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.START_BUY)) {
@@ -503,19 +529,31 @@ public class LadderStackView implements ILadderBoard {
             } else if (label.startsWith(HTML.ORDER)) {
                 // rightClickModify(clientSpeedState, data);
             } else if (label.equals(HTML.BUY_OFFSET_UP)) {
-                if (!stackData.adjustBidStackLevels(-1)) {
+                if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
+                    increaseChildOffsetCmdPublisher.publish(
+                            new StackIncreaseChildOffsetCmd(STACK_SOURCE, symbol, BookSide.BID, stackData.getPriceOffsetTickSize()));
+                } else if (!stackData.adjustBidStackLevels(-1)) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.BUY_OFFSET_DOWN)) {
-                if (!stackData.adjustBidStackLevels(1)) {
+                if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
+                    increaseChildOffsetCmdPublisher.publish(
+                            new StackIncreaseChildOffsetCmd(STACK_SOURCE, symbol, BookSide.BID, -stackData.getPriceOffsetTickSize()));
+                } else if (!stackData.adjustBidStackLevels(1)) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.SELL_OFFSET_UP)) {
-                if (!stackData.adjustAskStackLevels(1)) {
+                if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
+                    increaseChildOffsetCmdPublisher.publish(
+                            new StackIncreaseChildOffsetCmd(STACK_SOURCE, symbol, BookSide.ASK, stackData.getPriceOffsetTickSize()));
+                } else if (!stackData.adjustAskStackLevels(1)) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.SELL_OFFSET_DOWN)) {
-                if (!stackData.adjustAskStackLevels(-1)) {
+                if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
+                    increaseChildOffsetCmdPublisher.publish(
+                            new StackIncreaseChildOffsetCmd(STACK_SOURCE, symbol, BookSide.ASK, -stackData.getPriceOffsetTickSize()));
+                } else if (!stackData.adjustAskStackLevels(-1)) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.STACK_BID_QUOTE_ENABLED)) {

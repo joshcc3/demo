@@ -650,7 +650,7 @@ function setParentData(familyName, bidPriceOffset, askPriceOffset, selectedConfi
 	family.find(".familyDetails .ask .quoterEnabled").toggleClass("enabled", askQuoterEnabled);
 }
 
-function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier) {
+function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier, familyToChildRatio) {
 
 	var rowID = cleanID(childSymbol);
 	var row = $("#" + rowID);
@@ -691,10 +691,14 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 	var askPriceOffsetDiv = addNumberBox(row, ".ask.priceOffset");
 	var askQtyMultiplierDiv = addNumberBox(row, ".ask.qtyMultiplier");
 
+	var familyToChildRatioDiv = addNumberBox(row, ".familyToChildRatio");
+
 	setDoubleData(bidPriceOffsetDiv, bidPriceOffset);
 	setDoubleData(bidQtyMultiplierDiv, bidQtyMultiplier);
 	setDoubleData(askPriceOffsetDiv, askPriceOffset);
 	setDoubleData(askQtyMultiplierDiv, askQtyMultiplier);
+
+	setDoubleData(familyToChildRatioDiv, familyToChildRatio);
 
 	var submitButton = row.find("input[type=Submit]");
 	submitButton.removeClass("hidden");
@@ -706,7 +710,9 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 		var askOffset = askPriceOffsetDiv.val();
 		var askMultiplier = askQtyMultiplierDiv.val();
 
-		ws.send(command("setRelationship", [childSymbol, bidOffset, bidMultiplier, askOffset, askMultiplier]));
+		var ratio = familyToChildRatioDiv.val();
+
+		ws.send(command("setRelationship", [childSymbol, bidOffset, bidMultiplier, askOffset, askMultiplier, ratio]));
 	});
 
 	var orphanButton = row.find(".orphanButton");
@@ -891,14 +897,14 @@ function setActiveChildCounts(child) {
 
 function displayErrorMsg(text) {
 
-	var errorDiv = $("#footer");
+	var errorDiv = $("#errorMsg");
 	errorDiv.text(text);
 	console.log("ERROR", text, errorDiv);
 	setTimeout(hideErrorMsg, 5000);
 }
 
 function hideErrorMsg() {
-	var errorDiv = $("#footer");
+	var errorDiv = $("#errorMsg");
 	errorDiv.text("");
 }
 
