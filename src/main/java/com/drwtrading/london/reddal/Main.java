@@ -385,12 +385,14 @@ public class Main {
                         getLadderPresenter(displayMonitor, displaySelectIO, channels, environment,
                                 depthBookSubscriber, ewokBaseURL, webSocket, fiberBuilder);
 
-                final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-                shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
-                final ShredderPresenter shredderPresenter = new ShredderPresenter(depthBookSubscriber);
-                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus);
-                displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
-                displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
+                {
+                    final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                    shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
+                    final ShredderPresenter shredderPresenter = new ShredderPresenter(depthBookSubscriber);
+                    fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus);
+                    displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
+                    displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
+                }
 
                 final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
                 if (null != mdSourceStackConfigs) {

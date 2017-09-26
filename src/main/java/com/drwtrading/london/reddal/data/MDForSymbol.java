@@ -87,4 +87,8 @@ public class MDForSymbol {
     public IBook<IBookLevelWithOrders> getLevel3Book() {
         return level3Book;
     }
+
+    public void subscribeForMD() {
+        bookSubscriber.subscribeForMD(symbol, this);
+    }
 }

@@ -92,7 +92,7 @@ public class LadderPresenter {
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap = new HashMap<>();
     private final Map<String, MDForSymbol> marketDataForSymbolMap;
-    private final Set<String> existingSymbols = new HashSet<>();
+    private final Map<String, SearchResult> refData = new HashMap<>();
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher;
@@ -147,14 +147,13 @@ public class LadderPresenter {
     }
 
     private void unsubscribeFromMarketDataForSymbol(final String symbol) {
-
         final MDForSymbol md = marketDataForSymbolMap.get(symbol);
         md.unsubscribeForMD();
     }
 
     @Subscribe
     public void onSearchResult(final SearchResult searchResult) {
-        existingSymbols.add(searchResult.symbol);
+        refData.put(searchResult.symbol, searchResult);
     }
 
     public void setTheo(final TheoValue theoValue) {
@@ -189,7 +188,7 @@ public class LadderPresenter {
                 new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions,
                         tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
                         ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
-                        orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, existingSymbols::contains);
+                        orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, refData::containsKey);
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }
@@ -222,6 +221,7 @@ public class LadderPresenter {
                 final String symbol = args[1];
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
+                mdForSymbol.subscribeForMD();
                 final String userName = msg.getClient().getUserName();
                 view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), metaDataBySymbol.get(symbol),
                         dataBySymbol.get(symbol), stackBySymbol.get(symbol), getLadderPrefsForSymbolUser(symbol, userName),
@@ -255,9 +255,10 @@ public class LadderPresenter {
                 ladderPrefsForUserBySymbol.computeIfAbsent(userName, k -> new HashMap<>());
         LadderPrefsForSymbolUser prefs = symbolToPrefs.get(symbol);
         if (null == prefs) {
-            final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
-            if (null != mdForSymbol && null != mdForSymbol.getBook()) {
-                if (mdForSymbol.getBook().getInstType() == InstType.FUTURE) {
+
+            SearchResult searchResult = refData.get(symbol);
+            if (null != searchResult) {
+                if (searchResult.instType == InstType.FUTURE) {
                     final FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);
                     if (null != futureFromSymbol) {
                         final FutureExpiryCalc expiryCalc = new FutureExpiryCalc();
@@ -270,7 +271,7 @@ public class LadderPresenter {
                             }
                         }
                     }
-                } else if (mdForSymbol.getBook().getInstType() == InstType.FUTURE_SPREAD) {
+                } else if (searchResult.instType == InstType.FUTURE_SPREAD) {
                     final String[] legs = symbol.split("-");
                     final FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(legs[0]);
                     if (null != futureFromSymbol) {
