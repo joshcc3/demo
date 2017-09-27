@@ -6,5 +6,5 @@ public interface IMDSubscriber {
 
     public void subscribeForMD(final String symbol, final MDForSymbol listener);
 
-    public void unsubscribeForMD(final String symbol);
+    public void unsubscribeForMD(final String symbol, final MDForSymbol listener);
 }

@@ -60,7 +60,7 @@ public class MDForSymbol {
     }
 
     public void unsubscribeForMD() {
-        bookSubscriber.unsubscribeForMD(symbol);
+        bookSubscriber.unsubscribeForMD(symbol, this);
         tradeTracker.clear();
     }
 

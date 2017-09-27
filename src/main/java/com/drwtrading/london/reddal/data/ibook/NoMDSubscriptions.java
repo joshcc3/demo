@@ -10,7 +10,8 @@ public class NoMDSubscriptions implements IMDSubscriber {
     }
 
     @Override
-    public void unsubscribeForMD(final String symbol) {
-        // no-op
+    public void unsubscribeForMD(String symbol, MDForSymbol listener) {
+
     }
+
 }

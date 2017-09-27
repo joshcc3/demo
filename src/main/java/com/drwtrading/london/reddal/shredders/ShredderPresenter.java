@@ -42,7 +42,6 @@ public class ShredderPresenter {
     public void onConnected(final WebSocketConnected connected) {
         final UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         final IShredderUI view = new WebSocketOutputDispatcher<>(IShredderUI.class).wrap(msg -> uiPipe.eval(msg.getData()));
-
         final ShredderView shredderView = new ShredderView(view, uiPipe);
 
         viewsBySocket.put(connected.getOutboundChannel(), shredderView);
@@ -58,10 +57,12 @@ public class ShredderPresenter {
             final String user = disconnected.getClient().getUserName();
             viewsByUser.remove(user, view);
             if (viewsBySymbol.get(symbol).isEmpty()) {
-                marketDataForSymbolMap.remove(symbol);
+                MDForSymbol remove = marketDataForSymbolMap.remove(symbol);
+                if (null != remove) {
+                    remove.unsubscribeForMD();
+                }
             }
         }
-
     }
 
     @Subscribe
@@ -76,9 +77,7 @@ public class ShredderPresenter {
                 final String symbol = args[1];
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
-
                 view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol));
-
                 viewsBySymbol.put(symbol, view);
             } else {
                 view.onRawInboundData(data);

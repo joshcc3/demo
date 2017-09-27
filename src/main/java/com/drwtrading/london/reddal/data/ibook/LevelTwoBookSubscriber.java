@@ -14,6 +14,7 @@ import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.stacks.opxl.StackRefPriceDetail;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.google.common.collect.HashMultimap;
 import org.jetlang.channels.Channel;
 
 import java.text.SimpleDateFormat;
@@ -31,7 +32,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
     private final Channel<StackRefPriceDetail> stackRefPriceDetails;
 
     private final Map<String, IBook<IBookLevel>> books;
-    private final Map<String, MDForSymbol> listeners;
+    private final HashMultimap<String, MDForSymbol> listeners;
 
     private final SimpleDateFormat sdf;
     private final long timezoneOffsetMillis;
@@ -47,7 +48,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
         this.mdClients = new EnumMap<>(MDSource.class);
 
         this.books = new HashMap<>();
-        this.listeners = new HashMap<>();
+        this.listeners = HashMultimap.create();
 
         this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
         this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
@@ -64,10 +65,8 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
 
     @Override
     public void bookCreated(final IBook<IBookLevel> book) {
-
         books.put(book.getSymbol(), book);
-        final MDForSymbol listener = listeners.get(book.getSymbol());
-        if (null != listener) {
+        for (MDForSymbol listener : listeners.get(book.getSymbol())) {
             bookSubscribe(listener, book);
         }
         final SearchResult searchResult = new SearchResult(book);
@@ -98,7 +97,6 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
     }
 
     public void subscribeForMD(final String symbol, final MDForSymbol listener) {
-
         listeners.put(symbol, listener);
         final IBook<?> book = books.get(symbol);
         if (null != book) {
@@ -107,29 +105,26 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
     }
 
     private void bookSubscribe(final MDForSymbol listener, final IBook<?> book) {
-
         listener.setBook(book);
         final MDTransportClient client = mdClients.get(book.getSourceExch());
         client.subscribeToInst(book.getLocalID());
         monitor.setOK(ReddalComponents.MD_L2_HANDLER);
     }
 
-    public void unsubscribeForMD(final String symbol) {
-
-        listeners.remove(symbol);
-        final IBook<IBookLevel> book = books.get(symbol);
-        if (null != book) {
-            final MDTransportClient client = mdClients.get(book.getSourceExch());
-            client.unsubscribeToInst(book.getLocalID());
+    public void unsubscribeForMD(final String symbol, MDForSymbol listener) {
+        listeners.remove(symbol, listener);
+        if (!listeners.containsKey(symbol)) {
+            final IBook<IBookLevel> book = books.get(symbol);
+            if (null != book) {
+                final MDTransportClient client = mdClients.get(book.getSourceExch());
+                client.unsubscribeToInst(book.getLocalID());
+            }
         }
-
     }
 
     @Override
     public void trade(final IBook<IBookLevel> book, final long execID, final AggressorSide side, final long price, final long qty) {
-
-        final MDForSymbol listener = listeners.get(book.getSymbol());
-        if (null != listener) {
+        for (MDForSymbol listener : listeners.get(book.getSymbol())) {
             listener.trade(price, qty);
         }
     }

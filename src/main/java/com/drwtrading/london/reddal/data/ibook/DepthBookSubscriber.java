@@ -20,8 +20,8 @@ public class DepthBookSubscriber implements IMDSubscriber {
     }
 
     @Override
-    public void unsubscribeForMD(final String symbol) {
-        this.l3BookSubscriber.unsubscribeForMD(symbol);
-        this.l2BookSubscriber.unsubscribeForMD(symbol);
+    public void unsubscribeForMD(final String symbol, final MDForSymbol listener) {
+        this.l3BookSubscriber.unsubscribeForMD(symbol, listener);
+        this.l2BookSubscriber.unsubscribeForMD(symbol, listener);
     }
 }
