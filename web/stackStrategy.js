@@ -1,5 +1,7 @@
 var ws;
 
+var filters = [];
+
 $(function () {
 
 	ws = connect();
@@ -24,7 +26,55 @@ $(function () {
 	});
 
 	$("body").unbind("dblclick").bind("dblclick", showAdmin);
+
+	var instTypeFilterList = $("#instTypesFilter");
+	instTypeFilterList.val("ALL");
+	instTypeFilterList.change(updateFilters);
+	updateFilters();
 });
+
+function updateFilters() {
+
+
+	filters = [];
+
+	var instTypeFilterList = $("#instTypesFilter");
+	instTypeFilterList.find(":selected").each(function (i, selected) {
+		filters[i] = new RegExp($(selected).attr("data"));
+		refreshAllFilteredRows();
+	});
+}
+
+function refreshAllFilteredRows() {
+
+	var allRows = $("#exchanges").find(".row:not(.header)");
+
+	allRows.each(function (i, row) {
+		row = $(row);
+		row.toggleClass("hidden", isFiltered(row));
+	});
+}
+
+function isFiltered(row) {
+
+	var source = row.find(".instType").text();
+
+	var filtered = true;
+	filters.forEach(function (filter) {
+		if (source.match(filter)) {
+			filtered = false;
+		}
+	});
+	return filtered;
+}
+
+function compareOptionRow(a, b) {
+
+	var aName = a.text();
+	var bName = b.text();
+
+	return aName < bName ? -1 : aName == bName ? 0 : 1;
+}
 
 function setupSymbolInput(i, input) {
 
@@ -41,13 +91,30 @@ function addInstType(instTypes) {
 
 	var instTypeCombo = $("#leanInstID");
 	$(instTypeCombo).find("option").remove();
+
+	var instTypeFilterList = $("#instTypesFilter");
+	var allFilter = instTypeFilterList.find("option[value=\"ALL\"]");
+	var unwantedFilters = instTypeFilterList.find("option");
+	unwantedFilters.remove();
+	instTypeFilterList.append(allFilter);
+
+	console.log(instTypeFilterList);
+
 	instTypes.forEach(function (instType) {
 
 		var option = $("<option value=\"" + instType + "\">" + instType + "</option>");
 		option.addClass(instType);
 		option.attr("data", instType);
 		instTypeCombo.append(option);
+
+		var filterOption = $("<option value=\"" + instType + "\">" + instType + "</option>");
+		filterOption.addClass(instType);
+		filterOption.attr("data", instType);
+		addSortedDiv(instTypeFilterList.find("option"), filterOption, compareOptionRow);
 	});
+
+	instTypeFilterList.val("ALL");
+	updateFilters();
 }
 
 function addAvailableNibblers(nibblers) {
@@ -138,6 +205,8 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 	setCellData(row, ".selectedConfigType", selectedConfigType);
 
 	setOrderCount(nibblerName);
+
+	row.toggleClass("hidden", isFiltered(row));
 }
 
 function setOrderCount(nibblerName) {

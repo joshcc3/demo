@@ -21,13 +21,32 @@ body {
 	color: white;
 }
 
-.template, .hidden {
-	display: none;
+#header {
+
+	background: black;
+	height: 100px;
+	z-index: 1;
+	border-bottom: solid 1px gray;
+	padding: 10px;
+
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+}
+
+#adminBlock {
+	margin-top: 130px;
 }
 
 .row {
 	white-space: nowrap;
 	display: flex;
+}
+
+.template, .hidden {
+	display: none;
 }
 
 .row > div {

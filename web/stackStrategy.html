@@ -11,9 +11,18 @@
 	<script src="js/sounds.js"></script>
 	<script src="cell-functions.js"></script>
 	<script src="launcher.js"></script>
+	<script src="utils.js"></script>
 	<script src="stackStrategy.js"></script>
 </head>
 <body>
+
+<div id="header">
+	<div id="filters">
+		<select multiple name="instTypesFilter" id="instTypesFilter">
+			<option value="ALL" data=".*">--ALL--</option>
+		</select>
+	</div>
+</div>
 
 <div id="adminBlock" class="hideAdmin">
 	<div id="background"></div>
