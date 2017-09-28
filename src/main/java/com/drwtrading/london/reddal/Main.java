@@ -50,6 +50,7 @@ import com.drwtrading.london.eeif.yoda.transport.io.YodaClientHandler;
 import com.drwtrading.london.indy.transport.IndyTransportComponents;
 import com.drwtrading.london.indy.transport.cache.IIndyCacheListener;
 import com.drwtrading.london.indy.transport.cache.IndyCacheFactory;
+import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.stats.MonitoredJetlangFactory;
 import com.drwtrading.london.jetlang.transport.LowTrafficMulticastTransport;
 import com.drwtrading.london.logging.JsonChannelLogger;
@@ -187,6 +188,12 @@ public class Main {
 
     private static final String TRANSPORT_REMOTE_CMDS_NAME_PARAM = "remoteCommands";
     private static final Pattern PARENT_STACK_SUFFIX = Pattern.compile(";S", Pattern.LITERAL);
+    public static final ChannelFactory CHANNEL_FACTORY = new ChannelFactory() {
+        @Override
+        public <T> TypedChannel<T> createChannel(Class<T> type, String name) {
+            return TypedChannels.create(type);
+        }
+    };
 
     public static void main(final String[] args) throws Exception {
 
@@ -355,6 +362,20 @@ public class Main {
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> webSockets = new EnumMap<>(MDSource.class);
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderWebSockets = new EnumMap<>(MDSource.class);
 
+
+        final EnumMap<MDSource, ConfigGroup> shredderOverrides = new EnumMap<>(MDSource.class);
+        final ConfigGroup shredderOverrideConfig = root.getEnabledGroup("shredder", "md");
+        if (null != shredderOverrideConfig) {
+            for (ConfigGroup mdConfig : shredderOverrideConfig.groups()) {
+                MDSource mdSource = MDSource.get(mdConfig.getKey());
+                if (null == mdSource) {
+                    throw new ConfigException("MDSource [" + mdConfig.getKey() + "] is not known.");
+                }
+                shredderOverrides.put(mdSource, mdConfig);
+            }
+        }
+
+
         final ConfigGroup mdConfig = root.getGroup("md");
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
 
@@ -386,10 +407,20 @@ public class Main {
                                 webSocket, fiberBuilder);
 
                 {
+
+                    final IMDSubscriber shredderBookSubscriber;
+                    if (shredderOverrides.containsKey(mdSource)) {
+                        ReddalChannels noOpChannels = new ReddalChannels(CHANNEL_FACTORY);
+                        shredderBookSubscriber = getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource),
+                                noOpChannels, localAppName );
+                    } else {
+                        shredderBookSubscriber = depthBookSubscriber;
+                    }
+
                     final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket =
                             TypedChannels.create(WebSocketControlMessage.class);
                     shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
-                    final ShredderPresenter shredderPresenter = new ShredderPresenter(depthBookSubscriber);
+                    final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
                     fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus);
                     displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
                     displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
