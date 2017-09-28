@@ -17,20 +17,31 @@ body {
 	font-size: 10px;
 	font-family: verdana, tahoma, arial, serif;
 	overflow: hidden;
+	margin: 0px;
 }
 
 body#search_page {
 	overflow: auto !important;
 }
 
+.laser {
+	position: absolute;
+	height: 1px;
+	width: 50px;
+	top: 0;
+	z-index: 3;
+}
+
 #ladder {
 	top: 0;
 	z-index: 0;
+	position: relative;
 }
 
 #rows {
 	position: relative;
 	z-index: 1;
+	bottom: 1px; /* aligning the lasers */
 }
 
 #symbol {
@@ -46,6 +57,7 @@ body#search_page {
 	z-index: 0;
 	height: 15px;
 	white-space: nowrap;
+	position: relative;
 }
 
 .row:hover {
@@ -88,6 +100,14 @@ body#search_page {
 }
 
 
+#orderSummaryHoverBox {
+	display: none;
+	position: absolute;
+	background-color: lightpink;
+	color: black;
+	padding: 1px;
+}
+
 .side.bid_active {
 	background-color: #0032ff;
 	border-bottom: 1px solid slategray;
@@ -108,6 +128,22 @@ body#search_page {
 
 .book .side {
 	color: white;
+}
+
+.bid_color {
+	border-top: solid 1px blue;
+}
+
+.ask_color {
+	border-top: solid 1px red;
+}
+
+.green_color {
+	border-top: solid 1px #00ff1b;
+}
+
+.white_colour {
+	border-top: solid 1px white;
 }
 
 input::-webkit-outer-spin-button,

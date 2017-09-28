@@ -5,18 +5,21 @@ import com.drwtrading.london.reddal.fastui.html.CSSClass;
 
 public class ShreddedOrder {
 
+    String tag;
+    String orderType;
     int queuePosition;
     int level;
     long quantity;
     boolean isOurs;
+    final int previousQuantity;
     BookSide side;
 
-    ShreddedOrder(final int queuePosition, final int level, final long quantity, boolean isOurs, final BookSide side) {
+    ShreddedOrder(final int queuePosition, final int level, final long quantity, final BookSide side, final int previousQuantity) {
         this.queuePosition = queuePosition;
         this.level = level;
         this.quantity = quantity;
         this.side = side;
-        this.isOurs = isOurs;
+        this.previousQuantity = previousQuantity;
     }
 
     CSSClass getCorrespondingCSSClass() {

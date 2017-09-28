@@ -8,6 +8,8 @@ let pixelsPerSize = 0.05;
 let orderSizeAnchor = 10;
 let maxOrderSizeInPixels = 400;
 let currentLevels = 0;
+let currentNumberOfColumns = 0;
+let currentNumberOfRows = 0;
 
 $(function () {
 	ws = connect();
@@ -20,6 +22,7 @@ $(function () {
 
 	subscribe();
 	setInterval(resizeIfNecessary, 200);
+	$(window).resize(() => handler.send("update", $("#shredded_0").width()));
 
 	$(document).keydown(function (e) {
 		const keyCode1 = (e.keyCode ? e.keyCode : e.which);
@@ -29,30 +32,70 @@ $(function () {
 	});
 });
 
+function addOrdersToRow(startingColumn, ordersPerRow, row, shreddedOrders) {
+	for (let column = startingColumn; column < ordersPerRow; column++) {
+		let orderId = `order_${row}_${column}`;
+		let order = $('<div \>', {
+			id: orderId,
+			class: "blank_order"
+		});
+
+		var showPopupBox = function () {
+			var summaryHoverBox = $("#orderSummaryHoverBox");
+			summaryHoverBox.find("#quantityInFront").text(handler.getData(orderId, 'vIF'));
+
+			// .text(undefined) does not change the existing text so we have to manually set it to an empty string
+			let tag = handler.getData(orderId, 'tag') ? handler.getData(orderId, 'tag') : "";
+			let orderType = handler.getData(orderId, 'orderType') ? handler.getData(orderId, 'orderType') : "";
+
+			summaryHoverBox.find("#tag").text(tag);
+			summaryHoverBox.find("#orderType").text(orderType);
+			showHoverBoxByElement(order, summaryHoverBox);
+			summaryHoverBox.show();
+		};
+
+		var hidePopupBox = function () {
+			$("#orderSummaryHoverBox").hide();
+		};
+
+		order.hover(showPopupBox, hidePopupBox);
+		shreddedOrders.append(order)
+	}
+}
+
+function removeOrders(row, from) {
+	$(`#order_${row}_${from}`).nextAll().remove();
+}
+
 function draw(levels, ordersPerRow) {
 	console.log(`Redrawing ${levels} levels with ${ordersPerRow} orders per row`);
 	currentLevels = levels;
 	let rows = $("#rows");
-	rows.find(".row").remove();
+
+	$(`#row_${levels-1}`).nextAll().remove();
 
 	for (let i = 0; i < levels; i++) {
-		let bookRow = $("#row_template").clone().removeClass("template");
-		bookRow.attr('id', 'row_' + i);
-		bookRow.find('.price').attr('id', 'price_' + i).text(' ');
-		bookRow.find('.side').attr('id', 'side_' + i).text(' ');
-
-		let shredded_orders = bookRow.find('.shredded');
-		shredded_orders.attr('id', 'shredded_' + i).text(' ');
-
-		for (let j = 0; j < ordersPerRow; j++) {
-			shredded_orders.append($('<div \>', {
-				id: `order_${i}_${j}`,
-				class: "blank_order"
-			}))
+		if (i < currentNumberOfRows) {
+			if (ordersPerRow < currentNumberOfColumns ) {
+				removeOrders(i,  ordersPerRow);
+			}
+			let shreddedOrders = $(`#shredded_${i}`);
+			addOrdersToRow(currentNumberOfColumns, ordersPerRow, i,  shreddedOrders);
+		} else {
+			let bookRow = $("#row_template").clone().removeClass("template");
+			bookRow.attr('id', 'row_' + i);
+			bookRow.find('.price').attr('id', 'price_' + i).text(' ');
+			bookRow.find('.side').attr('id', 'side_' + i).text(' ');
+			let shreddedOrders = bookRow.find('.shredded');
+			shreddedOrders.attr('id', 'shredded_' + i).text(' ');
+			addOrdersToRow(0, ordersPerRow, i,  shreddedOrders);
+			rows.append(bookRow);
 		}
-
-		rows.append(bookRow);
 	}
+
+	currentNumberOfColumns = ordersPerRow;
+	currentNumberOfRows = levels;
+	handler.send("update", $("#shredded_0").width());
 }
 
 function subscribe() {
@@ -77,7 +120,6 @@ function subscribe() {
 
 function resizeIfNecessary() {
 	if (calcLevels() != numLevels) {
-		console.log("subscribing", calcLevels(), numLevels, $(window).height());
 		subscribe();
 	}
 
@@ -85,7 +127,7 @@ function resizeIfNecessary() {
 }
 
 function calcLevels() {
-	return parseInt(($(window).height() - 23) / 15);
+	return parseInt(($(window).height() - 16) / 15);
 }
 
 
@@ -113,4 +155,8 @@ function order(qty, orderId) {
 			width: `${width}px`
 		},
 	});
+}
+
+function showHoverBoxByElement(element, hoverElement) {
+	hoverElement.css({top: element.offset().top - hoverElement.outerHeight() - 2, left: element.offset().left});
 }

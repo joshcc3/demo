@@ -5,6 +5,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import eeif.execution.Side;
+import eeif.execution.WorkingOrderType;
 import eeif.execution.WorkingOrderUpdate;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -30,10 +31,12 @@ public class ShredderBookViewTest {
         Mockito.when(firstWorkingOrder.getSide()).thenReturn(Side.BID);
         Mockito.when(firstWorkingOrder.getTotalQuantity()).thenReturn(1337);
         Mockito.when(firstWorkingOrder.getFilledQuantity()).thenReturn(0);
+        Mockito.when(firstWorkingOrder.getWorkingOrderType()).thenReturn(WorkingOrderType.MARKET);
 
         Mockito.when(secondWorkingOrder.getSide()).thenReturn(Side.BID);
         Mockito.when(secondWorkingOrder.getTotalQuantity()).thenReturn(58008);
         Mockito.when(secondWorkingOrder.getFilledQuantity()).thenReturn(0);
+        Mockito.when(secondWorkingOrder.getWorkingOrderType()).thenReturn(WorkingOrderType.MARKET);
 
         final WorkingOrderUpdateFromServer firstWorkingOrderContainer = new WorkingOrderUpdateFromServer("iddqd", firstWorkingOrder);
         final WorkingOrderUpdateFromServer secondWorkingOrderContainer = new WorkingOrderUpdateFromServer("UpUpDownDownLeftRightBA", secondWorkingOrder);
@@ -44,10 +47,14 @@ public class ShredderBookViewTest {
         workingOrdersForSymbol.ordersByPrice.put(secondOrder.getPrice(), secondWorkingOrderContainer);
 
         final ShredderBookView shredderBookView = new ShredderBookView(null, null, null,
-                null, 10, workingOrdersForSymbol);
+                null, 10, workingOrdersForSymbol, null);
 
 
-        Assert.assertTrue(shredderBookView.isOurOrder(firstOrder), "First order is not correctly identified");
-        Assert.assertTrue(shredderBookView.isOurOrder(secondOrder), "Second order is not correctly identified");
+        ShreddedOrder shreddedOrder1 = new ShreddedOrder(0, 0, 0L, null, 0);
+        ShreddedOrder shreddedOrder2 = new ShreddedOrder(0, 0, 0L, null, 0);
+        shredderBookView.augmentIfOurOrder(firstOrder, shreddedOrder1);
+        shredderBookView.augmentIfOurOrder(firstOrder, shreddedOrder2);
+        Assert.assertTrue(shreddedOrder1.isOurs == true, "First order is not correctly identified");
+        Assert.assertTrue(shreddedOrder2.isOurs == true, "Second order is not correctly identified");
     }
 }

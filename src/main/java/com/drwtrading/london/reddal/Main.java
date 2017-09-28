@@ -96,6 +96,7 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransport
 import com.drwtrading.london.reddal.pks.PKSPositionClient;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
+import com.drwtrading.london.reddal.shredders.ShredderInfoListener;
 import com.drwtrading.london.reddal.shredders.ShredderMessageRouter;
 import com.drwtrading.london.reddal.shredders.ShredderPresenter;
 import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
@@ -406,25 +407,23 @@ public class Main {
                         getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, depthBookSubscriber, ewokBaseURL,
                                 webSocket, fiberBuilder);
 
-                {
 
-                    final IMDSubscriber shredderBookSubscriber;
-                    if (shredderOverrides.containsKey(mdSource)) {
-                        ReddalChannels noOpChannels = new ReddalChannels(CHANNEL_FACTORY);
-                        shredderBookSubscriber = getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource),
-                                noOpChannels, localAppName );
-                    } else {
-                        shredderBookSubscriber = depthBookSubscriber;
-                    }
-
-                    final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket =
-                            TypedChannels.create(WebSocketControlMessage.class);
-                    shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
-                    final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
-                    fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus);
-                    displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
-                    displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
+                final IMDSubscriber shredderBookSubscriber;
+                if (shredderOverrides.containsKey(mdSource)) {
+                    ReddalChannels noOpChannels = new ReddalChannels(CHANNEL_FACTORY);
+                    shredderBookSubscriber = getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource),
+                            noOpChannels, localAppName );
+                } else {
+                    shredderBookSubscriber = depthBookSubscriber;
                 }
+
+                final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
+                final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
+                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus, channels.metaData);
+                displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
+                displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
+                final ShredderInfoListener shredderInfoListener = new ShredderInfoListener(shredderPresenter);
 
                 final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
                 if (null != mdSourceStackConfigs) {
@@ -464,6 +463,7 @@ public class Main {
                                         ladderInfoListener);
 
                         client.getCaches().addTradingDataListener(ladderInfoListener);
+                        client.getCaches().addTradingDataListener(shredderInfoListener);
                         client.getCaches().blotterCache.addListener(ladderInfoListener);
                     }
                 }

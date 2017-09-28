@@ -1,13 +1,18 @@
 package com.drwtrading.london.reddal.shredders;
 
+import com.drwtrading.jetlang.autosubscribe.KeyedBatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
+import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
+import com.drwtrading.london.reddal.ladders.LaserLineStringConverter;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
+import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
@@ -20,6 +25,7 @@ import org.jetlang.channels.Publisher;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class ShredderPresenter {
 
@@ -32,6 +38,7 @@ public class ShredderPresenter {
     private final Map<String, MDForSymbol> marketDataForSymbolMap;
     private final IMDSubscriber bookSubscriber;
     private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
+    private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(ExtraDataForSymbol::new);
 
     public ShredderPresenter(final IMDSubscriber depthBookSubscriber) {
         this.bookSubscriber = depthBookSubscriber;
@@ -77,7 +84,9 @@ public class ShredderPresenter {
                 final String symbol = args[1];
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
-                view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol));
+
+                view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), dataBySymbol.get(symbol));
+
                 viewsBySymbol.put(symbol, view);
             } else {
                 view.onRawInboundData(data);
@@ -111,6 +120,25 @@ public class ShredderPresenter {
     @Subscribe
     public void on(final WorkingOrderUpdateFromServer workingOrderUpdate) {
         ordersBySymbol.get(workingOrderUpdate.workingOrderUpdate.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
+    }
+
+    @KeyedBatchSubscriber(converter = LaserLineStringConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
+    @Subscribe
+    public void on(final Map<String, LaserLine> laserLines) {
+        for (final LaserLine laserLine: laserLines.values()) {
+            dataBySymbol.get(laserLine.getSymbol()).onLaserLine(laserLine);
+        }
+    }
+
+    public void setLaserLine(final com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine laserLine) {
+        final ExtraDataForSymbol data = dataBySymbol.get(laserLine.getSymbol());
+        data.setLaserLine(laserLine);
+    }
+
+    public void setTheo(final TheoValue theoValue) {
+
+        final ExtraDataForSymbol data = dataBySymbol.get(theoValue.getSymbol());
+        data.setTheoValue(theoValue);
     }
 
     private MDForSymbol subscribeToMarketDataForSymbol(final String symbol) {

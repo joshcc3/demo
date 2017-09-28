@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.shredders;
 
+import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.fastui.UiEventHandler;
@@ -39,11 +40,11 @@ public class ShredderView implements UiEventHandler {
     }
 
     void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
-            final WorkingOrdersForSymbol workingOrdersForSymbol) {
+            final WorkingOrdersForSymbol workingOrdersForSymbol, ExtraDataForSymbol dataForSymbol) {
         this.symbol = symbol;
         this.levels = levels;
 
-        this.shredderBookView = new ShredderBookView(uiPipe, view, marketData, symbol, levels, workingOrdersForSymbol);
+        this.shredderBookView = new ShredderBookView(uiPipe, view, marketData, symbol, levels, workingOrdersForSymbol, dataForSymbol);
 
         setup();
     }
@@ -69,7 +70,9 @@ public class ShredderView implements UiEventHandler {
 
     @Override
     public void onUpdate(final String id, final Map<String, String> data) {
-
+        if (data.size() < 1) {
+                shredderBookView.shreddedRowWidth = Integer.valueOf(id);
+        }
     }
 
     @Override
@@ -100,6 +103,7 @@ public class ShredderView implements UiEventHandler {
         }
     }
 
+    @Override
     public void onHeartbeat(final long sentTimeMillis) {
         final long returnTimeMillis = System.currentTimeMillis();
         if (lastHeartbeatSentMillis == sentTimeMillis) {

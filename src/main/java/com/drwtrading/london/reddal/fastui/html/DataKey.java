@@ -6,7 +6,10 @@ public enum DataKey implements IEnumKey {
 
     PRICE("price"),
     ORDER("orderKeys"),
-    EEIF("eeifKeys");
+    EEIF("eeifKeys"),
+    VOLUME_IN_FRONT("vIF"),
+    ORDER_TYPE("orderType"),
+    TAG("tag");
 
     public final String key;
 

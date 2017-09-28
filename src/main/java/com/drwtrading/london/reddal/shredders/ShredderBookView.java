@@ -1,5 +1,7 @@
 package com.drwtrading.london.reddal.shredders;
 
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
@@ -10,6 +12,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
+import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
@@ -22,6 +25,7 @@ import com.drwtrading.london.reddal.ladders.LadderHTMLRow;
 import com.drwtrading.london.reddal.ladders.LadderHTMLTable;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import eeif.execution.Side;
+import eeif.execution.WorkingOrderType;
 import eeif.execution.WorkingOrderUpdate;
 
 import java.util.ArrayList;
@@ -47,10 +51,14 @@ class ShredderBookView {
 
     private long centeredPrice = 0;
     private long topPrice = Long.MIN_VALUE;
+    private long bottomPrice = Long.MAX_VALUE;
     private boolean initialDisplay = false;
+    private boolean needToResize = false;
+    private ExtraDataForSymbol dataForSymbol;
+    Integer shreddedRowWidth = 0;
 
     ShredderBookView(final UiPipeImpl uiPipe, final IShredderUI view, final MDForSymbol marketData, final String symbol, final int levels,
-            final WorkingOrdersForSymbol workingOrdersForSymbol) {
+            final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol dataForSymbol) {
 
         this.uiPipe = uiPipe;
         this.view = view;
@@ -58,6 +66,7 @@ class ShredderBookView {
         this.symbol = symbol;
         this.levels = levels;
         this.workingOrdersForSymbol = workingOrdersForSymbol;
+        this.dataForSymbol = dataForSymbol;
 
         ladderHTMLKeys.extendToLevels(levels);
     }
@@ -71,9 +80,70 @@ class ShredderBookView {
         }
 
         gatherShreddedOrders();
+        if (needToResize) {
+            view.draw(levels, ordersPerRow);
+            needToResize = false;
+        }
         drawPriceLevels();
         drawAggregateOrders();
+        drawLaserLines();
         drawShreddedOrders();
+    }
+
+    private void drawLaserLines() {
+        if (null != marketData.getBook() && marketData.getBook().isValid()) {
+            for (final com.drwtrading.photons.ladder.LaserLine laserLine : dataForSymbol.laserLineByName.values()) {
+                final String laserKey = HTML.LASER + ("offer".equals(laserLine.getId()) ? "ask" : laserLine.getId()).toUpperCase();
+                setLaserLine(laserKey, laserLine.isValid(), laserLine.getPrice());
+            }
+
+            for (final LaserLine laserLine: dataForSymbol.getLaserLines()) {
+                setLaserLine(HTML.LASER + laserLine.getType().name(), laserLine.isValid(), laserLine.getPrice());
+            }
+
+            if (dataForSymbol.getTheoValue() != null) {
+                final TheoValue theoValue = dataForSymbol.getTheoValue();
+                final String laserKey;
+                switch (theoValue.getTheoType()) {
+                    case SPREADNOUGHT:
+                        laserKey = HTML.LASER + "WHITE";
+                        break;
+                    default:
+                        laserKey = HTML.LASER + "GREEN";
+                        break;
+                }
+
+                setLaserLine(laserKey, theoValue.isValid(), theoValue.getTheoreticalValue());
+            }
+        }
+    }
+
+    private void setLaserLine(final String laserKey, final boolean isValid, final long laserLinePrice) {
+        if (isValid && 0 < levels) {
+            if (topPrice < laserLinePrice) {
+                final LadderBoardRow priceRow = priceRows.get(topPrice);
+                uiPipe.height(laserKey, priceRow.htmlKeys.bookPriceKey, 0.5);
+            } else if (laserLinePrice < bottomPrice) {
+                final LadderBoardRow priceRow = priceRows.get(bottomPrice);
+                uiPipe.height(laserKey, priceRow.htmlKeys.bookPriceKey, -0.5);
+            } else {
+                long price = bottomPrice;
+                while (price <= topPrice) {
+                    final long priceAbove = marketData.getBook().getTickTable().addTicks(price, 1);
+                    if (price <= laserLinePrice && laserLinePrice <= priceAbove && priceRows.containsKey(price)) {
+                        final long fractionalPrice = laserLinePrice - price;
+                        final double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
+                        final LadderBoardRow priceRow = priceRows.get(price);
+                        uiPipe.height(laserKey, priceRow.htmlKeys.bookPriceKey, tickFraction);
+                        break;
+                    }
+                    price = priceAbove;
+                }
+            }
+            uiPipe.cls(laserKey, CSSClass.INVISIBLE, false);
+        } else {
+            uiPipe.cls(laserKey, CSSClass.INVISIBLE, true);
+        }
     }
 
     private void drawPriceLevels() {
@@ -97,11 +167,12 @@ class ShredderBookView {
 
             uiPipe.cls(orderCellKey, CSSClass.BLANK_ORDER, false);
             uiPipe.cls(orderCellKey, CSSClass.ORDER, true);
+            uiPipe.data(orderCellKey, DataKey.VOLUME_IN_FRONT, shreddedOrder.previousQuantity);
 
             final double widthInPercent = Math.min((double) shreddedOrder.quantity / scalingFactor * 100, MAX_VISUAL_ORDER_SIZE);
             uiPipe.width(orderCellKey, widthInPercent);
 
-            if (widthInPercent > 0.75 * Math.floor(Math.log10(shreddedOrder.quantity) + 1)) {
+            if (( widthInPercent * shreddedRowWidth ) / 100 > 10 * Math.ceil(Math.log10(shreddedOrder.quantity))) {
                 uiPipe.txt(orderCellKey, shreddedOrder.quantity);
             } else {
                 uiPipe.txt(orderCellKey, "\u00a0");
@@ -111,22 +182,28 @@ class ShredderBookView {
             uiPipe.cls(orderCellKey, shreddedOrder.getCorrespondingCSSClass(), true);
 
             uiPipe.cls(orderCellKey, CSSClass.OUR_ORDER, shreddedOrder.isOurs);
+            if (shreddedOrder.isOurs) {
+                uiPipe.data(orderCellKey, DataKey.TAG, shreddedOrder.tag);
+                uiPipe.data(orderCellKey, DataKey.ORDER_TYPE, shreddedOrder.orderType);
+            }
         }
     }
 
-    boolean isOurOrder(final IBookOrder order) {
+    void augmentIfOurOrder(final IBookOrder order, ShreddedOrder shreddedOrder) {
+        shreddedOrder.isOurs = false;
+
         for (final WorkingOrderUpdateFromServer workingOrderUpdateFromServer : workingOrdersForSymbol.ordersByPrice.get(order.getPrice())) {
             final WorkingOrderUpdate ourOrder = workingOrderUpdateFromServer.workingOrderUpdate;
-
             final boolean sameSide = sameSide(order.getSide(), ourOrder.getSide());
             final boolean sameSize = ourOrder.getTotalQuantity() - ourOrder.getFilledQuantity() == order.getRemainingQty();
 
             if (sameSide && sameSize) {
-                return true;
+                shreddedOrder.tag = ourOrder.getTag();
+                shreddedOrder.orderType = ourOrder.getWorkingOrderType().toString();
+                shreddedOrder.isOurs = true;
+                break;
             }
         }
-
-        return false;
     }
 
     private boolean sameSide(BookSide bookSide, Side side) {
@@ -160,6 +237,7 @@ class ShredderBookView {
                     final IBookOrder order = book.getAskLevel(price).getFirstOrder();
                     gatherShreddedOrdersAtLevel(order, level);
                 }
+
                 price = book.getTickTable().addTicks(price, -1);
             }
         }
@@ -167,16 +245,20 @@ class ShredderBookView {
 
     private void gatherShreddedOrdersAtLevel(IBookOrder order, int level) {
         int queuePosition = 0;
+        int previousQuantity = 0;
 
         while (null != order) {
-            shreddedOrders.add(new ShreddedOrder(queuePosition, level, order.getRemainingQty(), isOurOrder(order), order.getSide()));
+            ShreddedOrder shreddedOrder = new ShreddedOrder(queuePosition, level, order.getRemainingQty(), order.getSide(), previousQuantity);
+            augmentIfOurOrder(order, shreddedOrder);
+            shreddedOrders.add(shreddedOrder);
             queuePosition++;
+            previousQuantity += order.getRemainingQty();
             order = order.next();
         }
 
         if (queuePosition > ordersPerRow) {
             ordersPerRow = queuePosition + queuePosition / 2;
-            view.draw(levels, ordersPerRow);
+            needToResize = true;
         }
     }
 
@@ -269,6 +351,7 @@ class ShredderBookView {
 
                 priceRows.put(price, ladderBookRow);
 
+                bottomPrice = price;
                 price = marketData.getBook().getTickTable().addTicks(price, -1);
             }
         }

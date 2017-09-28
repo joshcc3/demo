@@ -102,6 +102,10 @@ var Handler = function (ws) {
 		return regExp;
 	}
 
+	self.getData = function (elID, key) {
+		return Data[elID][key];
+	};
+
 	self.clear = function () {
 		Data = {};
 	};
