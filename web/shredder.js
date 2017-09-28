@@ -45,11 +45,9 @@ function addOrdersToRow(startingColumn, ordersPerRow, row, shreddedOrders) {
 			summaryHoverBox.find("#quantityInFront").text(handler.getData(orderId, 'vIF'));
 
 			// .text(undefined) does not change the existing text so we have to manually set it to an empty string
-			let tag = handler.getData(orderId, 'tag') ? handler.getData(orderId, 'tag') : "";
-			let orderType = handler.getData(orderId, 'orderType') ? handler.getData(orderId, 'orderType') : "";
 
-			summaryHoverBox.find("#tag").text(tag);
-			summaryHoverBox.find("#orderType").text(orderType);
+			summaryHoverBox.find("#tag").text(handler.getData(orderId, 'tag'));
+			summaryHoverBox.find("#orderType").text(handler.getData(orderId, 'orderType'));
 			showHoverBoxByElement(order, summaryHoverBox);
 			summaryHoverBox.show();
 		};

@@ -182,10 +182,8 @@ class ShredderBookView {
             uiPipe.cls(orderCellKey, shreddedOrder.getCorrespondingCSSClass(), true);
 
             uiPipe.cls(orderCellKey, CSSClass.OUR_ORDER, shreddedOrder.isOurs);
-            if (shreddedOrder.isOurs) {
-                uiPipe.data(orderCellKey, DataKey.TAG, shreddedOrder.tag);
-                uiPipe.data(orderCellKey, DataKey.ORDER_TYPE, shreddedOrder.orderType);
-            }
+            uiPipe.data(orderCellKey, DataKey.TAG, shreddedOrder.tag);
+            uiPipe.data(orderCellKey, DataKey.ORDER_TYPE, shreddedOrder.orderType);
         }
     }
 

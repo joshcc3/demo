@@ -5,8 +5,8 @@ import com.drwtrading.london.reddal.fastui.html.CSSClass;
 
 public class ShreddedOrder {
 
-    String tag;
-    String orderType;
+    String tag = "";
+    String orderType = "";
     int queuePosition;
     int level;
     long quantity;
