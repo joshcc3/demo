@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.nibblers;
 
-import com.drwtrading.london.eeif.nibbler.transport.INibblerTransportConnectionListener;
 import com.drwtrading.london.eeif.nibbler.transport.cache.tradingData.INibblerTradingDataListener;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
@@ -20,7 +19,7 @@ import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
-public class NibblerMetaDataLogger implements INibblerTradingDataListener, INibblerTransportConnectionListener {
+public class NibblerMetaDataLogger implements INibblerTradingDataListener {
 
     private static final String LOG_FILE_PREFIX = "metaData-";
 
@@ -57,16 +56,6 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener, INibb
         this.laserLineRow = fileTableWriter.addTable(NibblerMetaTables.LASER_LINE, NibblerLaserLineColumns.values());
         this.lastTradeRow = fileTableWriter.addTable(NibblerMetaTables.LAST_TRADE, NibblerLastTradeColumns.values());
         this.metaDataRow = fileTableWriter.addTable(NibblerMetaTables.META_DATA, NibblerMetaDataColumns.values());
-    }
-
-    @Override
-    public boolean connectionEstablished(final String remoteAppName) {
-        return true;
-    }
-
-    @Override
-    public void connectionLost(final String remoteAppName) {
-
     }
 
     @Override
