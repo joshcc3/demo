@@ -107,7 +107,7 @@ public class LadderWorkspace {
         openLadderForUser(userRequest.host, userRequest.symbol);
     }
 
-    public boolean openLadderForUser(final String user, String symbol) {
+    public boolean openLadderForUser(final String user, final String ladderSymbol) {
 
         boolean openedWorkspace = false;
         if (workspacesByHost.containsKey(user)) {
@@ -119,14 +119,17 @@ public class LadderWorkspace {
                 final WorkspaceView view = viewsList.pollLast();
 
                 if (!lockedViews.contains(view)) {
-                    view.addSymbol(symbol);
+                    view.addSymbol(ladderSymbol);
                     openedWorkspace = true;
                 }
             }
         }
 
-        if (symbol.contains(";")) {
-            symbol = symbol.split(";")[0];
+        final String symbol;
+        if (ladderSymbol.contains(";")) {
+            symbol = ladderSymbol.split(";")[0];
+        } else {
+            symbol = ladderSymbol;
         }
 
         final SpreadContractSet contractSet = contractSets.get(symbol);
@@ -157,7 +160,7 @@ public class LadderWorkspace {
                     }
 
                     view.addSymbol(contractSet.symbol);
-                    view.addSymbol(symbol);
+                    view.addSymbol(ladderSymbol);
                     openedSpreadWorkspace = true;
                 }
             }

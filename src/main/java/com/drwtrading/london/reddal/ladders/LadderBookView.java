@@ -493,6 +493,8 @@ public class LadderBookView implements ILadderBoard {
                 center = auctionSummaryPrice.getPrice();
             } else if (marketData.getTradeTracker().hasTrade()) {
                 center = marketData.getTradeTracker().getLastPrice();
+            } else if (null != dataForSymbol.getTheoValue() && dataForSymbol.getTheoValue().isValid()) {
+                center = dataForSymbol.getTheoValue().getTheoreticalValue();
             } else if (yestClose.isValid()) {
                 center = yestClose.getPrice();
             } else {

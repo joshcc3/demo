@@ -119,9 +119,7 @@ function doLadders() {
 			isStack = symbolSwitch == 'S'
 		}
 
-		var symbol = frameTarget.substr(0, symbolEnd);
-
-		setFrame(Frames[i], symbol, isStack);
+		setFrame(Frames[i], frameTarget, isStack);
 	}
 }
 
