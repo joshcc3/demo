@@ -444,11 +444,6 @@ public class LadderView implements UiEventHandler {
             if (null != extraDataForSymbol.getMetaData()) {
                 setCellTest("r2c2", symbolMetaData.getBidStrategyOffset());
                 setCellTest("r2c4", symbolMetaData.getAskStrategyOffset());
-
-                final InstType instType = marketData.getBook().getInstType();
-                if (InstType.FUTURE == instType || InstType.FUTURE_SPREAD == instType) {
-                    setCellTest("r1c1", symbolMetaData.getFixedRateFraction());
-                }
             }
 
             if (null != extraDataForSymbol.getTheoValue()) {
