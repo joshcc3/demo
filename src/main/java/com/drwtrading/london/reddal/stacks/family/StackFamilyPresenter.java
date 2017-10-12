@@ -22,6 +22,7 @@ import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
+import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
@@ -50,7 +51,7 @@ import java.util.regex.Pattern;
 public class StackFamilyPresenter implements IStackRelationshipListener {
 
     private static final Collection<String> ALLOWED_INST_TYPES =
-            Lists.newArrayList(InstType.EQUITY.name(), InstType.DR.name(), InstType.INDEX.name(), InstType.SYNTHETIC.name());
+            StackStrategiesPresenter.ALLOWED_INST_TYPES;
 
     private static final String SOURCE_UI = "FAMILY_ADMIN_UI";
 
