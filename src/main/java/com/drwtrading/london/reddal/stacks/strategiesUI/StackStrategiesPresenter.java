@@ -24,7 +24,7 @@ import java.util.Map;
 public class StackStrategiesPresenter {
 
     private static final Collection<String> ALLOWED_INST_TYPES =
-            Lists.newArrayList(InstType.EQUITY.name(), InstType.DR.name(), InstType.INDEX.name(), InstType.SYNTHETIC.name());
+            Lists.newArrayList(InstType.EQUITY.name(), InstType.DR.name(), InstType.INDEX.name(), InstType.SYNTHETIC.name(), InstType.FUTURE.name());
 
     private final FiberBuilder logFiber;
     private final UILogger uiLogger;
