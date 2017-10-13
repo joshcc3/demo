@@ -119,7 +119,12 @@ function doLadders() {
 			isStack = symbolSwitch == 'S'
 		}
 
-		setFrame(Frames[i], frameTarget, isStack);
+		if (isStack) {
+			var symbol = frameTarget.substr(0, symbolEnd);
+			setFrame(Frames[i], symbol, true);
+		} else {
+			setFrame(Frames[i], frameTarget, false);
+		}
 	}
 }
 
@@ -137,11 +142,13 @@ function moveFrameToFront(index) {
 }
 
 function addSymbol(symbol) {
+
 	var parameters = parseHashcode();
 	var symbols = parameters.symbols;
-	if (symbols.indexOf(symbol) != -1) {
+
+	var index = findSymbol(symbols, symbol);
+	if (-1 != index) {
 		// Move the symbol to the front and move its frame
-		var index = symbols.indexOf(symbol);
 		moveFrameToFront(index, Frames);
 		symbols.splice(index, 1);
 		symbols.unshift(symbol);
@@ -153,6 +160,42 @@ function addSymbol(symbol) {
 	}
 	document.location.hash = generateHashcode(symbols);
 	doLadders();
+}
+
+function findSymbol(symbols, frameTarget) {
+
+	var symbolEnd = frameTarget.indexOf(';', 0);
+	var isStack;
+	if (symbolEnd < 0) {
+		symbolEnd = frameTarget.length;
+		isStack = false;
+	} else {
+		var symbolSwitch = frameTarget.substr(symbolEnd + 1);
+		isStack = symbolSwitch == 'S'
+	}
+
+	if (isStack) {
+		return symbols.indexOf(frameTarget);
+	} else {
+
+		var symbol = frameTarget.substr(0, symbolEnd);
+		for (var i = 0; i < Math.min(symbols.length, Frames.length); i++) {
+
+			var symbolsTarget = symbols[i];
+			var symbolsTargetEnd = symbolsTarget.indexOf(';', 0);
+			if (symbolsTargetEnd < 0) {
+				if (symbol == symbolsTarget) {
+					return i;
+				}
+			} else {
+				var symbolsTargetSwitch = symbolsTarget.substr(symbolsTargetEnd + 1);
+				if ('S' != symbolsTargetSwitch && symbol == symbolsTarget.substr(0, symbolsTargetEnd)) {
+					return i;
+				}
+			}
+		}
+		return -1;
+	}
 }
 
 function toggleLock() {
