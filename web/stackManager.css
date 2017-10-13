@@ -314,6 +314,10 @@ input::-webkit-inner-spin-button:hover {
 	background-color: lightcoral;
 }
 
+.activeCount.somethingOff {
+	background-color: #525252;
+}
+
 .activeCount div {
 	text-align: center;
 	width: 14px;

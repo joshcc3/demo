@@ -889,10 +889,12 @@ function setActiveChildCounts(child) {
 	var bidCounts = familyDetails.filter(".bid");
 	bidCounts.find(".on").text(onBids);
 	bidCounts.find(".off").text(offBids);
+	bidCounts.toggleClass("somethingOff", 0 < offBids);
 
 	var askCounts = familyDetails.filter(".ask");
 	askCounts.find(".on").text(onAsks);
 	askCounts.find(".off").text(offAsks);
+	askCounts.toggleClass("somethingOff", 0 < offAsks);
 }
 
 function displayErrorMsg(text) {
