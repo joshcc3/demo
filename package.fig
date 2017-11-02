@@ -12,12 +12,12 @@ config default
 	include :rake
 	include :scripts
 
-	include drw.london.eeif-utils/199
-	include drw.london.eeif-md/245
-	include drw.london.eeif-nibbler-transport/21
-	include drw.london.eeif-position-transport/77
-	include drw.london.eeif-stack-transport/60
-	include drw.london.eeif-yoda-transport/50
+	include drw.london.eeif-utils/202
+	include drw.london.eeif-md/249
+	include drw.london.eeif-nibbler-transport/24
+	include drw.london.eeif-position-transport/80
+	include drw.london.eeif-stack-transport/64
+	include drw.london.eeif-yoda-transport/53
 
 	# Libraries and containers
 	include google.guava/r06
@@ -51,7 +51,7 @@ config default
 
 	# Photons
 	include log4j/1.2.16 # For protocols
-	include drw.london.eeif-photocols-client/123
+	include drw.london.eeif-photocols-client/126
 	include com.drwtrading.photons.mrphil/1.0.0.4
 	include com.drwtrading.london.photons.reddal/2
 	include com.drwtrading.london.photons.eeifoe/16

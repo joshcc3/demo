@@ -318,7 +318,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     private void inboundData(final WebSocketInboundData msg) {
 
-        logFiber.execute(() -> uiLogger.write("StackConfig", msg));
+        logFiber.execute(() -> uiLogger.write("stackFamilyPresenter", msg));
 
         final String data = msg.getData();
         if ("subscribe".equals(data)) {
