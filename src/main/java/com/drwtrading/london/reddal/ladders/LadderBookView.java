@@ -173,17 +173,17 @@ public class LadderBookView implements ILadderBoard {
     private long modifyFromPriceSelectedTime;
 
     LadderBookView(final IResourceMonitor<ReddalComponents> monitor, final String username, final boolean isTrader, final String symbol,
-            final UiPipeImpl ui, final ILadderUI view, final LadderOptions ladderOptions,
-            final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-            final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
-            final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
-            final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
-            final SymbolStackData stackData, final LadderMetaData metaData,
-            final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
-            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher, final Publisher<Jsonable> trace,
-            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap, final long centeredPrice) {
+                   final UiPipeImpl ui, final ILadderUI view, final LadderOptions ladderOptions,
+                   final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+                   final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
+                   final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+                   final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
+                   final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
+                   final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
+                   final SymbolStackData stackData, final LadderMetaData metaData,
+                   final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
+                   final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher, final Publisher<Jsonable> trace,
+                   final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap, final long centeredPrice) {
 
         this.monitor = monitor;
 
@@ -463,8 +463,11 @@ public class LadderBookView implements ILadderBoard {
 
     private long getCenterPrice() {
 
+
         final IBook<?> book = marketData.getBook();
         if (!pendingRefDataAndSettle && null != book && book.isValid()) {
+
+            Long specialCasePrice = specialCaseCenterPrice(book);
 
             final IBookLevel bestBid = book.getBestBid();
             final IBookLevel bestAsk = book.getBestAsk();
@@ -495,6 +498,8 @@ public class LadderBookView implements ILadderBoard {
                 center = marketData.getTradeTracker().getLastPrice();
             } else if (null != dataForSymbol.getTheoValue() && dataForSymbol.getTheoValue().isValid()) {
                 center = dataForSymbol.getTheoValue().getTheoreticalValue();
+            } else if (null != specialCasePrice) {
+                center = specialCasePrice;
             } else if (yestClose.isValid()) {
                 center = yestClose.getPrice();
             } else {
@@ -504,6 +509,13 @@ public class LadderBookView implements ILadderBoard {
         } else {
             return 0;
         }
+    }
+
+    private Long specialCaseCenterPrice(IBook<?> book) {
+        if (book.getInstType() == InstType.FUTURE && book.getSymbol().startsWith("FES1")) {
+            return 0L;
+        }
+        return null;
     }
 
     private void drawPriceLevels() {
@@ -978,7 +990,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void workingQty(final LadderHTMLRow htmlRowKeys, final int qty, final BookSide side, final Set<WorkingOrderType> orderTypes,
-            final boolean hasEeifOEOrder) {
+                            final boolean hasEeifOEOrder) {
 
         ui.txt(htmlRowKeys.bookOrderKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.bookOrderKey, CSSClass.WORKING_QTY, 0 < qty);
@@ -1227,7 +1239,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrderClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data,
-            final String orderType) {
+                                  final String orderType) {
 
         final long price = Long.valueOf(data.get("price"));
         final LadderBoardRow bookRow = priceRows.get(price);
@@ -1300,7 +1312,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final long price, final BookSide side,
-            final String tag) {
+                             final String tag) {
 
         final int sequenceNumber = orderSeqNo++;
 
@@ -1372,7 +1384,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void modifyOrder(final ClientSpeedState clientSpeedState, final long price, final WorkingOrderUpdateFromServer order,
-            final int totalQuantity) {
+                             final int totalQuantity) {
 
         trace.publish(new CommandTrace("modify", username, symbol, order.workingOrderUpdate.getWorkingOrderType().toString(), true, price,
                 order.workingOrderUpdate.getSide().toString(), order.workingOrderUpdate.getTag(), clickTradingBoxQty,
