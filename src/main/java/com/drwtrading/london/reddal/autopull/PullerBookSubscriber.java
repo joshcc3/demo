@@ -24,13 +24,13 @@ public class PullerBookSubscriber {
     Callback<IBook<?>> createdCallback = message -> {
     };
 
-    public void setCreatedCallback(Callback<IBook<?>> createdCallback) {
+    public void setCreatedCallback(final Callback<IBook<?>> createdCallback) {
         this.createdCallback = createdCallback;
     }
 
-    public IBook<?> subscribeToSymbol(String symbol, Callback<IBook<?>> callback) {
+    public IBook<?> subscribeToSymbol(final String symbol, final Callback<IBook<?>> callback) {
         callbacks.put(symbol, callback);
-        IBook<?> book = knownBooks.get(symbol);
+        final IBook<?> book = knownBooks.get(symbol);
         if (null != book) {
             clientMap.get(book.getSourceExch()).subscribeToInst(book.getLocalID());
             callback.onMessage(book);
@@ -38,9 +38,9 @@ public class PullerBookSubscriber {
         return book;
     }
 
-    public void bookCreated(IBook<?> book) {
+    public void bookCreated(final IBook<?> book) {
         knownBooks.put(book.getSymbol(), book);
-        Callback<IBook<?>> callback = callbacks.get(book.getSymbol());
+        final Callback<IBook<?>> callback = callbacks.get(book.getSymbol());
         if (null != callback) {
             clientMap.get(book.getSourceExch()).subscribeToInst(book.getLocalID());
             callback.onMessage(book);
@@ -48,14 +48,14 @@ public class PullerBookSubscriber {
         createdCallback.onMessage(book);
     }
 
-    public void bookChanged(IBook<?> book) {
-        Callback<IBook<?>> iBookCallback = callbacks.get(book.getSymbol());
+    public void bookChanged(final IBook<?> book) {
+        final Callback<IBook<?>> iBookCallback = callbacks.get(book.getSymbol());
         if (null != iBookCallback) {
             iBookCallback.onMessage(book);
         }
     }
 
-    public void setClient(MDSource source, MDTransportClient client) {
+    public void setClient(final MDSource source, final MDTransportClient client) {
         clientMap.put(source, client);
     }
 
@@ -65,75 +65,76 @@ public class PullerBookSubscriber {
             HashSet<IBook<?>> changed = new HashSet<>();
 
             @Override
-            public void addLevel(IBook<IBookLevel> book, IBookLevel level) {
+            public void addLevel(final IBook<IBookLevel> book, final IBookLevel level) {
                 changed.add(book);
             }
 
             @Override
-            public void modifyLevel(IBook<IBookLevel> book, IBookLevel level, long oldQty) {
-                changed.add(book);
-
-            }
-
-            @Override
-            public void modifyLevel(IBook<IBookLevel> book, IBookLevel level, boolean wasTopOfBook, long oldPrice, long oldQty) {
+            public void modifyLevel(final IBook<IBookLevel> book, final IBookLevel level, final long oldQty) {
                 changed.add(book);
 
             }
 
             @Override
-            public void deleteLevel(IBook<IBookLevel> book, IBookLevel level) {
+            public void modifyLevel(final IBook<IBookLevel> book, final IBookLevel level, final boolean wasTopOfBook, final long oldPrice,
+                    final long oldQty) {
                 changed.add(book);
 
             }
 
             @Override
-            public void bookCreated(IBook<IBookLevel> book) {
+            public void deleteLevel(final IBook<IBookLevel> book, final IBookLevel level) {
+                changed.add(book);
+
+            }
+
+            @Override
+            public void bookCreated(final IBook<IBookLevel> book) {
                 PullerBookSubscriber.this.bookCreated(book);
             }
 
             @Override
-            public void clearBook(IBook<IBookLevel> book) {
+            public void clearBook(final IBook<IBookLevel> book) {
                 changed.add(book);
 
             }
 
             @Override
-            public void impliedQty(IBook<IBookLevel> book, IBookLevel level) {
+            public void impliedQty(final IBook<IBookLevel> book, final IBookLevel level) {
                 changed.add(book);
 
             }
 
             @Override
-            public void trade(IBook<IBookLevel> book, long execID, AggressorSide side, long price, long qty) {
+            public void trade(final IBook<IBookLevel> book, final long execID, final AggressorSide side, final long price, final long qty) {
                 changed.add(book);
 
             }
 
             @Override
-            public void statusUpdate(IBook<IBookLevel> book) {
+            public void statusUpdate(final IBook<IBookLevel> book) {
                 changed.add(book);
 
             }
 
             @Override
-            public void referencePrice(IBook<IBookLevel> book, IBookReferencePrice referencePriceData) {
+            public void referencePrice(final IBook<IBookLevel> book, final IBookReferencePrice referencePriceData) {
 
             }
 
             @Override
-            public void bookValidated(IBook<IBookLevel> book) {
+            public void bookValidated(final IBook<IBookLevel> book) {
                 changed.add(book);
 
             }
 
             @Override
-            public void logErrorMsg(String msg) {
+            public void logErrorMsg(final String msg) {
 
             }
 
             @Override
-            public void logErrorMsg(String msg, Throwable t) {
+            public void logErrorMsg(final String msg, final Throwable t) {
 
             }
 
@@ -145,78 +146,77 @@ public class PullerBookSubscriber {
         };
     }
 
-
     public IBookLevelThreeMonitor getL3() {
         return new IBookLevelThreeMonitor() {
 
             @Override
-            public void addOrder(IBook<IBookLevelWithOrders> book, IBookOrder order) {
+            public void addOrder(final IBook<IBookLevelWithOrders> book, final IBookOrder order) {
                 changed.add(book);
 
             }
 
             @Override
-            public void modifyOrder(IBook<IBookLevelWithOrders> book, IBookLevelWithOrders oldLevel, IBookOrder order) {
+            public void modifyOrder(final IBook<IBookLevelWithOrders> book, final IBookLevelWithOrders oldLevel, final IBookOrder order) {
                 changed.add(book);
 
             }
 
             @Override
-            public void deleteOrder(IBook<IBookLevelWithOrders> book, IBookOrder order) {
+            public void deleteOrder(final IBook<IBookLevelWithOrders> book, final IBookOrder order) {
                 changed.add(book);
 
             }
 
             HashSet<IBook<?>> changed = new HashSet<>();
 
-
             @Override
-            public void bookCreated(IBook<IBookLevelWithOrders> book) {
+            public void bookCreated(final IBook<IBookLevelWithOrders> book) {
                 PullerBookSubscriber.this.bookCreated(book);
 
             }
 
             @Override
-            public void clearBook(IBook<IBookLevelWithOrders> book) {
+            public void clearBook(final IBook<IBookLevelWithOrders> book) {
                 changed.add(book);
 
             }
 
             @Override
-            public void impliedQty(IBook<IBookLevelWithOrders> book, IBookLevelWithOrders level) {
+            public void impliedQty(final IBook<IBookLevelWithOrders> book, final IBookLevelWithOrders level) {
                 changed.add(book);
 
             }
 
             @Override
-            public void trade(IBook<IBookLevelWithOrders> book, long execID, AggressorSide side, long price, long qty) {
+            public void trade(final IBook<IBookLevelWithOrders> book, final long execID, final AggressorSide side, final long price,
+                    final long qty) {
 
             }
 
             @Override
-            public void statusUpdate(IBook<IBookLevelWithOrders> book) {
+            public void statusUpdate(final IBook<IBookLevelWithOrders> book) {
                 changed.add(book);
 
             }
 
             @Override
-            public void referencePrice(IBook<IBookLevelWithOrders> book, IBookReferencePrice referencePriceData) {
+            public void referencePrice(final IBook<IBookLevelWithOrders> book, final IBookReferencePrice referencePriceData) {
 
             }
 
             @Override
-            public void bookValidated(IBook<IBookLevelWithOrders> book) {
+            public void bookValidated(final IBook<IBookLevelWithOrders> book) {
                 changed.add(book);
 
             }
 
             @Override
-            public void logErrorMsg(String msg) {
+            public void logErrorMsg(final String msg) {
 
             }
 
             @Override
-            public void logErrorMsg(String msg, Throwable t) {
+            public void logErrorMsg(final String msg, final Throwable t) {
 
             }
 
@@ -227,6 +227,5 @@ public class PullerBookSubscriber {
             }
         };
     }
-
 
 }

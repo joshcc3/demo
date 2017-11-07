@@ -48,7 +48,7 @@ public class YodaRestingOrderClient implements ITransportCacheListener<YodaSymbo
             final String price = priceDF.format(signal.price / (double) Constants.NORMALISING_FACTOR);
             final String msg = side + signal.qty + " @ " + price + " [at " + start + "].";
 
-            final StockAlert alert = new StockAlert(timestamp, signal.key.signal.name(), signal.key.symbol, msg);
+            final StockAlert alert = new StockAlert(signal.milliSinceMidnight, timestamp, signal.key.signal.name(), signal.key.symbol, msg);
             stockAlerts.publish(alert);
 
         }

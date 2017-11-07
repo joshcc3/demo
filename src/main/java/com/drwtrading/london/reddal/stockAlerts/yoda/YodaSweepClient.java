@@ -46,7 +46,7 @@ public class YodaSweepClient implements ITransportCacheListener<YodaSymbolSideKe
             }
             final String msg = action + signal.numLevels + " levels [qty:" + signal.qty + "].";
 
-            final StockAlert alert = new StockAlert(timestamp, signal.key.signal.name(), signal.key.symbol, msg);
+            final StockAlert alert = new StockAlert(signal.milliSinceMidnight, timestamp, signal.key.signal.name(), signal.key.symbol, msg);
             stockAlerts.publish(alert);
         }
         return true;

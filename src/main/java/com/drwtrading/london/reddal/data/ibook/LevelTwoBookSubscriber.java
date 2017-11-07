@@ -66,7 +66,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
     @Override
     public void bookCreated(final IBook<IBookLevel> book) {
         books.put(book.getSymbol(), book);
-        for (MDForSymbol listener : listeners.get(book.getSymbol())) {
+        for (final MDForSymbol listener : listeners.get(book.getSymbol())) {
             bookSubscribe(listener, book);
         }
         final SearchResult searchResult = new SearchResult(book);
@@ -79,12 +79,11 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
         if (refPrice.isValid()) {
             switch (refPrice.getReferencePoint()) {
                 case RFQ: {
-                    if (book.isValid()) {
-                        final String timestamp =
-                                sdf.format(timezoneOffsetMillis + (refPrice.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS));
-                        final StockAlert stockAlert = new StockAlert(timestamp, "RFQ", book.getSymbol(), "Qty: " + refPrice.getQty());
-                        stockAlertChannel.publish(stockAlert);
-                    }
+                    final long milliSinceMidnight = refPrice.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS;
+                    final String timestamp = sdf.format(timezoneOffsetMillis + milliSinceMidnight);
+                    final StockAlert stockAlert =
+                            new StockAlert(milliSinceMidnight, timestamp, "RFQ", book.getSymbol(), "Qty: " + refPrice.getQty());
+                    stockAlertChannel.publish(stockAlert);
                     break;
                 }
                 case YESTERDAY_CLOSE: {
@@ -111,7 +110,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
         monitor.setOK(ReddalComponents.MD_L2_HANDLER);
     }
 
-    public void unsubscribeForMD(final String symbol, MDForSymbol listener) {
+    public void unsubscribeForMD(final String symbol, final MDForSymbol listener) {
         listeners.remove(symbol, listener);
         if (!listeners.containsKey(symbol)) {
             final IBook<IBookLevel> book = books.get(symbol);
@@ -124,7 +123,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
 
     @Override
     public void trade(final IBook<IBookLevel> book, final long execID, final AggressorSide side, final long price, final long qty) {
-        for (MDForSymbol listener : listeners.get(book.getSymbol())) {
+        for (final MDForSymbol listener : listeners.get(book.getSymbol())) {
             listener.trade(price, qty);
         }
     }

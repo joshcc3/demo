@@ -66,8 +66,8 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
     @Override
     public void bookCreated(final IBook<IBookLevelWithOrders> book) {
         books.put(book.getSymbol(), book);
-        for (MDForSymbol listener : listeners.get(book.getSymbol())) {
-                bookSubscribe(listener, book);
+        for (final MDForSymbol listener : listeners.get(book.getSymbol())) {
+            bookSubscribe(listener, book);
         }
         final SearchResult searchResult = new SearchResult(book);
         searchResults.publish(searchResult);
@@ -79,12 +79,11 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
         if (refPrice.isValid()) {
             switch (refPrice.getReferencePoint()) {
                 case RFQ: {
-                    if (book.isValid()) {
-                        final String timestamp =
-                                sdf.format(timezoneOffsetMillis + (refPrice.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS));
-                        final StockAlert stockAlert = new StockAlert(timestamp, "RFQ", book.getSymbol(), "Qty: " + refPrice.getQty());
-                        stockAlertChannel.publish(stockAlert);
-                    }
+                    final long milliSinceMidnight = refPrice.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS;
+                    final String timestamp = sdf.format(timezoneOffsetMillis + milliSinceMidnight);
+                    final StockAlert stockAlert =
+                            new StockAlert(milliSinceMidnight, timestamp, "RFQ", book.getSymbol(), "Qty: " + refPrice.getQty());
+                    stockAlertChannel.publish(stockAlert);
                     break;
                 }
                 case YESTERDAY_CLOSE: {
@@ -125,7 +124,7 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
     @Override
     public void trade(final IBook<IBookLevelWithOrders> book, final long execID, final AggressorSide side, final long price,
             final long qty) {
-        for (MDForSymbol listener : listeners.get(book.getSymbol())) {
+        for (final MDForSymbol listener : listeners.get(book.getSymbol())) {
             listener.trade(price, qty);
         }
     }
