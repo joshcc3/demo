@@ -438,6 +438,9 @@ public class SymbolStackData {
     public boolean startBidStrategy() {
         if (null != bidStackGroup) {
             stackClient.startStrategy(bidStackGroup.getSymbol(), BookSide.BID);
+            for (final StackType stackType : StackType.values()) {
+                stackClient.setStackEnabled(SOURCE, bidStackGroup.getStackID(), stackType, true);
+            }
             return stackClient.batchComplete();
         } else {
             return false;
@@ -447,6 +450,9 @@ public class SymbolStackData {
     public boolean stopBidStrategy() {
         if (null != bidStackGroup) {
             stackClient.stopStrategy(bidStackGroup.getSymbol(), BookSide.BID);
+            for (final StackType stackType : StackType.values()) {
+                stackClient.setStackEnabled(SOURCE, bidStackGroup.getStackID(), stackType, false);
+            }
             return stackClient.batchComplete();
         } else {
             return false;
@@ -456,6 +462,9 @@ public class SymbolStackData {
     public boolean startAskStrategy() {
         if (null != askStackGroup) {
             stackClient.startStrategy(askStackGroup.getSymbol(), BookSide.ASK);
+            for (final StackType stackType : StackType.values()) {
+                stackClient.setStackEnabled(SOURCE, askStackGroup.getStackID(), stackType, true);
+            }
             return stackClient.batchComplete();
         } else {
             return false;
@@ -465,6 +474,9 @@ public class SymbolStackData {
     public boolean stopAskStrategy() {
         if (null != askStackGroup) {
             stackClient.stopStrategy(askStackGroup.getSymbol(), BookSide.ASK);
+            for (final StackType stackType : StackType.values()) {
+                stackClient.setStackEnabled(SOURCE, askStackGroup.getStackID(), stackType, false);
+            }
             return stackClient.batchComplete();
         } else {
             return false;

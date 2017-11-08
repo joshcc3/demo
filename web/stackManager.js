@@ -34,6 +34,12 @@ $(function () {
 	$("#minimiseFamilies").unbind().bind("click", function () {
 		minimiseAll();
 	});
+	$("#globalPriceOffsetUp").unbind().bind("click", function () {
+		ws.send(command("increaseGlobalPriceOffset", []));
+	});
+	$("#globalPriceOffsetDown").unbind().bind("click", function () {
+		ws.send(command("decreaseGlobalPriceOffset", []));
+	});
 
 	var footer = $("#footer");
 	var closeFooter = footer.find("#closeFooter");
@@ -191,6 +197,10 @@ function popUp(url, name, width, height) {
 
 	window.open(url, name, 'width=' + width + ',height=' + height);
 	window.focus();
+}
+
+function setGlobalOffset(globalOffset) {
+	$("#globalPriceOffset").text(globalOffset);
 }
 
 function setFilters(filters) {

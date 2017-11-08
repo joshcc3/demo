@@ -14,6 +14,7 @@ import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
+import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.staticData.ExpiryPeriod;
@@ -32,9 +33,9 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
-import com.google.common.collect.Lists;
 import org.jetlang.channels.Publisher;
 
+import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,8 +51,7 @@ import java.util.regex.Pattern;
 
 public class StackFamilyPresenter implements IStackRelationshipListener {
 
-    private static final Collection<String> ALLOWED_INST_TYPES =
-            StackStrategiesPresenter.ALLOWED_INST_TYPES;
+    private static final Collection<String> ALLOWED_INST_TYPES = StackStrategiesPresenter.ALLOWED_INST_TYPES;
 
     private static final String SOURCE_UI = "FAMILY_ADMIN_UI";
 
@@ -61,6 +61,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private static final String EXPIRY_FILTER_GROUP = "Expiries";
     private static final String EXPIRY_FRONT_MONTH_FILTER = "Front months";
     private static final String EXPIRY_BACK_MONTH_FILTER = "Back months";
+
+    private static final double GLOBAL_OFFSET_INCREMENT_BPS = 1d;
 
     private final FiberBuilder logFiber;
     private final UILogger uiLogger;
@@ -85,7 +87,11 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Map<String, String> filterGroups;
     private final Map<String, StackChildFilter> filters;
 
+    private final DecimalFormat priceOffsetDF;
+
     private StackCommunityManager communityManager;
+
+    private double globalPriceOffsetBPS;
 
     public StackFamilyPresenter(final FiberBuilder logFiber, final UILogger uiLogger,
             final SpreadContractSetGenerator contractSetGenerator) {
@@ -112,6 +118,10 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         this.filterGroups = new HashMap<>();
         this.filters = new HashMap<>();
+
+        this.priceOffsetDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 1, 3);
+
+        this.globalPriceOffsetBPS = 0d;
     }
 
     public void setCommunityManager(final StackCommunityManager communityManager) {
@@ -354,6 +364,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         for (final StackUIData uiData : childData.values()) {
             updateChildUIData(newView, uiData);
         }
+
+        presentGlobalOffset(newView);
     }
 
     @FromWebSocketView
@@ -365,6 +377,34 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     @FromWebSocketView
     public void cleanAllParents(final WebSocketInboundData data) {
         communityManager.cleanParentStacks(SOURCE_UI);
+    }
+
+    @FromWebSocketView
+    public void increaseGlobalPriceOffset() {
+
+        globalPriceOffsetBPS += GLOBAL_OFFSET_INCREMENT_BPS;
+        updateCommunityManagerGlobalOffset();
+    }
+
+    @FromWebSocketView
+    public void decreaseGlobalPriceOffset() {
+
+        globalPriceOffsetBPS -= GLOBAL_OFFSET_INCREMENT_BPS;
+        globalPriceOffsetBPS = Math.max(globalPriceOffsetBPS, 0d);
+        updateCommunityManagerGlobalOffset();
+    }
+
+    private void updateCommunityManagerGlobalOffset() {
+
+        final double sideOffsetBPS = globalPriceOffsetBPS / 2;
+        communityManager.setGlobalOffsets(-sideOffsetBPS, sideOffsetBPS);
+
+        presentGlobalOffset(views.all());
+    }
+
+    private void presentGlobalOffset(final IStackFamilyUI view) {
+        final String prettyGlobalOffsetBPS = priceOffsetDF.format(globalPriceOffsetBPS);
+        view.setGlobalOffset(prettyGlobalOffsetBPS);
     }
 
     @FromWebSocketView

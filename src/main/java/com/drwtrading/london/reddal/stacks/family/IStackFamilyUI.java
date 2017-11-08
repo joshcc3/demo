@@ -5,6 +5,8 @@ import java.util.Map;
 
 public interface IStackFamilyUI {
 
+    public void setGlobalOffset(final String globalOffset);
+
     public void setFilters(final Map<String, String> filters);
 
     public void clearFieldData(final String fieldID);

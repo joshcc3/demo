@@ -200,10 +200,10 @@ public class LadderBookView implements ILadderBoard {
 
         this.defaultPrefs = new HashMap<>();
         this.defaultPrefs.put(HTML.WORKING_ORDER_TAG, "CHAD");
-        if (symbol.startsWith("FDAX")) {
-            this.defaultPrefs.put(HTML.INP_RELOAD, "5");
-        } else if (username.startsWith("dcook")) {
+        if (username.startsWith("dcook")) {
             this.defaultPrefs.put(HTML.INP_RELOAD, "0");
+        } else if (symbol.startsWith("FDAX")) {
+            this.defaultPrefs.put(HTML.INP_RELOAD, "5");
         } else {
             this.defaultPrefs.put(HTML.INP_RELOAD, "50");
         }

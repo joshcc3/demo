@@ -342,20 +342,20 @@ input::-webkit-inner-spin-button:hover {
 	cursor: pointer;
 }
 
-.familyDetails .priceOffset {
+#header .priceOffset, .familyDetails .priceOffset {
 	text-align: right;
 	width: 75px;
 	margin: 0 2px;
 }
 
-.familyDetails .priceOffsetButtons {
+#header .priceOffsetButtons, .familyDetails .priceOffsetButtons {
 	white-space: normal;
 	vertical-align: middle;
 	width: 20px;
 	height: auto;
 }
 
-.familyDetails .priceOffsetButtons button {
+#header .priceOffsetButtons button, .familyDetails .priceOffsetButtons button {
 	height: 8px;
 	width: 20px;
 	margin-bottom: 3px;
