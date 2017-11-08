@@ -64,7 +64,7 @@ public class ShredderPresenter {
             final String user = disconnected.getClient().getUserName();
             viewsByUser.remove(user, view);
             if (viewsBySymbol.get(symbol).isEmpty()) {
-                MDForSymbol remove = marketDataForSymbolMap.remove(symbol);
+                final MDForSymbol remove = marketDataForSymbolMap.remove(symbol);
                 if (null != remove) {
                     remove.unsubscribeForMD();
                 }
