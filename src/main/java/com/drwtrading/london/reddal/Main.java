@@ -1003,12 +1003,12 @@ public class Main {
 
             stackFamilyPresenter.setCommunityManager(communityManager);
             channels.increaseParentOffsetCmds.subscribe(selectIOFiber, msg -> {
-                final String parentSymbol = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
-                communityManager.increaseOffset(msg.source, parentSymbol, msg.side, msg.multiplier);
+                final String childSymbol = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
+                communityManager.increaseOffset(msg.source, childSymbol, msg.side, msg.multiplier);
             });
             channels.increaseChildOffsetBPSCmds.subscribe(selectIOFiber, msg -> {
-                final String parentSymbol = PARENT_STACK_SUFFIX.matcher(msg.childName).replaceAll("");
-                communityManager.increaseChildPriceOffset(msg.source, parentSymbol, msg.side, msg.offsetIncreaseBPS);
+                final String childSymbol = PARENT_STACK_SUFFIX.matcher(msg.childName).replaceAll("");
+                communityManager.increaseChildPriceOffset(msg.source, childSymbol, msg.side, msg.offsetIncreaseBPS);
             });
 
             final StackFamilyListener familyListener = new StackFamilyListener(stackFamilyPresenter);
