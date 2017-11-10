@@ -16,6 +16,7 @@ import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
+import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.staticData.ExpiryPeriod;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
@@ -763,6 +764,58 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
                 stackClient.batchComplete();
             }
         }
+    }
+
+    @FromWebSocketView
+    public void createAllRFQ(final WebSocketInboundData data) {
+
+        for (final SearchResult searchResult : searchResults.values()) {
+
+            if (MDSource.RFQ == searchResult.mdSource) {
+
+                final StackClientHandler strategyClient = nibblerClients.get("rfq");
+
+                final String rfqSymbol = searchResult.symbol;
+                final InstrumentID rfqInstId = searchResult.instID;
+
+                if (null != strategyClient && !childrenToFamily.containsKey(rfqSymbol)) {
+
+                    strategyClient.createStrategy(rfqSymbol, rfqInstId, InstType.INDEX, rfqSymbol, rfqInstId, "");
+                    strategyClient.batchComplete();
+                }
+            }
+        }
+    }
+
+    @FromWebSocketView
+    public void adoptAllRFQ() {
+
+        for (final SearchResult searchResult : searchResults.values()) {
+
+            if (MDSource.RFQ == searchResult.mdSource) {
+
+                final String familyName = getExistingFamily(searchResult.instID.isin);
+                final String rfqSymbol = searchResult.symbol;
+
+                if (null != familyName && childrenToFamily.containsKey(rfqSymbol)) {
+                    communityManager.setRelationship(SOURCE_UI, familyName, rfqSymbol);
+                }
+            }
+        }
+    }
+
+    private String getExistingFamily(final String isin) {
+
+        final LinkedHashSet<String> symbols = fungibleInsts.get(isin);
+        for (final String symbol : symbols) {
+
+            final SearchResult searchResult = searchResults.get(symbol);
+            final String family = getFamilyName(searchResult);
+            if (families.containsKey(family)) {
+                return family;
+            }
+        }
+        return null;
     }
 
     @FromWebSocketView

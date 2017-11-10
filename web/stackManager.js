@@ -170,6 +170,12 @@ $(function () {
 	$("#killExpiredFutures").unbind().bind("click", function () {
 		ws.send(command("killExpiredFutures"));
 	});
+	$("#createAllRFQ").unbind().bind("click", function () {
+		ws.send(command("createAllRFQ"));
+	});
+	$("#adoptAllRFQ").unbind().bind("click", function () {
+		ws.send(command("adoptAllRFQ"));
+	});
 
 	var copyFromSymbolInput = $("#copyFromSymbol");
 	copyFromSymbolInput.on("input", function () {
