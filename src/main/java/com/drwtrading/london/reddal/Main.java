@@ -154,6 +154,7 @@ import com.sun.jndi.toolkit.url.Uri;
 import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
 import org.jetlang.channels.BatchSubscriber;
+import org.jetlang.channels.KeyedBatchSubscriber;
 import org.jetlang.channels.Publisher;
 
 import java.io.IOException;
@@ -285,7 +286,8 @@ public class Main {
                     new OrdersPresenter(webLog, channels.singleOrderCommand, channels.orderEntryCommandToServer);
             fibers.ui.subscribe(ordersPresenter, websocket, channels.orderEntryFromServer);
             channels.workingOrders.subscribe(
-                    new BatchSubscriber<>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 100, TimeUnit.MILLISECONDS));
+                    new KeyedBatchSubscriber<String, WorkingOrderUpdateFromServer>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 1, TimeUnit.SECONDS,
+                            WorkingOrderUpdateFromServer::key));
         }
 
         { // Working orders screen
@@ -296,9 +298,8 @@ public class Main {
             final WorkingOrdersPresenter presenter =
                     new WorkingOrdersPresenter(clock, monitor, webLog, fibers.ui.getFiber(), channels.remoteOrderCommand, nibblers,
                             channels.orderEntryCommandToServer);
-            fibers.ui.subscribe(presenter, ws, channels.orderEntryFromServer);
+            fibers.ui.subscribe(presenter, ws, channels.orderEntryFromServer, channels.workingOrders);
             channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
-            channels.workingOrders.subscribe(fibers.ui.getFiber(), presenter::onWorkingOrder);
             channels.workingOrderConnectionEstablished.subscribe(fibers.ui.getFiber(), presenter::nibblerConnectionEstablished);
         }
 

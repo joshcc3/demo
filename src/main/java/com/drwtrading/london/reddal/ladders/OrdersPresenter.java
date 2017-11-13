@@ -45,8 +45,8 @@ public class OrdersPresenter {
         this.orderEntryCommandToServer = orderEntryCommandToServer;
     }
 
-    public void onWorkingOrderBatch(final List<WorkingOrderUpdateFromServer> batch) {
-        batch.forEach(this::onWorkingOrder);
+    public void onWorkingOrderBatch(final Map<String, WorkingOrderUpdateFromServer> batch) {
+        batch.values().forEach(this::onWorkingOrder);
     }
 
     public void onWorkingOrder(final WorkingOrderUpdateFromServer update) {

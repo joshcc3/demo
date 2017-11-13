@@ -44,6 +44,7 @@ import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
@@ -59,6 +60,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import drw.london.json.Jsonable;
+import org.jetlang.channels.Converter;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
 
@@ -110,16 +112,16 @@ public class LadderPresenter {
     private OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx;
 
     public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
-            final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
-            final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
-            final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
-            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-            final Publisher<UserCycleRequest> userCycleContractPublisher,
-            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
-            final Publisher<HostWorkspaceRequest> userWorkspaceRequests) {
+                           final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
+                           final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+                           final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+                           final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
+                           final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
+                           final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
+                           final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+                           final Publisher<UserCycleRequest> userCycleContractPublisher,
+                           final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
+                           final Publisher<HostWorkspaceRequest> userWorkspaceRequests) {
 
         this.monitor = monitor;
         this.bookSubscriber = bookSubscriber;
@@ -314,14 +316,18 @@ public class LadderPresenter {
         return -1;
     }
 
+
+    @KeyedBatchSubscriber(converter = WorkingOrdersPresenter.WOConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
-    public void on(final WorkingOrderUpdateFromServer workingOrderUpdate) {
-        ordersBySymbol.get(workingOrderUpdate.workingOrderUpdate.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
+    public void onWorkingOrderUpdates(final Map<String, WorkingOrderUpdateFromServer> workingOrderUpdates) {
+        for (WorkingOrderUpdateFromServer workingOrderUpdate : workingOrderUpdates.values()) {
+            ordersBySymbol.get(workingOrderUpdate.workingOrderUpdate.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
+        }
     }
 
     @KeyedBatchSubscriber(converter = LaserLineStringConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
-    public void on(final Map<String, com.drwtrading.photons.ladder.LaserLine> laserLines) {
+    public void onLaserLines(final Map<String, com.drwtrading.photons.ladder.LaserLine> laserLines) {
         for (final com.drwtrading.photons.ladder.LaserLine laserLine : laserLines.values()) {
             dataBySymbol.get(laserLine.getSymbol()).onLaserLine(laserLine);
         }
@@ -473,9 +479,21 @@ public class LadderPresenter {
         orderEntryMap.put(symbolOrderChannel.symbol, symbolOrderChannel);
     }
 
+
+
+    public static class UpdateFromServerConverter implements Converter<UpdateFromServer, String> {
+        @Override
+        public String convert(UpdateFromServer msg) {
+            return msg.key;
+        }
+    }
+
+    @KeyedBatchSubscriber(converter = UpdateFromServerConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
-    public void on(final UpdateFromServer update) {
-        eeifOrdersBySymbol.get(update.symbol).onUpdate(update);
+    public void onEeifOEUpdates(final Map<String, UpdateFromServer> updates) {
+        for (UpdateFromServer update : updates.values()) {
+            eeifOrdersBySymbol.get(update.symbol).onUpdate(update);
+        }
     }
 
     @Subscribe

@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.autopull;
 
 import com.drwtrading.jetlang.autosubscribe.BatchSubscriber;
+import com.drwtrading.jetlang.autosubscribe.KeyedBatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
@@ -9,6 +10,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 
 public class AutoPuller {
     private final Instant DISABLE_TIME = new DateTime().withHourOfDay(20).withMinuteOfHour(57).withSecondOfMinute(00).toInstant();
@@ -46,12 +49,13 @@ public class AutoPuller {
         persistence.getPullRules().values().forEach(this::addOrUpdateRule);
     }
 
-    @BatchSubscriber
+    @KeyedBatchSubscriber(converter = WorkingOrdersPresenter.WOConverter.class, flushInterval = 500, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
-    public void on(List<WorkingOrderUpdateFromServer> woEvents) {
+    public void on(Map<String, WorkingOrderUpdateFromServer> woEvents) {
+
         HashSet<String> updatedSymbols = new HashSet<>();
         boolean newSymbols = false;
-        for (WorkingOrderUpdateFromServer e : woEvents) {
+        for (WorkingOrderUpdateFromServer e : woEvents.values()) {
             if (!e.isLikelyGTC()) {
                 continue;
             }

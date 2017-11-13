@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.workingOrders;
 
 import com.drwtrading.jetlang.autosubscribe.BatchSubscriber;
+import com.drwtrading.jetlang.autosubscribe.KeyedBatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -27,6 +28,7 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import eeif.execution.Side;
 import eeif.execution.WorkingOrderState;
 import eeif.execution.WorkingOrderUpdate;
+import org.jetlang.channels.Converter;
 import org.jetlang.channels.Publisher;
 import org.jetlang.core.Scheduler;
 
@@ -101,14 +103,26 @@ public class WorkingOrdersPresenter {
         searchResults.put(searchResult.symbol, searchResult);
     }
 
-    public void onWorkingOrder(final WorkingOrderUpdateFromServer order) {
 
-        if (order.workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
-            workingOrders.remove(order.key());
-        } else {
-            workingOrders.put(order.key(), order);
+    public static class WOConverter implements Converter<WorkingOrderUpdateFromServer, String> {
+
+        @Override
+        public String convert(WorkingOrderUpdateFromServer msg) {
+            return msg.key();
         }
-        dirty.put(order.key(), order);
+    }
+
+    @KeyedBatchSubscriber(converter = WOConverter.class, flushInterval = 500, timeUnit = TimeUnit.MILLISECONDS)
+    @Subscribe
+    public void onWorkingOrder(final Map<String, WorkingOrderUpdateFromServer> orders) {
+        for (WorkingOrderUpdateFromServer order : orders.values()) {
+            if (order.workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
+                workingOrders.remove(order.key());
+            } else {
+                workingOrders.put(order.key(), order);
+            }
+            dirty.put(order.key(), order);
+        }
     }
 
     @BatchSubscriber
