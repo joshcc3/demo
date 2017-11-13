@@ -107,7 +107,7 @@ public class WorkingOrdersPresenter {
     public static class WOConverter implements Converter<WorkingOrderUpdateFromServer, String> {
 
         @Override
-        public String convert(WorkingOrderUpdateFromServer msg) {
+        public String convert(final WorkingOrderUpdateFromServer msg) {
             return msg.key();
         }
     }
@@ -115,7 +115,8 @@ public class WorkingOrdersPresenter {
     @KeyedBatchSubscriber(converter = WOConverter.class, flushInterval = 500, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
     public void onWorkingOrder(final Map<String, WorkingOrderUpdateFromServer> orders) {
-        for (WorkingOrderUpdateFromServer order : orders.values()) {
+
+        for (final WorkingOrderUpdateFromServer order : orders.values()) {
             if (order.workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
                 workingOrders.remove(order.key());
             } else {

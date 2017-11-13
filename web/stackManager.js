@@ -34,6 +34,33 @@ $(function () {
 	$("#minimiseFamilies").unbind().bind("click", function () {
 		minimiseAll();
 	});
+
+	var saveOffsetButton = $("#saveOffsets");
+	saveOffsetButton.unbind().bind("click", function () {
+
+		if (!saveOffsetButton.hasClass("locked")) {
+			ws.send(command("saveOffsets", []));
+		}
+	});
+	var loadOffsetButton = $("#loadOffsets");
+	loadOffsetButton.unbind().bind("click", function () {
+
+		if (!loadOffsetButton.hasClass("locked")) {
+			ws.send(command("loadOffsets", []));
+		}
+	});
+
+	$("#enableSaveLoad").unbind().bind("click", function () {
+
+		saveOffsetButton.toggleClass("locked", !saveOffsetButton.hasClass("locked"));
+		loadOffsetButton.toggleClass("locked", !loadOffsetButton.hasClass("locked"));
+
+		setTimeout(function () {
+			saveOffsetButton.toggleClass("locked", true);
+			loadOffsetButton.toggleClass("locked", true);
+		}, 3000);
+	});
+
 	$("#globalPriceOffsetUp").unbind().bind("click", function () {
 		ws.send(command("increaseGlobalPriceOffset", []));
 	});

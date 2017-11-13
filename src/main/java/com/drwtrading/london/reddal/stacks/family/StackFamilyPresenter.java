@@ -409,6 +409,16 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
+    public void saveOffsets() {
+        communityManager.saveOffsets();
+    }
+
+    @FromWebSocketView
+    public void loadOffsets() {
+        communityManager.loadOffsets();
+    }
+
+    @FromWebSocketView
     public void checkFamilyInst(final String family, final String resultFieldID, final WebSocketInboundData data) {
 
         final IStackFamilyUI ui = views.get(data.getOutboundChannel());

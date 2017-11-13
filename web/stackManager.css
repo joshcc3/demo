@@ -106,6 +106,14 @@ body {
 	background-color: #337ab7;
 }
 
+.btn.offsets {
+	background-color: #e394bd;
+}
+
+.btn.locked {
+    opacity: 0.5;
+}
+
 #filteringBlock div {
 	display: inline-block;
 	vertical-align: middle;
@@ -464,7 +472,7 @@ input[type=Submit].hidden {
 	display: auto;
 }
 
-.notPersisted {
+.notPersisted, .childCreationRow select.notPersisted {
 	border: 3px solid red;
 }
 
