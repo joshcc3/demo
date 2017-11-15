@@ -26,6 +26,8 @@ $(function () {
 
 function checkWarning() {
 
+	$(".pinned").toggleClass("pinned", false);
+
 	if (checkWarnedForAWhile()) {
 
 		if (!dogBarkSound.readyState) {
@@ -42,6 +44,7 @@ function checkWarnedForAWhile() {
 	$(".isWarning, .isError").each(function () {
 		var warningTime =  parseInt($(this).attr("data-warningTime"), 10);
 		if (warningTime < minTime) {
+			$(this).toggleClass("pinned", true);
 			return isLongEnough = true;
 		}
 	});

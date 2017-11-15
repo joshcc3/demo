@@ -47,7 +47,7 @@ body {
 	display: none;
 }
 
-.hidden, .minimised .row:not(.isWarning) {
+.hidden, .minimised .row:not(.isWarning):not(.pinned) {
 	display: none;
 }
 
@@ -108,10 +108,9 @@ body {
 }
 
 #nibblers .omsRow .stateText {
-    background-color: #ff5200;
+	background-color: #ff5200;
 	width: auto;
 }
-
 
 #nibblers .omsRow div {
 	font-size: 20px;
