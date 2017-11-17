@@ -40,7 +40,7 @@ function checkWarning() {
 function checkWarnedForAWhile() {
 
 	var isLongEnough = false;
-	var minTime = new Date().getTime() - 5000;
+	var minTime = new Date().getTime() - 15000;
 	$(".isWarning, .isError").each(function () {
 		var warningTime =  parseInt($(this).attr("data-warningTime"), 10);
 		if (warningTime < minTime) {
