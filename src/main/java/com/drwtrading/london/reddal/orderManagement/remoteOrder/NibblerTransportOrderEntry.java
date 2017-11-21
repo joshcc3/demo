@@ -94,9 +94,9 @@ public class NibblerTransportOrderEntry {
         writeRow(modifyRow, NibblerRemoteModifyColumns.timestamp);
     }
 
-    void cancelOrder(final String username, final boolean isUserLogin, final int chainID, final String symbol) {
+    void cancelOrder(final String username, final boolean isAuto, final int chainID, final String symbol) {
 
-        nibblerClient.cancelOrder(username, isUserLogin, chainID, symbol);
+        nibblerClient.cancelOrder(username, isAuto, chainID, symbol);
         nibblerClient.batchComplete();
 
         cancelRow.set(NibblerRemoteCancelColumns.USERNAME, username);

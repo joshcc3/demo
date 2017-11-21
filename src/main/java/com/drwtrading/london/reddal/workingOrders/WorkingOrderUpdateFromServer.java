@@ -33,16 +33,16 @@ public class WorkingOrderUpdateFromServer extends Struct {
     }
 
     public RemoteOrderCommandToServer buildCancelCommand(final String username) {
-        return buildCancel(username, true);
-    }
-
-    public RemoteOrderCommandToServer buildAutoCancel(final String username) {
         return buildCancel(username, false);
     }
 
-    private RemoteOrderCommandToServer buildCancel(final String username, final boolean isUserLogin) {
+    public RemoteOrderCommandToServer buildAutoCancel(final String username) {
+        return buildCancel(username, true);
+    }
 
-        final IOrderCmd cmd = new CancelOrderCmd(username, isUserLogin, workingOrderUpdate.getChainId(), workingOrderUpdate.getSymbol());
+    private RemoteOrderCommandToServer buildCancel(final String username, final boolean isAuto) {
+
+        final IOrderCmd cmd = new CancelOrderCmd(username, isAuto, workingOrderUpdate.getChainId(), workingOrderUpdate.getSymbol());
         return new RemoteOrderCommandToServer(this.fromServer, cmd);
     }
 
