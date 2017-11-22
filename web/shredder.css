@@ -94,8 +94,13 @@ body#search_page {
 	display: none;
 }
 
-.our_order {
+.maybe_our_order {
 	background-color: yellow !important;
+	color: black !important;
+}
+
+.our_order {
+	background-color: greenyellow !important;
 	color: black !important;
 }
 

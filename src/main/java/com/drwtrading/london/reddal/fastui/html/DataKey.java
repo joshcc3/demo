@@ -5,6 +5,7 @@ import com.drwtrading.london.reddal.fastui.IEnumKey;
 public enum DataKey implements IEnumKey {
 
     PRICE("price"),
+    QUANTITY("quantity"),
     ORDER("orderKeys"),
     EEIF("eeifKeys"),
     VOLUME_IN_FRONT("vIF"),

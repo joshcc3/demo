@@ -86,6 +86,7 @@ public enum CSSClass {
     ORDER("order"),
     BLANK_ORDER("blank_order"),
     OUR_ORDER("our_order"),
+    MAYBE_OUR_OURDER("maybe_our_order"),
     ASK_ORDER("ask_order"),
     BID_ORDER("bid_order"),
 

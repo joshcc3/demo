@@ -25,11 +25,14 @@ import com.drwtrading.london.reddal.ladders.LadderHTMLRow;
 import com.drwtrading.london.reddal.ladders.LadderHTMLTable;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import eeif.execution.Side;
+import eeif.execution.WorkingOrderState;
 import eeif.execution.WorkingOrderType;
 import eeif.execution.WorkingOrderUpdate;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.TreeSet;
 
 class ShredderBookView {
 
@@ -48,6 +51,9 @@ class ShredderBookView {
     private final WorkingOrdersForSymbol workingOrdersForSymbol;
 
     private final List<ShreddedOrder> shreddedOrders = new ArrayList<>();
+
+    //TODO:: Remove this when we have access to the orderIds
+    private final TreeSet<ShreddedOrder> ourOrders = new TreeSet<>(Comparator.comparingLong(o -> o.quantity));
 
     private long centeredPrice = 0;
     private long topPrice = Long.MIN_VALUE;
@@ -88,6 +94,14 @@ class ShredderBookView {
         drawAggregateOrders();
         drawLaserLines();
         drawShreddedOrders();
+    }
+
+    public void center() {
+        if (null != marketData.getBook() && marketData.getBook().isValid()) {
+
+            final long bookCenter = getCenterPrice();
+            setCenteredPrice(bookCenter);
+        }
     }
 
     private void drawLaserLines() {
@@ -147,6 +161,10 @@ class ShredderBookView {
     }
 
     private void drawPriceLevels() {
+        for (int i = 0; i < levels; i++) {
+            uiPipe.clickable('#' + HTML.PRICE + i);
+        }
+
         for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
             final long price = priceNode.key;
             final LadderHTMLRow htmlRowKeys = priceNode.getValue().htmlKeys;
@@ -162,12 +180,13 @@ class ShredderBookView {
     private void drawShreddedOrders() {
         wipeDisplayedOrders();
 
-        for (ShreddedOrder shreddedOrder : shreddedOrders) {
+        for (final ShreddedOrder shreddedOrder : shreddedOrders) {
             final String orderCellKey = String.format("order_%s_%s", shreddedOrder.level, shreddedOrder.queuePosition);
 
             uiPipe.cls(orderCellKey, CSSClass.BLANK_ORDER, false);
             uiPipe.cls(orderCellKey, CSSClass.ORDER, true);
             uiPipe.data(orderCellKey, DataKey.VOLUME_IN_FRONT, shreddedOrder.previousQuantity);
+            uiPipe.data(orderCellKey, DataKey.QUANTITY, shreddedOrder.quantity);
 
             final double widthInPercent = Math.min((double) shreddedOrder.quantity / scalingFactor * 100, MAX_VISUAL_ORDER_SIZE);
             uiPipe.width(orderCellKey, widthInPercent);
@@ -181,13 +200,14 @@ class ShredderBookView {
             uiPipe.cls(orderCellKey, shreddedOrder.getOppositeCSSCClass(), false);
             uiPipe.cls(orderCellKey, shreddedOrder.getCorrespondingCSSClass(), true);
 
-            uiPipe.cls(orderCellKey, CSSClass.OUR_ORDER, shreddedOrder.isOurs);
+            uiPipe.cls(orderCellKey, CSSClass.MAYBE_OUR_OURDER, shreddedOrder.isOurs);
+            uiPipe.cls(orderCellKey, CSSClass.OUR_ORDER, shreddedOrder.isOurs && shreddedOrder.canOnlyBeOurs);
             uiPipe.data(orderCellKey, DataKey.TAG, shreddedOrder.tag);
             uiPipe.data(orderCellKey, DataKey.ORDER_TYPE, shreddedOrder.orderType);
         }
     }
 
-    void augmentIfOurOrder(final IBookOrder order, ShreddedOrder shreddedOrder) {
+    void augmentIfOurOrder(final IBookOrder order, final ShreddedOrder shreddedOrder) {
         shreddedOrder.isOurs = false;
 
         for (final WorkingOrderUpdateFromServer workingOrderUpdateFromServer : workingOrdersForSymbol.ordersByPrice.get(order.getPrice())) {
@@ -199,12 +219,22 @@ class ShredderBookView {
                 shreddedOrder.tag = ourOrder.getTag();
                 shreddedOrder.orderType = ourOrder.getWorkingOrderType().toString();
                 shreddedOrder.isOurs = true;
+
+                final ShreddedOrder closestSimilarOrder = ourOrders.floor(shreddedOrder);
+                if (closestSimilarOrder != null) {
+                    if (closestSimilarOrder.quantity == shreddedOrder.quantity) {
+                        closestSimilarOrder.canOnlyBeOurs = false;
+                        shreddedOrder.canOnlyBeOurs = false;
+                    }
+                }
+
+                ourOrders.add(shreddedOrder);
                 break;
             }
         }
     }
 
-    private boolean sameSide(BookSide bookSide, Side side) {
+    private boolean sameSide(final BookSide bookSide, final Side side) {
         return (bookSide == BookSide.BID && side == Side.BID) || (bookSide == BookSide.ASK && side == Side.OFFER);
     }
 
@@ -228,6 +258,7 @@ class ShredderBookView {
 
             long price = topPrice;
             for (int level = 0; level < levels; level++) {
+                ourOrders.clear();
                 if (book.getBidLevel(price) != null) {
                     final IBookOrder order = book.getBidLevel(price).getFirstOrder();
                     gatherShreddedOrdersAtLevel(order, level);
@@ -237,16 +268,18 @@ class ShredderBookView {
                 }
 
                 price = book.getTickTable().addTicks(price, -1);
+
             }
         }
     }
 
-    private void gatherShreddedOrdersAtLevel(IBookOrder order, int level) {
+    private void gatherShreddedOrdersAtLevel(IBookOrder order, final int level) {
+        ourOrders.clear();
         int queuePosition = 0;
-        int previousQuantity = 0;
+        long previousQuantity = 0;
 
         while (null != order) {
-            ShreddedOrder shreddedOrder = new ShreddedOrder(queuePosition, level, order.getRemainingQty(), order.getSide(), previousQuantity);
+            final ShreddedOrder shreddedOrder = new ShreddedOrder(queuePosition, level, order.getRemainingQty(), order.getSide(), previousQuantity);
             augmentIfOurOrder(order, shreddedOrder);
             shreddedOrders.add(shreddedOrder);
             queuePosition++;
@@ -298,11 +331,11 @@ class ShredderBookView {
                 final IBookLevel askLevel = marketData.getBook().getAskLevel(price);
 
                 if (null != bidLevel) {
-                    long bidLevelQty = bidLevel.getQty();
+                    final long bidLevelQty = bidLevel.getQty();
                     bidQty(bookRow.htmlKeys, bidLevelQty);
                     uiPipe.cls(bookRow.htmlKeys.bookSideKey, CSSClass.IMPLIED_BID, 0 < bidLevel.getImpliedQty());
                 } else if (null != askLevel) {
-                    long askLevelQty = askLevel.getQty();
+                    final long askLevelQty = askLevel.getQty();
                     askQty(bookRow.htmlKeys, askLevelQty);
                     uiPipe.cls(bookRow.htmlKeys.bookSideKey, CSSClass.IMPLIED_ASK, 0 < askLevel.getImpliedQty());
                 } else {

@@ -44,8 +44,9 @@ function addOrdersToRow(startingColumn, ordersPerRow, row, shreddedOrders) {
 			var summaryHoverBox = $("#orderSummaryHoverBox");
 			summaryHoverBox.find("#quantityInFront").text(handler.getData(orderId, 'vIF'));
 
-			// .text(undefined) does not change the existing text so we have to manually set it to an empty string
+			summaryHoverBox.find("#orderQuantity").text(handler.getData(orderId, 'quantity'));
 
+			// .text(undefined) does not change the existing text so we have to manually set it to an empty string
 			summaryHoverBox.find("#tag").text(handler.getData(orderId, 'tag'));
 			summaryHoverBox.find("#orderType").text(handler.getData(orderId, 'orderType'));
 			showHoverBoxByElement(order, summaryHoverBox);

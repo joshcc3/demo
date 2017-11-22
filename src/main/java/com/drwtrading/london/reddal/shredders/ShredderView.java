@@ -6,6 +6,7 @@ import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.fastui.UiEventHandler;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.HTML;
+import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,6 +61,10 @@ public class ShredderView implements UiEventHandler {
 
     @Override
     public void onClick(final String id, final Map<String, String> data) {
+        final String button = data.get("button");
+        if ("middle".equals(button)){
+            shredderBookView.center();
+        }
 
     }
 

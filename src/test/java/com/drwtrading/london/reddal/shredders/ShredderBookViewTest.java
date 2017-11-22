@@ -11,6 +11,8 @@ import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.TreeSet;
+
 public class ShredderBookViewTest {
     @Test
     public void highlightingTwoOrders() {
@@ -50,11 +52,13 @@ public class ShredderBookViewTest {
                 null, 10, workingOrdersForSymbol, null);
 
 
-        ShreddedOrder shreddedOrder1 = new ShreddedOrder(0, 0, 0L, null, 0);
-        ShreddedOrder shreddedOrder2 = new ShreddedOrder(0, 0, 0L, null, 0);
+        final ShreddedOrder shreddedOrder1 = new ShreddedOrder(0, 0, 0L, null, 0);
+        final ShreddedOrder shreddedOrder2 = new ShreddedOrder(0, 0, 0L, null, 0);
+
+        final TreeSet<ShreddedOrder> ourOrders = new TreeSet<>();
         shredderBookView.augmentIfOurOrder(firstOrder, shreddedOrder1);
         shredderBookView.augmentIfOurOrder(firstOrder, shreddedOrder2);
-        Assert.assertTrue(shreddedOrder1.isOurs == true, "First order is not correctly identified");
-        Assert.assertTrue(shreddedOrder2.isOurs == true, "Second order is not correctly identified");
+        Assert.assertTrue(shreddedOrder1.isOurs, "First order is not correctly identified");
+        Assert.assertTrue(shreddedOrder2.isOurs, "Second order is not correctly identified");
     }
 }

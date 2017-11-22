@@ -11,10 +11,11 @@ public class ShreddedOrder {
     int level;
     long quantity;
     boolean isOurs;
-    final int previousQuantity;
+    boolean canOnlyBeOurs = true;
+    final long previousQuantity;
     BookSide side;
 
-    ShreddedOrder(final int queuePosition, final int level, final long quantity, final BookSide side, final int previousQuantity) {
+    ShreddedOrder(final int queuePosition, final int level, final long quantity, final BookSide side, final long previousQuantity) {
         this.queuePosition = queuePosition;
         this.level = level;
         this.quantity = quantity;
