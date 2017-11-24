@@ -103,7 +103,6 @@ public class WorkingOrdersPresenter {
         searchResults.put(searchResult.symbol, searchResult);
     }
 
-
     public static class WOConverter implements Converter<WorkingOrderUpdateFromServer, String> {
 
         @Override
@@ -236,11 +235,11 @@ public class WorkingOrdersPresenter {
     public void cancelAllNonGTC(final WebSocketInboundData data) {
 
         final String user = data.getClient().getUserName();
-        cancelAllNoneGTC(user, "Working orders - Cancel non-gtc.");
+        cancelAllNoneGTC(user, "Working orders - Cancel non-gtc.", false);
     }
 
-    private void cancelAllNoneGTC(final String user, final String reason) {
-        workingOrders.values().stream().filter(NON_GTC_FILTER).forEach(order -> cancel(user, order));
+    private void cancelAllNoneGTC(final String user, final String reason, final boolean isAutomated) {
+        workingOrders.values().stream().filter(NON_GTC_FILTER).forEach(order -> cancel(user, order, isAutomated));
         for (final String nibbler : nibblersStatus.keySet()) {
             stopAllStrategies(nibbler, reason);
         }
@@ -251,7 +250,7 @@ public class WorkingOrdersPresenter {
     public void cancelExchangeNonGTC(final WebSocketInboundData data, final String nibbler) {
         final String user = data.getClient().getUserName();
         workingOrders.values().stream().filter(order -> nibbler.equals(order.fromServer)).filter(NON_GTC_FILTER).forEach(
-                order -> cancel(user, order));
+                order -> cancel(user, order, false));
         managedOrders.values().stream().filter(order -> nibbler.equals(order.server)).forEach(this::cancel);
         stopAllStrategies(nibbler, "Working orders - Cancel exchange non-gtc.");
     }
@@ -259,7 +258,7 @@ public class WorkingOrdersPresenter {
     @FromWebSocketView
     public void cancelAll(final WebSocketInboundData data) {
         final String user = data.getClient().getUserName();
-        workingOrders.values().forEach(order -> cancel(user, order));
+        workingOrders.values().forEach(order -> cancel(user, order, false));
         managedOrders.values().forEach(this::cancel);
         for (final String nibbler : nibblersStatus.keySet()) {
             stopAllStrategies(nibbler, "Working orders - Cancel ALL exchange.");
@@ -269,7 +268,7 @@ public class WorkingOrdersPresenter {
     @FromWebSocketView
     public void cancelExchange(final WebSocketInboundData data, final String nibbler) {
         final String user = data.getClient().getUserName();
-        workingOrders.values().stream().filter(order -> nibbler.equals(order.fromServer)).forEach(order -> cancel(user, order));
+        workingOrders.values().stream().filter(order -> nibbler.equals(order.fromServer)).forEach(order -> cancel(user, order, false));
         managedOrders.values().stream().filter(order -> nibbler.equals(order.server)).forEach(this::cancel);
         stopAllStrategies(nibbler, "Working orders - Cancel ALL.");
     }
@@ -292,16 +291,21 @@ public class WorkingOrdersPresenter {
         } else {
             final WorkingOrderUpdateFromServer order = workingOrders.get(key);
             if (null != order) {
-                cancel(user, order);
+                cancel(user, order, false);
             }
         }
     }
 
     // -----------------
 
-    private void cancel(final String username, final WorkingOrderUpdateFromServer order) {
+    private void cancel(final String username, final WorkingOrderUpdateFromServer order, final boolean isAutomated) {
 
-        final RemoteOrderCommandToServer cmd = order.buildCancelCommand(username);
+        final RemoteOrderCommandToServer cmd;
+        if (isAutomated) {
+            cmd = order.buildAutoCancel(username);
+        } else {
+            cmd = order.buildCancelCommand(username);
+        }
         commands.publish(cmd);
     }
 
@@ -325,7 +329,7 @@ public class WorkingOrdersPresenter {
                 HEART_BEAT_TIMEOUT_NANOS < (clock.getReferenceNanoSinceMidnightUTC() - lastViewerHeartbeatNanoSinceMidnight);
         if (userHeartbeatLate) {
             monitor.logError(ReddalComponents.SAFETY_WORKING_ORDER_VIEWER, "No users viewing working order screen.");
-            cancelAllNoneGTC("AUTOMATED", "Working orders - no users viewing working orders screen.");
+            cancelAllNoneGTC("AUTOMATED", "Working orders - no users viewing working orders screen.", true);
         } else {
             monitor.setOK(ReddalComponents.SAFETY_WORKING_ORDER_VIEWER);
         }

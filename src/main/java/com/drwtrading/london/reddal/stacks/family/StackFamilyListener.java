@@ -3,8 +3,10 @@ package com.drwtrading.london.reddal.stacks.family;
 import com.drwtrading.london.eeif.stack.manager.persistence.StackNoOpCacheListener;
 import com.drwtrading.london.eeif.stack.transport.cache.stack.IStackGroupCacheListener;
 import com.drwtrading.london.eeif.stack.transport.cache.strategy.IStackStrategyCacheListener;
+import com.drwtrading.london.eeif.stack.transport.data.stacks.Stack;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroupFactory;
+import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
@@ -13,6 +15,7 @@ import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -98,6 +101,14 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     }
 
     @Override
+    public boolean stackTypeCleared(final String source, final long stackGroupID, final StackType stackType) {
+
+        final StackGroup stackGroup = stackGroups.get(stackGroupID);
+        stackGroup.clearStackType(source, stackType);
+        return true;
+    }
+
+    @Override
     public boolean updateStackGroup(final String source, final long stackGroupID, final double priceOffsetBPS,
             final double priceOffsetTickSize, final double stackAlignmentTickToBPS) {
 
@@ -141,6 +152,28 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
 
         final StackGroup stackGroup = stackGroups.get(stackGroupID);
         stackGroup.addStackQty(source, stackType, orderType, pullbackTicks, qty);
+
+        return updateUI(stackGroupID);
+    }
+
+    @Override
+    public boolean setStackImage(final String source, final long stackGroupID, final StackType stackType, final Stack stack) {
+
+        final LongMap<EnumMap<StackOrderType, Long>> pullbackLevels = new LongMap<>();
+        StackLevel stackLevel = stack.getFirstLevel();
+        while (null != stackLevel) {
+
+            final EnumMap<StackOrderType, Long> levelQties = new EnumMap<>(StackOrderType.class);
+            for (final StackOrderType orderType : StackOrderType.values()) {
+                levelQties.put(orderType, stackLevel.getOrderTypeQty(orderType));
+            }
+
+            pullbackLevels.put(stackLevel.getPullbackTicks(), levelQties);
+            stackLevel = stack.next(stackLevel);
+        }
+
+        final StackGroup stackGroup = stackGroups.get(stackGroupID);
+        stackGroup.setStackImage(source, stackType, pullbackLevels);
 
         return updateUI(stackGroupID);
     }

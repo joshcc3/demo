@@ -14,8 +14,9 @@ import org.testng.annotations.Test;
 import java.util.TreeSet;
 
 public class ShredderBookViewTest {
+
     @Test
-    public void highlightingTwoOrders() {
+    public void highlightingTwoOrdersTest() {
         final IBookOrder firstOrder = Mockito.mock(IBookOrder.class);
         final IBookOrder secondOrder = Mockito.mock(IBookOrder.class);
 
@@ -41,16 +42,14 @@ public class ShredderBookViewTest {
         Mockito.when(secondWorkingOrder.getWorkingOrderType()).thenReturn(WorkingOrderType.MARKET);
 
         final WorkingOrderUpdateFromServer firstWorkingOrderContainer = new WorkingOrderUpdateFromServer("iddqd", firstWorkingOrder);
-        final WorkingOrderUpdateFromServer secondWorkingOrderContainer = new WorkingOrderUpdateFromServer("UpUpDownDownLeftRightBA", secondWorkingOrder);
-
+        final WorkingOrderUpdateFromServer secondWorkingOrderContainer =
+                new WorkingOrderUpdateFromServer("UpUpDownDownLeftRightBA", secondWorkingOrder);
 
         final WorkingOrdersForSymbol workingOrdersForSymbol = new WorkingOrdersForSymbol("operation cwal");
         workingOrdersForSymbol.ordersByPrice.put(firstOrder.getPrice(), firstWorkingOrderContainer);
         workingOrdersForSymbol.ordersByPrice.put(secondOrder.getPrice(), secondWorkingOrderContainer);
 
-        final ShredderBookView shredderBookView = new ShredderBookView(null, null, null,
-                null, 10, workingOrdersForSymbol, null);
-
+        final ShredderBookView shredderBookView = new ShredderBookView(null, null, null, null, 10, workingOrdersForSymbol, null);
 
         final ShreddedOrder shreddedOrder1 = new ShreddedOrder(0, 0, 0L, null, 0);
         final ShreddedOrder shreddedOrder2 = new ShreddedOrder(0, 0, 0L, null, 0);
