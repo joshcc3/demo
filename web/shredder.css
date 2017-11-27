@@ -95,11 +95,13 @@ body#search_page {
 }
 
 .maybe_our_order {
+	border-left: solid 1px yellow !important;
 	background-color: yellow !important;
 	color: black !important;
 }
 
 .our_order {
+	border-left: solid 1px greenyellow !important;
 	background-color: greenyellow !important;
 	color: black !important;
 }
