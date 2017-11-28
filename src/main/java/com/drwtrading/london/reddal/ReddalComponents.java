@@ -10,6 +10,7 @@ public enum ReddalComponents implements IMonitoredComponent {
     INDY,
 
     UI_SELECT_IO,
+    SHREDDER_SELECT_IO,
     STACK_SELECT_IO,
     AUTO_PULLER_SELECT_IO,
 

@@ -11,6 +11,7 @@ import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.ladders.LaserLineStringConverter;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketConnected;
@@ -117,14 +118,17 @@ public class ShredderPresenter {
         }
     }
 
+    @KeyedBatchSubscriber(converter = WorkingOrdersPresenter.WOConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
-    public void on(final WorkingOrderUpdateFromServer workingOrderUpdate) {
-        ordersBySymbol.get(workingOrderUpdate.workingOrderUpdate.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
+    public void onWorkingOrders(final Map<String, WorkingOrderUpdateFromServer> workingOrderUpdates) {
+        for (WorkingOrderUpdateFromServer workingOrderUpdate : workingOrderUpdates.values()) {
+            ordersBySymbol.get(workingOrderUpdate.workingOrderUpdate.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
+        }
     }
 
     @KeyedBatchSubscriber(converter = LaserLineStringConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
-    public void on(final Map<String, LaserLine> laserLines) {
+    public void onLaserLines(final Map<String, LaserLine> laserLines) {
         for (final LaserLine laserLine: laserLines.values()) {
             dataBySymbol.get(laserLine.getSymbol()).onLaserLine(laserLine);
         }

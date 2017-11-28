@@ -6,6 +6,7 @@ import com.drw.nns.api.NnsFactory;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
+import com.drwtrading.london.eeif.nibbler.transport.INibblerTransportConnectionListener;
 import com.drwtrading.london.eeif.nibbler.transport.NibblerTransportComponents;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerCacheFactory;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerTransportCaches;
@@ -409,23 +410,6 @@ public class Main {
                                 webSocket, fiberBuilder);
 
 
-                final IMDSubscriber shredderBookSubscriber;
-                if (shredderOverrides.containsKey(mdSource)) {
-                    ReddalChannels noOpChannels = new ReddalChannels(CHANNEL_FACTORY);
-                    shredderBookSubscriber = getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource),
-                            noOpChannels, localAppName );
-                } else {
-                    shredderBookSubscriber = depthBookSubscriber;
-                }
-
-                final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-                shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
-                final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
-                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus, channels.metaData);
-                displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
-                displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
-                final ShredderInfoListener shredderInfoListener = new ShredderInfoListener(shredderPresenter);
-
                 final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
                 if (null != mdSourceStackConfigs) {
 
@@ -464,12 +448,82 @@ public class Main {
                                         ladderInfoListener);
 
                         client.getCaches().addTradingDataListener(ladderInfoListener);
-                        client.getCaches().addTradingDataListener(shredderInfoListener);
                         client.getCaches().blotterCache.addListener(ladderInfoListener);
                     }
                 }
             }
         }
+
+
+
+        for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
+
+            final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
+            if (null == mdSource) {
+                throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
+            } else {
+
+                final String threadName = "Shredder-" + mdSource.name();
+
+                final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(threadName);
+                final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+                        new ExpandedDetailResourceMonitor<>(displayMonitor, threadName, errorLog, SelectIOComponents.class,
+                                ReddalComponents.SHREDDER_SELECT_IO);
+
+                final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
+                final FiberBuilder fiberBuilder =
+                        fibers.fiberGroup.wrap(new SelectIOFiber(displaySelectIO, errorLog, threadName), threadName);
+
+                final IMDSubscriber shredderBookSubscriber;
+                if (shredderOverrides.containsKey(mdSource)) {
+                    ReddalChannels noOpChannels = new ReddalChannels(CHANNEL_FACTORY);
+                    shredderBookSubscriber = getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource),
+                            noOpChannels, localAppName );
+                } else {
+                    shredderBookSubscriber = getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName);
+                }
+
+                final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
+
+                final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
+                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus, channels.metaData);
+                displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
+                displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
+
+                final ShredderInfoListener shredderInfoListener = new ShredderInfoListener(shredderPresenter);
+
+                final List<ConfigGroup> nibblerConfigs = nibblers.get(mdSource);
+                if (null != nibblerConfigs) {
+
+                    final IResourceMonitor<NibblerTransportComponents> nibblerMonitor =
+                            new ExpandedDetailResourceMonitor<>(displayMonitor, threadName + "-Nibblers", errorLog,
+                                    NibblerTransportComponents.class, ReddalComponents.TRADING_DATA);
+
+                    final MultiLayeredResourceMonitor<NibblerTransportComponents> nibblerParentMonitor =
+                            new MultiLayeredResourceMonitor<>(nibblerMonitor, NibblerTransportComponents.class, errorLog);
+
+                    for (final ConfigGroup nibblerConfig : nibblerConfigs) {
+                        final IResourceMonitor<NibblerTransportComponents> childMonitor =
+                                nibblerParentMonitor.createChildResourceMonitor(nibblerConfig.getKey());
+                        final NibblerClientHandler client =
+                                NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
+                                        threadName + "-transport-" + nibblerConfig.getKey(), localAppName + mdSource.name(), true,
+                                        new INibblerTransportConnectionListener() {
+                                            @Override
+                                            public boolean connectionEstablished(String s) {
+                                                return true;
+                                            }
+                                            @Override
+                                            public void connectionLost(String s) {
+                                            }
+                                        });
+                        client.getCaches().addTradingDataListener(shredderInfoListener);
+                    }
+                }
+            }
+        }
+
 
         // Auto-puller thread
         {
