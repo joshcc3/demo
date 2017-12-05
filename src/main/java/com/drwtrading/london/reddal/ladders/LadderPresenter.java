@@ -112,16 +112,16 @@ public class LadderPresenter {
     private OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx;
 
     public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
-                           final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-                           final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
-                           final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-                           final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
-                           final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
-                           final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-                           final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-                           final Publisher<UserCycleRequest> userCycleContractPublisher,
-                           final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
-                           final Publisher<HostWorkspaceRequest> userWorkspaceRequests) {
+            final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
+            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+            final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
+            final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
+            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+            final Publisher<UserCycleRequest> userCycleContractPublisher,
+            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
+            final Publisher<HostWorkspaceRequest> userWorkspaceRequests) {
 
         this.monitor = monitor;
         this.bookSubscriber = bookSubscriber;
@@ -316,7 +316,6 @@ public class LadderPresenter {
         return -1;
     }
 
-
     @KeyedBatchSubscriber(converter = WorkingOrdersPresenter.WOConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
     public void onWorkingOrderUpdates(final Map<String, WorkingOrderUpdateFromServer> workingOrderUpdates) {
@@ -479,9 +478,8 @@ public class LadderPresenter {
         orderEntryMap.put(symbolOrderChannel.symbol, symbolOrderChannel);
     }
 
-
-
     public static class UpdateFromServerConverter implements Converter<UpdateFromServer, String> {
+
         @Override
         public String convert(UpdateFromServer msg) {
             return msg.key;
