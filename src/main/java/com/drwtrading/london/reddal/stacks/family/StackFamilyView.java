@@ -313,9 +313,11 @@ public class StackFamilyView implements IStackRelationshipListener {
         if (isFamilyDisplayable(parentSymbol)) {
             views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
                     familyToChildRatio);
-        }
 
-        contractSetGenerator.setParentStack(childSymbol, parentSymbol);
+            if (!isAsylumPresenter) {
+                contractSetGenerator.setParentStack(childSymbol, parentSymbol);
+            }
+        }
         return true;
     }
 

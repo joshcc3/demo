@@ -783,6 +783,12 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 		ws.send(command("orphanChild", [childSymbol]));
 	});
 
+	var asylumButton = row.find(".asylumButton");
+	asylumButton.removeClass("hidden");
+	asylumButton.unbind().bind("click", function () {
+		ws.send(command("adoptChild", ["Asylum", childSymbol]));
+	});
+
 	var killSymbolButton = row.find(".killSymbolButton");
 	killSymbolButton.removeClass("hidden");
 	killSymbolButton.unbind().bind("click", function () {
