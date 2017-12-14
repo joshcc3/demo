@@ -20,7 +20,7 @@ public class PullerBookSubscriber {
 
     final HashMap<String, IBook<?>> knownBooks = new HashMap<>();
     final HashMap<String, Callback<IBook<?>>> callbacks = new HashMap<>();
-    final EnumMap<MDSource, MDTransportClient> clientMap = new EnumMap<MDSource, MDTransportClient>(MDSource.class);
+    final EnumMap<MDSource, MDTransportClient> clientMap = new EnumMap<>(MDSource.class);
     Callback<IBook<?>> createdCallback = message -> {
     };
 

@@ -20,6 +20,7 @@ class StackUIData implements IStackGroupUpdateCallback {
 
     public final String source;
     public final String symbol;
+    public final String leanSymbol;
 
     private final DecimalFormat priceOffsetDF;
 
@@ -30,10 +31,11 @@ class StackUIData implements IStackGroupUpdateCallback {
     private String bidPriceOffsetBPS;
     private String askPriceOffsetBPS;
 
-    StackUIData(final String source, final String symbol) {
+    StackUIData(final String source, final String symbol, final String leanSymbol) {
 
         this.source = source;
         this.symbol = symbol;
+        this.leanSymbol = leanSymbol;
 
         this.priceOffsetDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 10);
 

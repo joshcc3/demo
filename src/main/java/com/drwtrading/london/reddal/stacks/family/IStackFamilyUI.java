@@ -24,6 +24,8 @@ public interface IStackFamilyUI {
 
     public void addFamily(final String familyName);
 
+    public void removeChild(final String familyName, final String childSymbol);
+
     public void setChild(final String familyName, final String childSymbol, final double bidPriceOffset, final double bidQtyMultiplier,
             final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio);
 
@@ -34,7 +36,7 @@ public interface IStackFamilyUI {
     void setParentData(final String familyName, final String bidPriceOffset, final String askPriceOffset, final String selectedConfigType,
             final boolean bidPicardEnabled, final boolean bidQuoterEnabled, final boolean askPicardEnabled, final boolean askQuoterEnabled);
 
-    void setChildData(final String symbol, final String nibblerName, final String selectedConfigType, final boolean isBidStrategyOn,
-            final String bidInfo, final boolean bidPicardEnabled, final boolean bidQuoterEnabled, final boolean isAskStrategyOn,
-            final String askInfo, final boolean askPicardEnabled, final boolean askQuoterEnabled);
+    void setChildData(final String symbol, final String leanSymbol, final String nibblerName, final String selectedConfigType, final boolean isBidStrategyOn,
+            final String bidInfo, final boolean isBidPicardEnabled, final boolean isBidQuoterEnabled, final boolean isAskStrategyOn,
+            final String askInfo, final boolean isAskPicardEnabled, final boolean isAskQuoterEnabled);
 }

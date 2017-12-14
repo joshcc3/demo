@@ -32,7 +32,7 @@
 		</div>
 		<div class="headerSecondRow">
 
-			<div class="headerButton">
+			<div class="headerButton hideForAsylum">
 				<button id="stackParentalRule" class="btn">Refresh</button>
 			</div>
 
@@ -44,28 +44,22 @@
 				<button id="allStop" class="btn">■■■</button>
 			</div>
 
-			<div class="headerButton">
+			<div class="headerButton hideForAsylum">
 				<button id="cleanAllParents" class="btn">Clean</button>
 			</div>
 
-			<div class="headerButton">
+			<div class="headerButton hideForAsylum">
 				<button id="minimiseFamilies" class="btn link">Minimise Tables</button>
 			</div>
 
-			<div class="headerButton">
+			<div class="headerButton hideForAsylum">
 				<button id="saveOffsets" class="btn offsets locked">S</button>
-			</div>
-
-			<div class="headerButton">
 				<button id="enableSaveLoad" class="btn offsets">☢</button>
-			</div>
-
-			<div class="headerButton">
 				<button id="loadOffsets" class="btn offsets locked">L</button>
 			</div>
 
-			<div id="globalPriceOffset" class="global priceOffset headerButton" title="Global Offset">---</div>
-			<div class="global priceOffsetButtons headerButton">
+			<div id="globalPriceOffset" class="global priceOffset headerButton hideForAsylum" title="Global Offset">---</div>
+			<div class="global priceOffsetButtons headerButton hideForAsylum">
 				<button id="globalPriceOffsetUp"></button>
 				<button id="globalPriceOffsetDown"></button>
 			</div>
@@ -264,8 +258,8 @@
 
 			<div id="templateFamily" class="template family">
 				<div class="familyDetails">
-					<button type="button" class="openStack">stack</button>
-					<button type="button" class="refreshParent">Refresh</button>
+					<button type="button" class="openStack hideForAsylum">stack</button>
+					<button type="button" class="refreshParent hideForAsylum">Refresh</button>
 
 					<div class="childCount"></div>
 
@@ -274,11 +268,11 @@
 						<div class="off">0</div>
 					</div>
 
-					<div class="bid runningControls">
+					<div class="bid runningControls hideForAsylum">
 						<button class="start">▶</button>
 						<button class="stop">■</button>
 					</div>
-					<div class="ask runningControls">
+					<div class="ask runningControls hideForAsylum">
 						<button class="start">▶</button>
 						<button class="stop">■</button>
 					</div>
@@ -290,36 +284,36 @@
 
 					<div class="familyName"></div>
 
-					<div class="bid priceOffset">---</div>
-					<div class="bid priceOffsetButtons">
+					<div class="bid priceOffset hideForAsylum">---</div>
+					<div class="bid priceOffsetButtons hideForAsylum">
 						<button class="priceOffsetUp"></button>
 						<button class="priceOffsetDown"></button>
 					</div>
 
-					<div class="ask priceOffset">---</div>
-					<div class="ask priceOffsetButtons">
+					<div class="ask priceOffset hideForAsylum">---</div>
+					<div class="ask priceOffsetButtons hideForAsylum">
 						<button class="priceOffsetUp"></button>
 						<button class="priceOffsetDown"></button>
 					</div>
 
-					<div class="configControls">
+					<div class="configControls hideForAsylum">
 						<button class="default">D</button>
 						<button class="wide">W</button>
 						<button class="obligation">O</button>
 						<button class="configWindow">&#9775;</button>
 					</div>
 
-					<div class="bid stackControls">
+					<div class="bid stackControls hideForAsylum">
 						<div class="picardEnabled">P</div>
 						<div class="quoterEnabled">Q</div>
 					</div>
-					<div class="ask stackControls">
+					<div class="ask stackControls hideForAsylum">
 						<div class="quoterEnabled">Q</div>
 						<div class="picardEnabled">P</div>
 					</div>
-					<div class="stackControls allEnabled">All</div>
+					<div class="stackControls allEnabled hideForAsylum">All</div>
 
-					<div class="stackControls cleanParent">Clean</div>
+					<div class="stackControls cleanParent hideForAsylum">Clean</div>
 				</div>
 				<div class="children hidden">
 					<div class="header row">
@@ -327,17 +321,21 @@
 						<div class="relationship">
 							<div class="symbol childDetail"></div>
 
-							<div class="bid qtyMultiplier childDetail">Qty multiplier</div>
-							<div class="bid priceOffset childDetail">Offset BPS</div>
+							<div class="bid qtyMultiplier childDetail hideForAsylum">Qty multiplier</div>
+							<div class="bid priceOffset childDetail hideForAsylum">Offset BPS</div>
 
-							<div class="familyToChildRatio childDetail">Ratio</div>
+							<div class="familyToChildRatio childDetail hideForAsylum">Ratio</div>
 
-							<div class="ask priceOffset childDetail">Offset BPS</div>
-							<div class="ask qtyMultiplier childDetail">Qty multiplier</div>
+							<div class="ask priceOffset childDetail hideForAsylum">Offset BPS</div>
+							<div class="ask qtyMultiplier childDetail hideForAsylum">Qty multiplier</div>
 
-							<input type="submit" class="submitButton hidden childDetail" value="Submit">
-							<button type="button" class="orphanButton hidden adminOnly">Orphan</button>
-							<button type="button" class="killSymbolButton hidden adminOnly">Kill</button>
+							<input type="submit" class="submitButton hidden childDetail hideForAsylum" value="Submit">
+							<button type="button" class="orphanButton hidden adminOnly hideForAsylum">Orphan</button>
+							<button type="button" class="killSymbolButton hidden adminOnly hideForAsylum">Kill</button>
+						</div>
+
+						<div class="asylumControls">
+							<div class="leanSymbol"></div>
 						</div>
 
 						<div class="childControls">

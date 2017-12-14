@@ -428,6 +428,20 @@ input::-webkit-inner-spin-button:hover {
 	text-align: center;
 }
 
+.asylumControls {
+	display: none;
+}
+
+#adminBlock.isAsylumView .asylumControls, .asylumControls > div {
+	display: inline-block;
+}
+
+.asylumControls > div {
+	min-width: 75px;
+	max-width: 75px;
+	font-size: 12px;
+}
+
 .children .relationship .bid input {
 	background: lightcyan;
 }
@@ -466,6 +480,14 @@ input[type=Submit], #families .dataRow > button {
 
 #families .family .children .header input[type=Submit] {
 	visibility: hidden;
+}
+
+.isAsylumView .hideForAsylum, .isAsylumView #families .family .hideForAsylum {
+	display: none;
+}
+
+.onlyShowForAsylum {
+	display: none;
 }
 
 input[type=Submit].hidden {

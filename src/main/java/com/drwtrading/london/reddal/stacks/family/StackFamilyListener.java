@@ -52,7 +52,7 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
 
         presenter.addFamily(familyName);
 
-        final StackUIData uiData = new StackUIData(source, familyName);
+        final StackUIData uiData = new StackUIData(source, familyName, leanSymbol);
 
         uiDataBySymbol.put(familyName, uiData);
         uiDataByStrategyID.put(strategyID, uiData);
