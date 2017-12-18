@@ -71,11 +71,6 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         asylumView.updateChildUIData(uiData);
     }
 
-    void addFamily(final String familyName) {
-        familyView.addFamily(familyName);
-        asylumView.addFamily(familyName);
-    }
-
     void addFamilyUIData(final StackUIData uiData) {
         familyView.addFamilyUIData(uiData);
         asylumView.addFamilyUIData(uiData);

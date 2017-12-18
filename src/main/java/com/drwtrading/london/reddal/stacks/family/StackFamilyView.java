@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.stacks.family;
 
-import com.drwtrading.london.eeif.stack.manager.relations.StackAsylum;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.transport.cache.families.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackAdditiveConfig;
@@ -118,13 +117,20 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.priceOffsetDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 1, 3);
 
         this.globalPriceOffsetBPS = 0d;
-
-        addFamily(StackAsylum.ASYLUM_NAME);
     }
 
-    private boolean isFamilyDisplayable(final String familyName) {
-        final boolean isInAsylum = StackAsylum.ASYLUM_NAME.equals(familyName);
-        return isAsylumPresenter == isInAsylum;
+    private boolean isFamilyDisplayable(final String parentSymbol) {
+        final StackUIData parentUIData = parentData.get(parentSymbol);
+        if (null == parentUIData) {
+            return !isAsylumPresenter;
+        } else {
+            return isFamilyDisplayable(parentUIData.leanInstType);
+        }
+    }
+
+    private boolean isFamilyDisplayable(final InstType familyInstType) {
+        final boolean isAnAsylum = InstType.SYNTHETIC == familyInstType;
+        return isAsylumPresenter == isAnAsylum;
     }
 
     void setCommunityManager(final StackCommunityManager communityManager) {
@@ -165,8 +171,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private void updateChildUIData(final IStackFamilyUI view, final StackUIData uiData) {
 
-        final String familyName = childrenToFamily.get(uiData.symbol);
-        if (isFamilyDisplayable(familyName)) {
+        if (isFamilyDisplayable(uiData.leanInstType)) {
             view.setChildData(uiData.symbol, uiData.leanSymbol, uiData.source, uiData.getSelectedConfigType(),
                     uiData.isStrategyOn(BookSide.BID), uiData.getRunningInfo(BookSide.BID),
                     uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
@@ -253,18 +258,17 @@ public class StackFamilyView implements IStackRelationshipListener {
         return result;
     }
 
-    void addFamily(final String familyName) {
-
-        families.put(familyName, new TreeMap<>());
-        if (isFamilyDisplayable(familyName)) {
-            views.all().addFamily(familyName);
-        }
-    }
-
     void addFamilyUIData(final StackUIData uiData) {
 
-        parentData.put(uiData.symbol, uiData);
-        updateFamilyUIData(views.all(), uiData);
+        final String familyName = uiData.symbol;
+
+        parentData.put(familyName, uiData);
+        families.put(familyName, new TreeMap<>());
+
+        if (isFamilyDisplayable(uiData.leanInstType)) {
+            views.all().addFamily(familyName);
+            updateFamilyUIData(views.all(), uiData);
+        }
     }
 
     void updateFamilyUIData(final StackUIData uiData) {
@@ -498,15 +502,20 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void createFamily(final String symbol, final WebSocketInboundData data) {
 
-        final SearchResult searchResult = searchResults.get(symbol);
-        if (null != searchResult) {
+        if (isAsylumPresenter) {
 
-            final String family = getFamilyName(searchResult);
+            communityManager.createAsylum(SOURCE_UI, symbol);
+        } else {
+            final SearchResult searchResult = searchResults.get(symbol);
+            if (null != searchResult) {
 
-            final InstrumentID instID = searchResult.instID;
-            final InstType instType = searchResult.instType;
+                final String family = getFamilyName(searchResult);
 
-            communityManager.createFamily(SOURCE_UI, family, instID, instType);
+                final InstrumentID instID = searchResult.instID;
+                final InstType instType = searchResult.instType;
+
+                communityManager.createFamily(SOURCE_UI, family, instID, instType);
+            }
         }
     }
 
@@ -691,15 +700,15 @@ public class StackFamilyView implements IStackRelationshipListener {
     public void adoptChild(final String family, final String child, final WebSocketInboundData data) {
 
         final String familyName;
-        if (!families.containsKey(family)) {
+        if (families.containsKey(family)) {
+            familyName = family;
+        } else {
 
             final SearchResult searchResult = searchResults.get(family);
             familyName = getFamilyName(searchResult);
             if (!families.containsKey(familyName)) {
                 throw new IllegalArgumentException("Parent [" + family + "] is not known. Should it be created first?");
             }
-        } else {
-            familyName = family;
         }
 
         if (!childrenToFamily.containsKey(child)) {
@@ -958,9 +967,13 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void startAll(final WebSocketInboundData data) {
         if (isAsylumPresenter) {
-            for (final String childName : families.get(StackAsylum.ASYLUM_NAME).keySet()) {
-                communityManager.startChild(StackAsylum.ASYLUM_NAME, childName, BookSide.BID);
-                communityManager.startChild(StackAsylum.ASYLUM_NAME, childName, BookSide.ASK);
+            for (final StackUIData familyUIData : parentData.values()) {
+                if (isFamilyDisplayable(familyUIData.leanInstType)) {
+                    for (final String childName : families.get(familyUIData.symbol).keySet()) {
+                        communityManager.startChild(familyUIData.symbol, childName, BookSide.BID);
+                        communityManager.startChild(familyUIData.symbol, childName, BookSide.ASK);
+                    }
+                }
             }
         } else {
             communityManager.startFamilies(families.keySet(), BookSide.BID);
@@ -971,9 +984,13 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void stopAll(final WebSocketInboundData data) {
         if (isAsylumPresenter) {
-            for (final String childName : families.get(StackAsylum.ASYLUM_NAME).keySet()) {
-                communityManager.stopChild(StackAsylum.ASYLUM_NAME, childName, BookSide.BID);
-                communityManager.stopChild(StackAsylum.ASYLUM_NAME, childName, BookSide.ASK);
+            for (final StackUIData familyUIData : parentData.values()) {
+                if (isFamilyDisplayable(familyUIData.leanInstType)) {
+                    for (final String childName : families.get(familyUIData.symbol).keySet()) {
+                        communityManager.stopChild(familyUIData.symbol, childName, BookSide.BID);
+                        communityManager.stopChild(familyUIData.symbol, childName, BookSide.ASK);
+                    }
+                }
             }
         } else {
             communityManager.stopFamilies(families.keySet(), BookSide.BID);

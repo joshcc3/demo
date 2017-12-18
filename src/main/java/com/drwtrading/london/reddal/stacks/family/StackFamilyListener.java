@@ -50,9 +50,7 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     public boolean strategyCreated(final String source, final long strategyID, final String familyName, final InstrumentID instID,
             final InstType leanInstType, final String leanSymbol, final InstrumentID leanInstID, final String additiveSymbol) {
 
-        presenter.addFamily(familyName);
-
-        final StackUIData uiData = new StackUIData(source, familyName, leanSymbol);
+        final StackUIData uiData = new StackUIData(source, familyName, leanSymbol, leanInstType);
 
         uiDataBySymbol.put(familyName, uiData);
         uiDataByStrategyID.put(strategyID, uiData);

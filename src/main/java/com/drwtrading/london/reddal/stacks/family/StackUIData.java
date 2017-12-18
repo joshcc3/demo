@@ -8,6 +8,7 @@ import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 
 import java.text.DecimalFormat;
 import java.util.EnumMap;
@@ -21,6 +22,7 @@ class StackUIData implements IStackGroupUpdateCallback {
     public final String source;
     public final String symbol;
     public final String leanSymbol;
+    public final InstType leanInstType;
 
     private final DecimalFormat priceOffsetDF;
 
@@ -31,11 +33,12 @@ class StackUIData implements IStackGroupUpdateCallback {
     private String bidPriceOffsetBPS;
     private String askPriceOffsetBPS;
 
-    StackUIData(final String source, final String symbol, final String leanSymbol) {
+    StackUIData(final String source, final String symbol, final String leanSymbol, final InstType leanInstType) {
 
         this.source = source;
         this.symbol = symbol;
         this.leanSymbol = leanSymbol;
+        this.leanInstType = leanInstType;
 
         this.priceOffsetDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 10);
 
