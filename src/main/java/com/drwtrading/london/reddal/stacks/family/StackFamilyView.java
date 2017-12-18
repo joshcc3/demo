@@ -171,7 +171,8 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private void updateChildUIData(final IStackFamilyUI view, final StackUIData uiData) {
 
-        if (isFamilyDisplayable(uiData.leanInstType)) {
+        final String parentSymbol = childrenToFamily.get(uiData.symbol);
+        if (isFamilyDisplayable(parentSymbol)) {
             view.setChildData(uiData.symbol, uiData.leanSymbol, uiData.source, uiData.getSelectedConfigType(),
                     uiData.isStrategyOn(BookSide.BID), uiData.getRunningInfo(BookSide.BID),
                     uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
