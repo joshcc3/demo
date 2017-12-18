@@ -114,6 +114,7 @@ import com.drwtrading.london.reddal.stockAlerts.StockAlertPresenter;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaRestingOrderClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaSweepClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaTWAPClient;
+import com.drwtrading.london.reddal.stockAlerts.yoda.YodaTweetClient;
 import com.drwtrading.london.reddal.symbols.ChixInstMatcher;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
@@ -287,7 +288,7 @@ public class Main {
                     new OrdersPresenter(webLog, channels.singleOrderCommand, channels.orderEntryCommandToServer);
             fibers.ui.subscribe(ordersPresenter, websocket, channels.orderEntryFromServer);
             channels.workingOrders.subscribe(
-                    new KeyedBatchSubscriber<String, WorkingOrderUpdateFromServer>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 1, TimeUnit.SECONDS,
+                    new KeyedBatchSubscriber<>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 1, TimeUnit.SECONDS,
                             WorkingOrderUpdateFromServer::key));
         }
 
@@ -365,7 +366,6 @@ public class Main {
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> webSockets = new EnumMap<>(MDSource.class);
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderWebSockets = new EnumMap<>(MDSource.class);
 
-
         final EnumMap<MDSource, ConfigGroup> shredderOverrides = new EnumMap<>(MDSource.class);
         final ConfigGroup shredderOverrideConfig = root.getEnabledGroup("shredder", "md");
         if (null != shredderOverrideConfig) {
@@ -377,7 +377,6 @@ public class Main {
                 shredderOverrides.put(mdSource, mdConfig);
             }
         }
-
 
         final ConfigGroup mdConfig = root.getGroup("md");
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
@@ -408,7 +407,6 @@ public class Main {
                 final LadderPresenter ladderPresenter =
                         getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, depthBookSubscriber, ewokBaseURL,
                                 webSocket, fiberBuilder);
-
 
                 final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
                 if (null != mdSourceStackConfigs) {
@@ -454,8 +452,6 @@ public class Main {
             }
         }
 
-
-
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
 
             final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
@@ -477,17 +473,21 @@ public class Main {
                 final IMDSubscriber shredderBookSubscriber;
                 if (shredderOverrides.containsKey(mdSource)) {
                     ReddalChannels noOpChannels = new ReddalChannels(CHANNEL_FACTORY);
-                    shredderBookSubscriber = getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource),
-                            noOpChannels, localAppName );
+                    shredderBookSubscriber =
+                            getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource), noOpChannels,
+                                    localAppName);
                 } else {
-                    shredderBookSubscriber = getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName);
+                    shredderBookSubscriber =
+                            getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName);
                 }
 
-                final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket =
+                        TypedChannels.create(WebSocketControlMessage.class);
                 shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
 
                 final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
-                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus, channels.metaData);
+                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus,
+                        channels.metaData);
                 displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
                 displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
 
@@ -514,6 +514,7 @@ public class Main {
                                             public boolean connectionEstablished(String s) {
                                                 return true;
                                             }
+
                                             @Override
                                             public void connectionLost(String s) {
                                             }
@@ -523,7 +524,6 @@ public class Main {
                 }
             }
         }
-
 
         // Auto-puller thread
         {
@@ -1015,12 +1015,13 @@ public class Main {
 
                 final YodaRestingOrderClient restingClient = new YodaRestingOrderClient(millisAtMidnight, stockAlerts);
                 final YodaSweepClient sweepClient = new YodaSweepClient(millisAtMidnight, stockAlerts);
+                final YodaTweetClient tweetClient = new YodaTweetClient(millisAtMidnight, stockAlerts);
                 final YodaTWAPClient twapClient = new YodaTWAPClient(millisAtMidnight, stockAlerts);
 
                 final YodaClientHandler yodaHandler =
                         YodaClientCacheFactory.createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName,
-                                new YodaNullClient<>(), restingClient, sweepClient, twapClient, new YodaNullClient<>(),
-                                EnumSet.of(YodaSignalType.RESTING_ORDER, YodaSignalType.SWEEP, YodaSignalType.TWAP));
+                                new YodaNullClient<>(), restingClient, sweepClient, twapClient, tweetClient, new YodaNullClient<>(),
+                                EnumSet.of(YodaSignalType.RESTING_ORDER, YodaSignalType.SWEEP, YodaSignalType.TWAP, YodaSignalType.TWEET));
 
                 final TransportTCPKeepAliveConnection<?, ?> client =
                         YodaClientCacheFactory.createClient(selectIO, yodaInstanceConfig, yodaChildMonitor, yodaHandler);
