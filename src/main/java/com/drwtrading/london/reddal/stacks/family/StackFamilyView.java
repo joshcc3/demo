@@ -51,6 +51,9 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private static final Collection<String> ALLOWED_INST_TYPES = StackStrategiesPresenter.ALLOWED_INST_TYPES;
 
+    private static final String SPREADNOUGHT_FAMILY_NAME = "Spreadnought";
+    private static final String YODA_FAMILY_NAME = "Yoda";
+
     private static final String SOURCE_UI = "FAMILY_ADMIN_UI";
 
     private static final String MD_SOURCE_FILTER_GROUP = "Trading Venue";
@@ -845,6 +848,17 @@ public class StackFamilyView implements IStackRelationshipListener {
             }
         }
         return null;
+    }
+
+    @FromWebSocketView
+    public void adoptAllYoda() {
+
+        for (final StackUIData child : childData.values()) {
+
+            if (InstType.SYNTHETIC == child.leanInstType && !YODA_FAMILY_NAME.equals(childrenToFamily.get(child.symbol))) {
+                communityManager.setRelationship(SOURCE_UI, YODA_FAMILY_NAME, child.symbol);
+            }
+        }
     }
 
     @FromWebSocketView

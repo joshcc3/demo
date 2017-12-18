@@ -436,6 +436,10 @@ input::-webkit-inner-spin-button:hover {
 	display: inline-block;
 }
 
+#adminBlock.isAsylumView .children {
+	display: block;
+}
+
 .asylumControls > div {
 	min-width: 75px;
 	max-width: 75px;
