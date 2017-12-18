@@ -9,9 +9,9 @@ $(function () {
 	};
 
 	var hash = document.location.hash.substr(1);
-	if (hash === "Asylum") {
+	if (hash) {
 		$("#adminBlock").toggleClass("isAsylumView", true);
-		ws.send("subscribeAsylum");
+		ws.send("subscribe" + hash);
 	} else {
 		ws.send("subscribeFamily");
 	}

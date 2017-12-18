@@ -1046,7 +1046,9 @@ public class Main {
                             app.logDir);
             final StackCommunityManager communityManager = server.getCommunityManager();
 
-            final StackFamilyPresenter stackFamilyPresenter = new StackFamilyPresenter(fibers.ui, webLog, contractSetGenerator);
+            final Set<String> asylumFamilyNames = stackConfig.getSet("visibleAsylumNames");
+            final StackFamilyPresenter stackFamilyPresenter =
+                    new StackFamilyPresenter(fibers.ui, webLog, contractSetGenerator, asylumFamilyNames);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(fibers.ui, webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(fibers.ui, webLog);
 

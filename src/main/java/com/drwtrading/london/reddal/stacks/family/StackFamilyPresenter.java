@@ -17,6 +17,7 @@ import org.jetlang.channels.Publisher;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class StackFamilyPresenter implements IStackRelationshipListener {
 
@@ -24,66 +25,90 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final UILogger uiLogger;
 
     private final StackFamilyView familyView;
-    private final StackFamilyView asylumView;
+    private final Map<String, StackFamilyView> asylums;
 
     private final Map<Publisher<WebSocketOutboundData>, StackFamilyView> userViews;
 
-    public StackFamilyPresenter(final FiberBuilder logFiber, final UILogger uiLogger,
-            final SpreadContractSetGenerator contractSetGenerator) {
+    public StackFamilyPresenter(final FiberBuilder logFiber, final UILogger uiLogger, final SpreadContractSetGenerator contractSetGenerator,
+            final Set<String> visibleAsylumNames) {
 
         this.logFiber = logFiber;
         this.uiLogger = uiLogger;
 
-        this.familyView = new StackFamilyView(contractSetGenerator, false);
-        this.asylumView = new StackFamilyView(contractSetGenerator, true);
+        this.familyView = new StackFamilyView(contractSetGenerator, false, null);
+
+        this.asylums = new HashMap<>();
+        for (final String asylumName : visibleAsylumNames) {
+            final StackFamilyView asylumView = new StackFamilyView(contractSetGenerator, true, asylumName);
+            asylums.put(asylumName, asylumView);
+        }
 
         this.userViews = new HashMap<>();
 
     }
 
     public void setCommunityManager(final StackCommunityManager communityManager) {
+
         familyView.setCommunityManager(communityManager);
-        asylumView.setCommunityManager(communityManager);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.setCommunityManager(communityManager);
+        }
     }
 
     public void setStrategyClient(final String nibblerName, final StackClientHandler cache) {
         familyView.setStrategyClient(nibblerName, cache);
-        asylumView.setStrategyClient(nibblerName, cache);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.setStrategyClient(nibblerName, cache);
+        }
     }
 
     public void setFilter(final StackChildFilter newFilter) {
         familyView.setFilter(newFilter);
-        asylumView.setFilter(newFilter);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.setFilter(newFilter);
+        }
     }
 
     public void setSearchResult(final SearchResult searchResult) {
         familyView.setSearchResult(searchResult);
-        asylumView.setSearchResult(searchResult);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.setSearchResult(searchResult);
+        }
     }
 
     void addChildUIData(final StackUIData uiData) {
         familyView.addChildUIData(uiData);
-        asylumView.addChildUIData(uiData);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.addChildUIData(uiData);
+        }
     }
 
     void updateChildUIData(final StackUIData uiData) {
         familyView.updateChildUIData(uiData);
-        asylumView.updateChildUIData(uiData);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.updateChildUIData(uiData);
+        }
     }
 
     void addFamilyUIData(final StackUIData uiData) {
         familyView.addFamilyUIData(uiData);
-        asylumView.addFamilyUIData(uiData);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.addFamilyUIData(uiData);
+        }
     }
 
     void updateFamilyUIData(final StackUIData uiData) {
         familyView.updateFamilyUIData(uiData);
-        asylumView.updateFamilyUIData(uiData);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.updateFamilyUIData(uiData);
+        }
     }
 
     void setConfig(final StackConfigGroup stackConfig) {
         familyView.setConfig(stackConfig);
-        asylumView.setConfig(stackConfig);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.setConfig(stackConfig);
+        }
     }
 
     @Override
@@ -93,8 +118,10 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         familyView.updateRelationship(source, relationshipID, childSymbol, parentSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset,
                 askQtyMultiplier, familyToChildRatio);
-        asylumView.updateRelationship(source, relationshipID, childSymbol, parentSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset,
-                askQtyMultiplier, familyToChildRatio);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.updateRelationship(source, relationshipID, childSymbol, parentSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset,
+                    askQtyMultiplier, familyToChildRatio);
+        }
         return true;
     }
 
@@ -105,7 +132,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     public void symbolSelected(final SymbolSelection symbolSelection) {
         familyView.symbolSelected(symbolSelection);
-        asylumView.symbolSelected(symbolSelection);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.symbolSelected(symbolSelection);
+        }
     }
 
     public void webControl(final WebSocketControlMessage webMsg) {
@@ -129,16 +158,24 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         final String username = msg.getClient().getUserName();
         final String data = msg.getData();
 
-        if ("subscribeFamily".equals(data)) {
+        final String[] cmdParts = data.split(",");
+
+        if ("subscribeFamily".equals(data) || cmdParts.length < 2) {
 
             userViews.put(outChannel, familyView);
             familyView.addUI(username, outChannel);
 
-        } else if ("subscribeAsylum".equals(data)) {
+        } else if ("subscribeAsylum".equals(cmdParts[0])) {
 
-            userViews.put(outChannel, asylumView);
-            asylumView.addUI(username, outChannel);
-
+            final String asylumName = cmdParts[1];
+            final StackFamilyView asylumView = asylums.get(asylumName);
+            if (null == asylumView) {
+                userViews.put(outChannel, familyView);
+                familyView.addUI(username, outChannel);
+            } else {
+                userViews.put(outChannel, asylumView);
+                asylumView.addUI(username, outChannel);
+            }
         } else {
 
             final StackFamilyView view = userViews.get(outChannel);

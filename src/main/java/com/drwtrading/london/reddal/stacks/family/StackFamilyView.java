@@ -67,6 +67,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private final SpreadContractSetGenerator contractSetGenerator;
     private final boolean isAsylumPresenter;
+    private final String asylumFamilyName;
 
     private final WebSocketViews<IStackFamilyUI> views;
     private final Map<String, HashSet<IStackFamilyUI>> userViews;
@@ -93,10 +94,12 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private double globalPriceOffsetBPS;
 
-    public StackFamilyView(final SpreadContractSetGenerator contractSetGenerator, final boolean isAsylumPresenter) {
+    public StackFamilyView(final SpreadContractSetGenerator contractSetGenerator, final boolean isAsylumPresenter,
+            final String asylumFamilyName) {
 
         this.contractSetGenerator = contractSetGenerator;
         this.isAsylumPresenter = isAsylumPresenter;
+        this.asylumFamilyName = asylumFamilyName;
 
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
         this.userViews = new HashMap<>();
@@ -122,18 +125,20 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.globalPriceOffsetBPS = 0d;
     }
 
-    private boolean isFamilyDisplayable(final String parentSymbol) {
-        final StackUIData parentUIData = parentData.get(parentSymbol);
-        if (null == parentUIData) {
-            return !isAsylumPresenter;
-        } else {
-            return isFamilyDisplayable(parentUIData.leanInstType);
-        }
+    private boolean isFamilyDisplayable(final String familyName) {
+
+        final StackUIData parentUIData = parentData.get(familyName);
+        return null != parentUIData && isFamilyDisplayable(parentUIData);
     }
 
-    private boolean isFamilyDisplayable(final InstType familyInstType) {
-        final boolean isAnAsylum = InstType.SYNTHETIC == familyInstType;
-        return isAsylumPresenter == isAnAsylum;
+    private boolean isFamilyDisplayable(final StackUIData parentUIData) {
+
+        final boolean isAnAsylum = InstType.SYNTHETIC == parentUIData.leanInstType;
+        if (isAsylumPresenter) {
+            return isAnAsylum && asylumFamilyName.equals(parentUIData.symbol);
+        } else {
+            return !isAnAsylum;
+        }
     }
 
     void setCommunityManager(final StackCommunityManager communityManager) {
@@ -269,7 +274,7 @@ public class StackFamilyView implements IStackRelationshipListener {
         parentData.put(familyName, uiData);
         families.put(familyName, new TreeMap<>());
 
-        if (isFamilyDisplayable(uiData.leanInstType)) {
+        if (isFamilyDisplayable(uiData)) {
             views.all().addFamily(familyName);
             updateFamilyUIData(views.all(), uiData);
         }
@@ -983,7 +988,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     public void startAll(final WebSocketInboundData data) {
         if (isAsylumPresenter) {
             for (final StackUIData familyUIData : parentData.values()) {
-                if (isFamilyDisplayable(familyUIData.leanInstType)) {
+                if (isFamilyDisplayable(familyUIData)) {
                     for (final String childName : families.get(familyUIData.symbol).keySet()) {
                         communityManager.startChild(familyUIData.symbol, childName, BookSide.BID);
                         communityManager.startChild(familyUIData.symbol, childName, BookSide.ASK);
@@ -1000,7 +1005,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     public void stopAll(final WebSocketInboundData data) {
         if (isAsylumPresenter) {
             for (final StackUIData familyUIData : parentData.values()) {
-                if (isFamilyDisplayable(familyUIData.leanInstType)) {
+                if (isFamilyDisplayable(familyUIData)) {
                     for (final String childName : families.get(familyUIData.symbol).keySet()) {
                         communityManager.stopChild(familyUIData.symbol, childName, BookSide.BID);
                         communityManager.stopChild(familyUIData.symbol, childName, BookSide.ASK);
