@@ -128,7 +128,11 @@ public class StackFamilyView implements IStackRelationshipListener {
     private boolean isFamilyDisplayable(final String familyName) {
 
         final StackUIData parentUIData = parentData.get(familyName);
-        return null != parentUIData && isFamilyDisplayable(parentUIData);
+        if (null == parentUIData) {
+            return !isAsylumPresenter;
+        } else {
+            return isFamilyDisplayable(parentUIData);
+        }
     }
 
     private boolean isFamilyDisplayable(final StackUIData parentUIData) {
@@ -860,7 +864,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         for (final StackUIData child : childData.values()) {
 
-            if (InstType.SYNTHETIC == child.leanInstType && !YODA_FAMILY_NAME.equals(child.symbol) &&
+            if (InstType.SYNTHETIC == child.leanInstType && !families.containsKey(child.symbol) &&
                     !YODA_FAMILY_NAME.equals(childrenToFamily.get(child.symbol))) {
 
                 communityManager.setRelationship(SOURCE_UI, YODA_FAMILY_NAME, child.symbol);
