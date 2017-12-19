@@ -146,7 +146,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         } else if (webMsg instanceof WebSocketDisconnected) {
 
             final StackFamilyView handler = userViews.get(webMsg.getOutboundChannel());
-            handler.removeUI(webMsg.getClient().getUserName(), (WebSocketDisconnected) webMsg);
+            if (null != handler) {
+                handler.removeUI(webMsg.getClient().getUserName(), (WebSocketDisconnected) webMsg);
+            }
         }
     }
 
@@ -160,19 +162,15 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         final String[] cmdParts = data.split(",");
 
-        if ("subscribeFamily".equals(data) || cmdParts.length < 2) {
+        if ("subscribeFamily".equals(data)) {
 
             userViews.put(outChannel, familyView);
             familyView.addUI(username, outChannel);
 
         } else if ("subscribeAsylum".equals(cmdParts[0])) {
 
-            final String asylumName = cmdParts[1];
-            final StackFamilyView asylumView = asylums.get(asylumName);
-            if (null == asylumView) {
-                userViews.put(outChannel, familyView);
-                familyView.addUI(username, outChannel);
-            } else {
+            final StackFamilyView asylumView = cmdParts.length < 2 ? null : asylums.get(cmdParts[1]);
+            if (null != asylumView) {
                 userViews.put(outChannel, asylumView);
                 asylumView.addUI(username, outChannel);
             }

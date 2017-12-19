@@ -860,7 +860,9 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         for (final StackUIData child : childData.values()) {
 
-            if (InstType.SYNTHETIC == child.leanInstType && !YODA_FAMILY_NAME.equals(childrenToFamily.get(child.symbol))) {
+            if (InstType.SYNTHETIC == child.leanInstType && !YODA_FAMILY_NAME.equals(child.symbol) &&
+                    !YODA_FAMILY_NAME.equals(childrenToFamily.get(child.symbol))) {
+
                 communityManager.setRelationship(SOURCE_UI, YODA_FAMILY_NAME, child.symbol);
             }
         }
