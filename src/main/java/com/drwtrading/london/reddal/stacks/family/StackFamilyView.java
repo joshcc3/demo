@@ -77,7 +77,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     private final Map<String, NavigableMap<String, StackUIRelationship>> families;
     private final Map<String, StackUIData> parentData;
     private final Map<String, String> childrenToFamily;
-    private final Map<String, StackUIData> childData;
+    private final Map<String, StackFamilyChildRow> childData;
 
     private final Map<String, SearchResult> searchResults;
     private final Map<String, LinkedHashSet<String>> fungibleInsts;
@@ -171,25 +171,26 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     void addChildUIData(final StackUIData uiData) {
 
-        childData.put(uiData.symbol, uiData);
-        updateChildUIData(views.all(), uiData);
+        final StackFamilyChildRow childRow = new StackFamilyChildRow(uiData);
+        childData.put(uiData.symbol, childRow);
+        updateChildUIData(views.all(), childRow);
 
         updateSymbolFilters(uiData.symbol);
     }
 
     void updateChildUIData(final StackUIData uiData) {
-        updateChildUIData(views.all(), uiData);
+
+        final StackFamilyChildRow childRow = childData.get(uiData.symbol);
+        if (childRow.updateSnapshot(uiData)) {
+            updateChildUIData(views.all(), childRow);
+        }
     }
 
-    private void updateChildUIData(final IStackFamilyUI view, final StackUIData uiData) {
+    private void updateChildUIData(final IStackFamilyUI view, final StackFamilyChildRow childRow) {
 
-        final String parentSymbol = childrenToFamily.get(uiData.symbol);
+        final String parentSymbol = childrenToFamily.get(childRow.getSymbol());
         if (isFamilyDisplayable(parentSymbol)) {
-            view.setChildData(uiData.symbol, uiData.leanSymbol, uiData.source, uiData.getSelectedConfigType(),
-                    uiData.isStrategyOn(BookSide.BID), uiData.getRunningInfo(BookSide.BID),
-                    uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
-                    uiData.isStrategyOn(BookSide.ASK), uiData.getRunningInfo(BookSide.ASK),
-                    uiData.isStackEnabled(BookSide.ASK, StackType.PICARD), uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
+            childRow.sendRowState(view);
         }
     }
 
@@ -379,7 +380,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             updateFamilyUIData(newView, uiData);
         }
 
-        for (final StackUIData uiData : childData.values()) {
+        for (final StackFamilyChildRow uiData : childData.values()) {
             updateChildUIData(newView, uiData);
         }
 
@@ -407,16 +408,16 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void increaseGlobalPriceOffset() {
+    public void increaseGlobalPriceOffset(final int multiplier, final WebSocketInboundData data) {
 
-        globalPriceOffsetBPS += GLOBAL_OFFSET_INCREMENT_BPS;
+        globalPriceOffsetBPS += multiplier * GLOBAL_OFFSET_INCREMENT_BPS;
         updateCommunityManagerGlobalOffset();
     }
 
     @FromWebSocketView
-    public void decreaseGlobalPriceOffset() {
+    public void decreaseGlobalPriceOffset(final int multiplier, final WebSocketInboundData data) {
 
-        globalPriceOffsetBPS -= GLOBAL_OFFSET_INCREMENT_BPS;
+        globalPriceOffsetBPS -= multiplier * GLOBAL_OFFSET_INCREMENT_BPS;
         globalPriceOffsetBPS = Math.max(globalPriceOffsetBPS, 0d);
         updateCommunityManagerGlobalOffset();
     }
@@ -607,15 +608,15 @@ public class StackFamilyView implements IStackRelationshipListener {
             if (expiryPeriod == future.expiryPeriod) {
 
                 final String frontMonthSymbol = expiryCalc.getFutureCode(future, 0);
-                final StackUIData frontMonthData = childData.get(frontMonthSymbol);
+                final StackFamilyChildRow frontMonthData = childData.get(frontMonthSymbol);
 
                 final String backMonthSymbol = expiryCalc.getFutureCode(future, 1);
                 final SearchResult backMonthSearchResult = searchResults.get(backMonthSymbol);
-                final StackUIData backMonthData = childData.get(backMonthSymbol);
+                final StackFamilyChildRow backMonthData = childData.get(backMonthSymbol);
 
                 if (null != frontMonthData && null == backMonthData && null != backMonthSearchResult) {
 
-                    final StackClientHandler strategyClient = nibblerClients.get(frontMonthData.source);
+                    final StackClientHandler strategyClient = nibblerClients.get(frontMonthData.getSource());
 
                     if (null != strategyClient) {
                         strategyClient.createStrategy(backMonthSymbol, backMonthSearchResult.instID, InstType.INDEX, backMonthSymbol,
@@ -650,12 +651,12 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         final Map<StackConfigType, StackConfigGroup> fromConfigs = stackConfigs.get(fromSymbol);
         final Map<StackConfigType, StackConfigGroup> toConfigs = stackConfigs.get(toSymbol);
-        final StackUIData toChildUIData = childData.get(fromSymbol);
+        final StackFamilyChildRow toChildUIData = childData.get(fromSymbol);
 
         if (null != fromConfigs && null != toConfigs) {
 
             communityManager.copyChildStacks(SOURCE_UI, fromSymbol, toSymbol);
-            final StackClientHandler configClient = nibblerClients.get(toChildUIData.source);
+            final StackClientHandler configClient = nibblerClients.get(toChildUIData.getSource());
 
             for (final StackConfigType configType : StackConfigType.values()) {
 
@@ -776,15 +777,16 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         final long midnight = cal.getTimeInMillis();
 
-        for (final StackUIData stackData : childData.values()) {
+        for (final StackFamilyChildRow childRow : childData.values()) {
 
-            final FutureConstant future = FutureConstant.getFutureFromSymbol(stackData.symbol);
+            final String childSymbol = childRow.getSymbol();
+            final FutureConstant future = FutureConstant.getFutureFromSymbol(childSymbol);
             if (null != future) {
 
-                expiryCalc.setToRollDate(cal, stackData.symbol);
+                expiryCalc.setToRollDate(cal, childSymbol);
 
                 if (cal.getTimeInMillis() < midnight) {
-                    killStrategy(stackData.symbol);
+                    killStrategy(childSymbol);
                 }
             }
         }
@@ -796,10 +798,10 @@ public class StackFamilyView implements IStackRelationshipListener {
             communityManager.orphanChild(SOURCE_UI, childSymbol);
         }
 
-        final StackUIData stackData = childData.get(childSymbol);
-        if (null != stackData) {
+        final StackFamilyChildRow childRow = childData.get(childSymbol);
+        if (null != childRow) {
 
-            final StackClientHandler stackClient = nibblerClients.get(stackData.source);
+            final StackClientHandler stackClient = nibblerClients.get(childRow.getSource());
             if (null != stackClient) {
                 stackClient.killStrategy(childSymbol);
                 stackClient.batchComplete();
@@ -862,12 +864,12 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void adoptAllYoda() {
 
-        for (final StackUIData child : childData.values()) {
+        for (final StackFamilyChildRow child : childData.values()) {
 
-            if (InstType.SYNTHETIC == child.leanInstType && !families.containsKey(child.symbol) &&
-                    !YODA_FAMILY_NAME.equals(childrenToFamily.get(child.symbol))) {
+            if (InstType.SYNTHETIC == child.getLeanInstType() && !families.containsKey(child.getSymbol()) &&
+                    !YODA_FAMILY_NAME.equals(childrenToFamily.get(child.getSymbol()))) {
 
-                communityManager.setRelationship(SOURCE_UI, YODA_FAMILY_NAME, child.symbol);
+                communityManager.setRelationship(SOURCE_UI, YODA_FAMILY_NAME, child.getSymbol());
             }
         }
     }
@@ -975,8 +977,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     private void setChildStackEnabled(final String familyName, final String childSymbol, final BookSide side, final StackType stackType,
             final boolean isEnabled) {
 
-        final StackUIData childUIData = childData.get(childSymbol);
-        if (null != childUIData) {
+        if (childData.containsKey(childSymbol)) {
             try {
                 communityManager.setChildStackEnabled(SOURCE_UI, familyName, childSymbol, side, stackType, isEnabled);
             } catch (final NullPointerException ignored) {

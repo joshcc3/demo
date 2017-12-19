@@ -68,12 +68,8 @@ $(function () {
 		}, 3000);
 	});
 
-	$("#globalPriceOffsetUp").unbind().bind("click", function () {
-		ws.send(command("increaseGlobalPriceOffset", []));
-	});
-	$("#globalPriceOffsetDown").unbind().bind("click", function () {
-		ws.send(command("decreaseGlobalPriceOffset", []));
-	});
+	$("#globalPriceOffsetUp").unbind().mousedown(globalWidthControls("increaseGlobalPriceOffset"));
+	$("#globalPriceOffsetDown").unbind().mousedown(globalWidthControls("decreaseGlobalPriceOffset"));
 
 	var footer = $("#footer");
 	var closeFooter = footer.find("#closeFooter");
@@ -677,6 +673,24 @@ function stackEnableAllStackChange(familyName) {
 			case 3:
 			{
 				ws.send(command("setAllStacksEnabled", [familyName, false]));
+				break;
+			}
+		}
+	}
+}
+
+function globalWidthControls(instruction) {
+	return function (event) {
+		event.preventDefault();
+		switch (event.which) {
+			case 1:
+			{
+				ws.send(command(instruction, [1]));
+				break;
+			}
+			case 3:
+			{
+				ws.send(command(instruction, [5]));
 				break;
 			}
 		}
