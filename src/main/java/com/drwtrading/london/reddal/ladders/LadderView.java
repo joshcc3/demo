@@ -10,7 +10,6 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
-import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
@@ -122,7 +121,6 @@ public class LadderView implements UiEventHandler {
     private final String ewokBaseURL;
     private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final LadderOptions ladderOptions;
-    private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
@@ -162,9 +160,8 @@ public class LadderView implements UiEventHandler {
     public LadderView(final IResourceMonitor<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui,
             final ILadderUI view, final String ewokBaseURL, final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
             final LadderOptions ladderOptions, final TradingStatusForAll tradingStatusForAll,
-            final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+            final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
+            final Publisher<Jsonable> trace, final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
@@ -178,7 +175,6 @@ public class LadderView implements UiEventHandler {
         this.ewokBaseURL = ewokBaseURL;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.ladderOptions = ladderOptions;
-        this.commandPublisher = commandPublisher;
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.trace = trace;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
@@ -222,10 +218,9 @@ public class LadderView implements UiEventHandler {
         final long bookCenteredPrice = null == bookView ? 0 : bookView.getCenteredPrice();
         this.bookView =
                 new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ui, view, ladderOptions, ladderPrefsForSymbolUser,
-                        ladderClickTradingIssuePublisher, commandPublisher, remoteOrderCommandToServerPublisher, eeifCommandToServer,
-                        tradingStatusForAll, marketData, workingOrdersForSymbol, extraDataForSymbol, orderUpdatesForSymbol, levels,
-                        ladderHTMLKeys, stackData, metaData, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, trace,
-                        orderEntryMap, bookCenteredPrice);
+                        ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher, eeifCommandToServer, tradingStatusForAll,
+                        marketData, workingOrdersForSymbol, extraDataForSymbol, orderUpdatesForSymbol, levels, ladderHTMLKeys, stackData,
+                        metaData, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
         final Map<String, Integer> buttonQties;

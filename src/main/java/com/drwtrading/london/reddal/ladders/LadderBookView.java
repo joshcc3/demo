@@ -18,11 +18,6 @@ import com.drwtrading.london.photons.eeifoe.Cancel;
 import com.drwtrading.london.photons.eeifoe.Metadata;
 import com.drwtrading.london.photons.eeifoe.OrderSide;
 import com.drwtrading.london.photons.eeifoe.Submit;
-import com.drwtrading.london.photons.reddal.Command;
-import com.drwtrading.london.photons.reddal.Direction;
-import com.drwtrading.london.photons.reddal.ReddalCommand;
-import com.drwtrading.london.photons.reddal.ReddalMessage;
-import com.drwtrading.london.photons.reddal.UpdateOffset;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderMetaData;
@@ -130,7 +125,6 @@ public class LadderBookView implements ILadderBoard {
     private final Map<String, String> defaultPrefs;
 
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher;
-    private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final Publisher<OrderEntryCommandToServer> eeifCommandToServer;
     private final TradingStatusForAll tradingStatusForAll;
@@ -175,7 +169,7 @@ public class LadderBookView implements ILadderBoard {
     LadderBookView(final IResourceMonitor<ReddalComponents> monitor, final String username, final boolean isTrader, final String symbol,
             final UiPipeImpl ui, final ILadderUI view, final LadderOptions ladderOptions,
             final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher, final Publisher<ReddalMessage> commandPublisher,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
             final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
             final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
@@ -212,7 +206,6 @@ public class LadderBookView implements ILadderBoard {
         this.defaultPrefs.put(HTML.RANDOM_RELOAD_CHECK, "true");
 
         this.ladderClickTradingIssuesPublisher = ladderClickTradingIssuesPublisher;
-        this.commandPublisher = commandPublisher;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.eeifCommandToServer = eeifCommandToServer;
         this.tradingStatusForAll = tradingStatusForAll;
@@ -657,11 +650,8 @@ public class LadderBookView implements ILadderBoard {
             }
         }
 
-        if (null != dataForSymbol) {
-            final boolean isInvisible = !dataForSymbol.symbolAvailable &&
-                    (null == metaData.spreadContractSet || null == metaData.spreadContractSet.stackSymbol);
-            ui.cls(HTML.OFFSET_CONTROL, CSSClass.INVISIBLE, isInvisible);
-        }
+        final boolean isInvisible = null == metaData.spreadContractSet || null == metaData.spreadContractSet.stackSymbol;
+        ui.cls(HTML.OFFSET_CONTROL, CSSClass.INVISIBLE, isInvisible);
     }
 
     private String getPref(final String id) {
@@ -1071,46 +1061,38 @@ public class LadderBookView implements ILadderBoard {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     stackParentCmdPublisher.publish(
                             new StackIncreaseParentOffsetCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, 1));
-                } else if (!stackData.improveBidStackPriceOffset(stackData.getPriceOffsetTickSize())) {
-                    commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.UP));
+                } else {
+                    stackData.improveBidStackPriceOffset(stackData.getPriceOffsetTickSize());
                 }
             } else if (label.equals(HTML.BUY_OFFSET_DOWN)) {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     stackParentCmdPublisher.publish(
                             new StackIncreaseParentOffsetCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, -1));
-                } else if (!stackData.improveBidStackPriceOffset(-stackData.getPriceOffsetTickSize())) {
-                    commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.DOWN));
+                } else {
+                    stackData.improveBidStackPriceOffset(-stackData.getPriceOffsetTickSize());
                 }
             } else if (label.equals(HTML.SELL_OFFSET_UP)) {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     stackParentCmdPublisher.publish(
                             new StackIncreaseParentOffsetCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, 1));
-                } else if (!stackData.improveAskStackPriceOffset(stackData.getPriceOffsetTickSize())) {
-                    commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.UP));
+                } else {
+                    stackData.improveAskStackPriceOffset(stackData.getPriceOffsetTickSize());
                 }
             } else if (label.equals(HTML.SELL_OFFSET_DOWN)) {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     stackParentCmdPublisher.publish(
                             new StackIncreaseParentOffsetCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, -1));
-                } else if (!stackData.improveAskStackPriceOffset(-stackData.getPriceOffsetTickSize())) {
-                    commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.DOWN));
+                } else {
+                    stackData.improveAskStackPriceOffset(-stackData.getPriceOffsetTickSize());
                 }
             } else if (label.equals(HTML.START_BUY)) {
-                if (!stackData.startBidStrategy()) {
-                    commandPublisher.publish(new Command(ReddalCommand.START, symbol, com.drwtrading.london.photons.reddal.Side.BID));
-                }
+                stackData.startBidStrategy();
             } else if (label.equals(HTML.START_SELL)) {
-                if (!stackData.startAskStrategy()) {
-                    commandPublisher.publish(new Command(ReddalCommand.START, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
-                }
+                stackData.startAskStrategy();
             } else if (label.equals(HTML.STOP_BUY)) {
-                if (!stackData.stopBidStrategy()) {
-                    commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.BID));
-                }
+                stackData.stopBidStrategy();
             } else if (label.equals(HTML.STOP_SELL)) {
-                if (!stackData.stopAskStrategy()) {
-                    commandPublisher.publish(new Command(ReddalCommand.STOP, symbol, com.drwtrading.london.photons.reddal.Side.OFFER));
-                }
+                stackData.stopAskStrategy();
             } else if (label.equals(HTML.PRICING_BPS)) {
                 pricingModes.set(PricingMode.BPS);
             } else if (label.equals(HTML.PRICING_RAW)) {
@@ -1137,29 +1119,29 @@ public class LadderBookView implements ILadderBoard {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     increaseChildOffsetCmdPublisher.publish(
                             new StackIncreaseChildOffsetCmd(LADDER_SOURCE, symbol, BookSide.BID, stackData.getPriceOffsetTickSize()));
-                } else if (!stackData.adjustBidStackLevels(-1)) {
-                    commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.UP));
+                } else {
+                    stackData.adjustBidStackLevels(-1);
                 }
             } else if (label.equals(HTML.BUY_OFFSET_DOWN)) {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     increaseChildOffsetCmdPublisher.publish(
                             new StackIncreaseChildOffsetCmd(LADDER_SOURCE, symbol, BookSide.BID, -stackData.getPriceOffsetTickSize()));
-                 } else if (!stackData.adjustBidStackLevels(1)) {
-                    commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.BID, Direction.DOWN));
+                } else {
+                    stackData.adjustBidStackLevels(1);
                 }
             } else if (label.equals(HTML.SELL_OFFSET_UP)) {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     increaseChildOffsetCmdPublisher.publish(
                             new StackIncreaseChildOffsetCmd(LADDER_SOURCE, symbol, BookSide.ASK, stackData.getPriceOffsetTickSize()));
-                } else if (!stackData.adjustAskStackLevels(1)) {
-                    commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.UP));
+                } else {
+                    stackData.adjustAskStackLevels(1);
                 }
             } else if (label.equals(HTML.SELL_OFFSET_DOWN)) {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     increaseChildOffsetCmdPublisher.publish(
                             new StackIncreaseChildOffsetCmd(LADDER_SOURCE, symbol, BookSide.ASK, -stackData.getPriceOffsetTickSize()));
-                } else if (!stackData.adjustAskStackLevels(-1)) {
-                    commandPublisher.publish(new UpdateOffset(symbol, com.drwtrading.london.photons.reddal.Side.OFFER, Direction.DOWN));
+                } else {
+                    stackData.adjustAskStackLevels(-1);
                 }
             }
         } else if ("middle".equals(button)) {

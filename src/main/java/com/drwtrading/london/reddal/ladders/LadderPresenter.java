@@ -15,8 +15,6 @@ import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.photons.reddal.CenterToPrice;
-import com.drwtrading.london.photons.reddal.ReddalMessage;
-import com.drwtrading.london.photons.reddal.SymbolAvailable;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
@@ -98,7 +96,6 @@ public class LadderPresenter {
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher;
     private final Publisher<HeartbeatRoundtrip> roundTripPublisher;
-    private final Publisher<ReddalMessage> commandPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
     private final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher;
@@ -114,9 +111,8 @@ public class LadderPresenter {
     public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
             final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
-            final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<ReddalMessage> commandPublisher,
-            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Fiber fiber, final Publisher<Jsonable> trace,
-            final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
+            final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
+            final Fiber fiber, final Publisher<Jsonable> trace, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher,
@@ -131,7 +127,6 @@ public class LadderPresenter {
         this.ladderOptions = ladderOptions;
         this.storeLadderPrefPublisher = storeLadderPrefPublisher;
         this.roundTripPublisher = roundTripPublisher;
-        this.commandPublisher = commandPublisher;
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.fiber = fiber;
         this.trace = trace;
@@ -190,10 +185,9 @@ public class LadderPresenter {
         final ILadderUI view = new WebSocketOutputDispatcher<>(ILadderUI.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final LadderView ladderView =
                 new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions,
-                        tradingStatusForAll, roundTripPublisher, commandPublisher, recenterLaddersForUser, trace,
-                        ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
-                        orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
-                        refData::containsKey);
+                        tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, trace, ladderClickTradingIssuePublisher,
+                        userCycleContractPublisher, userWorkspaceRequests, orderEntryMap, orderEntryCommandToServerPublisher,
+                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, refData::containsKey);
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }
@@ -250,8 +244,7 @@ public class LadderPresenter {
             }
         }
         if (!"heartbeat".equals(cmd)) {
-            trace.publish(
-                    new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
+            trace.publish(new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
         }
     }
 
@@ -319,7 +312,7 @@ public class LadderPresenter {
     @KeyedBatchSubscriber(converter = WorkingOrdersPresenter.WOConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
     public void onWorkingOrderUpdates(final Map<String, WorkingOrderUpdateFromServer> workingOrderUpdates) {
-        for (WorkingOrderUpdateFromServer workingOrderUpdate : workingOrderUpdates.values()) {
+        for (final WorkingOrderUpdateFromServer workingOrderUpdate : workingOrderUpdates.values()) {
             ordersBySymbol.get(workingOrderUpdate.workingOrderUpdate.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
         }
     }
@@ -435,11 +428,6 @@ public class LadderPresenter {
     }
 
     @Subscribe
-    public void on(final SymbolAvailable symbolAvailable) {
-        dataBySymbol.get(symbolAvailable.getSymbol()).setSymbolAvailable();
-    }
-
-    @Subscribe
     public void on(final DisplaySymbol displaySymbol) {
         metaDataBySymbol.get(displaySymbol.marketDataSymbol).setDisplaySymbol(displaySymbol);
     }
@@ -481,7 +469,7 @@ public class LadderPresenter {
     public static class UpdateFromServerConverter implements Converter<UpdateFromServer, String> {
 
         @Override
-        public String convert(UpdateFromServer msg) {
+        public String convert(final UpdateFromServer msg) {
             return msg.key;
         }
     }
@@ -489,7 +477,7 @@ public class LadderPresenter {
     @KeyedBatchSubscriber(converter = UpdateFromServerConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
     public void onEeifOEUpdates(final Map<String, UpdateFromServer> updates) {
-        for (UpdateFromServer update : updates.values()) {
+        for (final UpdateFromServer update : updates.values()) {
             eeifOrdersBySymbol.get(update.symbol).onUpdate(update);
         }
     }

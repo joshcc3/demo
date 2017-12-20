@@ -21,8 +21,6 @@ public class ExtraDataForSymbol {
     public com.drwtrading.photons.ladder.LastTrade lastBuy;
     public com.drwtrading.photons.ladder.LastTrade lastSell;
 
-    public boolean symbolAvailable = false;
-
     private final Map<LaserLineType, LaserLine> laserLines;
 
     private TheoValue theoValue;
@@ -50,10 +48,6 @@ public class ExtraDataForSymbol {
         } else if (lastTrade.getSide() == Side.OFFER) {
             lastSell = lastTrade;
         }
-    }
-
-    public void setSymbolAvailable() {
-        symbolAvailable = true;
     }
 
     public void setTheoValue(final TheoValue theoValue) {

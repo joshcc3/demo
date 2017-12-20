@@ -925,7 +925,7 @@ public class Main {
 
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
-                        environment.ladderOptions(), channels.storeLadderPref, channels.heartbeatRoundTrips, channels.reddalCommand,
+                        environment.ladderOptions(), channels.storeLadderPref, channels.heartbeatRoundTrips,
                         channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffsetCmds,
                         channels.increaseChildOffsetBPSCmds, channels.ladderClickTradingIssues, channels.userCycleContractPublisher,
                         channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
