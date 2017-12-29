@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.ladders;
 
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SymbolMetaData;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -143,6 +142,7 @@ public class LadderView implements UiEventHandler {
     private long lastCenteredTime = 0;
     private LadderMetaData metaData;
     private ExtraDataForSymbol extraDataForSymbol;
+    private SymbolStackData stackData;
 
     private ClientSpeedState clientSpeedState = ClientSpeedState.FINE;
 
@@ -212,6 +212,7 @@ public class LadderView implements UiEventHandler {
         this.marketData = marketData;
         this.metaData = metaData;
         this.extraDataForSymbol = extraDataForSymbol;
+        this.stackData = stackData;
 
         final boolean wasBookView = null == bookView || activeView == bookView;
 
@@ -435,10 +436,9 @@ public class LadderView implements UiEventHandler {
                 ui.txt(HTML.TEXT_PREFIX + ladderText.getCell(), ladderText.getText());
             }
 
-            final SymbolMetaData symbolMetaData = extraDataForSymbol.getMetaData();
-            if (null != symbolMetaData) {
-                setCellTest("r2c2", symbolMetaData.getBidStrategyOffset());
-                setCellTest("r2c4", symbolMetaData.getAskStrategyOffset());
+            if (null != stackData) {
+                setCellTest(HTML.BID_BEST_OFFSET_BPS, stackData.getBidTopOrderOffsetBPS());
+                setCellTest(HTML.ASK_BEST_OFFSET_BPS, stackData.getAskTopOrderOffsetBPS());
             }
 
             final TheoValue theoValue = extraDataForSymbol.getTheoValue();
@@ -466,9 +466,9 @@ public class LadderView implements UiEventHandler {
     private void setCellTest(final String cellID, final double value) {
 
         if (Double.isNaN(value)) {
-            ui.txt(HTML.TEXT_PREFIX + cellID, "---");
+            ui.txt(cellID, "---");
         } else {
-            ui.txt(HTML.TEXT_PREFIX + cellID, twoDF.format(value));
+            ui.txt(cellID, twoDF.format(value));
 
         }
     }

@@ -3,7 +3,6 @@ package com.drwtrading.london.reddal.nibblers;
 import com.drwtrading.london.eeif.nibbler.transport.cache.tradingData.INibblerTradingDataListener;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SymbolMetaData;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableRow;
@@ -36,7 +35,6 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
     private final FileTableRow<NibblerMetaTables, NibblerTheoValueColumns> theoRow;
     private final FileTableRow<NibblerMetaTables, NibblerLaserLineColumns> laserLineRow;
     private final FileTableRow<NibblerMetaTables, NibblerLastTradeColumns> lastTradeRow;
-    private final FileTableRow<NibblerMetaTables, NibblerMetaDataColumns> metaDataRow;
 
     public NibblerMetaDataLogger(final IClock clock, final IResourceMonitor<ReddalComponents> monitor, final Path logDir,
             final String nibblerName) throws IOException {
@@ -55,7 +53,6 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         this.theoRow = fileTableWriter.addTable(NibblerMetaTables.THEO_VALUE, NibblerTheoValueColumns.values());
         this.laserLineRow = fileTableWriter.addTable(NibblerMetaTables.LASER_LINE, NibblerLaserLineColumns.values());
         this.lastTradeRow = fileTableWriter.addTable(NibblerMetaTables.LAST_TRADE, NibblerLastTradeColumns.values());
-        this.metaDataRow = fileTableWriter.addTable(NibblerMetaTables.META_DATA, NibblerMetaDataColumns.values());
     }
 
     @Override
@@ -156,33 +153,6 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
 
         try {
             this.fileTableWriter.writeRow(lastTradeRow, false);
-        } catch (final IOException e) {
-            monitor.logError(ReddalComponents.META_DATA_LOG, "Failed to write laser line row.", e);
-        }
-    }
-
-    @Override
-    public boolean addMetaData(final SymbolMetaData metaData) {
-        writeMetaDataRow(metaData);
-        return true;
-    }
-
-    @Override
-    public boolean updateMetaData(final SymbolMetaData metaData) {
-        writeMetaDataRow(metaData);
-        return true;
-    }
-
-    private void writeMetaDataRow(final SymbolMetaData metaData) {
-
-        metaDataRow.set(NibblerMetaDataColumns.SYMBOL, metaData.getSymbol());
-
-        metaDataRow.set(NibblerMetaDataColumns.BID_STRATEGY_OFFSET, priceDF.format(metaData.getBidStrategyOffset()));
-        metaDataRow.set(NibblerMetaDataColumns.ASK_STRATEGY_OFFSET, priceDF.format(metaData.getAskStrategyOffset()));
-        metaDataRow.set(NibblerMetaDataColumns.FIXED_RATE_FRACTION, priceDF.format(metaData.getFixedRateFraction()));
-
-        try {
-            this.fileTableWriter.writeRow(metaDataRow, false);
         } catch (final IOException e) {
             monitor.logError(ReddalComponents.META_DATA_LOG, "Failed to write laser line row.", e);
         }

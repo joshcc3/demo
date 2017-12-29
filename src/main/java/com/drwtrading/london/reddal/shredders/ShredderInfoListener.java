@@ -3,7 +3,6 @@ package com.drwtrading.london.reddal.shredders;
 import com.drwtrading.london.eeif.nibbler.transport.cache.tradingData.INibblerTradingDataListener;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SymbolMetaData;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 
 public class ShredderInfoListener implements INibblerTradingDataListener {
@@ -44,16 +43,6 @@ public class ShredderInfoListener implements INibblerTradingDataListener {
 
     @Override
     public boolean updateLastTrade(final LastTrade lastTrade) {
-        return true;
-    }
-
-    @Override
-    public boolean addMetaData(final SymbolMetaData metaData) {
-        return true;
-    }
-
-    @Override
-    public boolean updateMetaData(final SymbolMetaData metaData) {
         return true;
     }
 

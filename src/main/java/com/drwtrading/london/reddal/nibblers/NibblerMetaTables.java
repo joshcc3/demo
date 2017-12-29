@@ -5,6 +5,5 @@ public enum NibblerMetaTables {
     CONNECTED,
     THEO_VALUE,
     LASER_LINE,
-    LAST_TRADE,
-    META_DATA
+    LAST_TRADE
 }

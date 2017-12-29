@@ -31,12 +31,14 @@ public class SymbolStackData {
     private String bidFormattedPriceOffsetBPS;
     private long totalBidQty;
     private final boolean[] enabledBidStacks;
+    private double bidMostAggressiveOffsetBPS;
 
     private final LongMap<SymbolStackPriceLevel> askStackLevels;
     private StackGroup askStackGroup;
     private String askFormattedPriceOffsetBPS;
     private long totalAskQty;
     private final boolean[] enabledAskStacks;
+    private double askMostAggressiveOffsetBPS;
 
     private double priceOffsetTickSize;
     private double stackAlignmentTickToBPS;
@@ -97,13 +99,24 @@ public class SymbolStackData {
         bidFormattedPriceOffsetBPS = PRICE_DF.format(stackGroup.getPriceOffsetBPS());
         totalBidQty = setGroup(bidStackLevels, stackGroup, BID_PRICE_MULTIPLIER);
 
+        boolean isStackPresent = false;
         for (final StackType stackType : StackType.values()) {
+
             final Stack stack = stackGroup.getStack(stackType);
             enabledBidStacks[stackType.ordinal()] = stack.isEnabled();
+
+            isStackPresent |= null != stack.getFirstLevel();
         }
 
         priceOffsetTickSize = stackGroup.getPriceOffsetTickSize();
         stackAlignmentTickToBPS = stackGroup.getStackAlignmentTickToBPS();
+
+        if (isStackPresent) {
+            bidMostAggressiveOffsetBPS = stackGroup.getPriceOffsetBPS() +
+                    stackAlignmentTickToBPS * getMostAggressiveTickOffset(stackGroup, BID_PRICE_MULTIPLIER);
+        } else {
+            bidMostAggressiveOffsetBPS = Double.NaN;
+        }
     }
 
     public void setAskGroup(final StackGroup stackGroup) {
@@ -112,9 +125,22 @@ public class SymbolStackData {
         askFormattedPriceOffsetBPS = PRICE_DF.format(stackGroup.getPriceOffsetBPS());
         totalAskQty = setGroup(askStackLevels, stackGroup, ASK_PRICE_MULTIPLIER);
 
+        boolean isStackPresent = false;
         for (final StackType stackType : StackType.values()) {
+
             final Stack stack = stackGroup.getStack(stackType);
             enabledAskStacks[stackType.ordinal()] = stack.isEnabled();
+
+            isStackPresent |= null != stack.getFirstLevel();
+        }
+
+        final double stackAlignmentTickToBPS = stackGroup.getStackAlignmentTickToBPS();
+
+        if (isStackPresent) {
+            askMostAggressiveOffsetBPS = stackGroup.getPriceOffsetBPS() +
+                    stackAlignmentTickToBPS * getMostAggressiveTickOffset(stackGroup, ASK_PRICE_MULTIPLIER);
+        } else {
+            askMostAggressiveOffsetBPS = Double.NaN;
         }
     }
 
@@ -188,6 +214,10 @@ public class SymbolStackData {
         return totalBidQty;
     }
 
+    public double getBidTopOrderOffsetBPS() {
+        return bidMostAggressiveOffsetBPS;
+    }
+
     public boolean isAskStackEnabled(final StackType stackType) {
         return enabledAskStacks[stackType.ordinal()];
     }
@@ -214,6 +244,10 @@ public class SymbolStackData {
 
     public long getTotalAskQty() {
         return totalAskQty;
+    }
+
+    public double getAskTopOrderOffsetBPS() {
+        return askMostAggressiveOffsetBPS;
     }
 
     private static long getMostAggressiveTickOffset(final StackGroup stackGroup, final long priceMultiplier) {

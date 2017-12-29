@@ -7,7 +7,6 @@ import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterSymbolLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SymbolMetaData;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 
@@ -56,17 +55,6 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
 
     @Override
     public boolean updateLastTrade(final LastTrade lastTrade) {
-        return true;
-    }
-
-    @Override
-    public boolean addMetaData(final SymbolMetaData metaData) {
-        ladderPresenter.setMetaData(metaData);
-        return true;
-    }
-
-    @Override
-    public boolean updateMetaData(final SymbolMetaData metaData) {
         return true;
     }
 

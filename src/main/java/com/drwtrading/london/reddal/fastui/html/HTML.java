@@ -4,7 +4,6 @@ public class HTML {
 
     public static final String LADDER_DIV = "ladderDiv";
 
-
     public static final String BOOK_TABLE = "rows";
 
     public static final String EMPTY = " "; /* Key prefixes*/
@@ -16,6 +15,8 @@ public class HTML {
     public static final String TRADE = "trade_";
     public static final String VOLUME = "volume_";
     public static final String AFTER_HOURS_WEIGHT = "after_hours_weight";
+    public static final String BID_BEST_OFFSET_BPS = "bid_best_offset_bps";
+    public static final String ASK_BEST_OFFSET_BPS = "ask_best_offset_bps";
     public static final String TEXT_PREFIX = "text_";
 
     public static final String STACK_BID_QUOTE = "bid_quote_";

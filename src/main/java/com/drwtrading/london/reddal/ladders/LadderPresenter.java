@@ -4,7 +4,6 @@ import com.drwtrading.jetlang.autosubscribe.KeyedBatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SymbolMetaData;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
@@ -171,12 +170,6 @@ public class LadderPresenter {
 
         final ExtraDataForSymbol data = dataBySymbol.get(lastTrade.getSymbol());
         data.setLastTrade(lastTrade);
-    }
-
-    public void setMetaData(final SymbolMetaData metaData) {
-
-        final ExtraDataForSymbol data = dataBySymbol.get(metaData.getSymbol());
-        data.setMetaData(metaData);
     }
 
     @Subscribe

@@ -2,7 +2,6 @@ package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SymbolMetaData;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.LaserLineType;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -27,8 +26,6 @@ public class ExtraDataForSymbol {
 
     private LastTrade bidLastTrade;
     private LastTrade askLastTrade;
-
-    private SymbolMetaData metaData;
 
     public ExtraDataForSymbol(final String symbol) {
 
@@ -84,13 +81,5 @@ public class ExtraDataForSymbol {
 
     public boolean isLastSell(final long price) {
         return (null != askLastTrade && askLastTrade.getPrice() == price) || (null != lastSell && lastSell.getPrice() == price);
-    }
-
-    public void setMetaData(final SymbolMetaData metaData) {
-        this.metaData = metaData;
-    }
-
-    public SymbolMetaData getMetaData() {
-        return metaData;
     }
 }
