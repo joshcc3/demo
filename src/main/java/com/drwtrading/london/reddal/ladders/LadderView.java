@@ -436,14 +436,14 @@ public class LadderView implements UiEventHandler {
             }
 
             final SymbolMetaData symbolMetaData = extraDataForSymbol.getMetaData();
-            if (null != extraDataForSymbol.getMetaData()) {
+            if (null != symbolMetaData) {
                 setCellTest("r2c2", symbolMetaData.getBidStrategyOffset());
                 setCellTest("r2c4", symbolMetaData.getAskStrategyOffset());
             }
 
-            if (null != extraDataForSymbol.getTheoValue()) {
+            final TheoValue theoValue = extraDataForSymbol.getTheoValue();
+            if (null != theoValue) {
 
-                final TheoValue theoValue = extraDataForSymbol.getTheoValue();
                 if (!theoValue.isValid()) {
                     ui.txt(HTML.AFTER_HOURS_WEIGHT, "XXX");
                     ui.txt(HTML.TEXT_PREFIX + "r2c5", "XXX");

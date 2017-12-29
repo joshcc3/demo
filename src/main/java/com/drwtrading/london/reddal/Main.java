@@ -194,7 +194,7 @@ public class Main {
     private static final Pattern PARENT_STACK_SUFFIX = Pattern.compile(";S", Pattern.LITERAL);
     public static final ChannelFactory CHANNEL_FACTORY = new ChannelFactory() {
         @Override
-        public <T> TypedChannel<T> createChannel(Class<T> type, String name) {
+        public <T> TypedChannel<T> createChannel(final Class<T> type, final String name) {
             return TypedChannels.create(type);
         }
     };
@@ -369,8 +369,8 @@ public class Main {
         final EnumMap<MDSource, ConfigGroup> shredderOverrides = new EnumMap<>(MDSource.class);
         final ConfigGroup shredderOverrideConfig = root.getEnabledGroup("shredder", "md");
         if (null != shredderOverrideConfig) {
-            for (ConfigGroup mdConfig : shredderOverrideConfig.groups()) {
-                MDSource mdSource = MDSource.get(mdConfig.getKey());
+            for (final ConfigGroup mdConfig : shredderOverrideConfig.groups()) {
+                final MDSource mdSource = MDSource.get(mdConfig.getKey());
                 if (null == mdSource) {
                     throw new ConfigException("MDSource [" + mdConfig.getKey() + "] is not known.");
                 }
@@ -472,7 +472,7 @@ public class Main {
 
                 final IMDSubscriber shredderBookSubscriber;
                 if (shredderOverrides.containsKey(mdSource)) {
-                    ReddalChannels noOpChannels = new ReddalChannels(CHANNEL_FACTORY);
+                    final ReddalChannels noOpChannels = new ReddalChannels(CHANNEL_FACTORY);
                     shredderBookSubscriber =
                             getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource), noOpChannels,
                                     localAppName);
@@ -511,12 +511,12 @@ public class Main {
                                         threadName + "-transport-" + nibblerConfig.getKey(), localAppName + mdSource.name(), true,
                                         new INibblerTransportConnectionListener() {
                                             @Override
-                                            public boolean connectionEstablished(String s) {
+                                            public boolean connectionEstablished(final String s) {
                                                 return true;
                                             }
 
                                             @Override
-                                            public void connectionLost(String s) {
+                                            public void connectionLost(final String s) {
                                             }
                                         });
                         client.getCaches().addTradingDataListener(shredderInfoListener);
@@ -1020,7 +1020,8 @@ public class Main {
 
                 final YodaClientHandler yodaHandler =
                         YodaClientCacheFactory.createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName,
-                                new YodaNullClient<>(), restingClient, sweepClient, twapClient, tweetClient, new YodaNullClient<>(),
+                                new YodaNullClient<>(), new YodaNullClient<>(), restingClient, sweepClient, twapClient, tweetClient,
+                                new YodaNullClient<>(),
                                 EnumSet.of(YodaSignalType.RESTING_ORDER, YodaSignalType.SWEEP, YodaSignalType.TWAP, YodaSignalType.TWEET));
 
                 final TransportTCPKeepAliveConnection<?, ?> client =
