@@ -1036,7 +1036,8 @@ public class Main {
                 final YodaClientHandler yodaHandler =
                         YodaClientCacheFactory.createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName, atCloseClient,
                                 new YodaNullClient<>(), restingClient, sweepClient, twapClient, tweetClient, new YodaNullClient<>(),
-                                EnumSet.of(YodaSignalType.RESTING_ORDER, YodaSignalType.SWEEP, YodaSignalType.TWAP, YodaSignalType.TWEET));
+                                EnumSet.of(YodaSignalType.AT_CLOSE, YodaSignalType.RESTING_ORDER, YodaSignalType.SWEEP, YodaSignalType.TWAP,
+                                        YodaSignalType.TWEET));
 
                 final TransportTCPKeepAliveConnection<?, ?> client =
                         YodaClientCacheFactory.createClient(selectIO, yodaInstanceConfig, yodaChildMonitor, yodaHandler);

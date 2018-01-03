@@ -8,6 +8,7 @@ $(function () {
 		eval(m);
 	};
 
+	var adminBlock =
 	var hash = document.location.hash.substr(1);
 	if (hash) {
 		$("#adminBlock").toggleClass("isAsylumView", true);
@@ -150,6 +151,11 @@ $(function () {
 	$("#symbolLookupGo").unbind().bind("click", function () {
 		var symbol = childSymbolSearchInput.val();
 		showChild(symbol);
+	});
+
+
+	$("#hideRegistered").unbind().bind("click", function () {
+
 	});
 
 	var familyIsinInput = $("#familySymbolLookup");
