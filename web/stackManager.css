@@ -438,6 +438,10 @@ input::-webkit-inner-spin-button:hover {
 	display: block;
 }
 
+#adminBlock.hideUnregistered .dataRow.unregistered {
+	display: none;
+}
+
 .asylumControls > div {
 	min-width: 75px;
 	max-width: 75px;

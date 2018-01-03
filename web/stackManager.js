@@ -8,10 +8,10 @@ $(function () {
 		eval(m);
 	};
 
-	var adminBlock =
+	var adminBlock = $("#adminBlock");
 	var hash = document.location.hash.substr(1);
 	if (hash) {
-		$("#adminBlock").toggleClass("isAsylumView", true);
+		adminBlock.toggleClass("isAsylumView", true);
 		ws.send("subscribe" + hash);
 	} else {
 		ws.send("subscribeFamily");
@@ -153,9 +153,8 @@ $(function () {
 		showChild(symbol);
 	});
 
-
-	$("#hideRegistered").unbind().bind("click", function () {
-
+	$("#hideUnregistered").unbind().bind("click", function (cb) {
+		adminBlock.toggleClass("hideUnregistered", cb.toElement.checked);
 	});
 
 	var familyIsinInput = $("#familySymbolLookup");
@@ -745,6 +744,7 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 		row.removeClass("header");
 		row.attr("id", rowID);
 		row.addClass("dataRow");
+		row.toggleClass("unregistered", true);
 
 		quoteSymbolCell = setCellData(row.find(".symbol"), childSymbol);
 
@@ -874,6 +874,7 @@ function setChildData(childSymbol, leanSymbol, nibblerName, selectedConfigType, 
 
 	if (row) {
 
+		row.removeClass("unregistered");
 		row.find(".leanSymbol").text(leanSymbol);
 
 		var childControls = row.find(".childControls");
