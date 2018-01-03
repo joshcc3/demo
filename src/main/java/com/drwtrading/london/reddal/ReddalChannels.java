@@ -94,7 +94,7 @@ class ReddalChannels {
     final TypedChannel<StackIncreaseChildOffsetCmd> increaseChildOffsetBPSCmds;
 
     final TypedChannel<PicardRow> picardRows;
-    final TypedChannel<PicardRow> yodaRows;
+    final TypedChannel<PicardRow> yodaPicardRows;
 
     ReddalChannels(final ChannelFactory channelFactory) {
 
@@ -144,7 +144,7 @@ class ReddalChannels {
         this.increaseChildOffsetBPSCmds = create(StackIncreaseChildOffsetCmd.class);
 
         this.picardRows = create(PicardRow.class);
-        this.yodaRows = create(PicardRow.class);
+        this.yodaPicardRows = create(PicardRow.class);
     }
 
     <T> TypedChannel<T> create(final Class<T> clazz) {

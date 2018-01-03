@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.picard;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -132,23 +133,23 @@ public class PicardSpotter {
 
             if (null != bidLaserLine && bidLaserLine.isValid() && bestAsk <= bidLaserLine.getPrice()) {
 
-                final String askPrice = df.format(bestAsk);
+                final String askPrice = df.format(bestAsk / (double) Constants.NORMALISING_FACTOR);
                 final double bpsThrough = getBPSThrough(bidLaserLine.getPrice(), bestAsk);
 
                 picardData.previousRow =
-                        new PicardRow(nowMilliSinceUTC, book, BookSide.BID, bestAsk, askPrice, bpsThrough, PicardRowState.LIVE, description,
-                                isInAuction, isNewRow);
+                        new PicardRow(nowMilliSinceUTC, book.getSymbol(), book.getInstType(), BookSide.BID, bestAsk, askPrice, bpsThrough,
+                                PicardRowState.LIVE, description, isInAuction, isNewRow);
 
                 rowPublisher.publish(picardData.previousRow);
 
             } else if (null != askLaserLine && askLaserLine.isValid() && askLaserLine.getPrice() <= bestBid) {
 
-                final String bidPrice = df.format(bestBid);
+                final String bidPrice = df.format(bestBid / (double) Constants.NORMALISING_FACTOR);
                 final double bpsThrough = getBPSThrough(askLaserLine.getPrice(), bestBid);
 
                 picardData.previousRow =
-                        new PicardRow(nowMilliSinceUTC, book, BookSide.ASK, bestBid, bidPrice, bpsThrough, PicardRowState.LIVE, description,
-                                isInAuction, isNewRow);
+                        new PicardRow(nowMilliSinceUTC, book.getSymbol(), book.getInstType(), BookSide.ASK, bestBid, bidPrice, bpsThrough,
+                                PicardRowState.LIVE, description, isInAuction, isNewRow);
 
                 rowPublisher.publish(picardData.previousRow);
 
@@ -171,7 +172,7 @@ public class PicardSpotter {
         }
     }
 
-    private static double getBPSThrough(final long theoreticalValue, final long price) {
+    static double getBPSThrough(final long theoreticalValue, final long price) {
 
         final long divisor = Math.min(price, theoreticalValue);
         if (0 == divisor) {

@@ -100,6 +100,7 @@ import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.picard.PicardSounds;
 import com.drwtrading.london.reddal.picard.PicardSpotter;
 import com.drwtrading.london.reddal.picard.PicardUI;
+import com.drwtrading.london.reddal.picard.YodaAtCloseClient;
 import com.drwtrading.london.reddal.pks.PKSPositionClient;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
@@ -386,7 +387,7 @@ public class Main {
             }
         }
 
-        setupPicardUI(selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaRows, channels.recenterLadder,
+        setupPicardUI(selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
                 channels.displaySymbol, webApp);
 
         final ConfigGroup mdConfig = root.getGroup("md");
@@ -826,7 +827,7 @@ public class Main {
                 IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
         selectIO.execute(indyConnection::restart);
 
-        setupYodaSignals(selectIO, monitor, errorLog, root, app.appName, channels.stockAlerts);
+        setupYodaSignals(selectIO, monitor, errorLog, root, app.appName, channels.stockAlerts, channels.yodaPicardRows);
 
         final ConfigGroup opxlConfig = root.getEnabledGroup("opxl");
 
@@ -1007,8 +1008,8 @@ public class Main {
     }
 
     private static void setupYodaSignals(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
-            final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts)
-            throws ConfigException {
+            final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts,
+            final Publisher<PicardRow> atClosePublisher) throws ConfigException {
 
         final ConfigGroup yodaConfig = config.getEnabledGroup("yoda");
         if (null != yodaConfig) {
@@ -1026,20 +1027,21 @@ public class Main {
                 final IResourceMonitor<YodaTransportComponents> yodaChildMonitor =
                         yodaParentMonitor.createChildResourceMonitor(instanceName);
 
+                final YodaAtCloseClient atCloseClient = new YodaAtCloseClient(selectIO, atClosePublisher);
                 final YodaRestingOrderClient restingClient = new YodaRestingOrderClient(millisAtMidnight, stockAlerts);
                 final YodaSweepClient sweepClient = new YodaSweepClient(millisAtMidnight, stockAlerts);
                 final YodaTweetClient tweetClient = new YodaTweetClient(millisAtMidnight, stockAlerts);
                 final YodaTWAPClient twapClient = new YodaTWAPClient(millisAtMidnight, stockAlerts);
 
                 final YodaClientHandler yodaHandler =
-                        YodaClientCacheFactory.createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName,
-                                new YodaNullClient<>(), new YodaNullClient<>(), restingClient, sweepClient, twapClient, tweetClient,
-                                new YodaNullClient<>(),
+                        YodaClientCacheFactory.createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName, atCloseClient,
+                                new YodaNullClient<>(), restingClient, sweepClient, twapClient, tweetClient, new YodaNullClient<>(),
                                 EnumSet.of(YodaSignalType.RESTING_ORDER, YodaSignalType.SWEEP, YodaSignalType.TWAP, YodaSignalType.TWEET));
 
                 final TransportTCPKeepAliveConnection<?, ?> client =
                         YodaClientCacheFactory.createClient(selectIO, yodaInstanceConfig, yodaChildMonitor, yodaHandler);
                 selectIO.execute(client::restart);
+
             }
         }
     }

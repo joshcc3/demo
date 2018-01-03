@@ -62,8 +62,8 @@ public class PicardUI {
 
     public void addPicardRow(final PicardRow row) {
 
-        if (instType.contains(row.inst.getInstType())) {
-            dirty.put(row.inst.getSymbol(), row);
+        if (instType.contains(row.instType)) {
+            dirty.put(row.symbol, row);
         }
     }
 
@@ -130,17 +130,17 @@ public class PicardUI {
     private void display(final IPicardView view, final PicardRow row) {
 
         final String bpsThrough = bpsDF.format(row.bpsThrough);
-        final String givenSymbol = displaySymbols.get(row.inst.getSymbol());
+        final String givenSymbol = displaySymbols.get(row.symbol);
 
         final String displaySymbol;
         if (null == givenSymbol) {
-            displaySymbol = row.inst.getSymbol();
+            displaySymbol = row.symbol;
         } else {
             displaySymbol = givenSymbol;
         }
 
-        view.picard(row.inst.getSymbol(), displaySymbol, row.side.toString(), bpsThrough, row.prettyPrice, row.description,
-                row.state.toString(), row.inAuction, Long.toString(row.price));
+        view.picard(row.symbol, displaySymbol, row.side.toString(), bpsThrough, row.prettyPrice, row.description, row.state.toString(),
+                row.inAuction, Long.toString(row.price));
         if (row.isNewRow && soundsOn) {
             view.playSound();
         }
