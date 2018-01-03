@@ -52,7 +52,7 @@ public class MDForSymbol {
         }
         final int decimalPlaces = Math.max(0, 10 - leastSigDigit);
         this.df = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, decimalPlaces);
-        this.nonTrailingDF = NumberFormatUtil.getDF(NumberFormatUtil.ZERO_TO_FOUR_DP, 1, decimalPlaces);
+        this.nonTrailingDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 1, decimalPlaces);
     }
 
     public void trade(final long price, final long qty) {

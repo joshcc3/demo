@@ -40,6 +40,7 @@ import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
 import com.drwtrading.london.eeif.utils.transport.io.TransportTCPKeepAliveConnection;
@@ -79,6 +80,7 @@ import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
+import com.drwtrading.london.reddal.ladders.RecenterLadder;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
 import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
 import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
@@ -94,6 +96,10 @@ import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
+import com.drwtrading.london.reddal.picard.PicardRow;
+import com.drwtrading.london.reddal.picard.PicardSounds;
+import com.drwtrading.london.reddal.picard.PicardSpotter;
+import com.drwtrading.london.reddal.picard.PicardUI;
 import com.drwtrading.london.reddal.pks.PKSPositionClient;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
@@ -116,6 +122,7 @@ import com.drwtrading.london.reddal.stockAlerts.yoda.YodaSweepClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaTWAPClient;
 import com.drwtrading.london.reddal.stockAlerts.yoda.YodaTweetClient;
 import com.drwtrading.london.reddal.symbols.ChixInstMatcher;
+import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
@@ -156,6 +163,7 @@ import com.sun.jndi.toolkit.url.Uri;
 import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
 import org.jetlang.channels.BatchSubscriber;
+import org.jetlang.channels.Channel;
 import org.jetlang.channels.KeyedBatchSubscriber;
 import org.jetlang.channels.Publisher;
 
@@ -258,14 +266,14 @@ public class Main {
 
         final Map<String, TypedChannel<WebSocketControlMessage>> webSocketsForLogging = Maps.newHashMap();
 
-        final WebApplication webapp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
+        final WebApplication webApp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
         System.out.println("http://localhost:" + environment.getWebPort());
-        webapp.enableSingleSignOn();
+        webApp.enableSingleSignOn();
 
         fibers.onStart(() -> fibers.ui.execute(() -> {
             try {
-                webapp.serveStaticContent("web");
-                webapp.start();
+                webApp.serveStaticContent("web");
+                webApp.start();
             } catch (final Exception e) {
                 throw new RuntimeException(e);
             }
@@ -273,7 +281,7 @@ public class Main {
 
         { // Index presenter
             final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("/", "index", fibers.ui, webapp, websocket);
+            createWebPageWithWebSocket("/", "index", fibers.ui, webApp, websocket);
             webSocketsForLogging.put("index", websocket);
             final IndexUIPresenter indexPresenter = new IndexUIPresenter(webLog, isEquitiesSearchable, isFuturesSearchable);
             fibers.ui.subscribe(indexPresenter, channels.displaySymbol, websocket);
@@ -282,7 +290,7 @@ public class Main {
 
         { // Orders presenter
             final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("orders", "orders", fibers.ui, webapp, websocket);
+            createWebPageWithWebSocket("orders", "orders", fibers.ui, webApp, websocket);
             webSocketsForLogging.put("orders", websocket);
             final OrdersPresenter ordersPresenter =
                     new OrdersPresenter(webLog, channels.singleOrderCommand, channels.orderEntryCommandToServer);
@@ -294,7 +302,7 @@ public class Main {
 
         { // Working orders screen
             final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webapp, ws);
+            createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webApp, ws);
 
             final Collection<String> nibblers = environment.getList(Environment.WORKING_ORDERS);
             final WorkingOrdersPresenter presenter =
@@ -307,7 +315,7 @@ public class Main {
 
         { // Stock alert screen
             final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("stockalerts", "stockalerts", fibers.ui, webapp, ws);
+            createWebPageWithWebSocket("stockalerts", "stockalerts", fibers.ui, webApp, ws);
 
             final StockAlertPresenter presenter = new StockAlertPresenter(webLog);
             fibers.ui.subscribe(presenter, ws);
@@ -328,10 +336,10 @@ public class Main {
         final SelectIO stackManagerSelectIO = new SelectIO(stackManagerSelectIOMonitor);
         final IMDSubscriber noBookSubscription = new NoMDSubscriptions();
         final TypedChannel<WebSocketControlMessage> stackManagerWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-        final SelectIOFiber selectIOFiber1 = new SelectIOFiber(stackManagerSelectIO, errorLog, stackManagerThreadName);
+        final SelectIOFiber stackManagerSelectIOFiber = new SelectIOFiber(stackManagerSelectIO, errorLog, stackManagerThreadName);
         final LadderPresenter stackManagerLadderPresenter =
                 getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment, noBookSubscription, ewokBaseURL,
-                        stackManagerWebSocket, fibers.fiberGroup.wrap(selectIOFiber1, stackManagerThreadName));
+                        stackManagerWebSocket, fibers.fiberGroup.wrap(stackManagerSelectIOFiber, stackManagerThreadName));
 
         final Map<MDSource, LinkedList<ConfigGroup>> stackConfigs = new EnumMap<>(MDSource.class);
 
@@ -360,8 +368,8 @@ public class Main {
         final SpreadContractSetGenerator contractSetGenerator = new SpreadContractSetGenerator(channels.contractSets);
         channels.searchResults.subscribe(selectIOFiber, contractSetGenerator::setSearchResult);
 
-        setupStackManager(app, fibers, channels, webapp, webLog, selectIOFiber, contractSetGenerator, isEquitiesSearchable);
-        final Map<MDSource, LinkedList<ConfigGroup>> nibblers = setupNibblerTransport(app, fibers, webapp, webLog, selectIOFiber, channels);
+        setupStackManager(app, fibers, channels, webApp, webLog, selectIOFiber, contractSetGenerator, isEquitiesSearchable);
+        final Map<MDSource, LinkedList<ConfigGroup>> nibblers = setupNibblerTransport(app, fibers, webApp, webLog, selectIOFiber, channels);
 
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> webSockets = new EnumMap<>(MDSource.class);
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderWebSockets = new EnumMap<>(MDSource.class);
@@ -377,6 +385,9 @@ public class Main {
                 shredderOverrides.put(mdSource, mdConfig);
             }
         }
+
+        setupPicardUI(selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaRows, channels.recenterLadder,
+                channels.displaySymbol, webApp);
 
         final ConfigGroup mdConfig = root.getGroup("md");
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
@@ -425,6 +436,9 @@ public class Main {
                     }
                 }
 
+                final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows);
+                displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
+
                 final List<ConfigGroup> nibblerConfigs = nibblers.get(mdSource);
                 if (null != nibblerConfigs) {
 
@@ -439,7 +453,7 @@ public class Main {
                         final IResourceMonitor<NibblerTransportComponents> childMonitor =
                                 nibblerParentMonitor.createChildResourceMonitor(nibblerConfig.getKey());
 
-                        final LadderInfoListener ladderInfoListener = new LadderInfoListener(ladderPresenter);
+                        final LadderInfoListener ladderInfoListener = new LadderInfoListener(ladderPresenter, picardSpotter);
                         final NibblerClientHandler client =
                                 NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
                                         threadName + "-transport-" + nibblerConfig.getKey(), localAppName + mdSource.name(), true,
@@ -571,7 +585,7 @@ public class Main {
             fiberBuilder.getFiber().scheduleWithFixedDelay(puller::timeChecker, 1, 1, TimeUnit.MINUTES);
             final AutoPullerUI autoPullerUI = new AutoPullerUI(puller);
             final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("autopuller", "autopuller", fiberBuilder, webapp, ws);
+            createWebPageWithWebSocket("autopuller", "autopuller", fiberBuilder, webApp, ws);
             fiberBuilder.subscribe(autoPullerUI, ws);
         }
 
@@ -579,14 +593,14 @@ public class Main {
         channels.searchResults.subscribe(fibers.contracts.getFiber(), chixInstMatcher::setSearchResult);
 
         final TypedChannel<WebSocketControlMessage> historyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-        createWebPageWithWebSocket("history", "history", fibers.ladderRouter, webapp, historyWebSocket);
+        createWebPageWithWebSocket("history", "history", fibers.ladderRouter, webApp, historyWebSocket);
         final HistoryPresenter historyPresenter = new HistoryPresenter(webLog);
         fibers.ladderRouter.subscribe(historyPresenter, historyWebSocket);
         channels.symbolSelections.subscribe(fibers.ladderRouter.getFiber(), historyPresenter::addSymbol);
 
         // Ladder router
         final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-        createWebPageWithWebSocket("ladder", "ladder", fibers.ladderRouter, webapp, ladderWebSocket);
+        createWebPageWithWebSocket("ladder", "ladder", fibers.ladderRouter, webApp, ladderWebSocket);
         final LadderMessageRouter ladderMessageRouter =
                 new LadderMessageRouter(monitor, webLog, channels.symbolSelections, stackManagerWebSocket, webSockets, fibers.ui);
         fibers.ladderRouter.subscribe(ladderMessageRouter, ladderWebSocket, channels.replaceCommand);
@@ -596,7 +610,7 @@ public class Main {
         // Shredder router
         {
             final TypedChannel<WebSocketControlMessage> shredderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("shredder", "shredder", fibers.shredderRouter, webapp, shredderWebSocket);
+            createWebPageWithWebSocket("shredder", "shredder", fibers.shredderRouter, webApp, shredderWebSocket);
 
             final ShredderMessageRouter shredderMessageRouter = new ShredderMessageRouter(monitor, webLog, shredderWebSockets, fibers.ui);
             fibers.shredderRouter.subscribe(shredderMessageRouter, shredderWebSocket);
@@ -712,8 +726,6 @@ public class Main {
                     Photocols.server(new InetSocketAddress(environment.getCommandsPort()), ReddalMessage.class, ReddalMessage.class,
                             fibers.metaData.getFiber(), EXCEPTION_HANDLER);
             commandServer.logFile(logDir.resolve("photocols.commands.log").toFile(), fibers.logging.getFiber(), true);
-            commandServer.endpoint().add(
-                    new JetlangChannelHandler<>(channels.reddalCommandSymbolAvailable, channels.reddalCommand, fibers.metaData.getFiber()));
             fibers.onStart(() -> {
                 try {
                     commandServer.start();
@@ -931,13 +943,14 @@ public class Main {
                         channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
 
         fiberBuilder.subscribe(ladderPresenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
-                channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.reddalCommandSymbolAvailable,
-                channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand,
-                channels.replaceCommand, channels.userCycleContractPublisher, channels.orderEntrySymbols, channels.orderEntryFromServer,
-                channels.searchResults, channels.isinsGoingEx);
+                channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.recenterLaddersForUser,
+                channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand, channels.replaceCommand,
+                channels.userCycleContractPublisher, channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults,
+                channels.isinsGoingEx);
 
         channels.ladderClickTradingIssues.subscribe(fiberBuilder.getFiber(), ladderPresenter::displayTradeIssue);
         channels.pksExposure.subscribe(fiberBuilder.getFiber(), ladderPresenter::setPKSExposure);
+        channels.recenterLadder.subscribe(fiberBuilder.getFiber(), ladderPresenter::recenterLadder);
 
         displaySelectIO.addDelayedAction(1000, ladderPresenter::flushAllLadders);
         displaySelectIO.addDelayedAction(1500, ladderPresenter::sendAllHeartbeats);
@@ -1224,5 +1237,38 @@ public class Main {
         }
 
         return result;
+    }
+
+    private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
+            final Channel<PicardRow> picardRows, final Channel<PicardRow> yodaRows, final Channel<RecenterLadder> recenterLadderChannel,
+            final TypedChannel<DisplaySymbol> displaySymbol, final WebApplication webApp) {
+
+        setupPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, displaySymbol,
+                EnumSet.of(InstType.FUTURE, InstType.FUTURE_SPREAD), PicardSounds.FUTURES, webApp, "picard");
+
+        setupPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.DR, InstType.EQUITY),
+                PicardSounds.SPREADER, webApp, "picardspread");
+
+        setupPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF,
+                webApp, "picardetf");
+
+        setupPicardUI(selectIO, fiber, webLog, yodaRows, recenterLadderChannel, displaySymbol, EnumSet.allOf(InstType.class),
+                PicardSounds.STOCKS, webApp, "picardstocks");
+    }
+
+    private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
+            final Channel<PicardRow> picardRows, final Channel<RecenterLadder> recenterLadderChannel,
+            final TypedChannel<DisplaySymbol> displaySymbol, final Set<InstType> filterList, final PicardSounds sound,
+            final WebApplication webApp, final String alias) {
+
+        final PicardUI picardUI = new PicardUI(webLog, filterList, sound, recenterLadderChannel);
+        selectIO.addDelayedAction(1000, picardUI::flush);
+        picardRows.subscribe(fiber, picardUI::addPicardRow);
+        displaySymbol.subscribe(fiber, picardUI::setDisplaySymbol);
+
+        webApp.alias('/' + alias, "/picard.html");
+        final TypedChannel<WebSocketControlMessage> webSocketChannel = TypedChannels.create(WebSocketControlMessage.class);
+        webApp.createWebSocket('/' + alias + "/ws/", webSocketChannel, fiber);
+        webSocketChannel.subscribe(fiber, picardUI::webControl);
     }
 }

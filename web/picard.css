@@ -1,0 +1,88 @@
+body {
+	background-color: #2a2927;
+	color: #ffffff;;
+	font-family: sans-serif;
+	padding: 5px;
+	margin: 5px;
+}
+
+body.queued {
+	background-color: #d4a39a;
+}
+
+#picards {
+	border-collapse: collapse;
+	width: 100%;
+	font-size: 16px;
+}
+
+#picards td {
+	border-bottom: 1px solid #555555;
+	text-align: center;
+	padding: 0 6px 0 6px;
+}
+
+tr.picard.BID {
+	color: #babdff;
+	background-color: #000022;
+}
+
+tr.picard.BID:hover {
+	background-color: #000066;
+}
+
+tr.picard.ASK {
+	color: #ff9999;
+	background-color: #220000;
+}
+
+tr.picard.ASK:hover {
+	background-color: #660000;
+}
+
+tr.picard.BID_AUCTION {
+	color: #23ffbc;
+	background-color: #000022;
+}
+
+tr.picard.BID_AUCTION:hover {
+	background-color: #166659;
+}
+
+tr.picard.ASK_AUCTION {
+	color: #ff89d6;
+	background-color: #220000;
+}
+
+tr.picard.ASK_AUCTION:hover {
+	background-color: #660349;
+}
+
+td.description {
+	font-size: 10px;
+}
+
+.invisible {
+	visibility: hidden;
+	width: 0;
+	font-size: 0;
+}
+
+#footer {
+	width: 100%;
+	position: fixed;
+	bottom: 0px;
+	left: 0px;
+	height: 15px;
+	padding: 0px;
+	margin: 0px;
+}
+
+#footer input {
+	background-color: #6e6e6e !important;
+	border: none;
+}
+
+.fade {
+	opacity: 0.5;
+}

@@ -9,14 +9,17 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
+import com.drwtrading.london.reddal.picard.PicardSpotter;
 
 public class LadderInfoListener implements INibblerTradingDataListener, INibblerTransportConnectionListener, INibblerBlotterListener {
 
     private final LadderPresenter ladderPresenter;
+    private final PicardSpotter picardSpotter;
 
-    public LadderInfoListener(final LadderPresenter ladderPresenter) {
+    public LadderInfoListener(final LadderPresenter ladderPresenter, final PicardSpotter picardSpotter) {
 
         this.ladderPresenter = ladderPresenter;
+        this.picardSpotter = picardSpotter;
     }
 
     @Override
@@ -39,6 +42,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     @Override
     public boolean addLaserLine(final LaserLine laserLine) {
         ladderPresenter.setLaserLine(laserLine);
+        picardSpotter.setLaserLine(laserLine);
         return true;
     }
 

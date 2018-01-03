@@ -13,7 +13,6 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
-import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
@@ -413,10 +412,10 @@ public class LadderPresenter {
         getLadderPrefsForSymbolUser(pref.symbol, pref.user).on(ladderPrefLoaded);
     }
 
-    @Subscribe
-    public void on(final CenterToPrice centerToPrice) {
+    public void recenterLadder(final RecenterLadder recenterLadder) {
+
         for (final LadderView ladderView : viewBySocket.values()) {
-            ladderView.recenterLadderForUser(centerToPrice);
+            ladderView.recenterLadder(recenterLadder);
         }
     }
 

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Picard</title>
+	<link rel="stylesheet" type="text/css" href="picard.css">
+	<script src="jquery-1.8.3.js"></script>
+	<script src="js/websocket.js"></script>
+	<script src="js/websocket-ui.js"></script>
+	<script src="launcher.js"></script>
+	<script src="picard.js"></script>
+</head>
+<body id="body">
+<table id="picards">
+	<tr class="template picard">
+		<td class="symbol"></td>
+		<td class="side"></td>
+		<td class="bpsThrough"></td>
+		<td class="price"></td>
+		<td class="description"></td>
+		<td class="long_price invisible"></td>
+	</tr>
+</table>
+<div id="footer">
+	<input type="button" id="sound" value="sound on"/>
+	<input type="button" id="all" value="Show All Crosses"/>
+</div>
+<div id="background"></div>
+</body>
+</html>

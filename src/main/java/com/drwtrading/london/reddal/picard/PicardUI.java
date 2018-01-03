@@ -1,0 +1,148 @@
+package com.drwtrading.london.reddal.picard;
+
+import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
+import com.drwtrading.london.reddal.ladders.RecenterLadder;
+import com.drwtrading.london.reddal.symbols.DisplaySymbol;
+import com.drwtrading.london.reddal.util.UILogger;
+import com.drwtrading.london.websocket.FromWebSocketView;
+import com.drwtrading.london.websocket.WebSocketViews;
+import com.drwtrading.websockets.WebSocketClient;
+import com.drwtrading.websockets.WebSocketConnected;
+import com.drwtrading.websockets.WebSocketControlMessage;
+import com.drwtrading.websockets.WebSocketDisconnected;
+import com.drwtrading.websockets.WebSocketInboundData;
+import org.jetlang.channels.Publisher;
+
+import java.text.DecimalFormat;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+public class PicardUI {
+
+    private static final long FLUSH_PERIOD_MILLIS = 300;
+
+    private final UILogger webLog;
+
+    private final Set<InstType> instType;
+
+    private final PicardSounds sounds;
+    private boolean soundsOn;
+
+    private final Publisher<RecenterLadder> reddalMessagePublisher;
+
+    private final DecimalFormat bpsDF;
+
+    private final Map<String, String> displaySymbols;
+    private final Map<String, PicardRow> cache;
+    private final Map<String, PicardRow> dirty;
+
+    private final WebSocketViews<IPicardView> views;
+
+    public PicardUI(final UILogger webLog, final Set<InstType> instTypes, final PicardSounds sounds,
+            final Publisher<RecenterLadder> recenterLadderPublisher) {
+
+        this.webLog = webLog;
+
+        this.instType = instTypes;
+
+        this.sounds = sounds;
+        this.soundsOn = instTypes.contains(InstType.FUTURE);
+
+        this.reddalMessagePublisher = recenterLadderPublisher;
+
+        this.bpsDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2);
+
+        this.displaySymbols = new HashMap<>();
+        this.cache = new HashMap<>();
+        this.dirty = new HashMap<>();
+        this.views = new WebSocketViews<>(IPicardView.class, this);
+    }
+
+    public void addPicardRow(final PicardRow row) {
+
+        if (instType.contains(row.inst.getInstType())) {
+            dirty.put(row.inst.getSymbol(), row);
+        }
+    }
+
+    public void setDisplaySymbol(final DisplaySymbol displaySymbol) {
+        displaySymbols.put(displaySymbol.marketDataSymbol, displaySymbol.marketDataSymbol);
+    }
+
+    public void webControl(final WebSocketControlMessage msg) {
+
+        if (msg instanceof WebSocketConnected) {
+
+            webUIConnected((WebSocketConnected) msg);
+
+        } else if (msg instanceof WebSocketDisconnected) {
+
+            views.unregister((WebSocketDisconnected) msg);
+
+        } else if (msg instanceof WebSocketInboundData) {
+
+            inboundData((WebSocketInboundData) msg);
+        }
+    }
+
+    private void webUIConnected(final WebSocketConnected connected) {
+
+        final IPicardView view = views.register(connected);
+        view.setCheckCrossed(soundsOn);
+        view.setSound(sounds.fileName);
+        for (final PicardRow opportunity : cache.values()) {
+            display(view, opportunity);
+        }
+    }
+
+    private void inboundData(final WebSocketInboundData msg) {
+
+        webLog.write("LadderWorkspace", msg);
+        views.invoke(msg);
+    }
+
+    @FromWebSocketView
+    public void setCheckCrossed(final boolean showAllCrosses) {
+        this.soundsOn = showAllCrosses;
+        views.all().setCheckCrossed(showAllCrosses);
+    }
+
+    @FromWebSocketView
+    public void recenter(final WebSocketClient webSocketClient, final String symbol, final String value) {
+
+        final RecenterLadder recenterLadder = new RecenterLadder(webSocketClient.getUserName(), symbol, Long.parseLong(value));
+        reddalMessagePublisher.publish(recenterLadder);
+    }
+
+    public long flush() {
+
+        for (final PicardRow picardRow : dirty.values()) {
+            display(views.all(), picardRow);
+        }
+        cache.putAll(dirty);
+        dirty.clear();
+
+        return FLUSH_PERIOD_MILLIS;
+    }
+
+    private void display(final IPicardView view, final PicardRow row) {
+
+        final String bpsThrough = bpsDF.format(row.bpsThrough);
+        final String givenSymbol = displaySymbols.get(row.inst.getSymbol());
+
+        final String displaySymbol;
+        if (null == givenSymbol) {
+            displaySymbol = row.inst.getSymbol();
+        } else {
+            displaySymbol = givenSymbol;
+        }
+
+        view.picard(row.inst.getSymbol(), displaySymbol, row.side.toString(), bpsThrough, row.prettyPrice, row.description,
+                row.state.toString(), row.inAuction, Long.toString(row.price));
+        if (row.isNewRow && soundsOn) {
+            view.playSound();
+        }
+    }
+}

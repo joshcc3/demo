@@ -3,11 +3,11 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.jetlang.ChannelFactory;
-import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
 import com.drwtrading.london.reddal.ladders.OrdersPresenter;
+import com.drwtrading.london.reddal.ladders.RecenterLadder;
 import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
@@ -18,6 +18,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
+import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
@@ -68,9 +69,8 @@ class ReddalChannels {
     final TypedChannel<StockAlert> stockAlerts;
     final TypedChannel<HeartbeatRoundtrip> heartbeatRoundTrips;
 
-    final TypedChannel<ReddalMessage> reddalCommand;
-    final TypedChannel<ReddalMessage> reddalCommandSymbolAvailable;
     final TypedChannel<RecenterLaddersForUser> recenterLaddersForUser;
+    final TypedChannel<RecenterLadder> recenterLadder;
     final TypedChannel<SpreadContractSet> contractSets;
     final TypedChannel<HostWorkspaceRequest> userWorkspaceRequests;
     final TypedChannel<ChixSymbolPair> chixSymbolPairs;
@@ -92,6 +92,9 @@ class ReddalChannels {
     final TypedChannel<StackChildFilter> etfOPXLStackFilters;
     final TypedChannel<StackIncreaseParentOffsetCmd> increaseParentOffsetCmds;
     final TypedChannel<StackIncreaseChildOffsetCmd> increaseChildOffsetBPSCmds;
+
+    final TypedChannel<PicardRow> picardRows;
+    final TypedChannel<PicardRow> yodaRows;
 
     ReddalChannels(final ChannelFactory channelFactory) {
 
@@ -116,9 +119,8 @@ class ReddalChannels {
         this.searchResults = create(SearchResult.class);
         this.stockAlerts = create(StockAlert.class);
         this.heartbeatRoundTrips = create(HeartbeatRoundtrip.class);
-        this.reddalCommand = create(ReddalMessage.class);
-        this.reddalCommandSymbolAvailable = create(ReddalMessage.class);
         this.recenterLaddersForUser = create(RecenterLaddersForUser.class);
+        this.recenterLadder = create(RecenterLadder.class);
         this.contractSets = create(SpreadContractSet.class);
         this.userWorkspaceRequests = create(HostWorkspaceRequest.class);
         this.chixSymbolPairs = create(ChixSymbolPair.class);
@@ -140,6 +142,9 @@ class ReddalChannels {
         this.etfOPXLStackFilters = create(StackChildFilter.class);
         this.increaseParentOffsetCmds = create(StackIncreaseParentOffsetCmd.class);
         this.increaseChildOffsetBPSCmds = create(StackIncreaseChildOffsetCmd.class);
+
+        this.picardRows = create(PicardRow.class);
+        this.yodaRows = create(PicardRow.class);
     }
 
     <T> TypedChannel<T> create(final Class<T> clazz) {

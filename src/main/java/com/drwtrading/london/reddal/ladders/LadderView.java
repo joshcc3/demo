@@ -8,7 +8,6 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
-import com.drwtrading.london.photons.reddal.CenterToPrice;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
@@ -497,15 +496,18 @@ public class LadderView implements UiEventHandler {
     }
 
     public void recenterLadderForUser(final RecenterLaddersForUser recenterLaddersForUser) {
+
         if (client.getUserName().equals(recenterLaddersForUser.user)) {
             activeView.center();
             resetLastCenteredTime();
         }
     }
 
-    public void recenterLadderForUser(final CenterToPrice centerToPrice) {
-        if (client.getUserName().equals(centerToPrice.getUsername()) && symbol.equals(centerToPrice.getSymbol())) {
-            activeView.setCenteredPrice(centerToPrice.getPrice());
+    public void recenterLadder(final RecenterLadder recenterLadder) {
+
+        if (client.getUserName().equals(recenterLadder.username) && symbol.equals(recenterLadder.symbol)) {
+
+            activeView.setCenteredPrice(recenterLadder.price);
             resetLastCenteredTime();
         }
     }
