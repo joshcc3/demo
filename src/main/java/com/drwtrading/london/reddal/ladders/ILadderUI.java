@@ -9,8 +9,6 @@ public interface ILadderUI {
     void trading(final boolean tradingEnabled, final Collection<String> workingOrderTags, final Collection<String> orderTypesLeft,
             final Collection<String> orderTypesRight);
 
-    void selecta(final boolean enabled);
-
     void goToSymbol(final String symbol);
 
     void goToUrl(final String url);

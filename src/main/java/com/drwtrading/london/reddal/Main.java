@@ -62,8 +62,6 @@ import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
 import com.drwtrading.london.photons.eeifoe.OrderUpdateEvent;
 import com.drwtrading.london.photons.eeifoe.OrderUpdateEventMsg;
 import com.drwtrading.london.photons.eeifoe.Update;
-import com.drwtrading.london.photons.reddal.Heartbeat;
-import com.drwtrading.london.photons.reddal.ReddalMessage;
 import com.drwtrading.london.reddal.autopull.AutoPullPersistence;
 import com.drwtrading.london.reddal.autopull.AutoPuller;
 import com.drwtrading.london.reddal.autopull.AutoPullerUI;
@@ -149,7 +147,6 @@ import com.drwtrading.monitoring.transport.LoggingTransport;
 import com.drwtrading.monitoring.transport.MultiplexTransport;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
-import com.drwtrading.photocols.easy.Photocols;
 import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
@@ -169,7 +166,6 @@ import org.jetlang.channels.KeyedBatchSubscriber;
 import org.jetlang.channels.Publisher;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -719,23 +715,6 @@ public class Main {
             client.handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10));
             client.handler(new JetlangChannelHandler<>(channels.metaData));
             fibers.onStart(client::start);
-        }
-
-        // Reddal server
-        {
-            final Photocols<ReddalMessage, ReddalMessage> commandServer =
-                    Photocols.server(new InetSocketAddress(environment.getCommandsPort()), ReddalMessage.class, ReddalMessage.class,
-                            fibers.metaData.getFiber(), EXCEPTION_HANDLER);
-            commandServer.logFile(logDir.resolve("photocols.commands.log").toFile(), fibers.logging.getFiber(), true);
-            fibers.onStart(() -> {
-                try {
-                    commandServer.start();
-                } catch (final InterruptedException e) {
-                    channels.errorPublisher.publish(e);
-                }
-            });
-            fibers.metaData.getFiber().scheduleWithFixedDelay(() -> commandServer.publish(new Heartbeat()), 1000, 1000,
-                    TimeUnit.MILLISECONDS);
         }
 
         // Working orders

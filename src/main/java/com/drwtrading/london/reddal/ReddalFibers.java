@@ -14,13 +14,10 @@ class ReddalFibers {
     final FiberBuilder logging;
     final FiberBuilder ui;
     final FiberBuilder stats;
-    final FiberBuilder marketData;
     final FiberBuilder metaData;
     final FiberBuilder workingOrders;
-    final FiberBuilder selecta;
     final FiberBuilder remoteOrders;
     final FiberBuilder opxlPosition;
-    final FiberBuilder opxlText;
     final FiberBuilder mrPhil;
     final FiberBuilder indy;
     final FiberBuilder watchdog;
@@ -39,13 +36,10 @@ class ReddalFibers {
         ladderRouter = fiberGroup.create("Ladder");
         shredderRouter = fiberGroup.create("Shredder");
         stats = fiberGroup.create("Stats");
-        marketData = fiberGroup.create("Market data");
         metaData = fiberGroup.create("Metadata");
         workingOrders = fiberGroup.create("Working orders");
-        selecta = fiberGroup.create("Selecta");
         remoteOrders = fiberGroup.create("Remote orders");
         opxlPosition = fiberGroup.create("OPXL Position");
-        opxlText = fiberGroup.create("OPXL Text");
         mrPhil = fiberGroup.create("Mr Phil");
         indy = fiberGroup.create("Indy");
         watchdog = fiberGroup.create("Watchdog");

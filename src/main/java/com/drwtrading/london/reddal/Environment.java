@@ -47,10 +47,6 @@ public class Environment {
         return settingsFile;
     }
 
-    public int getCommandsPort() throws ConfigException {
-        return config.getGroup("commands").getInt("port");
-    }
-
     public static class HostAndNic {
 
         public final InetSocketAddress host;
