@@ -1,11 +1,15 @@
 var Rows = {};
 
+var disconnectionSound;
+
 $(function () {
 	ws = connect();
 	ws.logToConsole = false;
 	ws.onmessage = function (x) {
 		eval(x)
 	};
+
+	disconnectionSound = new Audio("sounds/yuranass.wav");
 
 	var cancelAllNonGTC = $("#cancelNonGTC");
 	var cancelAllButton = $("#cancelAll");
@@ -44,8 +48,7 @@ $(function () {
 		}
 	});
 
-
-	$("#enderOnlyInput").change(function() {
+	$("#enderOnlyInput").change(function () {
 		$("#workingOrders").toggleClass("hideNoneEnder", this.checked);
 	});
 
@@ -75,9 +78,18 @@ function setButtonDisabled(cancelAllGTC, cancelButton, shutdownButton) {
 function addNibbler(server, connectionEstablished) {
 
 	var serverBlock = getNibbler(server);
-	serverBlock.toggleClass("connectionLost", !connectionEstablished);
-}
 
+	var wasConnected = !serverBlock.hasClass("connectionLost");
+	serverBlock.toggleClass("connectionLost", !connectionEstablished);
+
+	if (wasConnected && !connectionEstablished) {
+
+		if (!disconnectionSound.readyState) {
+			disconnectionSound.load();
+		}
+		disconnectionSound.play();
+	}
+}
 
 function getNibbler(server) {
 
