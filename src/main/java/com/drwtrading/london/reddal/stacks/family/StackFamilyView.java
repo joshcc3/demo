@@ -153,10 +153,13 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.nibblerClients.put(nibblerName, cache);
     }
 
-    void setFilter(final StackChildFilter newFilter) {
+    void setFilter(final Collection<StackChildFilter> newFilters) {
 
-        filters.put(newFilter.filterName, newFilter);
-        filterGroups.put(newFilter.filterName, newFilter.groupName);
+        for (final StackChildFilter newFilter : newFilters) {
+
+            filters.put(newFilter.filterName, newFilter);
+            filterGroups.put(newFilter.filterName, newFilter.groupName);
+        }
 
         views.all().setFilters(filterGroups);
     }

@@ -3,39 +3,22 @@ package com.drwtrading.london.reddal.opxl;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
-import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
-import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.stacks.family.StackChildFilter;
-import org.jetlang.channels.Publisher;
 
 import java.nio.file.Path;
-import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class StackManagerFiltersOPXL extends AOpxlReader<Collection<StackChildFilter>> {
-
-    private static final String TOPIC_PREFIX = "eeif(etf_filters_";
-    private static final String TOPIC_SUFFIX = ")";
+abstract class AFiltersOPXL extends AOpxlReader<Collection<StackChildFilter>> {
 
     private static final String SYMBOL_COL = "Symbol";
 
-    private final Publisher<StackChildFilter> filtersPublisher;
+    protected AFiltersOPXL(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor, final ReddalComponents component,
+            final String topic, final Path path) {
 
-    public StackManagerFiltersOPXL(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
-            final Publisher<StackChildFilter> filtersPublisher, final Path logPath) {
-
-        super(selectIO, monitor, ReddalComponents.OPXL_ETF_STACK_MANAGER_FILTERS, getTopic(selectIO), logPath);
-        this.filtersPublisher = filtersPublisher;
-    }
-
-    private static String getTopic(final IClock clock) {
-
-        final SimpleDateFormat sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.DATE_FILE_FORMAT);
-        final String todayDate = sdf.format(clock.nowMilliUTC());
-        return TOPIC_PREFIX + todayDate + TOPIC_SUFFIX;
+        super(selectIO, monitor, component, topic, path);
     }
 
     @Override
@@ -114,14 +97,6 @@ public class StackManagerFiltersOPXL extends AOpxlReader<Collection<StackChildFi
             return result;
         } else {
             return existingFilter;
-        }
-    }
-
-    @Override
-    protected void handleUpdate(final Collection<StackChildFilter> filters) {
-
-        for (final StackChildFilter filter : filters) {
-            filtersPublisher.publish(filter);
         }
     }
 

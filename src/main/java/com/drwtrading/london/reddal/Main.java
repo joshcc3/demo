@@ -82,10 +82,11 @@ import com.drwtrading.london.reddal.ladders.RecenterLadder;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
 import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
 import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
+import com.drwtrading.london.reddal.opxl.EtfStackFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
-import com.drwtrading.london.reddal.opxl.StackManagerFiltersOPXL;
+import com.drwtrading.london.reddal.opxl.SpreadnoughtFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.UltimateParentOPXL;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
@@ -847,10 +848,6 @@ public class Main {
         final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(selectIO, monitor, channels.ultimateParents, logDir);
         app.addStartUpAction(ultimateParentOPXL::connectToOpxl);
 
-        final StackManagerFiltersOPXL etfStackFiltersOPXL =
-                new StackManagerFiltersOPXL(selectIO, monitor, channels.etfOPXLStackFilters, logDir);
-        app.addStartUpAction(etfStackFiltersOPXL::connectToOpxl);
-
         // Ex-dates
         new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
                 new OpxlExDateSubscriber(channels.errorPublisher, channels.isinsGoingEx)::onOpxlData,
@@ -1122,7 +1119,18 @@ public class Main {
             channels.symbolSelections.subscribe(selectIOFiber, stackFamilyPresenter::symbolSelected);
 
             if (isForETF) {
-                channels.etfOPXLStackFilters.subscribe(selectIOFiber, stackFamilyPresenter::setFilter);
+
+                final EtfStackFiltersOPXL etfStackFiltersOPXL =
+                        new EtfStackFiltersOPXL(app.selectIO, app.monitor, app.logDir, stackFamilyPresenter);
+                app.addStartUpAction(etfStackFiltersOPXL::connectToOpxl);
+
+            }
+
+            if (asylumFamilyNames.contains(SpreadnoughtFiltersOPXL.FAMILY_NAME)) {
+
+                final SpreadnoughtFiltersOPXL spreadnoughtFiltersOPXL =
+                        new SpreadnoughtFiltersOPXL(app.selectIO, app.monitor, app.logDir, stackFamilyPresenter);
+                app.addStartUpAction(spreadnoughtFiltersOPXL::connectToOpxl);
             }
 
             final TypedChannel<WebSocketControlMessage> familyWebSocket = TypedChannels.create(WebSocketControlMessage.class);

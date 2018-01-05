@@ -15,6 +15,7 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -62,11 +63,15 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         }
     }
 
-    public void setFilter(final StackChildFilter newFilter) {
-        familyView.setFilter(newFilter);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.setFilter(newFilter);
-        }
+    public void setFamiliesFilters(final Collection<StackChildFilter> filters) {
+
+        familyView.setFilter(filters);
+    }
+
+    public void setAsylumFilters(final String asylumName, final Collection<StackChildFilter> filters) {
+
+        final StackFamilyView view = asylums.get(asylumName);
+        view.setFilter(filters);
     }
 
     public void setSearchResult(final SearchResult searchResult) {
