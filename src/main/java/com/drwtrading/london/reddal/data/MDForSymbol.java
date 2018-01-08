@@ -14,7 +14,7 @@ public class MDForSymbol {
     private final String symbol;
 
     private final boolean isPriceInverted;
-    public final TradeTracker tradeTracker;
+    private TradeTracker tradeTracker;
 
     private IBook<?> book;
     private IBook<IBookLevelWithOrders> level3Book;
@@ -27,7 +27,8 @@ public class MDForSymbol {
         this.symbol = symbol;
 
         this.isPriceInverted = symbol.startsWith("6R");
-        this.tradeTracker = new TradeTracker();
+
+        tradeTracker = new TradeTracker();
         bookSubscriber.subscribeForMD(symbol, this);
     }
 
@@ -55,13 +56,8 @@ public class MDForSymbol {
         this.nonTrailingDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 1, decimalPlaces);
     }
 
-    public void trade(final long price, final long qty) {
-        tradeTracker.addTrade(price, qty);
-    }
-
     public void unsubscribeForMD() {
         bookSubscriber.unsubscribeForMD(symbol, this);
-        tradeTracker.clear();
     }
 
     public boolean isPriceInverted() {
@@ -90,5 +86,9 @@ public class MDForSymbol {
 
     public void subscribeForMD() {
         bookSubscriber.subscribeForMD(symbol, this);
+    }
+
+    public void setTradeTracker(final TradeTracker tradeTracker) {
+        this.tradeTracker = tradeTracker;
     }
 }

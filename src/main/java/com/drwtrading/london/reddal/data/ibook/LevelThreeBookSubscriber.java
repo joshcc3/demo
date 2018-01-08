@@ -11,6 +11,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.MDForSymbol;
+import com.drwtrading.london.reddal.data.TradeTracker;
 import com.drwtrading.london.reddal.stacks.opxl.StackRefPriceDetail;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -36,6 +37,7 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
 
     private final SimpleDateFormat sdf;
     private final long timezoneOffsetMillis;
+    private final HashMap<String, TradeTracker> tradeTrackers = new HashMap<>();
 
     public LevelThreeBookSubscriber(final IResourceMonitor<ReddalComponents> monitor, final Channel<SearchResult> searchResults,
             final Channel<StockAlert> stockAlertChannel, final Channel<StackRefPriceDetail> stackRefPriceDetails) {
@@ -105,6 +107,16 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
 
     private void bookSubscribe(final MDForSymbol listener, final IBook<IBookLevelWithOrders> book) {
         listener.setL3Book(book);
+
+        final TradeTracker tradeTracker;
+        if (!tradeTrackers.containsKey(book.getSymbol())) {
+            tradeTracker = new TradeTracker();
+            tradeTrackers.put(book.getSymbol(), tradeTracker);
+        } else {
+            tradeTracker = tradeTrackers.get(book.getSymbol());
+        }
+        listener.setTradeTracker(tradeTracker);
+
         final MDTransportClient client = mdClients.get(book.getSourceExch());
         client.subscribeToInst(book.getLocalID());
         monitor.setOK(ReddalComponents.MD_L3_HANDLER);
@@ -117,6 +129,7 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
             if (null != book) {
                 final MDTransportClient client = mdClients.get(book.getSourceExch());
                 client.unsubscribeToInst(book.getLocalID());
+                tradeTrackers.get(symbol).clear();
             }
         }
     }
@@ -124,9 +137,8 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
     @Override
     public void trade(final IBook<IBookLevelWithOrders> book, final long execID, final AggressorSide side, final long price,
             final long qty) {
-        for (final MDForSymbol listener : listeners.get(book.getSymbol())) {
-            listener.trade(price, qty);
-        }
+        final TradeTracker tradeTracker = tradeTrackers.get(book.getSymbol());
+        tradeTracker.addTrade(price, qty);
     }
 
     @Override
