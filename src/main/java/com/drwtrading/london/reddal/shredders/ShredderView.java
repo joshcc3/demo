@@ -1,12 +1,11 @@
 package com.drwtrading.london.reddal.shredders;
 
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.MDForSymbol;
+import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.fastui.UiEventHandler;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.HTML;
-import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;

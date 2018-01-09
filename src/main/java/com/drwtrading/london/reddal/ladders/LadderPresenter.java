@@ -19,11 +19,11 @@ import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
+import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
@@ -88,7 +88,6 @@ public class LadderPresenter {
     private final Map<String, LadderMetaData> metaDataBySymbol = new MapMaker().makeComputingMap(LadderMetaData::new);
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap = new HashMap<>();
-    private final Map<String, MDForSymbol> marketDataForSymbolMap;
     private final Map<String, SearchResult> refData = new HashMap<>();
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
@@ -136,16 +135,6 @@ public class LadderPresenter {
         this.orderEntryCommandToServerPublisher = orderEntryCommandToServerPublisher;
         this.userWorkspaceRequests = userWorkspaceRequests;
         this.ladderPrefsForUserBySymbol = new HashMap<>();
-        this.marketDataForSymbolMap = new MapMaker().makeComputingMap(this::subscribeToMarketDataForSymbol);
-    }
-
-    private MDForSymbol subscribeToMarketDataForSymbol(final String symbol) {
-        return new MDForSymbol(bookSubscriber, symbol);
-    }
-
-    private void unsubscribeFromMarketDataForSymbol(final String symbol) {
-        final MDForSymbol md = marketDataForSymbolMap.get(symbol);
-        md.unsubscribeForMD();
     }
 
     @Subscribe
@@ -196,7 +185,7 @@ public class LadderPresenter {
             final String user = disconnected.getClient().getUserName();
             viewsByUser.remove(user, view);
             if (viewsBySymbol.get(symbol).isEmpty()) {
-                unsubscribeFromMarketDataForSymbol(symbol);
+                bookSubscriber.unsubscribeForMD(symbol, this);
             }
         }
     }
@@ -211,8 +200,8 @@ public class LadderPresenter {
             if ("ladder-subscribe".equals(cmd)) {
                 final String symbol = args[1];
                 final int levels = Integer.parseInt(args[2]);
-                final MDForSymbol mdForSymbol = marketDataForSymbolMap.get(symbol);
-                mdForSymbol.subscribeForMD();
+                final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(symbol, this);
+
                 final String userName = msg.getClient().getUserName();
                 view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), metaDataBySymbol.get(symbol),
                         dataBySymbol.get(symbol), stackBySymbol.get(symbol), getLadderPrefsForSymbolUser(symbol, userName),
@@ -236,7 +225,8 @@ public class LadderPresenter {
             }
         }
         if (!"heartbeat".equals(cmd)) {
-            trace.publish(new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
+            trace.publish(
+                    new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
         }
     }
 

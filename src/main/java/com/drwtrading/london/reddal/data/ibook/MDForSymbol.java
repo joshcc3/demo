@@ -1,35 +1,37 @@
-package com.drwtrading.london.reddal.data;
+package com.drwtrading.london.reddal.data.ibook;
 
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
-import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
+import com.drwtrading.london.reddal.data.TradeTracker;
 
 import java.text.DecimalFormat;
+import java.util.HashSet;
+import java.util.Set;
 
 public class MDForSymbol {
 
-    private final IMDSubscriber bookSubscriber;
-    private final String symbol;
+    public final String symbol;
+
+    private final Set<Object> listeners;
 
     private final boolean isPriceInverted;
-    private TradeTracker tradeTracker;
+    private final TradeTracker tradeTracker;
 
     private IBook<?> book;
     private IBook<IBookLevelWithOrders> level3Book;
     private DecimalFormat df;
     private DecimalFormat nonTrailingDF;
 
-    public MDForSymbol(final IMDSubscriber bookSubscriber, final String symbol) {
+    public MDForSymbol(final String symbol) {
 
-        this.bookSubscriber = bookSubscriber;
         this.symbol = symbol;
 
-        this.isPriceInverted = symbol.startsWith("6R");
+        this.listeners = new HashSet<>();
 
-        tradeTracker = new TradeTracker();
-        bookSubscriber.subscribeForMD(symbol, this);
+        this.isPriceInverted = symbol.startsWith("6R");
+        this.tradeTracker = new TradeTracker();
     }
 
     public void setL3Book(final IBook<IBookLevelWithOrders> book) {
@@ -56,8 +58,17 @@ public class MDForSymbol {
         this.nonTrailingDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 1, decimalPlaces);
     }
 
-    public void unsubscribeForMD() {
-        bookSubscriber.unsubscribeForMD(symbol, this);
+    boolean addListener(final Object listener) {
+
+        final boolean result = listeners.isEmpty();
+        listeners.add(listener);
+        return result;
+    }
+
+    boolean removeListener(final Object listener) {
+
+        listeners.remove(listener);
+        return listeners.isEmpty();
     }
 
     public boolean isPriceInverted() {
@@ -84,11 +95,11 @@ public class MDForSymbol {
         return level3Book;
     }
 
-    public void subscribeForMD() {
-        bookSubscriber.subscribeForMD(symbol, this);
+    public void trade(final long price, final long qty) {
+        tradeTracker.addTrade(price, qty);
     }
 
-    public void setTradeTracker(final TradeTracker tradeTracker) {
-        this.tradeTracker = tradeTracker;
+    public void unsubscribed() {
+        tradeTracker.clear();
     }
 }

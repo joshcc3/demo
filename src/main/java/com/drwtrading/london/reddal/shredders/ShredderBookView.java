@@ -13,7 +13,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.MDForSymbol;
+import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
@@ -25,8 +25,6 @@ import com.drwtrading.london.reddal.ladders.LadderHTMLRow;
 import com.drwtrading.london.reddal.ladders.LadderHTMLTable;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import eeif.execution.Side;
-import eeif.execution.WorkingOrderState;
-import eeif.execution.WorkingOrderType;
 import eeif.execution.WorkingOrderUpdate;
 
 import java.util.ArrayList;

@@ -10,8 +10,8 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.time.IClock;
-import com.drwtrading.london.reddal.data.MDForSymbol;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
+import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
@@ -48,7 +48,7 @@ public class PicardSpotter {
 
         final PicardData picardData = picardDatas.get(laserLine.getSymbol());
         if (null == picardData) {
-            final MDForSymbol mdForSymbol = new MDForSymbol(bookSubscriber, laserLine.getSymbol());
+            final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(laserLine.getSymbol(), this);
             final PicardData newPicardData = new PicardData(laserLine.getSymbol(), mdForSymbol);
             setLaserLine(newPicardData, laserLine);
             picardDatas.put(laserLine.getSymbol(), newPicardData);

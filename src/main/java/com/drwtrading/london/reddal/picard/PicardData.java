@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.picard;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
-import com.drwtrading.london.reddal.data.MDForSymbol;
+import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 
 class PicardData {
 
