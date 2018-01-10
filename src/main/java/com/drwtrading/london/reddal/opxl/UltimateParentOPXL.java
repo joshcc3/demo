@@ -18,6 +18,7 @@ public class UltimateParentOPXL extends AOpxlReader<Collection<UltimateParentMap
 
     private static final String PARENT_COL = "parent";
     private static final String CHILD_COL = "original";
+    private static final String RATIO_COL = "1_child_per_x_parents";
 
     private final Publisher<UltimateParentMapping> ultimateParentPublisher;
 
@@ -42,6 +43,7 @@ public class UltimateParentOPXL extends AOpxlReader<Collection<UltimateParentMap
 
             final int childCol = findColumn(headerRow, CHILD_COL);
             final int parentCol = findColumn(headerRow, PARENT_COL);
+            final int ratioCol = findColumn(headerRow, RATIO_COL);
 
             final Map<String, UltimateParentMapping> isinToParent = new HashMap<>();
 
@@ -55,19 +57,22 @@ public class UltimateParentOPXL extends AOpxlReader<Collection<UltimateParentMap
 
                     final String child = row[childCol].toString();
                     final String parent = row[parentCol].toString();
+                    final String optionalRatio = row[ratioCol].toString();
 
                     try {
                         final InstrumentID childInstID = InstrumentID.getFromIsinCcyMic(child);
                         final InstrumentID parentInstID = InstrumentID.getFromIsinCcyMic(parent);
+                        final double childPerParentRatio = optionalRatio.isEmpty() ? 1d : Double.parseDouble(optionalRatio);
 
-                        final UltimateParentMapping UltimateParentMapping = new UltimateParentMapping(childInstID.isin, parentInstID);
+                        final UltimateParentMapping ultimateParentMapping =
+                                new UltimateParentMapping(childInstID.isin, parentInstID, 1 / childPerParentRatio);
 
-                        final UltimateParentMapping prevUltimateParent = isinToParent.putIfAbsent(childInstID.isin, UltimateParentMapping);
+                        final UltimateParentMapping prevUltimateParent = isinToParent.putIfAbsent(childInstID.isin, ultimateParentMapping);
                         if (null != prevUltimateParent && !parentInstID.equals(prevUltimateParent.parentID)) {
 
                             logErrorOnSelectIO(
                                     "Ultimate parent differs for [" + childInstID.isin + "], first [" + prevUltimateParent.parentID +
-                                            "] and then [" + UltimateParentMapping.parentID + "].");
+                                            "] and then [" + ultimateParentMapping.parentID + "].");
                             allOK = false;
                         }
                     } catch (final Exception e) {

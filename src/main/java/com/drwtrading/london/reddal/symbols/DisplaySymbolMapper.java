@@ -82,12 +82,12 @@ public class DisplaySymbolMapper {
 
     public void setUltimateParent(final UltimateParentMapping ultimateParent) {
 
-        ultimateParents.put(ultimateParent.isin, ultimateParent.parentID.isin);
+        ultimateParents.put(ultimateParent.childISIN, ultimateParent.parentID.isin);
 
         final String parentBBGCode = bbgByIsin.get(ultimateParent.parentID.isin);
         if (null != parentBBGCode) {
-            ultimateParentBBG.put(ultimateParent.isin, parentBBGCode);
-            makeDisplaySymbol(ultimateParent.isin);
+            ultimateParentBBG.put(ultimateParent.childISIN, parentBBGCode);
+            makeDisplaySymbol(ultimateParent.childISIN);
         }
     }
 

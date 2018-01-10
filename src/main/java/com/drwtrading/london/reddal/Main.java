@@ -827,6 +827,7 @@ public class Main {
                     new ExpandedDetailResourceMonitor<>(monitor, "PKS", errorLog, PositionTransportComponents.class, ReddalComponents.PKS);
 
             final PKSPositionClient pksClient = new PKSPositionClient(channels.pksExposure);
+            channels.ultimateParents.subscribe(selectIOFiber, pksClient::setUltimateParent);
             channels.searchResults.subscribe(selectIOFiber, pksClient::setSearchResult);
 
             final PositionClientHandler cache =
