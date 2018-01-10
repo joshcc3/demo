@@ -39,4 +39,6 @@ public interface IStackFamilyUI {
     void setChildData(final String symbol, final String leanSymbol, final String nibblerName, final String selectedConfigType, final boolean isBidStrategyOn,
             final String bidInfo, final boolean isBidPicardEnabled, final boolean isBidQuoterEnabled, final boolean isAskStrategyOn,
             final String askInfo, final boolean isAskPicardEnabled, final boolean isAskQuoterEnabled);
+
+    void openConfig(final String symbolList);
 }

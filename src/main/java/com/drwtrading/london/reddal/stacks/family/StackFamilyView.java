@@ -200,8 +200,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     private void updateSymbolFilters(final String symbol) {
 
         final SearchResult searchResult = searchResults.get(symbol);
-        if (null != searchResult && (InstType.ETF == searchResult.instType || InstType.FUTURE == searchResult.instType) &&
-                childData.containsKey(symbol)) {
+        if (null != searchResult && childData.containsKey(symbol)) {
 
             final String filterName = searchResult.mdSource.name();
             final StackChildFilter filter = getFilter(filterName.trim(), MD_SOURCE_FILTER_GROUP);
@@ -900,6 +899,24 @@ public class StackFamilyView implements IStackRelationshipListener {
 
             final String family = childrenToFamily.get(childSymbol);
             communityManager.setChildSelectedConfig(SOURCE_UI, family, childSymbol, stackConfigType);
+        }
+    }
+
+    @FromWebSocketView
+    public void lookupConfigSymbols(final String filters, final WebSocketInboundData data) {
+
+        final Collection<String> affectedChildren = getFilteredSymbols(filters);
+        if (!affectedChildren.isEmpty()) {
+
+            final StringBuilder sb = new StringBuilder();
+            for (final String symbol : affectedChildren) {
+                sb.append(symbol);
+                sb.append(',');
+            }
+
+            sb.setLength(sb.length() - 1);
+            final IStackFamilyUI ui = views.get(data.getOutboundChannel());
+            ui.openConfig(sb.toString());
         }
     }
 

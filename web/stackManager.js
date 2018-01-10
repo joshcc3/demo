@@ -119,6 +119,10 @@ $(function () {
 	obligationConfigButton.unbind().bind("click", function () {
 		ws.send(command("setFilteredSelectedConfig", [filterSelection.text(), "OBLIGATION"]));
 	});
+	var configFilterButton = filteringRow.find(".configControls .configWindow");
+	configFilterButton.unbind().bind("click", function () {
+		ws.send(command("lookupConfigSymbols", [filterSelection.text()]));
+	});
 
 	var bidPicardDiv = filteringRow.find(".bid .picardEnabled");
 	bidPicardDiv.mousedown(stackEnableFilteredStackChange(filterSelection, "BID", "PICARD"));
@@ -1002,4 +1006,8 @@ function showAdmin(event) {
 		adminDiv.toggleClass("hideAdmin", true);
 	}
 	window.getSelection().removeAllRanges();
+}
+
+function openConfig(symbolList) {
+	popUp("/stackConfig#;" + symbolList, "Configs", 2200, 400);
 }
