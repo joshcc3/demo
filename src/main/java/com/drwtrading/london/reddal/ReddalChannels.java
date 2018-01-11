@@ -23,7 +23,7 @@ import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
-import com.drwtrading.london.reddal.stacks.family.StackChildFilter;
+import com.drwtrading.london.reddal.stacks.StacksDisableSiblingsCmd;
 import com.drwtrading.london.reddal.stacks.opxl.StackRefPriceDetail;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
@@ -89,9 +89,9 @@ class ReddalChannels {
     final TypedChannel<UltimateParentMapping> ultimateParents;
 
     final TypedChannel<String> stackParentSymbolPublisher;
-    final TypedChannel<StackChildFilter> etfOPXLStackFilters;
     final TypedChannel<StackIncreaseParentOffsetCmd> increaseParentOffsetCmds;
     final TypedChannel<StackIncreaseChildOffsetCmd> increaseChildOffsetBPSCmds;
+    final TypedChannel<StacksDisableSiblingsCmd> disableSiblingsCmds;
 
     final TypedChannel<PicardRow> picardRows;
     final TypedChannel<PicardRow> yodaPicardRows;
@@ -139,15 +139,15 @@ class ReddalChannels {
         this.ultimateParents = create(UltimateParentMapping.class);
 
         this.stackParentSymbolPublisher = create(String.class);
-        this.etfOPXLStackFilters = create(StackChildFilter.class);
         this.increaseParentOffsetCmds = create(StackIncreaseParentOffsetCmd.class);
         this.increaseChildOffsetBPSCmds = create(StackIncreaseChildOffsetCmd.class);
+        this.disableSiblingsCmds = create(StacksDisableSiblingsCmd.class);
 
         this.picardRows = create(PicardRow.class);
         this.yodaPicardRows = create(PicardRow.class);
     }
 
-    <T> TypedChannel<T> create(final Class<T> clazz) {
+    private <T> TypedChannel<T> create(final Class<T> clazz) {
         return channelFactory.createChannel(clazz, clazz.getSimpleName());
     }
 }

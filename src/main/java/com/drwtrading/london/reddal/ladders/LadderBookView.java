@@ -22,11 +22,11 @@ import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradeTracker;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.fastui.html.DataKey;
@@ -43,6 +43,7 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.SubmitOrderCmd;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
+import com.drwtrading.london.reddal.stacks.StacksDisableSiblingsCmd;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
@@ -86,7 +87,7 @@ public class LadderBookView implements ILadderBoard {
 
     private static final String WHITE_LASER_LINE_ID = "white";
 
-    public static final int AUTO_RECENTER_TICKS = 3;
+    private static final int AUTO_RECENTER_TICKS = 3;
 
     private static final Set<String> TAGS = ImmutableSet.of("CHAD", "DIV", "STRING", "CLICKNOUGHT", "GLABN");
 
@@ -143,6 +144,7 @@ public class LadderBookView implements ILadderBoard {
     private final LadderMetaData metaData;
     private final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
+    private final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher;
 
     private final LongMap<LadderBoardRow> priceRows;
 
@@ -176,7 +178,8 @@ public class LadderBookView implements ILadderBoard {
             final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
             final SymbolStackData stackData, final LadderMetaData metaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
-            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher, final Publisher<Jsonable> trace,
+            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
+            final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher, final Publisher<Jsonable> trace,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap, final long centeredPrice) {
 
         this.monitor = monitor;
@@ -221,6 +224,7 @@ public class LadderBookView implements ILadderBoard {
         this.metaData = metaData;
         this.stackParentCmdPublisher = stackParentCmdPublisher;
         this.increaseChildOffsetCmdPublisher = increaseChildOffsetCmdPublisher;
+        this.disableSiblingsCmdPublisher = disableSiblingsCmdPublisher;
 
         this.pricingModes = new EnumSwitcher<>(PricingMode.class, PricingMode.values());
         this.buttonQty = new HashMap<>();
@@ -378,7 +382,7 @@ public class LadderBookView implements ILadderBoard {
         drawClickTrading();
     }
 
-    void drawPricingButtons() {
+    private void drawPricingButtons() {
 
         for (final PricingMode mode : pricingModes.getUniverse()) {
             ui.cls(HTML.PRICING + mode, CSSClass.INVISIBLE, !pricingModes.isValidChoice(mode));
@@ -459,7 +463,7 @@ public class LadderBookView implements ILadderBoard {
         final IBook<?> book = marketData.getBook();
         if (!pendingRefDataAndSettle && null != book && book.isValid()) {
 
-            Long specialCasePrice = specialCaseCenterPrice(book);
+            final Long specialCasePrice = specialCaseCenterPrice(book);
 
             final IBookLevel bestBid = book.getBestBid();
             final IBookLevel bestAsk = book.getBestAsk();
@@ -503,7 +507,7 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private Long specialCaseCenterPrice(IBook<?> book) {
+    private static Long specialCaseCenterPrice(final IBook<?> book) {
         if (book.getInstType() == InstType.FUTURE && book.getSymbol().startsWith("FES1")) {
             return 0L;
         }
@@ -613,12 +617,12 @@ public class LadderBookView implements ILadderBoard {
 
     private boolean isOrderTypeSupported(final CSSClass orderType, final String mic) {
 
-        return TAGS.stream().filter(tag -> {
-            boolean oldOrderType = null != ladderOptions.serverResolver.resolveToServerName(symbol, orderType.name(), tag, mic);
-            boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(orderType.name()) &&
+        return TAGS.stream().anyMatch(tag -> {
+            final boolean oldOrderType = null != ladderOptions.serverResolver.resolveToServerName(symbol, orderType.name(), tag, mic);
+            final boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(orderType.name()) &&
                     orderEntryMap.get(symbol).supportedTypes.contains(ManagedOrderType.valueOf(orderType.name()));
             return oldOrderType || newOrderType;
-        }).findAny().isPresent();
+        });
     }
 
     private void drawClickTrading() {
@@ -1090,8 +1094,18 @@ public class LadderBookView implements ILadderBoard {
             } else if (label.equals(HTML.START_SELL)) {
                 stackData.startAskStrategy();
             } else if (label.equals(HTML.STOP_BUY)) {
+                if (null != metaData.spreadContractSet.parentSymbol) {
+                    final StacksDisableSiblingsCmd cmd =
+                            new StacksDisableSiblingsCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID);
+                    disableSiblingsCmdPublisher.publish(cmd);
+                }
                 stackData.stopBidStrategy();
             } else if (label.equals(HTML.STOP_SELL)) {
+                if (null != metaData.spreadContractSet.parentSymbol) {
+                    final StacksDisableSiblingsCmd cmd =
+                            new StacksDisableSiblingsCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK);
+                    disableSiblingsCmdPublisher.publish(cmd);
+                }
                 stackData.stopAskStrategy();
             } else if (label.equals(HTML.PRICING_BPS)) {
                 pricingModes.set(PricingMode.BPS);
@@ -1421,7 +1435,7 @@ public class LadderBookView implements ILadderBoard {
                     cancelOrder(orderUpdateFromServer);
                 }
             }
-            orderUpdatesForSymbol.updatesByKey.values().stream().forEach(update -> {
+            orderUpdatesForSymbol.updatesByKey.values().forEach(update -> {
                 if (convertSide(update.update.getOrder().getSide()) == side) {
                     cancelManagedOrder(update);
                 }

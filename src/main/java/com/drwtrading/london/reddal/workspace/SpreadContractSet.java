@@ -18,8 +18,8 @@ public class SpreadContractSet extends Struct {
 
     private final Map<String, String> nextSymbols;
 
-    public SpreadContractSet(final String symbol, final String backMonth, final String spread, final String leanSymbol,
-            final String stackSymbol, final String parentSymbol) {
+    SpreadContractSet(final String symbol, final String backMonth, final String spread, final String leanSymbol, final String stackSymbol,
+            final String parentSymbol) {
 
         this.symbol = symbol;
 

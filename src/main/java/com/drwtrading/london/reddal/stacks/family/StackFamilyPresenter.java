@@ -5,6 +5,7 @@ import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.transport.cache.families.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -45,7 +46,6 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         }
 
         this.userViews = new HashMap<>();
-
     }
 
     public void setCommunityManager(final StackCommunityManager communityManager) {
@@ -140,6 +140,10 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         for (final StackFamilyView asylum : asylums.values()) {
             asylum.symbolSelected(symbolSelection);
         }
+    }
+
+    public void disableSiblings(final String source, final String familyName, final BookSide side) {
+        familyView.disableSiblings(source, familyName, side);
     }
 
     public void webControl(final WebSocketControlMessage webMsg) {

@@ -10,15 +10,16 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.SymbolStackPriceLevel;
+import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.fastui.html.DataKey;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
+import com.drwtrading.london.reddal.stacks.StacksDisableSiblingsCmd;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
@@ -74,6 +75,7 @@ public class LadderStackView implements ILadderBoard {
     private final LadderMetaData metaData;
     private final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
+    private final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher;
 
     private final UiPipeImpl ui;
     private final ILadderUI view;
@@ -95,10 +97,11 @@ public class LadderStackView implements ILadderBoard {
     private long centeredPrice;
     private long topPrice;
 
-    public LadderStackView(final String username, final boolean isTrader, final String symbol, final Map<String, Integer> buttonQties,
+    LadderStackView(final String username, final boolean isTrader, final String symbol, final Map<String, Integer> buttonQties,
             final int levels, final LadderHTMLTable ladderHTMLKeys, final SymbolStackData stackData, final LadderMetaData metaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
-            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher, final UiPipeImpl ui, final ILadderUI view,
+            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
+            final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher, final UiPipeImpl ui, final ILadderUI view,
             final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final MDForSymbol marketData) {
 
         this.username = username;
@@ -109,6 +112,7 @@ public class LadderStackView implements ILadderBoard {
         this.metaData = metaData;
         this.stackParentCmdPublisher = stackParentCmdPublisher;
         this.increaseChildOffsetCmdPublisher = increaseChildOffsetCmdPublisher;
+        this.disableSiblingsCmdPublisher = disableSiblingsCmdPublisher;
 
         this.ui = ui;
         this.view = view;
@@ -504,8 +508,14 @@ public class LadderStackView implements ILadderBoard {
                 stackData.startAskStrategy();
             } else if (label.equals(HTML.STOP_BUY)) {
                 stackData.stopBidStrategy();
+                final StacksDisableSiblingsCmd cmd =
+                        new StacksDisableSiblingsCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID);
+                disableSiblingsCmdPublisher.publish(cmd);
             } else if (label.equals(HTML.STOP_SELL)) {
                 stackData.stopAskStrategy();
+                final StacksDisableSiblingsCmd cmd =
+                        new StacksDisableSiblingsCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK);
+                disableSiblingsCmdPublisher.publish(cmd);
             } else if (label.equals(HTML.STACK_BID_QUOTE_ENABLED)) {
                 stackData.setBidStackEnabled(StackType.QUOTER, true);
             } else if (label.equals(HTML.STACK_BID_PICARD_ENABLED)) {

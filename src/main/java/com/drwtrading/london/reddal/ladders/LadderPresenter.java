@@ -36,6 +36,7 @@ import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
+import com.drwtrading.london.reddal.stacks.StacksDisableSiblingsCmd;
 import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -68,8 +69,8 @@ import java.util.concurrent.TimeUnit;
 
 public class LadderPresenter {
 
-    public static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 5;
-    public static final long HEARTBEAT_INTERVAL_MS = 1000;
+    private static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 5;
+    private static final long HEARTBEAT_INTERVAL_MS = 1000;
 
     private final IResourceMonitor<ReddalComponents> monitor;
     private final IMDSubscriber bookSubscriber;
@@ -97,6 +98,7 @@ public class LadderPresenter {
     private final Publisher<Jsonable> trace;
     private final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
+    private final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher;
 
     private final Fiber fiber;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
@@ -111,6 +113,7 @@ public class LadderPresenter {
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
             final Fiber fiber, final Publisher<Jsonable> trace, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
+            final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
@@ -129,6 +132,7 @@ public class LadderPresenter {
         this.trace = trace;
         this.increaseParentOffsetPublisher = increaseParentOffsetPublisher;
         this.increaseChildOffsetCmdPublisher = increaseChildOffsetCmdPublisher;
+        this.disableSiblingsCmdPublisher = disableSiblingsCmdPublisher;
 
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
@@ -168,7 +172,7 @@ public class LadderPresenter {
                 new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions,
                         tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, trace, ladderClickTradingIssuePublisher,
                         userCycleContractPublisher, userWorkspaceRequests, orderEntryMap, orderEntryCommandToServerPublisher,
-                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, refData::containsKey);
+                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, refData::containsKey);
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }
@@ -261,8 +265,8 @@ public class LadderPresenter {
                         final int secondExp = getRollsHence(legs[1], futureFromSymbol, expiryCalc);
                         if (firstExp >= 0 && secondExp >= 0) {
                             for (int i = 0; i < 3; i++) {
-                                final String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp - i) +
-                                        '-' + expiryCalc.getFutureCode(futureFromSymbol, secondExp - i);
+                                final String existingSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp - i) + '-' +
+                                        expiryCalc.getFutureCode(futureFromSymbol, secondExp - i);
                                 final LadderPrefsForSymbolUser existingPrefs = symbolToPrefs.get(existingSymbol);
                                 if (null != existingPrefs) {
                                     prefs = existingPrefs.withSymbol(symbol);

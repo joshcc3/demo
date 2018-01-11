@@ -183,11 +183,11 @@ import java.util.regex.Pattern;
 
 public class Main {
 
-    public static final int MD_SERVER_TIMEOUT = 5000;
+    private static final int MD_SERVER_TIMEOUT = 5000;
 
-    public static final long SERVER_TIMEOUT = 3000L;
-    public static final long HEARTBEAT_INTERVAL_MS = 3000;
-    public static final long RECONNECT_INTERVAL_MILLIS = 10000;
+    private static final long SERVER_TIMEOUT = 3000L;
+    private static final long HEARTBEAT_INTERVAL_MS = 3000;
+    private static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     private static final String EWOK_BASE_URL_PARAM = "ewokBaseURL";
     private static final String IS_EQUITIES_SEARCHABLE_PARAM = "isEquitiesSearchable";
@@ -198,7 +198,7 @@ public class Main {
 
     private static final String TRANSPORT_REMOTE_CMDS_NAME_PARAM = "remoteCommands";
     private static final Pattern PARENT_STACK_SUFFIX = Pattern.compile(";S", Pattern.LITERAL);
-    public static final ChannelFactory CHANNEL_FACTORY = new ChannelFactory() {
+    private static final ChannelFactory CHANNEL_FACTORY = new ChannelFactory() {
         @Override
         public <T> TypedChannel<T> createChannel(final Class<T> type, final String name) {
             return TypedChannels.create(type);
@@ -917,8 +917,8 @@ public class Main {
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
                         environment.ladderOptions(), channels.storeLadderPref, channels.heartbeatRoundTrips,
                         channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffsetCmds,
-                        channels.increaseChildOffsetBPSCmds, channels.ladderClickTradingIssues, channels.userCycleContractPublisher,
-                        channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
+                        channels.increaseChildOffsetBPSCmds, channels.disableSiblingsCmds, channels.ladderClickTradingIssues,
+                        channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
 
         fiberBuilder.subscribe(ladderPresenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
                 channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.recenterLaddersForUser,
@@ -953,7 +953,7 @@ public class Main {
         stackUpdateBatcher.setStackClient(client);
     }
 
-    public static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
+    private static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
             final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
         webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
@@ -1055,12 +1055,16 @@ public class Main {
 
             stackFamilyPresenter.setCommunityManager(communityManager);
             channels.increaseParentOffsetCmds.subscribe(selectIOFiber, msg -> {
-                final String childSymbol = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
-                communityManager.increaseOffset(msg.source, childSymbol, msg.side, msg.multiplier);
+                final String familyName = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
+                communityManager.increaseOffset(msg.source, familyName, msg.side, msg.multiplier);
             });
             channels.increaseChildOffsetBPSCmds.subscribe(selectIOFiber, msg -> {
                 final String childSymbol = PARENT_STACK_SUFFIX.matcher(msg.childName).replaceAll("");
                 communityManager.increaseChildPriceOffset(msg.source, childSymbol, msg.side, msg.offsetIncreaseBPS);
+            });
+            channels.disableSiblingsCmds.subscribe(selectIOFiber, msg -> {
+                final String familyName = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
+                stackFamilyPresenter.disableSiblings(msg.source, familyName, msg.side);
             });
 
             final StackFamilyListener familyListener = new StackFamilyListener(stackFamilyPresenter);

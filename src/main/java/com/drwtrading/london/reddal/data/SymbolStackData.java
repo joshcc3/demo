@@ -265,14 +265,14 @@ public class SymbolStackData {
         return priceMultiplier * mostAggressiveTick;
     }
 
-    public boolean setStackGroupUpdate(final double tickSize, final double stackAlignmentTickToBPS) {
+    public void setStackGroupUpdate(final double tickSize, final double stackAlignmentTickToBPS) {
 
         if (null != bidStackGroup) {
             stackClient.updateStackGroup(SOURCE, bidStackGroup.getStackID(), bidStackGroup.getPriceOffsetBPS(), tickSize,
                     stackAlignmentTickToBPS);
             stackClient.updateStackGroup(SOURCE, askStackGroup.getStackID(), askStackGroup.getPriceOffsetBPS(), tickSize,
                     stackAlignmentTickToBPS);
-            return stackClient.batchComplete();
+            stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
         }
@@ -280,43 +280,41 @@ public class SymbolStackData {
 
     public boolean improveBidStackPriceOffset(final double priceOffset) {
 
-        if (null != bidStackGroup) {
-            final double newOffset = bidStackGroup.getPriceOffsetBPS() + priceOffset;
-            stackClient.updateStackGroup(SOURCE, bidStackGroup.getStackID(), newOffset, bidStackGroup.getPriceOffsetTickSize(),
-                    bidStackGroup.getStackAlignmentTickToBPS());
-            return stackClient.batchComplete();
-        } else {
-            return false;
-        }
+        return improveStackPriceOffset(bidStackGroup, priceOffset);
     }
 
     public boolean improveAskStackPriceOffset(final double priceOffset) {
 
-        if (null != askStackGroup) {
-            final double newOffset = askStackGroup.getPriceOffsetBPS() + priceOffset;
-            stackClient.updateStackGroup(SOURCE, askStackGroup.getStackID(), newOffset, askStackGroup.getPriceOffsetTickSize(),
-                    askStackGroup.getStackAlignmentTickToBPS());
+        return improveStackPriceOffset(askStackGroup, priceOffset);
+    }
+
+    private boolean improveStackPriceOffset(final StackGroup stackGroup, final double priceOffset) {
+
+        if (null != stackGroup) {
+            final double newOffset = stackGroup.getPriceOffsetBPS() + priceOffset;
+            stackClient.updateStackGroup(SOURCE, stackGroup.getStackID(), newOffset, stackGroup.getPriceOffsetTickSize(),
+                    stackGroup.getStackAlignmentTickToBPS());
             return stackClient.batchComplete();
         } else {
             return false;
         }
     }
 
-    public boolean setBidStackEnabled(final StackType stackType, final boolean isEnabled) {
+    public void setBidStackEnabled(final StackType stackType, final boolean isEnabled) {
 
         if (null != bidStackGroup) {
             stackClient.setStackEnabled(SOURCE, bidStackGroup.getStackID(), stackType, isEnabled);
-            return stackClient.batchComplete();
+            stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
         }
     }
 
-    public boolean setAskStackEnabled(final StackType stackType, final boolean isEnabled) {
+    public void setAskStackEnabled(final StackType stackType, final boolean isEnabled) {
 
         if (null != askStackGroup) {
             stackClient.setStackEnabled(SOURCE, askStackGroup.getStackID(), stackType, isEnabled);
-            return stackClient.batchComplete();
+            stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
         }
@@ -326,26 +324,6 @@ public class SymbolStackData {
 
         if (null != bidStackGroup) {
             stackClient.stackCleared(SOURCE, bidStackGroup.getStackID());
-            return stackClient.batchComplete();
-        } else {
-            throw new IllegalStateException("No stack for symbol.");
-        }
-    }
-
-    public boolean clearBidStack(final StackType stackType, final StackOrderType orderType) {
-
-        if (null != bidStackGroup) {
-            for (final LongMapNode<SymbolStackPriceLevel> stackPriceLevelNode : bidStackLevels) {
-
-                final SymbolStackPriceLevel stackPriceLevel = stackPriceLevelNode.getValue();
-                final StackLevel level = stackPriceLevel.getStackType(stackType);
-                if (null != level) {
-                    if (0 < level.getOrderTypeQty(orderType)) {
-                        stackClient.addStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType, level.getPullbackTicks(),
-                                -Long.MAX_VALUE);
-                    }
-                }
-            }
             return stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
@@ -362,21 +340,32 @@ public class SymbolStackData {
         }
     }
 
-    public boolean clearAskStack(final StackType stackType, final StackOrderType orderType) {
+    public void clearBidStack(final StackType stackType, final StackOrderType orderType) {
 
-        if (null != askStackGroup) {
-            for (final LongMapNode<SymbolStackPriceLevel> stackPriceLevelNode : askStackLevels) {
+        clearStack(bidStackGroup, bidStackLevels, stackType, orderType);
+    }
+
+    public void clearAskStack(final StackType stackType, final StackOrderType orderType) {
+
+        clearStack(askStackGroup, askStackLevels, stackType, orderType);
+    }
+
+    private void clearStack(final StackGroup stackGroup, final LongMap<SymbolStackPriceLevel> stackLevels, final StackType stackType,
+            final StackOrderType orderType) {
+
+        if (null != stackGroup) {
+            for (final LongMapNode<SymbolStackPriceLevel> stackPriceLevelNode : stackLevels) {
 
                 final SymbolStackPriceLevel stackPriceLevel = stackPriceLevelNode.getValue();
                 final StackLevel level = stackPriceLevel.getStackType(stackType);
                 if (null != level) {
                     if (0 < level.getOrderTypeQty(orderType)) {
-                        stackClient.addStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType, level.getPullbackTicks(),
+                        stackClient.addStackQty(SOURCE, stackGroup.getStackID(), stackType, orderType, level.getPullbackTicks(),
                                 -Long.MAX_VALUE);
                     }
                 }
             }
-            return stackClient.batchComplete();
+            stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
         }
@@ -384,22 +373,20 @@ public class SymbolStackData {
 
     public boolean adjustBidStackLevels(final int tickAdjustment) {
 
-        if (null != bidStackGroup) {
-            for (final StackType stackType : StackType.values()) {
-                stackClient.adjustStackLevels(SOURCE, bidStackGroup.getStackID(), stackType, tickAdjustment);
-            }
-            return stackClient.batchComplete();
-        } else {
-            throw new IllegalStateException("No stack for symbol.");
-        }
+        return adjustStackLevels(bidStackGroup, tickAdjustment);
     }
 
     public boolean adjustAskStackLevels(final int tickAdjustment) {
 
-        if (null != askStackGroup) {
+        return adjustStackLevels(askStackGroup, tickAdjustment);
+    }
+
+    private boolean adjustStackLevels(final StackGroup stackGroup, final int tickAdjustment) {
+
+        if (null != stackGroup) {
 
             for (final StackType stackType : StackType.values()) {
-                stackClient.adjustStackLevels(SOURCE, askStackGroup.getStackID(), stackType, tickAdjustment);
+                stackClient.adjustStackLevels(SOURCE, stackGroup.getStackID(), stackType, tickAdjustment);
             }
             return stackClient.batchComplete();
         } else {
@@ -409,36 +396,26 @@ public class SymbolStackData {
 
     public boolean clearBidStackPrice(final StackType stackType, final int tickOffset) {
 
-        if (null != bidStackGroup) {
-            final SymbolStackPriceLevel stackPriceLevel = bidStackLevels.get(tickOffset);
-            if (null != stackPriceLevel) {
-                final StackLevel level = stackPriceLevel.getStackType(stackType);
-                if (null != level) {
-                    for (final StackOrderType orderType : StackOrderType.values()) {
-                        if (0 < level.getOrderTypeQty(orderType)) {
-                            stackClient.addStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType,
-                                    BID_PRICE_MULTIPLIER * tickOffset, -Long.MAX_VALUE);
-                        }
-                    }
-                }
-            }
-            return stackClient.batchComplete();
-        } else {
-            throw new IllegalStateException("No stack for symbol.");
-        }
+        return clearStackPrice(bidStackGroup, bidStackLevels, stackType, BID_PRICE_MULTIPLIER, tickOffset);
     }
 
     public boolean clearAskStackPrice(final StackType stackType, final int tickOffset) {
 
-        if (null != askStackGroup) {
-            final SymbolStackPriceLevel stackPriceLevel = askStackLevels.get(tickOffset);
+        return clearStackPrice(askStackGroup, askStackLevels, stackType, ASK_PRICE_MULTIPLIER, tickOffset);
+    }
+
+    private boolean clearStackPrice(final StackGroup stackGroup, final LongMap<SymbolStackPriceLevel> stackLevels,
+            final StackType stackType, final int priceMultiplier, final int tickOffset) {
+
+        if (null != stackGroup) {
+            final SymbolStackPriceLevel stackPriceLevel = stackLevels.get(tickOffset);
             if (null != stackPriceLevel) {
                 final StackLevel level = stackPriceLevel.getStackType(stackType);
                 if (null != level) {
                     for (final StackOrderType orderType : StackOrderType.values()) {
                         if (0 < level.getOrderTypeQty(orderType)) {
-                            stackClient.addStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType,
-                                    ASK_PRICE_MULTIPLIER * tickOffset, -Long.MAX_VALUE);
+                            stackClient.addStackQty(SOURCE, stackGroup.getStackID(), stackType, orderType, priceMultiplier * tickOffset,
+                                    -Long.MAX_VALUE);
                         }
                     }
                 }
@@ -469,51 +446,41 @@ public class SymbolStackData {
         }
     }
 
-    public boolean startBidStrategy() {
+    public void startBidStrategy() {
+
         if (null != bidStackGroup) {
             stackClient.startStrategy(bidStackGroup.getSymbol(), BookSide.BID);
             for (final StackType stackType : StackType.values()) {
                 stackClient.setStackEnabled(SOURCE, bidStackGroup.getStackID(), stackType, true);
             }
-            return stackClient.batchComplete();
-        } else {
-            return false;
+            stackClient.batchComplete();
         }
     }
 
-    public boolean stopBidStrategy() {
-        if (null != bidStackGroup) {
-            stackClient.stopStrategy(bidStackGroup.getSymbol(), BookSide.BID);
-            for (final StackType stackType : StackType.values()) {
-                stackClient.setStackEnabled(SOURCE, bidStackGroup.getStackID(), stackType, false);
-            }
-            return stackClient.batchComplete();
-        } else {
-            return false;
-        }
-    }
+    public void startAskStrategy() {
 
-    public boolean startAskStrategy() {
         if (null != askStackGroup) {
             stackClient.startStrategy(askStackGroup.getSymbol(), BookSide.ASK);
             for (final StackType stackType : StackType.values()) {
                 stackClient.setStackEnabled(SOURCE, askStackGroup.getStackID(), stackType, true);
             }
-            return stackClient.batchComplete();
-        } else {
-            return false;
+            stackClient.batchComplete();
         }
     }
 
-    public boolean stopAskStrategy() {
+    public void stopBidStrategy() {
+
+        if (null != bidStackGroup) {
+            stackClient.stopStrategy(bidStackGroup.getSymbol(), BookSide.BID);
+            stackClient.batchComplete();
+        }
+    }
+
+    public void stopAskStrategy() {
+
         if (null != askStackGroup) {
             stackClient.stopStrategy(askStackGroup.getSymbol(), BookSide.ASK);
-            for (final StackType stackType : StackType.values()) {
-                stackClient.setStackEnabled(SOURCE, askStackGroup.getStackID(), stackType, false);
-            }
-            return stackClient.batchComplete();
-        } else {
-            return false;
+            stackClient.batchComplete();
         }
     }
 }

@@ -50,8 +50,8 @@ import java.util.regex.Pattern;
 public class StackFamilyView implements IStackRelationshipListener {
 
     private static final Collection<String> ALLOWED_INST_TYPES = StackStrategiesPresenter.ALLOWED_INST_TYPES;
+    private static final StackType[] STACK_TYPES = StackType.values();
 
-    private static final String SPREADNOUGHT_FAMILY_NAME = "Spreadnought";
     private static final String YODA_FAMILY_NAME = "Yoda";
 
     private static final String SOURCE_UI = "FAMILY_ADMIN_UI";
@@ -94,8 +94,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private double globalPriceOffsetBPS;
 
-    public StackFamilyView(final SpreadContractSetGenerator contractSetGenerator, final boolean isAsylumPresenter,
-            final String asylumFamilyName) {
+    StackFamilyView(final SpreadContractSetGenerator contractSetGenerator, final boolean isAsylumPresenter, final String asylumFamilyName) {
 
         this.contractSetGenerator = contractSetGenerator;
         this.isAsylumPresenter = isAsylumPresenter;
@@ -331,6 +330,7 @@ public class StackFamilyView implements IStackRelationshipListener {
         childrenToFamily.put(childSymbol, parentSymbol);
 
         if (isFamilyDisplayable(parentSymbol)) {
+
             views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
                     familyToChildRatio);
 
@@ -1097,5 +1097,20 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         final BookSide side = BookSide.valueOf(bookSide);
         communityManager.stopChild(family, childSymbol, side);
+    }
+
+    public void disableSiblings(final String source, final String familyName, final BookSide side) {
+
+        final Map<String, ?> children = families.get(familyName);
+
+        if (null != children) {
+            for (final String child : children.keySet()) {
+                if (childData.containsKey(child)) {
+                    for (final StackType stackType : STACK_TYPES) {
+                        communityManager.setChildStackEnabled(source, familyName, child, side, stackType, false);
+                    }
+                }
+            }
+        }
     }
 }
