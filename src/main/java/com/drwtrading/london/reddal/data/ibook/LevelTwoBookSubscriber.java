@@ -134,7 +134,9 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
     public void trade(final IBook<IBookLevel> book, final long execID, final AggressorSide side, final long price, final long qty) {
 
         final MDForSymbol mdForSymbol = mdForSymbols.get(book.getSymbol());
-        mdForSymbol.trade(price, qty);
+        if (null != mdForSymbol) {
+            mdForSymbol.trade(price, qty);
+        }
     }
 
     @Override

@@ -136,7 +136,9 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
             final long qty) {
 
         final MDForSymbol mdForSymbol = mdForSymbols.get(book.getSymbol());
-        mdForSymbol.trade(price, qty);
+        if (null != mdForSymbol) {
+            mdForSymbol.trade(price, qty);
+        }
     }
 
     @Override
