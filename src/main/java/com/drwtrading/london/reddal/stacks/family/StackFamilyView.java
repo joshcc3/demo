@@ -1013,6 +1013,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void startAll(final WebSocketInboundData data) {
+
         if (isAsylumPresenter) {
             for (final StackUIData familyUIData : parentData.values()) {
                 if (isFamilyDisplayable(familyUIData)) {
@@ -1023,6 +1024,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                 }
             }
         } else {
+            communityManager.reestablishParentalRule();
             communityManager.startFamilies(families.keySet(), BookSide.BID);
             communityManager.startFamilies(families.keySet(), BookSide.ASK);
         }
@@ -1030,6 +1032,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void stopAll(final WebSocketInboundData data) {
+
         if (isAsylumPresenter) {
             for (final StackUIData familyUIData : parentData.values()) {
                 if (isFamilyDisplayable(familyUIData)) {
