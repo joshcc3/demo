@@ -466,6 +466,20 @@ public class LadderView implements UiEventHandler {
             checkGoingEx();
             ui.cls(HTML.TEXT, CSSClass.GOING_EX, exState == GoingExState.YES);
         }
+
+        final double uppyDownyValue = stackData.getPriceOffsetTickSize();
+        if (0 < uppyDownyValue) {
+            final String bps = twoDF.format(uppyDownyValue) + "bps";
+            ui.tooltip('#' + HTML.BUY_OFFSET_UP, bps);
+            ui.tooltip('#' + HTML.SELL_OFFSET_UP, bps);
+            ui.tooltip('#' + HTML.BUY_OFFSET_DOWN, '-' + bps);
+            ui.tooltip('#' + HTML.SELL_OFFSET_DOWN, '-' + bps);
+        } else {
+            ui.tooltip('#' + HTML.BUY_OFFSET_UP, "");
+            ui.tooltip('#' + HTML.SELL_OFFSET_UP, "");
+            ui.tooltip('#' + HTML.BUY_OFFSET_DOWN, "");
+            ui.tooltip('#' + HTML.SELL_OFFSET_DOWN, "");
+        }
     }
 
     private void setCellTest(final String cellID, final double value) {

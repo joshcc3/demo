@@ -14,12 +14,13 @@ import java.util.Map;
 public class UiPipeImpl {
 
     static final char DATA_SEPARATOR = '\0';
-    static final char COMMAND_SEPARATOR = '\1';
+    private static final char COMMAND_SEPARATOR = '\1';
 
     private static final String CLEAR_CMD = "clear";
     private static final String TXT_CMD = "txt";
     private static final String CLS_CMD = "cls";
     private static final String DATA_CMD = "data";
+    private static final String TOOLTIP_CMD = "tooltip";
     private static final String HEIGHT_CMD = "height";
     private static final String WIDTH_CMD = "width";
     private static final String EVAL_CMD = "eval";
@@ -33,6 +34,7 @@ public class UiPipeImpl {
     private final KeyedBatcher text = new KeyedBatcher(TXT_CMD);
     private final ClassBatcher classes = new ClassBatcher(CLS_CMD);
     private final DataBatcher<DataKey> data = new DataBatcher<>(DATA_CMD, DataKey.class);
+    private final KeyedBatcher tooltip = new KeyedBatcher(TOOLTIP_CMD);
     private final KeyedBatcher height = new KeyedBatcher(HEIGHT_CMD);
     private final KeyedBatcher width = new KeyedBatcher(WIDTH_CMD);
 
@@ -59,6 +61,11 @@ public class UiPipeImpl {
     // Sets text of element #key to value
     public void txt(final String key, final Object value) {
         text.put(key, value.toString());
+    }
+
+    // Sets the tooltip of element #key to value
+    public void tooltip(final String key, final String text) {
+        tooltip.put(key, text);
     }
 
     // Moves top of element #moveId to the center of #refId, offset by heightFraction * height of #refId (positive is up)
@@ -94,6 +101,7 @@ public class UiPipeImpl {
         text.clear();
         classes.clear();
         data.clear();
+        tooltip.clear();
         height.clear();
         width.clear();
         clickable.clear();
@@ -106,6 +114,7 @@ public class UiPipeImpl {
         final List<String> commands = new ArrayList<>();
         text.flushPendingIntoCommandList(commands);
         data.flushPendingIntoCommandList(commands);
+        tooltip.flushPendingIntoCommandList(commands);
         classes.flushPendingIntoCommandList(commands);
         height.flushPendingIntoCommandList(commands);
         width.flushPendingIntoCommandList(commands);

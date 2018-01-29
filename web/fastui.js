@@ -209,6 +209,15 @@ var Handler = function (ws) {
 		window.document.title = args[1];
 	};
 
+	self.tooltip = function (args) {
+		console.log(args);
+		for (let i = 1; i < args.length - 1; i += 2) {
+			const elementID = args[i];
+			const tooltip = args[i + 1];
+			$(elementID).attr("title", tooltip);
+		}
+	};
+
 	self.updateOn = function (el, s) {
 		$(el).unbind(s).bind(s, function () {
 			send("update", el.id, packData(el.id));

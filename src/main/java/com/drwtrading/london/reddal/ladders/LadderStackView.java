@@ -60,7 +60,9 @@ public class LadderStackView implements ILadderBoard {
 
         STACK_ORDER_TYPES = new HashSet<>();
         for (final StackOrderType orderType : StackOrderType.values()) {
-            STACK_ORDER_TYPES.add(orderType.name());
+            if (StackOrderType.CHILD_ONE_SHOT != orderType) {
+                STACK_ORDER_TYPES.add(orderType.name());
+            }
         }
     }
 
