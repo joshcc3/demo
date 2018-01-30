@@ -1,4 +1,4 @@
-var ws;
+let ws;
 
 $(function () {
 
@@ -8,8 +8,8 @@ $(function () {
 		eval(m);
 	};
 
-	var adminBlock = $("#adminBlock");
-	var hash = document.location.hash.substr(1);
+	const adminBlock = $("#adminBlock");
+	const hash = document.location.hash.substr(1);
 	if (hash) {
 		adminBlock.toggleClass("isAsylumView", true);
 		ws.send("subscribe" + hash);
@@ -43,14 +43,14 @@ $(function () {
 		minimiseAll();
 	});
 
-	var saveOffsetButton = $("#saveOffsets");
+	const saveOffsetButton = $("#saveOffsets");
 	saveOffsetButton.unbind().bind("click", function () {
 
 		if (!saveOffsetButton.hasClass("locked")) {
 			ws.send(command("saveOffsets", []));
 		}
 	});
-	var loadOffsetButton = $("#loadOffsets");
+	const loadOffsetButton = $("#loadOffsets");
 	loadOffsetButton.unbind().bind("click", function () {
 
 		if (!loadOffsetButton.hasClass("locked")) {
@@ -72,88 +72,100 @@ $(function () {
 	$("#globalPriceOffsetUp").unbind().mousedown(globalWidthControls("increaseGlobalPriceOffset"));
 	$("#globalPriceOffsetDown").unbind().mousedown(globalWidthControls("decreaseGlobalPriceOffset"));
 
-	var footer = $("#footer");
-	var closeFooter = footer.find("#closeFooter");
+	const globalBidPicardDiv = $("#globalBidPicard");
+	globalBidPicardDiv.mousedown(globalStackEnableStackChange("BID", "PICARD"));
+
+	const globalBidQuoterDiv = $("#globalBidQuote");
+	globalBidQuoterDiv.mousedown(globalStackEnableStackChange("BID", "QUOTER"));
+
+	const globalAskQuoterDiv = $("#globalAskQuote");
+	globalAskQuoterDiv.mousedown(globalStackEnableStackChange("ASK", "QUOTER"));
+
+	const globalAskPicardDiv = $("#globalAskPicard");
+	globalAskPicardDiv.mousedown(globalStackEnableStackChange("ASK", "PICARD"));
+
+	const footer = $("#footer");
+	const closeFooter = footer.find("#closeFooter");
 	closeFooter.unbind().bind("click", function () {
 		footer.toggleClass("hidden", true);
 	});
-	var clearFilters = footer.find("#clearFilters");
+	const clearFilters = footer.find("#clearFilters");
 	clearFilters.unbind().bind("click", function () {
 		$("#filterList").find(".filterName.selected").toggleClass("selected", false);
 		updateSelectedFilters();
 	});
 
-	var filteringRow = $("#filteringBlock");
-	var filterSelection = $("#filterButton");
+	const filteringRow = $("#filteringBlock");
+	const filterSelection = $("#filterButton");
 	filterSelection.unbind().bind("click", function () {
 		footer.toggleClass("hidden", !footer.hasClass("hidden"));
 	});
 
-	var filteredBidStartButton = filteringRow.find(".bid.runningControls .start");
+	const filteredBidStartButton = filteringRow.find(".bid.runningControls .start");
 	filteredBidStartButton.unbind().bind("click", function () {
 		ws.send(command("startFiltered", [filterSelection.text(), "BID"]));
 	});
-	var filteredBidStopButton = filteringRow.find(".bid.runningControls .stop");
+	const filteredBidStopButton = filteringRow.find(".bid.runningControls .stop");
 	filteredBidStopButton.unbind().bind("click", function () {
 		ws.send(command("stopFiltered", [filterSelection.text(), "BID"]));
 	});
 
-	var filteredAskStartButton = filteringRow.find(".ask.runningControls .start");
+	const filteredAskStartButton = filteringRow.find(".ask.runningControls .start");
 	filteredAskStartButton.unbind().bind("click", function () {
 		ws.send(command("startFiltered", [filterSelection.text(), "ASK"]));
 	});
-	var filteredAskStopButton = filteringRow.find(".ask.runningControls .stop");
+	const filteredAskStopButton = filteringRow.find(".ask.runningControls .stop");
 	filteredAskStopButton.unbind().bind("click", function () {
 		ws.send(command("stopFiltered", [filterSelection.text(), "ASK"]));
 	});
 
-	var defaultConfigButton = filteringRow.find(".configControls .default");
+	const defaultConfigButton = filteringRow.find(".configControls .default");
 	defaultConfigButton.unbind().bind("click", function () {
 		ws.send(command("setFilteredSelectedConfig", [filterSelection.text(), "DEFAULT"]));
 	});
-	var wideConfigButton = filteringRow.find(".configControls .wide");
+	const wideConfigButton = filteringRow.find(".configControls .wide");
 	wideConfigButton.unbind().bind("click", function () {
 		ws.send(command("setFilteredSelectedConfig", [filterSelection.text(), "WIDE"]));
 	});
-	var obligationConfigButton = filteringRow.find(".configControls .obligation");
+	const obligationConfigButton = filteringRow.find(".configControls .obligation");
 	obligationConfigButton.unbind().bind("click", function () {
 		ws.send(command("setFilteredSelectedConfig", [filterSelection.text(), "OBLIGATION"]));
 	});
-	var configFilterButton = filteringRow.find(".configControls .configWindow");
+	const configFilterButton = filteringRow.find(".configControls .configWindow");
 	configFilterButton.unbind().bind("click", function () {
 		ws.send(command("lookupConfigSymbols", [filterSelection.text()]));
 	});
 
-	var bidPicardDiv = filteringRow.find(".bid .picardEnabled");
+	const bidPicardDiv = filteringRow.find(".bid .picardEnabled");
 	bidPicardDiv.mousedown(stackEnableFilteredStackChange(filterSelection, "BID", "PICARD"));
 
-	var bidQuoterDiv = filteringRow.find(".bid .quoterEnabled");
+	const bidQuoterDiv = filteringRow.find(".bid .quoterEnabled");
 	bidQuoterDiv.mousedown(stackEnableFilteredStackChange(filterSelection, "BID", "QUOTER"));
 
-	var askQuoterDiv = filteringRow.find(".ask .quoterEnabled");
+	const askQuoterDiv = filteringRow.find(".ask .quoterEnabled");
 	askQuoterDiv.mousedown(stackEnableFilteredStackChange(filterSelection, "ASK", "QUOTER"));
 
-	var askPicardDiv = filteringRow.find(".ask .picardEnabled");
+	const askPicardDiv = filteringRow.find(".ask .picardEnabled");
 	askPicardDiv.mousedown(stackEnableFilteredStackChange(filterSelection, "ASK", "PICARD"));
 
-	var allEnableDiv = filteringRow.find(".stackControls.allEnabled");
+	const allEnableDiv = filteringRow.find(".stackControls.allEnabled");
 	allEnableDiv.mousedown(stackEnableFilteredAllStackChange(filterSelection));
 
-	var childSymbolSearchInput = $("#symbolLookup");
+	const childSymbolSearchInput = $("#symbolLookup");
 	childSymbolSearchInput.unbind("input").bind("input", function () {
-		var symbol = childSymbolSearchInput.val();
-		var child = findChild(symbol);
+		const symbol = childSymbolSearchInput.val();
+		const child = findChild(symbol);
 		childSymbolSearchInput.toggleClass("childAvailable", 1 == child.length);
 	});
 
 	childSymbolSearchInput.bind("keypress", function (e) {
 		if (e.keyCode == 13) {
-			var symbol = childSymbolSearchInput.val();
+			const symbol = childSymbolSearchInput.val();
 			showChild(symbol);
 		}
 	});
 	$("#symbolLookupGo").unbind().bind("click", function () {
-		var symbol = childSymbolSearchInput.val();
+		const symbol = childSymbolSearchInput.val();
 		showChild(symbol);
 	});
 
@@ -161,36 +173,36 @@ $(function () {
 		adminBlock.toggleClass("hideUnregistered", cb.toElement.checked);
 	});
 
-	var familyIsinInput = $("#familySymbolLookup");
+	const familyIsinInput = $("#familySymbolLookup");
 	familyIsinInput.on("input", function () {
-		var symbol = familyIsinInput.val();
+		const symbol = familyIsinInput.val();
 		ws.send(command("checkFamilyInst", [symbol, "#creationInfoRow"]));
 	});
 	$("#findFamilyMembers").unbind().bind("click", function () {
-		var symbol = familyIsinInput.val();
+		const symbol = familyIsinInput.val();
 		$(".childCreationRow:not(.headerRow)").remove();
 		ws.send(command("findFamilyMembers", [symbol]));
 	});
 
-	var familyNameInput = $("#quoteSymbol");
+	const familyNameInput = $("#quoteSymbol");
 	$("#createFamily").unbind().bind("click", function () {
-		var symbol = familyNameInput.val();
+		const symbol = familyNameInput.val();
 		ws.send(command("createFamily", [symbol]));
 	});
 
-	var familyInput = $("#familySymbol");
+	const familyInput = $("#familySymbol");
 	familyInput.on("input", function () {
-		var family = familyInput.val();
+		const family = familyInput.val();
 		ws.send(command("checkFamilyExists", [family, "#adoptionInfoRow .familyFound"]));
 	});
-	var childInput = $("#childSymbol");
+	const childInput = $("#childSymbol");
 	childInput.on("input", function () {
-		var child = childInput.val();
+		const child = childInput.val();
 		ws.send(command("checkChildExists", [child, "#adoptionInfoRow .childFound"]));
 	});
 	$("#adoptChild").unbind().bind("click", function () {
-		var family = familyInput.val();
-		var child = childInput.val();
+		const family = familyInput.val();
+		const child = childInput.val();
 		ws.send(command("adoptChild", [family, child]));
 	});
 
@@ -209,6 +221,9 @@ $(function () {
 	$("#killExpiredFutures").unbind().bind("click", function () {
 		ws.send(command("killExpiredFutures"));
 	});
+	$("#killExpiringFutures").unbind().bind("click", function () {
+		ws.send(command("killExpiringFutures"));
+	});
 	$("#createAllRFQ").unbind().bind("click", function () {
 		ws.send(command("createAllRFQ"));
 	});
@@ -216,19 +231,19 @@ $(function () {
 		ws.send(command("adoptAllRFQ"));
 	});
 
-	var copyFromSymbolInput = $("#copyFromSymbol");
+	const copyFromSymbolInput = $("#copyFromSymbol");
 	copyFromSymbolInput.on("input", function () {
-		var symbol = copyFromSymbolInput.val();
+		const symbol = copyFromSymbolInput.val();
 		ws.send(command("checkFamilyInst", [symbol, ".stackCopyFeedback.fromFound"]));
 	});
-	var copyToSymbolInput = $("#copyToSymbol");
+	const copyToSymbolInput = $("#copyToSymbol");
 	copyToSymbolInput.on("input", function () {
-		var symbol = copyToSymbolInput.val();
+		const symbol = copyToSymbolInput.val();
 		ws.send(command("checkFamilyInst", [symbol, ".stackCopyFeedback.toFound"]));
 	});
 	$("#copyStackData").unbind().bind("click", function () {
-		var fromSymbol = copyFromSymbolInput.val();
-		var toSymbol = copyToSymbolInput.val();
+		const fromSymbol = copyFromSymbolInput.val();
+		const toSymbol = copyToSymbolInput.val();
 		ws.send(command("copyChildSetup", [fromSymbol, toSymbol]));
 	});
 
@@ -248,21 +263,28 @@ function setGlobalOffset(globalOffset) {
 	$("#globalPriceOffset").text(globalOffset);
 }
 
+function setGlobalStackEnabled(isBidPicardEnabled, isBidQuoterEnabled, isAskQuoterEnabled, isAskPicardEnabled) {
+	$("#globalBidPicard").toggleClass("enabled", isBidPicardEnabled);
+	$("#globalBidQuote").toggleClass("enabled", isBidQuoterEnabled);
+	$("#globalAskQuote").toggleClass("enabled", isAskQuoterEnabled);
+	$("#globalAskPicard").toggleClass("enabled", isAskPicardEnabled);
+}
+
 function setFilters(filters) {
 
-	var filterList = $("#filterList");
+	const filterList = $("#filterList");
 	filterList.find(".filterGroup:not(.template)").remove();
 
-	var templateFilter = filterList.find(".filterGroup.template");
+	const templateFilter = filterList.find(".filterGroup.template");
 
-	for (var filterName in filters) {
+	for (let filterName in filters) {
 
 		if (filters.hasOwnProperty(filterName)) {
 
-			var filterGroupName = filters[filterName];
+			const filterGroupName = filters[filterName];
 
-			var filterGroupID = cleanID("FILTER_GROUP_" + filterGroupName);
-			var filterGroup = findChild(filterGroupID);
+			const filterGroupID = cleanID("FILTER_GROUP_" + filterGroupName);
+			let filterGroup = findChild(filterGroupID);
 
 			if (filterGroup.length < 1) {
 				filterGroup = templateFilter.clone();
@@ -273,7 +295,7 @@ function setFilters(filters) {
 				addSortedDiv(filterList.find(".filterGroup"), filterGroup, filterComparator);
 			}
 
-			var filterNameCell = filterGroup.find(".template.filterName").clone();
+			const filterNameCell = filterGroup.find(".template.filterName").clone();
 
 			filterNameCell.removeClass("template");
 			filterNameCell.text(filterName);
@@ -294,15 +316,15 @@ function getFilterSelectionFunction(filterNameCell) {
 
 function updateSelectedFilters() {
 
-	var filterList = $("#filterList");
-	var selectedFilters = filterList.find(".filterName.selected");
+	const filterList = $("#filterList");
+	const selectedFilters = filterList.find(".filterName.selected");
 
-	var filterButton = $("#filterButton");
+	const filterButton = $("#filterButton");
 
 	if (selectedFilters.length < 1) {
 		filterButton.text("None");
 	} else {
-		var selectedFilterNames = "";
+		let selectedFilterNames = "";
 		selectedFilters.each(function () {
 			selectedFilterNames = selectedFilterNames + " | " + $(this).text();
 		});
@@ -313,22 +335,22 @@ function updateSelectedFilters() {
 
 function filterComparator(a, b) {
 
-	var aSymbol = a.find(".orderingName").text();
-	var bSymbol = b.find(".orderingName").text();
+	const aSymbol = a.find(".orderingName").text();
+	const bSymbol = b.find(".orderingName").text();
 
 	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
 }
 
 function clearFieldData(fieldID) {
 
-	var infoRow = $(fieldID);
+	const infoRow = $(fieldID);
 	infoRow.toggleClass("unknown", true);
 	infoRow.find("div").text("");
 }
 
 function setInstID(infoRowSelector, isin, ccy, mic, instType) {
 
-	var infoRow = $(infoRowSelector);
+	const infoRow = $(infoRowSelector);
 	infoRow.toggleClass("unknown", false);
 	infoRow.find(".isin").text(isin);
 	infoRow.find(".ccy").text(ccy);
@@ -338,33 +360,33 @@ function setInstID(infoRowSelector, isin, ccy, mic, instType) {
 
 function setFieldData(fieldID, text) {
 
-	var infoRow = $(fieldID);
+	const infoRow = $(fieldID);
 	infoRow.toggleClass("unknown", false);
 	infoRow.find("div").text(text);
 }
 
 function setCreateFamilyRow(symbol, isFamilyExists) {
 
-	var familyNameInput = $("#quoteSymbol");
+	const familyNameInput = $("#quoteSymbol");
 	familyNameInput.val(symbol);
 	familyNameInput.toggleClass("childAvailable", isFamilyExists);
 }
 
 function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, instTypes, leanInstType, leanSymbol) {
 
-	var childTable = $("#createChildrenTable");
-	var childCreationRow = $(".childCreationRow.headerRow").clone();
+	const childTable = $("#createChildrenTable");
+	const childCreationRow = $(".childCreationRow.headerRow").clone();
 
 	childCreationRow.removeClass("headerRow");
 
-	var childQuoteSymbolInput = childCreationRow.find(".childQuoteSymbol");
+	const childQuoteSymbolInput = childCreationRow.find(".childQuoteSymbol");
 	childQuoteSymbolInput.val(childSymbol);
 	childQuoteSymbolInput.toggleClass("childAvailable", isChildAlreadyCreated);
 
-	var nibblersCombo = childCreationRow.find(".hostNibblers");
+	const nibblersCombo = childCreationRow.find(".hostNibblers");
 	nibblers.forEach(function (nibbler) {
 
-		var option = $("<option value=\"" + nibbler + "\">" + nibbler + "</option>");
+		const option = $("<option value=\"" + nibbler + "\">" + nibbler + "</option>");
 		option.addClass(nibbler);
 		option.attr("data", nibbler);
 		nibblersCombo.append(option);
@@ -374,10 +396,10 @@ function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, instTyp
 		nibblersCombo.toggleClass("notPersisted", false);
 	});
 
-	var instTypeCombo = childCreationRow.find(".leanInstID");
+	const instTypeCombo = childCreationRow.find(".leanInstID");
 	instTypes.forEach(function (instType) {
 
-		var option = $("<option value=\"" + instType + "\">" + instType + "</option>");
+		const option = $("<option value=\"" + instType + "\">" + instType + "</option>");
 		option.addClass(instType);
 		option.attr("data", instType);
 		instTypeCombo.append(option);
@@ -392,16 +414,16 @@ function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, instTyp
 
 	childCreationRow.find("button.createButton").off("click").click(function () {
 
-		var quoteSymbol = childCreationRow.find("input[name=quote]").val();
-		var forNibbler = childCreationRow.find(".hostNibblers").find("option:selected").text();
-		var leanInstType = childCreationRow.find(".leanInstID").find("option:selected").text();
-		var leanSymbol = childCreationRow.find("input[name=lean]").val();
+		const quoteSymbol = childCreationRow.find("input[name=quote]").val();
+		const forNibbler = childCreationRow.find(".hostNibblers").find("option:selected").text();
+		const leanInstType = childCreationRow.find(".leanInstID").find("option:selected").text();
+		const leanSymbol = childCreationRow.find("input[name=lean]").val();
 		ws.send(command("createChildStack", [forNibbler, quoteSymbol, leanInstType, leanSymbol]));
 	});
 
 	childCreationRow.find("button.adoptButton").unbind().bind("click", function () {
-		var family = $("#quoteSymbol").val();
-		var child = childCreationRow.find("input[name=quote]").val();
+		const family = $("#quoteSymbol").val();
+		const child = childCreationRow.find("input[name=quote]").val();
 		ws.send(command("adoptChild", [family, child]));
 	});
 
@@ -410,21 +432,21 @@ function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, instTyp
 
 function childCreationComparator(a, b) {
 
-	var aSymbol = a.find(".childQuoteSymbol").val();
-	var bSymbol = b.find(".childQuoteSymbol").val();
+	const aSymbol = a.find(".childQuoteSymbol").val();
+	const bSymbol = b.find(".childQuoteSymbol").val();
 
 	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
 }
 
 function removeAll(nibblerName) {
-	var table = getExchangeTable(nibblerName);
+	const table = getExchangeTable(nibblerName);
 	table.find(".dataRow").remove();
 	setOrderCount(nibblerName);
 }
 
 function findChild(symbol) {
 
-	var rowID = cleanID(symbol);
+	const rowID = cleanID(symbol);
 	return $("#" + rowID);
 }
 
@@ -433,7 +455,7 @@ function cleanID(symbol) {
 }
 
 function showChild(symbol) {
-	var child = findChild(symbol);
+	const child = findChild(symbol);
 	if (1 == child.length) {
 		minimiseAll();
 		child.parent().toggleClass("hidden", false);
@@ -452,16 +474,16 @@ function minimiseAll() {
 
 function addFamily(familyName) {
 
-	var familyID = "family_" + cleanID(familyName);
-	var family = findChild(familyID);
+	const familyID = "family_" + cleanID(familyName);
+	let family = findChild(familyID);
 	if (family.length < 1) {
 
 		family = $("#templateFamily").clone();
 		family.attr("id", familyID);
 		family.removeClass("template");
 
-		var familyDetails = family.find(".familyDetails");
-		var familyBlock = family.find(".children");
+		const familyDetails = family.find(".familyDetails");
+		const familyBlock = family.find(".children");
 		familyDetails.find(".openStack").unbind().bind("click", function () {
 			launchLadder(familyName + ";S");
 		});
@@ -469,62 +491,62 @@ function addFamily(familyName) {
 			ws.send(command("refreshParent", [familyName]));
 		});
 
-		var bidStartButton = family.find(".familyDetails .bid .start");
+		const bidStartButton = family.find(".familyDetails .bid .start");
 		bidStartButton.unbind().bind("click", function () {
 			ws.send(command("startFamily", [familyName, "BID"]));
 		});
 
-		var bidStopButton = family.find(".familyDetails .bid .stop");
+		const bidStopButton = family.find(".familyDetails .bid .stop");
 		bidStopButton.unbind().bind("click", function () {
 			ws.send(command("stopFamily", [familyName, "BID"]));
 		});
 
-		var askStartButton = family.find(".familyDetails .ask .start");
+		const askStartButton = family.find(".familyDetails .ask .start");
 		askStartButton.unbind().bind("click", function () {
 			ws.send(command("startFamily", [familyName, "ASK"]));
 		});
 
-		var askStopButton = family.find(".familyDetails .ask .stop");
+		const askStopButton = family.find(".familyDetails .ask .stop");
 		askStopButton.unbind().bind("click", function () {
 			ws.send(command("stopFamily", [familyName, "ASK"]));
 		});
 
-		var familyNameDiv = family.find(".familyName");
+		const familyNameDiv = family.find(".familyName");
 		familyNameDiv.text(familyName);
 		familyNameDiv.unbind().bind("click", function () {
 			familyBlock.toggleClass("hidden", !familyBlock.hasClass("hidden"));
 		});
 
-		var bidOffsetUpButton = family.find(".bid .priceOffsetUp");
+		const bidOffsetUpButton = family.find(".bid .priceOffsetUp");
 		bidOffsetUpButton.mousedown(priceOffsetChange("increaseOffset", familyName, "BID", 1));
 
-		var bidOffsetDownButton = family.find(".bid .priceOffsetDown");
+		const bidOffsetDownButton = family.find(".bid .priceOffsetDown");
 		bidOffsetDownButton.mousedown(priceOffsetChange("increaseOffset", familyName, "BID", -1));
 
-		var askOffsetUpButton = family.find(".ask .priceOffsetUp");
+		const askOffsetUpButton = family.find(".ask .priceOffsetUp");
 		askOffsetUpButton.mousedown(priceOffsetChange("increaseOffset", familyName, "ASK", 1));
 
-		var askOffsetDownButton = family.find(".ask .priceOffsetDown");
+		const askOffsetDownButton = family.find(".ask .priceOffsetDown");
 		askOffsetDownButton.mousedown(priceOffsetChange("increaseOffset", familyName, "ASK", -1));
 
-		var selectDefaultConfigDiv = family.find(".configControls .default");
+		const selectDefaultConfigDiv = family.find(".configControls .default");
 		selectDefaultConfigDiv.unbind().bind("click", function () {
 			ws.send(command("selectConfig", [familyName, "DEFAULT"]));
 		});
 
-		var selectWideConfigDiv = family.find(".configControls .wide");
+		const selectWideConfigDiv = family.find(".configControls .wide");
 		selectWideConfigDiv.unbind().bind("click", function () {
 			ws.send(command("selectConfig", [familyName, "WIDE"]));
 		});
 
-		var selectObligationConfigDiv = family.find(".configControls .obligation");
+		const selectObligationConfigDiv = family.find(".configControls .obligation");
 		selectObligationConfigDiv.unbind().bind("click", function () {
 			ws.send(command("selectConfig", [familyName, "OBLIGATION"]));
 		});
 
-		var openConfigWindowDiv = family.find(".configControls .configWindow");
+		const openConfigWindowDiv = family.find(".configControls .configWindow");
 		openConfigWindowDiv.unbind().bind("click", function () {
-			var configs = familyName;
+			let configs = familyName;
 			family.find(".children .row:not(.header)").each(function () {
 				configs = configs + "," + $(this).attr("id").replace("_", " ");
 			});
@@ -533,9 +555,9 @@ function addFamily(familyName) {
 
 		openConfigWindowDiv.mousedown(function (e) {
 			if (e.button == 2) {
-				var children = family.find(".children .row:not(.header)");
+				const children = family.find(".children .row:not(.header)");
 				if (children.length) {
-					var configs = "";
+					let configs = "";
 					children.each(function () {
 						configs = configs + $(this).attr("id").replace("_", " ") + ",";
 					});
@@ -545,22 +567,22 @@ function addFamily(familyName) {
 			}
 		});
 
-		var bidPicardDiv = family.find(".bid .picardEnabled");
+		const bidPicardDiv = family.find(".bid .picardEnabled");
 		bidPicardDiv.mousedown(stackEnableStackChange(familyName, "BID", "PICARD"));
 
-		var bidQuoterDiv = family.find(".bid .quoterEnabled");
+		const bidQuoterDiv = family.find(".bid .quoterEnabled");
 		bidQuoterDiv.mousedown(stackEnableStackChange(familyName, "BID", "QUOTER"));
 
-		var askQuoterDiv = family.find(".ask .quoterEnabled");
+		const askQuoterDiv = family.find(".ask .quoterEnabled");
 		askQuoterDiv.mousedown(stackEnableStackChange(familyName, "ASK", "QUOTER"));
 
-		var askPicardDiv = family.find(".ask .picardEnabled");
+		const askPicardDiv = family.find(".ask .picardEnabled");
 		askPicardDiv.mousedown(stackEnableStackChange(familyName, "ASK", "PICARD"));
 
-		var allEnableDiv = family.find(".stackControls.allEnabled");
+		const allEnableDiv = family.find(".stackControls.allEnabled");
 		allEnableDiv.mousedown(stackEnableAllStackChange(familyName));
 
-		var cleanFamilyDiv = family.find(".stackControls.cleanParent");
+		const cleanFamilyDiv = family.find(".stackControls.cleanParent");
 		cleanFamilyDiv.mousedown(function () {
 			ws.send(command("cleanParent", [familyName]));
 		});
@@ -574,23 +596,37 @@ function addFamily(familyName) {
 
 function tableComparator(a, b) {
 
-	var aSymbol = a.find(".familyDetails .familyName").text();
-	var bSymbol = b.find(".familyDetails .familyName").text();
+	const aSymbol = a.find(".familyDetails .familyName").text();
+	const bSymbol = b.find(".familyDetails .familyName").text();
 
 	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
+}
+
+function globalStackEnableStackChange(side, stack) {
+	return function (event) {
+		event.preventDefault();
+		switch (event.which) {
+			case 1: {
+				ws.send(command("globalStackEnabled", [side, stack, true]));
+				break;
+			}
+			case 3: {
+				ws.send(command("globalStackEnabled", [side, stack, false]));
+				break;
+			}
+		}
+	}
 }
 
 function priceOffsetChange(cmd, familyName, side, direction) {
 	return function (event) {
 		event.preventDefault();
 		switch (event.which) {
-			case 1:
-			{
+			case 1: {
 				ws.send(command(cmd, [familyName, side, direction]));
 				break;
 			}
-			case 3:
-			{
+			case 3: {
 				ws.send(command(cmd, [familyName, side, 10 * direction]));
 				break;
 			}
@@ -602,13 +638,11 @@ function stackEnableFilteredStackChange(filters, side, stack) {
 	return function (event) {
 		event.preventDefault();
 		switch (event.which) {
-			case 1:
-			{
+			case 1: {
 				ws.send(command("setFilteredStackEnabled", [filters.text(), side, stack, true]));
 				break;
 			}
-			case 3:
-			{
+			case 3: {
 				ws.send(command("setFilteredStackEnabled", [filters.text(), side, stack, false]));
 				break;
 			}
@@ -620,13 +654,11 @@ function stackEnableStackChange(familyName, side, stack) {
 	return function (event) {
 		event.preventDefault();
 		switch (event.which) {
-			case 1:
-			{
+			case 1: {
 				ws.send(command("setStackEnabled", [familyName, side, stack, true]));
 				break;
 			}
-			case 3:
-			{
+			case 3: {
 				ws.send(command("setStackEnabled", [familyName, side, stack, false]));
 				break;
 			}
@@ -638,13 +670,11 @@ function stackChildEnableStackChange(familyName, childSymbol, side, stack) {
 	return function (event) {
 		event.preventDefault();
 		switch (event.which) {
-			case 1:
-			{
+			case 1: {
 				ws.send(command("setChildStackEnabled", [familyName, childSymbol, side, stack, true]));
 				break;
 			}
-			case 3:
-			{
+			case 3: {
 				ws.send(command("setChildStackEnabled", [familyName, childSymbol, side, stack, false]));
 				break;
 			}
@@ -656,13 +686,11 @@ function stackEnableFilteredAllStackChange(filters) {
 	return function (event) {
 		event.preventDefault();
 		switch (event.which) {
-			case 1:
-			{
+			case 1: {
 				ws.send(command("setFilteredAllStacksEnabled", [filters.text(), true]));
 				break;
 			}
-			case 3:
-			{
+			case 3: {
 				ws.send(command("setFilteredAllStacksEnabled", [filters.text(), false]));
 				break;
 			}
@@ -674,13 +702,11 @@ function stackEnableAllStackChange(familyName) {
 	return function (event) {
 		event.preventDefault();
 		switch (event.which) {
-			case 1:
-			{
+			case 1: {
 				ws.send(command("setAllStacksEnabled", [familyName, true]));
 				break;
 			}
-			case 3:
-			{
+			case 3: {
 				ws.send(command("setAllStacksEnabled", [familyName, false]));
 				break;
 			}
@@ -692,13 +718,11 @@ function globalWidthControls(instruction) {
 	return function (event) {
 		event.preventDefault();
 		switch (event.which) {
-			case 1:
-			{
+			case 1: {
 				ws.send(command(instruction, [1]));
 				break;
 			}
-			case 3:
-			{
+			case 3: {
 				ws.send(command(instruction, [5]));
 				break;
 			}
@@ -709,7 +733,7 @@ function globalWidthControls(instruction) {
 function setParentData(familyName, bidPriceOffset, askPriceOffset, selectedConfigType, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
 					   askQuoterEnabled) {
 
-	var family = addFamily(familyName);
+	const family = addFamily(familyName);
 
 	family.find(".familyDetails .bid.priceOffset").text(bidPriceOffset);
 	family.find(".familyDetails .ask.priceOffset").text(askPriceOffset);
@@ -726,10 +750,10 @@ function setParentData(familyName, bidPriceOffset, askPriceOffset, selectedConfi
 
 function removeChild(familyName, childSymbol) {
 
-	var rowID = cleanID(childSymbol);
-	var row = $("#" + rowID);
+	const rowID = cleanID(childSymbol);
+	const row = $("#" + rowID);
 
-	var family = row.parent().parent();
+	const family = row.parent().parent();
 	row.remove();
 	setActiveChildCounts(family);
 	setChildCount(familyName);
@@ -737,11 +761,11 @@ function removeChild(familyName, childSymbol) {
 
 function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier, familyToChildRatio) {
 
-	var rowID = cleanID(childSymbol);
-	var row = $("#" + rowID);
+	const rowID = cleanID(childSymbol);
+	let row = $("#" + rowID);
 
-	var exchangeTable = addFamily(familyName).find(".children");
-	var quoteSymbolCell;
+	const exchangeTable = addFamily(familyName).find(".children");
+	let quoteSymbolCell;
 	if (row.length < 1) {
 
 		row = exchangeTable.find(".header").clone();
@@ -756,7 +780,7 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 
 	} else if (row.parent().get(0) != exchangeTable.get(0)) {
 
-		var oldFamily = row.parent().parent().find(".familyName").text();
+		const oldFamily = row.parent().parent().find(".familyName").text();
 		row.remove();
 		setChildCount(oldFamily);
 
@@ -771,13 +795,13 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 		launchLadder(childSymbol);
 	});
 
-	var bidPriceOffsetDiv = addNumberBox(row, ".bid.priceOffset");
-	var bidQtyMultiplierDiv = addNumberBox(row, ".bid.qtyMultiplier");
+	const bidPriceOffsetDiv = addNumberBox(row, ".bid.priceOffset");
+	const bidQtyMultiplierDiv = addNumberBox(row, ".bid.qtyMultiplier");
 
-	var askPriceOffsetDiv = addNumberBox(row, ".ask.priceOffset");
-	var askQtyMultiplierDiv = addNumberBox(row, ".ask.qtyMultiplier");
+	const askPriceOffsetDiv = addNumberBox(row, ".ask.priceOffset");
+	const askQtyMultiplierDiv = addNumberBox(row, ".ask.qtyMultiplier");
 
-	var familyToChildRatioDiv = addNumberBox(row, ".familyToChildRatio");
+	const familyToChildRatioDiv = addNumberBox(row, ".familyToChildRatio");
 
 	setDoubleData(bidPriceOffsetDiv, bidPriceOffset);
 	setDoubleData(bidQtyMultiplierDiv, bidQtyMultiplier);
@@ -786,83 +810,83 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 
 	setDoubleData(familyToChildRatioDiv, familyToChildRatio);
 
-	var submitButton = row.find("input[type=Submit]");
+	const submitButton = row.find("input[type=Submit]");
 	submitButton.removeClass("hidden");
 	submitButton.unbind().bind("click", function () {
 
-		var bidOffset = bidPriceOffsetDiv.val();
-		var bidMultiplier = bidQtyMultiplierDiv.val();
+		const bidOffset = bidPriceOffsetDiv.val();
+		const bidMultiplier = bidQtyMultiplierDiv.val();
 
-		var askOffset = askPriceOffsetDiv.val();
-		var askMultiplier = askQtyMultiplierDiv.val();
+		const askOffset = askPriceOffsetDiv.val();
+		const askMultiplier = askQtyMultiplierDiv.val();
 
-		var ratio = familyToChildRatioDiv.val();
+		const ratio = familyToChildRatioDiv.val();
 
 		ws.send(command("setRelationship", [childSymbol, bidOffset, bidMultiplier, askOffset, askMultiplier, ratio]));
 	});
 
-	var orphanButton = row.find(".orphanButton");
+	const orphanButton = row.find(".orphanButton");
 	orphanButton.removeClass("hidden");
 	orphanButton.unbind().bind("click", function () {
 		ws.send(command("orphanChild", [childSymbol]));
 	});
 
-	var killSymbolButton = row.find(".killSymbolButton");
+	const killSymbolButton = row.find(".killSymbolButton");
 	killSymbolButton.removeClass("hidden");
 	killSymbolButton.unbind().bind("click", function () {
 		ws.send(command("killChild", [childSymbol]));
 	});
 
-	var childControls = row.find(".childControls");
+	const childControls = row.find(".childControls");
 
-	var defaultConfigButton = childControls.find(".default");
+	const defaultConfigButton = childControls.find(".default");
 	defaultConfigButton.unbind().bind("click", function () {
 		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "DEFAULT"]));
 	});
 
-	var wideConfigButton = childControls.find(".wide");
+	const wideConfigButton = childControls.find(".wide");
 	wideConfigButton.unbind().bind("click", function () {
 		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "WIDE"]));
 	});
 
-	var obligationConfigButton = childControls.find(".obligation");
+	const obligationConfigButton = childControls.find(".obligation");
 	obligationConfigButton.unbind().bind("click", function () {
 		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "OBLIGATION"]));
 	});
 
-	var openConfigWindowDiv = childControls.find(".configWindow");
+	const openConfigWindowDiv = childControls.find(".configWindow");
 	openConfigWindowDiv.unbind().bind("click", function () {
 		popUp("/stackConfig#;" + childSymbol, "Configs", 2200, 400);
 	});
 
-	var bidControls = childControls.find(".bid");
-	var askControls = childControls.find(".ask");
+	const bidControls = childControls.find(".bid");
+	const askControls = childControls.find(".ask");
 
-	var bidPicardButton = bidControls.find(".picardEnabled");
-	var bidQuoterButton = bidControls.find(".quoterEnabled");
-	var askQuoterButton = askControls.find(".quoterEnabled");
-	var askPicardButton = askControls.find(".picardEnabled");
+	const bidPicardButton = bidControls.find(".picardEnabled");
+	const bidQuoterButton = bidControls.find(".quoterEnabled");
+	const askQuoterButton = askControls.find(".quoterEnabled");
+	const askPicardButton = askControls.find(".picardEnabled");
 	bidPicardButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "BID", "PICARD"));
 	bidQuoterButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "BID", "QUOTER"));
 	askQuoterButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "ASK", "QUOTER"));
 	askPicardButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "ASK", "PICARD"));
 
-	var bidStartConfigWindowDiv = bidControls.find(".start");
+	const bidStartConfigWindowDiv = bidControls.find(".start");
 	bidStartConfigWindowDiv.unbind().bind("click", function () {
 		ws.send(command("startChild", [familyName, childSymbol, "BID"]));
 	});
 
-	var bidStopConfigWindowDiv = bidControls.find(".stop");
+	const bidStopConfigWindowDiv = bidControls.find(".stop");
 	bidStopConfigWindowDiv.unbind().bind("click", function () {
 		ws.send(command("stopChild", [familyName, childSymbol, "BID"]));
 	});
 
-	var askStartConfigWindowDiv = askControls.find(".start");
+	const askStartConfigWindowDiv = askControls.find(".start");
 	askStartConfigWindowDiv.unbind().bind("click", function () {
 		ws.send(command("startChild", [familyName, childSymbol, "ASK"]));
 	});
 
-	var askStopConfigWindowDiv = askControls.find(".stop");
+	const askStopConfigWindowDiv = askControls.find(".stop");
 	askStopConfigWindowDiv.unbind().bind("click", function () {
 		ws.send(command("stopChild", [familyName, childSymbol, "ASK"]));
 	});
@@ -873,48 +897,48 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 function setChildData(childSymbol, leanSymbol, nibblerName, selectedConfigType, isBidStrategyOn, bidInfo, bidPicardEnabled, bidQuoterEnabled, isAskStrategyOn,
 					  askInfo, askPicardEnabled, askQuoterEnabled) {
 
-	var rowID = cleanID(childSymbol);
-	var row = $("#" + rowID);
+	const rowID = cleanID(childSymbol);
+	const row = $("#" + rowID);
 
 	if (row) {
 
 		row.removeClass("unregistered");
 		row.find(".leanSymbol").text(leanSymbol);
 
-		var childControls = row.find(".childControls");
+		const childControls = row.find(".childControls");
 		childControls.find(".configControls button").removeClass("enabled");
 		childControls.find(".configControls ." + selectedConfigType.toLowerCase()).addClass("enabled");
 		childControls.find(".nibblerName").text(nibblerName);
 
-		var bidControls = childControls.find(".bid");
+		const bidControls = childControls.find(".bid");
 		bidControls.filter(".runningControls").toggleClass("enabled", isBidStrategyOn);
 		bidControls.find(".picardEnabled").toggleClass("enabled", bidPicardEnabled);
 		bidControls.find(".quoterEnabled").toggleClass("enabled", bidQuoterEnabled);
 		bidControls.filter(".strategyInfo").text(bidInfo);
 
-		var askControls = childControls.find(".ask");
+		const askControls = childControls.find(".ask");
 		askControls.filter(".runningControls").toggleClass("enabled", isAskStrategyOn);
 		askControls.find(".picardEnabled").toggleClass("enabled", askPicardEnabled);
 		askControls.find(".quoterEnabled").toggleClass("enabled", askQuoterEnabled);
 		askControls.filter(".strategyInfo").text(askInfo);
 
-		var family = row.parent().parent();
+		const family = row.parent().parent();
 		setActiveChildCounts(family);
 	}
 }
 
 function rowComparator(a, b) {
 
-	var aSymbol = a.find(".symbol").text();
-	var bSymbol = b.find(".symbol").text();
+	const aSymbol = a.find(".symbol").text();
+	const bSymbol = b.find(".symbol").text();
 
 	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
 }
 
 function addNumberBox(row, selector) {
 
-	var div = row.find(selector);
-	var input = div.find("input");
+	const div = row.find(selector);
+	let input = div.find("input");
 
 	if (!input.length) {
 		input = $("<input type=\"number\"/>");
@@ -954,32 +978,32 @@ function setDoubleData(input, value) {
 
 function setChildCount(familyName) {
 
-	var family = addFamily(familyName);
-	var orderCountDiv = family.find(".childCount");
-	var orders = family.find(".children .row").length - 1;
+	const family = addFamily(familyName);
+	const orderCountDiv = family.find(".childCount");
+	const orders = family.find(".children .row").length - 1;
 	orderCountDiv.text(orders);
 }
 
 function setActiveChildCounts(family) {
 
-	var childControls = family.find(".childControls");
+	const childControls = family.find(".childControls");
 
-	var runningControls = childControls.find(".runningControls");
-	var bidControls = runningControls.filter(".bid");
-	var onBids = bidControls.filter(".enabled").length;
-	var offBids = bidControls.length - onBids - 1;
+	const runningControls = childControls.find(".runningControls");
+	const bidControls = runningControls.filter(".bid");
+	const onBids = bidControls.filter(".enabled").length;
+	const offBids = bidControls.length - onBids - 1;
 
-	var askControls = runningControls.filter(".ask");
-	var onAsks = askControls.filter(".enabled").length;
-	var offAsks = askControls.length - onAsks - 1;
+	const askControls = runningControls.filter(".ask");
+	const onAsks = askControls.filter(".enabled").length;
+	const offAsks = askControls.length - onAsks - 1;
 
-	var familyDetails = family.find(".activeCount");
-	var bidCounts = familyDetails.filter(".bid");
+	const familyDetails = family.find(".activeCount");
+	const bidCounts = familyDetails.filter(".bid");
 	bidCounts.find(".on").text(onBids);
 	bidCounts.find(".off").text(offBids);
 	bidCounts.toggleClass("somethingOff", 0 < offBids);
 
-	var askCounts = familyDetails.filter(".ask");
+	const askCounts = familyDetails.filter(".ask");
 	askCounts.find(".on").text(onAsks);
 	askCounts.find(".off").text(offAsks);
 	askCounts.toggleClass("somethingOff", 0 < offAsks);
@@ -987,19 +1011,19 @@ function setActiveChildCounts(family) {
 
 function displayErrorMsg(text) {
 
-	var errorDiv = $("#errorMsg");
+	const errorDiv = $("#errorMsg");
 	errorDiv.text(text);
 	console.log("ERROR", text, errorDiv);
 	setTimeout(hideErrorMsg, 5000);
 }
 
 function hideErrorMsg() {
-	var errorDiv = $("#errorMsg");
+	const errorDiv = $("#errorMsg");
 	errorDiv.text("");
 }
 
 function showAdmin(event) {
-	var adminDiv = $("#adminBlock");
+	const adminDiv = $("#adminBlock");
 	if (event.ctrlKey) {
 		adminDiv.toggleClass("hideAdmin", !adminDiv.hasClass("hideAdmin"));
 	} else {

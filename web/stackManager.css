@@ -382,11 +382,11 @@ input::-webkit-inner-spin-button:hover {
 	border: solid 1px #2d270c;
 }
 
-#families .stackControls div {
+#families .stackControls div, #globalStackControls .stackControls div {
 	border: 3px solid red;
 }
 
-#families .stackControls div.enabled {
+#families .stackControls div.enabled, #globalStackControls .stackControls div.enabled {
 	border: 3px solid green;
 }
 

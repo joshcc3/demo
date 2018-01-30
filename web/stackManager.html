@@ -63,6 +63,16 @@
 				<button id="globalPriceOffsetUp"></button>
 				<button id="globalPriceOffsetDown"></button>
 			</div>
+			<div id="globalStackControls" class="headerButton hideForAsylum">
+				<div class="headerButton global bid stackControls">
+					<div id="globalBidPicard" class="headerButton picardEnabled">P</div>
+					<div id="globalBidQuote" class="headerButton quoterEnabled">Q</div>
+				</div>
+				<div class="headerButton global ask stackControls">
+					<div id="globalAskQuote" class="headerButton quoterEnabled">Q</div>
+					<div id="globalAskPicard" class="headerButton picardEnabled">P</div>
+				</div>
+			</div>
 		</div>
 
 		<div class="headerThirdRow">
@@ -218,6 +228,9 @@
 			<div id="ExpiredFutures">
 				<div class="button">
 					<button type="button" id="killExpiredFutures">Kill Expired</button>
+				</div>
+				<div class="button">
+					<button type="button" id="killExpiringFutures">Kill Expiring</button>
 				</div>
 			</div>
 			<div id="rfqCreation">

@@ -387,6 +387,7 @@ public class StackFamilyView implements IStackRelationshipListener {
         }
 
         presentGlobalOffset(newView);
+        presentGlobalStackEnabling(newView);
     }
 
     void handleWebMsg(final WebSocketInboundData msg) {
@@ -435,6 +436,26 @@ public class StackFamilyView implements IStackRelationshipListener {
     private void presentGlobalOffset(final IStackFamilyUI view) {
         final String prettyGlobalOffsetBPS = priceOffsetDF.format(globalPriceOffsetBPS);
         view.setGlobalOffset(prettyGlobalOffsetBPS);
+    }
+
+    @FromWebSocketView
+    public void globalStackEnabled(final String bookSide, final String stack, final boolean isEnabled, final WebSocketInboundData data) {
+
+        final BookSide side = BookSide.valueOf(bookSide);
+        final StackType stackType = StackType.valueOf(stack);
+        communityManager.setGlobalStackEnabled(side, stackType, isEnabled);
+
+        presentGlobalStackEnabling(views.all());
+    }
+
+    private void presentGlobalStackEnabling(final IStackFamilyUI view) {
+
+        final boolean isBidPicardEnabled = communityManager.getGlobalStackState(BookSide.BID, StackType.PICARD);
+        final boolean isBidQuoteEnabled = communityManager.getGlobalStackState(BookSide.BID, StackType.QUOTER);
+        final boolean isAskQuoteEnabled = communityManager.getGlobalStackState(BookSide.ASK, StackType.QUOTER);
+        final boolean isAskPicardEnabled = communityManager.getGlobalStackState(BookSide.ASK, StackType.PICARD);
+
+        view.setGlobalStackEnabled(isBidPicardEnabled, isBidQuoteEnabled, isAskQuoteEnabled, isAskPicardEnabled);
     }
 
     @FromWebSocketView
@@ -772,16 +793,25 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void killExpiredFutures(final WebSocketInboundData data) {
+        killExpiredFutures(0);
+    }
+
+    @FromWebSocketView
+    public void killExpiringFutures(final WebSocketInboundData data) {
+        killExpiredFutures(90);
+    }
+
+    private void killExpiredFutures(final int daysAhead) {
 
         final Calendar cal = DateTimeUtil.getCalendar();
         cal.setTimeInMillis(System.currentTimeMillis());
+        cal.add(Calendar.DAY_OF_YEAR, daysAhead);
         DateTimeUtil.setToMidnight(cal);
 
         final long midnight = cal.getTimeInMillis();
 
-        for (final StackFamilyChildRow childRow : childData.values()) {
+        for (final String childSymbol : childrenToFamily.keySet()) {
 
-            final String childSymbol = childRow.getSymbol();
             final FutureConstant future = FutureConstant.getFutureFromSymbol(childSymbol);
             if (null != future) {
 
