@@ -4,6 +4,7 @@ import com.drwtrading.london.eeif.stack.manager.utils.IStackClientListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
+import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.family.StackChildListener;
@@ -51,6 +52,13 @@ public class StackCallbackBatcher implements IStackClientListener {
     @Override
     public void connectionEstablished() {
         // no-op
+    }
+
+    @Override
+    public void addTradableSymbol(final StackTradableSymbol tradableSymbol) {
+
+        strategiesPresenter.addTradableSymbol(nibblerName, tradableSymbol);
+        childListener.addTradableSymbol(nibblerName, tradableSymbol);
     }
 
     @Override

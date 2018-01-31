@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.stacks.family;
 
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
-import com.drwtrading.london.eeif.stack.transport.cache.families.IStackRelationshipListener;
+import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackAdditiveConfig;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackFXConfig;
@@ -9,6 +9,7 @@ import com.drwtrading.london.eeif.stack.transport.data.config.StackLeanConfig;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackPlanConfig;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackQuoteConfig;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackStrategyConfig;
+import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
@@ -74,6 +75,8 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private final FutureExpiryCalc expiryCalc;
 
+    private final Map<String, String> tradableSymbols;
+
     private final Map<String, NavigableMap<String, StackUIRelationship>> families;
     private final Map<String, StackUIData> parentData;
     private final Map<String, String> childrenToFamily;
@@ -104,6 +107,8 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.userViews = new HashMap<>();
 
         this.expiryCalc = new FutureExpiryCalc(0);
+
+        this.tradableSymbols = new HashMap<>();
 
         this.families = new HashMap<>();
         this.parentData = new HashMap<>();
@@ -161,6 +166,11 @@ public class StackFamilyView implements IStackRelationshipListener {
         }
 
         views.all().setFilters(filterGroups);
+    }
+
+    void addTradableSymbol(final String nibblerName, final StackTradableSymbol tradableSymbol) {
+
+        tradableSymbols.put(tradableSymbol.symbol, nibblerName);
     }
 
     void setSearchResult(final SearchResult searchResult) {

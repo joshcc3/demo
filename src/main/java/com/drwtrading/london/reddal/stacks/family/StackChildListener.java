@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.stacks.family;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
+import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 
 import java.util.HashMap;
@@ -29,6 +30,10 @@ public class StackChildListener {
 
         this.strategyUIData = new LongMap<>();
         this.stackGroupUIData = new LongMap<>();
+    }
+
+    public void addTradableSymbol(final String nibblerName, final StackTradableSymbol tradableSymbol) {
+        presenter.addTradableSymbol(nibblerName, tradableSymbol);
     }
 
     public void strategyCreated(final StackStrategy strategy) {

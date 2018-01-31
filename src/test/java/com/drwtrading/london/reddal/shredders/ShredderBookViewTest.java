@@ -11,8 +11,6 @@ import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.TreeSet;
-
 public class ShredderBookViewTest {
 
     @Test
@@ -54,7 +52,6 @@ public class ShredderBookViewTest {
         final ShreddedOrder shreddedOrder1 = new ShreddedOrder(0, 0, 0L, null, 0);
         final ShreddedOrder shreddedOrder2 = new ShreddedOrder(0, 0, 0L, null, 0);
 
-        final TreeSet<ShreddedOrder> ourOrders = new TreeSet<>();
         shredderBookView.augmentIfOurOrder(firstOrder, shreddedOrder1);
         shredderBookView.augmentIfOurOrder(firstOrder, shreddedOrder2);
         Assert.assertTrue(shreddedOrder1.isOurs, "First order is not correctly identified");

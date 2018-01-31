@@ -2,8 +2,9 @@ package com.drwtrading.london.reddal.stacks.family;
 
 import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
-import com.drwtrading.london.eeif.stack.transport.cache.families.IStackRelationshipListener;
+import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
+import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
@@ -72,6 +73,14 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         final StackFamilyView view = asylums.get(asylumName);
         view.setFilter(filters);
+    }
+
+    void addTradableSymbol(final String nibblerName, final StackTradableSymbol tradableSymbol) {
+
+        familyView.addTradableSymbol(nibblerName, tradableSymbol);
+        for (final StackFamilyView asylum : asylums.values()) {
+            asylum.addTradableSymbol(nibblerName, tradableSymbol);
+        }
     }
 
     public void setSearchResult(final SearchResult searchResult) {

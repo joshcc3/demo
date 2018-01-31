@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.stack.transport.cache.strategy.IStackStrategyU
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
+import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
@@ -57,6 +58,11 @@ public class StackGroupCallbackBatcher
     @Override
     public IStackConfigUpdateCallback getConfigListener(final String symbol, final InstrumentID instID) {
         return this;
+    }
+
+    @Override
+    public void addRemoteTradableSymbol(final StackTradableSymbol tradableSymbol) {
+        // no-op
     }
 
     @Override
