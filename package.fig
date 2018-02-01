@@ -18,6 +18,7 @@ config default
 	include drw.london.eeif-position-transport/88
 	include drw.london.eeif-stack-transport/85
 	include drw.london.eeif-yoda-transport/62
+	include drw.london.eeif-indy-transport/171
 
 	# Libraries and containers
 	include google.guava/r06
