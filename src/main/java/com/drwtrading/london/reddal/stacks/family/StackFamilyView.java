@@ -516,8 +516,9 @@ public class StackFamilyView implements IStackRelationshipListener {
                         if (null != expirySearchResult) {
 
                             final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(expirySymbol);
-                            ui.addCreateChildRow(expirySymbol, isChildAlreadyCreated, nibblerClients.keySet(), ALLOWED_INST_TYPES,
-                                    InstType.INDEX.name(), expirySymbol);
+                            final String tradableNibbler = tradableSymbols.get(expirySymbol);
+                            ui.addCreateChildRow(expirySymbol, isChildAlreadyCreated, nibblerClients.keySet(), tradableNibbler,
+                                    ALLOWED_INST_TYPES, InstType.INDEX.name(), expirySymbol);
                         }
                     }
                 }
@@ -525,7 +526,8 @@ public class StackFamilyView implements IStackRelationshipListener {
                 final Set<String> children = fungibleInsts.get(searchResult.instID.isin);
                 for (final String childSymbol : children) {
                     final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(childSymbol);
-                    ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), ALLOWED_INST_TYPES,
+                    final String tradableNibbler = tradableSymbols.get(childSymbol);
+                    ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), tradableNibbler, ALLOWED_INST_TYPES,
                             InstType.INDEX.name(), childSymbol);
                 }
             }
@@ -610,6 +612,50 @@ public class StackFamilyView implements IStackRelationshipListener {
             if (null != quoteInstId && null != leanInstType && null != leanInstID) {
                 strategyClient.createStrategy(quoteSymbol, quoteInstId, leanInstType, leanSymbol, leanInstID, "");
                 strategyClient.batchComplete();
+            }
+        }
+    }
+
+    @FromWebSocketView
+    public void createMissingChildren(final WebSocketInboundData data) {
+
+        for (final StackUIData stackUIData : parentData.values()) {
+
+            final Collection<String> childSymbols = fungibleInsts.get(stackUIData.instID.isin);
+            if (null != childSymbols) {
+                for (final String childSymbol : childSymbols) {
+
+                    final SearchResult searchResult = searchResults.get(childSymbol);
+                    final String tradableNibbler = tradableSymbols.get(childSymbol);
+                    final StackClientHandler strategyClient = nibblerClients.get(tradableNibbler);
+
+                    if (null != searchResult && null != strategyClient) {
+
+                        strategyClient.createStrategy(searchResult.symbol, searchResult.instID, InstType.INDEX, searchResult.symbol,
+                                searchResult.instID, "");
+                        strategyClient.batchComplete();
+                    }
+                }
+            }
+        }
+    }
+
+    @FromWebSocketView
+    public void correctAdoptionsForChildren(final WebSocketInboundData data) {
+
+        for (final Map.Entry<String, String> childFamily : childrenToFamily.entrySet()) {
+
+            final String childSymbol = childFamily.getKey();
+            final String familyName = childFamily.getValue();
+
+            final SearchResult searchResult = searchResults.get(childSymbol);
+            if (null != searchResult) {
+
+                final String properFamilyName = getExistingFamily(searchResult.instID.isin);
+
+                if (null != properFamilyName && !familyName.equals(properFamilyName)) {
+                    communityManager.setRelationship(SOURCE_UI, properFamilyName, childSymbol);
+                }
             }
         }
     }
@@ -854,11 +900,11 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void createAllRFQ(final WebSocketInboundData data) {
 
+        final StackClientHandler strategyClient = nibblerClients.get("rfq");
+
         for (final SearchResult searchResult : searchResults.values()) {
 
             if (MDSource.RFQ == searchResult.mdSource) {
-
-                final StackClientHandler strategyClient = nibblerClients.get("rfq");
 
                 final String rfqSymbol = searchResult.symbol;
                 final InstrumentID rfqInstId = searchResult.instID;

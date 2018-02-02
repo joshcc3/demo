@@ -189,6 +189,22 @@ $(function () {
 		const symbol = familyNameInput.val();
 		ws.send(command("createFamily", [symbol]));
 	});
+	$("#createAllChildren").unbind().bind("click", function () {
+
+		const childCreationRows = $("#createChildrenTable").find(".childCreationRow:not(.headerRow)");
+		childCreationRows.each(function () {
+			const childCreationRow = $(this);
+			createStackForChildRow(childCreationRow);
+		});
+	});
+	$("#adoptAllChildren").unbind().bind("click", function () {
+
+		const childCreationRows = $("#createChildrenTable").find(".childCreationRow:not(.headerRow)");
+		childCreationRows.each(function () {
+			const childCreationRow = $(this);
+			adoptStackForChildRow(childCreationRow);
+		});
+	});
 
 	const familyInput = $("#familySymbol");
 	familyInput.on("input", function () {
@@ -206,6 +222,12 @@ $(function () {
 		ws.send(command("adoptChild", [family, child]));
 	});
 
+	$("#createMissingChildren").unbind().bind("click", function () {
+		ws.send(command("createMissingChildren"));
+	});
+	$("#correctChildAdoptions").unbind().bind("click", function () {
+		ws.send(command("correctAdoptionsForChildren"));
+	});
 	$("#createMonthlyFutures").unbind().bind("click", function () {
 		ws.send(command("createMonthlyFutures"));
 	});
@@ -372,7 +394,7 @@ function setCreateFamilyRow(symbol, isFamilyExists) {
 	familyNameInput.toggleClass("childAvailable", isFamilyExists);
 }
 
-function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, instTypes, leanInstType, leanSymbol) {
+function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, tradableNibbler, instTypes, leanInstType, leanSymbol) {
 
 	const childTable = $("#createChildrenTable");
 	const childCreationRow = $(".childCreationRow.headerRow").clone();
@@ -384,6 +406,7 @@ function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, instTyp
 	childQuoteSymbolInput.toggleClass("childAvailable", isChildAlreadyCreated);
 
 	const nibblersCombo = childCreationRow.find(".hostNibblers");
+	nibblersCombo.removeAttr('id');
 	nibblers.forEach(function (nibbler) {
 
 		const option = $("<option value=\"" + nibbler + "\">" + nibbler + "</option>");
@@ -395,6 +418,12 @@ function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, instTyp
 	nibblersCombo.off("focus").focus(function () {
 		nibblersCombo.toggleClass("notPersisted", false);
 	});
+
+	if (tradableNibbler) {
+		nibblersCombo.select(tradableNibbler);
+		nibblersCombo.change();
+		nibblersCombo.toggleClass("notPersisted", false);
+	}
 
 	const instTypeCombo = childCreationRow.find(".leanInstID");
 	instTypes.forEach(function (instType) {
@@ -413,21 +442,29 @@ function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, instTyp
 	});
 
 	childCreationRow.find("button.createButton").off("click").click(function () {
-
-		const quoteSymbol = childCreationRow.find("input[name=quote]").val();
-		const forNibbler = childCreationRow.find(".hostNibblers").find("option:selected").text();
-		const leanInstType = childCreationRow.find(".leanInstID").find("option:selected").text();
-		const leanSymbol = childCreationRow.find("input[name=lean]").val();
-		ws.send(command("createChildStack", [forNibbler, quoteSymbol, leanInstType, leanSymbol]));
+		createStackForChildRow(childCreationRow);
 	});
 
 	childCreationRow.find("button.adoptButton").unbind().bind("click", function () {
-		const family = $("#quoteSymbol").val();
-		const child = childCreationRow.find("input[name=quote]").val();
-		ws.send(command("adoptChild", [family, child]));
+		adoptStackForChildRow(family, childCreationRow);
 	});
 
 	addSortedDiv(childTable.find(".row"), childCreationRow, childCreationComparator);
+}
+
+function createStackForChildRow(childCreationRow) {
+
+	const quoteSymbol = childCreationRow.find("input[name=quote]").val();
+	const forNibbler = childCreationRow.find(".hostNibblers").find("option:selected").text();
+	const leanInstType = childCreationRow.find(".leanInstID").find("option:selected").text();
+	const leanSymbol = childCreationRow.find("input[name=lean]").val();
+	ws.send(command("createChildStack", [forNibbler, quoteSymbol, leanInstType, leanSymbol]));
+}
+
+function adoptStackForChildRow(childCreationRow) {
+	const family = $("#quoteSymbol").val();
+	const child = childCreationRow.find("input[name=quote]").val();
+	ws.send(command("adoptChild", [family, child]));
 }
 
 function childCreationComparator(a, b) {

@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 
@@ -21,6 +22,7 @@ class StackUIData implements IStackGroupUpdateCallback {
 
     public final String source;
     public final String symbol;
+    public final InstrumentID instID;
     public final String leanSymbol;
     public final InstType leanInstType;
 
@@ -33,10 +35,11 @@ class StackUIData implements IStackGroupUpdateCallback {
     private String bidPriceOffsetBPS;
     private String askPriceOffsetBPS;
 
-    StackUIData(final String source, final String symbol, final String leanSymbol, final InstType leanInstType) {
+    StackUIData(final String source, final String symbol, final InstrumentID instID, final String leanSymbol, final InstType leanInstType) {
 
         this.source = source;
         this.symbol = symbol;
+        this.instID = instID;
         this.leanSymbol = leanSymbol;
         this.leanInstType = leanInstType;
 

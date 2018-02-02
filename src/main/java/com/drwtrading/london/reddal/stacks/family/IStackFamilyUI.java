@@ -23,7 +23,7 @@ public interface IStackFamilyUI {
     public void setCreateFamilyRow(final String symbol, final boolean isFamilyExists);
 
     public void addCreateChildRow(final String symbol, final boolean isChildAlreadyCreated, final Collection<String> nibblers,
-            final Collection<String> instTypes, final String leanType, final String leanSymbol);
+            final String tradableNibbler, final Collection<String> instTypes, final String leanType, final String leanSymbol);
 
     public void addFamily(final String familyName);
 
