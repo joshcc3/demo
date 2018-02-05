@@ -155,7 +155,8 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     }
 
     @Override
-    public boolean setStackImage(final String source, final long stackGroupID, final StackType stackType, final Stack stack) {
+    public boolean setStackImage(final String source, final long stackGroupID, final StackType stackType, final Stack stack,
+            final boolean isCrossCheckRequired) {
 
         final LongMap<EnumMap<StackOrderType, Long>> pullbackLevels = new LongMap<>();
         StackLevel stackLevel = stack.getFirstLevel();
@@ -171,7 +172,7 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
         }
 
         final StackGroup stackGroup = stackGroups.get(stackGroupID);
-        stackGroup.setStackImage(source, stackType, pullbackLevels);
+        stackGroup.setStackImage(source, stackType, pullbackLevels, isCrossCheckRequired);
 
         return updateUI(stackGroupID);
     }

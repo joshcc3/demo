@@ -315,7 +315,7 @@ public class Main {
             final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("stockalerts", "stockalerts", fibers.ui, webApp, ws);
 
-            final StockAlertPresenter presenter = new StockAlertPresenter(webLog);
+            final StockAlertPresenter presenter = new StockAlertPresenter(new SystemClock(), webLog);
             fibers.ui.subscribe(presenter, ws);
             channels.stockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
         }

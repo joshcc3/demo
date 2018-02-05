@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.stockAlerts;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
@@ -23,15 +24,18 @@ public class StockAlertPresenter {
         UNWANTED_RFQ_FUTURES.add("FGBX");
     }
 
+    private static final long MAX_RFQ_ALERT_MILLIS = 60 * 1000;
     private static final int MAX_HISTORY = 15;
 
+    private final IClock clock;
     private final UILogger webLog;
 
     private final WebSocketViews<IStockAlertsView> views;
     private final LinkedHashSet<StockAlert> alerts;
 
-    public StockAlertPresenter(final UILogger webLog) {
+    public StockAlertPresenter(final IClock clock, final UILogger webLog) {
 
+        this.clock = clock;
         this.webLog = webLog;
 
         this.views = WebSocketViews.create(IStockAlertsView.class, this);
@@ -63,7 +67,9 @@ public class StockAlertPresenter {
 
             if (alerts.add(stockAlert)) {
 
-                views.all().stockAlert(stockAlert.timestamp, stockAlert.type, stockAlert.symbol, stockAlert.msg, true);
+                final boolean isRecent = Math.abs(stockAlert.milliSinceMidnight - clock.getMillisSinceMidnightUTC()) < MAX_RFQ_ALERT_MILLIS;
+
+                views.all().stockAlert(stockAlert.timestamp, stockAlert.type, stockAlert.symbol, stockAlert.msg, isRecent);
 
                 if (MAX_HISTORY < alerts.size()) {
                     final Iterator<?> it = alerts.iterator();

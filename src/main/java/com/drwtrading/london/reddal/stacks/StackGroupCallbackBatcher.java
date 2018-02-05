@@ -82,7 +82,7 @@ public class StackGroupCallbackBatcher
     }
 
     @Override
-    public void stackGroupUpdated(final StackGroup stackGroup) {
+    public void stackGroupUpdated(final StackGroup stackGroup, final boolean isCrossCheckRequired) {
         stackBatch.add(stackGroup);
     }
 

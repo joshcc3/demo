@@ -74,7 +74,7 @@ public class StackChildListener {
     public void stackGroupUpdated(final StackGroup stackGroup) {
 
         final StackUIData uiData = stackGroupUIData.get(stackGroup.getStackID());
-        uiData.stackGroupUpdated(stackGroup);
+        uiData.stackGroupUpdated(stackGroup, false);
 
         presenter.updateChildUIData(uiData);
     }

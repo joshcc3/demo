@@ -61,11 +61,11 @@ class StackUIData implements IStackGroupUpdateCallback {
     public void stackGroupCreated(final StackGroup stackGroup) {
 
         stackGroups.put(stackGroup.getSide(), stackGroup);
-        stackGroupUpdated(stackGroup);
+        stackGroupUpdated(stackGroup, false);
     }
 
     @Override
-    public void stackGroupUpdated(final StackGroup stackGroup) {
+    public void stackGroupUpdated(final StackGroup stackGroup, final boolean isCrossCheckRequired) {
 
         if (BookSide.BID == stackGroup.getSide()) {
             setBestBidOffset(stackGroup);
