@@ -102,11 +102,11 @@ public class ResolverTest {
                 "Resolved server.");
         Assert.assertEquals(resolver.resolveToServerName("FDAXU4", RemoteOrderType.TAKER, "CHAD", null), "nibbler-eurex-1",
                 "Resolved server.");
-        Assert.assertEquals(resolver.resolveToServerName("FSMMU4", RemoteOrderType.TAKER, "CHAD", null), "nibbler-eurex-3",
+        Assert.assertEquals(resolver.resolveToServerName("FSMMU4", RemoteOrderType.TAKER, "CHAD", null), "nibbler-eurex-1",
                 "Resolved server.");
         Assert.assertEquals(resolver.resolveToServerName("FSMIU4", RemoteOrderType.TAKER, "CHAD", null), "nibbler-eurex-1",
                 "Resolved server.");
-        Assert.assertEquals(resolver.resolveToServerName("FSLIU4", RemoteOrderType.TAKER, "CHAD", null), "nibbler-eurex-3",
+        Assert.assertEquals(resolver.resolveToServerName("FSLIU4", RemoteOrderType.TAKER, "CHAD", null), "nibbler-eurex-1",
                 "Resolved server.");
         Assert.assertEquals(resolver.resolveToServerName("FSTBZ4", RemoteOrderType.MANUAL, "CHAD", null), "nibbler-eurex-3",
                 "Resolved server.");
