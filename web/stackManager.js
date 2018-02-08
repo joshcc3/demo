@@ -420,7 +420,7 @@ function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, tradabl
 	});
 
 	if (tradableNibbler) {
-		nibblersCombo.select(tradableNibbler);
+		nibblersCombo.val(tradableNibbler);
 		nibblersCombo.change();
 		nibblersCombo.toggleClass("notPersisted", false);
 	}
