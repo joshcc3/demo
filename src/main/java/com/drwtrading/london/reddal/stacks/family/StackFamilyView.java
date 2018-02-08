@@ -836,6 +836,36 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
+    public void resetFamilyOffsets(final WebSocketInboundData data) {
+
+        try {
+
+            for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> family : families.entrySet()) {
+
+                final String familyName = family.getKey();
+                final StackUIData parentUIData = parentData.get(familyName);
+
+                if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
+
+                    final Map<String, StackUIRelationship> children = family.getValue();
+                    final Set<String> childSymbols = new HashSet<>(children.keySet());
+                    for (final String childSymbol : childSymbols) {
+
+                        if (childData.containsKey(childSymbol)) {
+                            final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
+                            communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset, offset);
+                        }
+                    }
+                }
+            }
+        } catch (final Exception e) {
+            final IStackFamilyUI ui = views.get(data.getOutboundChannel());
+            ui.displayErrorMsg(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @FromWebSocketView
     public void orphanChild(final String childSymbol, final WebSocketInboundData data) {
 
         communityManager.orphanChild(SOURCE_UI, childSymbol);

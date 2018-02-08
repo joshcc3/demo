@@ -446,6 +446,7 @@ function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, tradabl
 	});
 
 	childCreationRow.find("button.adoptButton").unbind().bind("click", function () {
+		const family = $("#quoteSymbol").val();
 		adoptStackForChildRow(family, childCreationRow);
 	});
 

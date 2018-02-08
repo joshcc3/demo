@@ -1,15 +1,14 @@
-
-var IN_DEV = false;
+const DEV_URLS = new Set(["localhost", "lnhq-wudrn01", "wud-ldnrn01"]);
 
 function openLink(ladderHost, symbol) {
-	var priceSplitPos = symbol.indexOf(';');
-	var rawSymbol;
+	const priceSplitPos = symbol.indexOf(';');
+	let rawSymbol;
 	if (0 < priceSplitPos) {
 		rawSymbol = symbol.substr(0, priceSplitPos);
 	} else {
 		rawSymbol = symbol;
 	}
-	var link = 'http://' + ladderHost + '/ladder#' + symbol;
+	const link = 'http://' + ladderHost + '/ladder#' + symbol;
 	window.open(link, rawSymbol, "dialog=yes,width=262,height=350");
 }
 
@@ -18,36 +17,16 @@ function launchLadderAtPrice(symbol, price) {
 }
 
 function getLadderHosts(symbol) {
-	if (window.location.href.indexOf('.gairloch.drw') != -1) {
-		if (IN_DEV) {
-			return {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
-		}
-		return {ladderHost: "prod-ladder.gairloch.drw:9044", workspaceHost: "prod-ladder.gairloch.drw:9045"};
-	}
 
-	var equitiesHost = "prod-equities-ladder.eeif.drw:9044";
-	var equitiesWorkspace = "prod-equities-ladder.eeif.drw:9045";
+	const isDev = DEV_URLS.has(window.location.hostname);
 
-	var futuresHost = "prod-futures-ladder.eeif.drw:9044";
-	var futuresWorkspace = "prod-futures-ladder.eeif.drw:9045";
-
-	var devHost = "localhost:9044";
-	var devWorkspace = "localhost:9045";
-
-	var ladderHost;
-	var workspaceHost;
-
-	if (IN_DEV) {
-		ladderHost = devHost;
-		workspaceHost = devWorkspace;
+	if (isDev) {
+		return {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
 	} else if (symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9](;.*)?$/)) {
-		ladderHost = futuresHost;
-		workspaceHost = futuresWorkspace;
+		return {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
 	} else {
-		ladderHost = equitiesHost;
-		workspaceHost = equitiesWorkspace;
+		return {ladderHost: "prod-equities-ladder.eeif.drw:9044", workspaceHost: "prod-equities-ladder.eeif.drw:9045"};
 	}
-	return {ladderHost: ladderHost, workspaceHost: workspaceHost};
 }
 
 function getLadderUrl(symbol) {
@@ -56,7 +35,7 @@ function getLadderUrl(symbol) {
 
 function launchLadder(symbol) {
 	symbol = symbol.toUpperCase();
-	var hosts = getLadderHosts(symbol);
+	const hosts = getLadderHosts(symbol);
 	$.ajax({
 		success: function (d, s, x) {
 			if (d != "success") {
@@ -77,7 +56,7 @@ function launchBasket(symbol, noPopUp) {
 	if (symbol.indexOf("-") != -1) {
 		symbol = symbol.split("-")[0];
 	}
-	var basketHost = "http://prod-bop.eeif.drw:8113";
+	const basketHost = "http://prod-bop.eeif.drw:8113";
 	$.ajax({
 		success: function (d, s, x) {
 			if (d != "success" && d != "none" && !noPopUp) {
@@ -95,15 +74,15 @@ function launchBasket(symbol, noPopUp) {
 
 function webwormLink(symbols, date) {
 
-	var d = date || new Date();
+	const d = date || new Date();
 
-	var symbolTemplate = "(exchange:{{EXCHANGE}},name:{{SYMBOL}})";
-	var linkTemplate = "http://grid:18222/?date:%27{{DATE}}%27,symbols:!({{SYMBOLS}})";
+	const symbolTemplate = "(exchange:{{EXCHANGE}},name:{{SYMBOL}})";
+	const linkTemplate = "http://grid:18222/?date:%27{{DATE}}%27,symbols:!({{SYMBOLS}})";
 
-	var symbolList = symbols.map(function (s) {
-		var symbol = s.symbol;
-		var exchange = s.exchange.toUpperCase();
-		var parts = symbol.split(" ");
+	const symbolList = symbols.map(function (s) {
+		let symbol = s.symbol;
+		const exchange = s.exchange.toUpperCase();
+		const parts = symbol.split(" ");
 
 		if (parts.length == 2) {
 			symbol = parts[0];
@@ -114,7 +93,7 @@ function webwormLink(symbols, date) {
 			.split("{{SYMBOL}}").join(symbol);
 	}).join(",");
 
-	var link = linkTemplate
+	const link = linkTemplate
 		.split("{{SYMBOLS}}").join(symbolList)
 		.split("{{DATE}}").join(d.toISOString().split("T")[0]);
 
@@ -124,7 +103,7 @@ function webwormLink(symbols, date) {
 }
 
 function popUp(url, name, width, height) {
-	var windowHandle = window.open(url, name, 'dialog=yes,width=' + width + ',height=' + height);
+	let windowHandle = window.open(url, name, 'dialog=yes,width=' + width + ',height=' + height);
 	windowHandle.close();
 	windowHandle = window.open(url, name, 'dialog=yes,width=' + width + ',height=' + height);
 	windowHandle.focus();
