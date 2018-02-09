@@ -9,6 +9,8 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
+import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
+import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
@@ -22,8 +24,8 @@ public class PicardSpotter {
 
     private static final long RECHECK_PICARD_PERIOD_MILLIS = 500L;
 
-    static final int FADE_TIMEOUT_MS = 1000;
-    static final int DEAD_TIMEOUT_MS = 8000;
+    private static final int FADE_TIMEOUT_MS = 1000;
+    private static final int DEAD_TIMEOUT_MS = 8000;
 
     private final IClock clock;
     private final IMDSubscriber bookSubscriber;
@@ -32,12 +34,15 @@ public class PicardSpotter {
     private final DecimalFormat df;
 
     private final Map<String, PicardData> picardDatas;
+    private final FXCalc<PicardFXCalcComponents> fxCalc;
 
-    public PicardSpotter(final IClock clock, final IMDSubscriber bookSubscriber, final Publisher<PicardRow> rowPublisher) {
+    public PicardSpotter(final IClock clock, final IMDSubscriber bookSubscriber, final Publisher<PicardRow> rowPublisher,
+            final FXCalc<PicardFXCalcComponents> fxCalc) {
 
         this.clock = clock;
         this.bookSubscriber = bookSubscriber;
         this.rowPublisher = rowPublisher;
+        this.fxCalc = fxCalc;
 
         this.df = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 0, 10);
 
@@ -137,8 +142,8 @@ public class PicardSpotter {
                 final double bpsThrough = getBPSThrough(bidLaserLine.getPrice(), bestAsk);
 
                 picardData.previousRow =
-                        new PicardRow(nowMilliSinceUTC, book.getSymbol(), book.getInstType(), BookSide.BID, bestAsk, askPrice, bpsThrough,
-                                PicardRowState.LIVE, description, isInAuction, isNewRow);
+                        createPicardRow(book, book.getBestAsk(), bidLaserLine, isNewRow, description, nowMilliSinceUTC, isInAuction,
+                                bestAsk, askPrice, bpsThrough);
 
                 rowPublisher.publish(picardData.previousRow);
 
@@ -146,10 +151,9 @@ public class PicardSpotter {
 
                 final String bidPrice = df.format(bestBid / (double) Constants.NORMALISING_FACTOR);
                 final double bpsThrough = getBPSThrough(askLaserLine.getPrice(), bestBid);
-
                 picardData.previousRow =
-                        new PicardRow(nowMilliSinceUTC, book.getSymbol(), book.getInstType(), BookSide.ASK, bestBid, bidPrice, bpsThrough,
-                                PicardRowState.LIVE, description, isInAuction, isNewRow);
+                        createPicardRow(book, book.getBestBid(), askLaserLine, isNewRow, description, nowMilliSinceUTC, isInAuction,
+                                bestBid, bidPrice, bpsThrough);
 
                 rowPublisher.publish(picardData.previousRow);
 
@@ -170,6 +174,53 @@ public class PicardSpotter {
                 }
             }
         }
+    }
+
+    private PicardRow createPicardRow(final IBook<?> book, final IBookLevel bestLevel, final LaserLine laserLine, final boolean isNewRow,
+            final String description, final long nowMilliSinceUTC, final boolean isInAuction, final long bestPrice,
+            final String bestPricePrint, final double bpsThrough) {
+
+        double fx = fxCalc.get(book.getCCY(), CCY.EUR, bestLevel.getSide());
+        final CCY opportunityCcy;
+        if (!Double.isNaN(fx)) {
+            opportunityCcy = CCY.EUR;
+        } else {
+            opportunityCcy = book.getCCY();
+            fx = 1;
+        }
+
+        final double opportunitySize;
+        if (book.getStatus() == BookMarketState.AUCTION) {
+            final IBookReferencePrice refPriceData = book.getRefPriceData(ReferencePoint.AUCTION_INDICATIVE);
+            if (refPriceData.isValid()) {
+                opportunitySize =
+                        opportunitySizeForLevel(laserLine.getPrice(), refPriceData.getPrice(), refPriceData.getQty(), book.getWPV(), fx);
+            } else {
+                opportunitySize = 0;
+            }
+        } else {
+            opportunitySize = calculateOpportunitySize(laserLine.getPrice(), bestLevel, fx);
+        }
+
+        return new PicardRow(nowMilliSinceUTC, book.getSymbol(), book.getInstType(), opportunityCcy, bestLevel.getSide().getOppositeSide(),
+                bestPrice, bestPricePrint, bpsThrough, opportunitySize, PicardRowState.LIVE, description, isInAuction, isNewRow);
+    }
+
+    private static double opportunitySizeForLevel(final long theoreticalValue, final long levelPrice, final long levelQty, final double wpv,
+            final double fx) {
+        return (Math.abs(theoreticalValue - levelPrice) * levelQty / (double) Constants.NORMALISING_FACTOR) * wpv * fx;
+    }
+
+    private static double calculateOpportunitySize(final long theoreticalValue, IBookLevel level, final double fx) {
+        double opportunitySize = 0;
+
+        final int sign = level.getSide() == BookSide.BID ? 1 : -1;
+        while (level != null && sign * (level.getPrice() - theoreticalValue) > 0) {
+            opportunitySize += opportunitySizeForLevel(theoreticalValue, level.getPrice(), level.getQty(), level.getBook().getWPV(), fx);
+            level = level.next();
+        }
+
+        return opportunitySize;
     }
 
     static double getBPSThrough(final long theoreticalValue, final long price) {

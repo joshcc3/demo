@@ -62,7 +62,7 @@ function displaySymbol(symbol, listing) {
 	return symbol;
 }
 
-function picard(symbol, listing, side, bpsThrough, price, description, state, inAuction, longPrice) {
+function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, description, state, inAuction, longPrice) {
 
 	if (!RUSSIA_SSF.test(symbol)) {
 
@@ -87,17 +87,19 @@ function picard(symbol, listing, side, bpsThrough, price, description, state, in
 			queueSort();
 		}
 
-		if (state == "DEAD") {
+		if (state === "DEAD") {
 			delete picards[key];
 			picard.remove();
 		} else {
 
 			picard.attr('id', key);
 			picard.data('bps', parseFloat(bpsThrough));
+			picard.data('opportunitySize', parseFloat(opportunitySize));
 			picard.find('.symbol').text(displaySymbol(symbol, listing));
 			picard.find('.bpsThrough').text(bpsThrough + ' bps');
 			picard.find('.price').text(price);
 			picard.find('.side').text(side);
+			picard.find('.opportunitySize').text(opportunitySize + " " + ccy);
 			picard.find('.description').text(description);
 
 			picard.toggleClass("live", state == "LIVE");
@@ -122,9 +124,9 @@ function queueSort() {
 }
 
 function sortPicards() {
-	var sorted = $('#picards').find('tr.picard:not(.template)');
+	let sorted = $('#picards').find('tr.picard:not(.template)');
 	sorted.sort(function (a, b) {
-		return parseInt(10000 * ($(b).data('bps') - $(a).data('bps')));
+		return parseInt(10000 * ($(b).data('opportunitySize') - $(a).data('opportunitySize')));
 	});
 	sorted.detach().appendTo('#picards');
 	queued = null;
@@ -135,9 +137,9 @@ function toId(symbol) {
 }
 
 function test() {
-	picard("sym1", "BID", "20.3", "1000.0", "live");
-	picard("sym2", "ASK", "0.3", "1000.0", "live");
-	picard("sym3", "BID", "30.3", "1000.0", "live");
-	picard("sym4", "BID", "1.65", "233.0", "fade");
-	picard("sym4", "BID", "1.65", "233.0", "dead");
+	picard("sym1", "CHIX", "BID", "20.3", "400","1000.0", "Description", "live");
+	picard("sym2", "CHIX", "ASK", "0.3", "350", "1000.0", "Description", "live");
+	picard("sym3", "CHIX", "BID", "30.3", "0", "1000.0 ", "Description", "live");
+	picard("sym4", "CHIX", "BID", "1.65", "400", "233.0", "Description", "fade");
+	picard("sym4", "CHIX", "BID", "1.65", "700", "233.0", "Description", "dead");
 }

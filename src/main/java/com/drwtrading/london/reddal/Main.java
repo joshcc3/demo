@@ -32,6 +32,7 @@ import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
+import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.MDTransportComponents;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClientFactory;
@@ -40,6 +41,7 @@ import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.ResourceIgnorer;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
@@ -95,6 +97,8 @@ import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
+import com.drwtrading.london.reddal.picard.OpxlFXCalcUpdater;
+import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.picard.PicardSounds;
 import com.drwtrading.london.reddal.picard.PicardSpotter;
@@ -159,6 +163,7 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.sun.jndi.toolkit.url.Uri;
+import drw.opxl.OpxlClient;
 import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
 import org.jetlang.channels.BatchSubscriber;
@@ -434,7 +439,13 @@ public class Main {
                     }
                 }
 
-                final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows);
+
+                final IResourceMonitor<PicardFXCalcComponents> fxMonitor = new ResourceIgnorer<>();
+                final FXCalc<PicardFXCalcComponents> initalFxCalc = new FXCalc<>(fxMonitor, PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
+                final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(initalFxCalc, app.selectIO, app.monitor, app.logDir);
+                final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, initalFxCalc);
+
+                app.addStartUpAction(opxlFXCalcUpdater::connectToOpxl);
                 displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
 
                 final List<ConfigGroup> nibblerConfigs = nibblers.get(mdSource);

@@ -131,6 +131,8 @@ public class PicardUI {
 
         final String bpsThrough = bpsDF.format(row.bpsThrough);
         final String givenSymbol = displaySymbols.get(row.symbol);
+        final String opportunitySize = bpsDF.format(row.opportunitySize);
+        final String ccy = row.ccy != null ? row.ccy.name() : "";
 
         final String displaySymbol;
         if (null == givenSymbol) {
@@ -139,8 +141,8 @@ public class PicardUI {
             displaySymbol = givenSymbol;
         }
 
-        view.picard(row.symbol, displaySymbol, row.side.toString(), bpsThrough, row.prettyPrice, row.description, row.state.toString(),
-                row.inAuction, Long.toString(row.price));
+        view.picard(row.symbol, displaySymbol, row.side.toString(), bpsThrough, opportunitySize, ccy, row.prettyPrice, row.description,
+                row.state.toString(), row.inAuction, Long.toString(row.price));
         if (row.isNewRow && soundsOn) {
             view.playSound();
         }

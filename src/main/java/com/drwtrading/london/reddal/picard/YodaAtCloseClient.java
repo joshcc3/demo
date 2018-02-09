@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.picard;
 
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
@@ -51,9 +52,9 @@ public class YodaAtCloseClient implements ITransportCacheListener<YodaSymbolSide
             final String closePrice = priceDF.format(signal.closePrice / (double) Constants.NORMALISING_FACTOR);
 
             final PicardRow row =
-                    new PicardRow(signalMilliSinceUTC, signal.key.symbol, InstType.EQUITY, signal.getKey().side.getOppositeSide(),
+                    new PicardRow(signalMilliSinceUTC, signal.key.symbol, InstType.EQUITY, null, signal.getKey().side.getOppositeSide(),
                             signal.closePrice, closePrice, PicardSpotter.getBPSThrough(signal.theoPrice, signal.closePrice),
-                            PicardRowState.LIVE, "AT_CLOSE", false, isNewRow);
+                            Math.abs(signal.theoPrice - signal.closePrice), PicardRowState.LIVE, "AT_CLOSE", false, isNewRow);
 
             rowBySymbol.put(symbol, row);
             rowPublisher.publish(row);

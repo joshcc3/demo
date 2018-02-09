@@ -29,7 +29,7 @@ public abstract class AOpxlReader<T> extends OpxlCallbacks implements Closeable 
 
     protected final ReddalComponents component;
 
-    private final String topic;
+    protected final String topic;
 
     private final OpxlClient opxlClient;
     private final BufferedWriter fileWriter;
