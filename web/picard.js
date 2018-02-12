@@ -78,9 +78,9 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			}
 			picard = $('tr.picard.template').clone().removeClass('template');
 			picard.click(function () {
-				console.log("HERE");
-				launchLadderAtPrice(symbol, price);
-				ws.send('recenter' + "," + symbol + ",\"" + longPrice + "\"");
+				let priceText = picard.find('.price').text();
+				launchLadderAtPrice(symbol, priceText);
+				ws.send('recenter' + "," + symbol + ",\"" + Math.round(parseFloat(priceText) * 1e9) + "\"");
 			});
 			picards[key] = picard;
 			$('#picards').append(picard);
