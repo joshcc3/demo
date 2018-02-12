@@ -952,12 +952,14 @@ function setChildData(childSymbol, leanSymbol, nibblerName, selectedConfigType, 
 		bidControls.find(".picardEnabled").toggleClass("enabled", bidPicardEnabled);
 		bidControls.find(".quoterEnabled").toggleClass("enabled", bidQuoterEnabled);
 		bidControls.filter(".strategyInfo").text(bidInfo);
+		childControls.toggleClass("bidChildRunning", isBidStrategyOn && (bidPicardEnabled || bidQuoterEnabled));
 
 		const askControls = childControls.find(".ask");
 		askControls.filter(".runningControls").toggleClass("enabled", isAskStrategyOn);
 		askControls.find(".picardEnabled").toggleClass("enabled", askPicardEnabled);
 		askControls.find(".quoterEnabled").toggleClass("enabled", askQuoterEnabled);
 		askControls.filter(".strategyInfo").text(askInfo);
+		childControls.toggleClass("askChildRunning", isAskStrategyOn && (askPicardEnabled || askQuoterEnabled));
 
 		const family = row.parent().parent();
 		setActiveChildCounts(family);
@@ -1025,14 +1027,11 @@ function setActiveChildCounts(family) {
 
 	const childControls = family.find(".childControls");
 
-	const runningControls = childControls.find(".runningControls");
-	const bidControls = runningControls.filter(".bid");
-	const onBids = bidControls.filter(".enabled").length;
-	const offBids = bidControls.length - onBids - 1;
+	const onBids = childControls.filter(".bidChildRunning").length;
+	const offBids = childControls.length - onBids - 1;
 
-	const askControls = runningControls.filter(".ask");
-	const onAsks = askControls.filter(".enabled").length;
-	const offAsks = askControls.length - onAsks - 1;
+	const onAsks = childControls.filter(".askChildRunning").length;
+	const offAsks = childControls.length - onAsks - 1;
 
 	const familyDetails = family.find(".activeCount");
 	const bidCounts = familyDetails.filter(".bid");

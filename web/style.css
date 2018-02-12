@@ -203,7 +203,7 @@ div {
 	border: dotted 1px #000288;
 }
 
-.order.modify_price_selected {
+.order.modify_price_selected, .stackView .modify_price_selected {
 	border: solid 2px red !important;
 }
 

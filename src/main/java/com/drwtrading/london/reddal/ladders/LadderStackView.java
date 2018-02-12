@@ -66,6 +66,8 @@ public class LadderStackView implements ILadderBoard {
         }
     }
 
+    private static final int MODIFY_TIMEOUT_MILLI = 5000;
+
     private static final DecimalFormat TICK_OFFSET_FORMAT = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 0);
     private static final DecimalFormat PRICE_OFFSET_TICK_SIZE_FORMAT = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2, 10);
 
@@ -98,6 +100,11 @@ public class LadderStackView implements ILadderBoard {
 
     private long centeredPrice;
     private long topPrice;
+
+    private BookSide modifySide;
+    private StackType modifyStackType;
+    private int modifyFromPrice;
+    private long modifyFromPriceSelectedTime;
 
     LadderStackView(final String username, final boolean isTrader, final String symbol, final Map<String, Integer> buttonQties,
             final int levels, final LadderHTMLTable ladderHTMLKeys, final SymbolStackData stackData, final LadderMetaData metaData,
@@ -177,6 +184,9 @@ public class LadderStackView implements ILadderBoard {
     @Override
     public void timedRefresh() {
 
+        if (null != modifySide && modifyFromPriceSelectedTime < System.currentTimeMillis() - MODIFY_TIMEOUT_MILLI) {
+            modifySide = null;
+        }
     }
 
     @Override
@@ -233,6 +243,10 @@ public class LadderStackView implements ILadderBoard {
 
             final SymbolStackPriceLevel bidPriceLevel = stackData.getBidPriceLevel(price);
             setQty(htmlRow.stackBidPicardKey, htmlRow.stackBidQuoteKey, bidPriceLevel);
+            ui.cls(htmlRow.stackBidQuoteKey, CSSClass.MODIFY_PRICE_SELECTED,
+                    BookSide.BID == modifySide && StackType.QUOTER == modifyStackType && modifyFromPrice == price);
+            ui.cls(htmlRow.stackBidPicardKey, CSSClass.MODIFY_PRICE_SELECTED,
+                    BookSide.BID == modifySide && StackType.PICARD == modifyStackType && modifyFromPrice == price);
 
             ui.data(htmlRow.stackBidPicardKey, DataKey.PRICE, boardRow.formattedPrice);
             ui.data(htmlRow.stackBidQuoteKey, DataKey.PRICE, boardRow.formattedPrice);
@@ -240,6 +254,10 @@ public class LadderStackView implements ILadderBoard {
 
             final SymbolStackPriceLevel askPriceLevel = stackData.getAskPriceLevel(price);
             setQty(htmlRow.stackAskPicardKey, htmlRow.stackAskQuoteKey, askPriceLevel);
+            ui.cls(htmlRow.stackAskQuoteKey, CSSClass.MODIFY_PRICE_SELECTED,
+                    BookSide.ASK == modifySide && StackType.QUOTER == modifyStackType && modifyFromPrice == price);
+            ui.cls(htmlRow.stackAskPicardKey, CSSClass.MODIFY_PRICE_SELECTED,
+                    BookSide.ASK == modifySide && StackType.PICARD == modifyStackType && modifyFromPrice == price);
 
             ui.data(htmlRow.stackAskPicardKey, DataKey.PRICE, boardRow.formattedPrice);
             ui.data(htmlRow.stackAskQuoteKey, DataKey.PRICE, boardRow.formattedPrice);
@@ -538,8 +556,14 @@ public class LadderStackView implements ILadderBoard {
                 if (ladderPrefsForSymbolUser != null) {
                     submitOrderRightClick(clientSpeedState, label, data);
                 }
-            } else if (label.startsWith(HTML.ORDER)) {
-                // rightClickModify(clientSpeedState, data);
+            } else if (label.startsWith(HTML.STACK_BID_QUOTE)) {
+                rightClickBidModify(clientSpeedState, data, StackType.QUOTER);
+            } else if (label.startsWith(HTML.STACK_BID_PICARD)) {
+                rightClickBidModify(clientSpeedState, data, StackType.PICARD);
+            } else if (label.startsWith(HTML.STACK_ASK_QUOTE)) {
+                rightClickAskModify(clientSpeedState, data, StackType.QUOTER);
+            } else if (label.startsWith(HTML.STACK_ASK_PICARD)) {
+                rightClickAskModify(clientSpeedState, data, StackType.PICARD);
             } else if (label.equals(HTML.BUY_OFFSET_UP)) {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     increaseChildOffsetCmdPublisher.publish(
@@ -568,6 +592,10 @@ public class LadderStackView implements ILadderBoard {
                 } else if (!stackData.adjustAskStackLevels(-1)) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
+            } else if (label.equals(HTML.STOP_BUY)) {
+                stackData.stopBidStrategy();
+            } else if (label.equals(HTML.STOP_SELL)) {
+                stackData.stopAskStrategy();
             } else if (label.equals(HTML.STACK_BID_QUOTE_ENABLED)) {
                 stackData.setBidStackEnabled(StackType.QUOTER, false);
             } else if (label.equals(HTML.STACK_BID_PICARD_ENABLED)) {
@@ -597,28 +625,6 @@ public class LadderStackView implements ILadderBoard {
             //    view.popUp(url, "orders", 270, 20 * (1 + orders.size()));
             //}
             //}
-        }
-    }
-
-    private void cancelBidStackOrders(final int price, final String label, final String expectedLabel, final StackType stackType) {
-
-        if (label.equals(expectedLabel)) {
-            if (!stackData.clearBidStackPrice(stackType, price)) {
-                throw new IllegalStateException("Could not send msg - stack connection down.");
-            }
-        } else {
-            System.out.println("Mismatched label: " + price + ' ' + expectedLabel + ' ' + label);
-        }
-    }
-
-    private void cancelAskStackOrders(final int price, final String label, final String expectedLabel, final StackType stackType) {
-
-        if (label.equals(expectedLabel)) {
-            if (!stackData.clearAskStackPrice(stackType, price)) {
-                throw new IllegalStateException("Could not send msg - stack connection down.");
-            }
-        } else {
-            System.out.println("Mismatched label: " + price + ' ' + expectedLabel + ' ' + label);
         }
     }
 
@@ -654,13 +660,13 @@ public class LadderStackView implements ILadderBoard {
             throw new IllegalArgumentException("No stack type [" + stackTypePref + "] provided.");
         } else if (label.equals(bookRow.htmlKeys.stackBidOffsetKey)) {
 
-            if (!stackData.setBidStackQty(stackType, orderType, price, tradingBoxQty)) {
+            if (!stackData.addBidStackQty(stackType, orderType, price, tradingBoxQty)) {
                 throw new IllegalStateException("Could not send msg - stack connection down.");
             }
 
         } else if (label.equals(bookRow.htmlKeys.stackAskOffsetKey)) {
 
-            if (!stackData.setAskStackQty(stackType, orderType, price, tradingBoxQty)) {
+            if (!stackData.addAskStackQty(stackType, orderType, price, tradingBoxQty)) {
                 throw new IllegalStateException("Could not send msg - stack connection down.");
             }
 
@@ -670,6 +676,84 @@ public class LadderStackView implements ILadderBoard {
 
         final int reloadBoxQty = Integer.valueOf(getPref(HTML.INP_RELOAD));
         tradingBoxQty = Math.max(0, reloadBoxQty);
+    }
+
+    private void rightClickBidModify(final ClientSpeedState clientSpeedState, final Map<String, String> data, final StackType stackType) {
+
+        final int price = Integer.valueOf(data.get("price"));
+
+        if (BookSide.BID == modifySide && stackType == modifyStackType) {
+
+            if (ClientSpeedState.FINE != clientSpeedState) {
+                throw new IllegalStateException("Cannot modify stack, client too slow.");
+            } else if (modifyFromPrice != price) {
+                stackData.moveBidOrders(stackType, modifyFromPrice, price);
+            }
+            modifySide = null;
+
+        } else {
+            final SymbolStackPriceLevel level = stackData.getBidPriceLevel(price);
+            if (null != level && null != level.getStackType(stackType)) {
+
+                modifySide = BookSide.BID;
+                modifyStackType = stackType;
+                modifyFromPrice = price;
+                modifyFromPriceSelectedTime = System.currentTimeMillis();
+
+            } else {
+                modifySide = null;
+            }
+        }
+    }
+
+    private void rightClickAskModify(final ClientSpeedState clientSpeedState, final Map<String, String> data, final StackType stackType) {
+
+        final int price = Integer.valueOf(data.get("price"));
+
+        if (BookSide.ASK == modifySide && stackType == modifyStackType) {
+
+            if (ClientSpeedState.FINE != clientSpeedState) {
+                throw new IllegalStateException("Cannot modify stack, client too slow.");
+            } else if (modifyFromPrice != price) {
+                stackData.moveAskOrders(stackType, modifyFromPrice, price);
+            }
+            modifySide = null;
+
+        } else {
+            final SymbolStackPriceLevel level = stackData.getAskPriceLevel(price);
+            if (null != level && null != level.getStackType(stackType)) {
+
+                modifySide = BookSide.ASK;
+                modifyStackType = stackType;
+                modifyFromPrice = price;
+                modifyFromPriceSelectedTime = System.currentTimeMillis();
+
+            } else {
+                modifySide = null;
+            }
+        }
+    }
+
+    private void cancelBidStackOrders(final int price, final String label, final String expectedLabel, final StackType stackType) {
+
+        if (label.equals(expectedLabel)) {
+            if (!stackData.clearBidStackPrice(stackType, price)) {
+                throw new IllegalStateException("Could not send msg - stack connection down.");
+            }
+        } else {
+            System.out.println("Mismatched label: " + price + ' ' + expectedLabel + ' ' + label);
+        }
+    }
+
+    private void cancelAskStackOrders(final int price, final String label, final String expectedLabel, final StackType stackType) {
+
+        if (label.equals(expectedLabel)) {
+            if (!stackData.clearAskStackPrice(stackType, price)) {
+                throw new IllegalStateException("Could not send msg - stack connection down.");
+            }
+        } else {
+            System.out.println("Mismatched label: " + price + ' ' + expectedLabel + ' ' + label);
+        }
     }
 
     @Override

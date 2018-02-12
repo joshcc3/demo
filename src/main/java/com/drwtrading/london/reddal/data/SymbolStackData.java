@@ -12,6 +12,8 @@ import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 
 import java.text.DecimalFormat;
+import java.util.EnumMap;
+import java.util.Map;
 
 public class SymbolStackData {
 
@@ -426,7 +428,7 @@ public class SymbolStackData {
         }
     }
 
-    public boolean setBidStackQty(final StackType stackType, final StackOrderType orderType, final int tickOffset, final long qty) {
+    public boolean addBidStackQty(final StackType stackType, final StackOrderType orderType, final int tickOffset, final long qty) {
 
         if (null != bidStackGroup) {
             stackClient.addStackQty(SOURCE, bidStackGroup.getStackID(), stackType, orderType, BID_PRICE_MULTIPLIER * tickOffset, qty);
@@ -436,13 +438,68 @@ public class SymbolStackData {
         }
     }
 
-    public boolean setAskStackQty(final StackType stackType, final StackOrderType orderType, final int tickOffset, final long qty) {
+    public boolean addAskStackQty(final StackType stackType, final StackOrderType orderType, final int tickOffset, final long qty) {
 
         if (null != askStackGroup) {
             stackClient.addStackQty(SOURCE, askStackGroup.getStackID(), stackType, orderType, ASK_PRICE_MULTIPLIER * tickOffset, qty);
             return stackClient.batchComplete();
         } else {
             throw new IllegalStateException("No stack for symbol.");
+        }
+    }
+
+    public void moveBidOrders(final StackType stackType, final int fromPrice, final int toPrice) {
+
+        if (null != bidStackGroup) {
+
+            final SymbolStackPriceLevel level = getBidPriceLevel(fromPrice);
+            moveOrders(stackType, level, bidStackGroup, bidStackLevels, fromPrice, toPrice, BID_PRICE_MULTIPLIER);
+        } else {
+            throw new IllegalStateException("No stack for symbol.");
+        }
+
+    }
+
+    public void moveAskOrders(final StackType stackType, final int fromPrice, final int toPrice) {
+
+        if (null != askStackGroup) {
+
+            final SymbolStackPriceLevel level = getAskPriceLevel(fromPrice);
+            moveOrders(stackType, level, askStackGroup, askStackLevels, fromPrice, toPrice, ASK_PRICE_MULTIPLIER);
+        } else {
+            throw new IllegalStateException("No stack for symbol.");
+        }
+    }
+
+    private void moveOrders(final StackType stackType, final SymbolStackPriceLevel level, final StackGroup stackGroup,
+            final LongMap<SymbolStackPriceLevel> stackLevels, final int fromPrice, final int toPrice, final int priceMultiplier) {
+
+        if (null != level) {
+
+            final StackLevel stackLevel = level.getStackType(stackType);
+
+            if (null != stackLevel) {
+                final Map<StackOrderType, Long> removedQties = new EnumMap<>(StackOrderType.class);
+
+                for (final StackOrderType orderType : StackOrderType.values()) {
+
+                    final long qty = stackLevel.getOrderTypeQty(orderType);
+                    if (0 < qty) {
+                        removedQties.put(orderType, qty);
+                    }
+                }
+
+                clearStackPrice(stackGroup, stackLevels, stackType, priceMultiplier, fromPrice);
+
+                for (final Map.Entry<StackOrderType, Long> removedQty : removedQties.entrySet()) {
+
+                    final StackOrderType orderType = removedQty.getKey();
+                    final long qty = removedQty.getValue();
+                    stackClient.addStackQty(SOURCE, stackGroup.getStackID(), stackType, orderType, priceMultiplier * toPrice, qty);
+                }
+
+                stackClient.batchComplete();
+            }
         }
     }
 
