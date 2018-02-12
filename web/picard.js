@@ -94,7 +94,7 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 
 			picard.attr('id', key);
 			picard.data('bps', parseFloat(bpsThrough));
-			picard.data('opportunitySize', parseFloat(opportunitySize));
+			picard.data('opportunitySize', parseFloat(opportunitySize.replace(",", "")));
 			picard.find('.symbol').text(displaySymbol(symbol, listing));
 			picard.find('.bpsThrough').text(bpsThrough + ' bps');
 			picard.find('.price').text(price);
@@ -126,7 +126,7 @@ function queueSort() {
 function sortPicards() {
 	let sorted = $('#picards').find('tr.picard:not(.template)');
 	sorted.sort(function (a, b) {
-		return parseInt(10000 * ($(b).data('opportunitySize') - $(a).data('opportunitySize')));
+		return parseInt(100*($(b).data('opportunitySize') - $(a).data('opportunitySize')));
 	});
 	sorted.detach().appendTo('#picards');
 	queued = null;
