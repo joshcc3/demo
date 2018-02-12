@@ -142,7 +142,7 @@ public class PicardSpotter {
                 final double bpsThrough = getBPSThrough(bidLaserLine.getPrice(), bestAsk);
 
                 picardData.previousRow =
-                        createPicardRow(book, book.getBestAsk(), bidLaserLine, isNewRow, description, nowMilliSinceUTC, isInAuction,
+                        createPicardRow(book, book.getBestAsk(), BookSide.ASK, bidLaserLine, isNewRow, description, nowMilliSinceUTC, isInAuction,
                                 bestAsk, askPrice, bpsThrough);
 
                 rowPublisher.publish(picardData.previousRow);
@@ -152,7 +152,7 @@ public class PicardSpotter {
                 final String bidPrice = df.format(bestBid / (double) Constants.NORMALISING_FACTOR);
                 final double bpsThrough = getBPSThrough(askLaserLine.getPrice(), bestBid);
                 picardData.previousRow =
-                        createPicardRow(book, book.getBestBid(), askLaserLine, isNewRow, description, nowMilliSinceUTC, isInAuction,
+                        createPicardRow(book, book.getBestBid(), BookSide.BID, askLaserLine, isNewRow, description, nowMilliSinceUTC, isInAuction,
                                 bestBid, bidPrice, bpsThrough);
 
                 rowPublisher.publish(picardData.previousRow);
@@ -176,11 +176,11 @@ public class PicardSpotter {
         }
     }
 
-    private PicardRow createPicardRow(final IBook<?> book, final IBookLevel bestLevel, final LaserLine laserLine, final boolean isNewRow,
+    private PicardRow createPicardRow(final IBook<?> book, final IBookLevel bestLevel, final BookSide side, final LaserLine laserLine, final boolean isNewRow,
             final String description, final long nowMilliSinceUTC, final boolean isInAuction, final long bestPrice,
             final String bestPricePrint, final double bpsThrough) {
 
-        double fx = fxCalc.get(book.getCCY(), CCY.EUR, bestLevel.getSide());
+        double fx = fxCalc.get(book.getCCY(), CCY.EUR, side);
         final CCY opportunityCcy;
         if (!Double.isNaN(fx)) {
             opportunityCcy = CCY.EUR;
@@ -190,7 +190,7 @@ public class PicardSpotter {
         }
 
         final double opportunitySize;
-        if (book.getStatus() == BookMarketState.AUCTION) {
+        if (isInAuction) {
             final IBookReferencePrice refPriceData = book.getRefPriceData(ReferencePoint.AUCTION_INDICATIVE);
             if (refPriceData.isValid()) {
                 opportunitySize =
@@ -199,10 +199,10 @@ public class PicardSpotter {
                 opportunitySize = 0;
             }
         } else {
-            opportunitySize = calculateOpportunitySize(laserLine.getPrice(), bestLevel, fx);
+            opportunitySize = calculateOpportunitySize(laserLine.getPrice(), bestLevel, side, fx);
         }
 
-        return new PicardRow(nowMilliSinceUTC, book.getSymbol(), book.getInstType(), opportunityCcy, bestLevel.getSide().getOppositeSide(),
+        return new PicardRow(nowMilliSinceUTC, book.getSymbol(), book.getInstType(), opportunityCcy, side.getOppositeSide(),
                 bestPrice, bestPricePrint, bpsThrough, opportunitySize, PicardRowState.LIVE, description, isInAuction, isNewRow);
     }
 
@@ -211,10 +211,10 @@ public class PicardSpotter {
         return (Math.abs(theoreticalValue - levelPrice) * levelQty / (double) Constants.NORMALISING_FACTOR) * wpv * fx;
     }
 
-    private static double calculateOpportunitySize(final long theoreticalValue, IBookLevel level, final double fx) {
+    private static double calculateOpportunitySize(final long theoreticalValue, IBookLevel level, final BookSide side, final double fx) {
         double opportunitySize = 0;
 
-        final int sign = level.getSide() == BookSide.BID ? 1 : -1;
+        final int sign = side == BookSide.BID ? 1 : -1;
         while (level != null && sign * (level.getPrice() - theoreticalValue) > 0) {
             opportunitySize += opportunitySizeForLevel(theoreticalValue, level.getPrice(), level.getQty(), level.getBook().getWPV(), fx);
             level = level.next();

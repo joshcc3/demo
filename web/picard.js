@@ -62,6 +62,7 @@ function displaySymbol(symbol, listing) {
 	return symbol;
 }
 
+//TODO:: remove longPrice
 function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, description, state, inAuction, longPrice) {
 
 	if (!RUSSIA_SSF.test(symbol)) {
