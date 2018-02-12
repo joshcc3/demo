@@ -68,6 +68,10 @@ td.description {
 	font-size: 0;
 }
 
+.hidden {
+	display: none;
+}
+
 #footer {
 	width: 100%;
 	position: fixed;

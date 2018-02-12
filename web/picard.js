@@ -11,6 +11,8 @@ var queued;
 var lastSound = new Date().getTime();
 
 var picardSound;
+let sortByValue = "opportunitySize";
+let displayThreshold = 2;
 
 $(function () {
 	ws = connect();
@@ -32,6 +34,23 @@ $(function () {
 
 	$("#all").bind('click', function () {
 		ws.send('setCheckCrossed,' + (!checkCrossed));
+	});
+
+	$("#sortBy").click(() => {
+		if (sortByValue === "opportunitySize") {
+			sortByValue = "bps";
+			$("#sortBy").val("bps");
+		} else {
+			sortByValue = "opportunitySize";
+			$("#sortBy").val("notional");
+		}
+	});
+
+	$("#filterValue").change(() => {
+		displayThreshold = parseFloat($("#filterValue").val());
+		$(".picard").each((index, row) => {
+			$(row).toggleClass("hidden", $(row).data("opportunitySize") < displayThreshold);
+		});
 	});
 
 	setInterval(sortPicards, 1000);
@@ -56,7 +75,7 @@ function playSound() {
 }
 
 function displaySymbol(symbol, listing) {
-	if (symbol.indexOf(listing) == -1) {
+	if (symbol.indexOf(listing) === -1) {
 		return listing + " (" + symbol + ")";
 	}
 	return symbol;
@@ -73,7 +92,7 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 		if (picards.hasOwnProperty(key)) {
 			picard = picards[key];
 		} else {
-			if (state == "DEAD") {
+			if (state === "DEAD") {
 				// Don't create a picard just to kill it
 				return;
 			}
@@ -93,9 +112,10 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			picard.remove();
 		} else {
 
+			let priceFloat = parseFloat(opportunitySize.replace(",", ""));
 			picard.attr('id', key);
 			picard.data('bps', parseFloat(bpsThrough));
-			picard.data('opportunitySize', parseFloat(opportunitySize.replace(",", "")));
+			picard.data('opportunitySize', priceFloat);
 			picard.find('.symbol').text(displaySymbol(symbol, listing));
 			picard.find('.bpsThrough').text(bpsThrough + ' bps');
 			picard.find('.price').text(price);
@@ -103,12 +123,13 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			picard.find('.opportunitySize').text(opportunitySize + " " + ccy);
 			picard.find('.description').text(description);
 
-			picard.toggleClass("live", state == "LIVE");
-			picard.toggleClass("fade", state == "FADE");
-			picard.toggleClass("BID", !inAuction && side == "BID");
-			picard.toggleClass("ASK", !inAuction && side == "ASK");
-			picard.toggleClass("BID_AUCTION", inAuction && side == "BID");
-			picard.toggleClass("ASK_AUCTION", inAuction && side == "ASK");
+			picard.toggleClass("live", state === "LIVE");
+			picard.toggleClass("fade", state === "FADE");
+			picard.toggleClass("BID", !inAuction && side === "BID");
+			picard.toggleClass("ASK", !inAuction && side === "ASK");
+			picard.toggleClass("BID_AUCTION", inAuction && side === "BID");
+			picard.toggleClass("ASK_AUCTION", inAuction && side === "ASK");
+			picard.toggleClass("hidden", priceFloat < displayThreshold);
 		}
 	}
 }
@@ -126,8 +147,9 @@ function queueSort() {
 
 function sortPicards() {
 	let sorted = $('#picards').find('tr.picard:not(.template)');
+	console.log("Sorting by " + sortByValue);
 	sorted.sort(function (a, b) {
-		return parseInt(100*($(b).data('opportunitySize') - $(a).data('opportunitySize')));
+		return $(b).data(sortByValue) - $(a).data(sortByValue);
 	});
 	sorted.detach().appendTo('#picards');
 	queued = null;
@@ -138,9 +160,9 @@ function toId(symbol) {
 }
 
 function test() {
-	picard("sym1", "CHIX", "BID", "20.3", "400","1000.0", "Description", "live");
-	picard("sym2", "CHIX", "ASK", "0.3", "350", "1000.0", "Description", "live");
-	picard("sym3", "CHIX", "BID", "30.3", "0", "1000.0 ", "Description", "live");
-	picard("sym4", "CHIX", "BID", "1.65", "400", "233.0", "Description", "fade");
-	picard("sym4", "CHIX", "BID", "1.65", "700", "233.0", "Description", "dead");
+	picard("sym1", "CHIX", "BID", "20.3", "400", "EUR", "1000.0", "Description", "live");
+	picard("sym2", "CHIX", "ASK", "0.3", "350",  "EUR", "1000.0", "Description", "live");
+	picard("sym3", "CHIX", "BID", "30.3", "0",   "EUR", "1000.0", "Description", "live");
+	picard("sym4", "CHIX", "BID", "1.65", "400", "EUR",  "233.0", "Description", "fade");
+	picard("sym4", "CHIX", "BID", "1.65", "700", "EUR",  "233.0", "Description", "dead");
 }
