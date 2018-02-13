@@ -21,6 +21,7 @@ import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiEventHandler;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
+import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
@@ -32,7 +33,6 @@ import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StacksDisableSiblingsCmd;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
-import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.websockets.WebSocketClient;
 import drw.london.json.Jsonable;
 import eeif.execution.Side;
@@ -437,8 +437,11 @@ public class LadderView implements UiEventHandler {
             }
 
             // Ladder text
-            for (final LadderText ladderText : metaData.ladderTextByPosition.values()) {
-                ui.txt(HTML.TEXT_PREFIX + ladderText.getCell(), ladderText.getText());
+            for (final Map.Entry<FreeTextCell, String> ladderText : metaData.freeTextCells.entrySet()) {
+
+                final FreeTextCell cell = ladderText.getKey();
+                final String text = ladderText.getValue();
+                ui.txt(cell.htmlID, text);
             }
 
             if (null != stackData) {

@@ -1,14 +1,15 @@
 package com.drwtrading.london.reddal.data;
 
+import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
-import com.drwtrading.london.reddal.util.FastUtilCollections;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.photons.ladder.DeskPosition;
 import com.drwtrading.photons.ladder.InfoOnLadder;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.mrphil.Position;
 
+import java.util.EnumMap;
 import java.util.Map;
 
 public class LadderMetaData {
@@ -17,7 +18,7 @@ public class LadderMetaData {
     public String displaySymbol;
     public DeskPosition deskPosition;
     public InfoOnLadder infoOnLadder;
-    public final Map<String, LadderText> ladderTextByPosition = FastUtilCollections.newFastMap();
+    public final Map<FreeTextCell, String> freeTextCells;
     public Position dayPosition;
     public PKSExposure pksExposure;
     public String chixSwitchSymbol;
@@ -27,6 +28,7 @@ public class LadderMetaData {
         this.symbol = symbol;
         this.displaySymbol = symbol;
         this.deskPosition = new DeskPosition(symbol, "");
+        this.freeTextCells = new EnumMap<>(FreeTextCell.class);
     }
 
     public void onDeskPosition(final DeskPosition deskPosition) {
@@ -38,7 +40,11 @@ public class LadderMetaData {
     }
 
     public void onLadderText(final LadderText ladderText) {
-        this.ladderTextByPosition.put(ladderText.getCell(), ladderText);
+
+        final FreeTextCell cell = FreeTextCell.getCell(ladderText.getCell());
+        if (null != cell) {
+            this.freeTextCells.put(cell, ladderText.getText());
+        }
     }
 
     public void onDayPosition(final Position data) {
