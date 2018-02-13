@@ -1157,6 +1157,10 @@ public class LadderBookView implements ILadderBoard {
                 } else {
                     stackData.adjustAskStackLevels(-1);
                 }
+            } else if (label.equals(HTML.STOP_BUY)) {
+                stackData.stopBidStrategy();
+            } else if (label.equals(HTML.STOP_SELL)) {
+                stackData.stopAskStrategy();
             }
         } else if ("middle".equals(button)) {
             if (label.startsWith(HTML.ORDER)) {
