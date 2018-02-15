@@ -157,38 +157,39 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 			row = $("#header").clone().removeAttr("id");
 			Rows[key] = row;
 
-			var serverBlock = getNibbler(server);
 			var rows = serverBlock.find(".rows");
+
+			var symbolCell = row.find(".symbol");
+			symbolCell.text(instrument);
+			symbolCell.unbind().bind("click", function () {
+				launchLadder(instrument);
+			});
+
+			row.find(".key").text(key);
+			row.find(".side").text(side);
+			row.find(".chainID").text(chainID);
+			row.find(".server").text(server);
+
+			row.toggleClass("bid", side == "BID");
+			row.toggleClass("offer", side == "OFFER");
+
+			row.find(".cancelOrder").unbind().bind("click", function () {
+				ws.send(command("cancelOrder", [key]));
+			});
+
 			rows.append(row);
 		}
 
 		row.find(".button").toggleClass("hidden", false);
 
-		row.find(".key").text(key);
 
-		var symbolCell = row.find(".symbol");
-		symbolCell.text(instrument);
-		symbolCell.unbind().bind("click", function () {
-			launchLadder(instrument);
-		});
-
-		row.find(".side").text(side);
 		row.find(".price").text(price);
 		row.find(".filledQuantity").text(filledQuantity);
 		row.find(".quantity").text(quantity);
 		row.find(".state").text(state);
 		row.find(".orderType").text(orderType);
 		row.find(".tag").text(tag);
-		row.find(".chainID").text(chainID);
-		row.find(".server").text(server);
-
-		row.toggleClass("bid", side == "BID");
-		row.toggleClass("offer", side == "OFFER");
 		row.toggleClass("notEnder", tag != "Ender");
-
-		row.find(".cancelOrder").unbind().bind("click", function () {
-			ws.send(command("cancelOrder", [key]));
-		});
 	}
 
 	setOrderCount(serverBlock);
@@ -197,6 +198,6 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 function setOrderCount(server) {
 
 	var orderCountDiv = server.find(".orderCount");
-	var orders = server.find(".rows").children().length;
+	var orders = server.find(".rows .row").length;
 	orderCountDiv.text(orders);
 }
