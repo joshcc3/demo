@@ -8,6 +8,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
@@ -25,6 +26,7 @@ import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
+import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
@@ -45,8 +47,6 @@ import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
-import com.drwtrading.photons.ladder.DeskPosition;
-import com.drwtrading.photons.ladder.InfoOnLadder;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.websockets.WebSocketConnected;
@@ -61,6 +61,7 @@ import org.jetlang.channels.Converter;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
 
+import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -78,6 +79,8 @@ public class LadderPresenter {
 
     private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
+
+    private final DecimalFormat oneDP;
 
     private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<>();
     private final Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
@@ -125,6 +128,9 @@ public class LadderPresenter {
 
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
+
+        this.oneDP = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 1);
+
         this.storeLadderPrefPublisher = storeLadderPrefPublisher;
         this.roundTripPublisher = roundTripPublisher;
         this.recenterLaddersForUser = recenterLaddersForUser;
@@ -311,14 +317,24 @@ public class LadderPresenter {
         }
     }
 
-    @Subscribe
-    public void on(final DeskPosition deskPosition) {
-        metaDataBySymbol.get(deskPosition.getSymbol()).onDeskPosition(deskPosition);
+    public void setDeskPositions(final OPXLDeskPositions deskPositions) {
+
+        for (final Map.Entry<String, Long> position : deskPositions.positions.entrySet()) {
+
+            final String symbol = position.getKey();
+            final LadderMetaData metaData = metaDataBySymbol.get(symbol);
+
+            metaData.setDeskPosition(oneDP, position.getValue());
+        }
     }
 
     @Subscribe
-    public void on(final InfoOnLadder infoOnLadder) {
-        metaDataBySymbol.get(infoOnLadder.getSymbol()).onInfoOnLadder(infoOnLadder);
+    public void setMrPhilPosition(final Position position) {
+        metaDataBySymbol.get(position.getSymbol()).setMrPhilPosition(oneDP, position);
+    }
+
+    public void setPKSExposure(final PKSExposure position) {
+        metaDataBySymbol.get(position.symbol).onPKSExposure(oneDP, position);
     }
 
     @Subscribe
@@ -366,15 +382,6 @@ public class LadderPresenter {
 
         metaDataBySymbol.get(chixSymbolPair.primarySymbol).setChixSwitchSymbol(chixSymbolPair.chixSymbol);
         metaDataBySymbol.get(chixSymbolPair.chixSymbol).setChixSwitchSymbol(chixSymbolPair.primarySymbol);
-    }
-
-    @Subscribe
-    public void on(final Position position) {
-        metaDataBySymbol.get(position.getSymbol()).onDayPosition(position);
-    }
-
-    public void setPKSExposure(final PKSExposure position) {
-        metaDataBySymbol.get(position.symbol).onPKSExposure(position);
     }
 
     @Subscribe

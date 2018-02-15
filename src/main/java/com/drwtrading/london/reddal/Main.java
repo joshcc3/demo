@@ -163,7 +163,6 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.sun.jndi.toolkit.url.Uri;
-import drw.opxl.OpxlClient;
 import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
 import org.jetlang.channels.BatchSubscriber;
@@ -439,11 +438,12 @@ public class Main {
                     }
                 }
 
-
                 final IResourceMonitor<PicardFXCalcComponents> fxMonitor = new ResourceIgnorer<>();
-                final FXCalc<PicardFXCalcComponents> initalFxCalc = new FXCalc<>(fxMonitor, PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
+                final FXCalc<PicardFXCalcComponents> initalFxCalc =
+                        new FXCalc<>(fxMonitor, PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
                 final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(initalFxCalc, app.selectIO, app.monitor, app.logDir);
-                final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, initalFxCalc);
+                final PicardSpotter picardSpotter =
+                        new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, initalFxCalc);
 
                 app.addStartUpAction(opxlFXCalcUpdater::connectToOpxl);
                 displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
@@ -827,7 +827,7 @@ public class Main {
         if (null != deskPositionConfig) {
             final Set<String> keys = deskPositionConfig.getSet("keys");
             new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
-                    new OpxlPositionSubscriber(channels.errorPublisher, channels.metaData::publish)::onOpxlData, keys,
+                    new OpxlPositionSubscriber(channels.errorPublisher, channels.deskPositions)::onOpxlData, keys,
                     fibers.opxlPosition.getFiber(), channels.error);
         }
 
@@ -938,6 +938,7 @@ public class Main {
                 channels.isinsGoingEx);
 
         channels.ladderClickTradingIssues.subscribe(fiberBuilder.getFiber(), ladderPresenter::displayTradeIssue);
+        channels.deskPositions.subscribe(fiberBuilder.getFiber(), ladderPresenter::setDeskPositions);
         channels.pksExposure.subscribe(fiberBuilder.getFiber(), ladderPresenter::setPKSExposure);
         channels.recenterLadder.subscribe(fiberBuilder.getFiber(), ladderPresenter::recenterLadder);
 

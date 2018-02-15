@@ -39,7 +39,6 @@ import eeif.execution.Side;
 import eeif.execution.WorkingOrderType;
 import org.jetlang.channels.Publisher;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -51,10 +50,9 @@ import java.util.function.Predicate;
 
 public class LadderView implements UiEventHandler {
 
-    private static final DecimalFormat POSITION_FMT = NumberFormatUtil.getDF("0.0");
     private static final DecimalFormat MILLIONS_QTY_FORMAT = NumberFormatUtil.getDF(".0");
 
-    public static final AtomicLong heartbeatSeqNo = new AtomicLong(0L);
+    private static final AtomicLong heartbeatSeqNo = new AtomicLong(0L);
 
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     private static final int RECENTER_TIME_MS = 11000;
@@ -405,35 +403,23 @@ public class LadderView implements UiEventHandler {
                 ui.cls(HTML.SYMBOL, CSSClass.BACK, symbol.equals(metaData.spreadContractSet.backMonth));
             }
             // Desk position
-            if (null != metaData.deskPosition && null != metaData.deskPosition.getPosition() &&
-                    !metaData.deskPosition.getPosition().isEmpty()) {
-                try {
-                    final BigDecimal decimal = new BigDecimal(metaData.deskPosition.getPosition());
-                    ui.txt(HTML.DESK_POSITION, formatPosition(decimal.doubleValue()));
-                    decorateUpDown(ui, HTML.DESK_POSITION, decimal.longValue());
-                } catch (final NumberFormatException ignored) {
-                    /* exception.printStackTrace();*/
-                }
+            if (null != metaData.formattedDeskPosition) {
+                ui.txt(HTML.DESK_POSITION, metaData.formattedDeskPosition);
+                decorateUpDown(ui, HTML.DESK_POSITION, metaData.deskPosition);
             }
             // Day position
-            if (null != metaData.dayPosition) {
-                ui.txt(HTML.POSITION, formatPosition(metaData.dayPosition.getNet()));
-                decorateUpDown(ui, HTML.POSITION, metaData.dayPosition.getNet());
-                ui.txt(HTML.TOTAL_TRADED, formatPosition(metaData.dayPosition.getVolume()));
+            if (null != metaData.formattedMrPhilNetPosition) {
+                decorateUpDown(ui, HTML.POSITION, metaData.mrPhilNetPosition);
+                ui.txt(HTML.POSITION, metaData.formattedMrPhilNetPosition);
+                ui.txt(HTML.TOTAL_TRADED, metaData.formattedMrPhilVolume);
 
                 ui.cls(HTML.POSITION, CSSClass.INVISIBLE, showTotalTraded);
                 ui.cls(HTML.TOTAL_TRADED, CSSClass.INVISIBLE, !showTotalTraded);
             }
 
             if (null != metaData.pksExposure) {
-                final String pksExposure = formatPosition(metaData.pksExposure.exposure);
-                final String pksPosition = formatPosition(metaData.pksExposure.position);
-                ui.txt(HTML.PKS_EXPOSURE, pksExposure);
-                ui.txt(HTML.PKS_POSITION, pksPosition);
-            }
-            // Ladder info
-            if (null != metaData.infoOnLadder) {
-                ui.txt(HTML.AFTER_HOURS_WEIGHT, metaData.infoOnLadder.getValue());
+                ui.txt(HTML.PKS_EXPOSURE, metaData.pksExposure);
+                ui.txt(HTML.PKS_POSITION, metaData.pksPosition);
             }
 
             // Ladder text
@@ -493,19 +479,6 @@ public class LadderView implements UiEventHandler {
             ui.txt(cellID, twoDF.format(value));
 
         }
-    }
-
-    private static String formatPosition(final double qty) {
-        final String display;
-        final double absQty = Math.abs(qty);
-        if (absQty < 10000) {
-            display = Integer.toString((int) qty);
-        } else if (absQty < 1000000) {
-            display = POSITION_FMT.format(qty / 1000.0) + 'K';
-        } else {
-            display = POSITION_FMT.format(qty / 1000000.0) + 'M';
-        }
-        return display;
     }
 
     private void recenterIfTimeoutElapsed() {

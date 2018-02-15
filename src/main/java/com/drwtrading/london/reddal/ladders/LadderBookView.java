@@ -823,8 +823,7 @@ public class LadderBookView implements ILadderBoard {
 
     private void drawWorkingOrders() {
 
-        final WorkingOrdersForSymbol w = this.workingOrdersForSymbol;
-        if (!pendingRefDataAndSettle && null != w && null != orderUpdatesForSymbol) {
+        if (!pendingRefDataAndSettle && null != workingOrdersForSymbol && null != orderUpdatesForSymbol) {
 
             final StringBuilder keys = new StringBuilder();
             final StringBuilder eeifKeys = new StringBuilder();
@@ -844,7 +843,7 @@ public class LadderBookView implements ILadderBoard {
                 int totalQty = 0;
                 BookSide side = null;
 
-                for (final WorkingOrderUpdateFromServer orderFromServer : w.ordersByPrice.get(price)) {
+                for (final WorkingOrderUpdateFromServer orderFromServer : workingOrdersForSymbol.ordersByPrice.get(price)) {
                     final WorkingOrderUpdate order = orderFromServer.workingOrderUpdate;
                     final int orderQty = order.getTotalQuantity() - order.getFilledQuantity();
                     side = LadderView.convertSide(order.getSide());
@@ -888,7 +887,7 @@ public class LadderBookView implements ILadderBoard {
             int sellHiddenTTQty = 0;
             int buyManagedQty = 0;
             int sellManagedQty = 0;
-            for (final WorkingOrderUpdateFromServer orderUpdateFromServer : w.ordersByKey.values()) {
+            for (final WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByKey.values()) {
                 if (orderUpdateFromServer.workingOrderUpdate.getWorkingOrderState() != WorkingOrderState.DEAD) {
                     final int remainingQty = orderUpdateFromServer.workingOrderUpdate.getTotalQuantity() -
                             orderUpdateFromServer.workingOrderUpdate.getFilledQuantity();

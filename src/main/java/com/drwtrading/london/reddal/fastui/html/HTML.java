@@ -6,7 +6,7 @@ public class HTML {
 
     public static final String BOOK_TABLE = "rows";
 
-    public static final String EMPTY = " "; /* Key prefixes*/
+    public static final String EMPTY = " ";
     public static final String BID = "bid_";
     public static final String OFFER = "offer_";
     public static final String SIDE = "side_";

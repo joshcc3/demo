@@ -33,11 +33,11 @@ public class OrdersPresenter {
 
     private final Publisher<SingleOrderCommand> singleOrderCommandPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServer;
-    WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
+    private final WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
 
-    Map<String, WorkingOrdersForSymbol> orders = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
-    Map<String, OrderUpdatesForSymbol> managedOrders = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
-    Multimap<SymbolPrice, View> subscribed = HashMultimap.create();
+    private final Map<String, WorkingOrdersForSymbol> orders = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
+    private final Map<String, OrderUpdatesForSymbol> managedOrders = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
+    private final Multimap<SymbolPrice, View> subscribed = HashMultimap.create();
 
     public OrdersPresenter(final UILogger webLog, final Publisher<SingleOrderCommand> singleOrderCommandPublisher, final Publisher<OrderEntryCommandToServer> orderEntryCommandToServer) {
         this.webLog = webLog;
@@ -49,7 +49,7 @@ public class OrdersPresenter {
         batch.values().forEach(this::onWorkingOrder);
     }
 
-    public void onWorkingOrder(final WorkingOrderUpdateFromServer update) {
+    private void onWorkingOrder(final WorkingOrderUpdateFromServer update) {
         final String symbol = update.workingOrderUpdate.getSymbol();
         final WorkingOrdersForSymbol orders = this.orders.get(symbol);
         final WorkingOrderUpdateFromServer prevUpdate = orders.onWorkingOrderUpdate(update);
@@ -147,7 +147,7 @@ public class OrdersPresenter {
         public final String symbol;
         public final long price;
 
-        public SymbolPrice(final String symbol, final long price) {
+        SymbolPrice(final String symbol, final long price) {
             this.symbol = symbol;
             this.price = price;
         }
@@ -166,11 +166,11 @@ public class OrdersPresenter {
 
         public final String symbol;
 
-        public final String orderKey;
+        final String orderKey;
         public final String username;
         public final int newRemainingQuantity;
 
-        public ModifyOrderQuantity(final String symbol, final String orderKey, final String username, final int newRemainingQuantity) {
+        ModifyOrderQuantity(final String symbol, final String orderKey, final String username, final int newRemainingQuantity) {
             this.symbol = symbol;
             this.orderKey = orderKey;
             this.username = username;
@@ -196,10 +196,10 @@ public class OrdersPresenter {
     public static class CancelOrder extends Struct implements SingleOrderCommand {
 
         public final String symbol;
-        public final String orderKey;
+        final String orderKey;
         public final String username;
 
-        public CancelOrder(final String symbol, final String orderKey, final String username) {
+        CancelOrder(final String symbol, final String orderKey, final String username) {
             this.symbol = symbol;
             this.orderKey = orderKey;
             this.username = username;

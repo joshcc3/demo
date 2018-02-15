@@ -9,8 +9,8 @@ class KeyedBatcher {
 
     private final String command;
 
-    public final Map<String, String> values;
-    public final Map<String, String> pendingValues;
+    private final Map<String, String> values;
+    private final Map<String, String> pendingValues;
 
     KeyedBatcher(final String command) {
 

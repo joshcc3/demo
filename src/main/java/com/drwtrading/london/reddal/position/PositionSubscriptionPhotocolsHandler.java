@@ -16,9 +16,9 @@ import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
 
 public class PositionSubscriptionPhotocolsHandler implements PhotocolsHandler<Position, Subscription> {
 
-    Set<String> allSymbols = newFastSet();
-    PhotocolsConnection<Subscription> connection = null;
-    final Publisher<Position> positionPublisher;
+    private final Set<String> allSymbols = newFastSet();
+    private PhotocolsConnection<Subscription> connection = null;
+    private final Publisher<Position> positionPublisher;
 
     public PositionSubscriptionPhotocolsHandler(final Publisher<Position> positionPublisher) {
         this.positionPublisher = positionPublisher;

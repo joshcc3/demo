@@ -4,11 +4,10 @@ import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
-import com.drwtrading.photons.ladder.DeskPosition;
-import com.drwtrading.photons.ladder.InfoOnLadder;
 import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.photons.mrphil.Position;
 
+import java.text.DecimalFormat;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -16,27 +15,34 @@ public class LadderMetaData {
 
     public final String symbol;
     public String displaySymbol;
-    public DeskPosition deskPosition;
-    public InfoOnLadder infoOnLadder;
+
     public final Map<FreeTextCell, String> freeTextCells;
-    public Position dayPosition;
-    public PKSExposure pksExposure;
+
+    public long deskPosition;
+    public String formattedDeskPosition;
+
+    public long mrPhilNetPosition;
+    public String formattedMrPhilNetPosition;
+    public String formattedMrPhilVolume;
+
+    public String pksExposure;
+    public String pksPosition;
+
     public String chixSwitchSymbol;
     public SpreadContractSet spreadContractSet;
 
     public LadderMetaData(final String symbol) {
+
         this.symbol = symbol;
         this.displaySymbol = symbol;
-        this.deskPosition = new DeskPosition(symbol, "");
+
+        this.formattedDeskPosition = null;
+        this.formattedMrPhilNetPosition = null;
+        this.formattedMrPhilVolume = null;
+        this.pksExposure = null;
+        this.pksPosition = null;
+
         this.freeTextCells = new EnumMap<>(FreeTextCell.class);
-    }
-
-    public void onDeskPosition(final DeskPosition deskPosition) {
-        this.deskPosition = deskPosition;
-    }
-
-    public void onInfoOnLadder(final InfoOnLadder infoOnLadder) {
-        this.infoOnLadder = infoOnLadder;
     }
 
     public void onLadderText(final LadderText ladderText) {
@@ -47,12 +53,29 @@ public class LadderMetaData {
         }
     }
 
-    public void onDayPosition(final Position data) {
-        this.dayPosition = data;
+    public void setDeskPosition(final DecimalFormat formatter, final long position) {
+
+        if (null == formattedDeskPosition || deskPosition != position) {
+
+            this.deskPosition = position;
+            this.formattedDeskPosition = formatPosition(formatter, position);
+        }
     }
 
-    public void onPKSExposure(final PKSExposure data) {
-        this.pksExposure = data;
+    public void setMrPhilPosition(final DecimalFormat formatter, final Position mrPhilPosition) {
+
+        if (null == formattedMrPhilNetPosition || mrPhilNetPosition != mrPhilPosition.getNet()) {
+
+            this.mrPhilNetPosition = mrPhilPosition.getNet();
+            this.formattedMrPhilNetPosition = formatPosition(formatter, mrPhilNetPosition);
+            this.formattedMrPhilVolume = formatPosition(formatter, mrPhilPosition.getVolume());
+        }
+    }
+
+    public void onPKSExposure(final DecimalFormat formatter, final PKSExposure data) {
+
+        this.pksExposure = formatPosition(formatter, data.exposure);
+        this.pksPosition = formatPosition(formatter, data.position);
     }
 
     public void setDisplaySymbol(final DisplaySymbol displaySymbol) {
@@ -67,6 +90,18 @@ public class LadderMetaData {
 
         if (null == this.spreadContractSet || spreadContractSet.symbol.equals(symbol)) {
             this.spreadContractSet = spreadContractSet;
+        }
+    }
+
+    private static String formatPosition(final DecimalFormat formatter, final double qty) {
+
+        final double absQty = Math.abs(qty);
+        if (absQty < 10000) {
+            return Integer.toString((int) qty);
+        } else if (absQty < 1000000) {
+            return formatter.format(qty / 1000.0) + 'K';
+        } else {
+            return formatter.format(qty / 1000000.0) + 'M';
         }
     }
 }
