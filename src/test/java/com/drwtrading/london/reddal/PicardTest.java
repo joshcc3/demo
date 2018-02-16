@@ -1,12 +1,12 @@
 package com.drwtrading.london.reddal;
 
-import com.drwtrading.eeif.md.utils.Book;
 import com.drwtrading.eeif.md.utils.L2DebugAdapter;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.LaserLineType;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
+import com.drwtrading.london.eeif.utils.marketData.book.BookLevelTwoMonitorAdaptor;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
@@ -36,9 +36,7 @@ public class PicardTest {
     @SuppressWarnings("unchecked")
     private final Publisher<PicardRow> picardPublisher = Mockito.mock(Publisher.class);
 
-
     private FXCalc<PicardFXCalcComponents> fxCalc;
-
 
     @BeforeMethod
     public void setUp() {
@@ -96,14 +94,14 @@ public class PicardTest {
 
         final PicardRow picardRow = picardRowCapture.getValue();
         Assert.assertEquals(picardRow.ccy, CCY.EUR, "Did not convert to EUR even though FX was present.");
-        Assert.assertEquals(picardRow.opportunitySize, 2 * fxCalc.getMid(CCY.USD, CCY.EUR),
-                "Did not calculate opportunity size correctly");
+        Assert.assertEquals(picardRow.opportunitySize, 2 * fxCalc.getMid(CCY.USD, CCY.EUR), "Did not calculate opportunity size correctly");
     }
 
     private static void setUpBook(final IMDSubscriber bookSubscriber, final CCY ccy, final BookMarketState marketState) {
         final InstrumentID instrumentID = new InstrumentID("AAPL12345678", ccy, MIC.XCME);
-        final LevelTwoBook book = new LevelTwoBook(new L2DebugAdapter(), "AAPL", 1, instrumentID, InstType.FUTURE,
-                new SingleBandTickTable(Constants.NORMALISING_FACTOR), MDSource.LSE, 1, 100);
+        final LevelTwoBook book =
+                new LevelTwoBook(new L2DebugAdapter(System.out, new BookLevelTwoMonitorAdaptor()), "AAPL", 1, instrumentID, InstType.FUTURE,
+                        new SingleBandTickTable(Constants.NORMALISING_FACTOR), MDSource.LSE, 1, 100);
         book.setLevel(BookSide.ASK, 103 * Constants.NORMALISING_FACTOR, 10);
         book.setLevel(BookSide.ASK, 102 * Constants.NORMALISING_FACTOR, 5);
         book.setLevel(BookSide.ASK, 101 * Constants.NORMALISING_FACTOR, 1);
