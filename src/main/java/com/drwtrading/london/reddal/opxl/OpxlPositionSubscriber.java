@@ -42,7 +42,7 @@ public class OpxlPositionSubscriber {
 
                     if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(position)) {
                         final long pos = Long.parseLong(position);
-                        positions.put(symbol, pos);
+                        positions.put(symbol.toUpperCase(), pos);
                     }
                 }
             }

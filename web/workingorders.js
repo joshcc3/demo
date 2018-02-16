@@ -1,6 +1,6 @@
-var Rows = {};
+const Rows = {};
 
-var disconnectionSound;
+let disconnectionSound;
 
 $(function () {
 	ws = connect();
@@ -11,24 +11,24 @@ $(function () {
 
 	disconnectionSound = new Audio("sounds/yuranass.wav");
 
-	var cancelAllNonGTC = $("#cancelNonGTC");
-	var cancelAllButton = $("#cancelAll");
-	var shutdownAllButton = $("#shutdownAll");
+	const cancelAllNonGTC = $("#cancelNonGTC");
+	const cancelAllButton = $("#cancelAll");
+	const shutdownAllButton = $("#shutdownAll");
 
-	var headerControls = $("#header");
-	var minimiseAllButton = headerControls.find(".buttons .minimiseAll");
+	const headerControls = $("#header");
+	const minimiseAllButton = headerControls.find(".buttons .minimiseAll");
 	minimiseAllButton.unbind().bind("click", function () {
 		$(".rows").toggleClass("hidden", true);
 	});
 
-	var maximiseAllButton = headerControls.find(".buttons .maximiseAll");
+	const maximiseAllButton = headerControls.find(".buttons .maximiseAll");
 	maximiseAllButton.unbind().bind("click", function () {
 		$(".rows").toggleClass("hidden", false);
 	});
 
 	$(".masterControls .omsButtons .enableNuclearOptions").unbind().bind("click", function () {
 
-		var isCancelAllClickable = cancelAllButton.hasClass("isClickable");
+		let isCancelAllClickable = cancelAllButton.hasClass("isClickable");
 		if (!isCancelAllClickable) {
 
 			cancelAllNonGTC.unbind().bind("click", function () {
@@ -77,9 +77,9 @@ function setButtonDisabled(cancelAllGTC, cancelButton, shutdownButton) {
 
 function addNibbler(server, connectionEstablished) {
 
-	var serverBlock = getNibbler(server);
+	const serverBlock = getNibbler(server);
 
-	var wasConnected = !serverBlock.hasClass("connectionLost");
+	const wasConnected = !serverBlock.hasClass("connectionLost");
 	serverBlock.toggleClass("connectionLost", !connectionEstablished);
 
 	if (wasConnected && !connectionEstablished) {
@@ -93,28 +93,29 @@ function addNibbler(server, connectionEstablished) {
 
 function getNibbler(server) {
 
-	var serverBlock = $('#' + server);
+	let serverBlock = $('#' + server);
 	if (!serverBlock[0]) {
 		serverBlock = $("#serverBlockTemplate").clone();
 		serverBlock.attr("id", server);
 		serverBlock.toggleClass("hidden", false);
+		serverBlock.toggleClass("serverBlock", true);
 
-		var headerName = serverBlock.find(".serverName");
+		const headerName = serverBlock.find(".serverName");
 		headerName.text(server);
 
-		var rowsBlock = serverBlock.find(".rows");
+		const rowsBlock = serverBlock.find(".rows");
 		rowsBlock.toggleClass("hidden", true);
 		serverBlock.find(".serverDetails").unbind().bind("click", function () {
 			rowsBlock.toggleClass("hidden", !rowsBlock.hasClass("hidden"))
 		});
 
-		var cancelNonGTCButton = serverBlock.find(".cancelNonGTC");
-		var cancelAllButton = serverBlock.find(".cancelAll");
-		var shutdownAllButton = serverBlock.find(".shutdownOMS");
+		const cancelNonGTCButton = serverBlock.find(".cancelNonGTC");
+		const cancelAllButton = serverBlock.find(".cancelAll");
+		const shutdownAllButton = serverBlock.find(".shutdownOMS");
 
 		serverBlock.find(".enableNuclearOptions").unbind().bind("click", function () {
 
-			var isCancelAllClickable = cancelAllButton.hasClass("isClickable");
+			let isCancelAllClickable = cancelAllButton.hasClass("isClickable");
 			if (!isCancelAllClickable) {
 
 				cancelNonGTCButton.unbind().bind("click", function () {
@@ -143,8 +144,8 @@ function getNibbler(server) {
 
 function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantity, quantity, state, orderType, tag, server, isDead) {
 
-	var row = Rows[key];
-	var serverBlock = getNibbler(server);
+	let row = Rows[key];
+	const serverBlock = getNibbler(server);
 
 	if (isDead) {
 		if (row) {
@@ -157,9 +158,9 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 			row = $("#header").clone().removeAttr("id");
 			Rows[key] = row;
 
-			var rows = serverBlock.find(".rows");
+			const rows = serverBlock.find(".rows");
 
-			var symbolCell = row.find(".symbol");
+			const symbolCell = row.find(".symbol");
 			symbolCell.text(instrument);
 			symbolCell.unbind().bind("click", function () {
 				launchLadder(instrument);
@@ -182,7 +183,6 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 
 		row.find(".button").toggleClass("hidden", false);
 
-
 		row.find(".price").text(price);
 		row.find(".filledQuantity").text(filledQuantity);
 		row.find(".quantity").text(quantity);
@@ -191,13 +191,17 @@ function updateWorkingOrder(key, chainID, instrument, side, price, filledQuantit
 		row.find(".tag").text(tag);
 		row.toggleClass("notEnder", tag != "Ender");
 	}
+}
 
+function refreshWorkingOrderCounts(server) {
+
+	const serverBlock = getNibbler(server);
 	setOrderCount(serverBlock);
 }
 
 function setOrderCount(server) {
 
-	var orderCountDiv = server.find(".orderCount");
-	var orders = server.find(".rows .row").length;
+	const orderCountDiv = server.find(".orderCount");
+	const orders = server.find(".rows .row").length;
 	orderCountDiv.text(orders);
 }

@@ -35,9 +35,11 @@ import org.jetlang.core.Scheduler;
 import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -96,7 +98,7 @@ public class WorkingOrdersPresenter {
 
         this.numViewers = 0;
 
-        scheduler.scheduleWithFixedDelay(this::repaint, 3000, 1000, TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(this::repaint, 3000, 500, TimeUnit.MILLISECONDS);
     }
 
     public void addSearchResult(final SearchResult searchResult) {
@@ -140,6 +142,7 @@ public class WorkingOrdersPresenter {
 
     @Subscribe
     public void on(final ServerDisconnected serverDisconnected) {
+
         final List<UpdateFromServer> collect = managedOrders.values().stream().filter(
                 updateFromServer -> serverDisconnected.server.equals(updateFromServer.server)).collect(Collectors.toList());
         for (final UpdateFromServer updateFromServer : collect) {
@@ -184,9 +187,8 @@ public class WorkingOrdersPresenter {
         for (final Map.Entry<String, Boolean> nibbler : nibblersStatus.entrySet()) {
             view.addNibbler(nibbler.getKey(), nibbler.getValue());
         }
-        for (final WorkingOrderUpdateFromServer update : workingOrders.values()) {
-            publishWorkingOrderUpdate(view, update);
-        }
+
+        sendUpdates(view, workingOrders, managedOrders);
     }
 
     @Subscribe
@@ -317,12 +319,7 @@ public class WorkingOrdersPresenter {
     private void repaint() {
 
         if (0 < numViewers) {
-            for (final WorkingOrderUpdateFromServer workingOrderUpdate : dirty.values()) {
-                publishWorkingOrderUpdate(views.all(), workingOrderUpdate);
-            }
-            for (final UpdateFromServer updateFromServer : dirtyManaged.values()) {
-                publishManagedOrderUpdate(views.all(), updateFromServer);
-            }
+            sendUpdates(views.all(), dirty, dirtyManaged);
         }
 
         final boolean userHeartbeatLate =
@@ -335,6 +332,25 @@ public class WorkingOrdersPresenter {
         }
         dirty.clear();
         dirtyManaged.clear();
+    }
+
+    private void sendUpdates(final IWorkingOrderView view, final Map<String, WorkingOrderUpdateFromServer> workingOrders,
+            final Map<String, UpdateFromServer> managedOrders) {
+
+        final Set<String> updatedServers = new HashSet<>();
+
+        for (final WorkingOrderUpdateFromServer updated : workingOrders.values()) {
+            publishWorkingOrderUpdate(view, updated);
+            updatedServers.add(updated.fromServer);
+        }
+        for (final UpdateFromServer update : managedOrders.values()) {
+            publishManagedOrderUpdate(view, update);
+            updatedServers.add(update.server);
+        }
+
+        for (final String server : updatedServers) {
+            view.refreshWorkingOrderCounts(server);
+        }
     }
 
     private void publishManagedOrderUpdate(final IWorkingOrderView view, final UpdateFromServer order) {
