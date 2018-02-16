@@ -96,7 +96,7 @@ public class WorkingOrdersPresenter {
 
         this.numViewers = 0;
 
-        scheduler.scheduleWithFixedDelay(this::repaint, 3000, 250, TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(this::repaint, 3000, 1000, TimeUnit.MILLISECONDS);
     }
 
     public void addSearchResult(final SearchResult searchResult) {
