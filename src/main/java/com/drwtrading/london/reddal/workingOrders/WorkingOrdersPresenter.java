@@ -166,21 +166,14 @@ public class WorkingOrdersPresenter {
 
     @FromWebSocketView
     public void shutdownAll(final WebSocketInboundData data) {
-
-        for (final String nibbler : nibblers.keySet()) {
-            shutdownOMS(nibbler, "Working orders - Shutdown ALL exchanges.");
+        for (final NibblerView nibbler : nibblers.values()) {
+            nibbler.shutdownOMS("Working orders - Shutdown ALL exchanges.");
         }
     }
 
     @FromWebSocketView
     public void shutdownExchange(final WebSocketInboundData data, final String nibbler) {
-        shutdownOMS(nibbler, "Working orders - Shutdown exchange.");
-    }
-
-    private void shutdownOMS(final String nibbler, final String reason) {
-        final IOrderCmd remoteCommand = new ShutdownOMSCmd(reason);
-        final RemoteOrderCommandToServer command = new RemoteOrderCommandToServer(nibbler, remoteCommand);
-        commands.publish(command);
+        nibblers.get(nibbler).shutdownOMS("Working orders - Shutdown exchange.");
     }
 
     @FromWebSocketView
@@ -192,6 +185,7 @@ public class WorkingOrdersPresenter {
     private void cancelAllNonGTC(final String user, final String reason, final boolean isAutomated) {
         for (NibblerView nibblerView : nibblers.values()) {
             nibblerView.cancelAllNonGTC(user, reason, isAutomated);
+
         }
     }
 

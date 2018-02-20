@@ -8,6 +8,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer
 import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.ShutdownOMSCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.StopAllStrategiesCmd;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
@@ -189,6 +190,13 @@ class NibblerView {
         final IOrderCmd cmd = new StopAllStrategiesCmd(reason);
         final RemoteOrderCommandToServer command = new RemoteOrderCommandToServer(server, cmd);
         commands.publish(command);
+    }
+
+    public void shutdownOMS(final String reason) {
+        final IOrderCmd remoteCommand = new ShutdownOMSCmd(reason);
+        final RemoteOrderCommandToServer command = new RemoteOrderCommandToServer(server, remoteCommand);
+        commands.publish(command);
+        stopAllStrategies("Shutdown OMS - " + reason);
     }
 
     private void cancel(final String username, final WorkingOrderUpdateFromServer order, final boolean isAutomated) {
