@@ -343,29 +343,33 @@ public class Main {
                 getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment, noBookSubscription, ewokBaseURL,
                         stackManagerWebSocket, fibers.fiberGroup.wrap(stackManagerSelectIOFiber, stackManagerThreadName));
 
+
+        // Load stacks
         final Map<MDSource, LinkedList<ConfigGroup>> stackConfigs = new EnumMap<>(MDSource.class);
+        {
+            final ConfigGroup stackConfig = root.getEnabledGroup("stacks", "nibblers");
+            if (null != stackConfig) {
+                for (final ConfigGroup stackClientConfig : stackConfig.groups()) {
 
-        final ConfigGroup stackConfig = root.getEnabledGroup("stacks", "nibblers");
-        if (null != stackConfig) {
-            for (final ConfigGroup stackClientConfig : stackConfig.groups()) {
+                    final boolean isStackManager =
+                            stackClientConfig.paramExists(IS_STACK_MANAGER_PARAM) && stackClientConfig.getBoolean(IS_STACK_MANAGER_PARAM);
 
-                final boolean isStackManager =
-                        stackClientConfig.paramExists(IS_STACK_MANAGER_PARAM) && stackClientConfig.getBoolean(IS_STACK_MANAGER_PARAM);
-
-                if (isStackManager) {
-                    final StackManagerGroupCallbackBatcher stackUpdateBatcher =
-                            new StackManagerGroupCallbackBatcher(stackManagerLadderPresenter, channels.stackParentSymbolPublisher);
-                    createStackClient(errorLog, stackManagerMonitor, stackManagerSelectIO, stackManagerThreadName, stackClientConfig,
-                            stackUpdateBatcher, localAppName);
-                } else {
-                    final Set<MDSource> mdSources = stackClientConfig.getEnumSet(MD_SOURCES_PARAM, MDSource.class);
-                    for (final MDSource mdSource : mdSources) {
-                        final List<ConfigGroup> configGroups = MapUtils.getMappedLinkedList(stackConfigs, mdSource);
-                        configGroups.add(stackClientConfig);
+                    if (isStackManager) {
+                        final StackManagerGroupCallbackBatcher stackUpdateBatcher =
+                                new StackManagerGroupCallbackBatcher(stackManagerLadderPresenter, channels.stackParentSymbolPublisher);
+                        createStackClient(errorLog, stackManagerMonitor, stackManagerSelectIO, stackManagerThreadName, stackClientConfig,
+                                stackUpdateBatcher, localAppName);
+                    } else {
+                        final Set<MDSource> mdSources = stackClientConfig.getEnumSet(MD_SOURCES_PARAM, MDSource.class);
+                        for (final MDSource mdSource : mdSources) {
+                            final List<ConfigGroup> configGroups = MapUtils.getMappedLinkedList(stackConfigs, mdSource);
+                            configGroups.add(stackClientConfig);
+                        }
                     }
                 }
             }
         }
+
 
         final SpreadContractSetGenerator contractSetGenerator = new SpreadContractSetGenerator(channels.contractSets);
         channels.searchResults.subscribe(selectIOFiber, contractSetGenerator::setSearchResult);
@@ -891,8 +895,8 @@ public class Main {
     }
 
     private static DepthBookSubscriber getMDSubscription(final Application<?> app, final IResourceMonitor<ReddalComponents> displayMonitor,
-            final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
-            final String localAppName) throws ConfigException {
+                                                         final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
+                                                         final String localAppName) throws ConfigException {
 
         final LevelThreeBookSubscriber l3BookHandler =
                 new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, channels.stockAlerts,
@@ -920,9 +924,9 @@ public class Main {
     }
 
     private static LadderPresenter getLadderPresenter(final IResourceMonitor<ReddalComponents> displayMonitor,
-            final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment,
-            final IMDSubscriber depthBookSubscriber, final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket,
-            final FiberBuilder fiberBuilder) throws ConfigException {
+                                                      final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment,
+                                                      final IMDSubscriber depthBookSubscriber, final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket,
+                                                      final FiberBuilder fiberBuilder) throws ConfigException {
 
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
@@ -949,8 +953,8 @@ public class Main {
     }
 
     private static void createStackClient(final IErrorLogger errorLog, final IResourceMonitor<ReddalComponents> displayMonitor,
-            final SelectIO displaySelectIO, final String name, final ConfigGroup stackConfig,
-            final StackGroupCallbackBatcher stackUpdateBatcher, final String localAppName) throws ConfigException {
+                                          final SelectIO displaySelectIO, final String name, final ConfigGroup stackConfig,
+                                          final StackGroupCallbackBatcher stackUpdateBatcher, final String localAppName) throws ConfigException {
 
         final MultiLayeredResourceMonitor<StackTransportComponents> stackParentMonitor =
                 MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Stacks", errorLog, StackTransportComponents.class,
@@ -966,7 +970,7 @@ public class Main {
     }
 
     private static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
-            final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
+                                                   final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
         webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
 
@@ -975,7 +979,7 @@ public class Main {
     public static final TypedChannel<Throwable> ERROR_CHANNEL = TypedChannels.create(Throwable.class);
 
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,
-            final AtomicBoolean multicastEnabled) {
+                                                       final AtomicBoolean multicastEnabled) {
         return new Transport() {
             @Override
             public <T> void publish(final MsgCodec<T> codec, final T msg) {
@@ -997,8 +1001,8 @@ public class Main {
     }
 
     private static void setupYodaSignals(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
-            final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts,
-            final Publisher<PicardRow> atClosePublisher) throws ConfigException {
+                                         final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts,
+                                         final Publisher<PicardRow> atClosePublisher) throws ConfigException {
 
         final ConfigGroup yodaConfig = config.getEnabledGroup("yoda");
         if (null != yodaConfig) {
@@ -1037,8 +1041,8 @@ public class Main {
     }
 
     private static void setupStackManager(final Application<ReddalComponents> app, final ReddalFibers fibers, final ReddalChannels channels,
-            final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
-            final SpreadContractSetGenerator contractSetGenerator, final boolean isForETF) throws Exception {
+                                          final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
+                                          final SpreadContractSetGenerator contractSetGenerator, final boolean isForETF) throws Exception {
 
         final ConfigGroup stackConfig = app.config.getEnabledGroup("stacks");
         if (null != stackConfig) {
@@ -1165,8 +1169,8 @@ public class Main {
     }
 
     private static Map<MDSource, LinkedList<ConfigGroup>> setupNibblerTransport(final Application<ReddalComponents> app,
-            final ReddalFibers fibers, final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
-            final ReddalChannels channels) throws ConfigException, IOException {
+                                                                                final ReddalFibers fibers, final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
+                                                                                final ReddalChannels channels) throws ConfigException, IOException {
 
         final Map<MDSource, LinkedList<ConfigGroup>> result = new EnumMap<>(MDSource.class);
 
@@ -1247,8 +1251,8 @@ public class Main {
     }
 
     private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
-            final Channel<PicardRow> picardRows, final Channel<PicardRow> yodaRows, final Channel<RecenterLadder> recenterLadderChannel,
-            final TypedChannel<DisplaySymbol> displaySymbol, final WebApplication webApp) {
+                                      final Channel<PicardRow> picardRows, final Channel<PicardRow> yodaRows, final Channel<RecenterLadder> recenterLadderChannel,
+                                      final TypedChannel<DisplaySymbol> displaySymbol, final WebApplication webApp) {
 
         setupPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, displaySymbol,
                 EnumSet.of(InstType.FUTURE, InstType.FUTURE_SPREAD), PicardSounds.FUTURES, webApp, "picard");
@@ -1264,9 +1268,9 @@ public class Main {
     }
 
     private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
-            final Channel<PicardRow> picardRows, final Channel<RecenterLadder> recenterLadderChannel,
-            final TypedChannel<DisplaySymbol> displaySymbol, final Set<InstType> filterList, final PicardSounds sound,
-            final WebApplication webApp, final String alias) {
+                                      final Channel<PicardRow> picardRows, final Channel<RecenterLadder> recenterLadderChannel,
+                                      final TypedChannel<DisplaySymbol> displaySymbol, final Set<InstType> filterList, final PicardSounds sound,
+                                      final WebApplication webApp, final String alias) {
 
         final PicardUI picardUI = new PicardUI(webLog, filterList, sound, recenterLadderChannel);
         selectIO.addDelayedAction(1000, picardUI::flush);

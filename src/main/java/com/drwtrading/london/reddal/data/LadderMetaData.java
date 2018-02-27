@@ -50,6 +50,10 @@ public class LadderMetaData {
         final FreeTextCell cell = FreeTextCell.getCell(ladderText.getCell());
         if (null != cell) {
             this.freeTextCells.put(cell, ladderText.getText());
+        } else if (ladderText.getCell().equals("r3c1")) {
+            this.pksExposure = ladderText.getText();
+        } else if (ladderText.getCell().equals("r3c5")) {
+            this.pksPosition = ladderText.getText();
         }
     }
 
