@@ -36,6 +36,9 @@ import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.MDTransportComponents;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClientFactory;
+import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.ILevelTwoClient;
+import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.LevelTwoTransportComponents;
+import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.cache.LevelTwoCacheFactory;
 import com.drwtrading.london.eeif.utils.monitoring.ConcurrentMultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
@@ -130,12 +133,7 @@ import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
-import com.drwtrading.london.reddal.util.ConnectionCloser;
-import com.drwtrading.london.reddal.util.FileLogger;
-import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
-import com.drwtrading.london.reddal.util.ReconnectingOPXLClient;
-import com.drwtrading.london.reddal.util.SelectIOFiber;
-import com.drwtrading.london.reddal.util.UILogger;
+import com.drwtrading.london.reddal.util.*;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
@@ -165,6 +163,7 @@ import com.google.common.collect.Maps;
 import com.sun.jndi.toolkit.url.Uri;
 import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
+import org.apache.velocity.runtime.Runtime;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.KeyedBatchSubscriber;
@@ -478,6 +477,40 @@ public class Main {
                 }
             }
         }
+
+        // FX view
+        final ConfigGroup fxConfig = root.getEnabledGroup("fx");
+        if (null != fxConfig) {
+            final String name = "FX UI";
+            final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
+            final IResourceMonitor<SelectIOComponents> selectIOMonitor = new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class, ReddalComponents.FX_SELECT_IO);
+
+            final SelectIO fxSelectIO = new SelectIO(selectIOMonitor);
+            final SelectIOFiber fxFiber = new SelectIOFiber(fxSelectIO, errorLog, "FX SelectIO");
+
+            final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(fxFiber, name);
+            final FXCalc<ReddalComponents> fxCalc = new FXCalc<>(fxSelectIO, monitor, ReddalComponents.FX_OK, ReddalComponents.FX_ERROR, fxConfig, Constants::NO_OP);
+            final ConfigGroup fxMDConfig = fxConfig.getGroup("md");
+            final ILevelTwoClient fxClient = LevelTwoCacheFactory.createClient(fxSelectIO,
+                    new ExpandedDetailResourceMonitor<>(displayMonitor, "FX", errorLog, LevelTwoTransportComponents.class,
+                            ReddalComponents.FX_OK), fxMDConfig);
+            final FXMDClient fxMdClient = new FXMDClient(fxCalc);
+            fxClient.registerListener(fxMdClient);
+
+            fxFiber.execute(() -> {
+                try {
+                    fxClient.start();
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("fx", "fx", fiberBuilder, webApp, ws);
+            FxUi ui = new FxUi(fxCalc);
+            fiberBuilder.subscribe(ui, ws);
+        }
+
 
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
 

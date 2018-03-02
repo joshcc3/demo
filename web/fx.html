@@ -1,0 +1,170 @@
+<html>
+<head>
+    <title>names</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="ui.css">
+    <script src="math.min.js"></script>
+    <script src="js/jquery-1.4.2.js"></script>
+    <script src="js/websocket.js"></script>
+    <script src="js/websocket-ui.js"></script>
+    <script src="js/sound-files.js"></script>
+    <script src="js/sound-player.js"></script>
+    <script src="js/sounds.js"></script>
+    <script src="cell-functions.js"></script>
+    <script src="launcher.js"></script>
+    <script src="popup.js"></script>
+    <style>
+        td.result {
+            min-width: 100px;
+            padding: 5px;
+            color: white;
+            background-color: black;
+        }
+
+        tr.resultRow {
+            min-height: 40px;
+        }
+
+        td.rowCcy {
+            color: black;
+            font-weight: bold;
+        }
+
+        th {
+            color: black;
+        }
+
+        input#input {
+            padding: 5px;
+            font-size: 20px;
+            font-color: black;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+    <script type="text/javascript">
+        let ws;
+        let search;
+        let FocusCcy;
+        let Boxes = {};
+        let CcyList;
+        var flip = false;
+
+        function run() {
+            const val = $("#input").val();
+            if (val != "") {
+                search = val;
+                var result = math.eval(val);
+                ws.send(command("convert", [result.toFixed(9), flip]));
+            }
+        }
+
+        $(function () {
+            ws = connect();
+            ws.logToConsole = false;
+            ws.onmessage = function (x) {
+                eval(x);
+            };
+
+            let hashVal = document.location.hash.substr(1);
+            if (hashVal) {
+                let split = hashVal.split(" ");
+                if (split.length > 1) {
+                    FocusCcy = split[1];
+                }
+                $("#input").val(split[0]);
+            }
+
+            setInterval(function () {
+                run();
+            }, 500);
+            $("#input").bind('keypress', run);
+            $("#flip").bind('click', function () {
+                flip = !flip;
+            });
+            $("#all").bind('click', function () {
+                document.location.href = "/fx#" + $("input").val();
+                location.reload();
+            });
+        });
+
+
+        function create(ccy_list) {
+
+            CcyList = ccy_list;
+
+            let resultTable = $("#results");
+            let headerRow = resultTable.find("tr.headerRow");
+
+            for (let i = 0; i < ccy_list.length; i += 1) {
+
+                const ccy = ccy_list[i];
+
+                // Add header col
+                if (!FocusCcy || ccy == FocusCcy) {
+                    const th = headerRow.find("th.template").clone().removeClass("template");
+                    th.text(ccy);
+                    headerRow.append(th);
+                }
+
+                // Add row
+                {
+                    const tr = resultTable.find("tr.resultRow.template").clone().removeClass("template");
+                    tr.find("td.rowCcy").text(ccy);
+                    resultTable.append(tr);
+
+                    const td = tr.find("td.result.template").clone().removeClass("template");
+                    for (let j = 0; j < ccy_list.length; j += 1) {
+                        let to_ccy = ccy_list[j];
+                        if (FocusCcy && to_ccy != FocusCcy) {
+                            continue;
+                        }
+                        let cell_id = ccy + "_" + to_ccy;
+                        let cell = td.clone();
+                        cell.attr('id', cell_id);
+                        tr.append(cell);
+                        Boxes[cell_id] = cell;
+                    }
+
+                }
+
+            }
+
+        }
+
+        function update(results) {
+
+            for (var k in results) {
+                let val = results[k];
+                if (Boxes[k]) {
+                    Boxes[k].text(val.toFixed(4));
+                }
+
+            }
+
+        }
+
+    </script>
+</head>
+<body>
+
+<div class="input">
+    <input id="input" type="text" value="1"/>
+    <input id="flip" type="submit" value="flip"/>
+    <input id="all" type="submit" value="all"/>
+</div>
+
+<table id="results">
+    <tr class="headerRow">
+        <td></td>
+        <th class="colCcy template"></th>
+    </tr>
+    <tr class="resultRow template">
+        <td class="rowCcy"></td>
+        <td class="result template"></td>
+    </tr>
+</table>
+
+
+</body>
+</html>
