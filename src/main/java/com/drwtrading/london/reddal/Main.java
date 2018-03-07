@@ -210,6 +210,7 @@ public class Main {
             return TypedChannels.create(type);
         }
     };
+    public static final String INDY_SERVER_GROUP = "indyServer";
 
     public static void main(final String[] args) throws Exception {
 
@@ -373,8 +374,9 @@ public class Main {
         }
 
         // Indy LeanDefs
-        ConfigGroup indyServerConfig = app.config.getEnabledGroup("indyServer");
+        ConfigGroup indyServerConfig = app.config.getEnabledGroup(INDY_SERVER_GROUP);
         if (null != indyServerConfig) {
+            System.out.println("Indy server listening");
             ExpandedDetailResourceMonitor<ReddalComponents, IndyTransportComponents> indyMonitor = new ExpandedDetailResourceMonitor<>(monitor,
                     "indyServer", app.errorLog, IndyTransportComponents.class, ReddalComponents.INDY_SERVER);
             IndyCache cache = new IndyCache(selectIO, indyMonitor);
