@@ -35,6 +35,7 @@ import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablis
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
+import com.drwtrading.london.reddal.workspace.LeanDef;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.photons.ladder.LadderMetadata;
@@ -97,6 +98,7 @@ class ReddalChannels {
 
     final TypedChannel<PicardRow> picardRows;
     final TypedChannel<PicardRow> yodaPicardRows;
+    final TypedChannel<LeanDef> leanDefs;
 
     ReddalChannels(final ChannelFactory channelFactory) {
 
@@ -148,6 +150,7 @@ class ReddalChannels {
 
         this.picardRows = create(PicardRow.class);
         this.yodaPicardRows = create(PicardRow.class);
+        leanDefs = create(LeanDef.class);
     }
 
     private <T> TypedChannel<T> create(final Class<T> clazz) {

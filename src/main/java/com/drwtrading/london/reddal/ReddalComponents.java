@@ -44,7 +44,7 @@ public enum ReddalComponents implements IMonitoredComponent {
 
 
     FX_OK,
-    FX_ERROR, FX_SELECT_IO;
+    FX_ERROR, FX_SELECT_IO, INDY_SERVER;
 
     @Override
     public String getMnemonic() {

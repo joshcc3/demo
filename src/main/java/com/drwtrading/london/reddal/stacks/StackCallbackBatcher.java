@@ -76,7 +76,7 @@ public class StackCallbackBatcher implements IStackClientListener {
 
         final String symbol = strategy.getSymbol();
         if (null != contractSetGenerator) {
-            contractSetGenerator.setStackRelationship(symbol, strategy.getLeanSymbol());
+            contractSetGenerator.setStackRelationship(symbol, strategy.getLeanSymbol(), strategy.getLeanInstID(), strategy.getLeanInstType());
         }
         childListener.strategyCreated(strategy);
     }

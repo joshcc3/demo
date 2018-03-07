@@ -56,7 +56,11 @@ import com.drwtrading.london.eeif.yoda.transport.cache.YodaNullClient;
 import com.drwtrading.london.eeif.yoda.transport.io.YodaClientHandler;
 import com.drwtrading.london.indy.transport.IndyTransportComponents;
 import com.drwtrading.london.indy.transport.cache.IIndyCacheListener;
+import com.drwtrading.london.indy.transport.cache.IndyCache;
 import com.drwtrading.london.indy.transport.cache.IndyCacheFactory;
+import com.drwtrading.london.indy.transport.data.InstrumentDef;
+import com.drwtrading.london.indy.transport.data.Source;
+import com.drwtrading.london.indy.transport.io.IndyServer;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.stats.MonitoredJetlangFactory;
 import com.drwtrading.london.jetlang.transport.LowTrafficMulticastTransport;
@@ -163,7 +167,6 @@ import com.google.common.collect.Maps;
 import com.sun.jndi.toolkit.url.Uri;
 import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
-import org.apache.velocity.runtime.Runtime;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.KeyedBatchSubscriber;
@@ -369,8 +372,25 @@ public class Main {
             }
         }
 
+        // Indy LeanDefs
+        ConfigGroup indyServerConfig = app.config.getEnabledGroup("indyServer");
+        if (null != indyServerConfig) {
+            ExpandedDetailResourceMonitor<ReddalComponents, IndyTransportComponents> indyMonitor = new ExpandedDetailResourceMonitor<>(monitor,
+                    "indyServer", app.errorLog, IndyTransportComponents.class, ReddalComponents.INDY_SERVER);
+            IndyCache cache = new IndyCache(selectIO, indyMonitor);
+            IndyServer server = new IndyServer(selectIO, indyServerConfig, indyMonitor, cache);
+            app.addStartUpAction(server::start);
+            channels.leanDefs.subscribe(selectIOFiber, message -> {
+                if (message.instType == InstType.EQUITY || message.instType == InstType.DR) {
+                    cache.setInstDef(new InstrumentDef(
+                            message.instID, Source.ONLINE_VIEW, true, message.symbol, true
+                    ));
+                }
+            });
+        }
 
-        final SpreadContractSetGenerator contractSetGenerator = new SpreadContractSetGenerator(channels.contractSets);
+
+        final SpreadContractSetGenerator contractSetGenerator = new SpreadContractSetGenerator(channels.contractSets, channels.leanDefs);
         channels.searchResults.subscribe(selectIOFiber, contractSetGenerator::setSearchResult);
 
         setupStackManager(app, fibers, channels, webApp, webLog, selectIOFiber, contractSetGenerator, isEquitiesSearchable);

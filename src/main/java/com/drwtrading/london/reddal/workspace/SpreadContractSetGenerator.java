@@ -1,8 +1,10 @@
 package com.drwtrading.london.reddal.workspace;
 
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.google.common.collect.ImmutableSet;
 import org.jetlang.channels.Publisher;
@@ -17,6 +19,7 @@ public class SpreadContractSetGenerator {
     private static final Set<String> EXCLUDED_MARKETS = ImmutableSet.of("FEXD");
 
     private final Publisher<SpreadContractSet> publisher;
+    private final Publisher<LeanDef> leanDefPublisher;
 
     private final Set<String> futureSymbols;
     private final Map<String, String> frontLegToBackLeg;
@@ -29,9 +32,10 @@ public class SpreadContractSetGenerator {
 
     private final FutureExpiryCalc expiryCalc;
 
-    public SpreadContractSetGenerator(final Publisher<SpreadContractSet> publisher) {
 
+    public SpreadContractSetGenerator(final Publisher<SpreadContractSet> publisher, final Publisher<LeanDef> leanDefPublisher) {
         this.publisher = publisher;
+        this.leanDefPublisher = leanDefPublisher;
 
         this.futureSymbols = new HashSet<>();
         this.frontLegToBackLeg = new HashMap<>();
@@ -45,9 +49,10 @@ public class SpreadContractSetGenerator {
         this.expiryCalc = new FutureExpiryCalc(0);
     }
 
-    public void setStackRelationship(final String quoteSymbol, final String leanSymbol) {
+    public void setStackRelationship(final String quoteSymbol, final String leanSymbol, InstrumentID leanInstID, InstType leanInstType) {
         this.stackLeanSymbols.put(quoteSymbol, leanSymbol);
         publishContractSet(quoteSymbol);
+        leanDefPublisher.publish(new LeanDef(leanSymbol, leanInstID, leanInstType));
     }
 
     public void setParentStack(final String quoteSymbol, final String parentStackSymbol) {
