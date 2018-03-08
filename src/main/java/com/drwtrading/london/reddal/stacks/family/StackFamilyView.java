@@ -1218,7 +1218,7 @@ public class StackFamilyView implements IStackRelationshipListener {
         communityManager.stopChild(family, childSymbol, side);
     }
 
-    public void disableSiblings(final String source, final String familyName, final BookSide side) {
+    public void setChildStackEnabled(final String source, final String familyName, final BookSide side, final boolean isEnabled) {
 
         final Map<String, ?> children = families.get(familyName);
 
@@ -1226,7 +1226,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             for (final String child : children.keySet()) {
                 if (childData.containsKey(child)) {
                     for (final StackType stackType : STACK_TYPES) {
-                        communityManager.setChildStackEnabled(source, familyName, child, side, stackType, false);
+                        communityManager.setChildStackEnabled(source, familyName, child, side, stackType, isEnabled);
                     }
                 }
             }

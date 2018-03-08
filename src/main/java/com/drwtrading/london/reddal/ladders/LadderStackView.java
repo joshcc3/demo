@@ -19,7 +19,7 @@ import com.drwtrading.london.reddal.fastui.html.DataKey;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
-import com.drwtrading.london.reddal.stacks.StacksDisableSiblingsCmd;
+import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
@@ -79,7 +79,7 @@ public class LadderStackView implements ILadderBoard {
     private final LadderMetaData metaData;
     private final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
-    private final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher;
+    private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
 
     private final UiPipeImpl ui;
     private final ILadderUI view;
@@ -110,7 +110,7 @@ public class LadderStackView implements ILadderBoard {
             final int levels, final LadderHTMLTable ladderHTMLKeys, final SymbolStackData stackData, final LadderMetaData metaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher, final UiPipeImpl ui, final ILadderUI view,
+            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final UiPipeImpl ui, final ILadderUI view,
             final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final MDForSymbol marketData) {
 
         this.username = username;
@@ -528,13 +528,13 @@ public class LadderStackView implements ILadderBoard {
                 stackData.startAskStrategy();
             } else if (label.equals(HTML.STOP_BUY)) {
                 stackData.stopBidStrategy();
-                final StacksDisableSiblingsCmd cmd =
-                        new StacksDisableSiblingsCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID);
+                final StacksSetSiblingsEnableCmd cmd =
+                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, false);
                 disableSiblingsCmdPublisher.publish(cmd);
             } else if (label.equals(HTML.STOP_SELL)) {
                 stackData.stopAskStrategy();
-                final StacksDisableSiblingsCmd cmd =
-                        new StacksDisableSiblingsCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK);
+                final StacksSetSiblingsEnableCmd cmd =
+                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, false);
                 disableSiblingsCmdPublisher.publish(cmd);
             } else if (label.equals(HTML.STACK_BID_QUOTE_ENABLED)) {
                 stackData.setBidStackEnabled(StackType.QUOTER, true);
@@ -592,6 +592,16 @@ public class LadderStackView implements ILadderBoard {
                 } else if (!stackData.adjustAskStackLevels(-1)) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
+            } else if (label.equals(HTML.START_BUY)) {
+                stackData.startBidStrategy();
+                final StacksSetSiblingsEnableCmd cmd =
+                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, true);
+                disableSiblingsCmdPublisher.publish(cmd);
+            } else if (label.equals(HTML.START_SELL)) {
+                stackData.startAskStrategy();
+                final StacksSetSiblingsEnableCmd cmd =
+                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, true);
+                disableSiblingsCmdPublisher.publish(cmd);
             } else if (label.equals(HTML.STOP_BUY)) {
                 stackData.stopBidStrategy();
             } else if (label.equals(HTML.STOP_SELL)) {

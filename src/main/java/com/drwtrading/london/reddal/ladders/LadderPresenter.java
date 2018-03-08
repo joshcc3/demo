@@ -38,7 +38,7 @@ import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
-import com.drwtrading.london.reddal.stacks.StacksDisableSiblingsCmd;
+import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -101,7 +101,7 @@ public class LadderPresenter {
     private final Publisher<Jsonable> trace;
     private final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
-    private final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher;
+    private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
 
     private final Fiber fiber;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
@@ -116,7 +116,7 @@ public class LadderPresenter {
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
             final Fiber fiber, final Publisher<Jsonable> trace, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher,
+            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,

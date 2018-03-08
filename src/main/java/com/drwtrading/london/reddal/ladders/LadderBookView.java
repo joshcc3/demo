@@ -43,7 +43,7 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.SubmitOrderCmd;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
-import com.drwtrading.london.reddal.stacks.StacksDisableSiblingsCmd;
+import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
@@ -144,7 +144,7 @@ public class LadderBookView implements ILadderBoard {
     private final LadderMetaData metaData;
     private final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
-    private final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher;
+    private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
 
     private final LongMap<LadderBoardRow> priceRows;
 
@@ -179,7 +179,7 @@ public class LadderBookView implements ILadderBoard {
             final SymbolStackData stackData, final LadderMetaData metaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher, final Publisher<Jsonable> trace,
+            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Publisher<Jsonable> trace,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap, final long centeredPrice) {
 
         this.monitor = monitor;
@@ -1094,15 +1094,15 @@ public class LadderBookView implements ILadderBoard {
                 stackData.startAskStrategy();
             } else if (label.equals(HTML.STOP_BUY)) {
                 if (null != metaData.spreadContractSet.parentSymbol) {
-                    final StacksDisableSiblingsCmd cmd =
-                            new StacksDisableSiblingsCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID);
+                    final StacksSetSiblingsEnableCmd cmd =
+                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, false);
                     disableSiblingsCmdPublisher.publish(cmd);
                 }
                 stackData.stopBidStrategy();
             } else if (label.equals(HTML.STOP_SELL)) {
                 if (null != metaData.spreadContractSet.parentSymbol) {
-                    final StacksDisableSiblingsCmd cmd =
-                            new StacksDisableSiblingsCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK);
+                    final StacksSetSiblingsEnableCmd cmd =
+                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, false);
                     disableSiblingsCmdPublisher.publish(cmd);
                 }
                 stackData.stopAskStrategy();
@@ -1115,7 +1115,8 @@ public class LadderBookView implements ILadderBoard {
             } else if (label.startsWith(DataKey.PRICE.key)) {
                 pricingModes.next();
             } else if (label.equals(HTML.VOLUME + '0')) {
-                view.popUp("/fx#" + ((double) centeredPrice / Constants.NORMALISING_FACTOR) + " " + marketData.getBook().getCCY().name(),null,245,332);
+                view.popUp("/fx#" + ((double) centeredPrice / Constants.NORMALISING_FACTOR) + " " + marketData.getBook().getCCY().name(),
+                        null, 245, 332);
             } else if (label.startsWith(HTML.VOLUME)) {
                 view.launchBasket(symbol);
             } else if (label.equals(HTML.YESTERDAY_SETTLE) || label.equals(HTML.LAST_TRADE_COD)) {
@@ -1157,6 +1158,20 @@ public class LadderBookView implements ILadderBoard {
                             new StackIncreaseChildOffsetCmd(LADDER_SOURCE, symbol, BookSide.ASK, -stackData.getPriceOffsetTickSize()));
                 } else {
                     stackData.adjustAskStackLevels(-1);
+                }
+            } else if (label.equals(HTML.START_BUY)) {
+                if (null != metaData.spreadContractSet.parentSymbol) {
+                    final StacksSetSiblingsEnableCmd cmd =
+                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, true);
+                    disableSiblingsCmdPublisher.publish(cmd);
+                }
+                stackData.startBidStrategy();
+            } else if (label.equals(HTML.START_SELL)) {
+                stackData.startAskStrategy();
+                if (null != metaData.spreadContractSet.parentSymbol) {
+                    final StacksSetSiblingsEnableCmd cmd =
+                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, true);
+                    disableSiblingsCmdPublisher.publish(cmd);
                 }
             } else if (label.equals(HTML.STOP_BUY)) {
                 stackData.stopBidStrategy();

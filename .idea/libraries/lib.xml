@@ -20,7 +20,6 @@
       <root url="jar://$PROJECT_DIR$/lib/src/drw.fast.core-src.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/src/drw.frontoffice.book-src.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/src/drw.jetlang.core.src.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/src/drw.liffe.xdp-src.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/src/drw.london.eeif-photocols-client-src.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/src/drw.london.esquilatency-src.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/src/drw.london.selectable-src.jar!/" />
@@ -35,9 +34,6 @@
       <root url="jar://$PROJECT_DIR$/lib/src/joda-time-2.1-sources.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/src/log4j-1.2.16-sources.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/src/netty-3.2.7.Final-sources.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/src/slf4j-api-1.6.1-sources.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/src/slf4j-ext-1.6.1-sources.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/src/slf4j-log4j12-1.6.1-sources.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/src/webbit-rest-0.3.0-sources.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/src/webbit-src.jar!/" />
       <root url="jar://$PROJECT_DIR$/lib/src/drw.london.json-src.jar!/src/main" />

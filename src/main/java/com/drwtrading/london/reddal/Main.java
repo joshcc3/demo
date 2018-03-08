@@ -137,7 +137,13 @@ import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
-import com.drwtrading.london.reddal.util.*;
+import com.drwtrading.london.reddal.util.ConnectionCloser;
+import com.drwtrading.london.reddal.util.FXMDClient;
+import com.drwtrading.london.reddal.util.FileLogger;
+import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
+import com.drwtrading.london.reddal.util.ReconnectingOPXLClient;
+import com.drwtrading.london.reddal.util.SelectIOFiber;
+import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
@@ -346,7 +352,6 @@ public class Main {
                 getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment, noBookSubscription, ewokBaseURL,
                         stackManagerWebSocket, fibers.fiberGroup.wrap(stackManagerSelectIOFiber, stackManagerThreadName));
 
-
         // Load stacks
         final Map<MDSource, LinkedList<ConfigGroup>> stackConfigs = new EnumMap<>(MDSource.class);
         {
@@ -377,20 +382,18 @@ public class Main {
         ConfigGroup indyServerConfig = app.config.getEnabledGroup(INDY_SERVER_GROUP);
         if (null != indyServerConfig) {
             System.out.println("Indy server listening");
-            ExpandedDetailResourceMonitor<ReddalComponents, IndyTransportComponents> indyMonitor = new ExpandedDetailResourceMonitor<>(monitor,
-                    "indyServer", app.errorLog, IndyTransportComponents.class, ReddalComponents.INDY_SERVER);
+            ExpandedDetailResourceMonitor<ReddalComponents, IndyTransportComponents> indyMonitor =
+                    new ExpandedDetailResourceMonitor<>(monitor, "indyServer", app.errorLog, IndyTransportComponents.class,
+                            ReddalComponents.INDY_SERVER);
             IndyCache cache = new IndyCache(selectIO, indyMonitor);
             IndyServer server = new IndyServer(selectIO, indyServerConfig, indyMonitor, cache);
             app.addStartUpAction(server::start);
             channels.leanDefs.subscribe(selectIOFiber, message -> {
                 if (message.instType == InstType.EQUITY || message.instType == InstType.DR) {
-                    cache.setInstDef(new InstrumentDef(
-                            message.instID, Source.ONLINE_VIEW, true, message.symbol, true
-                    ));
+                    cache.setInstDef(new InstrumentDef(message.instID, Source.ONLINE_VIEW, true, message.symbol, true));
                 }
             });
         }
-
 
         final SpreadContractSetGenerator contractSetGenerator = new SpreadContractSetGenerator(channels.contractSets, channels.leanDefs);
         channels.searchResults.subscribe(selectIOFiber, contractSetGenerator::setSearchResult);
@@ -505,13 +508,16 @@ public class Main {
         if (null != fxConfig) {
             final String name = "FX UI";
             final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
-            final IResourceMonitor<SelectIOComponents> selectIOMonitor = new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class, ReddalComponents.FX_SELECT_IO);
+            final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+                    new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class,
+                            ReddalComponents.FX_SELECT_IO);
 
             final SelectIO fxSelectIO = new SelectIO(selectIOMonitor);
             final SelectIOFiber fxFiber = new SelectIOFiber(fxSelectIO, errorLog, "FX SelectIO");
 
             final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(fxFiber, name);
-            final FXCalc<ReddalComponents> fxCalc = new FXCalc<>(fxSelectIO, monitor, ReddalComponents.FX_OK, ReddalComponents.FX_ERROR, fxConfig, Constants::NO_OP);
+            final FXCalc<ReddalComponents> fxCalc =
+                    new FXCalc<>(fxSelectIO, monitor, ReddalComponents.FX_OK, ReddalComponents.FX_ERROR, fxConfig, Constants::NO_OP);
             final ConfigGroup fxMDConfig = fxConfig.getGroup("md");
             final ILevelTwoClient fxClient = LevelTwoCacheFactory.createClient(fxSelectIO,
                     new ExpandedDetailResourceMonitor<>(displayMonitor, "FX", errorLog, LevelTwoTransportComponents.class,
@@ -532,7 +538,6 @@ public class Main {
             FxUi ui = new FxUi(fxCalc);
             fiberBuilder.subscribe(ui, ws);
         }
-
 
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
 
@@ -950,8 +955,8 @@ public class Main {
     }
 
     private static DepthBookSubscriber getMDSubscription(final Application<?> app, final IResourceMonitor<ReddalComponents> displayMonitor,
-                                                         final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
-                                                         final String localAppName) throws ConfigException {
+            final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
+            final String localAppName) throws ConfigException {
 
         final LevelThreeBookSubscriber l3BookHandler =
                 new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, channels.stockAlerts,
@@ -979,15 +984,15 @@ public class Main {
     }
 
     private static LadderPresenter getLadderPresenter(final IResourceMonitor<ReddalComponents> displayMonitor,
-                                                      final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment,
-                                                      final IMDSubscriber depthBookSubscriber, final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket,
-                                                      final FiberBuilder fiberBuilder) throws ConfigException {
+            final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment,
+            final IMDSubscriber depthBookSubscriber, final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket,
+            final FiberBuilder fiberBuilder) throws ConfigException {
 
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
                         environment.ladderOptions(), channels.storeLadderPref, channels.heartbeatRoundTrips,
                         channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffsetCmds,
-                        channels.increaseChildOffsetBPSCmds, channels.disableSiblingsCmds, channels.ladderClickTradingIssues,
+                        channels.increaseChildOffsetBPSCmds, channels.setSiblingsEnabledCmds, channels.ladderClickTradingIssues,
                         channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
 
         fiberBuilder.subscribe(ladderPresenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
@@ -1008,8 +1013,8 @@ public class Main {
     }
 
     private static void createStackClient(final IErrorLogger errorLog, final IResourceMonitor<ReddalComponents> displayMonitor,
-                                          final SelectIO displaySelectIO, final String name, final ConfigGroup stackConfig,
-                                          final StackGroupCallbackBatcher stackUpdateBatcher, final String localAppName) throws ConfigException {
+            final SelectIO displaySelectIO, final String name, final ConfigGroup stackConfig,
+            final StackGroupCallbackBatcher stackUpdateBatcher, final String localAppName) throws ConfigException {
 
         final MultiLayeredResourceMonitor<StackTransportComponents> stackParentMonitor =
                 MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Stacks", errorLog, StackTransportComponents.class,
@@ -1025,7 +1030,7 @@ public class Main {
     }
 
     private static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
-                                                   final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
+            final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
         webapp.alias('/' + alias, '/' + name + ".html");
         webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
 
@@ -1034,7 +1039,7 @@ public class Main {
     public static final TypedChannel<Throwable> ERROR_CHANNEL = TypedChannels.create(Throwable.class);
 
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,
-                                                       final AtomicBoolean multicastEnabled) {
+            final AtomicBoolean multicastEnabled) {
         return new Transport() {
             @Override
             public <T> void publish(final MsgCodec<T> codec, final T msg) {
@@ -1056,8 +1061,8 @@ public class Main {
     }
 
     private static void setupYodaSignals(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
-                                         final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts,
-                                         final Publisher<PicardRow> atClosePublisher) throws ConfigException {
+            final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts,
+            final Publisher<PicardRow> atClosePublisher) throws ConfigException {
 
         final ConfigGroup yodaConfig = config.getEnabledGroup("yoda");
         if (null != yodaConfig) {
@@ -1096,8 +1101,8 @@ public class Main {
     }
 
     private static void setupStackManager(final Application<ReddalComponents> app, final ReddalFibers fibers, final ReddalChannels channels,
-                                          final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
-                                          final SpreadContractSetGenerator contractSetGenerator, final boolean isForETF) throws Exception {
+            final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
+            final SpreadContractSetGenerator contractSetGenerator, final boolean isForETF) throws Exception {
 
         final ConfigGroup stackConfig = app.config.getEnabledGroup("stacks");
         if (null != stackConfig) {
@@ -1133,9 +1138,9 @@ public class Main {
                 final String childSymbol = PARENT_STACK_SUFFIX.matcher(msg.childName).replaceAll("");
                 communityManager.increaseChildPriceOffset(msg.source, childSymbol, msg.side, msg.offsetIncreaseBPS);
             });
-            channels.disableSiblingsCmds.subscribe(selectIOFiber, msg -> {
+            channels.setSiblingsEnabledCmds.subscribe(selectIOFiber, msg -> {
                 final String familyName = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
-                stackFamilyPresenter.disableSiblings(msg.source, familyName, msg.side);
+                stackFamilyPresenter.setChildStackEnabled(msg.source, familyName, msg.side, msg.isEnabled);
             });
 
             final StackFamilyListener familyListener = new StackFamilyListener(stackFamilyPresenter);
@@ -1224,8 +1229,8 @@ public class Main {
     }
 
     private static Map<MDSource, LinkedList<ConfigGroup>> setupNibblerTransport(final Application<ReddalComponents> app,
-                                                                                final ReddalFibers fibers, final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
-                                                                                final ReddalChannels channels) throws ConfigException, IOException {
+            final ReddalFibers fibers, final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
+            final ReddalChannels channels) throws ConfigException, IOException {
 
         final Map<MDSource, LinkedList<ConfigGroup>> result = new EnumMap<>(MDSource.class);
 
@@ -1306,8 +1311,8 @@ public class Main {
     }
 
     private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
-                                      final Channel<PicardRow> picardRows, final Channel<PicardRow> yodaRows, final Channel<RecenterLadder> recenterLadderChannel,
-                                      final TypedChannel<DisplaySymbol> displaySymbol, final WebApplication webApp) {
+            final Channel<PicardRow> picardRows, final Channel<PicardRow> yodaRows, final Channel<RecenterLadder> recenterLadderChannel,
+            final TypedChannel<DisplaySymbol> displaySymbol, final WebApplication webApp) {
 
         setupPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, displaySymbol,
                 EnumSet.of(InstType.FUTURE, InstType.FUTURE_SPREAD), PicardSounds.FUTURES, webApp, "picard");
@@ -1323,9 +1328,9 @@ public class Main {
     }
 
     private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
-                                      final Channel<PicardRow> picardRows, final Channel<RecenterLadder> recenterLadderChannel,
-                                      final TypedChannel<DisplaySymbol> displaySymbol, final Set<InstType> filterList, final PicardSounds sound,
-                                      final WebApplication webApp, final String alias) {
+            final Channel<PicardRow> picardRows, final Channel<RecenterLadder> recenterLadderChannel,
+            final TypedChannel<DisplaySymbol> displaySymbol, final Set<InstType> filterList, final PicardSounds sound,
+            final WebApplication webApp, final String alias) {
 
         final PicardUI picardUI = new PicardUI(webLog, filterList, sound, recenterLadderChannel);
         selectIO.addDelayedAction(1000, picardUI::flush);

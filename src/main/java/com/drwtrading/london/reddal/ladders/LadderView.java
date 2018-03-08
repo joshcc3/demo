@@ -30,7 +30,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
-import com.drwtrading.london.reddal.stacks.StacksDisableSiblingsCmd;
+import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.websockets.WebSocketClient;
@@ -130,7 +130,7 @@ public class LadderView implements UiEventHandler {
     private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
     private final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
-    private final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher;
+    private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
     private final Predicate<String> symbolExists;
     private final LadderHTMLTable ladderHTMLKeys;
     private final DecimalFormat twoDF;
@@ -166,7 +166,7 @@ public class LadderView implements UiEventHandler {
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
             final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<StacksDisableSiblingsCmd> disableSiblingsCmdPublisher, final Predicate<String> symbolExists) {
+            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Predicate<String> symbolExists) {
 
         this.monitor = monitor;
 

@@ -151,8 +151,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         }
     }
 
-    public void disableSiblings(final String source, final String familyName, final BookSide side) {
-        familyView.disableSiblings(source, familyName, side);
+    public void setChildStackEnabled(final String source, final String familyName, final BookSide side, final boolean isEnabled) {
+        familyView.setChildStackEnabled(source, familyName, side, isEnabled);
     }
 
     public void webControl(final WebSocketControlMessage webMsg) {
