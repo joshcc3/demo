@@ -16,11 +16,12 @@ public final class ChildOffsetCalculator {
         EXCHANGE_OFFSETS.put("DC", 1.55d);
         EXCHANGE_OFFSETS.put("EB", 3d);
         EXCHANGE_OFFSETS.put("FH", 1.55d);
-        EXCHANGE_OFFSETS.put("GY", 1.3d);
+        EXCHANGE_OFFSETS.put("FP", 1.1d);
+        EXCHANGE_OFFSETS.put("GY", 1.1d);
         EXCHANGE_OFFSETS.put("ID", 1.25d);
         EXCHANGE_OFFSETS.put("IM", 3d);
         EXCHANGE_OFFSETS.put("IX", 0.75d);
-        EXCHANGE_OFFSETS.put("LN", 1.5d);
+        EXCHANGE_OFFSETS.put("LN", 1.1d);
         EXCHANGE_OFFSETS.put("NA", 1.1d);
         EXCHANGE_OFFSETS.put("NO", 1.95d);
         EXCHANGE_OFFSETS.put("RFQ", 0d);
