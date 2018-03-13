@@ -33,7 +33,6 @@ import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
-import org.mockito.internal.matchers.Null;
 
 import java.text.DecimalFormat;
 import java.util.Calendar;
