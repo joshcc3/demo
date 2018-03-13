@@ -22,7 +22,7 @@ $(function () {
 
 	subscribe();
 	setInterval(resizeIfNecessary, 200);
-	$(window).resize(() => handler.send("update", $("#shredded_0").width()));
+	$(window).resize(updateWidth);
 
 	$(document).keydown(function (e) {
 		const keyCode1 = (e.keyCode ? e.keyCode : e.which);
@@ -66,6 +66,12 @@ function removeOrders(row, from) {
 	$(`#order_${row}_${from}`).nextAll().remove();
 }
 
+function updateWidth() {
+	if ($("#shredded_0").width()) {
+		handler.send("update", $("#shredded_0").width());
+	}
+}
+
 function draw(levels, ordersPerRow) {
 	console.log(`Redrawing ${levels} levels with ${ordersPerRow} orders per row`);
 	currentLevels = levels;
@@ -94,7 +100,7 @@ function draw(levels, ordersPerRow) {
 
 	currentNumberOfColumns = ordersPerRow;
 	currentNumberOfRows = levels;
-	handler.send("update", $("#shredded_0").width());
+	updateWidth();
 }
 
 function subscribe() {
