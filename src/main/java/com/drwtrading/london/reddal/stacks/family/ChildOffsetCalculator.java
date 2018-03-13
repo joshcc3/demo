@@ -6,6 +6,7 @@ import java.util.Map;
 public final class ChildOffsetCalculator {
 
     private static final double DEFAULT_EXCHANGE_OFFSETS = 5d;
+    private static final double NO_EXCHANGE_OFFSETS = 0d;
     private static final Map<String, Double> EXCHANGE_OFFSETS;
 
     static {
@@ -46,7 +47,7 @@ public final class ChildOffsetCalculator {
                 return exchangeOffset;
             }
         } else {
-            return DEFAULT_EXCHANGE_OFFSETS;
+            return NO_EXCHANGE_OFFSETS;
         }
     }
 }

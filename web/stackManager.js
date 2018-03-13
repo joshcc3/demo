@@ -206,7 +206,12 @@ $(function () {
 		});
 	});
 
-	const familyInput = $("#familySymbol");
+    $("#resetOffets").unbind().bind("click", function () {
+        const symbol = familyNameInput.val();
+        ws.send(command("resetOffsetsForFamily", [symbol]));
+    });
+
+    const familyInput = $("#familySymbol");
 	familyInput.on("input", function () {
 		const family = familyInput.val();
 		ws.send(command("checkFamilyExists", [family, "#adoptionInfoRow .familyFound"]));
