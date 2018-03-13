@@ -33,6 +33,7 @@ import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
+import org.mockito.internal.matchers.Null;
 
 import java.text.DecimalFormat;
 import java.util.Calendar;
@@ -613,8 +614,6 @@ public class StackFamilyView implements IStackRelationshipListener {
             if (null != quoteInstId && null != leanInstType && null != leanInstID) {
                 strategyClient.createStrategy(quoteSymbol, quoteInstId, leanInstType, leanSymbol, leanInstID, "");
                 strategyClient.batchComplete();
-                final double offset = ChildOffsetCalculator.getSymbolOffset(quoteSymbol);
-                communityManager.setChildPriceOffsets(SOURCE_UI, quoteSymbol, -offset, offset);
             }
         }
     }
@@ -633,13 +632,8 @@ public class StackFamilyView implements IStackRelationshipListener {
                     final StackClientHandler strategyClient = nibblerClients.get(tradableNibbler);
 
                     if (null != searchResult && null != strategyClient) {
-
                         strategyClient.createStrategy(searchResult.symbol, searchResult.instID, InstType.INDEX, searchResult.symbol,
                                 searchResult.instID, "");
-
-                        final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
-                        communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset, offset);
-
                         strategyClient.batchComplete();
                     }
                 }
@@ -871,27 +865,35 @@ public class StackFamilyView implements IStackRelationshipListener {
             e.printStackTrace();
         }
     }
-
     @FromWebSocketView
     public void resetOffsetsForFamily(String familySymbol, final WebSocketInboundData data) {
         try {
-            NavigableMap<String, StackUIRelationship> family = families.get(familySymbol);
 
-            final String familyName = familySymbol;
+
+            SearchResult searchResult = searchResults.get(familySymbol);
+            if (null == searchResult) {
+                return;
+            }
+
+            final String familyName = getFamilyName(searchResult);
+            final NavigableMap<String, StackUIRelationship> family = families.get(familySymbol);
+
+            if (null == family) {
+                System.out.println("Couldn't find [" + familyName + "] for symbol [" + familySymbol + "]");
+                return;
+            }
+
             final StackUIData parentUIData = parentData.get(familyName);
-
             if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
-
-                final Map<String, StackUIRelationship> children = family;
-                final Set<String> childSymbols = new HashSet<>(children.keySet());
+                final Set<String> childSymbols = new HashSet<>(family.keySet());
                 for (final String childSymbol : childSymbols) {
-
                     if (childData.containsKey(childSymbol)) {
                         final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
                         communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset, offset);
                     }
                 }
             }
+
         } catch (final Exception e) {
             final IStackFamilyUI ui = views.get(data.getOutboundChannel());
             ui.displayErrorMsg(e.getMessage());
