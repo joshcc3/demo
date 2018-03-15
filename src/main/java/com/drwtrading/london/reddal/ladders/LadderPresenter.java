@@ -369,11 +369,11 @@ public class LadderPresenter {
     public void on(final SpreadContractSet spreadContractSet) {
 
         metaDataBySymbol.get(spreadContractSet.symbol).onSpreadContractSet(spreadContractSet);
-        if (spreadContractSet.backMonth != null) {
-            metaDataBySymbol.get(spreadContractSet.backMonth).onSpreadContractSet(spreadContractSet);
+        if (spreadContractSet.nextContract != null) {
+            metaDataBySymbol.get(spreadContractSet.nextContract).onSpreadContractSet(spreadContractSet);
         }
-        if (spreadContractSet.spread != null) {
-            metaDataBySymbol.get(spreadContractSet.spread).onSpreadContractSet(spreadContractSet);
+        if (spreadContractSet.contractAfterNext != null) {
+            metaDataBySymbol.get(spreadContractSet.contractAfterNext).onSpreadContractSet(spreadContractSet);
         }
     }
 
@@ -451,7 +451,7 @@ public class LadderPresenter {
 
     @Subscribe
     public void on(final UserCycleRequest request) {
-        viewsByUser.get(request.username).forEach(LadderView::nextContract);
+        viewsByUser.get(request.username).forEach(ladderView -> ladderView.switchContract(request));
     }
 
     @Subscribe

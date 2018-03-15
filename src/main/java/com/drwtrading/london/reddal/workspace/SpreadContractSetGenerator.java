@@ -125,15 +125,15 @@ public class SpreadContractSetGenerator {
     private SpreadContractSet getSpreadSet(final String symbol) {
 
         final boolean isFuture = futureSymbols.contains(symbol);
-        final String backLeg = frontLegToBackLeg.get(symbol);
-        final String frontLeg = backLegToFrontLeg.get(symbol);
 
         if (isFuture) {
+            final String backLeg = frontLegToBackLeg.get(symbol);
+            final String frontLeg = backLegToFrontLeg.get(symbol);
 
             if (null != backLeg) {
-                return getSpreadSet(true, symbol, backLeg, symbol + '-' + backLeg);
+                return getSpreadSet(true, symbol, null, backLeg);
             } else if (null != frontLeg) {
-                return getSpreadSet(true, symbol, frontLeg + '-' + symbol, frontLeg);
+                return getSpreadSet(true, symbol, frontLeg, null);
             } else {
                 return getSpreadSet(false, symbol, symbol, symbol);
             }
@@ -143,8 +143,8 @@ public class SpreadContractSetGenerator {
         }
     }
 
-    private SpreadContractSet getSpreadSet(final boolean isFutureSpread, final String symbol, final String backMonthSymbol,
-            final String spreadSymbol) {
+    private SpreadContractSet getSpreadSet(final boolean isFutureSpread, final String symbol, final String frontMonth,
+            final String backMonth) {
 
         final String leanSymbol = stackLeanSymbols.get(symbol);
         final String parentStackSymbol = parentStackSymbols.get(symbol);
@@ -152,10 +152,10 @@ public class SpreadContractSetGenerator {
         if (!isFutureSpread && null == leanSymbol && null == parentStackSymbol) {
             return null;
         } else if (null == leanSymbol) {
-            return new SpreadContractSet(symbol, backMonthSymbol, spreadSymbol, null, null, parentStackSymbol);
+            return new SpreadContractSet(symbol, frontMonth, backMonth, null, null, parentStackSymbol);
         } else {
             final String stackSymbol = symbol + ";S";
-            return new SpreadContractSet(symbol, backMonthSymbol, spreadSymbol, leanSymbol, stackSymbol, parentStackSymbol);
+            return new SpreadContractSet(symbol, frontMonth, backMonth, leanSymbol, stackSymbol, parentStackSymbol);
         }
     }
 }

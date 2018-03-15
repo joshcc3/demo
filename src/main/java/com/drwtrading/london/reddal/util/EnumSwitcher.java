@@ -48,7 +48,7 @@ public class EnumSwitcher<E extends Enum<E>> {
             }
             currentIdx = (currentIdx + 1) % universe.length;
             current = universe[currentIdx];
-        } while (!validChoices.contains(universe[currentIdx]));
+        } while (!validChoices.contains(current));
         return current;
     }
 

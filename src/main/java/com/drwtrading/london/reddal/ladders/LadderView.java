@@ -196,13 +196,13 @@ public class LadderView implements UiEventHandler {
         this.activeView = LadderNoView.SINGLETON;
     }
 
-    public void replaceSymbol(final ReplaceCommand replaceCommand) {
+    void replaceSymbol(final ReplaceCommand replaceCommand) {
         if (null != view) {
             view.replace(replaceCommand.from, replaceCommand.to);
         }
     }
 
-    public void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
+    void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
             final WorkingOrdersForSymbol workingOrdersForSymbol, final LadderMetaData metaData, final ExtraDataForSymbol extraDataForSymbol,
             final SymbolStackData stackData, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final OrderUpdatesForSymbol orderUpdatesForSymbol) {
@@ -307,6 +307,10 @@ public class LadderView implements UiEventHandler {
         ui.clickable(HTML.BUTTONS);
         ui.scrollable('#' + HTML.LADDER);
 
+        ui.clickable('#' + HTML.TEXT_PREFIX + HTML.R1C2);
+        ui.clickable('#' + HTML.TEXT_PREFIX + HTML.R1C3);
+        ui.clickable('#' + HTML.TEXT_PREFIX + HTML.R1C4);
+
         final boolean isTrader = isTrader();
         if (isTrader) {
 
@@ -339,7 +343,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    public void timedRefresh() {
+    void timedRefresh() {
 
         activeView.timedRefresh();
         recenterIfTimeoutElapsed();
@@ -357,7 +361,7 @@ public class LadderView implements UiEventHandler {
         ui.flush();
     }
 
-    public void fastInputFlush() {
+    void fastInputFlush() {
 
         activeView.refresh(getSymbol());
         ui.flush();
@@ -369,11 +373,11 @@ public class LadderView implements UiEventHandler {
         ui.cls(HTML.CLOCK, CSSClass.VERY_SLOW, clientSpeedState == ClientSpeedState.TOO_SLOW);
     }
 
-    public void clickTradingIssue(final LadderClickTradingIssue issue) {
+    void clickTradingIssue(final LadderClickTradingIssue issue) {
         clickTradingIssue(ui, issue);
     }
 
-    public static void clickTradingIssue(final UiPipeImpl ui, final LadderClickTradingIssue issue) {
+    static void clickTradingIssue(final UiPipeImpl ui, final LadderClickTradingIssue issue) {
         ui.txt(HTML.CLICK_TRADING_ISSUES, issue.issue);
     }
 
@@ -399,8 +403,8 @@ public class LadderView implements UiEventHandler {
 
         if (null != metaData && null != extraDataForSymbol) {
             if (metaData.spreadContractSet != null) {
-                ui.cls(HTML.SYMBOL, CSSClass.SPREAD, symbol.equals(metaData.spreadContractSet.spread));
-                ui.cls(HTML.SYMBOL, CSSClass.BACK, symbol.equals(metaData.spreadContractSet.backMonth));
+                ui.cls(HTML.SYMBOL, CSSClass.SPREAD, symbol.equals(metaData.spreadContractSet.contractAfterNext));
+                ui.cls(HTML.SYMBOL, CSSClass.BACK, symbol.equals(metaData.spreadContractSet.nextContract));
             }
             // Desk position
             if (null != metaData.formattedDeskPosition) {
@@ -491,7 +495,7 @@ public class LadderView implements UiEventHandler {
         ui.cls(HTML.LADDER, CSSClass.RECENTERING, 0 < lastCenteredTime && RECENTER_WARN_TIME_MS <= milliSinceLastCentered);
     }
 
-    public void recenterLadderForUser(final RecenterLaddersForUser recenterLaddersForUser) {
+    void recenterLadderForUser(final RecenterLaddersForUser recenterLaddersForUser) {
 
         if (client.getUserName().equals(recenterLaddersForUser.user)) {
             activeView.center();
@@ -499,7 +503,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    public void recenterLadder(final RecenterLadder recenterLadder) {
+    void recenterLadder(final RecenterLadder recenterLadder) {
 
         if (client.getUserName().equals(recenterLadder.username) && symbol.equals(recenterLadder.symbol)) {
 
@@ -508,7 +512,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    public void setCenterPrice(final long price) {
+    void setCenterPrice(final long price) {
         activeView.setCenteredPrice(price);
         resetLastCenteredTime();
     }
@@ -519,7 +523,7 @@ public class LadderView implements UiEventHandler {
 
     // Inbound
 
-    public void onRawInboundData(final String data) {
+    void onRawInboundData(final String data) {
         ui.onInbound(data);
     }
 
@@ -686,6 +690,27 @@ public class LadderView implements UiEventHandler {
 
         } else if (label.equals(HTML.POSITION) || label.equals(HTML.TOTAL_TRADED)) {
             showTotalTraded = !showTotalTraded;
+        } else if (label.equals(HTML.TEXT_PREFIX + HTML.R1C2)
+                || label.equals(HTML.TEXT_PREFIX + HTML.R1C3)
+                || label.equals(HTML.TEXT_PREFIX + HTML.R1C4)) {
+            final Contract contract;
+            switch (label.substring(HTML.TEXT_PREFIX.length())) {
+                case HTML.R1C2:
+                    contract = Contract.FRONT;
+                    break;
+                case HTML.R1C3:
+                    contract = Contract.BACK;
+                    break;
+                case HTML.R1C4:
+                    contract = Contract.SPREAD;
+                    break;
+                default:
+                    contract = null;
+            }
+
+            final UserCycleRequest cycleRequest = new UserCycleRequest(client.getUserName(), contract);
+            userCycleContractPublisher.publish(cycleRequest);
+            return;
         } else {
 
             try {
@@ -699,26 +724,49 @@ public class LadderView implements UiEventHandler {
         flushDynamicFeatures();
     }
 
-    boolean nextContract() {
+    boolean switchContract(final UserCycleRequest cycleRequest) {
         if (null != metaData && null != metaData.spreadContractSet) {
-            final SpreadContractSet contracts = metaData.spreadContractSet;
-            String nextContract = contracts.next(symbol);
-            int count = 3;
-            while (!symbolExists.test(nextContract) && 0 < count--) {
-                nextContract = contracts.next(nextContract);
-            }
-            if (null != nextContract && !symbol.equals(nextContract) && symbolExists.test(nextContract)) {
-                view.goToSymbol(nextContract);
-                return true;
+
+            if (cycleRequest.contract != null) {
+                final SpreadContractSet contracts = metaData.spreadContractSet;
+                switch (cycleRequest.contract) {
+                    case FRONT:
+                        return goToContract(contracts.frontMonth);
+                    case BACK:
+                        return goToContract(contracts.backMonth);
+                    case SPREAD:
+                        return goToContract(contracts.spread);
+                    default:
+                        return false;
+                }
             } else {
-                return false;
+                return nextContract();
             }
         } else {
             return false;
         }
     }
 
-    boolean switchChixSymbol() {
+    private boolean nextContract() {
+        final SpreadContractSet contracts = metaData.spreadContractSet;
+        String nextContract = contracts.next(symbol);
+        int count = 3;
+        while (!symbolExists.test(nextContract) && 0 < count--) {
+            nextContract = contracts.next(nextContract);
+        }
+        return goToContract(nextContract);
+    }
+
+    private boolean goToContract(final String targetSymbol) {
+        if (targetSymbol != null && !symbol.equals(targetSymbol) && symbolExists.test(targetSymbol)) {
+            view.goToSymbol(targetSymbol);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean switchChixSymbol() {
         if (null != metaData && null != metaData.chixSwitchSymbol && symbolExists.test(metaData.chixSwitchSymbol)) {
             view.goToSymbol(metaData.chixSwitchSymbol);
             return true;
@@ -785,14 +833,14 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    public void onSingleOrderCommand(final OrdersPresenter.SingleOrderCommand singleOrderCommand) {
+    void onSingleOrderCommand(final OrdersPresenter.SingleOrderCommand singleOrderCommand) {
 
         bookView.onSingleOrderCommand(clientSpeedState, singleOrderCommand);
     }
 
     // Heartbeats
 
-    public void sendHeartbeat() {
+    void sendHeartbeat() {
         if (lastHeartbeatSentMillis == null) {
             lastHeartbeatSentMillis = System.currentTimeMillis();
             ui.send(UiPipeImpl.cmd("heartbeat", lastHeartbeatSentMillis, heartbeatSeqNo.getAndIncrement()));
@@ -823,7 +871,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    public void setIsinsGoingEx(final OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx) {
+    void setIsinsGoingEx(final OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx) {
         this.isinsGoingEx = isinsGoingEx;
         this.exState = GoingExState.Unknown;
         checkGoingEx();

@@ -64,8 +64,8 @@ public class LadderWorkspace {
 
         contractSets.put(contractSet.symbol, contractSet);
 
-        contractSets.putIfAbsent(contractSet.spread, contractSet);
-        contractSets.putIfAbsent(contractSet.backMonth, contractSet);
+        contractSets.putIfAbsent(contractSet.contractAfterNext, contractSet);
+        contractSets.putIfAbsent(contractSet.nextContract, contractSet);
     }
 
     @FromWebSocketView
@@ -146,8 +146,8 @@ public class LadderWorkspace {
 
                 if (!lockedViews.contains(view)) {
 
-                    view.addSymbol(contractSet.backMonth);
-                    view.addSymbol(contractSet.spread);
+                    view.addSymbol(contractSet.nextContract);
+                    view.addSymbol(contractSet.contractAfterNext);
 
                     if (null != contractSet.leanSymbol) {
                         view.addSymbol(contractSet.leanSymbol);

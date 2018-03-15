@@ -9,6 +9,10 @@ public class SpreadContractSet extends Struct {
 
     public final String symbol;
 
+    public final String nextContract;
+    public final String contractAfterNext;
+
+    public final String frontMonth;
     public final String backMonth;
     public final String spread;
 
@@ -18,13 +22,30 @@ public class SpreadContractSet extends Struct {
 
     private final Map<String, String> nextSymbols;
 
-    SpreadContractSet(final String symbol, final String backMonth, final String spread, final String leanSymbol, final String stackSymbol,
-            final String parentSymbol) {
+    SpreadContractSet(final String symbol, final String frontMonth, final String backMonth, final String leanSymbol,
+            final String stackSymbol, final String parentSymbol) {
 
         this.symbol = symbol;
 
-        this.backMonth = backMonth;
-        this.spread = spread;
+        if (backMonth != null) {
+            this.frontMonth = symbol;
+            this.backMonth = backMonth;
+            this.spread = this.frontMonth + '-' + this.backMonth;
+            this.nextContract = this.backMonth;
+            this.contractAfterNext = this.spread;
+        } else if (frontMonth != null) {
+            this.frontMonth = frontMonth;
+            this.backMonth = symbol;
+            this.spread = this.frontMonth + '-' + this.backMonth;
+            this.nextContract = this.spread;
+            this.contractAfterNext = this.frontMonth;
+        } else {
+            this.frontMonth = symbol;
+            this.backMonth = symbol;
+            this.spread = symbol;
+            this.nextContract = symbol;
+            this.contractAfterNext = symbol;
+        }
 
         this.leanSymbol = leanSymbol;
         this.stackSymbol = stackSymbol;
@@ -33,8 +54,8 @@ public class SpreadContractSet extends Struct {
         this.nextSymbols = new HashMap<>();
 
         String prevSymbol = symbol;
-        prevSymbol = addSymbolNext(prevSymbol, backMonth);
-        prevSymbol = addSymbolNext(prevSymbol, spread);
+        prevSymbol = addSymbolNext(prevSymbol, nextContract);
+        prevSymbol = addSymbolNext(prevSymbol, contractAfterNext);
         if (!symbol.equals(leanSymbol)) {
             prevSymbol = addSymbolNext(prevSymbol, leanSymbol);
         }

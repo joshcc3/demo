@@ -129,7 +129,9 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			picard.toggleClass("ASK", !inAuction && side === "ASK");
 			picard.toggleClass("BID_AUCTION", inAuction && side === "BID");
 			picard.toggleClass("ASK_AUCTION", inAuction && side === "ASK");
-			picard.toggleClass("hidden", priceFloat < displayThreshold);
+			if (priceFloat > displayThreshold) {
+				picard.removeClass("hidden");
+			}
 		}
 	}
 }

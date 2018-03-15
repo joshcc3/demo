@@ -43,7 +43,7 @@ public class SearchResult extends Struct {
 
     public SearchResult(final IBook<?> book) {
 
-        // TODO: Description of spread to contain buy/sell info
+        // TODO: Description of contractAfterNext to contain buy/sell info
 
         final String isinCcyMic = book.getInstID().toString();
 
