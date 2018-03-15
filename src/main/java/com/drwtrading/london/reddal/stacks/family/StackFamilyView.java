@@ -932,17 +932,24 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         final long midnight = cal.getTimeInMillis();
 
+        cal.add(Calendar.YEAR, 9);
+
+        final long nineYearsAhead = cal.getTimeInMillis();
+
         for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> familyChildren : families.entrySet()) {
 
             if (!StackOrphanage.ORPHANAGE.equals(familyChildren.getKey())) {
-                for (final String childSymbol : familyChildren.getValue().keySet()) {
+
+                final Set<String> children = new HashSet<>(familyChildren.getValue().keySet());
+                for (final String childSymbol : children) {
 
                     final FutureConstant future = FutureConstant.getFutureFromSymbol(childSymbol);
-                    if (null != future) {
+                    if (null != future && FutureConstant.FEXD != future) {
 
                         expiryCalc.setToRollDate(cal, childSymbol);
+                        final long expiryMillis = cal.getTimeInMillis();
 
-                        if (cal.getTimeInMillis() < midnight) {
+                        if (expiryMillis < midnight || nineYearsAhead < expiryMillis) {
                             killStrategy(childSymbol);
                         }
                     }
