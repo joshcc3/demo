@@ -1,8 +1,8 @@
-var ws;
+let ws;
 
-var NO_FILTER = "--ALL--";
-var STICKY_HEADER_ID = "stickyHeader";
-var symbolFilter;
+const NO_FILTER = "--ALL--";
+const STICKY_HEADER_ID = "stickyHeader";
+let symbolFilter;
 
 $(function () {
 
@@ -12,12 +12,12 @@ $(function () {
 		eval(m);
 	};
 
-	var nibblerFilter = document.location.hash;
-	var nibblerEnd = nibblerFilter.indexOf(';', 0);
+	const nibblerFilter = document.location.hash;
+	let nibblerEnd = nibblerFilter.indexOf(';', 0);
 	if (nibblerEnd < 0) {
 		nibblerEnd = nibblerFilter.length;
 	}
-	var nibbler = nibblerFilter.substr(1, nibblerEnd - 1);
+	const nibbler = nibblerFilter.substr(1, nibblerEnd - 1);
 	symbolFilter = nibblerFilter.substr(nibblerEnd + 1, nibblerFilter.length).split(",").filter(function (el) {
 		return 0 !== el.length;
 	});
@@ -25,16 +25,16 @@ $(function () {
 	setupTable();
 
 	ws.send("subscribe");
-	var configTypeCombo = $("#configTypes");
+	const configTypeCombo = $("#configTypes");
 	addConfigTypeOption(configTypeCombo, NO_FILTER);
 	configTypeCombo.on("change", function () {
 		selectedConfigTypeChanged();
 	});
 
-	var massControlRow = setRow("massControl", "ALL", "ALL", "");
+	const massControlRow = setRow("massControl", "ALL", "ALL", "");
 	massControlRow.find("input").each(setupCopyToAllRows);
 
-	var massControlSubmitAll = massControlRow.find(".button button");
+	const massControlSubmitAll = massControlRow.find(".button button");
 	massControlSubmitAll.text("Submit all");
 	massControlSubmitAll.off("click").click(function () {
 		getAllConfigRows().filter(":not(.filtered)").find(".button button").click();
@@ -54,7 +54,7 @@ function removeAll(nibblerName) {
 
 function setConfigTypes(configTypes) {
 
-	var configTypeCombo = $("#configTypes");
+	const configTypeCombo = $("#configTypes");
 	$(configTypeCombo).find("option").remove();
 	addConfigTypeOption(configTypeCombo, NO_FILTER);
 	configTypes.forEach(function (configType) {
@@ -68,9 +68,9 @@ function setConfigTypes(configTypes) {
 
 function selectedConfigTypeChanged() {
 
-	var selectedConfigType = getSelectedConfigType();
+	const selectedConfigType = getSelectedConfigType();
 
-	var rows = getAllConfigRows();
+	const rows = getAllConfigRows();
 	rows.each(function (i, row) {
 		row = $(row);
 		filterRowByConfigType(row, selectedConfigType);
@@ -84,14 +84,14 @@ function filterRowByConfigType(row, selectedConfigType) {
 function setupCopyToAllRows(i, input) {
 
 	input = $(input);
-	var parentDiv = input.parent();
-	var findCode = "";
-	var divClasses = parentDiv.attr("class");
+	const parentDiv = input.parent();
+	let findCode = "";
+	const divClasses = parentDiv.attr("class");
 	divClasses.split(" ").forEach(function (s) {
 		findCode += "." + s;
 	});
 	findCode += " input";
-	var inputClasses = input.attr("class");
+	const inputClasses = input.attr("class");
 	if (inputClasses) {
 		inputClasses.split(" ").forEach(function (s) {
 			findCode += "." + s;
@@ -100,8 +100,8 @@ function setupCopyToAllRows(i, input) {
 
 	if (parentDiv.hasClass("boolean")) {
 		input.change(function () {
-			var copyValue = input.is(":checked");
-			var targetInputs = getAllConfigRows().filter(":not(.filtered)").find(findCode);
+			const copyValue = input.is(":checked");
+			const targetInputs = getAllConfigRows().filter(":not(.filtered)").find(findCode);
 			targetInputs.each(function (i, targetInput) {
 				targetInput = $(targetInput);
 				targetInput.prop("checked", copyValue);
@@ -109,7 +109,7 @@ function setupCopyToAllRows(i, input) {
 			});
 		});
 		input.off("dblclick").dblclick(function () {
-			var targetInputs = getAllConfigRows().filter(":not(.filtered)").find(findCode);
+			const targetInputs = getAllConfigRows().filter(":not(.filtered)").find(findCode);
 			targetInputs.each(function (i, targetInput) {
 				targetInput = $(targetInput);
 				targetInput.prop("checked", "true" === targetInput.attr("data"));
@@ -121,8 +121,8 @@ function setupCopyToAllRows(i, input) {
 	} else {
 		input.on("input", function () {
 
-			var copyValue = input.val();
-			var targetInputs = getAllConfigRows().filter(":not(.filtered)").find(findCode);
+			const copyValue = input.val();
+			const targetInputs = getAllConfigRows().filter(":not(.filtered)").find(findCode);
 			targetInputs.each(function (i, targetInput) {
 				targetInput = $(targetInput);
 				if (copyValue) {
@@ -139,7 +139,7 @@ function setupCopyToAllRows(i, input) {
 
 function addConfigTypeOption(configTypeCombo, configType) {
 
-	var option = $("<option value=\"" + configType + "\">" + configType + "</option>");
+	const option = $("<option value=\"" + configType + "\">" + configType + "</option>");
 	option.addClass(configType);
 	option.attr("data", configType);
 	configTypeCombo.append(option);
@@ -156,8 +156,8 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 				askModTicks, askQuoteFlickerBuffer, askQuotePicardMaxTicksThrough, askPicardMaxPerSec, askPicardMaxPerMin,
 				askPicardMaxPerHour, askPicardMaxPerDay) {
 
-	var rowID = nibblerName + configGroupID;
-	var row = $("#" + rowID);
+	const rowID = nibblerName + configGroupID;
+	let row = $("#" + rowID);
 	if (0 === symbolFilter.length || -1 < symbolFilter.indexOf(symbol) || "ALL" == symbol) {
 		if (row.length < 1) {
 			row = $("#header").clone();
@@ -175,7 +175,7 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 				if (!d.hasClass("button") && !d.hasClass("stickyColumn")) {
 					d.text("");
 
-					var inputType;
+					let inputType;
 					if (d.hasClass("boolean")) {
 						inputType = "checkbox";
 					} else {
@@ -210,7 +210,7 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 				submitRow(row);
 			});
 
-			var limitedBufferInput = row.find(".quoteFlickerBuffer input, .maxPapaWeight input");
+			const limitedBufferInput = row.find(".quoteFlickerBuffer input, .maxPapaWeight input");
 			limitedBufferInput.attr("min", 0);
 			limitedBufferInput.attr("max", 100);
 			limitedBufferInput.on('keydown', function (e) {
@@ -227,15 +227,15 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 			});
 		}
 		row.attr("configType", configType);
-		var selectedConfigType = getSelectedConfigType();
+		const selectedConfigType = getSelectedConfigType();
 		filterRowByConfigType(row, selectedConfigType);
 
 		row.find(".symbol").text(symbol);
 
-		var sideCol = row.find(".side");
+		const sideCol = row.find(".side");
 		sideCol.text("");
-		var bidSide = $("<div class=\"bid\">BID</div>");
-		var askSide = $("<div class=\"ask\">ASK</div>");
+		const bidSide = $("<div class=\"bid\">BID</div>");
+		const askSide = $("<div class=\"ask\">ASK</div>");
 		sideCol.append(bidSide);
 		sideCol.append(askSide);
 
@@ -307,7 +307,7 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 
 function setCellData(row, cellID, value) {
 
-	var input = row.find(cellID);
+	const input = row.find(cellID);
 	if (typeof value != "undefined") {
 		input.attr("data", value);
 		input.val(value);
@@ -320,7 +320,7 @@ function setCellData(row, cellID, value) {
 
 function setDoubleData(row, cellID, value) {
 
-	var input = row.find(cellID);
+	const input = row.find(cellID);
 	if (typeof value != "undefined") {
 		input.attr("data", value);
 		input.val(parseFloat(value));
@@ -333,7 +333,7 @@ function setDoubleData(row, cellID, value) {
 
 function setBoolData(row, cellID, value) {
 
-	var input = row.find(cellID);
+	const input = row.find(cellID);
 	if (typeof value != "undefined") {
 		input.attr("data", value);
 		input.prop("checked", value);
@@ -346,65 +346,65 @@ function setBoolData(row, cellID, value) {
 
 function submitRow(row) {
 
-	var nibblerName = row.attr("data-nibblerName");
-	var configGroupID = row.attr("data-configGroupID");
+	const nibblerName = row.attr("data-nibblerName");
+	const configGroupID = row.attr("data-configGroupID");
 
-	var quoteMaxBookAgeMillis = getCellData(row, ".quoteInst.maxBookAgeMillis input");
-	var quoteIsAuctionQuotingEnabled = getCellBool(row, ".quoteInst.isAuctionQuotingEnabled input");
-	var quoteIsOnlyAuction = getCellBool(row, ".quoteInst.isOnlyAuction input");
-	var quoteAuctionTheoMaxTicksThrough = getCellData(row, ".quoteInst.auctionTheoMaxTicksThrough input");
-	var quoteMaxJumpBPS = getCellData(row, ".quoteInst.maxJumpBPS input");
-	var quoteBettermentQty = getCellData(row, ".quoteInst.bettermentQty input");
-	var quoteBettermentTicks = getCellData(row, ".quoteInst.bettermentTicks input");
+	const quoteMaxBookAgeMillis = getCellData(row, ".quoteInst.maxBookAgeMillis input");
+	const quoteIsAuctionQuotingEnabled = getCellBool(row, ".quoteInst.isAuctionQuotingEnabled input");
+	const quoteIsOnlyAuction = getCellBool(row, ".quoteInst.isOnlyAuction input");
+	const quoteAuctionTheoMaxTicksThrough = getCellData(row, ".quoteInst.auctionTheoMaxTicksThrough input");
+	const quoteMaxJumpBPS = getCellData(row, ".quoteInst.maxJumpBPS input");
+	const quoteBettermentQty = getCellData(row, ".quoteInst.bettermentQty input");
+	const quoteBettermentTicks = getCellData(row, ".quoteInst.bettermentTicks input");
 
-	var fxMaxBookAgeMillis = getCellData(row, ".fx.maxBookAgeMillis input");
-	var fxMaxJumpBPS = getCellData(row, ".fx.maxJumpBPS input");
+	const fxMaxBookAgeMillis = getCellData(row, ".fx.maxBookAgeMillis input");
+	const fxMaxJumpBPS = getCellData(row, ".fx.maxJumpBPS input");
 
-	var leanMaxBookAgeMillis = getCellData(row, ".leanInst.maxBookAgeMillis input");
-	var leanMaxJumpBPS = getCellData(row, ".leanInst.maxJumpBPS input");
-	var leanRequiredQty = getCellData(row, ".leanInst.requiredQty input");
-	var leanMaxPapaWeight = getCellData(row, ".leanInst.maxPapaWeight input");
-	var leanToQuoteRatio = getCellFloat(row, ".leanInst.leanToQuoteRatio input");
-	var leanPriceAdjustment = getCellFloat(row, ".leanInst.leanPriceAdjustment input");
+	const leanMaxBookAgeMillis = getCellData(row, ".leanInst.maxBookAgeMillis input");
+	const leanMaxJumpBPS = getCellData(row, ".leanInst.maxJumpBPS input");
+	const leanRequiredQty = getCellData(row, ".leanInst.requiredQty input");
+	const leanMaxPapaWeight = getCellData(row, ".leanInst.maxPapaWeight input");
+	const leanToQuoteRatio = getCellFloat(row, ".leanInst.leanToQuoteRatio input");
+	const leanPriceAdjustment = getCellFloat(row, ".leanInst.leanPriceAdjustment input");
 
-	var additiveIsEnabled = getCellBool(row, ".additiveInst.isEnabled input");
-	var additiveMaxSignalAgeMillis = getCellData(row, ".additiveInst.maxSignalAgeMillis input");
-	var additiveMinRequiredBPS = getCellData(row, ".additiveInst.minRequiredBPS input");
-	var additiveMaxBPS = getCellData(row, ".additiveInst.maxBPS input");
+	const additiveIsEnabled = getCellBool(row, ".additiveInst.isEnabled input");
+	const additiveMaxSignalAgeMillis = getCellData(row, ".additiveInst.maxSignalAgeMillis input");
+	const additiveMinRequiredBPS = getCellData(row, ".additiveInst.minRequiredBPS input");
+	const additiveMaxBPS = getCellData(row, ".additiveInst.maxBPS input");
 
-	var bidPlanMinLevelQty = getCellData(row, ".plan.minLevelQty .bid");
-	var bidPlanMaxLevelQty = getCellData(row, ".plan.maxLevelQty .bid");
-	var bidPlanLotSize = getCellData(row, ".plan.lotSize .bid");
-	var bidPlanMaxLevels = getCellData(row, ".plan.maxLevels .bid");
-	var bidMinPicardQty = getCellData(row, ".plan.minPicardQty .bid");
+	const bidPlanMinLevelQty = getCellData(row, ".plan.minLevelQty .bid");
+	const bidPlanMaxLevelQty = getCellData(row, ".plan.maxLevelQty .bid");
+	const bidPlanLotSize = getCellData(row, ".plan.lotSize .bid");
+	const bidPlanMaxLevels = getCellData(row, ".plan.maxLevels .bid");
+	const bidMinPicardQty = getCellData(row, ".plan.minPicardQty .bid");
 
-	var bidMaxOrdersPerLevel = getCellData(row, ".strategy.maxOrdersPerLevel .bid");
-	var bidIsOnlySubmitBestLevel = getCellBool(row, ".strategy.isOnlySubmitBestLevel .bid");
-	var bidIsQuoteBettermentOn = getCellBool(row, ".strategy.isQuoteBettermentOn .bid");
-	var bidModTicks = getCellData(row, ".strategy.quoteModTicks .bid");
-	var bidQuoteFlickerBuffer = getCellData(row, ".strategy.quoteFlickerBuffer .bid");
-	var bidQuotePicardMaxTicksThrough = getCellData(row, ".strategy.quotePicardMaxTicksThrough .bid");
-	var bidPicardMaxPerSec = getCellData(row, ".strategy.picardMaxPerSec .bid");
-	var bidPicardMaxPerMin = getCellData(row, ".strategy.picardMaxPerMin .bid");
-	var bidPicardMaxPerHour = getCellData(row, ".strategy.picardMaxPerHour .bid");
-	var bidPicardMaxPerDay = getCellData(row, ".strategy.picardMaxPerDay .bid");
+	const bidMaxOrdersPerLevel = getCellData(row, ".strategy.maxOrdersPerLevel .bid");
+	const bidIsOnlySubmitBestLevel = getCellBool(row, ".strategy.isOnlySubmitBestLevel .bid");
+	const bidIsQuoteBettermentOn = getCellBool(row, ".strategy.isQuoteBettermentOn .bid");
+	const bidModTicks = getCellData(row, ".strategy.quoteModTicks .bid");
+	const bidQuoteFlickerBuffer = getCellData(row, ".strategy.quoteFlickerBuffer .bid");
+	const bidQuotePicardMaxTicksThrough = getCellData(row, ".strategy.quotePicardMaxTicksThrough .bid");
+	const bidPicardMaxPerSec = getCellData(row, ".strategy.picardMaxPerSec .bid");
+	const bidPicardMaxPerMin = getCellData(row, ".strategy.picardMaxPerMin .bid");
+	const bidPicardMaxPerHour = getCellData(row, ".strategy.picardMaxPerHour .bid");
+	const bidPicardMaxPerDay = getCellData(row, ".strategy.picardMaxPerDay .bid");
 
-	var askPlanMinLevelQty = getCellData(row, ".plan.minLevelQty .ask");
-	var askPlanMaxLevelQty = getCellData(row, ".plan.maxLevelQty .ask");
-	var askPlanLotSize = getCellData(row, ".plan.lotSize .ask");
-	var askPlanMaxLevels = getCellData(row, ".plan.maxLevels .ask");
-	var askMinPicardQty = getCellData(row, ".plan.minPicardQty .ask");
+	const askPlanMinLevelQty = getCellData(row, ".plan.minLevelQty .ask");
+	const askPlanMaxLevelQty = getCellData(row, ".plan.maxLevelQty .ask");
+	const askPlanLotSize = getCellData(row, ".plan.lotSize .ask");
+	const askPlanMaxLevels = getCellData(row, ".plan.maxLevels .ask");
+	const askMinPicardQty = getCellData(row, ".plan.minPicardQty .ask");
 
-	var askMaxOrdersPerLevel = getCellData(row, ".strategy.maxOrdersPerLevel .ask");
-	var askIsOnlySubmitBestLevel = getCellBool(row, ".strategy.isOnlySubmitBestLevel .ask");
-	var askIsQuoteBettermentOn = getCellBool(row, ".strategy.isQuoteBettermentOn .ask");
-	var askModTicks = getCellData(row, ".strategy.quoteModTicks .ask");
-	var askQuoteFlickerBuffer = getCellData(row, ".strategy.quoteFlickerBuffer .ask");
-	var askQuotePicardMaxTicksThrough = getCellData(row, ".strategy.quotePicardMaxTicksThrough .ask");
-	var askPicardMaxPerSec = getCellData(row, ".strategy.picardMaxPerSec .ask");
-	var askPicardMaxPerMin = getCellData(row, ".strategy.picardMaxPerMin .ask");
-	var askPicardMaxPerHour = getCellData(row, ".strategy.picardMaxPerHour .ask");
-	var askPicardMaxPerDay = getCellData(row, ".strategy.picardMaxPerDay .ask");
+	const askMaxOrdersPerLevel = getCellData(row, ".strategy.maxOrdersPerLevel .ask");
+	const askIsOnlySubmitBestLevel = getCellBool(row, ".strategy.isOnlySubmitBestLevel .ask");
+	const askIsQuoteBettermentOn = getCellBool(row, ".strategy.isQuoteBettermentOn .ask");
+	const askModTicks = getCellData(row, ".strategy.quoteModTicks .ask");
+	const askQuoteFlickerBuffer = getCellData(row, ".strategy.quoteFlickerBuffer .ask");
+	const askQuotePicardMaxTicksThrough = getCellData(row, ".strategy.quotePicardMaxTicksThrough .ask");
+	const askPicardMaxPerSec = getCellData(row, ".strategy.picardMaxPerSec .ask");
+	const askPicardMaxPerMin = getCellData(row, ".strategy.picardMaxPerMin .ask");
+	const askPicardMaxPerHour = getCellData(row, ".strategy.picardMaxPerHour .ask");
+	const askPicardMaxPerDay = getCellData(row, ".strategy.picardMaxPerDay .ask");
 
 	ws.send(command("submitChange", [nibblerName, configGroupID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
 		quoteAuctionTheoMaxTicksThrough, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS,
@@ -439,9 +439,9 @@ function getSelectedConfigType() {
 
 function checkInputPersisted(checkbox) {
 
-	var parentDiv = checkbox.parent();
-	var allInputs = parentDiv.find("input");
-	var allPersisted = true;
+	const parentDiv = checkbox.parent();
+	const allInputs = parentDiv.find("input");
+	let allPersisted = true;
 	allInputs.each(function (i, input) {
 		input = $(input);
 		allPersisted &= input.prop("checked") == ("true" === input.attr("data"));
@@ -455,20 +455,20 @@ function setupTable() {
 		return false;
 	};
 
-	var header = $("#header");
-	var stickyHeader = header.clone();
+	const header = $("#header");
+	const stickyHeader = header.clone();
 	stickyHeader.appendTo(header.parent());
 	stickyHeader.attr("id", STICKY_HEADER_ID);
-	var wind = $(window);
-	var headerYPos = header.offset().top;
-	var headerXPos = header.offset().left;
+	const wind = $(window);
+	const headerYPos = header.offset().top;
+	const headerXPos = header.offset().left;
 
 	wind.scroll(function () {
 
 		if (headerYPos < wind.scrollTop()) {
 			stickyHeader.toggleClass('sticky', true);
 
-			var x = headerXPos - $(this).scrollLeft();
+			const x = headerXPos - $(this).scrollLeft();
 			stickyHeader.css('left', x);
 		} else {
 			stickyHeader.toggleClass('sticky', false);
@@ -476,37 +476,33 @@ function setupTable() {
 	});
 }
 
-function setupStickyColumns(rows) {
+function setupStickyColumns(row) {
 
-	rows.each(function () {
+	row.find(".stickyColumn").remove();
+	const columns = row.find(".configID");
 
-		var row = $(this);
-		row.find(".stickyColumn").remove();
-		var columns = row.find(".configID");
+	const stickyColumns = $("<div class=\"stickyColumn\"></div>");
 
-		var stickyColumns = $("<div class=\"stickyColumn\"></div>");
+	stickyColumns.appendTo(row);
+	columns.clone().appendTo(stickyColumns);
+	stickyColumns.removeAttr("id");
 
-		stickyColumns.appendTo(row);
-		columns.clone().appendTo(stickyColumns);
-		stickyColumns.removeAttr("id");
+	const referenceColumn = columns.filter(".leftMost");
 
-		var referenceColumn = columns.filter(".leftMost");
+	const wind = $(window);
+	const columnXPos = referenceColumn.offset().left;
 
-		var wind = $(window);
-		var columnXPos = referenceColumn.offset().left;
+	wind.scroll(function () {
 
-		wind.scroll(function () {
+		if (columnXPos < wind.scrollLeft()) {
+			stickyColumns.toggleClass('sticky', true);
 
-			if (columnXPos < wind.scrollLeft()) {
-				stickyColumns.toggleClass('sticky', true);
-
-				var columnYPos = referenceColumn.offset().top;
-				var y = columnYPos - $(this).scrollTop();
-				stickyColumns.css("top", y);
-				stickyColumns.css("height", referenceColumn.outerHeight());
-			} else {
-				stickyColumns.toggleClass('sticky', false);
-			}
-		});
+			const columnYPos = referenceColumn.offset().top;
+			const y = columnYPos - $(this).scrollTop();
+			stickyColumns.css("top", y);
+			stickyColumns.css("height", referenceColumn.outerHeight());
+		} else {
+			stickyColumns.toggleClass('sticky', false);
+		}
 	});
 }
