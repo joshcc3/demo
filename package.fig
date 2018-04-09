@@ -13,12 +13,12 @@ config default
 	include :scripts
 
 	include drw.london.eeif-utils/222
-	include drw.london.eeif-md/294
+	include drw.london.eeif-md/296
 	include drw.london.eeif-nibbler-transport/40
 	include drw.london.eeif-position-transport/94
 	include drw.london.eeif-stack-transport/96
 	include drw.london.eeif-yoda-transport/67
-	include drw.london.eeif-indy-transport/177
+	include drw.london.eeif-indy-transport/179
 
 	# Libraries and containers
 	include google.guava/r06
