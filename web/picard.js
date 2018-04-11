@@ -3,7 +3,7 @@ var ws;
 var isSoundsOn = true;
 var checkCrossed = false;
 
-var RUSSIA_SSF = /^(RI|SR|SP|GZ|LK|RN|TT|MT|NK|VB|SG|HY|FS|UK|CH|TN|SN|GM|RT|ME|MN)([A-Z])([0-9])$/;
+var RUSSIA_SSF = /^(SR|SP|GZ|LK|RN|TT|MT|NK|VB|SG|HY|FS|UK|CH|TN|SN|GM|RT|ME|MN)([A-Z])([0-9])$/;
 
 var picards = {};
 var queued;
