@@ -390,7 +390,7 @@ public class Main {
             app.addStartUpAction(server::start);
             channels.leanDefs.subscribe(selectIOFiber, message -> {
                 if (message.instType == InstType.EQUITY || message.instType == InstType.DR) {
-                    cache.setInstDef(new InstrumentDef(message.instID, Source.ONLINE_VIEW, true, message.symbol, true));
+                    cache.setInstDef(new InstrumentDef(message.instID, Source.LEAN_DEF, true, message.symbol, true));
                 }
             });
         }
