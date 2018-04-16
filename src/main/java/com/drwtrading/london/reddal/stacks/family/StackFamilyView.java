@@ -867,10 +867,10 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void resetOffsetsForFamily(String familySymbol, final WebSocketInboundData data) {
+    public void resetOffsetsForFamily(final String familySymbol, final WebSocketInboundData data) {
         try {
 
-            SearchResult searchResult = searchResults.get(familySymbol);
+            final SearchResult searchResult = searchResults.get(familySymbol);
             if (null == searchResult) {
                 return;
             }
@@ -1019,9 +1019,11 @@ public class StackFamilyView implements IStackRelationshipListener {
         for (final String symbol : symbols) {
 
             final SearchResult searchResult = searchResults.get(symbol);
-            final String family = getFamilyName(searchResult);
-            if (families.containsKey(family)) {
-                return family;
+            if (isin.equals(searchResult.instID.isin)) {
+                final String family = getFamilyName(searchResult);
+                if (families.containsKey(family)) {
+                    return family;
+                }
             }
         }
         return null;
