@@ -331,6 +331,7 @@ public class Main {
             final StockAlertPresenter presenter = new StockAlertPresenter(new SystemClock(), webLog);
             fibers.ui.subscribe(presenter, ws);
             channels.stockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
+            channels.rfqStockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
         }
 
 
