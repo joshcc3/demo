@@ -6,6 +6,7 @@ var etfRfqSound;
 var atCloseSound;
 var sweepSound;
 var twapSound;
+var tweetSound;
 var unknownSound;
 
 $(function () {
@@ -23,6 +24,7 @@ $(function () {
     atCloseSound = new Audio("stockAlerts/calf-slap.wav");
     sweepSound = new Audio("stockAlerts/sword-schwing.wav");
     twapSound = new Audio("stockAlerts/highNoon.mp3");
+    tweetSound = new Audio("stockAlerts/tweet.wav");
     unknownSound = new Audio("stockAlerts/huh-humm.wav");
 });
 
@@ -75,7 +77,9 @@ function playSound(type) {
         sound = twapSound;
     } else if ("ETF_RFQ" == type) {
         sound = etfRfqSound;
-    } else {
+    } else if ("TWEET" == type) {
+    	sound = tweetSound;
+	} else {
         sound = unknownSound;
     }
     if (!sound.readyState) {

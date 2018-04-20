@@ -82,7 +82,7 @@ function displaySymbol(symbol, listing) {
 }
 
 //TODO:: remove longPrice
-function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, description, state, inAuction, longPrice) {
+function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, description, state, inAuction, longPrice, isPlaySound) {
 
 	if (!RUSSIA_SSF.test(symbol)) {
 
@@ -129,8 +129,19 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			picard.toggleClass("ASK", !inAuction && side === "ASK");
 			picard.toggleClass("BID_AUCTION", inAuction && side === "BID");
 			picard.toggleClass("ASK_AUCTION", inAuction && side === "ASK");
+
+			if (isPlaySound) {
+				picard.toggleClass("toPlaySound", true);
+			}
+
 			if (priceFloat > displayThreshold) {
+
 				picard.removeClass("hidden");
+
+				if (picard.hasClass("toPlaySound")) {
+					picard.removeClass("toPlaySound");
+					playSound();
+				}
 			}
 		}
 	}
@@ -149,7 +160,6 @@ function queueSort() {
 
 function sortPicards() {
 	let sorted = $('#picards').find('tr.picard:not(.template)');
-	console.log("Sorting by " + sortByValue);
 	sorted.sort(function (a, b) {
 		return $(b).data(sortByValue) - $(a).data(sortByValue);
 	});
@@ -163,8 +173,8 @@ function toId(symbol) {
 
 function test() {
 	picard("sym1", "CHIX", "BID", "20.3", "400", "EUR", "1000.0", "Description", "live");
-	picard("sym2", "CHIX", "ASK", "0.3", "350",  "EUR", "1000.0", "Description", "live");
-	picard("sym3", "CHIX", "BID", "30.3", "0",   "EUR", "1000.0", "Description", "live");
-	picard("sym4", "CHIX", "BID", "1.65", "400", "EUR",  "233.0", "Description", "fade");
-	picard("sym4", "CHIX", "BID", "1.65", "700", "EUR",  "233.0", "Description", "dead");
+	picard("sym2", "CHIX", "ASK", "0.3", "350", "EUR", "1000.0", "Description", "live");
+	picard("sym3", "CHIX", "BID", "30.3", "0", "EUR", "1000.0", "Description", "live");
+	picard("sym4", "CHIX", "BID", "1.65", "400", "EUR", "233.0", "Description", "fade");
+	picard("sym4", "CHIX", "BID", "1.65", "700", "EUR", "233.0", "Description", "dead");
 }

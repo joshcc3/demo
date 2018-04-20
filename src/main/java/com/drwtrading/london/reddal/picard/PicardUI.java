@@ -141,10 +141,9 @@ public class PicardUI {
             displaySymbol = givenSymbol;
         }
 
+        final boolean isPlaySound = soundsOn && row.isNewRow;
+
         view.picard(row.symbol, displaySymbol, row.side.toString(), bpsThrough, opportunitySize, ccy, row.prettyPrice, row.description,
-                row.state.toString(), row.inAuction, Long.toString(row.price));
-        if (row.isNewRow && soundsOn) {
-            view.playSound();
-        }
+                row.state.toString(), row.inAuction, Long.toString(row.price), isPlaySound);
     }
 }

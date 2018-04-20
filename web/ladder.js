@@ -125,7 +125,7 @@ function subscribe() {
 	if (symbolEnd < 0) {
 		symbolEnd = document.location.hash.length;
 	}
-	var symbol = document.location.hash.substr(1, symbolEnd - 1);
+	var symbol = document.location.hash.substr(1, symbolEnd - 1).replace("%20", " ");
 	NumLevels = calcLevels();
 	draw(NumLevels);
 	if (0 < symbolEnd) {
