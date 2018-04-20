@@ -333,6 +333,15 @@ public class Main {
             channels.stockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
         }
 
+
+        { // ETF RFQ screen
+            final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("rfqs", "stockalerts", fibers.ui, webApp, ws);
+            final StockAlertPresenter presenter = new StockAlertPresenter(new SystemClock(), webLog);
+            fibers.ui.subscribe(presenter, ws);
+            channels.rfqStockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
+        }
+
         final String ewokBaseURL = root.getString(EWOK_BASE_URL_PARAM);
 
         final MultiLayeredResourceMonitor<ReddalComponents> parentMonitor =
@@ -419,6 +428,7 @@ public class Main {
         setupPicardUI(selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
                 channels.displaySymbol, webApp);
 
+        // MD Sources
         final ConfigGroup mdConfig = root.getGroup("md");
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
 
@@ -437,7 +447,8 @@ public class Main {
                 final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
 
                 final IMDSubscriber depthBookSubscriber =
-                        getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName);
+                        getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName,
+                                mdSource == MDSource.RFQ ? channels.rfqStockAlerts : channels.stockAlerts);
 
                 final TypedChannel<WebSocketControlMessage> webSocket = TypedChannels.create(WebSocketControlMessage.class);
                 webSockets.put(mdSource, webSocket);
@@ -562,10 +573,10 @@ public class Main {
                     final ReddalChannels noOpChannels = new ReddalChannels(CHANNEL_FACTORY);
                     shredderBookSubscriber =
                             getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource), noOpChannels,
-                                    localAppName);
+                                    localAppName, noOpChannels.stockAlerts);
                 } else {
                     shredderBookSubscriber =
-                            getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName);
+                            getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName, channels.stockAlerts);
                 }
 
                 final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket =
@@ -955,14 +966,14 @@ public class Main {
     }
 
     private static DepthBookSubscriber getMDSubscription(final Application<?> app, final IResourceMonitor<ReddalComponents> displayMonitor,
-            final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
-            final String localAppName) throws ConfigException {
+                                                         final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
+                                                         final String localAppName, TypedChannel<StockAlert> stockAlerts) throws ConfigException {
 
         final LevelThreeBookSubscriber l3BookHandler =
-                new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, channels.stockAlerts,
+                new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, stockAlerts,
                         channels.stackRefPriceDetailChannel);
         final LevelTwoBookSubscriber l2BookHandler =
-                new LevelTwoBookSubscriber(displayMonitor, channels.searchResults, channels.stockAlerts,
+                new LevelTwoBookSubscriber(displayMonitor, channels.searchResults, stockAlerts,
                         channels.stackRefPriceDetailChannel);
 
         final IResourceMonitor<MDTransportComponents> mdClientMonitor =

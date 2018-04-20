@@ -1,7 +1,10 @@
 package com.drwtrading.london.reddal.data.ibook;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class DepthBookSubscriber implements IMDSubscriber {
 
@@ -11,22 +14,17 @@ public class DepthBookSubscriber implements IMDSubscriber {
     private final Map<String, MDForSymbol> mdForSymbols;
 
     public DepthBookSubscriber(final LevelThreeBookSubscriber l3BookSubscriber, final LevelTwoBookSubscriber l2BookSubscriber) {
-
         this.l3BookSubscriber = l3BookSubscriber;
         this.l2BookSubscriber = l2BookSubscriber;
-
         this.mdForSymbols = new HashMap<>();
     }
 
     @Override
     public MDForSymbol subscribeForMD(final String symbol, final Object listener) {
-
         final MDForSymbol mdForSymbol = mdForSymbols.get(symbol);
         if (null == mdForSymbol) {
-
             final MDForSymbol newMDForSymbol = new MDForSymbol(symbol);
             mdForSymbols.put(symbol, newMDForSymbol);
-
             return addListener(newMDForSymbol, listener);
         } else {
             return addListener(mdForSymbol, listener);
@@ -34,9 +32,7 @@ public class DepthBookSubscriber implements IMDSubscriber {
     }
 
     private MDForSymbol addListener(final MDForSymbol mdForSymbol, final Object listener) {
-
         if (mdForSymbol.addListener(listener)) {
-
             this.l3BookSubscriber.subscribeForMD(mdForSymbol);
             this.l2BookSubscriber.subscribeForMD(mdForSymbol);
             return mdForSymbol;
@@ -46,13 +42,11 @@ public class DepthBookSubscriber implements IMDSubscriber {
 
     @Override
     public void unsubscribeForMD(final String symbol, final Object listener) {
-
         final MDForSymbol mdForSymbol = mdForSymbols.get(symbol);
-
         if (null != mdForSymbol && mdForSymbol.removeListener(listener)) {
-
             this.l3BookSubscriber.unsubscribeForMD(mdForSymbol);
             this.l2BookSubscriber.unsubscribeForMD(mdForSymbol);
         }
     }
+
 }

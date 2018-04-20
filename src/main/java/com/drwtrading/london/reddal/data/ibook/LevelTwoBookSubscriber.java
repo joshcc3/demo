@@ -8,6 +8,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.stacks.opxl.StackRefPriceDetail;
@@ -80,8 +81,14 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
                 case RFQ: {
                     final long milliSinceMidnight = refPrice.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS;
                     final String timestamp = sdf.format(millisAtMidnightUTC + milliSinceMidnight);
+                    final String type;
+                    if (book.getInstType() == InstType.ETF) {
+                        type = "ETF_RFQ";
+                    } else {
+                        type = "RFQ";
+                    }
                     final StockAlert stockAlert =
-                            new StockAlert(milliSinceMidnight, timestamp, "RFQ", book.getSymbol(), "Qty: " + refPrice.getQty());
+                            new StockAlert(milliSinceMidnight, timestamp, type, book.getSymbol(), "Qty: " + refPrice.getQty());
                     stockAlertChannel.publish(stockAlert);
                     break;
                 }

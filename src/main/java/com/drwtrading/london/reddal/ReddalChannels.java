@@ -70,6 +70,7 @@ class ReddalChannels {
     final TypedChannel<DisplaySymbol> displaySymbol;
     final TypedChannel<SearchResult> searchResults;
     final TypedChannel<StockAlert> stockAlerts;
+    final TypedChannel<StockAlert> rfqStockAlerts;
     final TypedChannel<HeartbeatRoundtrip> heartbeatRoundTrips;
 
     final TypedChannel<RecenterLaddersForUser> recenterLaddersForUser;
@@ -151,6 +152,7 @@ class ReddalChannels {
         this.picardRows = create(PicardRow.class);
         this.yodaPicardRows = create(PicardRow.class);
         leanDefs = create(LeanDef.class);
+        rfqStockAlerts = create(StockAlert.class);
     }
 
     private <T> TypedChannel<T> create(final Class<T> clazz) {
