@@ -19,7 +19,7 @@ $(function () {
     headerRow = $("#header");
 
     rfqSound = new Audio("stockAlerts/eastsideRFQ.wav");
-    etfRfqSound = new Audio("sounds/yoda.wav");
+    etfRfqSound = new Audio("sounds/honeybadgerdoesntcare.wav");
     atCloseSound = new Audio("stockAlerts/calf-slap.wav");
     sweepSound = new Audio("stockAlerts/sword-schwing.wav");
     twapSound = new Audio("stockAlerts/highNoon.mp3");
