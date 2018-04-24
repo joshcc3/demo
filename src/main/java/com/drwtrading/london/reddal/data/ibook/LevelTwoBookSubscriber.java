@@ -1,11 +1,13 @@
 package com.drwtrading.london.reddal.data.ibook;
 
+import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.AggressorSide;
 import com.drwtrading.london.eeif.utils.marketData.book.BookLevelTwoMonitorAdaptor;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
+import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
@@ -16,6 +18,7 @@ import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import org.jetlang.channels.Channel;
 
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -33,6 +36,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
     private final Map<String, IBook<IBookLevel>> books;
     private final Map<String, MDForSymbol> mdForSymbols;
 
+    private final DecimalFormat qtyDF;
     private final SimpleDateFormat sdf;
     private final long millisAtMidnightUTC;
 
@@ -48,6 +52,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
         this.books = new HashMap<>();
         this.mdForSymbols = new HashMap<>();
 
+        this.qtyDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 0);
         this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
         this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
 
@@ -87,8 +92,16 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
                     } else {
                         type = "RFQ";
                     }
-                    final StockAlert stockAlert =
-                            new StockAlert(milliSinceMidnight, timestamp, type, book.getSymbol(), "Qty: " + refPrice.getQty());
+                    final IBookReferencePrice yestClose = book.getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
+                    final String notional;
+                    if (refPrice.isValid() && yestClose.isValid()) {
+                        final double value = yestClose.getPrice() * refPrice.getQty() * (book.getCCY().isMinor ? 0.01d : 1d);
+                        notional = qtyDF.format(value);
+                    } else {
+                        notional = "0";
+                    }
+                    final StockAlert stockAlert = new StockAlert(milliSinceMidnight, timestamp, type, book.getSymbol(),
+                            "Qty: " + qtyDF.format(refPrice.getQty()) + ", notional: " + notional + ' ' + book.getCCY().major);
                     stockAlertChannel.publish(stockAlert);
                     break;
                 }
