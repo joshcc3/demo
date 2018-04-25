@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -33,17 +34,19 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Map<Publisher<WebSocketOutboundData>, StackFamilyView> userViews;
 
     public StackFamilyPresenter(final FiberBuilder logFiber, final UILogger uiLogger, final SpreadContractSetGenerator contractSetGenerator,
-            final Set<String> visibleAsylumNames) {
+            final InstType defaultInstType, final Map<InstType, String> families) {
 
         this.logFiber = logFiber;
         this.uiLogger = uiLogger;
 
-        this.familyView = new StackFamilyView(contractSetGenerator, false, null);
+        this.familyView = new StackFamilyView(contractSetGenerator, false, defaultInstType);
+
+        families.remove(defaultInstType);
 
         this.asylums = new HashMap<>();
-        for (final String asylumName : visibleAsylumNames) {
-            final StackFamilyView asylumView = new StackFamilyView(contractSetGenerator, true, asylumName);
-            asylums.put(asylumName, asylumView);
+        for (final Map.Entry<InstType, String> instType : families.entrySet()) {
+            final StackFamilyView asylumView = new StackFamilyView(contractSetGenerator, true, instType.getKey());
+            asylums.put(instType.getValue(), asylumView);
         }
 
         this.userViews = new HashMap<>();

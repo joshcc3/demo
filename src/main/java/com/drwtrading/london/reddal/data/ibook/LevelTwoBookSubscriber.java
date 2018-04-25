@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.data.ibook;
 
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.AggressorSide;
@@ -96,7 +97,7 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
                     final String notional;
                     if (refPrice.isValid() && yestClose.isValid()) {
                         final double value = yestClose.getPrice() * refPrice.getQty() * (book.getCCY().isMinor ? 0.01d : 1d);
-                        notional = qtyDF.format(value);
+                        notional = qtyDF.format(value / Constants.NORMALISING_FACTOR);
                     } else {
                         notional = "0";
                     }

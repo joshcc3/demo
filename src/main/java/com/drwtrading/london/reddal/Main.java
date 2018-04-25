@@ -29,6 +29,7 @@ import com.drwtrading.london.eeif.utils.application.Application;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
+import com.drwtrading.london.eeif.utils.config.ConfigParam;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
@@ -334,7 +335,6 @@ public class Main {
             channels.rfqStockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
         }
 
-
         { // ETF RFQ screen
             final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("rfqs", "stockalerts", fibers.ui, webApp, ws);
@@ -577,7 +577,8 @@ public class Main {
                                     localAppName, noOpChannels.stockAlerts);
                 } else {
                     shredderBookSubscriber =
-                            getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName, channels.stockAlerts);
+                            getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName,
+                                    channels.stockAlerts);
                 }
 
                 final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket =
@@ -967,15 +968,13 @@ public class Main {
     }
 
     private static DepthBookSubscriber getMDSubscription(final Application<?> app, final IResourceMonitor<ReddalComponents> displayMonitor,
-                                                         final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
-                                                         final String localAppName, TypedChannel<StockAlert> stockAlerts) throws ConfigException {
+            final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
+            final String localAppName, TypedChannel<StockAlert> stockAlerts) throws ConfigException {
 
         final LevelThreeBookSubscriber l3BookHandler =
-                new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, stockAlerts,
-                        channels.stackRefPriceDetailChannel);
+                new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, stockAlerts, channels.stackRefPriceDetailChannel);
         final LevelTwoBookSubscriber l2BookHandler =
-                new LevelTwoBookSubscriber(displayMonitor, channels.searchResults, stockAlerts,
-                        channels.stackRefPriceDetailChannel);
+                new LevelTwoBookSubscriber(displayMonitor, channels.searchResults, stockAlerts, channels.stackRefPriceDetailChannel);
 
         final IResourceMonitor<MDTransportComponents> mdClientMonitor =
                 new ExpandedDetailResourceMonitor<>(displayMonitor, mdSource.name() + "-Thread", app.errorLog, MDTransportComponents.class,
@@ -1128,9 +1127,17 @@ public class Main {
                             app.logDir);
             final StackCommunityManager communityManager = server.getCommunityManager();
 
-            final Set<String> asylumFamilyNames = stackConfig.getSet("visibleAsylumNames");
+            final InstType defaultInstType = InstType.valueOf(stackConfig.getString("defaultFamilyType"));
+
+            final ConfigGroup asylumFamilyConfigs = stackConfig.getGroup("visibleAsylumNames");
+            final Map<InstType, String> asylumFamilies = new EnumMap<>(InstType.class);
+            for (final ConfigParam asylumParam : asylumFamilyConfigs.params()) {
+                final InstType instType = InstType.valueOf(asylumParam.getKey());
+                asylumFamilies.put(instType, asylumParam.getString());
+            }
+
             final StackFamilyPresenter stackFamilyPresenter =
-                    new StackFamilyPresenter(fibers.ui, webLog, contractSetGenerator, asylumFamilyNames);
+                    new StackFamilyPresenter(fibers.ui, webLog, contractSetGenerator, defaultInstType, asylumFamilies);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(fibers.ui, webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(fibers.ui, webLog);
 
@@ -1219,7 +1226,7 @@ public class Main {
 
             }
 
-            if (asylumFamilyNames.contains(SpreadnoughtFiltersOPXL.FAMILY_NAME)) {
+            if (asylumFamilies.values().contains(SpreadnoughtFiltersOPXL.FAMILY_NAME)) {
 
                 final SpreadnoughtFiltersOPXL spreadnoughtFiltersOPXL =
                         new SpreadnoughtFiltersOPXL(app.selectIO, app.monitor, app.logDir, stackFamilyPresenter);

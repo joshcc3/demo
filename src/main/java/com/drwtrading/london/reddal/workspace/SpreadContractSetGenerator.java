@@ -32,7 +32,6 @@ public class SpreadContractSetGenerator {
 
     private final FutureExpiryCalc expiryCalc;
 
-
     public SpreadContractSetGenerator(final Publisher<SpreadContractSet> publisher, final Publisher<LeanDef> leanDefPublisher) {
         this.publisher = publisher;
         this.leanDefPublisher = leanDefPublisher;
@@ -49,7 +48,9 @@ public class SpreadContractSetGenerator {
         this.expiryCalc = new FutureExpiryCalc(0);
     }
 
-    public void setStackRelationship(final String quoteSymbol, final String leanSymbol, InstrumentID leanInstID, InstType leanInstType) {
+    public void setStackRelationship(final String quoteSymbol, final String leanSymbol, final InstrumentID leanInstID,
+            final InstType leanInstType) {
+
         this.stackLeanSymbols.put(quoteSymbol, leanSymbol);
         publishContractSet(quoteSymbol);
         leanDefPublisher.publish(new LeanDef(leanSymbol, leanInstID, leanInstType));

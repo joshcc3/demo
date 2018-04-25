@@ -68,8 +68,8 @@ public class StackFamilyView implements IStackRelationshipListener {
     private static final double GLOBAL_OFFSET_INCREMENT_BPS = 1d;
 
     private final SpreadContractSetGenerator contractSetGenerator;
-    private final boolean isAsylumPresenter;
-    private final String asylumFamilyName;
+    private final boolean isSecondaryView;
+    private final InstType displayableInstType;
 
     private final WebSocketViews<IStackFamilyUI> views;
     private final Map<String, HashSet<IStackFamilyUI>> userViews;
@@ -98,11 +98,12 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private double globalPriceOffsetBPS;
 
-    StackFamilyView(final SpreadContractSetGenerator contractSetGenerator, final boolean isAsylumPresenter, final String asylumFamilyName) {
+    StackFamilyView(final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
+            final InstType displayableInstType) {
 
         this.contractSetGenerator = contractSetGenerator;
-        this.isAsylumPresenter = isAsylumPresenter;
-        this.asylumFamilyName = asylumFamilyName;
+        this.isSecondaryView = isSecondaryView;
+        this.displayableInstType = displayableInstType;
 
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
         this.userViews = new HashMap<>();
@@ -134,20 +135,14 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         final StackUIData parentUIData = parentData.get(familyName);
         if (null == parentUIData) {
-            return !isAsylumPresenter;
+            return !isSecondaryView;
         } else {
             return isFamilyDisplayable(parentUIData);
         }
     }
 
     private boolean isFamilyDisplayable(final StackUIData parentUIData) {
-
-        final boolean isAnAsylum = InstType.SYNTHETIC == parentUIData.leanInstType;
-        if (isAsylumPresenter) {
-            return isAnAsylum && asylumFamilyName.equals(parentUIData.symbol);
-        } else {
-            return !isAnAsylum;
-        }
+        return displayableInstType == parentUIData.leanInstType;
     }
 
     void setCommunityManager(final StackCommunityManager communityManager) {
@@ -345,7 +340,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
                     familyToChildRatio);
 
-            if (!isAsylumPresenter) {
+            if (!isSecondaryView) {
                 contractSetGenerator.setParentStack(childSymbol, parentSymbol);
             }
         }
@@ -550,21 +545,19 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void createFamily(final String symbol, final WebSocketInboundData data) {
+    public void createFamily(final String symbol, final boolean isAsylum, final WebSocketInboundData data) {
 
-        if (isAsylumPresenter) {
+        if (isAsylum) {
 
-            communityManager.createAsylum(SOURCE_UI, symbol);
+            communityManager.createAsylum(SOURCE_UI, symbol, displayableInstType);
         } else {
             final SearchResult searchResult = searchResults.get(symbol);
             if (null != searchResult) {
 
                 final String family = getFamilyName(searchResult);
-
                 final InstrumentID instID = searchResult.instID;
-                final InstType instType = searchResult.instType;
 
-                communityManager.createFamily(SOURCE_UI, family, instID, instType);
+                communityManager.createFamily(SOURCE_UI, family, instID, displayableInstType);
             }
         }
     }
@@ -746,8 +739,8 @@ public class StackFamilyView implements IStackRelationshipListener {
                 final StackQuoteConfig quoteConfig = fromConfig.quoteConfig;
                 configClient.quoteConfigUpdated(SOURCE_UI, toConfig.configGroupID, quoteConfig.getMaxBookAgeMillis(),
                         quoteConfig.isAuctionQuotingEnabled(), quoteConfig.isOnlyAuctionQuoting(),
-                        quoteConfig.getAuctionTheoMaxTicksThrough(), quoteConfig.getMaxJumpBPS(), quoteConfig.getBettermentQty(),
-                        quoteConfig.getBettermentTicks());
+                        quoteConfig.getAuctionTheoMaxBPSThrough(), quoteConfig.isAllowEmptyBook(), quoteConfig.getMaxJumpBPS(),
+                        quoteConfig.getBettermentQty(), quoteConfig.getBettermentTicks());
 
                 final StackFXConfig fxConfig = fromConfig.fxConfig;
                 configClient.fxConfigUpdated(SOURCE_UI, toConfig.configGroupID, fxConfig.getMaxBookAgeMillis(), fxConfig.getMaxJumpBPS());
@@ -769,7 +762,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                 final StackStrategyConfig bidStratConfig = fromConfig.bidStrategyConfig;
                 configClient.strategyConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.BID, bidStratConfig.getMaxOrdersPerLevel(),
                         bidStratConfig.isOnlySubmitBestLevel(), bidStratConfig.isQuoteBettermentOn(), bidStratConfig.getModTicks(),
-                        bidStratConfig.getQuoteFlickerBufferPercent(), bidStratConfig.getQuotePicardMaxTicksThrough(),
+                        bidStratConfig.getQuoteFlickerBufferPercent(), bidStratConfig.getQuotePicardMaxBPSThrough(),
                         bidStratConfig.getPicardMaxPerSec(), bidStratConfig.getPicardMaxPerMin(), bidStratConfig.getPicardMaxPerHour(),
                         bidStratConfig.getPicardMaxPerDay());
 
@@ -781,7 +774,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                 final StackStrategyConfig askStratConfig = fromConfig.askStrategyConfig;
                 configClient.strategyConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.ASK, askStratConfig.getMaxOrdersPerLevel(),
                         askStratConfig.isOnlySubmitBestLevel(), askStratConfig.isQuoteBettermentOn(), askStratConfig.getModTicks(),
-                        askStratConfig.getQuoteFlickerBufferPercent(), askStratConfig.getQuotePicardMaxTicksThrough(),
+                        askStratConfig.getQuoteFlickerBufferPercent(), askStratConfig.getQuotePicardMaxBPSThrough(),
                         askStratConfig.getPicardMaxPerSec(), askStratConfig.getPicardMaxPerMin(), askStratConfig.getPicardMaxPerHour(),
                         askStratConfig.getPicardMaxPerDay());
 
@@ -1181,7 +1174,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void startAll(final WebSocketInboundData data) {
 
-        if (isAsylumPresenter) {
+        if (isSecondaryView) {
             for (final StackUIData familyUIData : parentData.values()) {
                 if (isFamilyDisplayable(familyUIData)) {
                     for (final String childName : families.get(familyUIData.symbol).keySet()) {
@@ -1200,7 +1193,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void stopAll(final WebSocketInboundData data) {
 
-        if (isAsylumPresenter) {
+        if (isSecondaryView) {
             for (final StackUIData familyUIData : parentData.values()) {
                 if (isFamilyDisplayable(familyUIData)) {
                     for (final String childName : families.get(familyUIData.symbol).keySet()) {

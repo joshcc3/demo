@@ -185,9 +185,11 @@ $(function () {
 	});
 
 	const familyNameInput = $("#quoteSymbol");
+	const isAsylumCheck = $("#isAsylum")[0];
 	$("#createFamily").unbind().bind("click", function () {
 		const symbol = familyNameInput.val();
-		ws.send(command("createFamily", [symbol]));
+		const isAsylum = isAsylumCheck.checked;
+		ws.send(command("createFamily", [symbol, isAsylum]));
 	});
 	$("#createAllChildren").unbind().bind("click", function () {
 
@@ -206,12 +208,12 @@ $(function () {
 		});
 	});
 
-    $("#resetOffets").unbind().bind("click", function () {
-        const symbol = familyNameInput.val();
-        ws.send(command("resetOffsetsForFamily", [symbol]));
-    });
+	$("#resetOffets").unbind().bind("click", function () {
+		const symbol = familyNameInput.val();
+		ws.send(command("resetOffsetsForFamily", [symbol]));
+	});
 
-    const familyInput = $("#familySymbol");
+	const familyInput = $("#familySymbol");
 	familyInput.on("input", function () {
 		const family = familyInput.val();
 		ws.send(command("checkFamilyExists", [family, "#adoptionInfoRow .familyFound"]));
@@ -936,8 +938,8 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 	setChildCount(familyName);
 }
 
-function setChildData(childSymbol, leanSymbol, nibblerName, selectedConfigType, isBidStrategyOn, bidInfo, bidPicardEnabled, bidQuoterEnabled, isAskStrategyOn,
-					  askInfo, askPicardEnabled, askQuoterEnabled) {
+function setChildData(childSymbol, leanSymbol, nibblerName, selectedConfigType, isBidStrategyOn, bidInfo, bidPicardEnabled,
+					  bidQuoterEnabled, isAskStrategyOn, askInfo, askPicardEnabled, askQuoterEnabled) {
 
 	const rowID = cleanID(childSymbol);
 	const row = $("#" + rowID);
@@ -945,7 +947,12 @@ function setChildData(childSymbol, leanSymbol, nibblerName, selectedConfigType, 
 	if (row) {
 
 		row.removeClass("unregistered");
-		row.find(".leanSymbol").text(leanSymbol);
+
+		const leanSymbolCell = row.find(".leanSymbol");
+		leanSymbolCell.text(leanSymbol);
+		leanSymbolCell.unbind().bind("click", function () {
+			launchLadder(leanSymbol);
+		});
 
 		const childControls = row.find(".childControls");
 		childControls.find(".configControls button").removeClass("enabled");

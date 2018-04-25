@@ -178,7 +178,7 @@ body {
 	text-align: right;
 }
 
-#familyLookup input, #familyCreationRow input, #childAdoption input, #stackCopy input {
+#familyLookup input, #familyCreationRow input[type=text], #childAdoption input, #stackCopy input {
 	width: 240px;
 	margin-right: 5px;
 }
