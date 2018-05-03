@@ -134,15 +134,15 @@ public class StackFamilyView implements IStackRelationshipListener {
     private boolean isFamilyDisplayable(final String familyName) {
 
         final StackUIData parentUIData = parentData.get(familyName);
-        if (null == parentUIData) {
-            return !isSecondaryView;
-        } else {
-            return isFamilyDisplayable(parentUIData);
-        }
+        return null != parentUIData && isFamilyDisplayable(parentUIData);
     }
 
     private boolean isFamilyDisplayable(final StackUIData parentUIData) {
         return displayableInstType == parentUIData.leanInstType;
+    }
+
+    private boolean isFamilyAsylum(final StackUIData parentUIData) {
+        return StackCommunityManager.ASYLUM_ISIN.equals(parentUIData.instID.isin);
     }
 
     void setCommunityManager(final StackCommunityManager communityManager) {
@@ -287,7 +287,8 @@ public class StackFamilyView implements IStackRelationshipListener {
         families.put(familyName, new TreeMap<>());
 
         if (isFamilyDisplayable(uiData)) {
-            views.all().addFamily(familyName);
+            final boolean isAsylum = isFamilyAsylum(uiData);
+            views.all().addFamily(familyName, isAsylum);
             updateFamilyUIData(views.all(), uiData);
         }
     }
@@ -374,7 +375,10 @@ public class StackFamilyView implements IStackRelationshipListener {
 
             final String familyName = family.getKey();
             if (isFamilyDisplayable(familyName)) {
-                newView.addFamily(familyName);
+
+                final StackUIData parentUIData = parentData.get(familyName);
+                final boolean isAsylum = isFamilyAsylum(parentUIData);
+                newView.addFamily(familyName, isAsylum);
 
                 for (final StackUIRelationship child : family.getValue().values()) {
 
@@ -523,8 +527,14 @@ public class StackFamilyView implements IStackRelationshipListener {
                 for (final String childSymbol : children) {
                     final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(childSymbol);
                     final String tradableNibbler = tradableSymbols.get(childSymbol);
+                    final String leanSymbol;
+                    if (isSecondaryView) {
+                        leanSymbol = symbol;
+                    } else {
+                        leanSymbol = childSymbol;
+                    }
                     ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), tradableNibbler, ALLOWED_INST_TYPES,
-                            InstType.INDEX.name(), childSymbol);
+                            InstType.INDEX.name(), leanSymbol);
                 }
             }
         }

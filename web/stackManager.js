@@ -516,7 +516,7 @@ function minimiseAll() {
 	$(".family .children").toggleClass("hidden", true);
 }
 
-function addFamily(familyName) {
+function addFamily(familyName, isAsylum) {
 
 	const familyID = "family_" + cleanID(familyName);
 	let family = findChild(familyID);
@@ -525,6 +525,8 @@ function addFamily(familyName) {
 		family = $("#templateFamily").clone();
 		family.attr("id", familyID);
 		family.removeClass("template");
+
+		family.toggleClass("isAsylum", isAsylum);
 
 		const familyDetails = family.find(".familyDetails");
 		const familyBlock = family.find(".children");
