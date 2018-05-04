@@ -25,26 +25,27 @@ $(function () {
     maximiseAllButton.unbind().bind("click", function () {
         $(".rows").toggleClass("hidden", false);
     });
+    cancelAllNonGTC.unbind().bind("click", function () {
+        ws.send(command("cancelAllNonGTC"));
+    });
+    cancelAllNonGTC.toggleClass("isClickable", true);
+
+    shutdownAllButton.toggleClass("isClickable", true);
+    shutdownAllButton.unbind().bind("click", function () {
+        ws.send(command("shutdownAll"));
+    });
+
 
     $(".masterControls .omsButtons .enableNuclearOptions").unbind().bind("click", function () {
 
         let isCancelAllClickable = cancelAllButton.hasClass("isClickable");
         if (!isCancelAllClickable) {
 
-            cancelAllNonGTC.unbind().bind("click", function () {
-                ws.send(command("cancelAllNonGTC"));
-            });
             cancelAllButton.unbind().bind("click", function () {
                 ws.send(command("cancelAll"));
             });
-            shutdownAllButton.unbind().bind("click", function () {
-                ws.send(command("shutdownAll"));
-            });
-
-            cancelAllNonGTC.toggleClass("isClickable", true);
             cancelAllButton.toggleClass("isClickable", true);
-            shutdownAllButton.toggleClass("isClickable", true);
-            window.setTimeout(setButtonDisabled(cancelAllNonGTC, cancelAllButton, shutdownAllButton), 2500);
+            window.setTimeout(setButtonDisabled(cancelAllButton), 2500);
         }
     });
 
@@ -123,25 +124,24 @@ function getNibbler(server) {
         const cancelAllButton = serverBlock.find(".cancelAll");
         const shutdownAllButton = serverBlock.find(".shutdownOMS");
 
-        serverBlock.find(".enableNuclearOptions").unbind().bind("click", function () {
+        cancelNonGTCButton.toggleClass("isClickable", true);
+        cancelNonGTCButton.unbind().bind("click", function () {
+            ws.send(command("cancelExchangeNonGTC", [server]));
+        });
 
+        shutdownAllButton.toggleClass("isClickable", true);
+        shutdownAllButton.unbind().bind("click", function () {
+            ws.send(command("shutdownExchange", [server]));
+        });
+
+        serverBlock.find(".enableNuclearOptions").unbind().bind("click", function () {
             let isCancelAllClickable = cancelAllButton.hasClass("isClickable");
             if (!isCancelAllClickable) {
-
-                cancelNonGTCButton.unbind().bind("click", function () {
-                    ws.send(command("cancelExchangeNonGTC", [server]));
-                });
                 cancelAllButton.unbind().bind("click", function () {
                     ws.send(command("cancelExchange", [server]));
                 });
-                shutdownAllButton.unbind().bind("click", function () {
-                    ws.send(command("shutdownExchange", [server]));
-                });
-
-                cancelNonGTCButton.toggleClass("isClickable", true);
                 cancelAllButton.toggleClass("isClickable", true);
-                shutdownAllButton.toggleClass("isClickable", true);
-                window.setTimeout(setButtonDisabled(cancelNonGTCButton, cancelAllButton, shutdownAllButton), 2500);
+                window.setTimeout(setButtonDisabled(cancelAllButton), 2500);
             }
         });
 
