@@ -527,14 +527,14 @@ public class StackFamilyView implements IStackRelationshipListener {
                 for (final String childSymbol : children) {
                     final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(childSymbol);
                     final String tradableNibbler = tradableSymbols.get(childSymbol);
-                    final String leanSymbol;
-                    if (isSecondaryView) {
-                        leanSymbol = symbol;
-                    } else {
-                        leanSymbol = childSymbol;
+
+                    if (!isSecondaryView) {
+                        ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), tradableNibbler,
+                                ALLOWED_INST_TYPES, InstType.INDEX.name(), childSymbol);
+                    } else if (!symbol.equals(childSymbol)) {
+                        ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), tradableNibbler,
+                                ALLOWED_INST_TYPES, InstType.EQUITY.name(), symbol);
                     }
-                    ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), tradableNibbler, ALLOWED_INST_TYPES,
-                            InstType.INDEX.name(), leanSymbol);
                 }
             }
         }
