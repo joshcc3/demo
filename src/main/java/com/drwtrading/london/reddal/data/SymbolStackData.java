@@ -530,6 +530,10 @@ public class SymbolStackData {
         if (null != bidStackGroup) {
             stackClient.stopStrategy(bidStackGroup.getSymbol(), BookSide.BID);
             stackClient.batchComplete();
+            for (final StackType stackType : StackType.values()) {
+                stackClient.setStackEnabled(SOURCE, bidStackGroup.getStackID(), stackType, false);
+            }
+            stackClient.batchComplete();
         }
     }
 
@@ -537,6 +541,10 @@ public class SymbolStackData {
 
         if (null != askStackGroup) {
             stackClient.stopStrategy(askStackGroup.getSymbol(), BookSide.ASK);
+            stackClient.batchComplete();
+            for (final StackType stackType : StackType.values()) {
+                stackClient.setStackEnabled(SOURCE, askStackGroup.getStackID(), stackType, false);
+            }
             stackClient.batchComplete();
         }
     }
