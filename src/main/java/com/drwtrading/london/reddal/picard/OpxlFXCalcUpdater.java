@@ -29,6 +29,7 @@ public class OpxlFXCalcUpdater extends AOpxlReader<Map<CCY, EnumMap<CCY, Double>
 
     public OpxlFXCalcUpdater(final FXCalc<PicardFXCalcComponents> fxCalc, final SelectIO selectIO,
             final IResourceMonitor<ReddalComponents> monitor, final Path path) {
+
         super(selectIO, monitor, ReddalComponents.OPXL_FX_CALC, getTopic(), path);
         this.fxCalc = fxCalc;
     }

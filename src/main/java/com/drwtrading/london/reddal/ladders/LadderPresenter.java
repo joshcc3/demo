@@ -10,6 +10,7 @@ import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
@@ -56,6 +57,7 @@ import com.drwtrading.websockets.WebSocketOutboundData;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
+import drw.eeif.fees.FeesCalc;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Converter;
 import org.jetlang.channels.Publisher;
@@ -79,6 +81,9 @@ public class LadderPresenter {
 
     private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
+
+    private final FeesCalc feesCalc;
+    private final DecimalFormat feeDF;
 
     private final DecimalFormat oneDP;
 
@@ -112,7 +117,7 @@ public class LadderPresenter {
 
     public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+            final FXCalc<?> fxCalc, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
             final Fiber fiber, final Publisher<Jsonable> trace, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
@@ -128,6 +133,9 @@ public class LadderPresenter {
 
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
+
+        this.feesCalc = new FeesCalc(msg -> monitor.logError(ReddalComponents.FEES_CALC, msg), fxCalc);
+        this.feeDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 5);
 
         this.oneDP = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 1);
 
@@ -176,7 +184,7 @@ public class LadderPresenter {
         final ILadderUI view = new WebSocketOutputDispatcher<>(ILadderUI.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final LadderView ladderView =
                 new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions,
-                        tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, trace, ladderClickTradingIssuePublisher,
+                        feesCalc, feeDF, tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, trace, ladderClickTradingIssuePublisher,
                         userCycleContractPublisher, userWorkspaceRequests, orderEntryMap, orderEntryCommandToServerPublisher,
                         increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, refData::containsKey);
         if (null != isinsGoingEx) {
@@ -358,11 +366,6 @@ public class LadderPresenter {
             view.clickTradingIssue(ladderClickTradingIssue);
             fiber.schedule(() -> view.clickTradingIssue(new LadderClickTradingIssue(symbol, "")), 5000, TimeUnit.MILLISECONDS);
         }
-    }
-
-    @Subscribe
-    public void on(final com.drwtrading.photons.ladder.LastTrade lastTrade) {
-        dataBySymbol.get(lastTrade.getSymbol()).onLastTrade(lastTrade);
     }
 
     @Subscribe

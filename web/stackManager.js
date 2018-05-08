@@ -495,7 +495,7 @@ function findChild(symbol) {
 }
 
 function cleanID(symbol) {
-	return symbol.replace(/ |\/|\.|:/g, "_");
+	return symbol.replace(/ |\/|\.|:|\(|\)/g, "_");
 }
 
 function showChild(symbol) {

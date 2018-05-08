@@ -1,10 +1,7 @@
 package com.drwtrading.london.reddal.data.ibook;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public class DepthBookSubscriber implements IMDSubscriber {
 
@@ -32,12 +29,14 @@ public class DepthBookSubscriber implements IMDSubscriber {
     }
 
     private MDForSymbol addListener(final MDForSymbol mdForSymbol, final Object listener) {
+
         if (mdForSymbol.addListener(listener)) {
             this.l3BookSubscriber.subscribeForMD(mdForSymbol);
             this.l2BookSubscriber.subscribeForMD(mdForSymbol);
             return mdForSymbol;
+        } else {
+            return mdForSymbol;
         }
-        return mdForSymbol;
     }
 
     @Override

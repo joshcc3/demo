@@ -23,7 +23,7 @@ $(function () {
     etfRfqSound = new Audio("sounds/honeybadgerdoesntcare.wav");
     atCloseSound = new Audio("stockAlerts/calf-slap.wav");
     sweepSound = new Audio("stockAlerts/sword-schwing.wav");
-    twapSound = new Audio("stockAlerts/highNoon.mp3");
+    twapSound = new Audio("stockAlerts/TWAP.wav");
     tweetSound = new Audio("stockAlerts/tweet.wav");
     unknownSound = new Audio("stockAlerts/huh-humm.wav");
 });

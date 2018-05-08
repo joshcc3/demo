@@ -19,6 +19,7 @@ public enum ReddalComponents implements IMonitoredComponent {
 
     MD_TRANSPORT,
 
+    FEES_CALC,
     LADDER_ROUTER,
     LADDER_PRESENTER,
 

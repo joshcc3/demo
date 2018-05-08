@@ -6,7 +6,6 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.LaserLineType;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.util.FastUtilCollections;
-import com.drwtrading.photons.ladder.Side;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -17,8 +16,6 @@ public class ExtraDataForSymbol {
     public final String symbol;
 
     public final Map<String, com.drwtrading.photons.ladder.LaserLine> laserLineByName;
-    public com.drwtrading.photons.ladder.LastTrade lastBuy;
-    public com.drwtrading.photons.ladder.LastTrade lastSell;
 
     private final Map<LaserLineType, LaserLine> laserLines;
 
@@ -37,14 +34,6 @@ public class ExtraDataForSymbol {
 
     public void onLaserLine(final com.drwtrading.photons.ladder.LaserLine laserLine) {
         laserLineByName.put(laserLine.getId(), laserLine);
-    }
-
-    public void onLastTrade(final com.drwtrading.photons.ladder.LastTrade lastTrade) {
-        if (lastTrade.getSide() == Side.BID) {
-            lastBuy = lastTrade;
-        } else if (lastTrade.getSide() == Side.OFFER) {
-            lastSell = lastTrade;
-        }
     }
 
     public void setTheoValue(final TheoValue theoValue) {
@@ -75,11 +64,15 @@ public class ExtraDataForSymbol {
         }
     }
 
+    public boolean hasTraded() {
+        return null != bidLastTrade || null != askLastTrade;
+    }
+
     public boolean isLastBuy(final long price) {
-        return (null != bidLastTrade && bidLastTrade.getPrice() == price) || (null != lastBuy && lastBuy.getPrice() == price);
+        return null != bidLastTrade && bidLastTrade.getPrice() == price;
     }
 
     public boolean isLastSell(final long price) {
-        return (null != askLastTrade && askLastTrade.getPrice() == price) || (null != lastSell && lastSell.getPrice() == price);
+        return null != askLastTrade && askLastTrade.getPrice() == price;
     }
 }

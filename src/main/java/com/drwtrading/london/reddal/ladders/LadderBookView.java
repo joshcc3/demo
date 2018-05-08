@@ -48,6 +48,7 @@ import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.google.common.collect.ImmutableSet;
+import drw.eeif.fees.FeesCalc;
 import drw.london.json.Jsonable;
 import eeif.execution.Side;
 import eeif.execution.WorkingOrderState;
@@ -121,6 +122,8 @@ public class LadderBookView implements ILadderBoard {
     private final ILadderUI view;
 
     private final LadderOptions ladderOptions;
+    private final FeesCalc feesCalc;
+    private final DecimalFormat feeDF;
 
     private final LadderPrefsForSymbolUser ladderPrefsForSymbolUser;
     private final Map<String, String> defaultPrefs;
@@ -162,15 +165,16 @@ public class LadderBookView implements ILadderBoard {
     private long topPrice;
     private long bottomPrice;
 
-    private int clickTradingBoxQty = 0;
+    private int clickTradingBoxQty;
+    private String feeString;
     private int orderSeqNo = 0;
 
     private Long modifyFromPrice;
     private long modifyFromPriceSelectedTime;
 
     LadderBookView(final IResourceMonitor<ReddalComponents> monitor, final String username, final boolean isTrader, final String symbol,
-            final UiPipeImpl ui, final ILadderUI view, final LadderOptions ladderOptions,
-            final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+            final UiPipeImpl ui, final ILadderUI view, final LadderOptions ladderOptions, final FeesCalc feesCalc,
+            final DecimalFormat feeDF, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
             final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
@@ -192,6 +196,11 @@ public class LadderBookView implements ILadderBoard {
         this.view = view;
 
         this.ladderOptions = ladderOptions;
+        this.feesCalc = feesCalc;
+        this.feeDF = feeDF;
+
+        this.clickTradingBoxQty = 0;
+        recalcFee();
 
         this.ladderPrefsForSymbolUser = ladderPrefsForSymbolUser;
 
@@ -251,6 +260,7 @@ public class LadderBookView implements ILadderBoard {
 
         this.bottomPrice = Long.MAX_VALUE;
         this.topPrice = Long.MIN_VALUE;
+
     }
 
     @Override
@@ -271,6 +281,28 @@ public class LadderBookView implements ILadderBoard {
     @Override
     public void setTradingBoxQty(final int qty) {
         clickTradingBoxQty = qty;
+        recalcFee();
+    }
+
+    private void recalcFee() {
+
+        if (0 < clickTradingBoxQty) {
+            final IBook<?> inst = marketData.getBook();
+            if (null != inst && null != inst.getBestBid() && null != inst.getBestAsk()) {
+
+                final double mid = (inst.getBestBid().getPrice() + inst.getBestAsk().getPrice()) / 2d;
+                final double notional = clickTradingBoxQty * mid / Constants.NORMALISING_FACTOR;
+
+                final boolean isFirstTrade = !dataForSymbol.hasTraded();
+
+                final double indicativeFee =
+                        feesCalc.getFeeEur(symbol, marketData.getTradeMIC(), inst.getMIC(), inst.getInstType(), BookSide.BID,
+                                clickTradingBoxQty, notional, isFirstTrade);
+                feeString = feeDF.format(indicativeFee);
+            }
+        } else {
+            feeString = "---";
+        }
     }
 
     @Override
@@ -322,7 +354,7 @@ public class LadderBookView implements ILadderBoard {
 
         clearModifyPriceIfTimedOut();
 
-        if (pendingRefDataAndSettle && null != marketData && null != marketData.getBook() && marketData.getBook().isValid()) {
+        if (pendingRefDataAndSettle && null != marketData.getBook() && marketData.getBook().isValid()) {
 
             final InstType instType = marketData.getBook().getInstType();
             buttonQty.putAll(LadderView.INST_TYPE_BUTTON_QTIES.get(instType));
@@ -435,7 +467,7 @@ public class LadderBookView implements ILadderBoard {
     @Override
     public void setCenteredPrice(final long newCenterPrice) {
 
-        if (null != marketData && null != marketData.getBook()) {
+        if (null != marketData.getBook()) {
 
             this.centeredPrice = this.marketData.getBook().getTickTable().roundAwayToTick(BookSide.BID, newCenterPrice);
 
@@ -549,14 +581,14 @@ public class LadderBookView implements ILadderBoard {
                 if (pricingModes.get() == PricingMode.BPS && isTheoValid) {
                     final double points = (10000.0 * (price - theoPrice)) / theoPrice;
                     ui.txt(htmlRowKeys.bookPriceKey, BASIS_POINT_DECIMAL_FORMAT.format(points));
-                } else if (pricingModes.get() == PricingMode.BPS && isCashEquityOrFX && hasBestBid() && null != marketData) {
+                } else if (pricingModes.get() == PricingMode.BPS && isCashEquityOrFX && hasBestBid()) {
                     final long basePrice = marketData.getBook().getBestBid().getPrice();
                     final double points = (10000.0 * (price - basePrice)) / basePrice;
                     ui.txt(htmlRowKeys.bookPriceKey, BASIS_POINT_DECIMAL_FORMAT.format(points));
-                } else if (PricingMode.EFP == pricingModes.get() && null != marketData && isTheoValid) {
+                } else if (PricingMode.EFP == pricingModes.get() && isTheoValid) {
                     final double efp = Math.round((price - theoPrice) * 100d / Constants.NORMALISING_FACTOR) / 100d;
                     ui.txt(htmlRowKeys.bookPriceKey, EFP_DECIMAL_FORMAT.format(efp));
-                } else if (PricingMode.EFP == pricingModes.get() && null != marketData && marketData.isPriceInverted()) {
+                } else if (PricingMode.EFP == pricingModes.get() && marketData.isPriceInverted()) {
                     final double invertedPrice = Constants.NORMALISING_FACTOR / (double) price;
                     ui.txt(htmlRowKeys.bookPriceKey, FX_DECIMAL_FORMAT.format(invertedPrice));
                 } else {
@@ -607,7 +639,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private Collection<String> filterUsableOrderTypes(final Collection<CSSClass> types) {
-        if (null != marketData && null != marketData.getBook()) {
+        if (null != marketData.getBook()) {
             final String mic = marketData.getBook().getMIC().name();
             return types.stream().filter(orderType -> isOrderTypeSupported(orderType, mic)).map(Enum::name).collect(Collectors.toList());
         } else {
@@ -630,6 +662,7 @@ public class LadderBookView implements ILadderBoard {
         if (null != ladderPrefsForSymbolUser) {
 
             ui.txt(HTML.INP_QTY, clickTradingBoxQty);
+            ui.tooltip('#' + HTML.INP_QTY, feeString);
 
             for (final String pref : PERSISTENT_PREFS) {
                 ui.txt(pref, getPref(pref));
@@ -746,7 +779,7 @@ public class LadderBookView implements ILadderBoard {
 
     private void drawBook(final String symbol) {
 
-        if (!pendingRefDataAndSettle && null != marketData && null != marketData.getBook()) {
+        if (!pendingRefDataAndSettle && null != marketData.getBook()) {
             switch (marketData.getBook().getStatus()) {
                 case CONTINUOUS: {
                     ui.txt(HTML.SYMBOL, symbol);
@@ -1045,8 +1078,10 @@ public class LadderBookView implements ILadderBoard {
         if ("left".equals(button)) {
             if (buttonQty.containsKey(label)) {
                 clickTradingBoxQty += buttonQty.get(label);
+                recalcFee();
             } else if (HTML.BUTTON_CLR.equals(label)) {
                 clickTradingBoxQty = 0;
+                recalcFee();
             } else if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
                 if (null != ladderPrefsForSymbolUser) {
                     submitOrderLeftClick(clientSpeedState, label, data);
@@ -1274,7 +1309,7 @@ public class LadderBookView implements ILadderBoard {
             throw new IllegalArgumentException("No tag provided.");
         } else {
 
-            if (orderType != null && clickTradingBoxQty > 0) {
+            if (orderType != null && 0 < clickTradingBoxQty) {
                 if (managedOrderTypes.contains(orderType)) {
                     submitManagedOrder(orderType, price, side, tag);
                 } else if (oldOrderTypes.contains(orderType)) {
@@ -1290,8 +1325,10 @@ public class LadderBookView implements ILadderBoard {
 
             if (randomReload) {
                 clickTradingBoxQty = Math.max(0, reloadBoxQty - (int) (Math.random() * ladderOptions.randomReloadFraction * reloadBoxQty));
+                recalcFee();
             } else {
                 clickTradingBoxQty = Math.max(0, reloadBoxQty);
+                recalcFee();
             }
         }
     }

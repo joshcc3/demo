@@ -358,9 +358,11 @@ public class Main {
         final IMDSubscriber noBookSubscription = new NoMDSubscriptions();
         final TypedChannel<WebSocketControlMessage> stackManagerWebSocket = TypedChannels.create(WebSocketControlMessage.class);
         final SelectIOFiber stackManagerSelectIOFiber = new SelectIOFiber(stackManagerSelectIO, errorLog, stackManagerThreadName);
+
+        final FXCalc<?> stackManagerFXCalc = createOPXLFXCalc(app);
         final LadderPresenter stackManagerLadderPresenter =
-                getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment, noBookSubscription, ewokBaseURL,
-                        stackManagerWebSocket, fibers.fiberGroup.wrap(stackManagerSelectIOFiber, stackManagerThreadName));
+                getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment, stackManagerFXCalc, noBookSubscription,
+                        ewokBaseURL, stackManagerWebSocket, fibers.fiberGroup.wrap(stackManagerSelectIOFiber, stackManagerThreadName));
 
         // Load stacks
         final Map<MDSource, LinkedList<ConfigGroup>> stackConfigs = new EnumMap<>(MDSource.class);
@@ -457,8 +459,10 @@ public class Main {
                 final FiberBuilder fiberBuilder =
                         fibers.fiberGroup.wrap(new SelectIOFiber(displaySelectIO, errorLog, threadName), threadName);
 
+                final FXCalc<?> fxCalc = createOPXLFXCalc(app);
+
                 final LadderPresenter ladderPresenter =
-                        getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, depthBookSubscriber, ewokBaseURL,
+                        getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, fxCalc, depthBookSubscriber, ewokBaseURL,
                                 webSocket, fiberBuilder);
 
                 final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
@@ -478,14 +482,7 @@ public class Main {
                     }
                 }
 
-                final IResourceMonitor<PicardFXCalcComponents> fxMonitor = new ResourceIgnorer<>();
-                final FXCalc<PicardFXCalcComponents> initalFxCalc =
-                        new FXCalc<>(fxMonitor, PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
-                final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(initalFxCalc, app.selectIO, app.monitor, app.logDir);
-                final PicardSpotter picardSpotter =
-                        new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, initalFxCalc);
-
-                app.addStartUpAction(opxlFXCalcUpdater::connectToOpxl);
+                final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, fxCalc);
                 displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
 
                 final List<ConfigGroup> nibblerConfigs = nibblers.get(mdSource);
@@ -995,13 +992,13 @@ public class Main {
     }
 
     private static LadderPresenter getLadderPresenter(final IResourceMonitor<ReddalComponents> displayMonitor,
-            final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment,
+            final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment, final FXCalc<?> fxCalc,
             final IMDSubscriber depthBookSubscriber, final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket,
             final FiberBuilder fiberBuilder) throws ConfigException {
 
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
-                        environment.ladderOptions(), channels.storeLadderPref, channels.heartbeatRoundTrips,
+                        environment.ladderOptions(), fxCalc, channels.storeLadderPref, channels.heartbeatRoundTrips,
                         channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffsetCmds,
                         channels.increaseChildOffsetBPSCmds, channels.setSiblingsEnabledCmds, channels.ladderClickTradingIssues,
                         channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
@@ -1360,5 +1357,15 @@ public class Main {
         final TypedChannel<WebSocketControlMessage> webSocketChannel = TypedChannels.create(WebSocketControlMessage.class);
         webApp.createWebSocket('/' + alias + "/ws/", webSocketChannel, fiber);
         webSocketChannel.subscribe(fiber, picardUI::webControl);
+    }
+
+    private static FXCalc<?> createOPXLFXCalc(final Application<ReddalComponents> app) {
+
+        final IResourceMonitor<PicardFXCalcComponents> fxMonitor = new ResourceIgnorer<>();
+        final FXCalc<PicardFXCalcComponents> fxCalc = new FXCalc<>(fxMonitor, PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
+        final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(fxCalc, app.selectIO, app.monitor, app.logDir);
+        app.addStartUpAction(opxlFXCalcUpdater::connectToOpxl);
+
+        return fxCalc;
     }
 }

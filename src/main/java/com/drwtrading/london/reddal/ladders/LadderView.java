@@ -34,6 +34,7 @@ import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.websockets.WebSocketClient;
+import drw.eeif.fees.FeesCalc;
 import drw.london.json.Jsonable;
 import eeif.execution.Side;
 import eeif.execution.WorkingOrderType;
@@ -118,6 +119,8 @@ public class LadderView implements UiEventHandler {
     private final String ewokBaseURL;
     private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final LadderOptions ladderOptions;
+    private final FeesCalc feesCalc;
+    private final DecimalFormat feeDF;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
@@ -158,9 +161,10 @@ public class LadderView implements UiEventHandler {
 
     LadderView(final IResourceMonitor<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view,
             final String ewokBaseURL, final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-            final LadderOptions ladderOptions, final TradingStatusForAll tradingStatusForAll,
-            final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
-            final Publisher<Jsonable> trace, final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+            final LadderOptions ladderOptions, final FeesCalc feesCalc, final DecimalFormat feeDF,
+            final TradingStatusForAll tradingStatusForAll, final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher,
+            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
@@ -175,6 +179,9 @@ public class LadderView implements UiEventHandler {
         this.ewokBaseURL = ewokBaseURL;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.ladderOptions = ladderOptions;
+        this.feesCalc = feesCalc;
+        this.feeDF = feeDF;
+
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.trace = trace;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
@@ -218,12 +225,11 @@ public class LadderView implements UiEventHandler {
         final boolean wasBookView = null == bookView || activeView == bookView;
 
         final long bookCenteredPrice = null == bookView ? 0 : bookView.getCenteredPrice();
-        this.bookView =
-                new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ui, view, ladderOptions, ladderPrefsForSymbolUser,
-                        ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher, eeifCommandToServer, tradingStatusForAll,
-                        marketData, workingOrdersForSymbol, extraDataForSymbol, orderUpdatesForSymbol, levels, ladderHTMLKeys, stackData,
-                        metaData, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace,
-                        orderEntryMap, bookCenteredPrice);
+        this.bookView = new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ui, view, ladderOptions, feesCalc, feeDF,
+                ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher, eeifCommandToServer,
+                tradingStatusForAll, marketData, workingOrdersForSymbol, extraDataForSymbol, orderUpdatesForSymbol, levels, ladderHTMLKeys,
+                stackData, metaData, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace,
+                orderEntryMap, bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
         final Map<String, Integer> buttonQties;
@@ -534,7 +540,7 @@ public class LadderView implements UiEventHandler {
         if (value != null) {
             value = value.trim();
             if (HTML.INP_QTY.equals(label)) {
-                activeView.setTradingBoxQty(Integer.valueOf(value));
+                    activeView.setTradingBoxQty(Integer.valueOf(value));
             } else if (HTML.STACK_TICK_SIZE.equals(label)) {
                 activeView.setStackTickSize(Double.valueOf(value));
             } else if (HTML.STACK_ALIGNMENT_TICK_TO_BPS.equals(label)) {
@@ -690,9 +696,8 @@ public class LadderView implements UiEventHandler {
 
         } else if (label.equals(HTML.POSITION) || label.equals(HTML.TOTAL_TRADED)) {
             showTotalTraded = !showTotalTraded;
-        } else if (label.equals(HTML.TEXT_PREFIX + HTML.R1C2)
-                || label.equals(HTML.TEXT_PREFIX + HTML.R1C3)
-                || label.equals(HTML.TEXT_PREFIX + HTML.R1C4)) {
+        } else if (label.equals(HTML.TEXT_PREFIX + HTML.R1C2) || label.equals(HTML.TEXT_PREFIX + HTML.R1C3) ||
+                label.equals(HTML.TEXT_PREFIX + HTML.R1C4)) {
             final Contract contract;
             switch (label.substring(HTML.TEXT_PREFIX.length())) {
                 case HTML.R1C2:

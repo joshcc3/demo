@@ -4,6 +4,8 @@ import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
+import com.drwtrading.london.eeif.utils.marketData.book.IInstrument;
+import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.reddal.data.TradeTracker;
 
 import java.text.DecimalFormat;
@@ -20,6 +22,7 @@ public class MDForSymbol {
     private final TradeTracker tradeTracker;
 
     private IBook<?> book;
+    private MIC tradeMIC;
     private IBook<IBookLevelWithOrders> level3Book;
     private DecimalFormat df;
     private DecimalFormat nonTrailingDF;
@@ -42,6 +45,7 @@ public class MDForSymbol {
     public void setBook(final IBook<?> book) {
 
         this.book = book;
+        this.tradeMIC = getTradeMIC(book);
 
         final long smallestTick = book.getTickTable().getRawTickLevels().firstEntry().getValue();
         final String tickSize = Long.toString(smallestTick);
@@ -56,6 +60,27 @@ public class MDForSymbol {
         final int decimalPlaces = Math.max(0, 10 - leastSigDigit);
         this.df = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, decimalPlaces);
         this.nonTrailingDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 1, decimalPlaces);
+    }
+
+    private static MIC getTradeMIC(final IInstrument book) {
+
+        switch (book.getSourceExch()) {
+            case BATS_EUROPE: {
+                return MIC.BATE;
+            }
+            case BATS_US: {
+                return MIC.BATS;
+            }
+            case CHIX: {
+                return MIC.CHIX;
+            }
+            case RFQ: {
+                return MIC.XOFF;
+            }
+            default: {
+                return book.getMIC();
+            }
+        }
     }
 
     boolean addListener(final Object listener) {
@@ -73,6 +98,10 @@ public class MDForSymbol {
 
     public boolean isPriceInverted() {
         return isPriceInverted;
+    }
+
+    public MIC getTradeMIC() {
+        return tradeMIC;
     }
 
     public IBook<?> getBook() {
