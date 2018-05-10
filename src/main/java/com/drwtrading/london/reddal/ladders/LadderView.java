@@ -5,6 +5,7 @@ import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
+import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
@@ -119,6 +120,7 @@ public class LadderView implements UiEventHandler {
     private final String ewokBaseURL;
     private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
     private final LadderOptions ladderOptions;
+    private final FXCalc<?> fxCalc;
     private final FeesCalc feesCalc;
     private final DecimalFormat feeDF;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
@@ -161,7 +163,7 @@ public class LadderView implements UiEventHandler {
 
     LadderView(final IResourceMonitor<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view,
             final String ewokBaseURL, final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-            final LadderOptions ladderOptions, final FeesCalc feesCalc, final DecimalFormat feeDF,
+            final LadderOptions ladderOptions, final FXCalc<?> fxCalc, final FeesCalc feesCalc, final DecimalFormat feeDF,
             final TradingStatusForAll tradingStatusForAll, final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher,
             final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
@@ -179,6 +181,7 @@ public class LadderView implements UiEventHandler {
         this.ewokBaseURL = ewokBaseURL;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
         this.ladderOptions = ladderOptions;
+        this.fxCalc = fxCalc;
         this.feesCalc = feesCalc;
         this.feeDF = feeDF;
 
@@ -225,11 +228,12 @@ public class LadderView implements UiEventHandler {
         final boolean wasBookView = null == bookView || activeView == bookView;
 
         final long bookCenteredPrice = null == bookView ? 0 : bookView.getCenteredPrice();
-        this.bookView = new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ui, view, ladderOptions, feesCalc, feeDF,
-                ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher, eeifCommandToServer,
-                tradingStatusForAll, marketData, workingOrdersForSymbol, extraDataForSymbol, orderUpdatesForSymbol, levels, ladderHTMLKeys,
-                stackData, metaData, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace,
-                orderEntryMap, bookCenteredPrice);
+        this.bookView =
+                new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ui, view, ladderOptions, fxCalc, feesCalc, feeDF,
+                        ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher,
+                        eeifCommandToServer, tradingStatusForAll, marketData, workingOrdersForSymbol, extraDataForSymbol,
+                        orderUpdatesForSymbol, levels, ladderHTMLKeys, stackData, metaData, increaseParentOffsetPublisher,
+                        increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
         final Map<String, Integer> buttonQties;
@@ -540,7 +544,7 @@ public class LadderView implements UiEventHandler {
         if (value != null) {
             value = value.trim();
             if (HTML.INP_QTY.equals(label)) {
-                    activeView.setTradingBoxQty(Integer.valueOf(value));
+                activeView.setTradingBoxQty(Integer.valueOf(value));
             } else if (HTML.STACK_TICK_SIZE.equals(label)) {
                 activeView.setStackTickSize(Double.valueOf(value));
             } else if (HTML.STACK_ALIGNMENT_TICK_TO_BPS.equals(label)) {

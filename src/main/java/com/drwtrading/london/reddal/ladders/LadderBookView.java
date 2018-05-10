@@ -12,7 +12,9 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
+import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.photons.eeifoe.Cancel;
 import com.drwtrading.london.photons.eeifoe.Metadata;
@@ -122,6 +124,7 @@ public class LadderBookView implements ILadderBoard {
     private final ILadderUI view;
 
     private final LadderOptions ladderOptions;
+    private final FXCalc<?> fxCalc;
     private final FeesCalc feesCalc;
     private final DecimalFormat feeDF;
 
@@ -173,7 +176,7 @@ public class LadderBookView implements ILadderBoard {
     private long modifyFromPriceSelectedTime;
 
     LadderBookView(final IResourceMonitor<ReddalComponents> monitor, final String username, final boolean isTrader, final String symbol,
-            final UiPipeImpl ui, final ILadderUI view, final LadderOptions ladderOptions, final FeesCalc feesCalc,
+            final UiPipeImpl ui, final ILadderUI view, final LadderOptions ladderOptions, final FXCalc<?> fxCalc, final FeesCalc feesCalc,
             final DecimalFormat feeDF, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
@@ -196,6 +199,7 @@ public class LadderBookView implements ILadderBoard {
         this.view = view;
 
         this.ladderOptions = ladderOptions;
+        this.fxCalc = fxCalc;
         this.feesCalc = feesCalc;
         this.feeDF = feeDF;
 
@@ -290,14 +294,15 @@ public class LadderBookView implements ILadderBoard {
             final IBook<?> inst = marketData.getBook();
             if (null != inst && null != inst.getBestBid() && null != inst.getBestAsk()) {
 
-                final double mid = (inst.getBestBid().getPrice() + inst.getBestAsk().getPrice()) / 2d;
-                final double notional = clickTradingBoxQty * mid / Constants.NORMALISING_FACTOR;
+                final double toEurFX = fxCalc.getLastValidMid(inst.getCCY(), CCY.EUR);
+                final double mid = toEurFX * (inst.getBestBid().getPrice() + inst.getBestAsk().getPrice()) / 2d;
+                final double notionalEUR = clickTradingBoxQty * mid / Constants.NORMALISING_FACTOR;
 
                 final boolean isFirstTrade = !dataForSymbol.hasTraded();
 
                 final double indicativeFee =
                         feesCalc.getFeeEur(symbol, marketData.getTradeMIC(), inst.getMIC(), inst.getInstType(), BookSide.BID,
-                                clickTradingBoxQty, notional, isFirstTrade);
+                                clickTradingBoxQty, notionalEUR, isFirstTrade);
                 feeString = feeDF.format(indicativeFee);
             }
         } else {

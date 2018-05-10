@@ -82,6 +82,7 @@ public class LadderPresenter {
     private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
 
+    private final FXCalc<?> fxCalc;
     private final FeesCalc feesCalc;
     private final DecimalFormat feeDF;
 
@@ -134,6 +135,7 @@ public class LadderPresenter {
         this.remoteOrderCommandByServer = remoteOrderCommandByServer;
         this.ladderOptions = ladderOptions;
 
+        this.fxCalc = fxCalc;
         this.feesCalc = new FeesCalc(msg -> monitor.logError(ReddalComponents.FEES_CALC, msg), fxCalc);
         this.feeDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 5);
 
@@ -183,10 +185,11 @@ public class LadderPresenter {
         final UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         final ILadderUI view = new WebSocketOutputDispatcher<>(ILadderUI.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final LadderView ladderView =
-                new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions,
-                        feesCalc, feeDF, tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, trace, ladderClickTradingIssuePublisher,
-                        userCycleContractPublisher, userWorkspaceRequests, orderEntryMap, orderEntryCommandToServerPublisher,
-                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, refData::containsKey);
+                new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions, fxCalc,
+                        feesCalc, feeDF, tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, trace,
+                        ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
+                        orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
+                        disableSiblingsCmdPublisher, refData::containsKey);
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }
