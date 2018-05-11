@@ -19,7 +19,7 @@ public class SpreadnoughtFiltersOPXL extends AFiltersOPXL {
     public SpreadnoughtFiltersOPXL(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor, final Path logPath,
             final StackFamilyPresenter stackFamilyPresenter) {
 
-        super(selectIO, monitor, ReddalComponents.OPXL_ETF_STACK_MANAGER_FILTERS, TOPIC_PREFIX, logPath);
+        super(selectIO, monitor, ReddalComponents.OPXL_SPREAD_STACK_MANAGER_FILTERS, TOPIC_PREFIX, logPath);
         this.stackFamilyPresenter = stackFamilyPresenter;
     }
 

@@ -42,7 +42,7 @@ public enum ReddalComponents implements IMonitoredComponent {
     OPXL_ULTIMATE_PARENT,
     OPXL_FX_CALC,
     OPXL_ETF_STACK_MANAGER_FILTERS,
-
+    OPXL_SPREAD_STACK_MANAGER_FILTERS,
 
     FX_OK,
     FX_ERROR, FX_SELECT_IO, INDY_SERVER;
