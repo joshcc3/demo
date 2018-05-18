@@ -1,7 +1,5 @@
 package com.drwtrading.london.reddal.ladders;
 
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
@@ -21,9 +19,10 @@ import com.drwtrading.london.photons.eeifoe.Metadata;
 import com.drwtrading.london.photons.eeifoe.OrderSide;
 import com.drwtrading.london.photons.eeifoe.Submit;
 import com.drwtrading.london.reddal.ReddalComponents;
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
+import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradeTracker;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
@@ -88,8 +87,6 @@ public class LadderBookView implements ILadderBoard {
 
     private static final Metadata LADDER_SOURCE_METADATA = new Metadata("SOURCE", "LADDER");
 
-    private static final String WHITE_LASER_LINE_ID = "white";
-
     private static final int AUTO_RECENTER_TICKS = 3;
 
     private static final Set<String> TAGS = ImmutableSet.of("CHAD", "DIV", "STRING", "CLICKNOUGHT", "GLABN");
@@ -138,7 +135,7 @@ public class LadderBookView implements ILadderBoard {
 
     private final MDForSymbol marketData;
     private final WorkingOrdersForSymbol workingOrdersForSymbol;
-    private final ExtraDataForSymbol dataForSymbol;
+    private final LastTradeDataForSymbol dataForSymbol;
     private final OrderUpdatesForSymbol orderUpdatesForSymbol;
 
     private final EnumSwitcher<PricingMode> pricingModes;
@@ -181,7 +178,7 @@ public class LadderBookView implements ILadderBoard {
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
             final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
-            final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol extraDataForSymbol,
+            final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final LastTradeDataForSymbol extraDataForSymbol,
             final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
             final SymbolStackData stackData, final LadderMetaData metaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
@@ -298,12 +295,14 @@ public class LadderBookView implements ILadderBoard {
                 final double mid = toEurFX * (inst.getBestBid().getPrice() + inst.getBestAsk().getPrice()) / 2d;
                 final double notionalEUR = clickTradingBoxQty * mid / Constants.NORMALISING_FACTOR;
 
-                final boolean isFirstTrade = !dataForSymbol.hasTraded();
-
-                final double indicativeFee =
+                final double indicativeFeeWithoutFirstTrade =
                         feesCalc.getFeeEur(symbol, marketData.getTradeMIC(), inst.getMIC(), inst.getInstType(), BookSide.BID,
-                                clickTradingBoxQty, notionalEUR, isFirstTrade);
-                feeString = feeDF.format(indicativeFee);
+                                clickTradingBoxQty, notionalEUR, false);
+                final double indicativeFeeWithFirstTrade =
+                        feesCalc.getFeeEur(symbol, marketData.getTradeMIC(), inst.getMIC(), inst.getInstType(), BookSide.BID,
+                                clickTradingBoxQty, notionalEUR, true);
+                final double firstTradeFee = indicativeFeeWithFirstTrade - indicativeFeeWithoutFirstTrade;
+                feeString = feeDF.format(indicativeFeeWithoutFirstTrade) + " (" + feeDF.format(firstTradeFee) + ')';
             }
         } else {
             feeString = "---";
@@ -529,8 +528,8 @@ public class LadderBookView implements ILadderBoard {
                 center = auctionSummaryPrice.getPrice();
             } else if (marketData.getTradeTracker().hasTrade()) {
                 center = marketData.getTradeTracker().getLastPrice();
-            } else if (null != dataForSymbol.getTheoValue() && dataForSymbol.getTheoValue().isValid()) {
-                center = dataForSymbol.getTheoValue().getTheoreticalValue();
+            } else if (stackData.getTheoLaserLine().isValid()) {
+                center = stackData.getTheoLaserLine().getValue();
             } else if (null != specialCasePrice) {
                 center = specialCasePrice;
             } else if (yestClose.isValid()) {
@@ -554,44 +553,21 @@ public class LadderBookView implements ILadderBoard {
     private void drawPriceLevels() {
 
         if (!pendingRefDataAndSettle) {
-            final boolean isTheoValid;
-            final double theoPrice;
-            if (null != dataForSymbol.getTheoValue() && dataForSymbol.getTheoValue().isValid()) {
 
-                isTheoValid = true;
-                theoPrice = dataForSymbol.getTheoValue().getOriginalValue();
-
-            } else if (dataForSymbol.laserLineByName.containsKey(WHITE_LASER_LINE_ID)) {
-
-                final com.drwtrading.photons.ladder.LaserLine laserLine = dataForSymbol.laserLineByName.get(WHITE_LASER_LINE_ID);
-                isTheoValid = laserLine.isValid();
-                theoPrice = laserLine.getPrice();
-
-            } else if (dataForSymbol.laserLineByName.containsKey(ladderOptions.theoLaserLineID)) {
-
-                final com.drwtrading.photons.ladder.LaserLine laserLine = dataForSymbol.laserLineByName.get(ladderOptions.theoLaserLineID);
-                isTheoValid = laserLine.isValid();
-                theoPrice = laserLine.getPrice();
-
-            } else {
-
-                isTheoValid = false;
-                theoPrice = Long.MIN_VALUE;
-
-            }
+            final LaserLineValue navLaserLine = stackData.getNavLaserLine();
 
             for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
                 final long price = priceNode.key;
                 final LadderHTMLRow htmlRowKeys = priceNode.getValue().htmlKeys;
-                if (pricingModes.get() == PricingMode.BPS && isTheoValid) {
-                    final double points = (10000.0 * (price - theoPrice)) / theoPrice;
+                if (pricingModes.get() == PricingMode.BPS && navLaserLine.isValid()) {
+                    final double points = (10000.0 * (price - navLaserLine.getValue())) / navLaserLine.getValue();
                     ui.txt(htmlRowKeys.bookPriceKey, BASIS_POINT_DECIMAL_FORMAT.format(points));
                 } else if (pricingModes.get() == PricingMode.BPS && isCashEquityOrFX && hasBestBid()) {
                     final long basePrice = marketData.getBook().getBestBid().getPrice();
                     final double points = (10000.0 * (price - basePrice)) / basePrice;
                     ui.txt(htmlRowKeys.bookPriceKey, BASIS_POINT_DECIMAL_FORMAT.format(points));
-                } else if (PricingMode.EFP == pricingModes.get() && isTheoValid) {
-                    final double efp = Math.round((price - theoPrice) * 100d / Constants.NORMALISING_FACTOR) / 100d;
+                } else if (PricingMode.EFP == pricingModes.get() && navLaserLine.isValid()) {
+                    final double efp = Math.round((price - navLaserLine.getValue()) * 100d / Constants.NORMALISING_FACTOR) / 100d;
                     ui.txt(htmlRowKeys.bookPriceKey, EFP_DECIMAL_FORMAT.format(efp));
                 } else if (PricingMode.EFP == pricingModes.get() && marketData.isPriceInverted()) {
                     final double invertedPrice = Constants.NORMALISING_FACTOR / (double) price;
@@ -722,38 +698,19 @@ public class LadderBookView implements ILadderBoard {
 
         if (null != marketData.getBook() && marketData.getBook().isValid()) {
 
-            for (final com.drwtrading.photons.ladder.LaserLine laserLine : dataForSymbol.laserLineByName.values()) {
-                final String laserKey = HTML.LASER + ("offer".equals(laserLine.getId()) ? "ask" : laserLine.getId()).toUpperCase();
-                setLaserLine(laserKey, laserLine.isValid(), laserLine.getPrice());
-            }
-
-            for (final LaserLine laserLine : dataForSymbol.getLaserLines()) {
-                setLaserLine(HTML.LASER + laserLine.getType().name(), laserLine.isValid(), laserLine.getPrice());
-            }
-
-            if (null != dataForSymbol.getTheoValue()) {
-
-                final TheoValue theoValue = dataForSymbol.getTheoValue();
-                final String laserKey;
-                switch (theoValue.getTheoType()) {
-                    case SPREADNOUGHT: {
-                        laserKey = HTML.LASER + "WHITE";
-                        break;
-                    }
-                    default: {
-                        laserKey = HTML.LASER + "GREEN";
-                        break;
-                    }
-                }
-
-                setLaserLine(laserKey, theoValue.isValid(), theoValue.getTheoreticalValue());
+            for (final LaserLineValue laserLine : stackData.getLaserLines()) {
+                setLaserLine(laserLine);
             }
         }
     }
 
-    private void setLaserLine(final String laserKey, final boolean isValid, final long laserLinePrice) {
+    private void setLaserLine(final LaserLineValue laserLine) {
 
-        if (isValid && 0 < levels) {
+        final String laserKey = laserLine.getType().htmlKey;
+
+        if (laserLine.isValid() && 0 < levels) {
+
+            final long laserLinePrice = laserLine.getValue();
 
             if (topPrice < laserLinePrice) {
                 final LadderBoardRow priceRow = priceRows.get(topPrice);

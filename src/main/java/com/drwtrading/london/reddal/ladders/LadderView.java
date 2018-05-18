@@ -12,7 +12,7 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
+import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.SymbolStackData;
@@ -145,7 +145,7 @@ public class LadderView implements UiEventHandler {
     private MDForSymbol marketData;
     private long lastCenteredTime = 0;
     private LadderMetaData metaData;
-    private ExtraDataForSymbol extraDataForSymbol;
+    private LastTradeDataForSymbol extraDataForSymbol;
     private SymbolStackData stackData;
 
     private ClientSpeedState clientSpeedState = ClientSpeedState.FINE;
@@ -213,7 +213,7 @@ public class LadderView implements UiEventHandler {
     }
 
     void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
-            final WorkingOrdersForSymbol workingOrdersForSymbol, final LadderMetaData metaData, final ExtraDataForSymbol extraDataForSymbol,
+            final WorkingOrdersForSymbol workingOrdersForSymbol, final LadderMetaData metaData, final LastTradeDataForSymbol extraDataForSymbol,
             final SymbolStackData stackData, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
@@ -444,24 +444,22 @@ public class LadderView implements UiEventHandler {
                 ui.txt(cell.htmlID, text);
             }
 
-            if (null != stackData) {
-                setCellTest(HTML.BID_BEST_OFFSET_BPS, stackData.getBidTopOrderOffsetBPS());
-                setCellTest(HTML.ASK_BEST_OFFSET_BPS, stackData.getAskTopOrderOffsetBPS());
-            }
+            setCellTest(HTML.BID_BEST_OFFSET_BPS, stackData.getBidTopOrderOffsetBPS());
+            setCellTest(HTML.ASK_BEST_OFFSET_BPS, stackData.getAskTopOrderOffsetBPS());
 
-            final TheoValue theoValue = extraDataForSymbol.getTheoValue();
+            final TheoValue theoValue = stackData.getTheoValue();
             if (null != theoValue) {
 
-                if (!theoValue.isValid()) {
-                    ui.txt(HTML.AFTER_HOURS_WEIGHT, "XXX");
-                    ui.txt(HTML.TEXT_PREFIX + "r2c5", "XXX");
-                } else {
+                if (theoValue.isValid()) {
                     if (theoValue.getAfterHoursPct() < Constants.EPSILON) {
                         ui.txt(HTML.AFTER_HOURS_WEIGHT, "0");
                     } else {
                         ui.txt(HTML.AFTER_HOURS_WEIGHT, Math.ceil(theoValue.getAfterHoursPct()));
                     }
                     ui.txt(HTML.TEXT_PREFIX + "r2c5", (int) Math.ceil(theoValue.getRawAfterHoursPct()));
+                } else {
+                    ui.txt(HTML.AFTER_HOURS_WEIGHT, "XXX");
+                    ui.txt(HTML.TEXT_PREFIX + "r2c5", "XXX");
                 }
             }
 

@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.nibblers;
 import com.drwtrading.london.eeif.nibbler.transport.cache.tradingData.INibblerTradingDataListener;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableRow;
@@ -33,6 +34,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
     private final FileTableWriter<NibblerMetaTables> fileTableWriter;
 
     private final FileTableRow<NibblerMetaTables, NibblerTheoValueColumns> theoRow;
+    private final FileTableRow<NibblerMetaTables, NibblerSpreadnoughtTheoColumns> spreadnoughtRow;
     private final FileTableRow<NibblerMetaTables, NibblerLaserLineColumns> laserLineRow;
     private final FileTableRow<NibblerMetaTables, NibblerLastTradeColumns> lastTradeRow;
 
@@ -51,6 +53,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         this.fileTableWriter = new FileTableWriter<>(logFile, NibblerMetaTables.class);
 
         this.theoRow = fileTableWriter.addTable(NibblerMetaTables.THEO_VALUE, NibblerTheoValueColumns.values());
+        this.spreadnoughtRow = fileTableWriter.addTable(NibblerMetaTables.SPREADNOUGHT_THEO, NibblerSpreadnoughtTheoColumns.values());
         this.laserLineRow = fileTableWriter.addTable(NibblerMetaTables.LASER_LINE, NibblerLaserLineColumns.values());
         this.lastTradeRow = fileTableWriter.addTable(NibblerMetaTables.LAST_TRADE, NibblerLastTradeColumns.values());
     }
@@ -92,6 +95,39 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
             this.fileTableWriter.writeRow(theoRow, false);
         } catch (final IOException e) {
             monitor.logError(ReddalComponents.META_DATA_LOG, "Failed to write theo row.", e);
+        }
+    }
+
+    @Override
+    public boolean addSpreadnoughtTheo(final SpreadnoughtTheo theo) {
+        writeSpreadnoughtTheoRow(theo);
+        return true;
+    }
+
+    @Override
+    public boolean updateSpreadnoughtTheo(final SpreadnoughtTheo theo) {
+        writeSpreadnoughtTheoRow(theo);
+        return true;
+    }
+
+    private void writeSpreadnoughtTheoRow(final SpreadnoughtTheo theo) {
+
+        final long millis = millisAtMidnight + theo.getNanoSinceMidnightUTC() / DateTimeUtil.NANOS_IN_MILLIS;
+        final String time = timeFormat.format(millis);
+
+        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.SYMBOL, theo.getSymbol());
+        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.TIME, time);
+
+        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.IS_BID_VALID, theo.isBidValid());
+        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.BID, priceDF.format(theo.getBidValue() / (double) Constants.NORMALISING_FACTOR));
+
+        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.IS_ASK_VALID, theo.isAskValid());
+        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.ASK, priceDF.format(theo.getAskValue() / (double) Constants.NORMALISING_FACTOR));
+
+        try {
+            this.fileTableWriter.writeRow(spreadnoughtRow, false);
+        } catch (final IOException e) {
+            monitor.logError(ReddalComponents.META_DATA_LOG, "Failed to write spreadnought theo row.", e);
         }
     }
 

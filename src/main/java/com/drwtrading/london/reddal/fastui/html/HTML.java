@@ -50,6 +50,11 @@ public class HTML {
     public static final String STACK_ASK_PICARD_ENABLED = "stackAskPicardEnabled";
     /* Classes*/
     public static final String LASER = "laser_";
+    public static final String LASER_NAV = LASER + "NAV";
+    public static final String LASER_GREEN = LASER + "GREEN";
+    public static final String LASER_WHITE = LASER + "WHITE";
+    public static final String LASER_BID = LASER + "BID";
+    public static final String LASER_ASK = LASER + "ASK";
     public static final String BUTTON_CLR = "btn_clear";
     public static final String INP_RELOAD = "inp_reload";
     public static final String WORKING_ORDER_TAG = "working_order_tags";

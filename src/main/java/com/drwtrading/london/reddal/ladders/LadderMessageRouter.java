@@ -46,8 +46,8 @@ public class LadderMessageRouter {
     private final Map<Publisher<WebSocketOutboundData>, LinkedList<WebSocketControlMessage>> queue;
 
     public LadderMessageRouter(final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
-                               final TypedChannel<SymbolSelection> symbolSelections, final TypedChannel<WebSocketControlMessage> stackManagerLadderPresenter,
-                               final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderPresenters, final FiberBuilder logFiber) {
+            final TypedChannel<SymbolSelection> symbolSelections, final TypedChannel<WebSocketControlMessage> stackManagerLadderPresenter,
+            final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderPresenters, final FiberBuilder logFiber) {
 
         this.monitor = monitor;
 
@@ -65,22 +65,21 @@ public class LadderMessageRouter {
         this.queue = new HashMap<>();
     }
 
-
     @Subscribe
-    public void on(ReplaceCommand replaceCommand) {
+    public void on(final ReplaceCommand replaceCommand) {
+
         System.out.println("LMR received command + " + replaceCommand);
-        for (HashSet<Publisher<WebSocketOutboundData>> publishers : unknownSymbolSubscriptions.values()) {
-            for (Publisher<WebSocketOutboundData> publisher : publishers) {
-                UiPipeImpl uiPipe = new UiPipeImpl(publisher);
+        for (final HashSet<Publisher<WebSocketOutboundData>> publishers : unknownSymbolSubscriptions.values()) {
+            for (final Publisher<WebSocketOutboundData> publisher : publishers) {
+                final UiPipeImpl uiPipe = new UiPipeImpl(publisher);
                 uiPipe.eval("replace(\"" + replaceCommand.from + "\",\"" + replaceCommand.to + "\")");
             }
         }
-        for (Publisher<WebSocketOutboundData> publisher : redirects.keySet()) {
-            UiPipeImpl uiPipe = new UiPipeImpl(publisher);
+        for (final Publisher<WebSocketOutboundData> publisher : redirects.keySet()) {
+            final UiPipeImpl uiPipe = new UiPipeImpl(publisher);
             uiPipe.eval("replace(\"" + replaceCommand.from + "\",\"" + replaceCommand.to + "\")");
         }
     }
-
 
     public void setParentStackSymbol(final String symbol) {
         setLadderPresenter(symbol, stackManagerLadderPresenter);
@@ -113,7 +112,7 @@ public class LadderMessageRouter {
     }
 
     private void replayQueuedMsgs(final Publisher<WebSocketControlMessage> ladderPresenter,
-                                  final Publisher<WebSocketOutboundData> outChannel) {
+            final Publisher<WebSocketOutboundData> outChannel) {
 
         final Collection<WebSocketControlMessage> queued = queue.remove(outChannel);
         for (final WebSocketControlMessage queuedMsg : queued) {

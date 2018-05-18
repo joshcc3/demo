@@ -89,7 +89,6 @@ public class Environment {
         final Collection<CSSClass> leftClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesLeft");
         final Collection<CSSClass> rightClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesRight");
         final Collection<String> traders = tradingGroup.getParam("traders").getSet(Pattern.compile(","));
-        final String theoLaserLine = tradingGroup.getString("theoLaserLine");
         final double reloadFraction = tradingGroup.getDouble("randomReloadFraction");
         final String basketURL;
         if (tradingGroup.paramExists("basketUrl")) {
@@ -97,8 +96,7 @@ public class Environment {
         } else {
             basketURL = null;
         }
-        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, theoLaserLine, getServerResolver(), reloadFraction,
-                basketURL);
+        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, getServerResolver(), reloadFraction, basketURL);
     }
 
     private static Collection<CSSClass> getClickOrderTypes(final ConfigGroup config, final String groupName) throws ConfigException {

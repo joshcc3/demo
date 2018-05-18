@@ -1,8 +1,8 @@
 package com.drwtrading.london.reddal.shredders;
 
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
+import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiEventHandler;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.HTML;
@@ -40,11 +40,12 @@ public class ShredderView implements UiEventHandler {
     }
 
     void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
-            final WorkingOrdersForSymbol workingOrdersForSymbol, ExtraDataForSymbol dataForSymbol) {
+            final WorkingOrdersForSymbol workingOrdersForSymbol, final SymbolStackData stackData) {
+
         this.symbol = symbol;
         this.levels = levels;
 
-        this.shredderBookView = new ShredderBookView(uiPipe, view, marketData, symbol, levels, workingOrdersForSymbol, dataForSymbol);
+        this.shredderBookView = new ShredderBookView(uiPipe, view, marketData, symbol, levels, workingOrdersForSymbol, stackData);
 
         setup();
     }
@@ -61,7 +62,7 @@ public class ShredderView implements UiEventHandler {
     @Override
     public void onClick(final String id, final Map<String, String> data) {
         final String button = data.get("button");
-        if ("middle".equals(button)){
+        if ("middle".equals(button)) {
             shredderBookView.center();
         }
 
@@ -75,7 +76,7 @@ public class ShredderView implements UiEventHandler {
     @Override
     public void onUpdate(final String id, final Map<String, String> data) {
         if (data.size() < 1) {
-                shredderBookView.shreddedRowWidth = Integer.valueOf(id);
+            shredderBookView.shreddedRowWidth = Integer.valueOf(id);
         }
     }
 

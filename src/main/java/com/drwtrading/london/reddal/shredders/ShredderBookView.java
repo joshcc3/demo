@@ -1,7 +1,5 @@
 package com.drwtrading.london.reddal.shredders;
 
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
@@ -12,9 +10,10 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
-import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
+import com.drwtrading.london.reddal.data.LaserLineValue;
+import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.fastui.html.DataKey;
@@ -39,7 +38,7 @@ class ShredderBookView {
     private long scalingStep = 10;
     private long ordersPerRow = ShredderView.INITAL_ORDERS_PER_ROW;
 
-    private final UiPipeImpl uiPipe;
+    private final UiPipeImpl ui;
     private final IShredderUI view;
     private final MDForSymbol marketData;
     private final String symbol;
@@ -58,19 +57,20 @@ class ShredderBookView {
     private long bottomPrice = Long.MAX_VALUE;
     private boolean initialDisplay = false;
     private boolean needToResize = false;
-    private ExtraDataForSymbol dataForSymbol;
+    private final SymbolStackData stackData;
+
     Integer shreddedRowWidth = 0;
 
-    ShredderBookView(final UiPipeImpl uiPipe, final IShredderUI view, final MDForSymbol marketData, final String symbol, final int levels,
-            final WorkingOrdersForSymbol workingOrdersForSymbol, final ExtraDataForSymbol dataForSymbol) {
+    ShredderBookView(final UiPipeImpl ui, final IShredderUI view, final MDForSymbol marketData, final String symbol, final int levels,
+            final WorkingOrdersForSymbol workingOrdersForSymbol, final SymbolStackData stackData) {
 
-        this.uiPipe = uiPipe;
+        this.ui = ui;
         this.view = view;
         this.marketData = marketData;
         this.symbol = symbol;
         this.levels = levels;
         this.workingOrdersForSymbol = workingOrdersForSymbol;
-        this.dataForSymbol = dataForSymbol;
+        this.stackData = stackData;
 
         ladderHTMLKeys.extendToLevels(levels);
     }
@@ -103,41 +103,29 @@ class ShredderBookView {
     }
 
     private void drawLaserLines() {
+
         if (null != marketData.getBook() && marketData.getBook().isValid()) {
-            for (final com.drwtrading.photons.ladder.LaserLine laserLine : dataForSymbol.laserLineByName.values()) {
-                final String laserKey = HTML.LASER + ("offer".equals(laserLine.getId()) ? "ask" : laserLine.getId()).toUpperCase();
-                setLaserLine(laserKey, laserLine.isValid(), laserLine.getPrice());
-            }
 
-            for (final LaserLine laserLine: dataForSymbol.getLaserLines()) {
-                setLaserLine(HTML.LASER + laserLine.getType().name(), laserLine.isValid(), laserLine.getPrice());
-            }
-
-            if (dataForSymbol.getTheoValue() != null) {
-                final TheoValue theoValue = dataForSymbol.getTheoValue();
-                final String laserKey;
-                switch (theoValue.getTheoType()) {
-                    case SPREADNOUGHT:
-                        laserKey = HTML.LASER + "WHITE";
-                        break;
-                    default:
-                        laserKey = HTML.LASER + "GREEN";
-                        break;
-                }
-
-                setLaserLine(laserKey, theoValue.isValid(), theoValue.getTheoreticalValue());
+            for (final LaserLineValue laserLine : stackData.getLaserLines()) {
+                setLaserLine(laserLine);
             }
         }
     }
 
-    private void setLaserLine(final String laserKey, final boolean isValid, final long laserLinePrice) {
-        if (isValid && 0 < levels) {
+    private void setLaserLine(final LaserLineValue laserLine) {
+
+        final String laserKey = laserLine.getType().htmlKey;
+
+        if (laserLine.isValid() && 0 < levels) {
+
+            final long laserLinePrice = laserLine.getValue();
+
             if (topPrice < laserLinePrice) {
                 final LadderBoardRow priceRow = priceRows.get(topPrice);
-                uiPipe.height(laserKey, priceRow.htmlKeys.bookPriceKey, 0.5);
+                ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, 0.5);
             } else if (laserLinePrice < bottomPrice) {
                 final LadderBoardRow priceRow = priceRows.get(bottomPrice);
-                uiPipe.height(laserKey, priceRow.htmlKeys.bookPriceKey, -0.5);
+                ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, -0.5);
             } else {
                 long price = bottomPrice;
                 while (price <= topPrice) {
@@ -146,32 +134,33 @@ class ShredderBookView {
                         final long fractionalPrice = laserLinePrice - price;
                         final double tickFraction = 1.0 * fractionalPrice / (priceAbove - price);
                         final LadderBoardRow priceRow = priceRows.get(price);
-                        uiPipe.height(laserKey, priceRow.htmlKeys.bookPriceKey, tickFraction);
+                        ui.height(laserKey, priceRow.htmlKeys.bookPriceKey, tickFraction);
                         break;
                     }
                     price = priceAbove;
                 }
             }
-            uiPipe.cls(laserKey, CSSClass.INVISIBLE, false);
+
+            ui.cls(laserKey, CSSClass.INVISIBLE, false);
         } else {
-            uiPipe.cls(laserKey, CSSClass.INVISIBLE, true);
+            ui.cls(laserKey, CSSClass.INVISIBLE, true);
         }
     }
 
     private void drawPriceLevels() {
         for (int i = 0; i < levels; i++) {
-            uiPipe.clickable('#' + HTML.PRICE + i);
+            ui.clickable('#' + HTML.PRICE + i);
         }
 
         for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
             final long price = priceNode.key;
             final LadderHTMLRow htmlRowKeys = priceNode.getValue().htmlKeys;
             final LadderBoardRow priceRow = priceRows.get(price);
-            uiPipe.txt(htmlRowKeys.bookPriceKey, priceRow.formattedPrice);
+            ui.txt(htmlRowKeys.bookPriceKey, priceRow.formattedPrice);
 
-            uiPipe.data(htmlRowKeys.bookBidKey, DataKey.PRICE, price);
-            uiPipe.data(htmlRowKeys.bookAskKey, DataKey.PRICE, price);
-            uiPipe.data(htmlRowKeys.bookOrderKey, DataKey.PRICE, price);
+            ui.data(htmlRowKeys.bookBidKey, DataKey.PRICE, price);
+            ui.data(htmlRowKeys.bookAskKey, DataKey.PRICE, price);
+            ui.data(htmlRowKeys.bookOrderKey, DataKey.PRICE, price);
         }
     }
 
@@ -181,27 +170,27 @@ class ShredderBookView {
         for (final ShreddedOrder shreddedOrder : shreddedOrders) {
             final String orderCellKey = String.format("order_%s_%s", shreddedOrder.level, shreddedOrder.queuePosition);
 
-            uiPipe.cls(orderCellKey, CSSClass.BLANK_ORDER, false);
-            uiPipe.cls(orderCellKey, CSSClass.ORDER, true);
-            uiPipe.data(orderCellKey, DataKey.VOLUME_IN_FRONT, shreddedOrder.previousQuantity);
-            uiPipe.data(orderCellKey, DataKey.QUANTITY, shreddedOrder.quantity);
+            ui.cls(orderCellKey, CSSClass.BLANK_ORDER, false);
+            ui.cls(orderCellKey, CSSClass.ORDER, true);
+            ui.data(orderCellKey, DataKey.VOLUME_IN_FRONT, shreddedOrder.previousQuantity);
+            ui.data(orderCellKey, DataKey.QUANTITY, shreddedOrder.quantity);
 
             final double widthInPercent = Math.min((double) shreddedOrder.quantity / scalingFactor * 100, MAX_VISUAL_ORDER_SIZE);
-            uiPipe.width(orderCellKey, widthInPercent);
+            ui.width(orderCellKey, widthInPercent);
 
-            if (( widthInPercent * shreddedRowWidth ) / 100 > 10 * Math.ceil(Math.log10(shreddedOrder.quantity))) {
-                uiPipe.txt(orderCellKey, shreddedOrder.quantity);
+            if ((widthInPercent * shreddedRowWidth) / 100 > 10 * Math.ceil(Math.log10(shreddedOrder.quantity))) {
+                ui.txt(orderCellKey, shreddedOrder.quantity);
             } else {
-                uiPipe.txt(orderCellKey, "\u00a0");
+                ui.txt(orderCellKey, "\u00a0");
             }
 
-            uiPipe.cls(orderCellKey, shreddedOrder.getOppositeCSSCClass(), false);
-            uiPipe.cls(orderCellKey, shreddedOrder.getCorrespondingCSSClass(), true);
+            ui.cls(orderCellKey, shreddedOrder.getOppositeCSSCClass(), false);
+            ui.cls(orderCellKey, shreddedOrder.getCorrespondingCSSClass(), true);
 
-            uiPipe.cls(orderCellKey, CSSClass.MAYBE_OUR_OURDER, shreddedOrder.isOurs);
-            uiPipe.cls(orderCellKey, CSSClass.OUR_ORDER, shreddedOrder.isOurs && shreddedOrder.canOnlyBeOurs);
-            uiPipe.data(orderCellKey, DataKey.TAG, shreddedOrder.tag);
-            uiPipe.data(orderCellKey, DataKey.ORDER_TYPE, shreddedOrder.orderType);
+            ui.cls(orderCellKey, CSSClass.MAYBE_OUR_OURDER, shreddedOrder.isOurs);
+            ui.cls(orderCellKey, CSSClass.OUR_ORDER, shreddedOrder.isOurs && shreddedOrder.canOnlyBeOurs);
+            ui.data(orderCellKey, DataKey.TAG, shreddedOrder.tag);
+            ui.data(orderCellKey, DataKey.ORDER_TYPE, shreddedOrder.orderType);
         }
     }
 
@@ -240,8 +229,8 @@ class ShredderBookView {
         for (int level = 0; level < levels; level++) {
             for (int queuePosition = 0; queuePosition < ordersPerRow; queuePosition++) {
                 final String orderCellKey = String.format("order_%s_%s", level, queuePosition);
-                uiPipe.cls(orderCellKey, CSSClass.BLANK_ORDER, true);
-                uiPipe.cls(orderCellKey, CSSClass.ORDER, false);
+                ui.cls(orderCellKey, CSSClass.BLANK_ORDER, true);
+                ui.cls(orderCellKey, CSSClass.ORDER, false);
             }
         }
     }
@@ -277,7 +266,8 @@ class ShredderBookView {
         long previousQuantity = 0;
 
         while (null != order) {
-            final ShreddedOrder shreddedOrder = new ShreddedOrder(queuePosition, level, order.getRemainingQty(), order.getSide(), previousQuantity);
+            final ShreddedOrder shreddedOrder =
+                    new ShreddedOrder(queuePosition, level, order.getRemainingQty(), order.getSide(), previousQuantity);
             augmentIfOurOrder(order, shreddedOrder);
             shreddedOrders.add(shreddedOrder);
             queuePosition++;
@@ -295,31 +285,31 @@ class ShredderBookView {
         if (null != marketData && null != marketData.getBook()) {
             switch (marketData.getBook().getStatus()) {
                 case CONTINUOUS: {
-                    uiPipe.txt(HTML.SYMBOL, symbol);
-                    uiPipe.cls(HTML.SYMBOL, CSSClass.AUCTION, false);
-                    uiPipe.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, false);
+                    ui.txt(HTML.SYMBOL, symbol);
+                    ui.cls(HTML.SYMBOL, CSSClass.AUCTION, false);
+                    ui.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, false);
                     break;
                 }
                 case AUCTION: {
-                    uiPipe.txt(HTML.SYMBOL, symbol + " - AUC");
-                    uiPipe.cls(HTML.SYMBOL, CSSClass.AUCTION, true);
-                    uiPipe.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, false);
+                    ui.txt(HTML.SYMBOL, symbol + " - AUC");
+                    ui.cls(HTML.SYMBOL, CSSClass.AUCTION, true);
+                    ui.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, false);
                     break;
                 }
                 case CLOSED: {
-                    uiPipe.txt(HTML.SYMBOL, symbol + " - CLSD");
-                    uiPipe.cls(HTML.SYMBOL, CSSClass.AUCTION, true);
-                    uiPipe.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, false);
+                    ui.txt(HTML.SYMBOL, symbol + " - CLSD");
+                    ui.cls(HTML.SYMBOL, CSSClass.AUCTION, true);
+                    ui.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, false);
                     break;
                 }
                 default: {
-                    uiPipe.txt(HTML.SYMBOL, symbol + " - ?");
-                    uiPipe.cls(HTML.SYMBOL, CSSClass.AUCTION, false);
-                    uiPipe.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, true);
+                    ui.txt(HTML.SYMBOL, symbol + " - ?");
+                    ui.cls(HTML.SYMBOL, CSSClass.AUCTION, false);
+                    ui.cls(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, true);
                     break;
                 }
             }
-            uiPipe.title(symbol);
+            ui.title(symbol);
 
             for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
                 final long price = priceNode.key;
@@ -331,17 +321,17 @@ class ShredderBookView {
                 if (null != bidLevel) {
                     final long bidLevelQty = bidLevel.getQty();
                     bidQty(bookRow.htmlKeys, bidLevelQty);
-                    uiPipe.cls(bookRow.htmlKeys.bookSideKey, CSSClass.IMPLIED_BID, 0 < bidLevel.getImpliedQty());
+                    ui.cls(bookRow.htmlKeys.bookSideKey, CSSClass.IMPLIED_BID, 0 < bidLevel.getImpliedQty());
                 } else if (null != askLevel) {
                     final long askLevelQty = askLevel.getQty();
                     askQty(bookRow.htmlKeys, askLevelQty);
-                    uiPipe.cls(bookRow.htmlKeys.bookSideKey, CSSClass.IMPLIED_ASK, 0 < askLevel.getImpliedQty());
+                    ui.cls(bookRow.htmlKeys.bookSideKey, CSSClass.IMPLIED_ASK, 0 < askLevel.getImpliedQty());
                 } else {
                     askQty(bookRow.htmlKeys, 0);
                 }
             }
 
-            uiPipe.cls(HTML.BOOK_TABLE, CSSClass.AUCTION, BookMarketState.AUCTION == marketData.getBook().getStatus());
+            ui.cls(HTML.BOOK_TABLE, CSSClass.AUCTION, BookMarketState.AUCTION == marketData.getBook().getStatus());
 
             if (BookMarketState.AUCTION == marketData.getBook().getStatus()) {
 
@@ -355,8 +345,8 @@ class ShredderBookView {
                     bidQty(bookRow.htmlKeys, auctionQty);
                     askQty(bookRow.htmlKeys, auctionQty);
 
-                    uiPipe.cls(bookRow.htmlKeys.bookBidKey, CSSClass.AUCTION, true);
-                    uiPipe.cls(bookRow.htmlKeys.bookAskKey, CSSClass.AUCTION, true);
+                    ui.cls(bookRow.htmlKeys.bookBidKey, CSSClass.AUCTION, true);
+                    ui.cls(bookRow.htmlKeys.bookAskKey, CSSClass.AUCTION, true);
                 }
             }
         }
@@ -468,17 +458,17 @@ class ShredderBookView {
     }
 
     private void bidQty(final LadderHTMLRow htmlRowKeys, final long qty) {
-        uiPipe.txt(htmlRowKeys.bookSideKey, formatMktQty(qty));
-        uiPipe.cls(htmlRowKeys.bookSideKey, CSSClass.BID_ACTIVE, 0 < qty);
-        uiPipe.cls(htmlRowKeys.bookSideKey, CSSClass.ASK_ACTIVE, false);
-        uiPipe.cls(htmlRowKeys.bookSideKey, CSSClass.AUCTION, false);
+        ui.txt(htmlRowKeys.bookSideKey, formatMktQty(qty));
+        ui.cls(htmlRowKeys.bookSideKey, CSSClass.BID_ACTIVE, 0 < qty);
+        ui.cls(htmlRowKeys.bookSideKey, CSSClass.ASK_ACTIVE, false);
+        ui.cls(htmlRowKeys.bookSideKey, CSSClass.AUCTION, false);
     }
 
     private void askQty(final LadderHTMLRow htmlRowKeys, final long qty) {
-        uiPipe.txt(htmlRowKeys.bookSideKey, formatMktQty(qty));
-        uiPipe.cls(htmlRowKeys.bookSideKey, CSSClass.ASK_ACTIVE, 0 < qty);
-        uiPipe.cls(htmlRowKeys.bookSideKey, CSSClass.BID_ACTIVE, false);
-        uiPipe.cls(htmlRowKeys.bookSideKey, CSSClass.AUCTION, false);
+        ui.txt(htmlRowKeys.bookSideKey, formatMktQty(qty));
+        ui.cls(htmlRowKeys.bookSideKey, CSSClass.ASK_ACTIVE, 0 < qty);
+        ui.cls(htmlRowKeys.bookSideKey, CSSClass.BID_ACTIVE, false);
+        ui.cls(htmlRowKeys.bookSideKey, CSSClass.AUCTION, false);
     }
 
     void zoomOut() {

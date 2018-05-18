@@ -1,30 +1,36 @@
 package com.drwtrading.london.reddal.opxl;
 
+import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.reddal.data.LaserLineType;
+import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.util.DoOnce;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.ladder.LadderText;
-import com.drwtrading.photons.ladder.LaserLine;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import drw.opxl.OpxlData;
 import org.jetlang.channels.Publisher;
 
-import java.math.BigDecimal;
 import java.util.Set;
 
 public class OpxlLadderTextSubscriber {
 
-    public static final int MAX_LENGTH_OF_TEXT = 6;
+    private static final int MAX_LENGTH_OF_TEXT = 6;
+
     private final Publisher<Throwable> errorPublisher;
-    private final Publisher<LadderMetadata> publisher;
-    public final DoOnce latch = new DoOnce();
+    private final Publisher<LaserLineValue> laserLinePublisher;
+    private final Publisher<LadderMetadata> metaPublisher;
 
-    private final Set<String> validCells =
-            Sets.newHashSet("r1c1", "r1c2", "r1c3", "r1c4", "r2c1", "r2c3", "r3c2", "r3c3", "r3c4");
+    private final DoOnce latch = new DoOnce();
 
-    public OpxlLadderTextSubscriber(final Publisher<Throwable> errorPublisher, final Publisher<LadderMetadata> publisher) {
+    private final Set<String> validCells = Sets.newHashSet("r1c1", "r1c2", "r1c3", "r1c4", "r2c1", "r2c3", "r3c2", "r3c3", "r3c4");
+
+    public OpxlLadderTextSubscriber(final Publisher<Throwable> errorPublisher, final Publisher<LaserLineValue> laserLinePublisher,
+            final Publisher<LadderMetadata> metaPublisher) {
+
         this.errorPublisher = errorPublisher;
-        this.publisher = publisher;
+        this.laserLinePublisher = laserLinePublisher;
+        this.metaPublisher = metaPublisher;
     }
 
     public void onOpxlData(final OpxlData opxlData) {
@@ -37,27 +43,27 @@ public class OpxlLadderTextSubscriber {
                 if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(cell)) {
                     if (cell.startsWith("laser")) {
 
-                        final String laserColor;
+                        final LaserLineType laserType;
                         if ("bid".equals(color)) {
-                            laserColor = "bid";
+                            laserType = LaserLineType.BID;
                         } else if ("offer".equals(color)) {
-                            laserColor = "offer";
+                            laserType = LaserLineType.ASK;
                         } else {
-                            laserColor = "GREEN";
+                            laserType = LaserLineType.GREEN;
                         }
 
-                        if (value.trim().isEmpty() || "#ERR".equals(value.trim())) {
-                            publisher.publish(new LaserLine(symbol, laserColor, 0, false, "EEIF"));
+                        final String trimmedValue = value.trim();
+                        if (trimmedValue.isEmpty() || "#ERR".equals(trimmedValue)) {
+                            laserLinePublisher.publish(new LaserLineValue(symbol, laserType));
                         } else {
                             try {
-                                publisher.publish(
-                                        new LaserLine(symbol, laserColor, new BigDecimal(value).movePointRight(9).longValue(), true,
-                                                "EEIF"));
+                                final long price = (long) (Constants.NORMALISING_FACTOR * Double.parseDouble(trimmedValue));
+                                laserLinePublisher.publish(new LaserLineValue(symbol, laserType, price));
                             } catch (final NumberFormatException e) {
-                                publisher.publish(new LaserLine(symbol, "laserColor", 0, false, "EEIF"));
+                                laserLinePublisher.publish(new LaserLineValue(symbol, laserType));
                                 latch.doOnce(() -> {
                                     errorPublisher.publish(
-                                            new RuntimeException("Could not format: " + value + " for " + symbol + ' ' + cell));
+                                            new RuntimeException("Could not format: " + trimmedValue + " for " + symbol + ' ' + cell));
                                     e.printStackTrace();
                                 });
                             }
@@ -65,8 +71,9 @@ public class OpxlLadderTextSubscriber {
                     } else if (!validCells.contains(cell)) {
                         latch.doOnce(() -> errorPublisher.publish(new Throwable("Opxl Ladder Text Cell is not valid, got:" + cell)));
                     } else {
-                        publisher.publish(
-                                new LadderText(symbol, cell, value.substring(0, Math.min(value.length(), MAX_LENGTH_OF_TEXT)), color));
+                        final LadderText text =
+                                new LadderText(symbol, cell, value.substring(0, Math.min(value.length(), MAX_LENGTH_OF_TEXT)), color);
+                        metaPublisher.publish(text);
                         latch.reset();
                     }
                 }

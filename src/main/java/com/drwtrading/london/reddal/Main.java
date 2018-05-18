@@ -105,6 +105,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
+import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.picard.OpxlFXCalcUpdater;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 import com.drwtrading.london.reddal.picard.PicardRow;
@@ -360,45 +361,44 @@ public class Main {
         final SelectIOFiber stackManagerSelectIOFiber = new SelectIOFiber(stackManagerSelectIO, errorLog, stackManagerThreadName);
 
         final FXCalc<?> stackManagerFXCalc = createOPXLFXCalc(app);
+        final FiberBuilder stackManagerFiberBuilder = fibers.fiberGroup.wrap(stackManagerSelectIOFiber, stackManagerThreadName);
         final LadderPresenter stackManagerLadderPresenter =
                 getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment, stackManagerFXCalc, noBookSubscription,
-                        ewokBaseURL, stackManagerWebSocket, fibers.fiberGroup.wrap(stackManagerSelectIOFiber, stackManagerThreadName));
+                        ewokBaseURL, stackManagerWebSocket, stackManagerFiberBuilder, Constants::NO_OP);
 
         // Load stacks
         final Map<MDSource, LinkedList<ConfigGroup>> stackConfigs = new EnumMap<>(MDSource.class);
-        {
-            final ConfigGroup stackConfig = root.getEnabledGroup("stacks", "nibblers");
-            if (null != stackConfig) {
-                for (final ConfigGroup stackClientConfig : stackConfig.groups()) {
+        final ConfigGroup stackConfig = root.getEnabledGroup("stacks", "nibblers");
+        if (null != stackConfig) {
+            for (final ConfigGroup stackClientConfig : stackConfig.groups()) {
 
-                    final boolean isStackManager =
-                            stackClientConfig.paramExists(IS_STACK_MANAGER_PARAM) && stackClientConfig.getBoolean(IS_STACK_MANAGER_PARAM);
+                final boolean isStackManager =
+                        stackClientConfig.paramExists(IS_STACK_MANAGER_PARAM) && stackClientConfig.getBoolean(IS_STACK_MANAGER_PARAM);
 
-                    if (isStackManager) {
-                        final StackManagerGroupCallbackBatcher stackUpdateBatcher =
-                                new StackManagerGroupCallbackBatcher(stackManagerLadderPresenter, channels.stackParentSymbolPublisher);
-                        createStackClient(errorLog, stackManagerMonitor, stackManagerSelectIO, stackManagerThreadName, stackClientConfig,
-                                stackUpdateBatcher, localAppName);
-                    } else {
-                        final Set<MDSource> mdSources = stackClientConfig.getEnumSet(MD_SOURCES_PARAM, MDSource.class);
-                        for (final MDSource mdSource : mdSources) {
-                            final List<ConfigGroup> configGroups = MapUtils.getMappedLinkedList(stackConfigs, mdSource);
-                            configGroups.add(stackClientConfig);
-                        }
+                if (isStackManager) {
+                    final StackManagerGroupCallbackBatcher stackUpdateBatcher =
+                            new StackManagerGroupCallbackBatcher(stackManagerLadderPresenter, channels.stackParentSymbolPublisher);
+                    createStackClient(errorLog, stackManagerMonitor, stackManagerSelectIO, stackManagerThreadName, stackClientConfig,
+                            stackUpdateBatcher, localAppName);
+                } else {
+                    final Set<MDSource> mdSources = stackClientConfig.getEnumSet(MD_SOURCES_PARAM, MDSource.class);
+                    for (final MDSource mdSource : mdSources) {
+                        final List<ConfigGroup> configGroups = MapUtils.getMappedLinkedList(stackConfigs, mdSource);
+                        configGroups.add(stackClientConfig);
                     }
                 }
             }
         }
 
         // Indy LeanDefs
-        ConfigGroup indyServerConfig = app.config.getEnabledGroup(INDY_SERVER_GROUP);
+        final ConfigGroup indyServerConfig = app.config.getEnabledGroup(INDY_SERVER_GROUP);
         if (null != indyServerConfig) {
             System.out.println("Indy server listening");
-            ExpandedDetailResourceMonitor<ReddalComponents, IndyTransportComponents> indyMonitor =
+            final ExpandedDetailResourceMonitor<ReddalComponents, IndyTransportComponents> indyMonitor =
                     new ExpandedDetailResourceMonitor<>(monitor, "indyServer", app.errorLog, IndyTransportComponents.class,
                             ReddalComponents.INDY_SERVER);
-            IndyCache cache = new IndyCache(selectIO, indyMonitor);
-            IndyServer server = new IndyServer(selectIO, indyServerConfig, indyMonitor, cache);
+            final IndyCache cache = new IndyCache(selectIO, indyMonitor);
+            final IndyServer server = new IndyServer(selectIO, indyServerConfig, indyMonitor, cache);
             app.addStartUpAction(server::start);
             channels.leanDefs.subscribe(selectIOFiber, message -> {
                 if (message.instType == InstType.EQUITY || message.instType == InstType.DR) {
@@ -461,9 +461,12 @@ public class Main {
 
                 final FXCalc<?> fxCalc = createOPXLFXCalc(app);
 
+                final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, fxCalc);
+                displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
+
                 final LadderPresenter ladderPresenter =
                         getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, fxCalc, depthBookSubscriber, ewokBaseURL,
-                                webSocket, fiberBuilder);
+                                webSocket, fiberBuilder, picardSpotter);
 
                 final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
                 if (null != mdSourceStackConfigs) {
@@ -482,9 +485,6 @@ public class Main {
                     }
                 }
 
-                final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, fxCalc);
-                displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
-
                 final List<ConfigGroup> nibblerConfigs = nibblers.get(mdSource);
                 if (null != nibblerConfigs) {
 
@@ -499,7 +499,7 @@ public class Main {
                         final IResourceMonitor<NibblerTransportComponents> childMonitor =
                                 nibblerParentMonitor.createChildResourceMonitor(nibblerConfig.getKey());
 
-                        final LadderInfoListener ladderInfoListener = new LadderInfoListener(ladderPresenter, picardSpotter);
+                        final LadderInfoListener ladderInfoListener = new LadderInfoListener(ladderPresenter);
                         final NibblerClientHandler client =
                                 NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
                                         threadName + "-transport-" + nibblerConfig.getKey(), localAppName + mdSource.name(), true,
@@ -537,14 +537,14 @@ public class Main {
             fxFiber.execute(() -> {
                 try {
                     fxClient.start();
-                } catch (Throwable e) {
+                } catch (final Throwable e) {
                     throw new RuntimeException(e);
                 }
             });
 
             final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("fx", "fx", fiberBuilder, webApp, ws);
-            FxUi ui = new FxUi(fxCalc);
+            final FxUi ui = new FxUi(fxCalc);
             fiberBuilder.subscribe(ui, ws);
         }
 
@@ -583,10 +583,29 @@ public class Main {
                 shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
 
                 final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
-                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders, channels.tradingStatus,
-                        channels.metaData);
+                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders);
+
+                channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), shredderPresenter::overrideLaserLine);
+                channels.tradingStatus.subscribe(fiberBuilder.getFiber(), shredderPresenter::setTradingStatus);
                 displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
                 displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
+
+                final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
+                if (null != mdSourceStackConfigs) {
+
+                    final MultiLayeredResourceMonitor<ReddalComponents> stackParentMonitor =
+                            new MultiLayeredResourceMonitor<>(displayMonitor, ReddalComponents.class, errorLog);
+
+                    for (final ConfigGroup stackClientConfig : mdSourceStackConfigs) {
+
+                        final IResourceMonitor<ReddalComponents> stackMonitor =
+                                stackParentMonitor.createChildResourceMonitor(threadName + '-' + stackClientConfig.getKey());
+
+                        final StackGroupCallbackBatcher stackUpdateBatcher = new StackGroupCallbackBatcher(shredderPresenter);
+                        createStackClient(errorLog, stackMonitor, displaySelectIO, threadName, stackClientConfig, stackUpdateBatcher,
+                                localAppName);
+                    }
+                }
 
                 final ShredderInfoListener shredderInfoListener = new ShredderInfoListener(shredderPresenter);
 
@@ -927,8 +946,8 @@ public class Main {
         if (null != ladderTextConfig) {
             final Set<String> keys = ladderTextConfig.getSet("keys");
             new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
-                    new OpxlLadderTextSubscriber(channels.errorPublisher, channels.metaData)::onOpxlData, keys, fibers.metaData.getFiber(),
-                    channels.error);
+                    new OpxlLadderTextSubscriber(channels.errorPublisher, channels.opxlLaserLineData, channels.metaData)::onOpxlData, keys,
+                    fibers.metaData.getFiber(), channels.error);
         }
 
         final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(selectIO, monitor, channels.ultimateParents, logDir);
@@ -966,7 +985,7 @@ public class Main {
 
     private static DepthBookSubscriber getMDSubscription(final Application<?> app, final IResourceMonitor<ReddalComponents> displayMonitor,
             final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
-            final String localAppName, TypedChannel<StockAlert> stockAlerts) throws ConfigException {
+            final String localAppName, final TypedChannel<StockAlert> stockAlerts) throws ConfigException {
 
         final LevelThreeBookSubscriber l3BookHandler =
                 new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, stockAlerts, channels.stackRefPriceDetailChannel);
@@ -994,11 +1013,11 @@ public class Main {
     private static LadderPresenter getLadderPresenter(final IResourceMonitor<ReddalComponents> displayMonitor,
             final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment, final FXCalc<?> fxCalc,
             final IMDSubscriber depthBookSubscriber, final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket,
-            final FiberBuilder fiberBuilder) throws ConfigException {
+            final FiberBuilder fiberBuilder, final IPicardSpotter picardSpotter) throws ConfigException {
 
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
-                        environment.ladderOptions(), fxCalc, channels.storeLadderPref, channels.heartbeatRoundTrips,
+                        environment.ladderOptions(), picardSpotter, fxCalc, channels.storeLadderPref, channels.heartbeatRoundTrips,
                         channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffsetCmds,
                         channels.increaseChildOffsetBPSCmds, channels.setSiblingsEnabledCmds, channels.ladderClickTradingIssues,
                         channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
@@ -1009,6 +1028,7 @@ public class Main {
                 channels.userCycleContractPublisher, channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults,
                 channels.isinsGoingEx);
 
+        channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);
         channels.ladderClickTradingIssues.subscribe(fiberBuilder.getFiber(), ladderPresenter::displayTradeIssue);
         channels.deskPositions.subscribe(fiberBuilder.getFiber(), ladderPresenter::setDeskPositions);
         channels.pksExposure.subscribe(fiberBuilder.getFiber(), ladderPresenter::setPKSExposure);

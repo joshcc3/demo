@@ -12,7 +12,6 @@ import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import com.drwtrading.london.reddal.ladders.LadderPresenter;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -20,15 +19,15 @@ import java.util.Set;
 public class StackGroupCallbackBatcher
         implements IStackConnectionListener, IStackGroupUpdateCallback, IStackConfigUpdateCallback, IStackStrategyUpdateCallback {
 
-    private final LadderPresenter ladderPresenter;
+    private final IStackPresenterCallback stackPresenter;
 
     private final Set<StackGroup> stackBatch;
 
     private StackClientHandler stackClientHandler;
 
-    public StackGroupCallbackBatcher(final LadderPresenter ladderPresenter) {
+    public StackGroupCallbackBatcher(final IStackPresenterCallback stackPresenter) {
 
-        this.ladderPresenter = ladderPresenter;
+        this.stackPresenter = stackPresenter;
 
         this.stackBatch = new HashSet<>();
     }
@@ -48,7 +47,7 @@ public class StackGroupCallbackBatcher
     @Override
     public IStackGroupUpdateCallback getStackListener(final String symbol, final InstrumentID instID, final BookSide side) {
 
-        if (null == ladderPresenter) {
+        if (null == stackPresenter) {
             throw new IllegalStateException("Ladder presenter has not been set.");
         } else {
             return this;
@@ -73,12 +72,12 @@ public class StackGroupCallbackBatcher
     @Override
     public void connectionLost(final String remoteAppName) {
         stackBatch.clear();
-        ladderPresenter.stacksConnectionLost(remoteAppName);
+        stackPresenter.stacksConnectionLost(remoteAppName);
     }
 
     @Override
     public void stackGroupCreated(final StackGroup stackGroup) {
-        ladderPresenter.stackGroupCreated(stackGroup, stackClientHandler);
+        stackPresenter.stackGroupCreated(stackGroup, stackClientHandler);
     }
 
     @Override
@@ -112,7 +111,7 @@ public class StackGroupCallbackBatcher
 
         for (final StackGroup group : stackBatch) {
             try {
-                ladderPresenter.stackGroupUpdated(group);
+                stackPresenter.stackGroupUpdated(group);
             } catch (final Exception e) {
                 System.out.println("Failed stack batch update.");
                 e.printStackTrace();

@@ -1,8 +1,6 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.eeif.md.utils.L2DebugAdapter;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
-import com.drwtrading.london.eeif.nibbler.transport.data.types.LaserLineType;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
@@ -18,6 +16,8 @@ import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
+import com.drwtrading.london.reddal.data.LaserLineType;
+import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
@@ -52,7 +52,7 @@ public class PicardTest {
         final PicardSpotter picardSpotter = new PicardSpotter(new SystemClock(), bookSubscriber, picardPublisher, fxCalc);
 
         setUpBook(bookSubscriber, CCY.USD, BookMarketState.CONTINUOUS);
-        final LaserLine laserLine = getLaserLine(LaserLineType.BID, 103);
+        final LaserLineValue laserLine = getLaserLine(LaserLineType.BID, 103);
 
         picardSpotter.setLaserLine(laserLine);
         picardSpotter.checkAnyCrossed();
@@ -71,7 +71,7 @@ public class PicardTest {
         final PicardSpotter picardSpotter = new PicardSpotter(new SystemClock(), bookSubscriber, picardPublisher, fxCalc);
 
         setUpBook(bookSubscriber, CCY.USD, BookMarketState.CONTINUOUS);
-        final LaserLine laserLine = getLaserLine(LaserLineType.BID, 100);
+        final LaserLineValue laserLine = getLaserLine(LaserLineType.BID, 100);
 
         picardSpotter.setLaserLine(laserLine);
         picardSpotter.checkAnyCrossed();
@@ -84,7 +84,7 @@ public class PicardTest {
         final PicardSpotter picardSpotter = new PicardSpotter(new SystemClock(), bookSubscriber, picardPublisher, fxCalc);
 
         setUpBook(bookSubscriber, CCY.USD, BookMarketState.AUCTION);
-        final LaserLine laserLine = getLaserLine(LaserLineType.BID, 103);
+        final LaserLineValue laserLine = getLaserLine(LaserLineType.BID, 103);
 
         picardSpotter.setLaserLine(laserLine);
         picardSpotter.checkAnyCrossed();
@@ -121,9 +121,10 @@ public class PicardTest {
         mdForSymbol.setBook(book);
     }
 
-    private static LaserLine getLaserLine(final LaserLineType laserLineType, final int price) {
-        final LaserLine laserLine = new LaserLine(1, "AAPL", laserLineType);
-        laserLine.set(1, true, price * Constants.NORMALISING_FACTOR);
+    private static LaserLineValue getLaserLine(final LaserLineType laserLineType, final int price) {
+
+        final LaserLineValue laserLine = new LaserLineValue("AAPL", laserLineType);
+        laserLine.setValue(price * Constants.NORMALISING_FACTOR);
         return laserLine;
     }
 }

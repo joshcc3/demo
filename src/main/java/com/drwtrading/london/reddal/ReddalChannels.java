@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.jetlang.ChannelFactory;
+import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
@@ -52,6 +53,7 @@ class ReddalChannels {
 
     final TypedChannel<Throwable> error;
     final Publisher<Throwable> errorPublisher;
+    final TypedChannel<LaserLineValue> opxlLaserLineData;
     final TypedChannel<LadderMetadata> metaData;
     final TypedChannel<OPXLDeskPositions> deskPositions;
     final TypedChannel<Position> position;
@@ -106,6 +108,7 @@ class ReddalChannels {
         this.channelFactory = channelFactory;
         this.error = Main.ERROR_CHANNEL;
         this.errorPublisher = new BogusErrorFilteringPublisher(error);
+        this.opxlLaserLineData = create(LaserLineValue.class);
         this.metaData = create(LadderMetadata.class);
         this.deskPositions = create(OPXLDeskPositions.class);
         this.position = create(Position.class);

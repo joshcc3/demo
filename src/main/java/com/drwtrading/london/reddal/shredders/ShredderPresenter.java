@@ -2,18 +2,23 @@ package com.drwtrading.london.reddal.shredders;
 
 import com.drwtrading.jetlang.autosubscribe.KeyedBatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
+import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
+import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
+import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.reddal.data.LaserLineValue;
+import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
-import com.drwtrading.london.reddal.ladders.LaserLineStringConverter;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
+import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
-import com.drwtrading.photons.ladder.LaserLine;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
@@ -28,7 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class ShredderPresenter {
+public class ShredderPresenter implements IStackPresenterCallback {
 
     private static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 5;
     private static final long HEARTBEAT_INTERVAL_MS = 1000;
@@ -38,10 +43,13 @@ public class ShredderPresenter {
     private final Multimap<String, ShredderView> viewsByUser = HashMultimap.create();
     private final IMDSubscriber bookSubscriber;
     private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
-    private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(ExtraDataForSymbol::new);
+    private final Map<String, SymbolStackData> stackBySymbol;
 
     public ShredderPresenter(final IMDSubscriber depthBookSubscriber) {
+
         this.bookSubscriber = depthBookSubscriber;
+
+        this.stackBySymbol= new MapMaker().makeComputingMap(symbol -> new SymbolStackData(symbol, Constants::NO_OP));
     }
 
     @Subscribe
@@ -77,11 +85,14 @@ public class ShredderPresenter {
 
         if (null != view) {
             if ("shredder-subscribe".equals(cmd)) {
+
                 final String symbol = args[1];
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(symbol, this);
 
-                view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), dataBySymbol.get(symbol));
+                final SymbolStackData stackData = stackBySymbol.get(symbol);
+
+                view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), stackData);
 
                 viewsBySymbol.put(symbol, view);
             } else {
@@ -91,8 +102,7 @@ public class ShredderPresenter {
         }
     }
 
-    @Subscribe
-    public void on(final ServerTradingStatus serverTradingStatus) {
+    public void setTradingStatus(final ServerTradingStatus serverTradingStatus) {
         if (!serverTradingStatus.isWorkingOrderConnected) {
             for (final WorkingOrdersForSymbol ordersForSymbol : ordersBySymbol.values()) {
                 for (final Iterator<WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByKey.values().iterator();
@@ -116,28 +126,26 @@ public class ShredderPresenter {
     @KeyedBatchSubscriber(converter = WorkingOrdersPresenter.WOConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
     public void onWorkingOrders(final Map<String, WorkingOrderUpdateFromServer> workingOrderUpdates) {
-        for (WorkingOrderUpdateFromServer workingOrderUpdate : workingOrderUpdates.values()) {
+        for (final WorkingOrderUpdateFromServer workingOrderUpdate : workingOrderUpdates.values()) {
             ordersBySymbol.get(workingOrderUpdate.workingOrderUpdate.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
         }
     }
 
-    @KeyedBatchSubscriber(converter = LaserLineStringConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
-    @Subscribe
-    public void onLaserLines(final Map<String, LaserLine> laserLines) {
-        for (final LaserLine laserLine : laserLines.values()) {
-            dataBySymbol.get(laserLine.getSymbol()).onLaserLine(laserLine);
-        }
-    }
-
-    public void setLaserLine(final com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine laserLine) {
-        final ExtraDataForSymbol data = dataBySymbol.get(laserLine.getSymbol());
-        data.setLaserLine(laserLine);
-    }
-
     public void setTheo(final TheoValue theoValue) {
+        final SymbolStackData stackData = stackBySymbol.get(theoValue.getSymbol());
+        stackData.setTheoValue(theoValue);
+    }
 
-        final ExtraDataForSymbol data = dataBySymbol.get(theoValue.getSymbol());
-        data.setTheoValue(theoValue);
+    public void setSpreadnoughtTheo(final SpreadnoughtTheo theo) {
+
+        final SymbolStackData stackData = stackBySymbol.get(theo.getSymbol());
+        stackData.setSpreadnoughtTheo(theo);
+    }
+
+    public void overrideLaserLine(final LaserLineValue laserLine) {
+
+        final SymbolStackData stackData = stackBySymbol.get(laserLine.symbol);
+        stackData.overrideStackData(laserLine);
     }
 
     public long flushAllShredders() {
@@ -152,5 +160,35 @@ public class ShredderPresenter {
             shredderView.sendHeartbeat();
         }
         return HEARTBEAT_INTERVAL_MS;
+    }
+
+    @Override
+    public void stacksConnectionLost(final String remoteAppName) {
+
+        for (final SymbolStackData stackData : stackBySymbol.values()) {
+            stackData.stackConnectionLost(remoteAppName);
+        }
+    }
+
+    @Override
+    public void stackGroupCreated(final StackGroup stackGroup, final StackClientHandler stackClientHandler) {
+
+        final String symbol = stackGroup.getSymbol();
+        final SymbolStackData stackData = stackBySymbol.get(symbol);
+        stackData.setStackClientHandler(stackClientHandler);
+
+        stackGroupUpdated(stackGroup);
+    }
+
+    @Override
+    public void stackGroupUpdated(final StackGroup stackGroup) {
+
+        final String symbol = stackGroup.getSymbol();
+        final SymbolStackData stackData = stackBySymbol.get(symbol);
+        if (BookSide.BID == stackGroup.getSide()) {
+            stackData.setBidGroup(stackGroup);
+        } else {
+            stackData.setAskGroup(stackGroup);
+        }
     }
 }

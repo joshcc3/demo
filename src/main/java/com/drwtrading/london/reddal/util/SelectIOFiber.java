@@ -5,7 +5,6 @@ import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import org.jetlang.core.Disposable;
 import org.jetlang.fibers.Fiber;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,11 +27,7 @@ public class SelectIOFiber implements Fiber {
 
     @Override
     public void start() {
-        try {
-            selectIO.start(threadName);
-        } catch (final IOException e) {
-            errorLog.error("Error starting SelectIO [" + threadName + ']', e);
-        }
+        selectIO.start(threadName);
     }
 
     @Override

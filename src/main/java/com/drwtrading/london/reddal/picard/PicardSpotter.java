@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.picard;
 
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
@@ -12,6 +11,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.time.IClock;
+import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import org.jetlang.channels.Publisher;
@@ -20,7 +20,7 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PicardSpotter {
+public class PicardSpotter implements IPicardSpotter {
 
     private static final long RECHECK_PICARD_PERIOD_MILLIS = 500L;
 
@@ -49,20 +49,21 @@ public class PicardSpotter {
         this.picardDatas = new HashMap<>();
     }
 
-    public void setLaserLine(final LaserLine laserLine) {
+    @Override
+    public void setLaserLine(final LaserLineValue laserLine) {
 
-        final PicardData picardData = picardDatas.get(laserLine.getSymbol());
+        final PicardData picardData = picardDatas.get(laserLine.symbol);
         if (null == picardData) {
-            final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(laserLine.getSymbol(), this);
-            final PicardData newPicardData = new PicardData(laserLine.getSymbol(), mdForSymbol);
+            final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(laserLine.symbol, this);
+            final PicardData newPicardData = new PicardData(laserLine.symbol, mdForSymbol);
             setLaserLine(newPicardData, laserLine);
-            picardDatas.put(laserLine.getSymbol(), newPicardData);
+            picardDatas.put(laserLine.symbol, newPicardData);
         } else {
             setLaserLine(picardData, laserLine);
         }
     }
 
-    private static void setLaserLine(final PicardData picardData, final LaserLine laserLine) {
+    private static void setLaserLine(final PicardData picardData, final LaserLineValue laserLine) {
 
         switch (laserLine.getType()) {
             case BID: {
@@ -90,8 +91,8 @@ public class PicardSpotter {
 
         if (null != book) {
 
-            final LaserLine bidLaserLine = picardData.bidLaserLine;
-            final LaserLine askLaserLine = picardData.askLaserLine;
+            final LaserLineValue bidLaserLine = picardData.bidLaserLine;
+            final LaserLineValue askLaserLine = picardData.askLaserLine;
 
             final boolean isNewRow = null == picardData.previousRow;
 
@@ -136,10 +137,10 @@ public class PicardSpotter {
                 }
             }
 
-            if (null != bidLaserLine && bidLaserLine.isValid() && bestAsk <= bidLaserLine.getPrice()) {
+            if (null != bidLaserLine && bidLaserLine.isValid() && bestAsk <= bidLaserLine.getValue()) {
 
                 final String askPrice = df.format(bestAsk / (double) Constants.NORMALISING_FACTOR);
-                final double bpsThrough = getBPSThrough(bidLaserLine.getPrice(), bestAsk);
+                final double bpsThrough = getBPSThrough(bidLaserLine.getValue(), bestAsk);
 
                 picardData.previousRow =
                         createPicardRow(book, book.getBestAsk(), BookSide.ASK, bidLaserLine, isNewRow, description, nowMilliSinceUTC,
@@ -147,10 +148,10 @@ public class PicardSpotter {
 
                 rowPublisher.publish(picardData.previousRow);
 
-            } else if (null != askLaserLine && askLaserLine.isValid() && askLaserLine.getPrice() <= bestBid) {
+            } else if (null != askLaserLine && askLaserLine.isValid() && askLaserLine.getValue() <= bestBid) {
 
                 final String bidPrice = df.format(bestBid / (double) Constants.NORMALISING_FACTOR);
-                final double bpsThrough = getBPSThrough(askLaserLine.getPrice(), bestBid);
+                final double bpsThrough = getBPSThrough(askLaserLine.getValue(), bestBid);
                 picardData.previousRow =
                         createPicardRow(book, book.getBestBid(), BookSide.BID, askLaserLine, isNewRow, description, nowMilliSinceUTC,
                                 isInAuction, bestBid, bidPrice, bpsThrough);
@@ -176,7 +177,7 @@ public class PicardSpotter {
         }
     }
 
-    private PicardRow createPicardRow(final IBook<?> book, final IBookLevel bestLevel, final BookSide side, final LaserLine laserLine,
+    private PicardRow createPicardRow(final IBook<?> book, final IBookLevel bestLevel, final BookSide side, final LaserLineValue laserLine,
             final boolean isNewRow, final String description, final long nowMilliSinceUTC, final boolean isInAuction, final long bestPrice,
             final String bestPricePrint, final double bpsThrough) {
 
@@ -194,12 +195,12 @@ public class PicardSpotter {
             final IBookReferencePrice refPriceData = book.getRefPriceData(ReferencePoint.AUCTION_INDICATIVE);
             if (refPriceData.isValid()) {
                 opportunitySize =
-                        opportunitySizeForLevel(laserLine.getPrice(), refPriceData.getPrice(), refPriceData.getQty(), book.getWPV(), fx);
+                        opportunitySizeForLevel(laserLine.getValue(), refPriceData.getPrice(), refPriceData.getQty(), book.getWPV(), fx);
             } else {
                 opportunitySize = 0;
             }
         } else {
-            opportunitySize = calculateOpportunitySize(laserLine.getPrice(), bestLevel, side, fx);
+            opportunitySize = calculateOpportunitySize(laserLine.getValue(), bestLevel, side, fx);
         }
 
         return new PicardRow(nowMilliSinceUTC, book.getSymbol(), book.getInstType(), opportunityCcy, side.getOppositeSide(), bestPrice,

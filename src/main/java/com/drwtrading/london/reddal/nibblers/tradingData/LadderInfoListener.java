@@ -7,19 +7,17 @@ import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterSymbolLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
-import com.drwtrading.london.reddal.picard.PicardSpotter;
 
 public class LadderInfoListener implements INibblerTradingDataListener, INibblerTransportConnectionListener, INibblerBlotterListener {
 
     private final LadderPresenter ladderPresenter;
-    private final PicardSpotter picardSpotter;
 
-    public LadderInfoListener(final LadderPresenter ladderPresenter, final PicardSpotter picardSpotter) {
+    public LadderInfoListener(final LadderPresenter ladderPresenter) {
 
         this.ladderPresenter = ladderPresenter;
-        this.picardSpotter = picardSpotter;
     }
 
     @Override
@@ -40,9 +38,19 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     }
 
     @Override
+    public boolean addSpreadnoughtTheo(final SpreadnoughtTheo theo) {
+        ladderPresenter.setSpreadnoughtTheo(theo);
+        return true;
+    }
+
+    @Override
+    public boolean updateSpreadnoughtTheo(final SpreadnoughtTheo theo) {
+        ladderPresenter.setSpreadnoughtTheo(theo);
+        return true;
+    }
+
+    @Override
     public boolean addLaserLine(final LaserLine laserLine) {
-        ladderPresenter.setLaserLine(laserLine);
-        picardSpotter.setLaserLine(laserLine);
         return true;
     }
 

@@ -2,8 +2,8 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.KeyedBatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
@@ -18,9 +18,10 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
-import com.drwtrading.london.reddal.data.ExtraDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.LaserLineValue;
+import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
@@ -35,8 +36,10 @@ import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
+import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
+import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
@@ -70,7 +73,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-public class LadderPresenter {
+public class LadderPresenter implements IStackPresenterCallback {
 
     private static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 5;
     private static final long HEARTBEAT_INTERVAL_MS = 1000;
@@ -93,12 +96,13 @@ public class LadderPresenter {
     private final Multimap<String, LadderView> viewsByUser = HashMultimap.create();
     private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
     private final Map<String, OrderUpdatesForSymbol> eeifOrdersBySymbol = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
-    private final Map<String, ExtraDataForSymbol> dataBySymbol = new MapMaker().makeComputingMap(ExtraDataForSymbol::new);
-    private final Map<String, SymbolStackData> stackBySymbol = new MapMaker().makeComputingMap(SymbolStackData::new);
+    private final Map<String, LastTradeDataForSymbol> lastTradeBySymbol = new MapMaker().makeComputingMap(LastTradeDataForSymbol::new);
     private final Map<String, LadderMetaData> metaDataBySymbol = new MapMaker().makeComputingMap(LadderMetaData::new);
+
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
-    private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap = new HashMap<>();
-    private final Map<String, SearchResult> refData = new HashMap<>();
+    private final Map<String, SymbolStackData> stackBySymbol;
+    private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap;
+    private final Map<String, SearchResult> refData;
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher;
@@ -118,7 +122,8 @@ public class LadderPresenter {
 
     public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-            final FXCalc<?> fxCalc, final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+            final IPicardSpotter picardSpotter, final FXCalc<?> fxCalc,
+            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
             final Fiber fiber, final Publisher<Jsonable> trace, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
@@ -141,6 +146,11 @@ public class LadderPresenter {
 
         this.oneDP = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 1);
 
+        this.stackBySymbol = new MapMaker().makeComputingMap(symbol -> new SymbolStackData(symbol, picardSpotter));
+        this.ladderPrefsForUserBySymbol = new HashMap<>();
+        this.orderEntryMap = new HashMap<>();
+        this.refData = new HashMap<>();
+
         this.storeLadderPrefPublisher = storeLadderPrefPublisher;
         this.roundTripPublisher = roundTripPublisher;
         this.recenterLaddersForUser = recenterLaddersForUser;
@@ -154,29 +164,29 @@ public class LadderPresenter {
         this.userCycleContractPublisher = userCycleContractPublisher;
         this.orderEntryCommandToServerPublisher = orderEntryCommandToServerPublisher;
         this.userWorkspaceRequests = userWorkspaceRequests;
-        this.ladderPrefsForUserBySymbol = new HashMap<>();
     }
 
     @Subscribe
     public void onSearchResult(final SearchResult searchResult) {
+
         refData.put(searchResult.symbol, searchResult);
     }
 
     public void setTheo(final TheoValue theoValue) {
 
-        final ExtraDataForSymbol data = dataBySymbol.get(theoValue.getSymbol());
-        data.setTheoValue(theoValue);
+        final SymbolStackData stackData = stackBySymbol.get(theoValue.getSymbol());
+        stackData.setTheoValue(theoValue);
     }
 
-    public void setLaserLine(final LaserLine laserLine) {
+    public void setSpreadnoughtTheo(final SpreadnoughtTheo theo) {
 
-        final ExtraDataForSymbol data = dataBySymbol.get(laserLine.getSymbol());
-        data.setLaserLine(laserLine);
+        final SymbolStackData stackData = stackBySymbol.get(theo.getSymbol());
+        stackData.setSpreadnoughtTheo(theo);
     }
 
     public void setLastTrade(final LastTrade lastTrade) {
 
-        final ExtraDataForSymbol data = dataBySymbol.get(lastTrade.getSymbol());
+        final LastTradeDataForSymbol data = lastTradeBySymbol.get(lastTrade.getSymbol());
         data.setLastTrade(lastTrade);
     }
 
@@ -223,10 +233,16 @@ public class LadderPresenter {
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(symbol, this);
 
+                final WorkingOrdersForSymbol workingOrders = ordersBySymbol.get(symbol);
+                final LadderMetaData ladderMetaData = metaDataBySymbol.get(symbol);
+                final LastTradeDataForSymbol lastTradeData = lastTradeBySymbol.get(symbol);
+                final SymbolStackData stackData = stackBySymbol.get(symbol);
+                final OrderUpdatesForSymbol orderUpdates = eeifOrdersBySymbol.get(symbol);
+
                 final String userName = msg.getClient().getUserName();
-                view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), metaDataBySymbol.get(symbol),
-                        dataBySymbol.get(symbol), stackBySymbol.get(symbol), getLadderPrefsForSymbolUser(symbol, userName),
-                        eeifOrdersBySymbol.get(symbol));
+                view.subscribeToSymbol(symbol, levels, mdForSymbol, workingOrders, ladderMetaData, lastTradeData, stackData,
+                        getLadderPrefsForSymbolUser(symbol, userName), orderUpdates);
+
                 if (3 < args.length) {
                     if ("S".equals(args[3])) {
                         view.setStackView();
@@ -320,12 +336,10 @@ public class LadderPresenter {
         }
     }
 
-    @KeyedBatchSubscriber(converter = LaserLineStringConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
-    @Subscribe
-    public void onLaserLines(final Map<String, com.drwtrading.photons.ladder.LaserLine> laserLines) {
-        for (final com.drwtrading.photons.ladder.LaserLine laserLine : laserLines.values()) {
-            dataBySymbol.get(laserLine.getSymbol()).onLaserLine(laserLine);
-        }
+    public void overrideLaserLine(final LaserLineValue laserLine) {
+
+        final SymbolStackData stackData = stackBySymbol.get(laserLine.symbol);
+        stackData.overrideStackData(laserLine);
     }
 
     public void setDeskPositions(final OPXLDeskPositions deskPositions) {
@@ -511,6 +525,7 @@ public class LadderPresenter {
         return HEARTBEAT_INTERVAL_MS;
     }
 
+    @Override
     public void stacksConnectionLost(final String remoteAppName) {
 
         for (final SymbolStackData stackData : stackBySymbol.values()) {
@@ -518,15 +533,17 @@ public class LadderPresenter {
         }
     }
 
+    @Override
     public void stackGroupCreated(final StackGroup stackGroup, final StackClientHandler stackClientHandler) {
 
         final String symbol = stackGroup.getSymbol();
         final SymbolStackData stackData = stackBySymbol.get(symbol);
-        stackData.setStackClientHandler(stackClientHandler);
 
+        stackData.setStackClientHandler(stackClientHandler);
         stackGroupUpdated(stackGroup);
     }
 
+    @Override
     public void stackGroupUpdated(final StackGroup stackGroup) {
 
         final String symbol = stackGroup.getSymbol();

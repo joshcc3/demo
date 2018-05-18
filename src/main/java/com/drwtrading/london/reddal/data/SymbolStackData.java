@@ -1,5 +1,7 @@
 package com.drwtrading.london.reddal.data;
 
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.Stack;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
@@ -10,8 +12,10 @@ import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.reddal.picard.IPicardSpotter;
 
 import java.text.DecimalFormat;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -27,6 +31,8 @@ public class SymbolStackData {
     private final String symbol;
 
     private StackClientHandler stackClient;
+
+    private final StacksLaserLineCalc stacksLaserLineCalc;
 
     private final LongMap<SymbolStackPriceLevel> bidStackLevels;
     private StackGroup bidStackGroup;
@@ -45,9 +51,11 @@ public class SymbolStackData {
     private double priceOffsetTickSize;
     private double stackAlignmentTickToBPS;
 
-    public SymbolStackData(final String symbol) {
+    public SymbolStackData(final String symbol, final IPicardSpotter picardSpotter) {
 
         this.symbol = symbol;
+
+        this.stacksLaserLineCalc = new StacksLaserLineCalc(symbol, picardSpotter);
 
         this.bidStackLevels = new LongMap<>();
         this.askStackLevels = new LongMap<>();
@@ -85,6 +93,9 @@ public class SymbolStackData {
             askStackGroup = null;
             askFormattedPriceOffsetBPS = "---";
 
+            stacksLaserLineCalc.setBidStackGroup(null);
+            stacksLaserLineCalc.setAskStackGroup(null);
+
             priceOffsetTickSize = 0d;
             stackAlignmentTickToBPS = 0d;
 
@@ -100,6 +111,8 @@ public class SymbolStackData {
         bidStackGroup = stackGroup;
         bidFormattedPriceOffsetBPS = PRICE_DF.format(stackGroup.getPriceOffsetBPS());
         totalBidQty = setGroup(bidStackLevels, stackGroup, BID_PRICE_MULTIPLIER);
+
+        stacksLaserLineCalc.setBidStackGroup(stackGroup);
 
         boolean isStackPresent = false;
         for (final StackType stackType : StackType.values()) {
@@ -126,6 +139,8 @@ public class SymbolStackData {
         askStackGroup = stackGroup;
         askFormattedPriceOffsetBPS = PRICE_DF.format(stackGroup.getPriceOffsetBPS());
         totalAskQty = setGroup(askStackLevels, stackGroup, ASK_PRICE_MULTIPLIER);
+
+        stacksLaserLineCalc.setAskStackGroup(stackGroup);
 
         boolean isStackPresent = false;
         for (final StackType stackType : StackType.values()) {
@@ -178,6 +193,34 @@ public class SymbolStackData {
         }
 
         return result;
+    }
+
+    public void overrideStackData(final LaserLineValue laserLineValue) {
+        this.stacksLaserLineCalc.overrideLaserLine(laserLineValue);
+    }
+
+    public TheoValue getTheoValue() {
+        return stacksLaserLineCalc.getTheoValue();
+    }
+
+    public void setTheoValue(final TheoValue theoValue) {
+        this.stacksLaserLineCalc.setTheoValue(theoValue);
+    }
+
+    public void setSpreadnoughtTheo(final SpreadnoughtTheo theo) {
+        this.stacksLaserLineCalc.setSpreadnoughtTheo(theo);
+    }
+
+    public LaserLineValue getNavLaserLine() {
+        return stacksLaserLineCalc.getNavLaserLine();
+    }
+
+    public LaserLineValue getTheoLaserLine() {
+        return stacksLaserLineCalc.getTheoLaserLine();
+    }
+
+    public Collection<LaserLineValue> getLaserLines() {
+        return stacksLaserLineCalc.getLaserLines();
     }
 
     public boolean isBidStackEnabled(final StackType stackType) {
