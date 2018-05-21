@@ -63,11 +63,13 @@ public class StacksLaserLineCalc {
 
         this.theoValue = theoValue;
 
-        setTheoValue(navLine, theoValue.isValid(), theoValue.getTheoreticalValue());
-        setTheoValue(theoLine, theoValue.isValid(), theoValue.getTheoreticalValue());
+        if (null != spreadnoughtTheo) {
+            setTheoValue(navLine, theoValue.isValid(), theoValue.getTheoreticalValue());
+            setTheoValue(theoLine, theoValue.isValid(), theoValue.getTheoreticalValue());
 
-        updateLaserFromTheo(bidTheo, bidStackGroup, BID_PULLBACK_MULT);
-        updateLaserFromTheo(askTheo, askStackGroup, ASK_PULLBACK_MULT);
+            updateLaserFromTheo(bidTheo, bidStackGroup, BID_PULLBACK_MULT);
+            updateLaserFromTheo(askTheo, askStackGroup, ASK_PULLBACK_MULT);
+        }
     }
 
     TheoValue getTheoValue() {
@@ -139,21 +141,31 @@ public class StacksLaserLineCalc {
             final Stack picardStack = stackGroup.getStack(StackType.PICARD);
 
             final StackLevel quoteStackLevel = quoteStack.getFirstLevel();
-            final boolean isQuoteStackEnabled = quoteStack.isEnabled() && null != quoteStackLevel;
-
             final StackLevel picardStackLevel = picardStack.getFirstLevel();
-            final boolean isPicardStackEnabled = picardStack.isEnabled() && null != picardStackLevel;
 
-            if (isQuoteStackEnabled || isPicardStackEnabled) {
+            if (null != quoteStackLevel || null != picardStackLevel) {
 
                 final double pullBackTicks;
 
-                if (!isQuoteStackEnabled) {
+                if (null == quoteStackLevel) {
+
                     pullBackTicks = picardStackLevel.getPullbackTicks();
-                } else if (!isPicardStackEnabled) {
+
+                } else if (null == picardStackLevel) {
+
                     pullBackTicks = quoteStackLevel.getPullbackTicks();
-                } else {
+
+                } else if (quoteStack.isEnabled() == picardStack.isEnabled()) {
+
                     pullBackTicks = Math.min(quoteStackLevel.getPullbackTicks(), picardStackLevel.getPullbackTicks());
+
+                } else if (quoteStack.isEnabled()) {
+
+                    pullBackTicks = quoteStackLevel.getPullbackTicks();
+
+                } else {
+
+                    pullBackTicks = picardStackLevel.getPullbackTicks();
                 }
 
                 final double theoPriceMult = 1 +
