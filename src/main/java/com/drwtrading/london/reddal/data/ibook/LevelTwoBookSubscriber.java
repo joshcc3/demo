@@ -14,7 +14,6 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ReddalComponents;
-import com.drwtrading.london.reddal.stacks.opxl.StackRefPriceDetail;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import org.jetlang.channels.Channel;
@@ -31,7 +30,6 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
 
     private final Channel<SearchResult> searchResults;
     private final Channel<StockAlert> stockAlertChannel;
-    private final Channel<StackRefPriceDetail> stackRefPriceDetails;
 
     private final Map<MDSource, MDTransportClient> mdClients;
     private final Map<String, IBook<IBookLevel>> books;
@@ -42,12 +40,11 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
     private final long millisAtMidnightUTC;
 
     public LevelTwoBookSubscriber(final IResourceMonitor<ReddalComponents> monitor, final Channel<SearchResult> searchResults,
-            final Channel<StockAlert> stockAlertChannel, final Channel<StackRefPriceDetail> stackRefPriceDetails) {
+            final Channel<StockAlert> stockAlertChannel) {
 
         this.monitor = monitor;
         this.searchResults = searchResults;
         this.stockAlertChannel = stockAlertChannel;
-        this.stackRefPriceDetails = stackRefPriceDetails;
 
         this.mdClients = new EnumMap<>(MDSource.class);
         this.books = new HashMap<>();
@@ -105,11 +102,6 @@ public class LevelTwoBookSubscriber extends BookLevelTwoMonitorAdaptor {
                             "Qty: " + qtyDF.format(refPrice.getQty()) + ", notional: " + notional + ' ' + book.getCCY().major);
                     stockAlertChannel.publish(stockAlert);
                     break;
-                }
-                case YESTERDAY_CLOSE: {
-                    final String symbol = book.getSymbol();
-                    final StackRefPriceDetail refPriceDetail = new StackRefPriceDetail(symbol, refPrice.getPrice(), book.getTickTable());
-                    stackRefPriceDetails.publish(refPriceDetail);
                 }
             }
         }

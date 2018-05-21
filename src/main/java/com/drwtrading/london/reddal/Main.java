@@ -126,7 +126,6 @@ import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.family.StackChildListener;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyListener;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyPresenter;
-import com.drwtrading.london.reddal.stacks.opxl.StackGroupOPXLView;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.stockAlerts.StockAlertPresenter;
@@ -175,7 +174,6 @@ import com.google.common.collect.Maps;
 import com.sun.jndi.toolkit.url.Uri;
 import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
-import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.KeyedBatchSubscriber;
 import org.jetlang.channels.Publisher;
@@ -987,10 +985,8 @@ public class Main {
             final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
             final String localAppName, final TypedChannel<StockAlert> stockAlerts) throws ConfigException {
 
-        final LevelThreeBookSubscriber l3BookHandler =
-                new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, stockAlerts, channels.stackRefPriceDetailChannel);
-        final LevelTwoBookSubscriber l2BookHandler =
-                new LevelTwoBookSubscriber(displayMonitor, channels.searchResults, stockAlerts, channels.stackRefPriceDetailChannel);
+        final LevelThreeBookSubscriber l3BookHandler = new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, stockAlerts);
+        final LevelTwoBookSubscriber l2BookHandler = new LevelTwoBookSubscriber(displayMonitor, channels.searchResults, stockAlerts);
 
         final IResourceMonitor<MDTransportComponents> mdClientMonitor =
                 new ExpandedDetailResourceMonitor<>(displayMonitor, mdSource.name() + "-Thread", app.errorLog, MDTransportComponents.class,
@@ -1157,13 +1153,6 @@ public class Main {
                     new StackFamilyPresenter(fibers.ui, webLog, contractSetGenerator, defaultInstType, asylumFamilies);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(fibers.ui, webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(fibers.ui, webLog);
-
-            final String stackOPXLTopic = stackConfig.getString("opxlSpreadTopic");
-            final StackGroupOPXLView stackOPXLView = new StackGroupOPXLView(app.monitor, stackOPXLTopic);
-
-            channels.metaData.subscribe(new BatchSubscriber<>(selectIOFiber, stackOPXLView::setLaserLines, 100, TimeUnit.MILLISECONDS));
-
-            app.selectIO.addDelayedAction(5000, stackOPXLView::update);
 
             stackFamilyPresenter.setCommunityManager(communityManager);
             channels.increaseParentOffsetCmds.subscribe(selectIOFiber, msg -> {

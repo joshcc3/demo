@@ -19,6 +19,7 @@ import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.staticData.ExpiryMonthCodes;
 import com.drwtrading.london.eeif.utils.staticData.ExpiryPeriod;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
@@ -74,6 +75,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     private final WebSocketViews<IStackFamilyUI> views;
     private final Map<String, HashSet<IStackFamilyUI>> userViews;
 
+    private final Calendar expiryCaledar;
     private final FutureExpiryCalc expiryCalc;
 
     private final Map<String, String> tradableSymbols;
@@ -108,6 +110,7 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
         this.userViews = new HashMap<>();
 
+        this.expiryCaledar = DateTimeUtil.getCalendar();
         this.expiryCalc = new FutureExpiryCalc(0);
 
         this.tradableSymbols = new HashMap<>();
@@ -153,15 +156,17 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.nibblerClients.put(nibblerName, cache);
     }
 
-    void setFilter(final Collection<StackChildFilter> newFilters) {
+    void setFilter(final InstType forInstType, final Collection<StackChildFilter> newFilters) {
 
-        for (final StackChildFilter newFilter : newFilters) {
+        if (forInstType == this.displayableInstType) {
+            for (final StackChildFilter newFilter : newFilters) {
 
-            filters.put(newFilter.filterName, newFilter);
-            filterGroups.put(newFilter.filterName, newFilter.groupName);
+                filters.put(newFilter.filterName, newFilter);
+                filterGroups.put(newFilter.filterName, newFilter.groupName);
+            }
+
+            views.all().setFilters(filterGroups);
         }
-
-        views.all().setFilters(filterGroups);
     }
 
     void addTradableSymbol(final String nibblerName, final StackTradableSymbol tradableSymbol) {
@@ -211,7 +216,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             final StackChildFilter filter = getFilter(filterName.trim(), MD_SOURCE_FILTER_GROUP);
             filter.addSymbol(symbol);
 
-            if (InstType.FUTURE == searchResult.instType) {
+            if (InstType.FUTURE == displayableInstType && InstType.FUTURE == searchResult.instType) {
 
                 final FutureConstant future = FutureConstant.getFutureFromSymbol(symbol);
 
@@ -225,6 +230,13 @@ public class StackFamilyView implements IStackRelationshipListener {
                     final StackChildFilter backMonths = getFilter(EXPIRY_BACK_MONTH_FILTER, EXPIRY_FILTER_GROUP);
                     backMonths.addSymbol(symbol);
                 }
+
+                expiryCalc.setToRollDate(expiryCaledar, symbol);
+                final int calendarMonthCode = expiryCaledar.get(Calendar.MONTH);
+                final ExpiryMonthCodes monthCode = ExpiryMonthCodes.getCode(calendarMonthCode);
+
+                final StackChildFilter monthCodesFilter = getFilter(monthCode.name(), EXPIRY_FILTER_GROUP);
+                monthCodesFilter.addSymbol(symbol);
             }
         }
     }

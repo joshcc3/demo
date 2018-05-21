@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.nibblers;
 
 import com.drwtrading.london.eeif.nibbler.transport.cache.tradingData.INibblerTradingDataListener;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
@@ -35,7 +34,6 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
 
     private final FileTableRow<NibblerMetaTables, NibblerTheoValueColumns> theoRow;
     private final FileTableRow<NibblerMetaTables, NibblerSpreadnoughtTheoColumns> spreadnoughtRow;
-    private final FileTableRow<NibblerMetaTables, NibblerLaserLineColumns> laserLineRow;
     private final FileTableRow<NibblerMetaTables, NibblerLastTradeColumns> lastTradeRow;
 
     public NibblerMetaDataLogger(final IClock clock, final IResourceMonitor<ReddalComponents> monitor, final Path logDir,
@@ -54,7 +52,6 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
 
         this.theoRow = fileTableWriter.addTable(NibblerMetaTables.THEO_VALUE, NibblerTheoValueColumns.values());
         this.spreadnoughtRow = fileTableWriter.addTable(NibblerMetaTables.SPREADNOUGHT_THEO, NibblerSpreadnoughtTheoColumns.values());
-        this.laserLineRow = fileTableWriter.addTable(NibblerMetaTables.LASER_LINE, NibblerLaserLineColumns.values());
         this.lastTradeRow = fileTableWriter.addTable(NibblerMetaTables.LAST_TRADE, NibblerLastTradeColumns.values());
     }
 
@@ -128,38 +125,6 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
             this.fileTableWriter.writeRow(spreadnoughtRow, false);
         } catch (final IOException e) {
             monitor.logError(ReddalComponents.META_DATA_LOG, "Failed to write spreadnought theo row.", e);
-        }
-    }
-
-    @Override
-    public boolean addLaserLine(final LaserLine laserLine) {
-        writeLaserLineRow(laserLine);
-        return true;
-    }
-
-    @Override
-    public boolean updateLaserLine(final LaserLine laserLine) {
-        writeLaserLineRow(laserLine);
-        return true;
-    }
-
-    private void writeLaserLineRow(final LaserLine laserLine) {
-
-        final long millis = millisAtMidnight + laserLine.getNanoSinceMidnightUTC() / DateTimeUtil.NANOS_IN_MILLIS;
-        final String time = timeFormat.format(millis);
-
-        laserLineRow.set(NibblerLaserLineColumns.SYMBOL, laserLine.getSymbol());
-        laserLineRow.set(NibblerLaserLineColumns.TIME, time);
-
-        laserLineRow.set(NibblerLaserLineColumns.IS_VALID, laserLine.isValid());
-        laserLineRow.set(NibblerLaserLineColumns.LASER_LINE_TYPE, laserLine.getType());
-
-        laserLineRow.set(NibblerLaserLineColumns.PRICE, priceDF.format(laserLine.getPrice() / (double) Constants.NORMALISING_FACTOR));
-
-        try {
-            this.fileTableWriter.writeRow(laserLineRow, false);
-        } catch (final IOException e) {
-            monitor.logError(ReddalComponents.META_DATA_LOG, "Failed to write laser line row.", e);
         }
     }
 

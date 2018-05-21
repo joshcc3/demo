@@ -26,7 +26,6 @@ import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
-import com.drwtrading.london.reddal.stacks.opxl.StackRefPriceDetail;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
@@ -88,7 +87,6 @@ class ReddalChannels {
     final TypedChannel<OrderEntryFromServer> orderEntryFromServer;
     final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
     final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
-    final TypedChannel<StackRefPriceDetail> stackRefPriceDetailChannel;
     final TypedChannel<OpxlExDateSubscriber.IsinsGoingEx> isinsGoingEx;
 
     final TypedChannel<SymbolSelection> symbolSelections;
@@ -141,7 +139,6 @@ class ReddalChannels {
         this.orderEntryFromServer = create(OrderEntryFromServer.class);
         this.orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
         this.orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
-        this.stackRefPriceDetailChannel = create(StackRefPriceDetail.class);
         this.isinsGoingEx = create(OpxlExDateSubscriber.IsinsGoingEx.class);
 
         this.symbolSelections = create(SymbolSelection.class);

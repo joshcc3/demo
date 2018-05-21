@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.opxl;
 
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.stacks.family.StackChildFilter;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyPresenter;
@@ -26,7 +27,7 @@ public class SpreadnoughtFiltersOPXL extends AFiltersOPXL {
     @Override
     protected void handleUpdate(final Collection<StackChildFilter> filters) {
 
-        stackFamilyPresenter.setAsylumFilters(FAMILY_NAME, filters);
+        stackFamilyPresenter.setAsylumFilters(InstType.DR, FAMILY_NAME, filters);
     }
 
     //

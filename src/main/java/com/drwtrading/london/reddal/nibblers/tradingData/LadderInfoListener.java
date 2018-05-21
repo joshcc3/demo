@@ -5,7 +5,6 @@ import com.drwtrading.london.eeif.nibbler.transport.cache.blotter.INibblerBlotte
 import com.drwtrading.london.eeif.nibbler.transport.cache.tradingData.INibblerTradingDataListener;
 import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterSymbolLine;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LaserLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
@@ -46,16 +45,6 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     @Override
     public boolean updateSpreadnoughtTheo(final SpreadnoughtTheo theo) {
         ladderPresenter.setSpreadnoughtTheo(theo);
-        return true;
-    }
-
-    @Override
-    public boolean addLaserLine(final LaserLine laserLine) {
-        return true;
-    }
-
-    @Override
-    public boolean updateLaserLine(final LaserLine laserLine) {
         return true;
     }
 

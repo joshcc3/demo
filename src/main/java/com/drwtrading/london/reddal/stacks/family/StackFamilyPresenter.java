@@ -21,7 +21,6 @@ import org.jetlang.channels.Publisher;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class StackFamilyPresenter implements IStackRelationshipListener {
 
@@ -67,15 +66,15 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         }
     }
 
-    public void setFamiliesFilters(final Collection<StackChildFilter> filters) {
+    public void setFamiliesFilters(final InstType forInstType, final Collection<StackChildFilter> filters) {
 
-        familyView.setFilter(filters);
+        familyView.setFilter(forInstType, filters);
     }
 
-    public void setAsylumFilters(final String asylumName, final Collection<StackChildFilter> filters) {
+    public void setAsylumFilters(final InstType forInstType, final String asylumName, final Collection<StackChildFilter> filters) {
 
         final StackFamilyView view = asylums.get(asylumName);
-        view.setFilter(filters);
+        view.setFilter(forInstType, filters);
     }
 
     void addTradableSymbol(final String nibblerName, final StackTradableSymbol tradableSymbol) {

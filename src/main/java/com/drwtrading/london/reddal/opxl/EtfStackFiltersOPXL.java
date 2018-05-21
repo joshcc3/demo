@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.opxl;
 
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.ReddalComponents;
@@ -36,6 +37,6 @@ public class EtfStackFiltersOPXL extends AFiltersOPXL {
     @Override
     protected void handleUpdate(final Collection<StackChildFilter> filters) {
 
-        stackFamilyPresenter.setFamiliesFilters(filters);
+        stackFamilyPresenter.setFamiliesFilters(InstType.ETF, filters);
     }
 }
