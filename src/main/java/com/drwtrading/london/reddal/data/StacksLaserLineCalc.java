@@ -63,7 +63,7 @@ public class StacksLaserLineCalc {
 
         this.theoValue = theoValue;
 
-        if (null != spreadnoughtTheo) {
+        if (null == spreadnoughtTheo) {
             setTheoValue(navLine, theoValue.isValid(), theoValue.getTheoreticalValue());
             setTheoValue(theoLine, theoValue.isValid(), theoValue.getTheoreticalValue());
 
