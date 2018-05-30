@@ -57,6 +57,8 @@ public class StacksLaserLineCalc {
 
         final LaserLineValue overriddenLaserLine = laserLines.get(laserLine.getType());
         overriddenLaserLine.set(laserLine);
+
+        picardSpotter.setLaserLine(laserLine);
     }
 
     void setTheoValue(final TheoValue theoValue) {
