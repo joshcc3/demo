@@ -891,7 +891,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             }
 
             final String familyName = getFamilyName(searchResult);
-            final NavigableMap<String, StackUIRelationship> family = families.get(familySymbol);
+            final NavigableMap<String, StackUIRelationship> family = families.get(familyName);
 
             if (null == family) {
                 System.out.println("Couldn't find [" + familyName + "] for symbol [" + familySymbol + "].");
