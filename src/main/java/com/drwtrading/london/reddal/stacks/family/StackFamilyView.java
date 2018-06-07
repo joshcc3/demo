@@ -894,21 +894,20 @@ public class StackFamilyView implements IStackRelationshipListener {
             final NavigableMap<String, StackUIRelationship> family = families.get(familySymbol);
 
             if (null == family) {
-                System.out.println("Couldn't find [" + familyName + "] for symbol [" + familySymbol + "]");
-                return;
-            }
+                System.out.println("Couldn't find [" + familyName + "] for symbol [" + familySymbol + "].");
+            } else {
 
-            final StackUIData parentUIData = parentData.get(familyName);
-            if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
-                final Set<String> childSymbols = new HashSet<>(family.keySet());
-                for (final String childSymbol : childSymbols) {
-                    if (childData.containsKey(childSymbol)) {
-                        final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
-                        communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset, offset);
+                final StackUIData parentUIData = parentData.get(familyName);
+                if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
+                    final Set<String> childSymbols = new HashSet<>(family.keySet());
+                    for (final String childSymbol : childSymbols) {
+                        if (childData.containsKey(childSymbol)) {
+                            final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
+                            communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset, offset);
+                        }
                     }
                 }
             }
-
         } catch (final Exception e) {
             final IStackFamilyUI ui = views.get(data.getOutboundChannel());
             ui.displayErrorMsg(e.getMessage());

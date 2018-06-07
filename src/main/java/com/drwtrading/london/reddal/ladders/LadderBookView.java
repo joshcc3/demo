@@ -1044,6 +1044,8 @@ public class LadderBookView implements ILadderBoard {
             } else if (HTML.BUTTON_CLR.equals(label)) {
                 clickTradingBoxQty = 0;
                 recalcFee();
+            } else if (HTML.BUTTON_COPY.equals(label)) {
+                ladderPrefsForSymbolUser.set(HTML.INP_RELOAD, Integer.toString(clickTradingBoxQty));
             } else if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
                 if (null != ladderPrefsForSymbolUser) {
                     submitOrderLeftClick(clientSpeedState, label, data);
