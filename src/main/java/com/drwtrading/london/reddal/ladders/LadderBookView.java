@@ -19,10 +19,10 @@ import com.drwtrading.london.photons.eeifoe.Metadata;
 import com.drwtrading.london.photons.eeifoe.OrderSide;
 import com.drwtrading.london.photons.eeifoe.Submit;
 import com.drwtrading.london.reddal.ReddalComponents;
-import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineValue;
+import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradeTracker;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
@@ -178,9 +178,9 @@ public class LadderBookView implements ILadderBoard {
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
             final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
-            final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol, final LastTradeDataForSymbol extraDataForSymbol,
-            final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final LadderHTMLTable ladderHTMLKeys,
-            final SymbolStackData stackData, final LadderMetaData metaData,
+            final MDForSymbol marketData, final WorkingOrdersForSymbol workingOrdersForSymbol,
+            final LastTradeDataForSymbol extraDataForSymbol, final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels,
+            final LadderHTMLTable ladderHTMLKeys, final SymbolStackData stackData, final LadderMetaData metaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
             final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Publisher<Jsonable> trace,
@@ -1044,8 +1044,6 @@ public class LadderBookView implements ILadderBoard {
             } else if (HTML.BUTTON_CLR.equals(label)) {
                 clickTradingBoxQty = 0;
                 recalcFee();
-            } else if (HTML.BUTTON_COPY.equals(label)) {
-                ladderPrefsForSymbolUser.set(HTML.INP_RELOAD, Integer.toString(clickTradingBoxQty));
             } else if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
                 if (null != ladderPrefsForSymbolUser) {
                     submitOrderLeftClick(clientSpeedState, label, data);
@@ -1122,7 +1120,9 @@ public class LadderBookView implements ILadderBoard {
                 showYesterdaySettleInsteadOfCOD = !showYesterdaySettleInsteadOfCOD;
             }
         } else if ("right".equals(button)) {
-            if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
+            if (HTML.BUTTON_CLR.equals(label)) {
+                ladderPrefsForSymbolUser.set(HTML.INP_RELOAD, Integer.toString(clickTradingBoxQty));
+            } else if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
                 if (ladderPrefsForSymbolUser != null) {
                     submitOrderRightClick(clientSpeedState, label, data);
                 }

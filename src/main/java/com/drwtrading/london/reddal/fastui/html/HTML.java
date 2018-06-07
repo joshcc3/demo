@@ -56,7 +56,6 @@ public class HTML {
     public static final String LASER_BID = LASER + "BID";
     public static final String LASER_ASK = LASER + "ASK";
     public static final String BUTTON_CLR = "btn_clear";
-    public static final String BUTTON_COPY = "btn_copy";
     public static final String INP_RELOAD = "inp_reload";
     public static final String WORKING_ORDER_TAG = "working_order_tags";
     public static final String INP_QTY = "inp_qty";
