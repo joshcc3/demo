@@ -90,7 +90,7 @@ config scripts
 end
 
 config rake
-	include drw.london.rake/1.0.1.9
+	include drw.london.rake/112
 end
 
 
