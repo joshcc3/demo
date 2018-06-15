@@ -698,7 +698,7 @@ public class Main {
                     5, TimeUnit.SECONDS, WorkingOrderUpdateFromServer::key));
             TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
-            fibers.ui.subscribe(obligationPresenter, ws);
+            fibers.ui.subscribe(obligationPresenter, ws, channels.searchResults);
         }
 
 

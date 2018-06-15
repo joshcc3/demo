@@ -55,6 +55,7 @@ public class ObligationPresenter {
     }
 
 
+    @Subscribe
     public void onSearchResult(SearchResult instrument) {
         if (symbolFilter.test(instrument.symbol)) {
             searchResults.put(instrument.symbol, instrument);
