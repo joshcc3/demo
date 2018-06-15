@@ -92,6 +92,7 @@ import com.drwtrading.london.reddal.ladders.RecenterLadder;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
 import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
 import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
+import com.drwtrading.london.reddal.obligations.ObligationPresenter;
 import com.drwtrading.london.reddal.opxl.EtfStackFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
@@ -688,6 +689,18 @@ public class Main {
             createWebPageWithWebSocket("autopuller", "autopuller", fiberBuilder, webApp, ws);
             fiberBuilder.subscribe(autoPullerUI, ws);
         }
+
+        // Obligations presenter
+        if (app.config.getEnabledGroup("obligations") != null){
+            FXCalc<?> opxlfxCalc = createOPXLFXCalc(app);
+            ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, s -> s.endsWith(" RFQ"));
+            channels.workingOrders.subscribe(new KeyedBatchSubscriber<>(fibers.ui.getFiber(), obligationPresenter::onWorkingOrders,
+                    5, TimeUnit.SECONDS, WorkingOrderUpdateFromServer::key));
+            TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
+            fibers.ui.subscribe(obligationPresenter, ws);
+        }
+
 
         final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
         channels.searchResults.subscribe(fibers.contracts.getFiber(), chixInstMatcher::setSearchResult);
