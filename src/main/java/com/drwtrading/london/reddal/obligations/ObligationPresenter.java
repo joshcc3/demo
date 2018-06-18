@@ -37,7 +37,7 @@ public class ObligationPresenter {
     @Subscribe
     public void on(final WebSocketConnected connected) {
         final View view = views.register(connected);
-        for (final String symbol : orders.keySet()) {
+        for (final String symbol : searchResults.keySet()) {
             view.addContract(symbol);
             updateView(view,symbol);
         }
@@ -84,8 +84,10 @@ public class ObligationPresenter {
         SearchResult searchResult = searchResults.get(symbol);
         WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
 
-        if (null == searchResult || null == ordersForSymbol) {
+        if (null == searchResult) {
             return;
+        } else if (null == ordersForSymbol) {
+            view.update(symbol, "Infinity", "0", "Infinity", "0");
         }
 
         final TreeMap<Double, Double> bids = new TreeMap<>(Comparator.reverseOrder());
