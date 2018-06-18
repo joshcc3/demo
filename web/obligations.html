@@ -33,7 +33,7 @@
                         launchLadder(symbol)
                     });
                 row.data('symbol', symbol);
-                $('#spreadTable').addSorted(row, function (a, b) {
+                $('#obligations').addSorted(row, function (a, b) {
                     a = $(a);
                     b = $(b);
                     return a.data('symbol') < b.data('symbol') ? -1 : a.data('symbol') == b.data('symbol') ? 0 : 1;

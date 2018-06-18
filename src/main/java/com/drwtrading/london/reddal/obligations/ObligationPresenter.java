@@ -113,7 +113,7 @@ public class ObligationPresenter {
                 }
             }
 
-            double dblPx = (double) price / Constants.NORMALISING_FACTOR;
+            double dblPx = (double) (price) / Constants.NORMALISING_FACTOR;
 
             if (bidQty > 0) {
                 bids.put(dblPx, dblPx * bidQty * fxRate);
@@ -137,8 +137,8 @@ public class ObligationPresenter {
         double tightestAsk = asks.firstKey();
         double widestAsk = asks.lastKey();
 
-        double tightestBps = 2 * (tightestAsk - tightestBid) / (tightestAsk + tightestBid);
-        double widestBps = 2 * (widestAsk - widestBid) / (widestAsk + widestBid);
+        double tightestBps = 2e4 * (tightestAsk - tightestBid) / (tightestAsk + tightestBid);
+        double widestBps = 2e4 * (widestAsk - widestBid) / (widestAsk + widestBid);
 
         double tightestEur = Math.min(bids.firstEntry().getValue(), asks.firstEntry().getValue());
         double maxEur = Math.min(totalBid, totalAsk);
