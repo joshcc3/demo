@@ -1229,7 +1229,7 @@ public class LadderBookView implements ILadderBoard {
         ui.cls(htmlRowKeys.bookAskKey, CSSClass.AUCTION, false);
     }
 
-    private static String formatMktQty(final long qty) {
+    public static String formatMktQty(final long qty) {
         if (qty <= 0) {
             return HTML.EMPTY;
         } else if (REALLY_BIG_NUMBER_THRESHOLD <= qty) {

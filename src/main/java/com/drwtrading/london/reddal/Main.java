@@ -695,10 +695,11 @@ public class Main {
             FXCalc<?> opxlfxCalc = createOPXLFXCalc(app);
             ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, s -> s.endsWith(" RFQ"));
             channels.workingOrders.subscribe(new KeyedBatchSubscriber<>(fibers.ui.getFiber(), obligationPresenter::onWorkingOrders,
-                    5, TimeUnit.SECONDS, WorkingOrderUpdateFromServer::key));
+                    1, TimeUnit.SECONDS, WorkingOrderUpdateFromServer::key));
             TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
             fibers.ui.subscribe(obligationPresenter, ws, channels.searchResults);
+            fibers.ui.getFiber().scheduleWithFixedDelay(obligationPresenter::update, 1, 1, TimeUnit.SECONDS);
         }
 
 
