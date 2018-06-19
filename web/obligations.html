@@ -10,6 +10,9 @@
     <script src="js/error-catcher.js"></script>
     <script src="launcher.js"></script>
     <style>
+        #obligations td {
+            background-color: darkgray;
+        }
     </style>
     <script type="text/javascript">
         var Contracts = {};
@@ -42,9 +45,7 @@
         }
 
         function update(symbol, bpsTop, eurTop, bpsMax, eurMax) {
-            if (!Contracts[symbol]) {
-                return;
-            }
+            addContract(symbol);
             var row = Contracts[symbol];
             row.find('.bpsTop').text(bpsTop);
             row.find('.eurTop').text(eurTop);

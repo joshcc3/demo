@@ -692,8 +692,10 @@ public class Main {
 
         // Obligations presenter
         if (app.config.getEnabledGroup("obligations") != null){
+            ConfigGroup config = app.config.getGroup("obligations");
+            Pattern filterRegex = Pattern.compile(config.getString("filterRegex"));
             FXCalc<?> opxlfxCalc = createOPXLFXCalc(app);
-            ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, s -> s.endsWith(" RFQ"));
+            ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, filterRegex.asPredicate());
             channels.workingOrders.subscribe(new KeyedBatchSubscriber<>(fibers.ui.getFiber(), obligationPresenter::onWorkingOrders,
                     1, TimeUnit.SECONDS, WorkingOrderUpdateFromServer::key));
             TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);

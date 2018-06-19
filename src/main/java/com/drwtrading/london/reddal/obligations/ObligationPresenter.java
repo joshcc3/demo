@@ -12,6 +12,7 @@ import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
+import com.google.common.collect.Sets;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -37,9 +38,8 @@ public class ObligationPresenter {
     @Subscribe
     public void on(final WebSocketConnected connected) {
         final View view = views.register(connected);
-        for (final String symbol : searchResults.keySet()) {
-            view.addContract(symbol);
-            updateView(view,symbol);
+        for (final String symbol : Sets.union(Collections.emptySet(), orders.keySet())) {
+            updateView(view, symbol);
         }
     }
 
@@ -81,13 +81,16 @@ public class ObligationPresenter {
     }
 
     public void updateView(View view, String symbol) {
+
         SearchResult searchResult = searchResults.get(symbol);
         WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
 
-        if (null == searchResult) {
+        if (null == searchResult || null == ordersForSymbol) {
+            view.update(symbol, "Infinity (" +
+                            (null == searchResult ? "-def " : "") +
+                            (null == ordersForSymbol ? "-orders" : "") + ")",
+                    "0", "Infinity", "0");
             return;
-        } else if (null == ordersForSymbol) {
-            view.update(symbol, "Infinity", "0", "Infinity", "0");
         }
 
         final TreeMap<Double, Double> bids = new TreeMap<>(Comparator.reverseOrder());
@@ -97,7 +100,7 @@ public class ObligationPresenter {
 
         double totalBid = 0.0;
         double totalAsk = 0.0;
-        
+
         for (Long price : ordersForSymbol.ordersByPrice.keySet()) {
             long bidQty = 0;
             long askQty = 0;
@@ -131,8 +134,9 @@ public class ObligationPresenter {
 
         if (bids.isEmpty() || asks.isEmpty()) {
             view.update(symbol, "Infinity", "0", "Infinity", "0");
+            return;
         }
-        
+
         double tightestBid = bids.firstKey();
         double widestBid = bids.lastKey();
 
@@ -150,7 +154,6 @@ public class ObligationPresenter {
     }
 
     public interface View {
-        void addContract(String symbol);
         void update(String symbol, String bpsTop, String eurTop, String bpsMax, String eurMax);
     }
 
