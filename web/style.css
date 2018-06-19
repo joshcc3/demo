@@ -27,6 +27,10 @@ body#search_page {
 	background-color: #bad4b1;
 }
 
+#symbol.reverseSpread {
+	border-top: solid 4px #00b000;
+}
+
 #symbol.back {
 	background-color: #d4d09b;
 }
@@ -320,7 +324,6 @@ div {
 	background-color: #ac0000;
 	left: 130px;
 }
-
 
 .book .offer:hover {
 	background-color: #980000 !important;

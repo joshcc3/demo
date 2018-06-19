@@ -38,6 +38,7 @@ public enum CSSClass {
     NO_BOOK_STATE("NO_BOOK_STATE"),
 
     SPREAD("spread"),
+    REVERSE_SPREAD("reverseSpread"),
     BACK("back"),
 
     RECENTERING("recentering"),

@@ -12,9 +12,9 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
-import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
@@ -213,9 +213,9 @@ public class LadderView implements UiEventHandler {
     }
 
     void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
-            final WorkingOrdersForSymbol workingOrdersForSymbol, final LadderMetaData metaData, final LastTradeDataForSymbol extraDataForSymbol,
-            final SymbolStackData stackData, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
-            final OrderUpdatesForSymbol orderUpdatesForSymbol) {
+            final WorkingOrdersForSymbol workingOrdersForSymbol, final LadderMetaData metaData,
+            final LastTradeDataForSymbol extraDataForSymbol, final SymbolStackData stackData,
+            final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
         this.symbol = symbol;
         this.levels = levels;
@@ -410,6 +410,12 @@ public class LadderView implements UiEventHandler {
 
         ui.cls(HTML.BOOK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == bookView);
         ui.cls(HTML.STACK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == stackView);
+
+        final IBook<?> book = marketData.getBook();
+        if (null != book) {
+            ui.cls(HTML.SYMBOL, CSSClass.REVERSE_SPREAD,
+                    InstType.FUTURE_SPREAD == book.getInstType() && book.getMIC().exchange.isReverseSpreadVenue);
+        }
 
         if (null != metaData && null != extraDataForSymbol) {
             if (metaData.spreadContractSet != null) {
