@@ -20,79 +20,67 @@ import java.util.stream.Collectors;
 public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
 
     private final AutoPuller autoPuller;
-    private final WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
-    private final Set<View> viewSet = new HashSet<>();
+    private final WebSocketViews<IAutoPullerView> views = new WebSocketViews<>(IAutoPullerView.class, this);
+    private final Set<IAutoPullerView> viewSet = new HashSet<>();
 
-    public AutoPullerUI(AutoPuller autoPuller) {
+    public AutoPullerUI(final AutoPuller autoPuller) {
         this.autoPuller = autoPuller;
         autoPuller.setCallbacks(this);
     }
 
     @Subscribe
-    public void on(WebSocketConnected connected) {
-        View view = views.register(connected);
+    public void on(final WebSocketConnected connected) {
+        final IAutoPullerView view = views.register(connected);
         viewSet.add(view);
         onConnected(view);
     }
 
     @Subscribe
-    public void on(WebSocketInboundData inbound) {
+    public void on(final WebSocketInboundData inbound) {
         views.invoke(inbound);
     }
 
     @Subscribe
-    public void on(WebSocketDisconnected disconnected) {
-        View view = views.unregister(disconnected);
+    public void on(final WebSocketDisconnected disconnected) {
+        final IAutoPullerView view = views.unregister(disconnected);
         viewSet.remove(view);
         if (viewSet.isEmpty()) {
             autoPuller.disableAllRules();
         }
     }
 
-
     @FromWebSocketView
-    public void writeRule(
-            String ruleID, String symbol, String side, String fromPrice, String toPrice,
-            String priceCondition, String conditionSide, String qtyCondition,
-            String qtyThreshold) {
+    public void writeRule(final String ruleID, final String symbol, final String side, final String fromPrice, final String toPrice,
+            final String priceCondition, final String conditionSide, final String qtyCondition, final String qtyThreshold) {
 
-        Long id = "NEW".equals(ruleID) ? PullRule.nextID() : Long.valueOf(ruleID);
+        final Long id = "NEW".equals(ruleID) ? PullRule.nextID() : Long.valueOf(ruleID);
 
-        PullRule pullRule = new PullRule(
-                id,
-                symbol,
-                new OrderSelection.PriceRangeSelection(
-                        symbol, BookSide.valueOf(side),
-                        parsePx(fromPrice), parsePx(toPrice)
-                ),
-                new MktCondition.QtyAtPriceCondition(
-                        symbol, BookSide.valueOf(conditionSide),
-                        parsePx(priceCondition), MktCondition.Condition.valueOf(qtyCondition),
-                        Integer.valueOf(qtyThreshold)
-                )
-        );
+        final PullRule pullRule = new PullRule(id, symbol,
+                new OrderSelection.PriceRangeSelection(symbol, BookSide.valueOf(side), parsePx(fromPrice), parsePx(toPrice)),
+                new MktCondition.QtyAtPriceCondition(symbol, BookSide.valueOf(conditionSide), parsePx(priceCondition),
+                        MktCondition.Condition.valueOf(qtyCondition), Integer.valueOf(qtyThreshold)));
         autoPuller.addOrUpdateRule(pullRule);
         displayRule(views.all(), autoPuller.getRule(pullRule.ruleID));
     }
 
     @FromWebSocketView
-    public void deleteRule(String ruleID) {
+    public void deleteRule(final String ruleID) {
         autoPuller.deleteRule(Long.valueOf(ruleID));
         views.all().removeRule(ruleID);
     }
 
     @FromWebSocketView
-    public void startRule(String ruleID, WebSocketInboundData data) {
-        String username = data.getClient().getUserName();
-        Long id = Long.valueOf(ruleID);
+    public void startRule(final String ruleID, final WebSocketInboundData data) {
+        final String username = data.getClient().getUserName();
+        final Long id = Long.valueOf(ruleID);
         enableRuleIfNoInstantPull(username, id);
     }
 
     @FromWebSocketView
-    public void startAllRules(WebSocketInboundData data) {
-        List<Long> ids = autoPuller.getRules().values().stream().map(e -> e.pullRule.ruleID).collect(Collectors.toList());
-        String username = data.getClient().getUserName();
-        for (Long id : ids) {
+    public void startAllRules(final WebSocketInboundData data) {
+        final List<Long> ids = autoPuller.getRules().values().stream().map(e -> e.pullRule.ruleID).collect(Collectors.toList());
+        final String username = data.getClient().getUserName();
+        for (final Long id : ids) {
             enableRuleIfNoInstantPull(username, id);
         }
     }
@@ -104,66 +92,61 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
     }
 
     @FromWebSocketView
-    public void stopRule(String ruleID) {
-        Long id = Long.valueOf(ruleID);
-        AutoPuller.EnabledPullRule pullRule = autoPuller.disableRule(id);
+    public void stopRule(final String ruleID) {
+        final Long id = Long.valueOf(ruleID);
+        final AutoPuller.EnabledPullRule pullRule = autoPuller.disableRule(id);
         displayRule(views.all(), pullRule);
     }
 
-    private void onConnected(View view) {
+    private void onConnected(final IAutoPullerView view) {
         updateGlobals(view);
         displayAllRules(view);
     }
 
-    private void enableRuleIfNoInstantPull(String username, Long id) {
-        AutoPuller.EnabledPullRule rule = autoPuller.getRule(id);
+    private void enableRuleIfNoInstantPull(final String username, final Long id) {
+        final AutoPuller.EnabledPullRule rule = autoPuller.getRule(id);
         if (0 == autoPuller.getPullCount(rule)) {
             autoPuller.enableRule(username, id);
         }
         displayRule(views.all(), rule);
     }
 
-    private void displayAllRules(View view) {
+    private void displayAllRules(final IAutoPullerView view) {
         autoPuller.getRules().forEach((id, enabledPullRule) -> displayRule(view, enabledPullRule));
     }
 
-    private void updateGlobals(View view) {
-        List<String> symbols = autoPuller.getRelevantSymbols();
+    private void updateGlobals(final IAutoPullerView view) {
+
+        final List<String> symbols = autoPuller.getRelevantSymbols();
         symbols.sort(Comparator.naturalOrder());
-        Map<String, List<String>> relevantPrices = new HashMap<>();
-        for (String symbol : symbols) {
-            List<String> priceList = autoPuller.getMDPrices(symbol).stream().map(AutoPullerUI::formatPx).collect(Collectors.toList());
+        final Map<String, List<String>> relevantPrices = new HashMap<>();
+        for (final String symbol : symbols) {
+            final List<String> priceList = autoPuller.getMDPrices(symbol).stream().map(AutoPullerUI::formatPx).collect(Collectors.toList());
             relevantPrices.put(symbol, priceList);
         }
         view.updateGlobals(symbols, relevantPrices, relevantPrices);
     }
 
-    private void displayRule(View view, AutoPuller.EnabledPullRule enabledPullRule) {
-        PullRule rule = enabledPullRule.getPullRule();
-        int pullCount = autoPuller.getPullCount(enabledPullRule);
+    private void displayRule(final IAutoPullerView view, final AutoPuller.EnabledPullRule enabledPullRule) {
+        final PullRule rule = enabledPullRule.getPullRule();
+        final int pullCount = autoPuller.getPullCount(enabledPullRule);
         view.displayRule(Long.toString(rule.ruleID), rule.symbol, rule.orderSelection.side.toString(),
-                formatPx(rule.orderSelection.fromPrice),
-                formatPx(rule.orderSelection.toPrice),
-                formatPx(rule.mktCondition.price),
-                rule.mktCondition.side.toString(),
-                rule.mktCondition.qtyCondition.toString(),
-                Integer.toString(rule.mktCondition.qtyThreshold),
-                enabledPullRule.isEnabled(),
-                enabledPullRule.getEnabledByUser() != null ? enabledPullRule.getEnabledByUser() : "",
-                pullCount
-        );
+                formatPx(rule.orderSelection.fromPrice), formatPx(rule.orderSelection.toPrice), formatPx(rule.mktCondition.price),
+                rule.mktCondition.side.toString(), rule.mktCondition.qtyCondition.toString(),
+                Integer.toString(rule.mktCondition.qtyThreshold), enabledPullRule.isEnabled(),
+                enabledPullRule.getEnabledByUser() != null ? enabledPullRule.getEnabledByUser() : "", pullCount);
     }
 
-    static String formatPx(long price) {
+    static String formatPx(final long price) {
         return new BigDecimal(price).movePointLeft(9).stripTrailingZeros().toPlainString();
     }
 
-    static long parsePx(String price) {
+    static long parsePx(final String price) {
         return new BigDecimal(price).movePointRight(9).longValue();
     }
 
     @Override
-    public void runRefreshView(String message) {
+    public void runRefreshView(final String message) {
         if (!viewSet.isEmpty()) {
             onConnected(views.all());
         }
@@ -173,31 +156,8 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
     }
 
     @Override
-    public void ruleFired(AutoPuller.EnabledPullRule rule) {
+    public void ruleFired(final AutoPuller.EnabledPullRule rule) {
         displayRule(views.all(), rule);
         views.all().ruleFired(Long.toString(rule.getPullRule().ruleID));
     }
-
-    public interface View {
-        void updateGlobals(List<String> relevantSymbols, Map<String, List<String>> symbolToWorkingPrice, Map<String, List<String>> symbolToPossiblePrices);
-
-        void displayRule(String key, String symbol,
-                         String side,
-                         String orderPriceFrom,
-                         String orderPriceTo,
-                         String conditionPrice,
-                         String conditionSide,
-                         String qtyCondition,
-                         String qtyThreshold,
-                         boolean enabled,
-                         String enabledByUser,
-                         int pullCount);
-
-        void ruleFired(String key);
-
-        void removeRule(String key);
-
-        void showMessage(String message);
-    }
-
 }

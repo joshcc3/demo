@@ -1,0 +1,83 @@
+
+body {
+	overflow: auto;
+}
+
+div#message {
+	color: red;
+	background-color: #ffccc6;
+	border-color: #50211f;
+	border: solid 2px;
+	padding: 2px;
+	margin: 2px;
+}
+
+.template {
+	display: none !important;
+}
+
+.hidden {
+	display: none !important;
+}
+
+table {
+	border-spacing: 4px;
+}
+
+thead {
+	border-bottom: 1px solid black;
+}
+
+thead td {
+	text-align: center;
+	font-size: 12px;
+}
+
+td {
+	padding: 3px;
+	padding-right: 10px;
+	color: black;
+}
+
+input.qtyThreshold {
+	width: 5em;
+}
+
+input {
+	font-size: 10px;
+	padding: 2px;
+	border: 1px solid #909090;
+}
+
+select {
+	font-size: 10px;
+	padding: 2px;
+
+}
+
+button {
+	font-size: 10px;
+	padding: 2px;
+}
+
+button.start {
+	width: 20px;
+	height: 20px;
+	background-color: green;
+}
+
+button.stop {
+	width: 20px;
+	height: 20px;
+	background-color: red;
+}
+
+tr.enabled {
+	background-color: #add4b5;
+	border: 1px solid #a0ff7e;
+}
+
+tr.alert {
+	background-color: #d2a1d4;
+	border: 1px solid #ff0008;
+}
