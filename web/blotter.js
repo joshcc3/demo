@@ -1,6 +1,6 @@
-var ws;
+let ws;
 
-var filters = [];
+let filters = [];
 
 $(function () {
 	ws = connect();
@@ -10,7 +10,7 @@ $(function () {
 
 	ws.send("subscribe");
 
-	var nibblerFilterList = $("#nibblerList");
+	const nibblerFilterList = $("#nibblerList");
 	nibblerFilterList.val("ALL");
 	nibblerFilterList.change(updateFilters);
 	updateFilters();
@@ -20,7 +20,7 @@ function updateFilters() {
 
 	filters = [];
 
-	var nibblerFilterList = $("#nibblerList");
+	const nibblerFilterList = $("#nibblerList");
 	nibblerFilterList.find(":selected").each(function (i, selected) {
 		filters[i] = new RegExp($(selected).attr("data"));
 		refreshAllFilteredRows();
@@ -29,7 +29,7 @@ function updateFilters() {
 
 function refreshAllFilteredRows() {
 
-	var allRows = $("#blotter").find(".row:not(.headerRow)");
+	const allRows = $("#blotter").find(".row:not(.headerRow)");
 
 	allRows.each(function (i, row) {
 		row = $(row);
@@ -39,9 +39,9 @@ function refreshAllFilteredRows() {
 
 function isFiltered(row) {
 
-	var source = row.find(".source").text();
+	const source = row.find(".source").text();
 
-	var filtered = true;
+	let filtered = true;
 	filters.forEach(function (filter) {
 		if (source.match(filter)) {
 			filtered = false;
@@ -52,10 +52,10 @@ function isFiltered(row) {
 
 function setNibblerConnected(nibblerName, isConnected) {
 
-	var row = $("#" + nibblerName);
+	let row = $("#" + nibblerName);
 	if (row.length < 1) {
-		var table = $("#nibblers");
-		var header = table.find(".headerRow");
+		const table = $("#nibblers");
+		const header = table.find(".headerRow");
 		row = header.clone();
 
 		row.attr("id", nibblerName);
@@ -65,7 +65,7 @@ function setNibblerConnected(nibblerName, isConnected) {
 
 		addSortedDiv(table.find(".row"), row, compareNibblerRow);
 
-		var option = $("<option value=\"" + nibblerName + "\">" + nibblerName + "</option>");
+		const option = $("<option value=\"" + nibblerName + "\">" + nibblerName + "</option>");
 		option.addClass(nibblerName);
 		option.attr("data", nibblerName);
 
@@ -77,27 +77,27 @@ function setNibblerConnected(nibblerName, isConnected) {
 
 function compareNibblerRow(a, b) {
 
-	var aName = a.find(".nibblerName").text();
-	var bName = b.find(".nibblerName").text();
+	const aName = a.find(".nibblerName").text();
+	const bName = b.find(".nibblerName").text();
 
 	return aName < bName ? -1 : aName == bName ? 0 : 1;
 }
 
 function compareOptionRow(a, b) {
 
-	var aName = a.text();
-	var bName = b.text();
+	const aName = a.text();
+	const bName = b.text();
 
 	return aName < bName ? -1 : aName == bName ? 0 : 1;
 }
 
 function addRow(id, timestamp, source, text) {
 
-	var row = $("#" + id);
+	let row = $("#" + id);
 
 	if (row.length < 1) {
-		var table = $("#blotter");
-		var header = table.find(".headerRow");
+		const table = $("#blotter");
+		const header = table.find(".headerRow");
 		row = header.clone();
 
 		row.attr("id", id);
@@ -115,14 +115,14 @@ function addRow(id, timestamp, source, text) {
 
 function removeRow(id) {
 
-	var row = $("#" + id);
+	const row = $("#" + id);
 	row.remove();
 }
 
 function compareBlotterRow(a, b) {
 
-	var aTime = a.find(".time").text();
-	var bTime = b.find(".time").text();
+	const aTime = a.find(".time").text();
+	const bTime = b.find(".time").text();
 
 	return aTime < bTime ? 1 : aTime == bTime ? 0 : -1;
 }

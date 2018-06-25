@@ -1,0 +1,82 @@
+body {
+	margin: 0px;
+	padding: 0px;
+	border: solid 2px black;
+}
+
+#orders {
+	border-collapse: collapse;
+	width: 250px;
+	font-size: 12px;
+	margin: 0px;
+	padding: 0px;;
+}
+
+#orders th {
+	color: black;
+	font-size: 11px;
+	font-weight: normal;
+}
+
+#orders td {
+	border-bottom: dotted gray 1px;
+	white-space: nowrap;
+}
+
+#orders td.qtyBox {
+	color: #1f1f1f;
+	font-size: 12px;
+	height: 16px;
+	border: solid 1px gray;
+	text-align: center;
+}
+
+#orders td.qtyAdjustmentBox {
+	background-color: #ffffff;
+	color: #1f1f1f;
+	font-size: 12px;
+	height: 16px;
+	border: solid 1px gray;
+	text-align: center;
+}
+
+#orders td.qtyBox.edited {
+	background-color: #ffd77d;
+	border: dotted 1px #ccc400;
+}
+
+span.qtyAdjustment {
+	display: block;
+	width: 100%;
+}
+
+tr.order.BID {
+	background-color: #babdff;
+	color: #000022;
+}
+
+tr.order.BID:hover {
+	background-color: #928dc4 !important;
+}
+
+tr.order.OFFER {
+	background-color: #ff9999;
+	color: #220000;
+}
+
+tr.order.OFFER:hover {
+	background-color: #b8839e !important;
+}
+
+tr button.go {
+	width: 14px;
+	height: 14px;
+	padding: 0px;
+}
+
+tr button.cancel {
+	width: 14px;
+	height: 14px;
+	padding: 0px;
+	color: black;
+}

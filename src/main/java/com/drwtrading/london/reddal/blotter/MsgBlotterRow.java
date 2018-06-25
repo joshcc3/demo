@@ -3,7 +3,7 @@ package com.drwtrading.london.reddal.blotter;
 class MsgBlotterRow implements Comparable<MsgBlotterRow> {
 
     final int id;
-    final long nanoSinceMidnight;
+    private final long nanoSinceMidnight;
 
     final String timestamp;
     final String source;
@@ -28,24 +28,24 @@ class MsgBlotterRow implements Comparable<MsgBlotterRow> {
     @Override
     public boolean equals(final Object o) {
 
-        if (this == o) {
-            return true;
-        } else if (o == null || getClass() != o.getClass()) {
-            return false;
-        } else {
-            final MsgBlotterRow that = (MsgBlotterRow) o;
-            return nanoSinceMidnight == that.nanoSinceMidnight && source.equals(that.source) && text.equals(that.text);
-        }
+        return this == o || (null != o && getClass() == o.getClass() && equals((MsgBlotterRow) o));
+    }
+
+    private boolean equals(final MsgBlotterRow that) {
+        return nanoSinceMidnight == that.nanoSinceMidnight && source.equals(that.source) && text.equals(that.text);
     }
 
     @Override
     public int compareTo(final MsgBlotterRow o) {
+
         if (equals(o)) {
             return 0;
         } else if (nanoSinceMidnight < o.nanoSinceMidnight) {
             return -1;
         } else if (o.nanoSinceMidnight < nanoSinceMidnight) {
             return 1;
+        } else if (this.equals(o)) {
+            return 0;
         } else {
             return Integer.compare(id, o.id);
         }

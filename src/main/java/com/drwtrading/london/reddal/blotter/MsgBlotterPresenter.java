@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.blotter;
 
 import com.drwtrading.jetlang.builder.FiberBuilder;
-import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterLine;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -15,8 +14,8 @@ import org.jetlang.channels.Publisher;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeSet;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 public class MsgBlotterPresenter {
 
@@ -30,7 +29,7 @@ public class MsgBlotterPresenter {
 
     private final Map<String, Boolean> connectedNibblers;
 
-    private final NavigableSet<MsgBlotterRow> rows;
+    private final NavigableMap<MsgBlotterRow, MsgBlotterRow> rows;
     private final SimpleDateFormat sdf;
 
     private int rowCount;
@@ -45,7 +44,7 @@ public class MsgBlotterPresenter {
 
         this.connectedNibblers = new HashMap<>();
 
-        this.rows = new TreeSet<>();
+        this.rows = new TreeMap<>();
         this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
         this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
 
@@ -62,11 +61,11 @@ public class MsgBlotterPresenter {
 
         final String time = sdf.format(milliAtMidnightUTC + nanoSinceMidnightUTC / DateTimeUtil.NANOS_IN_MILLIS);
         final MsgBlotterRow row = new MsgBlotterRow(++rowCount, nanoSinceMidnightUTC, time, source, text);
-        rows.add(row);
+        rows.putIfAbsent(row, row);
 
         if (MAX_ROWS < rows.size()) {
 
-            final MsgBlotterRow oldestRow = rows.first();
+            final MsgBlotterRow oldestRow = rows.pollFirstEntry().getValue();
             rows.remove(oldestRow);
 
             if (!oldestRow.equals(row)) {
@@ -113,7 +112,7 @@ public class MsgBlotterPresenter {
             newView.setNibblerConnected(nibblerConnected.getKey(), nibblerConnected.getValue());
         }
 
-        for (final MsgBlotterRow row : rows) {
+        for (final MsgBlotterRow row : rows.values()) {
             newView.addRow(row.id, row.timestamp, row.source, row.text);
         }
     }
