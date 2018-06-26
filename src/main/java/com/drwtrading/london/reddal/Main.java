@@ -92,7 +92,9 @@ import com.drwtrading.london.reddal.ladders.RecenterLadder;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
 import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
 import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
+import com.drwtrading.london.reddal.obligations.ObligationOPXL;
 import com.drwtrading.london.reddal.obligations.ObligationPresenter;
+import com.drwtrading.london.reddal.obligations.RFQObligation;
 import com.drwtrading.london.reddal.opxl.EtfStackFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
@@ -177,6 +179,7 @@ import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.KeyedBatchSubscriber;
+import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 
 import java.io.IOException;
@@ -695,13 +698,17 @@ public class Main {
             ConfigGroup config = app.config.getGroup("obligations");
             Pattern filterRegex = Pattern.compile(config.getString("filterRegex"));
             FXCalc<?> opxlfxCalc = createOPXLFXCalc(app);
+            MemoryChannel<Map<String, RFQObligation>> rfqObligationChannel = new MemoryChannel<>();
             ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, filterRegex.asPredicate());
+            ObligationOPXL obligationOPXL = new ObligationOPXL(app.selectIO, app.monitor, ReddalComponents.OBLIGATIONS_RFQ, logDir, rfqObligationChannel::publish);
             channels.workingOrders.subscribe(new KeyedBatchSubscriber<>(fibers.ui.getFiber(), obligationPresenter::onWorkingOrders,
                     1, TimeUnit.SECONDS, WorkingOrderUpdateFromServer::key));
             TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
             fibers.ui.subscribe(obligationPresenter, ws, channels.searchResults);
             fibers.ui.getFiber().scheduleWithFixedDelay(obligationPresenter::update, 1, 1, TimeUnit.SECONDS);
+            fibers.ui.subscribe(obligationPresenter::updateObligations, rfqObligationChannel);
+            fibers.ui.execute(obligationOPXL::connectToOpxl);
         }
 
 

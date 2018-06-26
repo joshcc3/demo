@@ -4,7 +4,6 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
-import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
@@ -14,21 +13,23 @@ import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.google.common.collect.Sets;
 
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.function.Predicate;
 
 public class ObligationPresenter {
+
+    static final RFQObligation DEFAULT = new RFQObligation("", Collections.singletonList(new Obligation(5e6, 10e-4)));
 
     private final FXCalc<?> fxCalc;
     private final HashMap<String, SearchResult> searchResults = new HashMap<>();
     private final HashMap<String, WorkingOrdersForSymbol> orders = new HashMap<>();
 
     private final WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
-    private final DecimalFormat format = new DecimalFormat("0.0");
     private final HashSet<String> changedSymbols = new HashSet<>();
 
     private final Predicate<String> symbolFilter;
+    private Set<Double> notionalColumns = new HashSet<>();
+    private Map<String, RFQObligation> rfqObligationMap;
 
     public ObligationPresenter(FXCalc<?> fxCalc, Predicate<String> symbolFilter) {
         this.fxCalc = fxCalc;
@@ -38,7 +39,7 @@ public class ObligationPresenter {
     @Subscribe
     public void on(final WebSocketConnected connected) {
         final View view = views.register(connected);
-        for (final String symbol : Sets.union(Collections.emptySet(), orders.keySet())) {
+        for (final String symbol : Sets.union(rfqObligationMap.keySet(), orders.keySet())) {
             updateView(view, symbol);
         }
     }
@@ -84,12 +85,10 @@ public class ObligationPresenter {
 
         SearchResult searchResult = searchResults.get(symbol);
         WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
+        RFQObligation obligation = rfqObligationMap.getOrDefault(symbol, DEFAULT);
 
         if (null == searchResult || null == ordersForSymbol) {
-            view.update(symbol, "Infinity (" +
-                            (null == searchResult ? "-def " : "") +
-                            (null == ordersForSymbol ? "-orders" : "") + ")",
-                    "0", "Infinity", "0");
+            view.update(symbol, obligation.obligations, obligation.obligations);
             return;
         }
 
@@ -97,9 +96,6 @@ public class ObligationPresenter {
         final TreeMap<Double, Double> asks = new TreeMap<>(Comparator.naturalOrder());
 
         final double fxRate = fxCalc.getLastValidMid(searchResult.instID.ccy, CCY.EUR);
-
-        double totalBid = 0.0;
-        double totalAsk = 0.0;
 
         for (Long price : ordersForSymbol.ordersByPrice.keySet()) {
             long bidQty = 0;
@@ -122,39 +118,71 @@ public class ObligationPresenter {
 
             if (bidQty > 0) {
                 bids.put(dblPx, dblPx * bidQty * fxRate);
-                totalBid += dblPx * bidQty * fxRate;
             }
 
             if (askQty > 0) {
                 asks.put(dblPx, dblPx * askQty * fxRate);
-                totalAsk += dblPx * askQty * fxRate;
             }
         }
 
 
         if (bids.isEmpty() || asks.isEmpty()) {
-            view.update(symbol, "Infinity", "0", "Infinity", "0");
+            view.update(symbol, obligation.obligations, obligation.obligations);
             return;
         }
 
-        double tightestBid = bids.firstKey();
-        double widestBid = bids.lastKey();
+        final double tightestBid = bids.firstKey();
+        final double tightestAsk = asks.firstKey();
+        final double midPx = (tightestBid + tightestAsk) / 2.0;
 
-        double tightestAsk = asks.firstKey();
-        double widestAsk = asks.lastKey();
+        final List<Obligation> missedBids = computeMissedObligations(midPx, bids, obligation.obligations);
+        final List<Obligation> missedAsks = computeMissedObligations(midPx, asks, obligation.obligations);
 
-        double tightestBps = 2e4 * (tightestAsk - tightestBid) / (tightestAsk + tightestBid);
-        double widestBps = 2e4 * (widestAsk - widestBid) / (widestAsk + widestBid);
+        if (missedBids.isEmpty() && missedAsks.isEmpty()) {
+            view.hide(symbol);
+        } else {
+            view.update(symbol, missedBids, missedAsks);
+        }
+    }
 
-        double tightestEur = Math.min(bids.firstEntry().getValue(), asks.firstEntry().getValue());
-        double maxEur = Math.min(totalBid, totalAsk);
+    private List<Obligation> computeMissedObligations(double midPx, TreeMap<Double, Double> pxToNotional, List<Obligation> obligations) {
 
-        view.update(symbol, format.format(tightestBps), format.format(tightestEur),
-                format.format(widestBps), format.format(maxEur));
+        final List<Obligation> missedObligations = new ArrayList<>();
+
+        double aggregateNotional = 0.0;
+        double lastPx = midPx;
+
+        final Iterator<Map.Entry<Double, Double>> pxIter = pxToNotional.entrySet().iterator();
+        for (Obligation obligation : obligations) {
+
+            while (aggregateNotional < obligation.notional && pxIter.hasNext()) {
+                final Map.Entry<Double, Double> e = pxIter.next();
+                final double px = e.getKey();
+                final double notional = e.getValue();
+
+                aggregateNotional += notional;
+                lastPx = px;
+            }
+
+            final double bpsAwayFromMid = Math.abs(2e4 * (midPx - lastPx) / (midPx + lastPx));
+            if (bpsAwayFromMid > obligation.bps) {
+                missedObligations.add(new Obligation(obligation.notional, bpsAwayFromMid));
+            } else if (aggregateNotional < obligation.notional) {
+                missedObligations.add(new Obligation(obligation.notional, Double.POSITIVE_INFINITY));
+            }
+
+        }
+
+        return missedObligations;
+    }
+
+    public void updateObligations(Map<String, RFQObligation> rfqObligationMap) {
+        this.rfqObligationMap = rfqObligationMap;
     }
 
     public interface View {
-        void update(String symbol, String bpsTop, String eurTop, String bpsMax, String eurMax);
+        void update(String symbol, List<Obligation> missedBid, List<Obligation> missedAsk);
+        void hide(String symbol);
     }
 
 }

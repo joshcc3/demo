@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>RFQ Obligations</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
     <script src="js/jquery-1.4.2.js"></script>
     <script src="js/jquery-extras.js"></script>
     <script src="js/websocket.js"></script>
@@ -13,6 +12,16 @@
         #obligations td {
             background-color: darkgray;
         }
+        .template {
+            display: none !important;
+        }
+        body {
+            background-color: #d4d0c7;
+            color: white;;
+            font-size: 10px;
+            font-family: verdana, tahoma, arial, serif;
+        }
+
     </style>
     <script type="text/javascript">
         var Contracts = {};
@@ -44,13 +53,20 @@
             }
         }
 
-        function update(symbol, bpsTop, eurTop, bpsMax, eurMax) {
+
+        function hide(symbol) {
+            var row = Contracts[symbol];
+            delete Contracts[symbol];
+            if (row) {
+                $(row).delete();
+            }
+        }
+
+        function update(symbol, missingBids, missingAsks) {
             addContract(symbol);
             var row = Contracts[symbol];
-            row.find('.bpsTop').text(bpsTop);
-            row.find('.eurTop').text(eurTop);
-            row.find('.bpsMax').text(bpsMax);
-            row.find('.eurMax').text(eurMax);
+            row.find('.bpsTop').text(JSON.stringify(missingBids));
+            row.find('.eurTop').text(JSON.stringify(missingAsks));
         }
 
     </script>

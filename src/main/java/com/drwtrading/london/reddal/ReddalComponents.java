@@ -45,7 +45,8 @@ public enum ReddalComponents implements IMonitoredComponent {
     OPXL_SPREAD_STACK_MANAGER_FILTERS,
 
     FX_OK,
-    FX_ERROR, FX_SELECT_IO, INDY_SERVER;
+    FX_ERROR, FX_SELECT_IO, INDY_SERVER,
+    OBLIGATIONS_RFQ;
 
     @Override
     public String getMnemonic() {
