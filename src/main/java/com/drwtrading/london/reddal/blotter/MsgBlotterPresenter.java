@@ -61,20 +61,22 @@ public class MsgBlotterPresenter {
 
         final String time = sdf.format(milliAtMidnightUTC + nanoSinceMidnightUTC / DateTimeUtil.NANOS_IN_MILLIS);
         final MsgBlotterRow row = new MsgBlotterRow(++rowCount, nanoSinceMidnightUTC, time, source, text);
-        rows.putIfAbsent(row, row);
+        final MsgBlotterRow oldRow = rows.putIfAbsent(row, row);
 
-        if (MAX_ROWS < rows.size()) {
+        if (null == oldRow) {
+            if (MAX_ROWS < rows.size()) {
 
-            final MsgBlotterRow oldestRow = rows.pollFirstEntry().getValue();
-            rows.remove(oldestRow);
+                final MsgBlotterRow oldestRow = rows.pollFirstEntry().getValue();
+                rows.remove(oldestRow);
 
-            if (!oldestRow.equals(row)) {
+                if (!oldestRow.equals(row)) {
 
-                views.all().removeRow(oldestRow.id);
+                    views.all().removeRow(oldestRow.id);
+                    views.all().addRow(row.id, row.timestamp, row.source, row.text);
+                }
+            } else {
                 views.all().addRow(row.id, row.timestamp, row.source, row.text);
             }
-        } else {
-            views.all().addRow(row.id, row.timestamp, row.source, row.text);
         }
     }
 
