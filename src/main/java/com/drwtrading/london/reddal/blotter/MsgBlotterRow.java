@@ -32,22 +32,18 @@ class MsgBlotterRow implements Comparable<MsgBlotterRow> {
     }
 
     private boolean equals(final MsgBlotterRow that) {
-        return nanoSinceMidnight == that.nanoSinceMidnight && source.equals(that.source) && text.equals(that.text);
+        return nanoSinceMidnight == that.nanoSinceMidnight && text.equals(that.text);
     }
 
     @Override
     public int compareTo(final MsgBlotterRow o) {
 
-        if (equals(o)) {
-            return 0;
-        } else if (nanoSinceMidnight < o.nanoSinceMidnight) {
+        if (nanoSinceMidnight < o.nanoSinceMidnight) {
             return -1;
         } else if (o.nanoSinceMidnight < nanoSinceMidnight) {
             return 1;
-        } else if (this.equals(o)) {
-            return 0;
         } else {
-            return Integer.compare(id, o.id);
+            return text.compareTo(o.text);
         }
     }
 }

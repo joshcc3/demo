@@ -65,18 +65,10 @@ public class MsgBlotterPresenter {
 
         if (null == oldRow) {
             if (MAX_ROWS < rows.size()) {
-
                 final MsgBlotterRow oldestRow = rows.pollFirstEntry().getValue();
-                rows.remove(oldestRow);
-
-                if (!oldestRow.equals(row)) {
-
-                    views.all().removeRow(oldestRow.id);
-                    views.all().addRow(row.id, row.timestamp, row.source, row.text);
-                }
-            } else {
-                views.all().addRow(row.id, row.timestamp, row.source, row.text);
+                views.all().removeRow(oldestRow.id);
             }
+            views.all().addRow(row.id, row.timestamp, row.source, row.text);
         }
     }
 
