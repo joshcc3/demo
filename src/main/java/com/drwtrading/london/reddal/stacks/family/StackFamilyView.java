@@ -1022,7 +1022,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
                 if (null != familyName && childrenToFamily.containsKey(rfqSymbol)) {
                     communityManager.setRelationship(SOURCE_UI, familyName, rfqSymbol);
-                    communityManager.setChildQtyMultipliers(SOURCE_UI, rfqSymbol, 5, 5);
+                    communityManager.setChildQtyMultipliers(SOURCE_UI, rfqSymbol, 10, 10);
                 }
             }
         }
