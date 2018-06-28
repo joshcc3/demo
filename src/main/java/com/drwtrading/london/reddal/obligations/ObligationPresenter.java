@@ -101,6 +101,11 @@ public class ObligationPresenter {
         WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
         RFQObligation obligation = rfqObligationMap.obligationMap.getOrDefault(symbol, DEFAULT);
 
+        if (obligation.obligations.isEmpty()) {
+            view.hide(symbol);
+            return;
+        }
+
         if (null == searchResult || null == ordersForSymbol) {
             view.update(symbol, obligation.obligations, obligation.obligations);
             return;
