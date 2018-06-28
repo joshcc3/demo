@@ -18,7 +18,7 @@ import java.util.function.Predicate;
 
 public class ObligationPresenter {
 
-    static final RFQObligation DEFAULT = new RFQObligation("", Collections.singletonList(new Obligation(5e6, 10e-4)));
+    static final RFQObligation DEFAULT = new RFQObligation("", Collections.singletonList(new Obligation(5e6, 10)));
 
     private final FXCalc<?> fxCalc;
     private final HashMap<String, SearchResult> searchResults = new HashMap<>();
@@ -28,8 +28,7 @@ public class ObligationPresenter {
     private final HashSet<String> changedSymbols = new HashSet<>();
 
     private final Predicate<String> symbolFilter;
-    private Set<Double> notionalColumns = new HashSet<>();
-    private Map<String, RFQObligation> rfqObligationMap;
+    private RFQObligationSet rfqObligationMap = ObligationOPXL.EMPTY_OBLIGATIONS;
 
     public ObligationPresenter(FXCalc<?> fxCalc, Predicate<String> symbolFilter) {
         this.fxCalc = fxCalc;
@@ -39,7 +38,14 @@ public class ObligationPresenter {
     @Subscribe
     public void on(final WebSocketConnected connected) {
         final View view = views.register(connected);
-        for (final String symbol : Sets.union(rfqObligationMap.keySet(), orders.keySet())) {
+        if (null != rfqObligationMap) {
+            refreshView(view);
+        }
+    }
+
+    private void refreshView(View view) {
+        view.setNotionals(rfqObligationMap.notionals);
+        for (String symbol : Sets.union(rfqObligationMap.obligationMap.keySet(), orders.keySet())) {
             updateView(view, symbol);
         }
     }
@@ -55,11 +61,19 @@ public class ObligationPresenter {
         // Ignore
     }
 
-
     @Subscribe
     public void onSearchResult(SearchResult instrument) {
         if (symbolFilter.test(instrument.symbol)) {
             searchResults.put(instrument.symbol, instrument);
+        }
+    }
+
+    public void updateObligations(RFQObligationSet rfqObligationMap) {
+        boolean notionalsChanged = this.rfqObligationMap == null || !rfqObligationMap.notionals.equals(this.rfqObligationMap.notionals);
+        this.rfqObligationMap = rfqObligationMap;
+        changedSymbols.addAll(rfqObligationMap.obligationMap.keySet());
+        if (notionalsChanged) {
+            refreshView(views.all());
         }
     }
 
@@ -85,7 +99,7 @@ public class ObligationPresenter {
 
         SearchResult searchResult = searchResults.get(symbol);
         WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
-        RFQObligation obligation = rfqObligationMap.getOrDefault(symbol, DEFAULT);
+        RFQObligation obligation = rfqObligationMap.obligationMap.getOrDefault(symbol, DEFAULT);
 
         if (null == searchResult || null == ordersForSymbol) {
             view.update(symbol, obligation.obligations, obligation.obligations);
@@ -176,12 +190,11 @@ public class ObligationPresenter {
         return missedObligations;
     }
 
-    public void updateObligations(Map<String, RFQObligation> rfqObligationMap) {
-        this.rfqObligationMap = rfqObligationMap;
-    }
-
     public interface View {
+        void setNotionals(List<Double> notionals);
+
         void update(String symbol, List<Obligation> missedBid, List<Obligation> missedAsk);
+
         void hide(String symbol);
     }
 

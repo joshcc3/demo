@@ -95,6 +95,7 @@ import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
 import com.drwtrading.london.reddal.obligations.ObligationOPXL;
 import com.drwtrading.london.reddal.obligations.ObligationPresenter;
 import com.drwtrading.london.reddal.obligations.RFQObligation;
+import com.drwtrading.london.reddal.obligations.RFQObligationSet;
 import com.drwtrading.london.reddal.opxl.EtfStackFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
@@ -698,7 +699,7 @@ public class Main {
             ConfigGroup config = app.config.getGroup("obligations");
             Pattern filterRegex = Pattern.compile(config.getString("filterRegex"));
             FXCalc<?> opxlfxCalc = createOPXLFXCalc(app);
-            MemoryChannel<Map<String, RFQObligation>> rfqObligationChannel = new MemoryChannel<>();
+            MemoryChannel<RFQObligationSet> rfqObligationChannel = new MemoryChannel<>();
             ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, filterRegex.asPredicate());
             ObligationOPXL obligationOPXL = new ObligationOPXL(app.selectIO, app.monitor, ReddalComponents.OBLIGATIONS_RFQ, logDir, rfqObligationChannel::publish);
             channels.workingOrders.subscribe(new KeyedBatchSubscriber<>(fibers.ui.getFiber(), obligationPresenter::onWorkingOrders,

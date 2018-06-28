@@ -9,12 +9,42 @@
     <script src="js/error-catcher.js"></script>
     <script src="launcher.js"></script>
     <style>
+
         #obligations td {
-            background-color: darkgray;
+            color: black;
+            padding: 3px;
+            margin: 3px;
+            min-width: 20px;
         }
+
+        #obligations td.notional.bid.violation {
+            background-color: lightsteelblue;
+        }
+
+        #obligations td.notional.ask.violation {
+            background-color: #f0a198;
+        }
+
+        tr.header_row th {
+            min-width: 20px;
+            padding: 5px;
+            background-color: #f0f0f0;
+            color: black;
+        }
+
+        td.symbol {
+            background-color: white;
+            min-width: 100px;
+        }
+
         .template {
             display: none !important;
         }
+
+        table {
+            width: 600px;
+        }
+
         body {
             background-color: #d4d0c7;
             color: white;;
@@ -24,11 +54,13 @@
 
     </style>
     <script type="text/javascript">
-        var Contracts = {};
+        let Contracts = {};
+        let Columns = {};
+        let NumColumns = 0;
 
         $(function () {
             ws = connect();
-            ws.logToConsole = false;
+            ws.logToConsole = true;
             ws.onmessage = function (x) {
                 eval(x);
             };
@@ -50,6 +82,11 @@
                     b = $(b);
                     return a.data('symbol') < b.data('symbol') ? -1 : a.data('symbol') == b.data('symbol') ? 0 : 1;
                 });
+                let notionalCellPrototype = $("tr.template td.template.notional").clone().removeClass("template");
+                for (let i = 0; i < NumColumns; i++) {
+                    row.append(notionalCellPrototype.clone().addClass("col_" + i).addClass("bid"));
+                    row.append(notionalCellPrototype.clone().addClass("col_" + i).addClass("ask"));
+                }
             }
         }
 
@@ -58,16 +95,64 @@
             var row = Contracts[symbol];
             delete Contracts[symbol];
             if (row) {
-                $(row).delete();
+                $(row).remove();
             }
+        }
+
+        function setNotionals(notionals) {
+
+            for (var symbol in Contracts) {
+                if (Contracts.hasOwnProperty(symbol)) {
+                    hide(symbol);
+                }
+            }
+
+            Columns = {};
+            NumColumns = notionals.length;
+
+            // Reset the column headers
+            $("th.notionalHeader").remove();
+            notionals.forEach(function (x, i) {
+                let newHeader = $("th.template.notional").clone().removeClass("template");
+                newHeader.addClass("notionalHeader");
+                newHeader.text(x.toFixed(0));
+                $("tr.header_row").append(newHeader);
+                Columns[x.toFixed(0)] = i;
+            });
+
+            console.log(Columns);
+            console.log($("th.notional"));
         }
 
         function update(symbol, missingBids, missingAsks) {
             addContract(symbol);
             var row = Contracts[symbol];
-            row.find('.bpsTop').text(JSON.stringify(missingBids));
-            row.find('.eurTop').text(JSON.stringify(missingAsks));
+
+            $(row).find("td.notional").removeClass("violation")
+
+            missingBids.forEach(function (x) {
+                let key = x.notional.toFixed(0);
+                let colIdx = Columns[key];
+                let cell = $(row).find("td.notional.bid.col_" + colIdx).addClass("violation");
+                cell.text(x.bps.toFixed(1));
+            });
+
+            missingAsks.forEach(function (x) {
+                let key = x.notional.toFixed(0);
+                let colIdx = Columns[key];
+                let cell = $(row).find("td.notional.ask.col_" + colIdx).addClass("violation");
+                cell.text(x.bps.toFixed(1));
+            });
         }
+
+
+        function test() {
+            setNotionals([1000, 10000, 1000000, 5000000]);
+            update("TEST FP",
+                [{"notional": 1000, "bps": 3}],
+                [{"notional": 1000, "bps": 3}])
+        }
+
 
     </script>
 </head>
@@ -75,21 +160,14 @@
 <table>
     <thead>
     <tr class="header_row">
-        <th>Symbol
-        </th>
-        <th>Tight Bps</th>
-        <th>Tight Eur</th>
-        <th>Max Bps</th>
-        <th>Max Eur</th>
+        <th>Symbol</th>
+        <th class="template notional" colspan="2"></th>
     </tr>
     </thead>
     <tbody id="obligations">
     <tr class="template">
         <td class="symbol"></td>
-        <td class="bpsTop bps"></td>
-        <td class="eurTop"></td>
-        <td class="bpsMax bps"></td>
-        <td class="eurMax"></td>
+        <td class="template notional"></td>
     </tr>
     </tbody>
 </table>

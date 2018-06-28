@@ -10,14 +10,15 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class ObligationOPXL extends AOpxlReader<Map<String, RFQObligation>> {
+public class ObligationOPXL extends AOpxlReader<RFQObligationSet> {
 
 
     final static String TOPIC = "eeif(etf_rfq_obligation)";
+    public static final RFQObligationSet EMPTY_OBLIGATIONS = new RFQObligationSet(Collections.emptyList(), Collections.emptyMap());
 
-    final Consumer<Map<String, RFQObligation>> updates;
+    final Consumer<RFQObligationSet> updates;
 
-    public ObligationOPXL(SelectIO selectIO, IResourceMonitor<ReddalComponents> monitor, ReddalComponents component, Path path, Consumer<Map<String, RFQObligation>> updates) {
+    public ObligationOPXL(SelectIO selectIO, IResourceMonitor<ReddalComponents> monitor, ReddalComponents component, Path path, Consumer<RFQObligationSet> updates) {
         super(selectIO, monitor, component, TOPIC, path);
         this.updates = updates;
     }
@@ -28,13 +29,13 @@ public class ObligationOPXL extends AOpxlReader<Map<String, RFQObligation>> {
     }
 
     @Override
-    protected Map<String, RFQObligation> parseTable(Object[][] opxlTable) {
+    protected RFQObligationSet parseTable(Object[][] opxlTable) {
 
         Map<String, RFQObligation> obligationHashMap = new HashMap<>();
         Object[] headerRow = opxlTable[0];
 
         if (!"symbol".equals(headerRow[0].toString().toLowerCase())) {
-            return obligationHashMap;
+            return EMPTY_OBLIGATIONS;
         }
 
         List<Double> notionals = Arrays.stream(headerRow)
@@ -63,11 +64,11 @@ public class ObligationOPXL extends AOpxlReader<Map<String, RFQObligation>> {
             obligationHashMap.put(symbol, obligation);
         });
 
-        return obligationHashMap;
+        return new RFQObligationSet(notionals, obligationHashMap);
     }
 
     @Override
-    protected void handleUpdate(Map<String, RFQObligation> values) {
+    protected void handleUpdate(RFQObligationSet values) {
         updates.accept(values);
     }
 
