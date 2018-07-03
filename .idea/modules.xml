@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/reddal.iml" filepath="$PROJECT_DIR$/reddal.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../eeif-stack-transport/eeif-stack-transport.iml" filepath="$PROJECT_DIR$/../../eeif-stack-transport/eeif-stack-transport.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../reddal/reddal.iml" filepath="$PROJECT_DIR$/../../reddal/reddal.iml" />
     </modules>
   </component>
 </project>
