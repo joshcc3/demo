@@ -54,18 +54,18 @@
 
     </style>
     <script type="text/javascript">
+
         let Contracts = {};
         let Columns = {};
         let NumColumns = 0;
 
         $(function () {
             ws = connect();
-            ws.logToConsole = true;
+            ws.logToConsole = false;
             ws.onmessage = function (x) {
                 eval(x);
             };
         });
-
 
         function addContract(symbol) {
             if (!Contracts.hasOwnProperty(symbol)) {
@@ -87,9 +87,13 @@
                     row.append(notionalCellPrototype.clone().addClass("col_" + i).addClass("bid"));
                     row.append(notionalCellPrototype.clone().addClass("col_" + i).addClass("ask"));
                 }
+                updateCount();
             }
         }
 
+        function updateCount() {
+            $(".count").text(Object.keys(Contracts).length);
+        }
 
         function hide(symbol) {
             var row = Contracts[symbol];
@@ -97,15 +101,19 @@
             if (row) {
                 $(row).remove();
             }
+            updateCount();
         }
 
-        function setNotionals(notionals) {
-
+        function clearAll() {
             for (var symbol in Contracts) {
                 if (Contracts.hasOwnProperty(symbol)) {
                     hide(symbol);
                 }
             }
+        }
+
+        function setNotionals(notionals) {
+            clearAll();
 
             Columns = {};
             NumColumns = notionals.length;
@@ -119,15 +127,11 @@
                 $("tr.header_row").append(newHeader);
                 Columns[x.toFixed(0)] = i;
             });
-
-            console.log(Columns);
-            console.log($("th.notional"));
         }
 
         function update(symbol, missingBids, missingAsks) {
             addContract(symbol);
             var row = Contracts[symbol];
-
             $(row).find("td.notional").removeClass("violation")
 
             missingBids.forEach(function (x) {
@@ -145,22 +149,13 @@
             });
         }
 
-
-        function test() {
-            setNotionals([1000, 10000, 1000000, 5000000]);
-            update("TEST FP",
-                [{"notional": 1000, "bps": 3}],
-                [{"notional": 1000, "bps": 3}])
-        }
-
-
     </script>
 </head>
 <body>
 <table>
     <thead>
     <tr class="header_row">
-        <th>Symbol</th>
+        <th><span class="count"></span> Symbols</th>
         <th class="template notional" colspan="2"></th>
     </tr>
     </thead>

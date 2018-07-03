@@ -916,6 +916,10 @@ public class StackFamilyView implements IStackRelationshipListener {
                             continue;
                         }
                         communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset - bpsWider, offset + bpsWider);
+                        SearchResult searchResult = searchResults.get(childSymbol);
+                        if (null != searchResult && searchResult.mdSource ==  MDSource.RFQ) {
+                            communityManager.setChildQtyMultipliers(SOURCE_UI, childSymbol, 10, 10);
+                        }
                     }
 
                 }

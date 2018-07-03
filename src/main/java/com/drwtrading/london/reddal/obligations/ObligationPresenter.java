@@ -19,6 +19,7 @@ import java.util.function.Predicate;
 public class ObligationPresenter {
 
     static final RFQObligation DEFAULT = new RFQObligation("", Collections.singletonList(new Obligation(5e6, 10)));
+    static final List<Obligation> NOT_FOUND = Collections.singletonList(new Obligation(Double.POSITIVE_INFINITY, 10));
 
     private final FXCalc<?> fxCalc;
     private final HashMap<String, SearchResult> searchResults = new HashMap<>();
@@ -107,7 +108,7 @@ public class ObligationPresenter {
         }
 
         if (null == searchResult || null == ordersForSymbol) {
-            view.update(symbol, obligation.obligations, obligation.obligations);
+            view.update(symbol, NOT_FOUND, NOT_FOUND);
             return;
         }
 
