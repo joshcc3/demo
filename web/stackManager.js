@@ -3,7 +3,7 @@ let ws;
 $(function () {
 
     ws = connect();
-    ws.logToConsole = false;
+    ws.logToConsole = true;
     ws.onmessage = function (m) {
         eval(m);
     };
@@ -283,7 +283,7 @@ $(function () {
 });
 
 function updateOffsets(familySymbol, bpsWider, skipNonDefaults) {
-    ws.send(command("resetFamilyOffsetsUnless", [familySymbol, bpsWider, skipNonDefaults]));
+    ws.send(command("updateOffsets", [familySymbol, bpsWider, skipNonDefaults]));
 }
 
 function popUp(url, name, width, height) {

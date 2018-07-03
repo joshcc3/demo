@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.stacks.family;
 
+import com.drwtrading.london.eeif.stack.manager.relations.IStackFamily;
 import com.drwtrading.london.eeif.stack.manager.relations.StackChildMinder;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
@@ -99,7 +100,6 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.isSecondaryView = isSecondaryView;
         this.displayableInstType = displayableInstType;
 
-        this.views = WebSocketViews.create(IStackFamilyUI.class, this);
         this.userViews = new HashMap<>();
 
         this.expiryCaledar = DateTimeUtil.getCalendar();
@@ -124,7 +124,12 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.priceOffsetDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 1, 3);
 
         this.globalPriceOffsetBPS = 0d;
+
+        this.views = WebSocketViews.create(IStackFamilyUI.class, this);
+
     }
+
+
 
     private boolean isFamilyDisplayable(final String familyName) {
 
@@ -875,64 +880,6 @@ public class StackFamilyView implements IStackRelationshipListener {
         }
     }
 
-
-    @FromWebSocketView
-    public void resetFamilyOffsetsUnless(String familySymbol, Double bpsWider, boolean skipNonDefaults, final WebSocketInboundData data) {
-
-        for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> family : families.entrySet()) {
-            try {
-                final String familyName = family.getKey();
-
-                if (!familySymbol.equals(familyName) && !familySymbol.equals("*")) {
-                    continue;
-                }
-
-                final StackUIData parentUIData = parentData.get(familyName);
-
-                if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
-
-                    final Map<String, StackUIRelationship> children = family.getValue();
-                    final List<String> childSymbols = children.keySet().stream().filter(childData::containsKey).collect(Collectors.toList());
-
-                    boolean familyMatchesDefaults = true;
-
-                    for (String childSymbol : childSymbols) {
-                        StackChildMinder child = communityManager.getFamily(familyName).getChild(childSymbol);
-                        final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
-                        final double bidOffset = Math.abs(child.getChildOffset(BookSide.BID));
-                        final double askOffset = child.getChildOffset(BookSide.ASK);
-                        if (bidOffset != offset || askOffset != offset) {
-                            familyMatchesDefaults = false;
-                        }
-                    }
-
-                    if (skipNonDefaults && !familyMatchesDefaults) {
-                        continue;
-                    }
-
-                    for (final String childSymbol : childSymbols) {
-                        final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
-                        if (offset == 0.0) {
-                            continue;
-                        }
-                        communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset - bpsWider, offset + bpsWider);
-                        SearchResult searchResult = searchResults.get(childSymbol);
-                        if (null != searchResult && searchResult.mdSource ==  MDSource.RFQ) {
-                            communityManager.setChildQtyMultipliers(SOURCE_UI, childSymbol, 10, 10);
-                        }
-                    }
-
-                }
-            } catch (final Exception e) {
-                final IStackFamilyUI ui = views.get(data.getOutboundChannel());
-                ui.displayErrorMsg(e.getMessage());
-                e.printStackTrace();
-            }
-        }
-
-    }
-
-
     @FromWebSocketView
     public void resetOffsetsForFamily(final String familySymbol, final WebSocketInboundData data) {
         try {
@@ -967,6 +914,61 @@ public class StackFamilyView implements IStackRelationshipListener {
         }
     }
 
+    @FromWebSocketView
+    public void updateOffsets(final String familySymbol, final Integer bpsWider, final Boolean skipNonDefaults, final WebSocketInboundData data) {
+
+        for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> family : families.entrySet()) {
+            try {
+                final String familyName = family.getKey();
+
+                if (!familySymbol.equals(familyName) && !familySymbol.equals("*")) {
+                    continue;
+                }
+
+                final StackUIData parentUIData = parentData.get(familyName);
+
+                if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
+
+                    final Map<String, StackUIRelationship> children = family.getValue();
+                    final List<String> childSymbols = children.keySet().stream().filter(childData::containsKey).collect(Collectors.toList());
+
+                    boolean familyMatchesDefaults = true;
+
+                    for (String childSymbol : childSymbols) {
+                        StackUIRelationship childData = children.get(childSymbol);
+                        final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
+                        final double bidOffset = Math.abs(childData.bidPriceOffsetBPS);
+                        final double askOffset = childData.askPriceOffsetBPS;
+                        if (bidOffset != offset || askOffset != offset) {
+                            familyMatchesDefaults = false;
+                        }
+                    }
+
+                    if (skipNonDefaults && !familyMatchesDefaults) {
+                        continue;
+                    }
+
+                    for (final String childSymbol : childSymbols) {
+                        final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
+                        if (offset == 0.0) {
+                            continue;
+                        }
+                        communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset - bpsWider, offset + bpsWider);
+                        SearchResult searchResult = searchResults.get(childSymbol);
+                        if (null != searchResult && searchResult.mdSource ==  MDSource.RFQ) {
+                            communityManager.setChildQtyMultipliers(SOURCE_UI, childSymbol, 10, 10);
+                        }
+                    }
+
+                }
+            } catch (final Exception e) {
+                final IStackFamilyUI ui = views.get(data.getOutboundChannel());
+                ui.displayErrorMsg(e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+    }
     @FromWebSocketView
     public void orphanChild(final String childSymbol, final WebSocketInboundData data) {
 
