@@ -94,7 +94,6 @@ import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
 import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
 import com.drwtrading.london.reddal.obligations.ObligationOPXL;
 import com.drwtrading.london.reddal.obligations.ObligationPresenter;
-import com.drwtrading.london.reddal.obligations.RFQObligation;
 import com.drwtrading.london.reddal.obligations.RFQObligationSet;
 import com.drwtrading.london.reddal.opxl.EtfStackFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
@@ -709,6 +708,7 @@ public class Main {
             fibers.ui.subscribe(obligationPresenter, ws, channels.searchResults);
             fibers.ui.getFiber().scheduleWithFixedDelay(obligationPresenter::update, 1, 1, TimeUnit.SECONDS);
             fibers.ui.subscribe(obligationPresenter::updateObligations, rfqObligationChannel);
+            fibers.ui.subscribe(obligationPresenter::onWorkingOrderConnected, channels.workingOrderConnectionEstablished);
             fibers.ui.execute(obligationOPXL::connectToOpxl);
         }
 

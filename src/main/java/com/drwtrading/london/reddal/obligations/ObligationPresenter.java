@@ -6,6 +6,7 @@ import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
@@ -87,6 +88,13 @@ public class ObligationPresenter {
                 changedSymbols.add(symbol);
             }
         }
+    }
+
+    public void onWorkingOrderConnected(WorkingOrderConnectionEstablished connectionEstablished) {
+        for (WorkingOrdersForSymbol workingOrdersForSymbol : orders.values()) {
+            workingOrdersForSymbol.onServerDisconnected(connectionEstablished);
+        }
+
     }
 
     public void update() {
@@ -195,6 +203,7 @@ public class ObligationPresenter {
 
         return missedObligations;
     }
+
 
     public interface View {
         void setNotionals(List<Double> notionals);

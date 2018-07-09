@@ -1,11 +1,13 @@
 package com.drwtrading.london.reddal.data;
 
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
 import eeif.execution.WorkingOrderState;
 import eeif.execution.WorkingOrderUpdate;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -37,6 +39,16 @@ public class WorkingOrdersForSymbol {
             return previous;
         } else {
             return null;
+        }
+    }
+
+    public void onServerDisconnected(WorkingOrderConnectionEstablished connectionEstablished) {
+        for (Iterator<WorkingOrderUpdateFromServer> it = ordersByKey.values().iterator(); it.hasNext(); ) {
+            WorkingOrderUpdateFromServer next = it.next();
+            if (next.fromServer.equals(connectionEstablished.server)) {
+                it.remove();
+                ordersByPrice.remove(next.workingOrderUpdate.getPrice(), next);
+            }
         }
     }
 
