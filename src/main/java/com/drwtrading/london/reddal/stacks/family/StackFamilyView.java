@@ -711,8 +711,16 @@ public class StackFamilyView implements IStackRelationshipListener {
                     final StackClientHandler strategyClient = nibblerClients.get(frontMonthData.getSource());
 
                     if (null != strategyClient) {
+
+                        final String additiveSymbol;
+                        if (frontMonthData.getAdditiveSymbol().equals(frontMonthData.getSymbol())) {
+                            additiveSymbol = backMonthSymbol;
+                        } else {
+                            additiveSymbol = frontMonthData.getAdditiveSymbol();
+                        }
+
                         strategyClient.createStrategy(backMonthSymbol, backMonthSearchResult.instID, InstType.INDEX, backMonthSymbol,
-                                backMonthSearchResult.instID, frontMonthData.getAdditiveSymbol());
+                                backMonthSearchResult.instID, additiveSymbol);
                         strategyClient.batchComplete();
                     }
                 }
