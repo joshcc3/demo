@@ -25,6 +25,7 @@ class StackUIData implements IStackGroupUpdateCallback {
     public final InstrumentID instID;
     public final String leanSymbol;
     public final InstType leanInstType;
+    public final String additiveSymbol;
 
     private final DecimalFormat priceOffsetDF;
 
@@ -35,13 +36,14 @@ class StackUIData implements IStackGroupUpdateCallback {
     private String bidPriceOffsetBPS;
     private String askPriceOffsetBPS;
 
-    StackUIData(final String source, final String symbol, final InstrumentID instID, final String leanSymbol, final InstType leanInstType) {
+    StackUIData(final String source, final String symbol, final InstrumentID instID, final String leanSymbol, final InstType leanInstType, String additiveSymbol) {
 
         this.source = source;
         this.symbol = symbol;
         this.instID = instID;
         this.leanSymbol = leanSymbol;
         this.leanInstType = leanInstType;
+        this.additiveSymbol = additiveSymbol;
 
         this.priceOffsetDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 10);
 
@@ -52,6 +54,7 @@ class StackUIData implements IStackGroupUpdateCallback {
         this.bidPriceOffsetBPS = NO_PRICE_OFFSET;
         this.askPriceOffsetBPS = NO_PRICE_OFFSET;
     }
+
 
     public void setSelectedConfig(final StackConfigType selectedConfig) {
         this.selectedConfig = selectedConfig.name();

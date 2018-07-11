@@ -22,7 +22,9 @@ $(function () {
 		var forNibbler = creationRow.find("#hostNibblers").find("option:selected").text();
 		var leanInstType = creationRow.find("#leanInstID").find("option:selected").text();
 		var leanSymbol = creationRow.find("input[name=lean]").val();
-		ws.send(command("submitSymbol", [forNibbler, quoteSymbol, leanInstType, leanSymbol]));
+        const additiveSymbol = childCreationRow.find("input[name=additive]").val();
+
+        ws.send(command("submitSymbol", [forNibbler, quoteSymbol, leanInstType, leanSymbol, additiveSymbol]));
 	});
 
 	$("body").unbind("dblclick").bind("dblclick", showAdmin);
@@ -154,7 +156,7 @@ function removeAll(nibblerName) {
 
 function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanInstType, leanSymbol, leanISIN, leanCCY, leanMIC,
 				isQuoteInstDefEventAvailable, isQuoteBookAvailable, isLeanBookAvailable, isFXAvailable, isAdditiveAvailable,
-				selectedConfigType) {
+				selectedConfigType, additiveSymbol) {
 
 	var rowID = nibblerName + strategyID;
 	var row = $("#" + rowID);
@@ -203,6 +205,7 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 	setBoolData(row, ".isAdditiveAvailable", isAdditiveAvailable);
 
 	setCellData(row, ".selectedConfigType", selectedConfigType);
+	setCellData(row, ".additiveSymbol", additiveSymbol);
 
 	setOrderCount(nibblerName);
 

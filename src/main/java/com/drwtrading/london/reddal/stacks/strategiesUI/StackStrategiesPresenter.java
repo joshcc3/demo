@@ -126,7 +126,7 @@ public class StackStrategiesPresenter {
                 quoteInstID.mic.name(), strategy.getLeanInstType().name(), strategy.getLeanSymbol(), leanInstID.isin, leanInstID.ccy.name(),
                 leanInstID.mic.name(), strategy.isQuoteInstDefEventAvailable(), strategy.isQuoteBookAvailable(),
                 strategy.isLeanBookAvailable(), strategy.isFXAvailable(), strategy.isAdditiveAvailable(),
-                strategy.getSelectedConfigType().name());
+                strategy.getSelectedConfigType().name(), strategy.getAdditiveSymbol());
     }
 
     public void serverConnectionLost(final String nibblerName) {
@@ -140,7 +140,7 @@ public class StackStrategiesPresenter {
     }
 
     @FromWebSocketView
-    public void submitSymbol(final String nibblerName, final String quoteSymbol, final String leanInstrumentType, final String leanSymbol) {
+    public void submitSymbol(final String nibblerName, final String quoteSymbol, final String leanInstrumentType, final String leanSymbol, final String additiveSymbol) {
 
         final StackClientHandler strategyClient = strategyClients.get(nibblerName);
         if (null != strategyClient) {
@@ -150,7 +150,7 @@ public class StackStrategiesPresenter {
             final InstrumentID leanInstID = instIDs.get(leanSymbol);
 
             if (null != quoteInstId && null != leanInstType && null != leanInstID) {
-                strategyClient.createStrategy(quoteSymbol, quoteInstId, leanInstType, leanSymbol, leanInstID, "");
+                strategyClient.createStrategy(quoteSymbol, quoteInstId, leanInstType, leanSymbol, leanInstID, additiveSymbol);
                 strategyClient.batchComplete();
             }
         }

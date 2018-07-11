@@ -41,7 +41,7 @@ public class StackChildListener {
         final String symbol = strategy.getSymbol();
         final long strategyID = strategy.getStrategyID();
         final StackUIData uiData =
-                new StackUIData(nibblerName, symbol, strategy.getInstID(), strategy.getLeanSymbol(), strategy.getLeanInstType());
+                new StackUIData(nibblerName, symbol, strategy.getInstID(), strategy.getLeanSymbol(), strategy.getLeanInstType(), strategy.getAdditiveSymbol());
         uiData.setSelectedConfig(strategy.getSelectedConfigType());
 
         symbolUIData.put(symbol, uiData);

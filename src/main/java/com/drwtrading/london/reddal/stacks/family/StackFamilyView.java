@@ -613,7 +613,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void createChildStack(final String nibblerName, final String quoteSymbol, final String leanInstrumentType,
-                                 final String leanSymbol, final WebSocketInboundData data) {
+                                 final String leanSymbol, final String additiveSymbol, final WebSocketInboundData data) {
 
         final StackClientHandler strategyClient = nibblerClients.get(nibblerName);
         if (null != strategyClient) {
@@ -624,7 +624,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             final InstrumentID leanInstID = searchResults.get(leanSymbol).instID;
 
             if (null != quoteInstId && null != leanInstType && null != leanInstID) {
-                strategyClient.createStrategy(quoteSymbol, quoteInstId, leanInstType, leanSymbol, leanInstID, "");
+                strategyClient.createStrategy(quoteSymbol, quoteInstId, leanInstType, leanSymbol, leanInstID, additiveSymbol);
                 strategyClient.batchComplete();
             }
         }
@@ -712,7 +712,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
                     if (null != strategyClient) {
                         strategyClient.createStrategy(backMonthSymbol, backMonthSearchResult.instID, InstType.INDEX, backMonthSymbol,
-                                backMonthSearchResult.instID, "");
+                                backMonthSearchResult.instID, frontMonthData.getAdditiveSymbol());
                         strategyClient.batchComplete();
                     }
                 }

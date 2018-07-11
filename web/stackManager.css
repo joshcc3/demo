@@ -12,6 +12,8 @@
 body {
 	color: white;
 	white-space: nowrap;
+	font-size: 10px;
+	font-family: verdana, tahoma, arial, serif;
 }
 
 .template, .hidden {
@@ -118,7 +120,7 @@ body {
 }
 
 #filterButton {
-	width: 200px;
+	width: 150px;
 	height: 30px;
 	text-align: center;
 	font-size: 10px;
@@ -202,7 +204,7 @@ body {
 }
 
 .childCreationRow input {
-	width: 200px;
+	width: 100px;
 	border: 0;
 	padding: 0;
 	margin: 0;

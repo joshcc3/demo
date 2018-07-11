@@ -469,7 +469,8 @@ function createStackForChildRow(childCreationRow) {
     const forNibbler = childCreationRow.find(".hostNibblers").find("option:selected").text();
     const leanInstType = childCreationRow.find(".leanInstID").find("option:selected").text();
     const leanSymbol = childCreationRow.find("input[name=lean]").val();
-    ws.send(command("createChildStack", [forNibbler, quoteSymbol, leanInstType, leanSymbol]));
+    const additiveSymbol = childCreationRow.find("input[name=additive]").val();
+    ws.send(command("createChildStack", [forNibbler, quoteSymbol, leanInstType, leanSymbol, additiveSymbol]));
 }
 
 function adoptStackForChildRow(childCreationRow) {
