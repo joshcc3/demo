@@ -552,7 +552,9 @@ public class LadderStackView implements ILadderBoard {
                 view.popUp(url, "stackConfig:" + symbol, 2400, 300);
             }
         } else if ("right".equals(button)) {
-            if (label.startsWith(HTML.STACK_BID_OFFSET) || label.startsWith(HTML.STACK_ASK_OFFSET)) {
+             if (HTML.BUTTON_CLR.equals(label)) {
+                setPersistencePreference(HTML.INP_RELOAD, Integer.toString(tradingBoxQty));
+            } else if (label.startsWith(HTML.STACK_BID_OFFSET) || label.startsWith(HTML.STACK_ASK_OFFSET)) {
                 if (ladderPrefsForSymbolUser != null) {
                     submitOrderRightClick(clientSpeedState, label, data);
                 }
