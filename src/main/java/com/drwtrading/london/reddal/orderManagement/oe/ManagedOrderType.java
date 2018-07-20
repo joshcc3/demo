@@ -178,7 +178,7 @@ public enum ManagedOrderType {
         public int getQty(int qty) {
             return qty;
         }
-    },;;
+    };
 
 
     public static int divisible(int qty, int i) {
