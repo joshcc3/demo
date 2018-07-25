@@ -47,7 +47,7 @@ public class ObligationPresenter {
 
     private void refreshView(View view) {
         view.setNotionals(rfqObligationMap.notionals);
-        for (String symbol : Sets.union(rfqObligationMap.obligationMap.keySet(), orders.keySet())) {
+        for (String symbol : Sets.union(searchResults.keySet(), Sets.union(rfqObligationMap.obligationMap.keySet(), orders.keySet()))) {
             updateView(view, symbol);
         }
     }
