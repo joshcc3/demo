@@ -13,6 +13,7 @@ import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
+import com.drwtrading.london.reddal.premium.IPremiumCalc;
 
 import java.text.DecimalFormat;
 import java.util.Collection;
@@ -51,11 +52,11 @@ public class SymbolStackData {
     private double priceOffsetTickSize;
     private double stackAlignmentTickToBPS;
 
-    public SymbolStackData(final String symbol, final IPicardSpotter picardSpotter) {
+    public SymbolStackData(final String symbol, final IPicardSpotter picardSpotter, final IPremiumCalc premiumCalc) {
 
         this.symbol = symbol;
 
-        this.stacksLaserLineCalc = new StacksLaserLineCalc(symbol, picardSpotter);
+        this.stacksLaserLineCalc = new StacksLaserLineCalc(symbol, picardSpotter, premiumCalc);
 
         this.bidStackLevels = new LongMap<>();
         this.askStackLevels = new LongMap<>();

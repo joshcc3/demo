@@ -38,6 +38,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.pks.PKSExposure;
+import com.drwtrading.london.reddal.premium.IPremiumCalc;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
@@ -122,7 +123,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-            final IPicardSpotter picardSpotter, final FXCalc<?> fxCalc,
+            final IPicardSpotter picardSpotter, final IPremiumCalc premiumCalc, final FXCalc<?> fxCalc,
             final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
             final Fiber fiber, final Publisher<Jsonable> trace, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
@@ -146,7 +147,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
         this.oneDP = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 1);
 
-        this.stackBySymbol = new MapMaker().makeComputingMap(symbol -> new SymbolStackData(symbol, picardSpotter));
+        this.stackBySymbol = new MapMaker().makeComputingMap(symbol -> new SymbolStackData(symbol, picardSpotter, premiumCalc));
         this.ladderPrefsForUserBySymbol = new HashMap<>();
         this.orderEntryMap = new HashMap<>();
         this.refData = new HashMap<>();

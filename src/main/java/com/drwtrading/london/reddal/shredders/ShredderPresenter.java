@@ -49,7 +49,7 @@ public class ShredderPresenter implements IStackPresenterCallback {
 
         this.bookSubscriber = depthBookSubscriber;
 
-        this.stackBySymbol= new MapMaker().makeComputingMap(symbol -> new SymbolStackData(symbol, Constants::NO_OP));
+        this.stackBySymbol = new MapMaker().makeComputingMap(symbol -> new SymbolStackData(symbol, Constants::NO_OP, Constants::NO_OP));
     }
 
     @Subscribe

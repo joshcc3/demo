@@ -11,6 +11,7 @@ import com.drwtrading.london.eeif.nibbler.transport.NibblerTransportComponents;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerCacheFactory;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerTransportCaches;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
+import com.drwtrading.london.eeif.opxl.OpxlClientComponents;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
 import com.drwtrading.london.eeif.position.transport.PositionTransportComponents;
 import com.drwtrading.london.eeif.position.transport.cache.PositionCacheFactory;
@@ -118,6 +119,8 @@ import com.drwtrading.london.reddal.picard.PicardUI;
 import com.drwtrading.london.reddal.picard.YodaAtCloseClient;
 import com.drwtrading.london.reddal.pks.PKSPositionClient;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
+import com.drwtrading.london.reddal.premium.IPremiumCalc;
+import com.drwtrading.london.reddal.premium.PremiumCalculator;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.shredders.ShredderInfoListener;
 import com.drwtrading.london.reddal.shredders.ShredderMessageRouter;
@@ -366,7 +369,7 @@ public class Main {
         final FiberBuilder stackManagerFiberBuilder = fibers.fiberGroup.wrap(stackManagerSelectIOFiber, stackManagerThreadName);
         final LadderPresenter stackManagerLadderPresenter =
                 getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment, stackManagerFXCalc, noBookSubscription,
-                        ewokBaseURL, stackManagerWebSocket, stackManagerFiberBuilder, Constants::NO_OP);
+                        ewokBaseURL, stackManagerWebSocket, stackManagerFiberBuilder, Constants::NO_OP, Constants::NO_OP);
 
         // Load stacks
         final Map<MDSource, LinkedList<ConfigGroup>> stackConfigs = new EnumMap<>(MDSource.class);
@@ -466,9 +469,17 @@ public class Main {
                 final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, fxCalc);
                 displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
 
+                final ConfigGroup premiumConfig = root.getGroup("premiumOPXL");
+                final IResourceMonitor<OpxlClientComponents> premiumMonitor =
+                        new ExpandedDetailResourceMonitor<>(displayMonitor, threadName, errorLog, OpxlClientComponents.class,
+                                ReddalComponents.OPXL_SPREAD_PREMIUM_WRITER);
+                final PremiumCalculator premiumCalc =
+                        new PremiumCalculator(displaySelectIO, premiumConfig, premiumMonitor, depthBookSubscriber);
+                selectIO.addDelayedAction(1000, premiumCalc::recalcAll);
+
                 final LadderPresenter ladderPresenter =
                         getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, fxCalc, depthBookSubscriber, ewokBaseURL,
-                                webSocket, fiberBuilder, picardSpotter);
+                                webSocket, fiberBuilder, picardSpotter, premiumCalc);
 
                 final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
                 if (null != mdSourceStackConfigs) {
@@ -694,15 +705,17 @@ public class Main {
         }
 
         // Obligations presenter
-        if (app.config.getEnabledGroup("obligations") != null){
+        if (app.config.getEnabledGroup("obligations") != null) {
             ConfigGroup config = app.config.getGroup("obligations");
             Pattern filterRegex = Pattern.compile(config.getString("filterRegex"));
             FXCalc<?> opxlfxCalc = createOPXLFXCalc(app);
             MemoryChannel<RFQObligationSet> rfqObligationChannel = new MemoryChannel<>();
             ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, filterRegex.asPredicate());
-            ObligationOPXL obligationOPXL = new ObligationOPXL(app.selectIO, app.monitor, ReddalComponents.OBLIGATIONS_RFQ, logDir, rfqObligationChannel::publish);
-            channels.workingOrders.subscribe(new KeyedBatchSubscriber<>(fibers.ui.getFiber(), obligationPresenter::onWorkingOrders,
-                    1, TimeUnit.SECONDS, WorkingOrderUpdateFromServer::key));
+            ObligationOPXL obligationOPXL =
+                    new ObligationOPXL(app.selectIO, app.monitor, ReddalComponents.OBLIGATIONS_RFQ, logDir, rfqObligationChannel::publish);
+            channels.workingOrders.subscribe(
+                    new KeyedBatchSubscriber<>(fibers.ui.getFiber(), obligationPresenter::onWorkingOrders, 1, TimeUnit.SECONDS,
+                            WorkingOrderUpdateFromServer::key));
             TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
             fibers.ui.subscribe(obligationPresenter, ws, channels.searchResults);
@@ -711,7 +724,6 @@ public class Main {
             fibers.ui.subscribe(obligationPresenter::onWorkingOrderConnected, channels.workingOrderConnectionEstablished);
             fibers.ui.execute(obligationOPXL::connectToOpxl);
         }
-
 
         final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
         channels.searchResults.subscribe(fibers.contracts.getFiber(), chixInstMatcher::setSearchResult);
@@ -1033,14 +1045,15 @@ public class Main {
     private static LadderPresenter getLadderPresenter(final IResourceMonitor<ReddalComponents> displayMonitor,
             final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment, final FXCalc<?> fxCalc,
             final IMDSubscriber depthBookSubscriber, final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket,
-            final FiberBuilder fiberBuilder, final IPicardSpotter picardSpotter) throws ConfigException {
+            final FiberBuilder fiberBuilder, final IPicardSpotter picardSpotter, final IPremiumCalc premiumCalc) throws ConfigException {
 
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
-                        environment.ladderOptions(), picardSpotter, fxCalc, channels.storeLadderPref, channels.heartbeatRoundTrips,
-                        channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffsetCmds,
-                        channels.increaseChildOffsetBPSCmds, channels.setSiblingsEnabledCmds, channels.ladderClickTradingIssues,
-                        channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
+                        environment.ladderOptions(), picardSpotter, premiumCalc, fxCalc, channels.storeLadderPref,
+                        channels.heartbeatRoundTrips, channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace,
+                        channels.increaseParentOffsetCmds, channels.increaseChildOffsetBPSCmds, channels.setSiblingsEnabledCmds,
+                        channels.ladderClickTradingIssues, channels.userCycleContractPublisher, channels.orderEntryCommandToServer,
+                        channels.userWorkspaceRequests);
 
         fiberBuilder.subscribe(ladderPresenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
                 channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.recenterLaddersForUser,

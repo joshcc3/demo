@@ -8,6 +8,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
+import com.drwtrading.london.reddal.premium.IPremiumCalc;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -19,6 +20,7 @@ public class StacksLaserLineCalc {
     private static final int ASK_PULLBACK_MULT = 1;
 
     private final IPicardSpotter picardSpotter;
+    private final IPremiumCalc premiumCalc;
 
     private final LaserLineValue navLine;
     private final LaserLineValue theoLine;
@@ -34,9 +36,10 @@ public class StacksLaserLineCalc {
     private StackGroup bidStackGroup;
     private StackGroup askStackGroup;
 
-    StacksLaserLineCalc(final String symbol, final IPicardSpotter picardSpotter) {
+    StacksLaserLineCalc(final String symbol, final IPicardSpotter picardSpotter, final IPremiumCalc premiumCalc) {
 
         this.picardSpotter = picardSpotter;
+        this.premiumCalc = premiumCalc;
 
         this.navLine = new LaserLineValue(symbol, LaserLineType.NAV);
         this.theoLine = new LaserLineValue(symbol, LaserLineType.GREEN);
@@ -90,6 +93,8 @@ public class StacksLaserLineCalc {
 
         updateLaserLine(bidTheo, spreadnoughtTheo.isBidValid(), spreadnoughtTheo.getBidValue(), bidStackGroup, BID_PULLBACK_MULT);
         updateLaserLine(askTheo, spreadnoughtTheo.isAskValid(), spreadnoughtTheo.getAskValue(), askStackGroup, ASK_PULLBACK_MULT);
+
+        this.premiumCalc.setTheoMid(theo.getSymbol(), isValid, mid);
     }
 
     private static void setTheoValue(final LaserLineValue theoLine, final boolean isValid, final long theoValue) {
