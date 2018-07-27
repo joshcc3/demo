@@ -121,6 +121,7 @@ import com.drwtrading.london.reddal.pks.PKSPositionClient;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.premium.IPremiumCalc;
 import com.drwtrading.london.reddal.premium.PremiumCalculator;
+import com.drwtrading.london.reddal.premium.PremiumOPXLWriter;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.shredders.ShredderInfoListener;
 import com.drwtrading.london.reddal.shredders.ShredderMessageRouter;
@@ -186,6 +187,7 @@ import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 
 import java.io.IOException;
+import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -436,6 +438,17 @@ public class Main {
         setupPicardUI(selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
                 channels.displaySymbol, webApp);
 
+        // Spreadnought Premium OPXL publisher
+        {
+            final ConfigGroup premiumConfig = root.getGroup("premiumOPXL");
+            final IResourceMonitor<OpxlClientComponents> premiumMonitor =
+                    new ExpandedDetailResourceMonitor<>(app.monitor, "Premium Opxl", errorLog, OpxlClientComponents.class,
+                            ReddalComponents.OPXL_SPREAD_PREMIUM_WRITER);
+            final PremiumOPXLWriter writer = new PremiumOPXLWriter(selectIO, premiumConfig, premiumMonitor);
+            channels.spreadnoughtPremiums.subscribe(selectIOFiber, writer::onPremium);
+            selectIO.addDelayedAction(1000, writer::flush);
+        }
+
         // MD Sources
         final ConfigGroup mdConfig = root.getGroup("md");
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
@@ -469,13 +482,8 @@ public class Main {
                 final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, fxCalc);
                 displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
 
-                final ConfigGroup premiumConfig = root.getGroup("premiumOPXL");
-                final IResourceMonitor<OpxlClientComponents> premiumMonitor =
-                        new ExpandedDetailResourceMonitor<>(displayMonitor, threadName, errorLog, OpxlClientComponents.class,
-                                ReddalComponents.OPXL_SPREAD_PREMIUM_WRITER);
-                final PremiumCalculator premiumCalc =
-                        new PremiumCalculator(displaySelectIO, premiumConfig, premiumMonitor, depthBookSubscriber);
-                selectIO.addDelayedAction(1000, premiumCalc::recalcAll);
+                final PremiumCalculator premiumCalc = new PremiumCalculator(depthBookSubscriber, channels.spreadnoughtPremiums);
+                displaySelectIO.addDelayedAction(1000, premiumCalc::recalcAll);
 
                 final LadderPresenter ladderPresenter =
                         getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, fxCalc, depthBookSubscriber, ewokBaseURL,

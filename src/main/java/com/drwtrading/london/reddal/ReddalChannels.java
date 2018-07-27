@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
+import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.reddal.data.LaserLineValue;
@@ -22,6 +23,7 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.pks.PKSExposure;
+import com.drwtrading.london.reddal.premium.Premium;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
@@ -100,6 +102,7 @@ class ReddalChannels {
     final TypedChannel<PicardRow> picardRows;
     final TypedChannel<PicardRow> yodaPicardRows;
     final TypedChannel<LeanDef> leanDefs;
+    final TypedChannel<Premium> spreadnoughtPremiums;
 
     ReddalChannels(final ChannelFactory channelFactory) {
 
@@ -151,8 +154,9 @@ class ReddalChannels {
 
         this.picardRows = create(PicardRow.class);
         this.yodaPicardRows = create(PicardRow.class);
-        leanDefs = create(LeanDef.class);
-        rfqStockAlerts = create(StockAlert.class);
+        this.leanDefs = create(LeanDef.class);
+        this.rfqStockAlerts = create(StockAlert.class);
+        this.spreadnoughtPremiums = create(Premium.class);
     }
 
     private <T> TypedChannel<T> create(final Class<T> clazz) {
