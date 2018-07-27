@@ -110,8 +110,8 @@ body#search_page {
 #orderSummaryHoverBox {
 	display: none;
 	position: absolute;
-	background-color: lightpink;
-	color: black;
+	background-color: darkgreen;
+	color: white;
 	padding: 1px;
 }
 
@@ -139,6 +139,14 @@ body#search_page {
 
 .bid_color {
 	border-top: solid 1px blue;
+}
+
+.bid_order {
+	background-color: rgba(0, 0, 255, 0.25);
+}
+
+.ask_order {
+	background-color: rgba(255, 0, 0, 0.25);
 }
 
 .ask_color {
