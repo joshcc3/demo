@@ -61,7 +61,7 @@ public class PremiumCalculator implements IPremiumCalc {
         if (theo.isValid() && 0 != theo.getMid() && null != book && book.isValid()) {
 
             final IBookLevel bestBid = book.getBestBid();
-            final IBookLevel bestAsk = book.getBestBid();
+            final IBookLevel bestAsk = book.getBestAsk();
 
             if (null != bestBid && null != bestAsk) {
 
