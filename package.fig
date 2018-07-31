@@ -17,11 +17,11 @@ config default
 	include drw.london.eeif-nibbler-transport/67
 	include drw.london.eeif-opxl-client/5
 	include drw.london.eeif-position-transport/112
-	include drw.london.eeif-stack-transport/124
+	include drw.london.eeif-stack-transport/125
 	include drw.london.eeif-yoda-transport/93
 	include drw.london.eeif-indy-transport/210
 
-	include drw.eeif.fees/43
+	include drw.eeif.fees/44
 
 	# Libraries and containers
 	include google.guava/r06
