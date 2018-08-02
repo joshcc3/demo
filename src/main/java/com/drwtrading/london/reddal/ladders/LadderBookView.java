@@ -1112,7 +1112,7 @@ public class LadderBookView implements ILadderBoard {
             } else if (label.startsWith(DataKey.PRICE.key)) {
                 pricingModes.next();
             } else if (label.equals(HTML.VOLUME + '0')) {
-                view.popUp("/fx#" + ((double) centeredPrice / Constants.NORMALISING_FACTOR) + " " + marketData.getBook().getCCY().name(),
+                view.popUp("/fx#" + ((double) centeredPrice / Constants.NORMALISING_FACTOR) + " " + marketData.getBook().getCCY().major.name(),
                         null, 245, 332);
             } else if (label.startsWith(HTML.VOLUME)) {
                 view.launchBasket(symbol);
