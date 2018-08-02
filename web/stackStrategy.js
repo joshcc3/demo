@@ -1,6 +1,6 @@
-var ws;
+let ws;
 
-var filters = [];
+let filters = [];
 
 $(function () {
 
@@ -12,24 +12,24 @@ $(function () {
 
 	ws.send("subscribe");
 
-	var creationRow = $("#creationRow");
+	const creationRow = $("#creationRow");
 	creationRow.find("input").each(setupSymbolInput);
 
-	var submit = creationRow.find(".button button");
+	const submit = creationRow.find(".button button");
 	submit.off("click").click(function () {
 
-		var quoteSymbol = creationRow.find("input[name=quote]").val();
-		var forNibbler = creationRow.find("#hostNibblers").find("option:selected").text();
-		var leanInstType = creationRow.find("#leanInstID").find("option:selected").text();
-		var leanSymbol = creationRow.find("input[name=lean]").val();
-        const additiveSymbol = childCreationRow.find("input[name=additive]").val();
+		const quoteSymbol = creationRow.find("input[name=quote]").val();
+		const forNibbler = creationRow.find("#hostNibblers").find("option:selected").text();
+		const leanInstType = creationRow.find("#leanInstID").find("option:selected").text();
+		const leanSymbol = creationRow.find("input[name=lean]").val();
+		const additiveSymbol = creationRow.find("input[name=additive]").val();
 
-        ws.send(command("submitSymbol", [forNibbler, quoteSymbol, leanInstType, leanSymbol, additiveSymbol]));
+		ws.send(command("submitSymbol", [forNibbler, quoteSymbol, leanInstType, leanSymbol, additiveSymbol]));
 	});
 
 	$("body").unbind("dblclick").bind("dblclick", showAdmin);
 
-	var instTypeFilterList = $("#instTypesFilter");
+	const instTypeFilterList = $("#instTypesFilter");
 	instTypeFilterList.val("ALL");
 	instTypeFilterList.change(updateFilters);
 	updateFilters();
@@ -37,10 +37,9 @@ $(function () {
 
 function updateFilters() {
 
-
 	filters = [];
 
-	var instTypeFilterList = $("#instTypesFilter");
+	const instTypeFilterList = $("#instTypesFilter");
 	instTypeFilterList.find(":selected").each(function (i, selected) {
 		filters[i] = new RegExp($(selected).attr("data"));
 		refreshAllFilteredRows();
@@ -49,7 +48,7 @@ function updateFilters() {
 
 function refreshAllFilteredRows() {
 
-	var allRows = $("#exchanges").find(".row:not(.header)");
+	const allRows = $("#exchanges").find(".row:not(.header)");
 
 	allRows.each(function (i, row) {
 		row = $(row);
@@ -59,9 +58,9 @@ function refreshAllFilteredRows() {
 
 function isFiltered(row) {
 
-	var source = row.find(".instType").text();
+	const source = row.find(".instType").text();
 
-	var filtered = true;
+	let filtered = true;
 	filters.forEach(function (filter) {
 		if (source.match(filter)) {
 			filtered = false;
@@ -72,8 +71,8 @@ function isFiltered(row) {
 
 function compareOptionRow(a, b) {
 
-	var aName = a.text();
-	var bName = b.text();
+	const aName = a.text();
+	const bName = b.text();
 
 	return aName < bName ? -1 : aName == bName ? 0 : 1;
 }
@@ -81,22 +80,22 @@ function compareOptionRow(a, b) {
 function setupSymbolInput(i, input) {
 
 	input = $(input);
-	var type = input.attr("name");
+	const type = input.attr("name");
 
 	input.on("input", function () {
-		var symbol = input.val();
+		const symbol = input.val();
 		ws.send(command("checkInst", [type, symbol]));
 	});
 }
 
 function addInstType(instTypes) {
 
-	var instTypeCombo = $("#leanInstID");
+	const instTypeCombo = $("#leanInstID");
 	$(instTypeCombo).find("option").remove();
 
-	var instTypeFilterList = $("#instTypesFilter");
-	var allFilter = instTypeFilterList.find("option[value=\"ALL\"]");
-	var unwantedFilters = instTypeFilterList.find("option");
+	const instTypeFilterList = $("#instTypesFilter");
+	const allFilter = instTypeFilterList.find("option[value=\"ALL\"]");
+	const unwantedFilters = instTypeFilterList.find("option");
 	unwantedFilters.remove();
 	instTypeFilterList.append(allFilter);
 
@@ -104,12 +103,12 @@ function addInstType(instTypes) {
 
 	instTypes.forEach(function (instType) {
 
-		var option = $("<option value=\"" + instType + "\">" + instType + "</option>");
+		const option = $("<option value=\"" + instType + "\">" + instType + "</option>");
 		option.addClass(instType);
 		option.attr("data", instType);
 		instTypeCombo.append(option);
 
-		var filterOption = $("<option value=\"" + instType + "\">" + instType + "</option>");
+		const filterOption = $("<option value=\"" + instType + "\">" + instType + "</option>");
 		filterOption.addClass(instType);
 		filterOption.attr("data", instType);
 		addSortedDiv(instTypeFilterList.find("option"), filterOption, compareOptionRow);
@@ -121,11 +120,11 @@ function addInstType(instTypes) {
 
 function addAvailableNibblers(nibblers) {
 
-	var nibblersCombo = $("#hostNibblers");
+	const nibblersCombo = $("#hostNibblers");
 	$(nibblersCombo).find("option").remove();
 	nibblers.forEach(function (nibbler) {
 
-		var option = $("<option value=\"" + nibbler + "\">" + nibbler + "</option>");
+		const option = $("<option value=\"" + nibbler + "\">" + nibbler + "</option>");
 		option.addClass(nibbler);
 		option.attr("data", nibbler);
 		nibblersCombo.append(option);
@@ -134,14 +133,14 @@ function addAvailableNibblers(nibblers) {
 
 function noInstID(type) {
 
-	var infoRow = $("#" + type + "Info");
+	const infoRow = $("#" + type + "Info");
 	infoRow.toggleClass("unknown", true);
 	infoRow.find("div").text("");
 }
 
 function setInstID(type, isin, ccy, mic) {
 
-	var infoRow = $("#" + type + "Info");
+	const infoRow = $("#" + type + "Info");
 	infoRow.toggleClass("unknown", false);
 	infoRow.find(".isin").text(isin);
 	infoRow.find(".ccy").text(ccy);
@@ -149,7 +148,7 @@ function setInstID(type, isin, ccy, mic) {
 }
 
 function removeAll(nibblerName) {
-	var table = getExchangeTable(nibblerName);
+	const table = getExchangeTable(nibblerName);
 	table.find(".dataRow").remove();
 	setOrderCount(nibblerName);
 }
@@ -158,11 +157,11 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 				isQuoteInstDefEventAvailable, isQuoteBookAvailable, isLeanBookAvailable, isFXAvailable, isAdditiveAvailable,
 				selectedConfigType, additiveSymbol) {
 
-	var rowID = nibblerName + strategyID;
-	var row = $("#" + rowID);
+	const rowID = nibblerName + strategyID;
+	let row = $("#" + rowID);
 	if (row.length < 1) {
 
-		var exchangeTable = getExchangeTable(nibblerName);
+		const exchangeTable = getExchangeTable(nibblerName);
 		row = exchangeTable.find(".header").clone();
 		row.removeClass("header");
 		row.attr("id", rowID);
@@ -174,14 +173,14 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 			d.text("");
 		});
 
-		var killSymbol = row.find(".killStrategy button");
+		const killSymbol = row.find(".killStrategy button");
 		killSymbol.text("kill");
 		killSymbol.off("click").click(function () {
 			ws.send(command("killSymbol", [nibblerName, quoteSymbol]));
 		});
 	}
 
-	var quoteSymbolCell = setCellData(row, ".quote.symbol", quoteSymbol);
+	const quoteSymbolCell = setCellData(row, ".quote.symbol", quoteSymbol);
 	quoteSymbolCell.unbind().bind("click", function () {
 		launchLadder(quoteSymbol);
 	});
@@ -189,7 +188,7 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 	setCellData(row, ".quote.ccy", quoteCCY);
 	setCellData(row, ".quote.mic", quoteMIC);
 
-	var leanSymbolCell = setCellData(row, ".lean.symbol", leanSymbol);
+	const leanSymbolCell = setCellData(row, ".lean.symbol", leanSymbol);
 	leanSymbolCell.unbind().bind("click", function () {
 		launchLadder(leanSymbol);
 	});
@@ -214,15 +213,15 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 
 function setOrderCount(nibblerName) {
 
-	var nibbler = $("#" + nibblerName);
-	var orderCountDiv = nibbler.find(".orderCount");
-	var orders = nibbler.find(".exchange .row").length - 1;
+	const nibbler = $("#" + nibblerName);
+	const orderCountDiv = nibbler.find(".orderCount");
+	const orders = nibbler.find(".exchange .row").length - 1;
 	orderCountDiv.text(orders);
 }
 
 function getExchangeTable(nibblerName) {
 
-	var nibbler = $("#" + nibblerName);
+	let nibbler = $("#" + nibblerName);
 	if (nibbler.length < 1) {
 
 		nibbler = $("#templateNibbler").clone();
@@ -231,15 +230,15 @@ function getExchangeTable(nibblerName) {
 
 		nibbler.find(".nibblerName").text(nibblerName);
 
-		var exchangeBlock = nibbler.find(".exchange");
+		const exchangeBlock = nibbler.find(".exchange");
 		nibbler.find(".serverDetails").unbind().bind("click", function () {
 			exchangeBlock.toggleClass("hidden", !exchangeBlock.hasClass("hidden"))
 		});
 
 		$("#exchanges").append(nibbler);
 
-		var headerRow = nibbler.find(".header.row");
-		var killSymbol = headerRow.find(".killStrategy button");
+		const headerRow = nibbler.find(".header.row");
+		const killSymbol = headerRow.find(".killStrategy button");
 		killSymbol.text("kill inactive");
 		killSymbol.off("click").click(function () {
 			ws.send(command("killInactiveSymbols", [nibblerName]));
@@ -250,7 +249,7 @@ function getExchangeTable(nibblerName) {
 
 function setCellData(row, cellID, value) {
 
-	var input = row.find(cellID);
+	const input = row.find(cellID);
 	if (typeof value != "undefined") {
 		input.attr("data", value);
 		input.text(value);
@@ -263,12 +262,12 @@ function setCellData(row, cellID, value) {
 
 function setBoolData(row, cellID, value) {
 
-	var input = row.find(cellID);
+	const input = row.find(cellID);
 	input.toggleClass("isTrue", value);
 }
 
 function showAdmin(event) {
-	var adminDiv = $("#adminBlock");
+	const adminDiv = $("#adminBlock");
 	if (event.ctrlKey) {
 		adminDiv.toggleClass("hideAdmin", !adminDiv.hasClass("hideAdmin"));
 	} else {

@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.stacks.family;
 
-import com.drwtrading.london.eeif.stack.manager.relations.IStackFamily;
 import com.drwtrading.london.eeif.stack.manager.relations.StackChildMinder;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
@@ -39,7 +38,18 @@ import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -68,7 +78,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     private final WebSocketViews<IStackFamilyUI> views;
     private final Map<String, HashSet<IStackFamilyUI>> userViews;
 
-    private final Calendar expiryCaledar;
+    private final Calendar expiryCal;
     private final FutureExpiryCalc expiryCalc;
 
     private final Map<String, String> tradableSymbols;
@@ -94,7 +104,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     private double globalPriceOffsetBPS;
 
     StackFamilyView(final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
-                    final InstType displayableInstType) {
+            final InstType displayableInstType) {
 
         this.contractSetGenerator = contractSetGenerator;
         this.isSecondaryView = isSecondaryView;
@@ -102,7 +112,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         this.userViews = new HashMap<>();
 
-        this.expiryCaledar = DateTimeUtil.getCalendar();
+        this.expiryCal = DateTimeUtil.getCalendar();
         this.expiryCalc = new FutureExpiryCalc(0);
 
         this.tradableSymbols = new HashMap<>();
@@ -128,8 +138,6 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
 
     }
-
-
 
     private boolean isFamilyDisplayable(final String familyName) {
 
@@ -228,8 +236,8 @@ public class StackFamilyView implements IStackRelationshipListener {
                     backMonths.addSymbol(symbol);
                 }
 
-                expiryCalc.setToRollDate(expiryCaledar, symbol);
-                final int calendarMonthCode = expiryCaledar.get(Calendar.MONTH);
+                expiryCalc.setToRollDate(expiryCal, symbol);
+                final int calendarMonthCode = expiryCal.get(Calendar.MONTH);
                 final ExpiryMonthCodes monthCode = ExpiryMonthCodes.getCode(calendarMonthCode);
 
                 final StackChildFilter monthCodesFilter = getFilter(monthCode.name(), EXPIRY_FILTER_GROUP);
@@ -324,8 +332,8 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @Override
     public boolean updateRelationship(final String source, final long relationshipID, final String childSymbol, final String parentSymbol,
-                                      final double bidPriceOffset, final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier,
-                                      final int familyToChildRatio) {
+            final double bidPriceOffset, final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier,
+            final int familyToChildRatio) {
 
         for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> familyRelations : families.entrySet()) {
 
@@ -613,7 +621,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void createChildStack(final String nibblerName, final String quoteSymbol, final String leanInstrumentType,
-                                 final String leanSymbol, final String additiveSymbol, final WebSocketInboundData data) {
+            final String leanSymbol, final String additiveSymbol, final WebSocketInboundData data) {
 
         final StackClientHandler strategyClient = nibblerClients.get(nibblerName);
         if (null != strategyClient) {
@@ -836,8 +844,8 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void setRelationship(final String childSymbol, final String bidPriceOffsetStr, final String bidQtyMultiplierText,
-                                final String askPriceOffsetStr, final String askQtyMultiplierText, final String familyToChildRatioText,
-                                final WebSocketInboundData data) {
+            final String askPriceOffsetStr, final String askQtyMultiplierText, final String familyToChildRatioText,
+            final WebSocketInboundData data) {
 
         try {
             final double bidPriceOffset = Double.parseDouble(bidPriceOffsetStr);
@@ -923,7 +931,8 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void updateOffsets(final String familySymbol, final Integer bpsWider, final Boolean skipNonDefaults, final WebSocketInboundData data) {
+    public void updateOffsets(final String familySymbol, final Integer bpsWider, final Boolean skipNonDefaults,
+            final WebSocketInboundData data) {
 
         for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> family : families.entrySet()) {
             try {
@@ -938,7 +947,8 @@ public class StackFamilyView implements IStackRelationshipListener {
                 if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
 
                     final Map<String, StackUIRelationship> children = family.getValue();
-                    final List<String> childSymbols = children.keySet().stream().filter(childData::containsKey).collect(Collectors.toList());
+                    final List<String> childSymbols =
+                            children.keySet().stream().filter(childData::containsKey).collect(Collectors.toList());
 
                     boolean familyMatchesDefaults = true;
 
@@ -963,7 +973,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                         }
                         communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset - bpsWider, offset + bpsWider);
                         SearchResult searchResult = searchResults.get(childSymbol);
-                        if (null != searchResult && searchResult.mdSource ==  MDSource.RFQ) {
+                        if (null != searchResult && searchResult.mdSource == MDSource.RFQ) {
                             communityManager.setChildQtyMultipliers(SOURCE_UI, childSymbol, 10, 10);
                         }
                     }
@@ -977,6 +987,7 @@ public class StackFamilyView implements IStackRelationshipListener {
         }
 
     }
+
     @FromWebSocketView
     public void orphanChild(final String childSymbol, final WebSocketInboundData data) {
 
@@ -1172,7 +1183,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void setChildSelectedConfig(final String familyName, final String childSymbol, final String configType,
-                                       final WebSocketInboundData data) {
+            final WebSocketInboundData data) {
 
         final StackConfigType stackConfigType = StackConfigType.valueOf(configType);
         communityManager.setChildSelectedConfig(SOURCE_UI, familyName, childSymbol, stackConfigType);
@@ -1180,7 +1191,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void setStackEnabled(final String familyName, final String bookSide, final String stack, final boolean isEnabled,
-                                final WebSocketInboundData data) {
+            final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
@@ -1215,7 +1226,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void setFilteredStackEnabled(final String filters, final String bookSide, final String stack, final boolean isEnabled,
-                                        final WebSocketInboundData data) {
+            final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
@@ -1230,7 +1241,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void setChildStackEnabled(final String familyName, final String childSymbol, final String bookSide, final String stack,
-                                     final boolean isEnabled, final WebSocketInboundData data) {
+            final boolean isEnabled, final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
@@ -1238,7 +1249,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     private void setChildStackEnabled(final String familyName, final String childSymbol, final BookSide side, final StackType stackType,
-                                      final boolean isEnabled) {
+            final boolean isEnabled) {
 
         if (childData.containsKey(childSymbol)) {
             try {

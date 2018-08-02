@@ -140,7 +140,8 @@ public class StackStrategiesPresenter {
     }
 
     @FromWebSocketView
-    public void submitSymbol(final String nibblerName, final String quoteSymbol, final String leanInstrumentType, final String leanSymbol, final String additiveSymbol) {
+    public void submitSymbol(final String nibblerName, final String quoteSymbol, final String leanInstrumentType, final String leanSymbol,
+            final String additiveSymbol) {
 
         final StackClientHandler strategyClient = strategyClients.get(nibblerName);
         if (null != strategyClient) {
