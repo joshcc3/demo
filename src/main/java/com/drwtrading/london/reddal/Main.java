@@ -439,8 +439,8 @@ public class Main {
                 channels.displaySymbol, webApp);
 
         // Spreadnought Premium OPXL publisher
-        {
-            final ConfigGroup premiumConfig = root.getGroup("premiumOPXL");
+        final ConfigGroup premiumConfig = root.getEnabledGroup("premiumOPXL");
+        if (null != premiumConfig) {
             final IResourceMonitor<OpxlClientComponents> premiumMonitor =
                     new ExpandedDetailResourceMonitor<>(app.monitor, "Premium Opxl", errorLog, OpxlClientComponents.class,
                             ReddalComponents.OPXL_SPREAD_PREMIUM_WRITER);
