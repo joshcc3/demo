@@ -137,6 +137,7 @@ public class LadderView implements UiEventHandler {
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
     private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
     private final Predicate<String> symbolExists;
+    private final Map<String, String> symbolDesc;
     private final LadderHTMLTable ladderHTMLKeys;
     private final DecimalFormat twoDF;
 
@@ -162,17 +163,18 @@ public class LadderView implements UiEventHandler {
     private GoingExState exState = GoingExState.Unknown;
 
     LadderView(final IResourceMonitor<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view,
-            final String ewokBaseURL, final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-            final LadderOptions ladderOptions, final FXCalc<?> fxCalc, final FeesCalc feesCalc, final DecimalFormat feeDF,
-            final TradingStatusForAll tradingStatusForAll, final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher,
-            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-            final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
-            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
-            final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
-            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Predicate<String> symbolExists) {
+               final String ewokBaseURL, final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+               final LadderOptions ladderOptions, final FXCalc<?> fxCalc, final FeesCalc feesCalc, final DecimalFormat feeDF,
+               final TradingStatusForAll tradingStatusForAll, final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher,
+               final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
+               final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+               final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
+               final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+               final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
+               final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
+               final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
+               final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Predicate<String> symbolExists,
+               final Map<String, String> symbolDesc) {
 
         this.monitor = monitor;
 
@@ -199,6 +201,7 @@ public class LadderView implements UiEventHandler {
         this.userCycleContractPublisher = userCycleContractPublisher;
         this.userWorkspaceRequests = userWorkspaceRequests;
         this.symbolExists = symbolExists;
+        this.symbolDesc = symbolDesc;
         this.ladderHTMLKeys = new LadderHTMLTable();
         this.twoDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2);
 
@@ -295,6 +298,7 @@ public class LadderView implements UiEventHandler {
 
         view.draw(levels);
         ui.txt(HTML.SYMBOL, symbol);
+        view.setDescription(symbolDesc.getOrDefault(symbol, symbol));
 
         ui.cls(HTML.LASER + "BID", CSSClass.INVISIBLE, true);
         ui.cls(HTML.LASER + "GREEN", CSSClass.INVISIBLE, true);

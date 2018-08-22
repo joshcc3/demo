@@ -1,18 +1,20 @@
 package com.drwtrading.london.reddal.symbols;
 
-import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.indy.transport.cache.IIndyCacheListener;
 import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.indy.transport.data.IndexDef;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
+import org.jetlang.channels.Publisher;
 
 public class IndyClient implements IIndyCacheListener {
 
-    private final TypedChannel<InstrumentDef> instDefs;
 
-    public IndyClient(final TypedChannel<InstrumentDef> instDefs) {
+    private final Publisher<InstrumentDef> instDefs;
+    private final Publisher<SymbolDescription> symbolDescriptions;
 
+    public IndyClient(final Publisher<InstrumentDef> instDefs, Publisher<SymbolDescription> symbolDescriptions) {
         this.instDefs = instDefs;
+        this.symbolDescriptions = symbolDescriptions;
     }
 
     @Override
@@ -28,6 +30,9 @@ public class IndyClient implements IIndyCacheListener {
 
     @Override
     public boolean setETFDef(final ETFDef etfDef) {
+        for (InstrumentDef instDef : etfDef.instDefs) {
+            symbolDescriptions.publish(new SymbolDescription(instDef.bbgCode, etfDef.indexDef.name));
+        }
         return true;
     }
 }

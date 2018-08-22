@@ -23,6 +23,10 @@ $(function () {
 	});
 });
 
+function setDescription(description) {
+    $("#symbol").attr("title", description);
+}
+
 function draw(levels) {
 
 	var rows = $("#rows");

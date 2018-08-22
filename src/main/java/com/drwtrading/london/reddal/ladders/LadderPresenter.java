@@ -47,6 +47,7 @@ import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.symbols.SymbolDescription;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
@@ -104,6 +105,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Map<String, SymbolStackData> stackBySymbol;
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap;
     private final Map<String, SearchResult> refData;
+    private final Map<String, String> symbolDesc = new HashMap<>();
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher;
@@ -200,7 +202,7 @@ public class LadderPresenter implements IStackPresenterCallback {
                         feesCalc, feeDF, tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, trace,
                         ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
                         orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
-                        disableSiblingsCmdPublisher, refData::containsKey);
+                        disableSiblingsCmdPublisher, refData::containsKey, symbolDesc);
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }
@@ -505,6 +507,11 @@ public class LadderPresenter implements IStackPresenterCallback {
     public void on(final OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx) {
         this.isinsGoingEx = isinsGoingEx;
         viewBySocket.values().forEach(l -> l.setIsinsGoingEx(isinsGoingEx));
+    }
+
+    @Subscribe
+    public void on(final SymbolDescription description) {
+        symbolDesc.put(description.symbol, description.description);
     }
 
     public long flushAllLadders() {

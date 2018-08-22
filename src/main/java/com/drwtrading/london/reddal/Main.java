@@ -187,7 +187,6 @@ import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 
 import java.io.IOException;
-import java.nio.channels.Channels;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -569,6 +568,7 @@ public class Main {
             fiberBuilder.subscribe(ui, ws);
         }
 
+        // Shredder view
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
 
             final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
@@ -941,17 +941,16 @@ public class Main {
         }
 
         // Indy
-        final ConfigGroup indyConfig = root.getGroup("indy");
-
-        final IIndyCacheListener indyListener = new IndyClient(channels.instDefs);
-
-        final String indyUsername = indyConfig.getString("username");
-
-        final IResourceMonitor<IndyTransportComponents> indyMonitor =
-                new ExpandedDetailResourceMonitor<>(monitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
-        final TransportTCPKeepAliveConnection<?, ?> indyConnection =
-                IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
-        selectIO.execute(indyConnection::restart);
+        {
+            final ConfigGroup indyConfig = root.getGroup("indy");
+            final IIndyCacheListener indyListener = new IndyClient(channels.instDefs, channels.symbolDescs);
+            final String indyUsername = indyConfig.getString("username");
+            final IResourceMonitor<IndyTransportComponents> indyMonitor =
+                    new ExpandedDetailResourceMonitor<>(monitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
+            final TransportTCPKeepAliveConnection<?, ?> indyConnection =
+                    IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
+            selectIO.execute(indyConnection::restart);
+        }
 
         setupYodaSignals(selectIO, monitor, errorLog, root, app.appName, channels.stockAlerts, channels.yodaPicardRows);
 
@@ -1067,7 +1066,7 @@ public class Main {
                 channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.recenterLaddersForUser,
                 channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand, channels.replaceCommand,
                 channels.userCycleContractPublisher, channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults,
-                channels.isinsGoingEx);
+                channels.isinsGoingEx, channels.symbolDescs);
 
         channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);
         channels.ladderClickTradingIssues.subscribe(fiberBuilder.getFiber(), ladderPresenter::displayTradeIssue);
