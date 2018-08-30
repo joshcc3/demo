@@ -41,6 +41,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderType;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.SubmitOrderCmd;
+import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
@@ -334,6 +335,9 @@ public class LadderBookView implements ILadderBoard {
 
         ui.clickable('#' + HTML.YESTERDAY_SETTLE);
         ui.clickable('#' + HTML.LAST_TRADE_COD);
+
+        ui.clickable('#' + HTML.PKS_EXPOSURE);
+        ui.clickable('#' + HTML.PKS_POSITION);
 
         ui.cls(HTML.RANDOM_RELOAD, CSSClass.INVISIBLE, false);
 
@@ -1112,12 +1116,25 @@ public class LadderBookView implements ILadderBoard {
             } else if (label.startsWith(DataKey.PRICE.key)) {
                 pricingModes.next();
             } else if (label.equals(HTML.VOLUME + '0')) {
-                view.popUp("/fx#" + ((double) centeredPrice / Constants.NORMALISING_FACTOR) + " " + marketData.getBook().getCCY().major.name(),
+                view.popUp(
+                        "/fx#" + ((double) centeredPrice / Constants.NORMALISING_FACTOR) + " " + marketData.getBook().getCCY().major.name(),
                         null, 245, 332);
             } else if (label.startsWith(HTML.VOLUME)) {
                 view.launchBasket(symbol);
             } else if (label.equals(HTML.YESTERDAY_SETTLE) || label.equals(HTML.LAST_TRADE_COD)) {
                 showYesterdaySettleInsteadOfCOD = !showYesterdaySettleInsteadOfCOD;
+            } else if (label.equals(HTML.PKS_EXPOSURE)) {
+
+                final PKSExposure pksExposure = metaData.getPKSData();
+                if (null != pksExposure) {
+                    clickTradingBoxQty = Math.abs((int) pksExposure.exposure);
+                }
+            } else if (label.equals(HTML.PKS_POSITION)) {
+
+                final PKSExposure pksExposure = metaData.getPKSData();
+                if (null != pksExposure) {
+                    clickTradingBoxQty = Math.abs((int) pksExposure.position);
+                }
             }
         } else if ("right".equals(button)) {
             if (HTML.BUTTON_CLR.equals(label)) {

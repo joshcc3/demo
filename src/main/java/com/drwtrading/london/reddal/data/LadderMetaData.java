@@ -25,6 +25,7 @@ public class LadderMetaData {
     public String formattedMrPhilNetPosition;
     public String formattedMrPhilVolume;
 
+    private PKSExposure pksData;
     public String pksExposure;
     public String pksPosition;
 
@@ -39,6 +40,8 @@ public class LadderMetaData {
         this.formattedDeskPosition = null;
         this.formattedMrPhilNetPosition = null;
         this.formattedMrPhilVolume = null;
+
+        this.pksData = null;
         this.pksExposure = null;
         this.pksPosition = null;
 
@@ -78,8 +81,13 @@ public class LadderMetaData {
 
     public void onPKSExposure(final DecimalFormat formatter, final PKSExposure data) {
 
+        this.pksData = data;
         this.pksExposure = formatPosition(formatter, data.exposure);
         this.pksPosition = formatPosition(formatter, data.position);
+    }
+
+    public PKSExposure getPKSData() {
+        return pksData;
     }
 
     public void setDisplaySymbol(final DisplaySymbol displaySymbol) {
