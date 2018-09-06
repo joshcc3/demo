@@ -1,16 +1,14 @@
 package com.drwtrading.london.reddal.premium;
 
 import com.drwtrading.london.eeif.opxl.OpxlClient;
-import com.drwtrading.london.eeif.opxl.OpxlClientComponents;
 import com.drwtrading.london.eeif.opxl.OpxlData;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
+import com.drwtrading.london.reddal.ReddalComponents;
 
-import java.io.IOException;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,20 +23,17 @@ public class PremiumOPXLWriter {
     private static final int PREMIUM_COL = 1;
     private static final long PUBLISH_INTERVAL = 5000;
 
-    private final IResourceMonitor<OpxlClientComponents> monitor;
-    private final OpxlClient writer;
+    private final OpxlClient<ReddalComponents> writer;
     private final String topic;
 
     private final Map<String, Object[]> rows;
 
     private Object[][] writeTable;
 
-    public PremiumOPXLWriter(final SelectIO selectIO, final ConfigGroup config, final IResourceMonitor<OpxlClientComponents> monitor)
+    public PremiumOPXLWriter(final SelectIO selectIO, final ConfigGroup config, final IResourceMonitor<ReddalComponents> monitor)
             throws ConfigException {
 
-        this.monitor = monitor;
-
-        this.writer = new OpxlClient(selectIO, config, monitor, Collections.emptySet(), null);
+        this.writer = new OpxlClient<>(selectIO, config, monitor, ReddalComponents.OPXL_SPREAD_PREMIUM_WRITER);
         this.writer.start();
 
         final String topicPrefix = config.getString(TOPIC_PREFIX_PARAM);
@@ -77,15 +72,7 @@ public class PremiumOPXLWriter {
 
         final OpxlData data = new OpxlData(topic, writeTable);
 
-        //TODO: Rad to handle the exception in library. :o)
-
-        try {
-            writer.publish(data);
-            monitor.setOK(OpxlClientComponents.OPXL_READ);
-        } catch (final IOException e) {
-            monitor.logError(OpxlClientComponents.OPXL_READ, "Failed to write [" + topic + "].", e);
-        }
-        
+        writer.publish(data);
         return PUBLISH_INTERVAL;
     }
 }

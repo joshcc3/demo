@@ -11,7 +11,6 @@ import com.drwtrading.london.eeif.nibbler.transport.NibblerTransportComponents;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerCacheFactory;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerTransportCaches;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
-import com.drwtrading.london.eeif.opxl.OpxlClientComponents;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
 import com.drwtrading.london.eeif.position.transport.PositionTransportComponents;
 import com.drwtrading.london.eeif.position.transport.cache.PositionCacheFactory;
@@ -440,10 +439,7 @@ public class Main {
         // Spreadnought Premium OPXL publisher
         final ConfigGroup premiumConfig = root.getEnabledGroup("premiumOPXL");
         if (null != premiumConfig) {
-            final IResourceMonitor<OpxlClientComponents> premiumMonitor =
-                    new ExpandedDetailResourceMonitor<>(app.monitor, "Premium Opxl", errorLog, OpxlClientComponents.class,
-                            ReddalComponents.OPXL_SPREAD_PREMIUM_WRITER);
-            final PremiumOPXLWriter writer = new PremiumOPXLWriter(selectIO, premiumConfig, premiumMonitor);
+            final PremiumOPXLWriter writer = new PremiumOPXLWriter(selectIO, premiumConfig, app.monitor);
             channels.spreadnoughtPremiums.subscribe(selectIOFiber, writer::onPremium);
             selectIO.addDelayedAction(1000, writer::flush);
         }

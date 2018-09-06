@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.stacks.family;
 
-import com.drwtrading.london.eeif.stack.manager.relations.StackChildMinder;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
 import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
@@ -883,8 +882,6 @@ public class StackFamilyView implements IStackRelationshipListener {
                         if (childData.containsKey(childSymbol)) {
                             final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
                             communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset, offset);
-                            StackChildMinder child = communityManager.getFamily(familyName).getChild(childSymbol);
-
                         }
                     }
                 }
@@ -952,8 +949,8 @@ public class StackFamilyView implements IStackRelationshipListener {
 
                     boolean familyMatchesDefaults = true;
 
-                    for (String childSymbol : childSymbols) {
-                        StackUIRelationship childData = children.get(childSymbol);
+                    for (final String childSymbol : childSymbols) {
+                        final StackUIRelationship childData = children.get(childSymbol);
                         final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
                         final double bidOffset = Math.abs(childData.bidPriceOffsetBPS);
                         final double askOffset = childData.askPriceOffsetBPS;
@@ -972,7 +969,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                             continue;
                         }
                         communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset - bpsWider, offset + bpsWider);
-                        SearchResult searchResult = searchResults.get(childSymbol);
+                        final SearchResult searchResult = searchResults.get(childSymbol);
                         if (null != searchResult && searchResult.mdSource == MDSource.RFQ) {
                             communityManager.setChildQtyMultipliers(SOURCE_UI, childSymbol, 10, 10);
                         }
