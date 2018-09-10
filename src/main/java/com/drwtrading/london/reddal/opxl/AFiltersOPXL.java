@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.opxl;
 
+import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -11,14 +12,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-abstract class AFiltersOPXL extends AOpxlReader<Collection<StackChildFilter>> {
+abstract class AFiltersOPXL extends AOpxlLoggingReader<ReddalComponents, Collection<StackChildFilter>> {
 
     private static final String SYMBOL_COL = "Symbol";
 
-    protected AFiltersOPXL(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor, final ReddalComponents component,
-            final String topic, final Path path) {
+    AFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<ReddalComponents> monitor,
+            final ReddalComponents component, final String topic, final Path logDir) {
 
-        super(selectIO, monitor, component, topic, path);
+        super(opxlSelectIO, callbackSelectIO, monitor, component, topic, logDir);
     }
 
     @Override
@@ -53,7 +54,7 @@ abstract class AFiltersOPXL extends AOpxlReader<Collection<StackChildFilter>> {
 
                 final Object[] row = opxlTable[i];
 
-                if (isColsPresent(row, symbolCol)) {
+                if (testColsPresent(row, symbolCol)) {
 
                     final String symbol = row[symbolCol].toString();
 

@@ -97,6 +97,7 @@ import com.drwtrading.london.reddal.obligations.ObligationPresenter;
 import com.drwtrading.london.reddal.obligations.RFQObligationSet;
 import com.drwtrading.london.reddal.opxl.EtfStackFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
+import com.drwtrading.london.reddal.opxl.OpxlFXCalcUpdater;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.opxl.SpreadnoughtFiltersOPXL;
@@ -109,7 +110,6 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
-import com.drwtrading.london.reddal.picard.OpxlFXCalcUpdater;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.picard.PicardSounds;
@@ -148,7 +148,6 @@ import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.FXMDClient;
 import com.drwtrading.london.reddal.util.FileLogger;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
-import com.drwtrading.london.reddal.util.ReconnectingOPXLClient;
 import com.drwtrading.london.reddal.util.SelectIOFiber;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
@@ -175,7 +174,6 @@ import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.sun.jndi.toolkit.url.Uri;
 import eeif.execution.WorkingOrderEvent;
@@ -710,23 +708,24 @@ public class Main {
 
         // Obligations presenter
         if (app.config.getEnabledGroup("obligations") != null) {
-            ConfigGroup config = app.config.getGroup("obligations");
-            Pattern filterRegex = Pattern.compile(config.getString("filterRegex"));
-            FXCalc<?> opxlfxCalc = createOPXLFXCalc(app);
-            MemoryChannel<RFQObligationSet> rfqObligationChannel = new MemoryChannel<>();
-            ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, filterRegex.asPredicate());
-            ObligationOPXL obligationOPXL =
-                    new ObligationOPXL(app.selectIO, app.monitor, ReddalComponents.OBLIGATIONS_RFQ, logDir, rfqObligationChannel::publish);
+            final ConfigGroup config = app.config.getGroup("obligations");
+            final Pattern filterRegex = Pattern.compile(config.getString("filterRegex"));
+            final FXCalc<?> opxlfxCalc = createOPXLFXCalc(app);
+            final MemoryChannel<RFQObligationSet> rfqObligationChannel = new MemoryChannel<>();
+            final ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, filterRegex.asPredicate());
+            final ObligationOPXL obligationOPXL =
+                    new ObligationOPXL(app.selectIO, app.selectIO, app.monitor, ReddalComponents.OBLIGATIONS_RFQ, logDir,
+                            rfqObligationChannel::publish);
             channels.workingOrders.subscribe(
                     new KeyedBatchSubscriber<>(fibers.ui.getFiber(), obligationPresenter::onWorkingOrders, 1, TimeUnit.SECONDS,
                             WorkingOrderUpdateFromServer::key));
-            TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
+            final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
             fibers.ui.subscribe(obligationPresenter, ws, channels.searchResults);
             fibers.ui.getFiber().scheduleWithFixedDelay(obligationPresenter::update, 1, 1, TimeUnit.SECONDS);
             fibers.ui.subscribe(obligationPresenter::updateObligations, rfqObligationChannel);
             fibers.ui.subscribe(obligationPresenter::onWorkingOrderConnected, channels.workingOrderConnectionEstablished);
-            fibers.ui.execute(obligationOPXL::connectToOpxl);
+            fibers.ui.execute(obligationOPXL::start);
         }
 
         final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
@@ -955,10 +954,11 @@ public class Main {
         // Desk Position
         final ConfigGroup deskPositionConfig = root.getEnabledGroup("opxl", "deskposition");
         if (null != deskPositionConfig) {
+
             final Set<String> keys = deskPositionConfig.getSet("keys");
-            new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
-                    new OpxlPositionSubscriber(channels.errorPublisher, channels.deskPositions)::onOpxlData, keys,
-                    fibers.opxlPosition.getFiber(), channels.error);
+            final OpxlPositionSubscriber opxlReader =
+                    new OpxlPositionSubscriber(app.selectIO, app.selectIO, app.monitor, keys, channels.deskPositions);
+            app.addStartUpAction(opxlReader::start);
         }
 
         final ConfigGroup pksConfig = root.getEnabledGroup("pks");
@@ -981,19 +981,21 @@ public class Main {
         // Ladder Text
         final ConfigGroup ladderTextConfig = root.getEnabledGroup("opxl", "laddertext");
         if (null != ladderTextConfig) {
+
             final Set<String> keys = ladderTextConfig.getSet("keys");
-            new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
-                    new OpxlLadderTextSubscriber(channels.errorPublisher, channels.opxlLaserLineData, channels.metaData)::onOpxlData, keys,
-                    fibers.metaData.getFiber(), channels.error);
+            final OpxlLadderTextSubscriber ladderTextReader =
+                    new OpxlLadderTextSubscriber(app.selectIO, app.selectIO, app.monitor, keys, channels.opxlLaserLineData,
+                            channels.metaData);
+            app.addStartUpAction(ladderTextReader::start);
         }
 
-        final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(selectIO, monitor, channels.ultimateParents, logDir);
-        app.addStartUpAction(ultimateParentOPXL::connectToOpxl);
+        final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(selectIO, selectIO, monitor, channels.ultimateParents, logDir);
+        app.addStartUpAction(ultimateParentOPXL::start);
 
         // Ex-dates
-        new ReconnectingOPXLClient(opxlConfig.getString("host"), opxlConfig.getInt("port"),
-                new OpxlExDateSubscriber(channels.errorPublisher, channels.isinsGoingEx)::onOpxlData,
-                ImmutableSet.of(OpxlExDateSubscriber.OPXL_KEY), fibers.opxlPosition.getFiber(), channels.errorPublisher);
+        final OpxlExDateSubscriber isinsGoingEx =
+                new OpxlExDateSubscriber(app.selectIO, app.selectIO, monitor, logDir, channels.isinsGoingEx);
+        app.addStartUpAction(isinsGoingEx::start);
 
         // Logging
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "working-orders.json", channels.errorPublisher),
@@ -1062,7 +1064,8 @@ public class Main {
                 channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.recenterLaddersForUser,
                 channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand, channels.replaceCommand,
                 channels.userCycleContractPublisher, channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults,
-                channels.isinsGoingEx, channels.symbolDescs);
+                channels.symbolDescs);
+        channels.isinsGoingEx.subscribe(fiberBuilder.getFiber(), ladderPresenter::setISINsGoingEx);
 
         channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);
         channels.ladderClickTradingIssues.subscribe(fiberBuilder.getFiber(), ladderPresenter::displayTradeIssue);
@@ -1267,16 +1270,16 @@ public class Main {
             if (isForETF) {
 
                 final EtfStackFiltersOPXL etfStackFiltersOPXL =
-                        new EtfStackFiltersOPXL(app.selectIO, app.monitor, app.logDir, stackFamilyPresenter);
-                app.addStartUpAction(etfStackFiltersOPXL::connectToOpxl);
+                        new EtfStackFiltersOPXL(app.selectIO, app.selectIO, app.monitor, app.logDir, stackFamilyPresenter);
+                app.addStartUpAction(etfStackFiltersOPXL::start);
 
             }
 
             if (asylumFamilies.values().contains(SpreadnoughtFiltersOPXL.FAMILY_NAME)) {
 
                 final SpreadnoughtFiltersOPXL spreadnoughtFiltersOPXL =
-                        new SpreadnoughtFiltersOPXL(app.selectIO, app.monitor, app.logDir, stackFamilyPresenter);
-                app.addStartUpAction(spreadnoughtFiltersOPXL::connectToOpxl);
+                        new SpreadnoughtFiltersOPXL(app.selectIO, app.selectIO, app.monitor, app.logDir, stackFamilyPresenter);
+                app.addStartUpAction(spreadnoughtFiltersOPXL::start);
             }
 
             final TypedChannel<WebSocketControlMessage> familyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
@@ -1412,8 +1415,8 @@ public class Main {
 
         final IResourceMonitor<PicardFXCalcComponents> fxMonitor = new ResourceIgnorer<>();
         final FXCalc<PicardFXCalcComponents> fxCalc = new FXCalc<>(fxMonitor, PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
-        final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(fxCalc, app.selectIO, app.monitor, app.logDir);
-        app.addStartUpAction(opxlFXCalcUpdater::connectToOpxl);
+        final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(app.selectIO, app.selectIO, app.monitor, fxCalc, app.logDir);
+        app.addStartUpAction(opxlFXCalcUpdater::start);
 
         return fxCalc;
     }

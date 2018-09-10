@@ -24,7 +24,6 @@ import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
 import com.drwtrading.london.reddal.fastui.html.HTML;
-import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
@@ -47,6 +46,7 @@ import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
@@ -159,7 +159,7 @@ public class LadderView implements UiEventHandler {
     private LadderBookView bookView;
     private ILadderBoard stackView;
     private ILadderBoard activeView;
-    private OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx;
+    private Set<String> isinsGoingEx;
     private GoingExState exState = GoingExState.Unknown;
 
     LadderView(final IResourceMonitor<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view,
@@ -888,19 +888,20 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    void setIsinsGoingEx(final OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx) {
+    void setIsinsGoingEx(final Set<String> isinsGoingEx) {
         this.isinsGoingEx = isinsGoingEx;
         this.exState = GoingExState.Unknown;
         checkGoingEx();
     }
 
     private void checkGoingEx() {
+
         if (this.exState != GoingExState.Unknown) {
             return;
         }
         GoingExState exState = GoingExState.Unknown;
-        if (isinsGoingEx != null && marketData != null && marketData.getBook() != null) {
-            if (isinsGoingEx.isins.contains(marketData.getBook().getISIN())) {
+        if (null != isinsGoingEx && null != marketData && null != marketData.getBook()) {
+            if (isinsGoingEx.contains(marketData.getBook().getISIN())) {
                 exState = GoingExState.YES;
             } else {
                 exState = GoingExState.NO;

@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
-import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.reddal.data.LaserLineValue;
@@ -12,8 +11,8 @@ import com.drwtrading.london.reddal.ladders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.RecenterLadder;
 import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
+import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
-import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
@@ -91,7 +90,7 @@ class ReddalChannels {
     final TypedChannel<OrderEntryFromServer> orderEntryFromServer;
     final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
     final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
-    final TypedChannel<OpxlExDateSubscriber.IsinsGoingEx> isinsGoingEx;
+    final TypedChannel<ISINsGoingEx> isinsGoingEx;
 
     final TypedChannel<SymbolSelection> symbolSelections;
     final TypedChannel<UltimateParentMapping> ultimateParents;
@@ -145,7 +144,7 @@ class ReddalChannels {
         this.orderEntryFromServer = create(OrderEntryFromServer.class);
         this.orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
         this.orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
-        this.isinsGoingEx = create(OpxlExDateSubscriber.IsinsGoingEx.class);
+        this.isinsGoingEx = create(ISINsGoingEx.class);
 
         this.symbolSelections = create(SymbolSelection.class);
         this.ultimateParents = create(UltimateParentMapping.class);

@@ -1,25 +1,31 @@
 package com.drwtrading.london.reddal.obligations;
 
+import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.reddal.ReddalComponents;
-import com.drwtrading.london.reddal.opxl.AOpxlReader;
 
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class ObligationOPXL extends AOpxlReader<RFQObligationSet> {
+public class ObligationOPXL extends AOpxlLoggingReader<ReddalComponents, RFQObligationSet> {
 
-
-    final static String TOPIC = "eeif(etf_rfq_obligation)";
+    private static final String TOPIC = "eeif(etf_rfq_obligation)";
     public static final RFQObligationSet EMPTY_OBLIGATIONS = new RFQObligationSet(Collections.emptyList(), Collections.emptyMap());
 
-    final Consumer<RFQObligationSet> updates;
+    private final Consumer<RFQObligationSet> updates;
 
-    public ObligationOPXL(SelectIO selectIO, IResourceMonitor<ReddalComponents> monitor, ReddalComponents component, Path path, Consumer<RFQObligationSet> updates) {
-        super(selectIO, monitor, component, TOPIC, path);
+    public ObligationOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<ReddalComponents> monitor,
+            final ReddalComponents component, final Path path, final Consumer<RFQObligationSet> updates) {
+
+        super(opxlSelectIO, callbackSelectIO, monitor, component, TOPIC, path);
         this.updates = updates;
     }
 
@@ -29,38 +35,32 @@ public class ObligationOPXL extends AOpxlReader<RFQObligationSet> {
     }
 
     @Override
-    protected RFQObligationSet parseTable(Object[][] opxlTable) {
+    protected RFQObligationSet parseTable(final Object[][] opxlTable) {
 
-        Map<String, RFQObligation> obligationHashMap = new HashMap<>();
-        Object[] headerRow = opxlTable[0];
+        final Map<String, RFQObligation> obligationHashMap = new HashMap<>();
+        final Object[] headerRow = opxlTable[0];
 
         if (!"symbol".equals(headerRow[0].toString().toLowerCase())) {
             return EMPTY_OBLIGATIONS;
         }
 
-        List<Double> notionals = Arrays.stream(headerRow)
-                .skip(1)
-                .filter(o -> !o.toString().trim().isEmpty())
-                .map(o -> o.toString().toLowerCase().replaceAll("m", "000000"))
-                .map(Double::valueOf)
-                .collect(Collectors.toList());
+        final List<Double> notionals = Arrays.stream(headerRow).skip(1).filter(o -> !o.toString().trim().isEmpty()).map(
+                o -> o.toString().toLowerCase().replaceAll("m", "000000")).map(Double::valueOf).collect(Collectors.toList());
 
-        Arrays.stream(opxlTable)
-                .skip(1)
-                .filter(objects -> objects.length == headerRow.length && !objects[0].toString().isEmpty())
-                .map(Arrays::asList).forEach(objects -> {
-            String symbol = objects.get(0).toString();
-            List<Obligation> obligations = new ArrayList<>();
+        Arrays.stream(opxlTable).skip(1).filter(objects -> objects.length == headerRow.length && !objects[0].toString().isEmpty()).map(
+                Arrays::asList).forEach(objects -> {
+            final String symbol = objects.get(0).toString();
+            final List<Obligation> obligations = new ArrayList<>();
             for (int i = 0; i < notionals.size() && 1 + i < objects.size(); i++) {
-                Object bpsString = objects.get(1 + i);
+                final Object bpsString = objects.get(1 + i);
                 if (bpsString.toString().trim().isEmpty()) {
                     continue;
                 }
-                double bps = Double.valueOf(bpsString.toString());
-                double notional = notionals.get(i);
+                final double bps = Double.valueOf(bpsString.toString());
+                final double notional = notionals.get(i);
                 obligations.add(new Obligation(notional, bps));
             }
-            RFQObligation obligation = new RFQObligation(symbol, obligations);
+            final RFQObligation obligation = new RFQObligation(symbol, obligations);
             obligationHashMap.put(symbol, obligation);
         });
 
@@ -68,17 +68,17 @@ public class ObligationOPXL extends AOpxlReader<RFQObligationSet> {
     }
 
     @Override
-    protected void handleUpdate(RFQObligationSet values) {
+    protected void handleUpdate(final RFQObligationSet prevValue, final RFQObligationSet values) {
         updates.accept(values);
     }
 
     @Override
-    protected void handleError(ReddalComponents component, String msg) {
+    protected void handleError(final ReddalComponents component, final String msg) {
 
     }
 
     @Override
-    protected void handleError(ReddalComponents component, String msg, Throwable t) {
+    protected void handleError(final ReddalComponents component, final String msg, final Throwable t) {
 
     }
 

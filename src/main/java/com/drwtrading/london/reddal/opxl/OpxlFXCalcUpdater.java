@@ -1,5 +1,6 @@
-package com.drwtrading.london.reddal.picard;
+package com.drwtrading.london.reddal.opxl;
 
+import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
@@ -7,7 +8,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ReddalComponents;
-import com.drwtrading.london.reddal.opxl.AOpxlReader;
+import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
@@ -15,7 +16,7 @@ import java.util.Calendar;
 import java.util.EnumMap;
 import java.util.Map;
 
-public class OpxlFXCalcUpdater extends AOpxlReader<Map<CCY, EnumMap<CCY, Double>>> {
+public class OpxlFXCalcUpdater extends AOpxlLoggingReader<ReddalComponents, Map<CCY, EnumMap<CCY, Double>>> {
 
     private static final String TOPIC_PREFIX = "eeif(fx_prices_";
     private static final String TOPIC_SUFFIX = ")";
@@ -27,10 +28,10 @@ public class OpxlFXCalcUpdater extends AOpxlReader<Map<CCY, EnumMap<CCY, Double>
     private final FXCalc<PicardFXCalcComponents> fxCalc;
     private boolean awaitingData = true;
 
-    public OpxlFXCalcUpdater(final FXCalc<PicardFXCalcComponents> fxCalc, final SelectIO selectIO,
-            final IResourceMonitor<ReddalComponents> monitor, final Path path) {
+    public OpxlFXCalcUpdater(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<ReddalComponents> monitor,
+            final FXCalc<PicardFXCalcComponents> fxCalc, final Path path) {
 
-        super(selectIO, monitor, ReddalComponents.OPXL_FX_CALC, getTopic(), path);
+        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_FX_CALC, getTopic(), path);
         this.fxCalc = fxCalc;
     }
 
@@ -97,9 +98,9 @@ public class OpxlFXCalcUpdater extends AOpxlReader<Map<CCY, EnumMap<CCY, Double>
     }
 
     @Override
-    protected void handleUpdate(final Map<CCY, EnumMap<CCY, Double>> fxRates) {
+    protected void handleUpdate(final Map<CCY, EnumMap<CCY, Double>> prevValue, final Map<CCY, EnumMap<CCY, Double>> values) {
 
-        for (final Map.Entry<CCY, ? extends Map<CCY, Double>> rates : fxRates.entrySet()) {
+        for (final Map.Entry<CCY, ? extends Map<CCY, Double>> rates : values.entrySet()) {
 
             final CCY fromCcy = rates.getKey();
 
@@ -109,16 +110,5 @@ public class OpxlFXCalcUpdater extends AOpxlReader<Map<CCY, EnumMap<CCY, Double>
                 fxCalc.setRate(fromCcy, toCcy, 0, true, fxRate, fxRate);
             }
         }
-    }
-
-    private static boolean testColsPresent(final Object[] row, final int... wantedCols) {
-
-        for (int i = 0; i < wantedCols.length; ++i) {
-            final int col = wantedCols[i];
-            if (null == row[col] || "".equals(row[col].toString())) {
-                return false;
-            }
-        }
-        return true;
     }
 }

@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.opxl;
 
+import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -12,7 +13,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UltimateParentOPXL extends AOpxlReader<Collection<UltimateParentMapping>> {
+public class UltimateParentOPXL extends AOpxlLoggingReader<ReddalComponents, Collection<UltimateParentMapping>> {
 
     private static final String TOPIC = "eeif.parent.original";
 
@@ -22,10 +23,12 @@ public class UltimateParentOPXL extends AOpxlReader<Collection<UltimateParentMap
 
     private final Publisher<UltimateParentMapping> ultimateParentPublisher;
 
-    public UltimateParentOPXL(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
-            final Publisher<UltimateParentMapping> ultimateParentPublisher, final Path logPath) {
+    public UltimateParentOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
+            final IResourceMonitor<ReddalComponents> monitor, final Publisher<UltimateParentMapping> ultimateParentPublisher,
+            final Path logPath) {
 
-        super(selectIO, monitor, ReddalComponents.OPXL_ULTIMATE_PARENT, TOPIC, logPath);
+        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_ULTIMATE_PARENT, TOPIC, logPath);
+
         this.ultimateParentPublisher = ultimateParentPublisher;
     }
 
@@ -53,7 +56,7 @@ public class UltimateParentOPXL extends AOpxlReader<Collection<UltimateParentMap
 
                 final Object[] row = opxlTable[i];
 
-                if (isColsPresent(row, childCol, parentCol)) {
+                if (testColsPresent(row, childCol, parentCol)) {
 
                     final String child = row[childCol].toString();
                     final String parent = row[parentCol].toString();
@@ -91,9 +94,9 @@ public class UltimateParentOPXL extends AOpxlReader<Collection<UltimateParentMap
     }
 
     @Override
-    protected void handleUpdate(final Collection<UltimateParentMapping> ultimateParents) {
+    protected void handleUpdate(final Collection<UltimateParentMapping> prevValue, final Collection<UltimateParentMapping> values) {
 
-        for (final UltimateParentMapping ultimateParent : ultimateParents) {
+        for (final UltimateParentMapping ultimateParent : values) {
             ultimateParentPublisher.publish(ultimateParent);
         }
     }

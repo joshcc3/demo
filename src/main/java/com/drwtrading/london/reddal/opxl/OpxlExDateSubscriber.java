@@ -1,50 +1,81 @@
 package com.drwtrading.london.reddal.opxl;
 
+import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
+import com.drwtrading.london.eeif.utils.io.SelectIO;
+import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
-import com.google.common.collect.ImmutableSet;
-import drw.opxl.OpxlData;
+import com.drwtrading.london.eeif.utils.time.IClock;
+import com.drwtrading.london.reddal.ReddalComponents;
 import org.jetlang.channels.Publisher;
 
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-public class OpxlExDateSubscriber {
+public class OpxlExDateSubscriber extends AOpxlLoggingReader<ReddalComponents, ISINsGoingEx> {
 
-    public static final String OPXL_KEY = "eeif(isin_going_ex_" + new SimpleDateFormat(DateTimeUtil.DATE_FILE_FORMAT).format(new Date()) + ")";
+    private static final String TOPIC_PREFIX = "eeif(isin_going_ex_";
+    private static final String TOPIC_SUFFIX = ")";
 
-    private final Publisher<Throwable> errorPublisher;
-    private final Publisher<IsinsGoingEx> publisher;
+    private static final String ISIN_COL = "ISIN";
 
-    public OpxlExDateSubscriber(final Publisher<Throwable> errorPublisher, final Publisher<IsinsGoingEx> publisher) {
-        this.errorPublisher = errorPublisher;
+    private final Publisher<ISINsGoingEx> publisher;
+
+    public OpxlExDateSubscriber(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
+            final IResourceMonitor<ReddalComponents> monitor, final Path logDir, final Publisher<ISINsGoingEx> publisher) {
+
+        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_ISINS_GOING_EX, getTopic(callbackSelectIO), logDir);
+
         this.publisher = publisher;
     }
 
-    public void onOpxlData(final OpxlData opxlData) {
-        String headerString = Arrays.asList(opxlData.getData()[0]).toString();
-        if (!headerString.equals("[ISIN, Ex Date]")) {
-            errorPublisher.publish(new Throwable("Ex-date: bad headers " + headerString));
-            return;
-        }
-        List<Object[]> rows = Arrays.asList(opxlData.getData()).subList(1, opxlData.getData().length);
-        HashSet<String> isins = new HashSet<>();
-        for (final Object[] data : rows) {
-            final String isin = data[0].toString();
-            final String value = data[1].toString();
-            isins.add(isin);
-        }
-        publisher.publish(new IsinsGoingEx(isins));
+    private static String getTopic(final IClock clock) {
+
+        final SimpleDateFormat sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.DATE_FILE_FORMAT);
+        final String todayDate = sdf.format(clock.nowMilliUTC());
+        return TOPIC_PREFIX + todayDate + TOPIC_SUFFIX;
     }
 
-    public static class IsinsGoingEx {
-        public final ImmutableSet<String> isins;
+    @Override
+    protected boolean isConnectionWanted() {
+        return true;
+    }
 
-        public IsinsGoingEx(Set<String> isins) {
-            this.isins = ImmutableSet.copyOf(isins);
+    @Override
+    protected ISINsGoingEx parseTable(final Object[][] opxlTable) {
+
+        final Object[] headerRow = opxlTable[0];
+
+        final int isinCol = findColumn(headerRow, ISIN_COL);
+
+        final Set<String> result = new HashSet<>();
+
+        for (int i = 1; i < opxlTable.length; ++i) {
+
+            final Object[] row = opxlTable[i];
+
+            if (testColsPresent(row, isinCol)) {
+
+                final String isin = row[isinCol].toString();
+                result.add(isin);
+            }
         }
+        return new ISINsGoingEx(result);
+    }
+
+    @Override
+    protected void handleUpdate(final ISINsGoingEx prevValue, final ISINsGoingEx values) {
+        publisher.publish(values);
+    }
+
+    @Override
+    protected void handleError(final ReddalComponents component, final String msg) {
+        monitor.logError(component, msg);
+    }
+
+    @Override
+    protected void handleError(final ReddalComponents component, final String msg, final Throwable t) {
+        monitor.logError(component, msg, t);
     }
 }

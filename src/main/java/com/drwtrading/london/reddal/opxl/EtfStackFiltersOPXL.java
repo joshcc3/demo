@@ -20,11 +20,17 @@ public class EtfStackFiltersOPXL extends AFiltersOPXL {
 
     private final StackFamilyPresenter stackFamilyPresenter;
 
-    public EtfStackFiltersOPXL(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor, final Path logPath,
-            final StackFamilyPresenter stackFamilyPresenter) {
+    public EtfStackFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
+            final IResourceMonitor<ReddalComponents> monitor, final Path logDir, final StackFamilyPresenter stackFamilyPresenter) {
 
-        super(selectIO, monitor, ReddalComponents.OPXL_ETF_STACK_MANAGER_FILTERS, getTopic(selectIO), logPath);
+        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_ETF_STACK_MANAGER_FILTERS, getTopic(callbackSelectIO), logDir);
         this.stackFamilyPresenter = stackFamilyPresenter;
+    }
+
+    @Override
+    protected void handleUpdate(final Collection<StackChildFilter> prevValue, final Collection<StackChildFilter> values) {
+
+        stackFamilyPresenter.setFamiliesFilters(InstType.ETF, values);
     }
 
     private static String getTopic(final IClock clock) {
@@ -32,11 +38,5 @@ public class EtfStackFiltersOPXL extends AFiltersOPXL {
         final SimpleDateFormat sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.DATE_FILE_FORMAT);
         final String todayDate = sdf.format(clock.nowMilliUTC());
         return TOPIC_PREFIX + todayDate + TOPIC_SUFFIX;
-    }
-
-    @Override
-    protected void handleUpdate(final Collection<StackChildFilter> filters) {
-
-        stackFamilyPresenter.setFamiliesFilters(InstType.ETF, filters);
     }
 }

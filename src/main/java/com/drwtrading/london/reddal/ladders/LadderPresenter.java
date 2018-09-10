@@ -28,8 +28,8 @@ import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
+import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
-import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
@@ -73,6 +73,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class LadderPresenter implements IStackPresenterCallback {
@@ -121,7 +122,8 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
     private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
-    private OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx;
+
+    private Set<String> isinsGoingEx;
 
     public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
@@ -503,10 +505,9 @@ public class LadderPresenter implements IStackPresenterCallback {
         eeifOrdersBySymbol.forEach((s, orderUpdatesForSymbol) -> orderUpdatesForSymbol.onDisconnected(disconnected));
     }
 
-    @Subscribe
-    public void on(final OpxlExDateSubscriber.IsinsGoingEx isinsGoingEx) {
-        this.isinsGoingEx = isinsGoingEx;
-        viewBySocket.values().forEach(l -> l.setIsinsGoingEx(isinsGoingEx));
+    public void setISINsGoingEx(final ISINsGoingEx isinsGoingEx) {
+        this.isinsGoingEx = isinsGoingEx.isins;
+        viewBySocket.values().forEach(l -> l.setIsinsGoingEx(isinsGoingEx.isins));
     }
 
     @Subscribe

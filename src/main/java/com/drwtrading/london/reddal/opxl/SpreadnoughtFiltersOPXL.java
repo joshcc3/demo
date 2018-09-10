@@ -17,17 +17,17 @@ public class SpreadnoughtFiltersOPXL extends AFiltersOPXL {
 
     private final StackFamilyPresenter stackFamilyPresenter;
 
-    public SpreadnoughtFiltersOPXL(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor, final Path logPath,
-            final StackFamilyPresenter stackFamilyPresenter) {
+    public SpreadnoughtFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
+            final IResourceMonitor<ReddalComponents> monitor, final Path logPath, final StackFamilyPresenter stackFamilyPresenter) {
 
-        super(selectIO, monitor, ReddalComponents.OPXL_SPREAD_STACK_MANAGER_FILTERS, TOPIC_PREFIX, logPath);
+        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_SPREAD_STACK_MANAGER_FILTERS, TOPIC_PREFIX, logPath);
         this.stackFamilyPresenter = stackFamilyPresenter;
     }
 
     @Override
-    protected void handleUpdate(final Collection<StackChildFilter> filters) {
+    protected void handleUpdate(final Collection<StackChildFilter> prevValue, final Collection<StackChildFilter> values) {
 
-        stackFamilyPresenter.setAsylumFilters(InstType.DR, FAMILY_NAME, filters);
+        stackFamilyPresenter.setAsylumFilters(InstType.DR, FAMILY_NAME, values);
     }
 
     //

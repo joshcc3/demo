@@ -15,7 +15,7 @@ config default
 	include drw.london.eeif-utils/254
 	include drw.london.eeif-md/364
 	include drw.london.eeif-nibbler-transport/72
-	include drw.london.eeif-opxl-client/13
+	include drw.london.eeif-opxl-client/14
 	include drw.london.eeif-position-transport/116
 	include drw.london.eeif-stack-transport/131
 	include drw.london.eeif-yoda-transport/101
@@ -69,9 +69,6 @@ config default
 	# Research
 	include joda.time/1.6
 	include org.apache.commons.math/2.2
-
-	# OPXL
-	include drw.opxl/1.5.1
 
 	add PATH=/site/drw/java/jdk1.8.0_05/bin
 end
