@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.premium;
 
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
+import com.drwtrading.london.reddal.data.TradeTracker;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import org.jetlang.channels.Publisher;
@@ -50,32 +51,40 @@ public class PremiumCalculator implements IPremiumCalc {
         for (final SpreadnoughtMidTheo theo : theos.values()) {
 
             final MDForSymbol mdForSymbol = books.get(theo.symbol);
-            recalcPremium(theo, mdForSymbol.getBook());
+            recalcPremium(theo, mdForSymbol.getBook(), mdForSymbol.getTradeTracker());
         }
 
         return UPDATE_PERIOD_MILLIS;
     }
 
-    private void recalcPremium(final SpreadnoughtMidTheo theo, final IBook<?> book) {
+    private void recalcPremium(final SpreadnoughtMidTheo theo, final IBook<?> book, final TradeTracker tradeTracker) {
 
         if (theo.isValid() && 0 != theo.getMid() && null != book && book.isValid()) {
 
             final IBookLevel bestBid = book.getBestBid();
             final IBookLevel bestAsk = book.getBestAsk();
 
+            final long midTheo = theo.getMid();
+
+            final double midMarketPremium;
             if (null != bestBid && null != bestAsk) {
 
-                final long midTheo = theo.getMid();
                 final long midMarket = (bestBid.getPrice() + bestAsk.getPrice()) / 2;
-
-                final double premium = (midMarket - midTheo) / (double) midTheo;
-
-                premiumPublisher.publish(new Premium(theo.symbol, premium));
+                midMarketPremium = (midMarket - midTheo) / (double) midTheo;
             } else {
-                premiumPublisher.publish(new Premium(theo.symbol, Double.NaN));
+                midMarketPremium = Double.NaN;
             }
+
+            final double lastTradePremium;
+            if (tradeTracker.hasTrade()) {
+                lastTradePremium = (tradeTracker.getLastPrice() - midTheo) / (double) midTheo;
+            } else {
+                lastTradePremium = Double.NaN;
+            }
+
+            premiumPublisher.publish(new Premium(theo.symbol, midMarketPremium, lastTradePremium));
         } else {
-            premiumPublisher.publish(new Premium(theo.symbol, Double.NaN));
+            premiumPublisher.publish(new Premium(theo.symbol, Double.NaN, Double.NaN));
         }
     }
 }

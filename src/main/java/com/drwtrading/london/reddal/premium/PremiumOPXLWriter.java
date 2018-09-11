@@ -18,9 +18,12 @@ public class PremiumOPXLWriter {
     private static final String TOPIC = ".eeif.spreadnought.premia.";
     private static final String TOPIC_PREFIX_PARAM = "prefix";
 
-    private static final Object[] HEADERS = {"Symbol", "Premium"};
+    private static final Object[] HEADERS = {"Symbol", "Premium", "LastTradePremium"};
+
     private static final int SYMBOL_COL = 0;
     private static final int PREMIUM_COL = 1;
+    private static final int LAST_TRADE_PREMIUM_COL = 2;
+
     private static final long PUBLISH_INTERVAL = 5000;
 
     private final OpxlClient<ReddalComponents> writer;
@@ -55,7 +58,8 @@ public class PremiumOPXLWriter {
             final Object[] newRow = new Object[HEADERS.length];
             rows.put(symbol, newRow);
             newRow[SYMBOL_COL] = symbol;
-            newRow[PREMIUM_COL] = premium.premium;
+            newRow[PREMIUM_COL] = premium.midMarketPremium;
+            newRow[LAST_TRADE_PREMIUM_COL] = premium.lastTradPremium;
 
             final Object[][] oldData = writeTable;
             writeTable = new Object[oldData.length + 1][];
@@ -64,7 +68,8 @@ public class PremiumOPXLWriter {
             writeTable[writeTable.length - 1] = newRow;
         } else {
 
-            row[PREMIUM_COL] = premium.premium;
+            row[PREMIUM_COL] = premium.midMarketPremium;
+            row[LAST_TRADE_PREMIUM_COL] = premium.lastTradPremium;
         }
     }
 
