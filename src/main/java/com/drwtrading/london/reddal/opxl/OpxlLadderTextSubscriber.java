@@ -52,7 +52,7 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<ReddalComponents, Coll
 
         for (final Object[] data : opxlTable) {
 
-            if (testColsPresent(data, SYMBOL_COL, CELL_COL, VALUE_COL, COLOUR_COL)) {
+            if (testColsPresent(data, SYMBOL_COL, CELL_COL, VALUE_COL)) {
 
                 final String symbol = data[SYMBOL_COL].toString();
                 final String cell = data[CELL_COL].toString();
