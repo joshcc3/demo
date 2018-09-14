@@ -952,7 +952,7 @@ public class Main {
         final ConfigGroup opxlConfig = root.getEnabledGroup("opxl");
 
         // Desk Position
-        final ConfigGroup deskPositionConfig = root.getEnabledGroup("opxl", "deskposition");
+        final ConfigGroup deskPositionConfig = opxlConfig.getEnabledGroup("deskposition");
         if (null != deskPositionConfig) {
 
             final Set<String> keys = deskPositionConfig.getSet("keys");
@@ -979,13 +979,13 @@ public class Main {
         }
 
         // Ladder Text
-        final ConfigGroup ladderTextConfig = root.getEnabledGroup("opxl", "laddertext");
+        final ConfigGroup ladderTextConfig = opxlConfig.getEnabledGroup("laddertext");
         if (null != ladderTextConfig) {
 
             final Set<String> keys = ladderTextConfig.getSet("keys");
             final OpxlLadderTextSubscriber ladderTextReader =
                     new OpxlLadderTextSubscriber(app.selectIO, app.selectIO, app.monitor, keys, channels.opxlLaserLineData,
-                            channels.metaData);
+                            channels.ladderText);
             app.addStartUpAction(ladderTextReader::start);
         }
 
@@ -1065,6 +1065,7 @@ public class Main {
                 channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand, channels.replaceCommand,
                 channels.userCycleContractPublisher, channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults,
                 channels.symbolDescs);
+        channels.ladderText.subscribe(fiberBuilder.getFiber(), ladderPresenter::setLadderText);
         channels.isinsGoingEx.subscribe(fiberBuilder.getFiber(), ladderPresenter::setISINsGoingEx);
 
         channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);

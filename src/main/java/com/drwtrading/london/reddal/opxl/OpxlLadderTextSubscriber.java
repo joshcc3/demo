@@ -7,18 +7,14 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.LaserLineType;
 import com.drwtrading.london.reddal.data.LaserLineValue;
-import com.drwtrading.photons.ladder.LadderMetadata;
-import com.drwtrading.photons.ladder.LadderText;
-import com.google.common.collect.Sets;
+import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
 import org.jetlang.channels.Publisher;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
-import java.util.Set;
+import java.util.List;
 
-public class OpxlLadderTextSubscriber extends AOpxlReader<ReddalComponents, Collection<OpxlLadderTextRow>> {
-
-    private static final Set<String> VALID_CELLS = Sets.newHashSet("r1c1", "r1c2", "r1c3", "r1c4", "r2c1", "r2c3", "r3c2", "r3c3", "r3c4");
+public class OpxlLadderTextSubscriber extends AOpxlReader<ReddalComponents, OpxlLadderTextRow> {
 
     private static final int SYMBOL_COL = 0;
     private static final int CELL_COL = 1;
@@ -28,16 +24,16 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<ReddalComponents, Coll
     private static final int MAX_LENGTH_OF_TEXT = 6;
 
     private final Publisher<LaserLineValue> laserLinePublisher;
-    private final Publisher<LadderMetadata> metaPublisher;
+    private final Publisher<OpxlLadderText> ladderTextPublisher;
 
     public OpxlLadderTextSubscriber(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
-            final IResourceMonitor<ReddalComponents> monitor, final Collection<String> topic,
-            final Publisher<LaserLineValue> laserLinePublisher, final Publisher<LadderMetadata> metaPublisher) {
+            final IResourceMonitor<ReddalComponents> monitor, final Collection<String> topics,
+            final Publisher<LaserLineValue> laserLinePublisher, final Publisher<OpxlLadderText> ladderTextPublisher) {
 
-        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_LADDER_TEXT, topic, "OpxlLadderTextSubscriber");
+        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_LADDER_TEXT, topics, "OpxlLadderTextSubscriber");
 
         this.laserLinePublisher = laserLinePublisher;
-        this.metaPublisher = metaPublisher;
+        this.ladderTextPublisher = ladderTextPublisher;
     }
 
     @Override
@@ -46,9 +42,10 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<ReddalComponents, Coll
     }
 
     @Override
-    protected Collection<OpxlLadderTextRow> parseTable(final Object[][] opxlTable) {
+    protected OpxlLadderTextRow parseTable(final Object[][] opxlTable) {
 
-        final Collection<OpxlLadderTextRow> rows = new LinkedList<>();
+        final List<OpxlLadderText> ladderTexts = new ArrayList<>(opxlTable.length);
+        final List<LaserLineValue> laserLines = new ArrayList<>(opxlTable.length);
 
         for (final Object[] data : opxlTable) {
 
@@ -56,51 +53,71 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<ReddalComponents, Coll
 
                 final String symbol = data[SYMBOL_COL].toString();
                 final String cell = data[CELL_COL].toString();
-                final String value = data[VALUE_COL].toString();
-                final String colour = data[COLOUR_COL].toString();
+                final String value = data[VALUE_COL].toString().trim();
 
-                final OpxlLadderTextRow row = new OpxlLadderTextRow(symbol, cell, value, colour);
-                rows.add(row);
+                if (cell.startsWith("laser")) {
+
+                    final String colour = data[COLOUR_COL].toString();
+                    final LaserLineValue laserLineValue = getLaserLine(symbol, cell, value, colour);
+                    laserLines.add(laserLineValue);
+
+                } else {
+
+                    final FreeTextCell freeTextCell = FreeTextCell.getCell(cell);
+                    if (null == freeTextCell) {
+                        logErrorOnSelectIO("Opxl Ladder Text Cell is not valid [" + cell + "] for [" + symbol + "].");
+                    } else {
+
+                        final String text;
+                        if (MAX_LENGTH_OF_TEXT < value.length()) {
+                            text = value.substring(0, Math.min(value.length(), MAX_LENGTH_OF_TEXT));
+                        } else {
+                            text = value;
+                        }
+
+                        final OpxlLadderText ladderText = new OpxlLadderText(symbol, freeTextCell, text);
+                        ladderTexts.add(ladderText);
+                    }
+                }
             }
         }
-        return rows;
+
+        return new OpxlLadderTextRow(ladderTexts, laserLines);
+    }
+
+    private LaserLineValue getLaserLine(final String symbol, final String cell, final String value, final String colour) {
+
+        final LaserLineType laserType;
+        if ("bid".equals(colour)) {
+            laserType = LaserLineType.BID;
+        } else if ("offer".equals(colour)) {
+            laserType = LaserLineType.ASK;
+        } else {
+            laserType = LaserLineType.GREEN;
+        }
+
+        if (value.isEmpty() || "#ERR".equals(value)) {
+            return new LaserLineValue(symbol, laserType);
+        } else {
+            try {
+                final long price = (long) (Constants.NORMALISING_FACTOR * Double.parseDouble(value));
+                return new LaserLineValue(symbol, laserType, price);
+            } catch (final NumberFormatException e) {
+                logErrorOnSelectIO("Could not format: " + value + " for " + symbol + ' ' + cell, e);
+                return new LaserLineValue(symbol, laserType);
+            }
+        }
     }
 
     @Override
-    protected void handleUpdate(final Collection<OpxlLadderTextRow> prevValue, final Collection<OpxlLadderTextRow> values) {
+    protected void handleUpdate(final OpxlLadderTextRow prevValue, final OpxlLadderTextRow values) {
 
-        for (final OpxlLadderTextRow row : values) {
+        for (final LaserLineValue laserLineValue : values.laserLines) {
+            laserLinePublisher.publish(laserLineValue);
+        }
 
-            if (row.cell.startsWith("laser")) {
-
-                final LaserLineType laserType;
-                if ("bid".equals(row.colour)) {
-                    laserType = LaserLineType.BID;
-                } else if ("offer".equals(row.colour)) {
-                    laserType = LaserLineType.ASK;
-                } else {
-                    laserType = LaserLineType.GREEN;
-                }
-
-                final String trimmedValue = row.value.trim();
-                if (trimmedValue.isEmpty() || "#ERR".equals(trimmedValue)) {
-                    laserLinePublisher.publish(new LaserLineValue(row.symbol, laserType));
-                } else {
-                    try {
-                        final long price = (long) (Constants.NORMALISING_FACTOR * Double.parseDouble(trimmedValue));
-                        laserLinePublisher.publish(new LaserLineValue(row.symbol, laserType, price));
-                    } catch (final NumberFormatException e) {
-                        laserLinePublisher.publish(new LaserLineValue(row.symbol, laserType));
-                        monitor.logError(component, "Could not format: " + trimmedValue + " for " + row.symbol + ' ' + row.cell, e);
-                    }
-                }
-            } else if (VALID_CELLS.contains(row.cell)) {
-                final String text = row.value.substring(0, Math.min(row.value.length(), MAX_LENGTH_OF_TEXT));
-                final LadderText ladderText = new LadderText(row.symbol, row.cell, text, row.colour);
-                metaPublisher.publish(ladderText);
-            } else {
-                monitor.logError(component, "Opxl Ladder Text Cell is not valid, got:" + row.cell);
-            }
+        for (final OpxlLadderText ladderText : values.ladderText) {
+            ladderTextPublisher.publish(ladderText);
         }
     }
 

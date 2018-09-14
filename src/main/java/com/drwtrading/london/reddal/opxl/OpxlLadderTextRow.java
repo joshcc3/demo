@@ -1,17 +1,17 @@
 package com.drwtrading.london.reddal.opxl;
 
-public class OpxlLadderTextRow {
+import com.drwtrading.london.reddal.data.LaserLineValue;
 
-    final String symbol;
-    final String cell;
-    final String value;
-    final String colour;
+import java.util.List;
 
-    OpxlLadderTextRow(final String symbol, final String cell, final String value, final String colour) {
+class OpxlLadderTextRow {
 
-        this.symbol = symbol;
-        this.cell = cell;
-        this.value = value;
-        this.colour = colour;
+    final List<OpxlLadderText> ladderText;
+    final List<LaserLineValue> laserLines;
+
+    OpxlLadderTextRow(final List<OpxlLadderText> ladderText, final List<LaserLineValue> laserLines) {
+
+        this.ladderText = ladderText;
+        this.laserLines = laserLines;
     }
 }

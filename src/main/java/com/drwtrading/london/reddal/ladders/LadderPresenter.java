@@ -30,6 +30,7 @@ import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
+import com.drwtrading.london.reddal.opxl.OpxlLadderText;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
@@ -374,6 +375,12 @@ public class LadderPresenter implements IStackPresenterCallback {
         } else {
             metaDataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
         }
+    }
+
+    public void setLadderText(final OpxlLadderText ladderText) {
+
+        final LadderMetaData metaData = metaDataBySymbol.get(ladderText.symbol);
+        metaData.setLadderText(ladderText);
     }
 
     public void displayTradeIssue(final LadderClickTradingIssue issue) {

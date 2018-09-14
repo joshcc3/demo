@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
+import com.drwtrading.london.reddal.opxl.OpxlLadderText;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
@@ -53,11 +54,15 @@ public class LadderMetaData {
         final FreeTextCell cell = FreeTextCell.getCell(ladderText.getCell());
         if (null != cell) {
             this.freeTextCells.put(cell, ladderText.getText());
-        } else if (ladderText.getCell().equals("r3c1")) {
+        } else if ("r3c1".equals(ladderText.getCell())) {
             this.pksExposure = ladderText.getText();
-        } else if (ladderText.getCell().equals("r3c5")) {
+        } else if ("r3c5".equals(ladderText.getCell())) {
             this.pksPosition = ladderText.getText();
         }
+    }
+
+    public void setLadderText(final OpxlLadderText ladderText) {
+        this.freeTextCells.put(ladderText.cell, ladderText.text);
     }
 
     public void setDeskPosition(final DecimalFormat formatter, final long position) {

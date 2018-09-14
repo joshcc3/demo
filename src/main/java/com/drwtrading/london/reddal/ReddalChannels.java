@@ -13,6 +13,7 @@ import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
+import com.drwtrading.london.reddal.opxl.OpxlLadderText;
 import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
@@ -55,6 +56,7 @@ class ReddalChannels {
     final TypedChannel<Throwable> error;
     final Publisher<Throwable> errorPublisher;
     final TypedChannel<LaserLineValue> opxlLaserLineData;
+    final TypedChannel<OpxlLadderText> ladderText;
     final TypedChannel<LadderMetadata> metaData;
     final TypedChannel<OPXLDeskPositions> deskPositions;
     final TypedChannel<Position> position;
@@ -111,6 +113,7 @@ class ReddalChannels {
         this.error = Main.ERROR_CHANNEL;
         this.errorPublisher = new BogusErrorFilteringPublisher(error);
         this.opxlLaserLineData = create(LaserLineValue.class);
+        this.ladderText = create(OpxlLadderText.class);
         this.metaData = create(LadderMetadata.class);
         this.deskPositions = create(OPXLDeskPositions.class);
         this.position = create(Position.class);
