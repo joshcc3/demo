@@ -5,6 +5,7 @@ import java.util.List;
 class StringBatcher {
 
     private final String command;
+    private final StringBuilder cmdSB;
 
     private String pendingValue;
     private String value;
@@ -12,6 +13,8 @@ class StringBatcher {
     StringBatcher(final String command) {
 
         this.command = command;
+        this.cmdSB = new StringBuilder();
+
         this.pendingValue = "";
         this.value = "";
     }
@@ -21,8 +24,9 @@ class StringBatcher {
     }
 
     void flushPendingIntoCommandList(final List<String> commands) {
+
         if (!pendingValue.equals(value)) {
-            commands.add(UiPipeImpl.cmd(this.command, pendingValue));
+            commands.add(UiPipeImpl.cmd(cmdSB, this.command, pendingValue));
             value = pendingValue;
         }
     }

@@ -20,17 +20,24 @@ public class ShredderView implements UiEventHandler {
 
     private final IShredderUI view;
     private final UiPipeImpl uiPipe;
+
+    private final AtomicLong heartbeatSeqNo;
+    private final StringBuilder cmdSB;
+
     private ShredderBookView shredderBookView;
     private int levels;
     public String symbol;
     private Long lastHeartbeatSentMillis = null;
-    private final AtomicLong heartbeatSeqNo = new AtomicLong(0L);
 
     ShredderView(final IShredderUI view, final UiPipeImpl uiPipe) {
+
         this.view = view;
         this.uiPipe = uiPipe;
 
         this.uiPipe.setHandler(this);
+
+        this.heartbeatSeqNo = new AtomicLong(0L);
+        this.cmdSB = new StringBuilder();
     }
 
     private void setup() {
@@ -110,7 +117,6 @@ public class ShredderView implements UiEventHandler {
 
     @Override
     public void onHeartbeat(final long sentTimeMillis) {
-        final long returnTimeMillis = System.currentTimeMillis();
         if (lastHeartbeatSentMillis == sentTimeMillis) {
             lastHeartbeatSentMillis = null;
         }
@@ -118,7 +124,7 @@ public class ShredderView implements UiEventHandler {
 
     void sendHeartbeat() {
         lastHeartbeatSentMillis = System.currentTimeMillis();
-        uiPipe.send(UiPipeImpl.cmd("heartbeat", lastHeartbeatSentMillis, heartbeatSeqNo.getAndIncrement()));
+        uiPipe.send(UiPipeImpl.cmd(cmdSB, "heartbeat", lastHeartbeatSentMillis, heartbeatSeqNo.getAndIncrement()));
     }
 
     void timedRefresh() {

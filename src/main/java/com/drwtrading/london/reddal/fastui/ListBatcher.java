@@ -7,11 +7,15 @@ import java.util.List;
 class ListBatcher {
 
     private final String command;
+    private final StringBuilder cmdSB;
+
     private final List<String> pendingValues;
 
     ListBatcher(final String command) {
 
         this.command = command;
+        this.cmdSB = new StringBuilder();
+
         this.pendingValues = FastUtilCollections.newFastList();
     }
 
@@ -27,11 +31,11 @@ class ListBatcher {
     }
 
     String getCommand() {
-        return UiPipeImpl.cmd(this.command, UiPipeImpl.cmd(pendingValues.toArray()));
+        final String pendingCmds = UiPipeImpl.cmd(cmdSB, pendingValues.toArray());
+        return UiPipeImpl.cmd(cmdSB, this.command, pendingCmds);
     }
 
     void clear() {
         pendingValues.clear();
     }
-
 }

@@ -18,6 +18,4 @@ public interface ILadderUI {
     void launchBasket(final String symbol);
 
     void replace(final String from, final String to);
-
-    void setDescription(String desc);
 }

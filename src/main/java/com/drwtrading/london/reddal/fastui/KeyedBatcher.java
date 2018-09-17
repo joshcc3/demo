@@ -8,6 +8,7 @@ import java.util.Map;
 class KeyedBatcher {
 
     private final String command;
+    private final StringBuilder cmdSB;
 
     private final Map<String, String> values;
     private final Map<String, String> pendingValues;
@@ -15,6 +16,8 @@ class KeyedBatcher {
     KeyedBatcher(final String command) {
 
         this.command = command;
+        this.cmdSB = new StringBuilder();
+
         this.values = new HashMap<>();
         this.pendingValues = new HashMap<>();
     }
@@ -44,7 +47,8 @@ class KeyedBatcher {
             updates.add(entry.getKey());
             updates.add(entry.getValue());
         }
-        return UiPipeImpl.cmd(this.command, UiPipeImpl.cmd(updates.toArray()));
+        final String updateCmds = UiPipeImpl.cmd(cmdSB, updates.toArray());
+        return UiPipeImpl.cmd(cmdSB, this.command, updateCmds);
     }
 
     void clear() {

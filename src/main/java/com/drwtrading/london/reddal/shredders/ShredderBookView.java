@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.shredders;
 
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
+import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
@@ -20,12 +21,12 @@ import com.drwtrading.london.reddal.fastui.html.DataKey;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.ladders.LadderBoardRow;
 import com.drwtrading.london.reddal.ladders.LadderBookView;
-import com.drwtrading.london.reddal.ladders.LadderHTMLRow;
-import com.drwtrading.london.reddal.ladders.LadderHTMLTable;
+import com.drwtrading.london.reddal.ladders.model.BookHTMLRow;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import eeif.execution.Side;
 import eeif.execution.WorkingOrderUpdate;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -34,6 +35,9 @@ import java.util.TreeSet;
 class ShredderBookView {
 
     private static final int MAX_VISUAL_ORDER_SIZE = 20;
+
+    private final NumberFormat BIG_NUMBER_DF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE + 'M', 0, 2);
+
     private long scalingFactor = 100;
     private long scalingStep = 10;
     private long ordersPerRow = ShredderView.INITAL_ORDERS_PER_ROW;
@@ -154,7 +158,7 @@ class ShredderBookView {
 
         for (final LongMapNode<LadderBoardRow> priceNode : priceRows) {
             final long price = priceNode.key;
-            final LadderHTMLRow htmlRowKeys = priceNode.getValue().htmlKeys;
+            final BookHTMLRow htmlRowKeys = priceNode.getValue().htmlKeys;
             final LadderBoardRow priceRow = priceRows.get(price);
             ui.txt(htmlRowKeys.bookPriceKey, priceRow.formattedPrice);
 
@@ -228,7 +232,7 @@ class ShredderBookView {
     private void wipeDisplayedOrders() {
         for (int level = 0; level < levels; level++) {
             for (int queuePosition = 0; queuePosition < ordersPerRow; queuePosition++) {
-                final String orderCellKey = String.format("order_%s_%s", level, queuePosition);
+                final String orderCellKey = "order_" + level + '_' + queuePosition;
                 ui.cls(orderCellKey, CSSClass.BLANK_ORDER, true);
                 ui.cls(orderCellKey, CSSClass.ORDER, false);
             }
@@ -365,7 +369,7 @@ class ShredderBookView {
             for (int i = 0; i < levels; ++i) {
 
                 final String formattedPrice = marketData.formatPrice(price);
-                final LadderHTMLRow htmlRowKeys = ladderHTMLKeys.getRow(i);
+                final BookHTMLRow htmlRowKeys = ladderHTMLKeys.getRow(i);
                 final LadderBoardRow ladderBookRow = new LadderBoardRow(formattedPrice, htmlRowKeys);
 
                 priceRows.put(price, ladderBookRow);
@@ -457,14 +461,14 @@ class ShredderBookView {
         }
     }
 
-    private void bidQty(final LadderHTMLRow htmlRowKeys, final long qty) {
+    private void bidQty(final BookHTMLRow htmlRowKeys, final long qty) {
         ui.txt(htmlRowKeys.bookSideKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.bookSideKey, CSSClass.BID_ACTIVE, 0 < qty);
         ui.cls(htmlRowKeys.bookSideKey, CSSClass.ASK_ACTIVE, false);
         ui.cls(htmlRowKeys.bookSideKey, CSSClass.AUCTION, false);
     }
 
-    private void askQty(final LadderHTMLRow htmlRowKeys, final long qty) {
+    private void askQty(final BookHTMLRow htmlRowKeys, final long qty) {
         ui.txt(htmlRowKeys.bookSideKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.bookSideKey, CSSClass.ASK_ACTIVE, 0 < qty);
         ui.cls(htmlRowKeys.bookSideKey, CSSClass.BID_ACTIVE, false);
@@ -479,12 +483,12 @@ class ShredderBookView {
         scalingFactor = scalingFactor - scalingStep >= scalingStep ? scalingFactor - scalingStep : scalingFactor;
     }
 
-    private static String formatMktQty(final long qty) {
+    private String formatMktQty(final long qty) {
         if (qty <= 0) {
             return HTML.EMPTY;
         } else if (LadderBookView.REALLY_BIG_NUMBER_THRESHOLD <= qty) {
             final double d = qty / 1000000d;
-            return LadderBookView.BIG_NUMBER_DF.format(d);
+            return BIG_NUMBER_DF.format(d);
         } else {
             return Long.toString(qty);
         }

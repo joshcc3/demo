@@ -210,7 +210,6 @@ var Handler = function (ws) {
 	};
 
 	self.tooltip = function (args) {
-		console.log(args);
 		for (let i = 1; i < args.length - 1; i += 2) {
 			const elementID = args[i];
 			const tooltip = args[i + 1];

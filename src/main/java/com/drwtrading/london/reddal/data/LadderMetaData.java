@@ -24,6 +24,8 @@ public class LadderMetaData {
 
     public long mrPhilNetPosition;
     public String formattedMrPhilNetPosition;
+
+    public long mrPhilVolume;
     public String formattedMrPhilVolume;
 
     private PKSExposure pksData;
@@ -54,10 +56,6 @@ public class LadderMetaData {
         final FreeTextCell cell = FreeTextCell.getCell(ladderText.getCell());
         if (null != cell) {
             this.freeTextCells.put(cell, ladderText.getText());
-        } else if ("r3c1".equals(ladderText.getCell())) {
-            this.pksExposure = ladderText.getText();
-        } else if ("r3c5".equals(ladderText.getCell())) {
-            this.pksPosition = ladderText.getText();
         }
     }
 
@@ -80,7 +78,9 @@ public class LadderMetaData {
 
             this.mrPhilNetPosition = mrPhilPosition.getNet();
             this.formattedMrPhilNetPosition = formatPosition(formatter, mrPhilNetPosition);
-            this.formattedMrPhilVolume = formatPosition(formatter, mrPhilPosition.getVolume());
+
+            this.mrPhilVolume = mrPhilPosition.getVolume();
+            this.formattedMrPhilVolume = formatPosition(formatter, mrPhilVolume);
         }
     }
 

@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
-import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
@@ -24,10 +23,15 @@ import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
 import com.drwtrading.london.reddal.fastui.html.HTML;
+import com.drwtrading.london.reddal.ladders.model.HeaderPanel;
+import com.drwtrading.london.reddal.ladders.model.LadderViewModel;
+import com.drwtrading.london.reddal.ladders.model.LeftHandPanel;
+import com.drwtrading.london.reddal.ladders.model.QtyButton;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
@@ -41,10 +45,7 @@ import eeif.execution.WorkingOrderType;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,7 +57,6 @@ public class LadderView implements UiEventHandler {
 
     private static final AtomicLong heartbeatSeqNo = new AtomicLong(0L);
 
-    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
     private static final int RECENTER_TIME_MS = 11000;
     private static final int RECENTER_WARN_TIME_MS = 9000;
 
@@ -66,48 +66,48 @@ public class LadderView implements UiEventHandler {
     private static final int END_KEY = 35;
     private static final int HOME_KEY = 36;
 
-    static final Map<InstType, Map<String, Integer>> INST_TYPE_BUTTON_QTIES;
+    static final Map<InstType, Map<QtyButton, Integer>> INST_TYPE_BUTTON_QTIES;
 
     static {
         INST_TYPE_BUTTON_QTIES = new EnumMap<>(InstType.class);
 
-        final Map<String, Integer> defaultQties = new HashMap<>();
-        defaultQties.put("btn_qty_1", 1);
-        defaultQties.put("btn_qty_2", 5);
-        defaultQties.put("btn_qty_3", 10);
-        defaultQties.put("btn_qty_4", 50);
-        defaultQties.put("btn_qty_5", 100);
-        defaultQties.put("btn_qty_6", 500);
+        final Map<QtyButton, Integer> defaultQties = new EnumMap<>(QtyButton.class);
+        defaultQties.put(QtyButton.ONE, 1);
+        defaultQties.put(QtyButton.TWO, 5);
+        defaultQties.put(QtyButton.THREE, 10);
+        defaultQties.put(QtyButton.FOUR, 50);
+        defaultQties.put(QtyButton.FIVE, 100);
+        defaultQties.put(QtyButton.SIX, 500);
         for (final InstType instType : InstType.values()) {
             INST_TYPE_BUTTON_QTIES.put(instType, defaultQties);
         }
 
-        final Map<String, Integer> futuresQties = new HashMap<>();
-        futuresQties.put("btn_qty_1", 1);
-        futuresQties.put("btn_qty_2", 5);
-        futuresQties.put("btn_qty_3", 10);
-        futuresQties.put("btn_qty_4", 25);
-        futuresQties.put("btn_qty_5", 50);
-        futuresQties.put("btn_qty_6", 100);
+        final Map<QtyButton, Integer> futuresQties = new EnumMap<>(QtyButton.class);
+        futuresQties.put(QtyButton.ONE, 1);
+        futuresQties.put(QtyButton.TWO, 5);
+        futuresQties.put(QtyButton.THREE, 10);
+        futuresQties.put(QtyButton.FOUR, 25);
+        futuresQties.put(QtyButton.FIVE, 50);
+        futuresQties.put(QtyButton.SIX, 100);
         INST_TYPE_BUTTON_QTIES.put(InstType.FUTURE, futuresQties);
         INST_TYPE_BUTTON_QTIES.put(InstType.FUTURE_SPREAD, futuresQties);
 
-        final Map<String, Integer> fxQties = new HashMap<>();
-        fxQties.put("btn_qty_1", 100000);
-        fxQties.put("btn_qty_2", 200000);
-        fxQties.put("btn_qty_3", 500000);
-        fxQties.put("btn_qty_4", 1000000);
-        fxQties.put("btn_qty_5", 2500000);
-        fxQties.put("btn_qty_6", 5000000);
+        final Map<QtyButton, Integer> fxQties = new EnumMap<>(QtyButton.class);
+        fxQties.put(QtyButton.ONE, 100000);
+        fxQties.put(QtyButton.TWO, 200000);
+        fxQties.put(QtyButton.THREE, 500000);
+        fxQties.put(QtyButton.FOUR, 1000000);
+        fxQties.put(QtyButton.FIVE, 2500000);
+        fxQties.put(QtyButton.SIX, 5000000);
         INST_TYPE_BUTTON_QTIES.put(InstType.FX, fxQties);
 
-        final Map<String, Integer> equityQties = new HashMap<>();
-        equityQties.put("btn_qty_1", 1);
-        equityQties.put("btn_qty_2", 10);
-        equityQties.put("btn_qty_3", 100);
-        equityQties.put("btn_qty_4", 1000);
-        equityQties.put("btn_qty_5", 5000);
-        equityQties.put("btn_qty_6", 10000);
+        final Map<QtyButton, Integer> equityQties = new EnumMap<>(QtyButton.class);
+        equityQties.put(QtyButton.ONE, 1);
+        equityQties.put(QtyButton.TWO, 10);
+        equityQties.put(QtyButton.THREE, 100);
+        equityQties.put(QtyButton.FOUR, 1000);
+        equityQties.put(QtyButton.FIVE, 5000);
+        equityQties.put(QtyButton.SIX, 10000);
         INST_TYPE_BUTTON_QTIES.put(InstType.DR, equityQties);
         INST_TYPE_BUTTON_QTIES.put(InstType.EQUITY, equityQties);
         INST_TYPE_BUTTON_QTIES.put(InstType.ETF, equityQties);
@@ -128,7 +128,6 @@ public class LadderView implements UiEventHandler {
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap;
     private final Publisher<OrderEntryCommandToServer> eeifCommandToServer;
-    private final UiPipeImpl ui;
     private final TradingStatusForAll tradingStatusForAll;
     private final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
@@ -138,8 +137,8 @@ public class LadderView implements UiEventHandler {
     private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
     private final Predicate<String> symbolExists;
     private final Map<String, String> symbolDesc;
-    private final LadderHTMLTable ladderHTMLKeys;
-    private final DecimalFormat twoDF;
+
+    private final LadderViewModel ladderModel;
 
     public String symbol;
     private int levels;
@@ -163,18 +162,18 @@ public class LadderView implements UiEventHandler {
     private GoingExState exState = GoingExState.Unknown;
 
     LadderView(final IResourceMonitor<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view,
-               final String ewokBaseURL, final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-               final LadderOptions ladderOptions, final FXCalc<?> fxCalc, final FeesCalc feesCalc, final DecimalFormat feeDF,
-               final TradingStatusForAll tradingStatusForAll, final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher,
-               final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-               final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-               final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
-               final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
-               final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
-               final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
-               final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-               final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Predicate<String> symbolExists,
-               final Map<String, String> symbolDesc) {
+            final String ewokBaseURL, final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
+            final LadderOptions ladderOptions, final FXCalc<?> fxCalc, final FeesCalc feesCalc, final DecimalFormat feeDF,
+            final TradingStatusForAll tradingStatusForAll, final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher,
+            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
+            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+            final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
+            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+            final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
+            final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
+            final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
+            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Predicate<String> symbolExists,
+            final Map<String, String> symbolDesc) {
 
         this.monitor = monitor;
 
@@ -195,17 +194,16 @@ public class LadderView implements UiEventHandler {
         this.increaseParentOffsetPublisher = increaseParentOffsetPublisher;
         this.increaseChildOffsetCmdPublisher = increaseChildOffsetCmdPublisher;
         this.disableSiblingsCmdPublisher = disableSiblingsCmdPublisher;
-        this.ui = ui;
         this.tradingStatusForAll = tradingStatusForAll;
         this.heartbeatRoundTripPublisher = heartbeatRoundTripPublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
         this.userWorkspaceRequests = userWorkspaceRequests;
         this.symbolExists = symbolExists;
         this.symbolDesc = symbolDesc;
-        this.ladderHTMLKeys = new LadderHTMLTable();
-        this.twoDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2);
 
-        this.ui.setHandler(this);
+        this.ladderModel = new LadderViewModel(ui);
+        ui.setHandler(this);
+
         this.activeView = LadderNoView.SINGLETON;
     }
 
@@ -222,7 +220,7 @@ public class LadderView implements UiEventHandler {
 
         this.symbol = symbol;
         this.levels = levels;
-        this.ladderHTMLKeys.extendToLevels(levels);
+        this.ladderModel.extendToLevels(levels);
         this.marketData = marketData;
         this.metaData = metaData;
         this.extraDataForSymbol = extraDataForSymbol;
@@ -232,14 +230,14 @@ public class LadderView implements UiEventHandler {
 
         final long bookCenteredPrice = null == bookView ? 0 : bookView.getCenteredPrice();
         this.bookView =
-                new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ui, view, ladderOptions, fxCalc, feesCalc, feeDF,
-                        ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher,
+                new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc,
+                        feeDF, ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher,
                         eeifCommandToServer, tradingStatusForAll, marketData, workingOrdersForSymbol, extraDataForSymbol,
-                        orderUpdatesForSymbol, levels, ladderHTMLKeys, stackData, metaData, increaseParentOffsetPublisher,
-                        increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
+                        orderUpdatesForSymbol, levels, stackData, metaData, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
+                        disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
-        final Map<String, Integer> buttonQties;
+        final Map<QtyButton, Integer> buttonQties;
         if (null == book) {
             buttonQties = INST_TYPE_BUTTON_QTIES.get(InstType.UNKNOWN);
         } else {
@@ -247,8 +245,8 @@ public class LadderView implements UiEventHandler {
         }
 
         this.stackView =
-                new LadderStackView(client.getUserName(), isTrader(), symbol, buttonQties, levels, ladderHTMLKeys, stackData, metaData,
-                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, ui, view,
+                new LadderStackView(client.getUserName(), isTrader(), symbol, buttonQties, levels, ladderModel, stackData, metaData,
+                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, view,
                         ladderPrefsForSymbolUser, marketData);
 
         if (wasBookView) {
@@ -283,77 +281,79 @@ public class LadderView implements UiEventHandler {
 
         initialSetup();
         timedRefresh();
-        sendHeartbeat();
     }
 
     private void initialSetup() {
 
-        ui.clear();
+        ladderModel.clear();
+        view.draw(levels);
 
         for (final CSSClass type : CSSClass.values()) {
-            ui.cls(HTML.ORDER_TYPE_LEFT, type, false);
-            ui.cls(HTML.ORDER_TYPE_RIGHT, type, false);
-            ui.cls(HTML.WORKING_ORDER_TAG, type, false);
+            ladderModel.setClass(HTML.ORDER_TYPE_LEFT, type, false);
+            ladderModel.setClass(HTML.ORDER_TYPE_RIGHT, type, false);
+            ladderModel.setClass(HTML.WORKING_ORDER_TAG, type, false);
         }
 
-        view.draw(levels);
-        ui.txt(HTML.SYMBOL, symbol);
-        view.setDescription(symbolDesc.getOrDefault(symbol, symbol));
+        final String symbolDescription = symbolDesc.getOrDefault(symbol, symbol);
 
-        ui.cls(HTML.LASER + "BID", CSSClass.INVISIBLE, true);
-        ui.cls(HTML.LASER + "GREEN", CSSClass.INVISIBLE, true);
-        ui.cls(HTML.LASER + "WHITE", CSSClass.INVISIBLE, true);
-        ui.cls(HTML.LASER + "ASK", CSSClass.INVISIBLE, true);
+        final HeaderPanel headerPanel = ladderModel.getHeaderPanel();
+        headerPanel.setSymbol(symbol);
+        headerPanel.setDescription(symbolDescription);
+
+        ladderModel.setClass(HTML.LASER + "BID", CSSClass.INVISIBLE, true);
+        ladderModel.setClass(HTML.LASER + "GREEN", CSSClass.INVISIBLE, true);
+        ladderModel.setClass(HTML.LASER + "WHITE", CSSClass.INVISIBLE, true);
+        ladderModel.setClass(HTML.LASER + "ASK", CSSClass.INVISIBLE, true);
 
         activeView.switchedTo();
 
-        ui.clickable('#' + HTML.SYMBOL);
-        ui.clickable('#' + HTML.BOOK_VIEW_BUTTON);
-        ui.clickable('#' + HTML.STACK_VIEW_BUTTON);
-        ui.clickable('#' + HTML.CLOCK);
-        ui.clickable('#' + HTML.POSITION);
-        ui.clickable('#' + HTML.TOTAL_TRADED);
-        ui.clickable('#' + HTML.AFTER_HOURS_WEIGHT);
+        ladderModel.setClickable('#' + HTML.SYMBOL);
+        ladderModel.setClickable('#' + HTML.BOOK_VIEW_BUTTON);
+        ladderModel.setClickable('#' + HTML.STACK_VIEW_BUTTON);
+        ladderModel.setClickable('#' + HTML.CLOCK);
+        ladderModel.setClickable('#' + HTML.POSITION);
+        ladderModel.setClickable('#' + HTML.TOTAL_TRADED);
+        ladderModel.setClickable('#' + HTML.AFTER_HOURS_WEIGHT);
 
         for (int i = 0; i < levels; i++) {
-            ui.clickable('#' + HTML.PRICE + i);
+            ladderModel.setClickable('#' + HTML.PRICE + i);
         }
-        ui.clickable(HTML.BUTTONS);
-        ui.scrollable('#' + HTML.LADDER);
+        ladderModel.setClickable(HTML.BUTTONS);
+        ladderModel.setScrollable('#' + HTML.LADDER);
 
-        ui.clickable('#' + HTML.TEXT_PREFIX + HTML.R1C2);
-        ui.clickable('#' + HTML.TEXT_PREFIX + HTML.R1C3);
-        ui.clickable('#' + HTML.TEXT_PREFIX + HTML.R1C4);
+        ladderModel.setClickable('#' + HTML.TEXT_PREFIX + HTML.R1C2);
+        ladderModel.setClickable('#' + HTML.TEXT_PREFIX + HTML.R1C3);
+        ladderModel.setClickable('#' + HTML.TEXT_PREFIX + HTML.R1C4);
 
         final boolean isTrader = isTrader();
         if (isTrader) {
 
             for (int i = 0; i < levels; i++) {
-                ui.clickable('#' + HTML.BID + i);
-                ui.clickable('#' + HTML.OFFER + i);
-                ui.clickable('#' + HTML.ORDER + i);
+                ladderModel.setClickable('#' + HTML.BID + i);
+                ladderModel.setClickable('#' + HTML.OFFER + i);
+                ladderModel.setClickable('#' + HTML.ORDER + i);
 
-                ui.clickable('#' + HTML.STACK_BID_PICARD + i);
-                ui.clickable('#' + HTML.STACK_BID_QUOTE + i);
-                ui.clickable('#' + HTML.STACK_BID_OFFSET + i);
+                ladderModel.setClickable('#' + HTML.STACK_BID_PICARD + i);
+                ladderModel.setClickable('#' + HTML.STACK_BID_QUOTE + i);
+                ladderModel.setClickable('#' + HTML.STACK_BID_OFFSET + i);
 
-                ui.clickable('#' + HTML.STACK_ASK_PICARD + i);
-                ui.clickable('#' + HTML.STACK_ASK_QUOTE + i);
-                ui.clickable('#' + HTML.STACK_ASK_OFFSET + i);
+                ladderModel.setClickable('#' + HTML.STACK_ASK_PICARD + i);
+                ladderModel.setClickable('#' + HTML.STACK_ASK_QUOTE + i);
+                ladderModel.setClickable('#' + HTML.STACK_ASK_OFFSET + i);
             }
 
-            ui.clickable('#' + HTML.BUY_QTY);
-            ui.clickable('#' + HTML.SELL_QTY);
-            ui.clickable('#' + HTML.BUY_OFFSET_UP);
-            ui.clickable('#' + HTML.BUY_OFFSET_DOWN);
-            ui.clickable('#' + HTML.SELL_OFFSET_UP);
-            ui.clickable('#' + HTML.SELL_OFFSET_DOWN);
-            ui.clickable('#' + HTML.START_BUY);
-            ui.clickable('#' + HTML.STOP_BUY);
-            ui.clickable('#' + HTML.START_SELL);
-            ui.clickable('#' + HTML.STOP_SELL);
+            ladderModel.setClickable('#' + HTML.BUY_QTY);
+            ladderModel.setClickable('#' + HTML.SELL_QTY);
+            ladderModel.setClickable('#' + HTML.BUY_OFFSET_UP);
+            ladderModel.setClickable('#' + HTML.BUY_OFFSET_DOWN);
+            ladderModel.setClickable('#' + HTML.SELL_OFFSET_UP);
+            ladderModel.setClickable('#' + HTML.SELL_OFFSET_DOWN);
+            ladderModel.setClickable('#' + HTML.START_BUY);
+            ladderModel.setClickable('#' + HTML.STOP_BUY);
+            ladderModel.setClickable('#' + HTML.START_SELL);
+            ladderModel.setClickable('#' + HTML.STOP_SELL);
 
-            ui.cls(HTML.OFFSET_CONTROL, CSSClass.INVISIBLE, false);
+            ladderModel.setClass(HTML.OFFSET_CONTROL, CSSClass.INVISIBLE, false);
         }
     }
 
@@ -372,34 +372,25 @@ public class LadderView implements UiEventHandler {
         drawMetaData();
 
         activeView.refresh(getSymbol());
-        ui.flush();
+        ladderModel.flush();
     }
 
     void fastInputFlush() {
 
         activeView.refresh(getSymbol());
-        ui.flush();
+        ladderModel.flush();
     }
 
     private void drawClock() {
-        ui.txt(HTML.CLOCK, SIMPLE_DATE_FORMAT.format(new Date()));
-        ui.cls(HTML.CLOCK, CSSClass.SLOW, clientSpeedState == ClientSpeedState.SLOW);
-        ui.cls(HTML.CLOCK, CSSClass.VERY_SLOW, clientSpeedState == ClientSpeedState.TOO_SLOW);
+
+        final LeftHandPanel panel = ladderModel.getLeftHandPanel();
+        panel.setTime(System.currentTimeMillis());
+        ladderModel.setClass(HTML.CLOCK, CSSClass.SLOW, clientSpeedState == ClientSpeedState.SLOW);
+        ladderModel.setClass(HTML.CLOCK, CSSClass.VERY_SLOW, clientSpeedState == ClientSpeedState.TOO_SLOW);
     }
 
-    void clickTradingIssue(final LadderClickTradingIssue issue) {
-        clickTradingIssue(ui, issue);
-    }
-
-    static void clickTradingIssue(final UiPipeImpl ui, final LadderClickTradingIssue issue) {
-        ui.txt(HTML.CLICK_TRADING_ISSUES, issue.issue);
-    }
-
-    static void decorateUpDown(final UiPipeImpl ui, final String key, final Long value) {
-        if (null != value) {
-            ui.cls(key, CSSClass.POSITIVE, 0 < value);
-            ui.cls(key, CSSClass.NEGATIVE, value < 0);
-        }
+    void clickTradingIssue(final String issue) {
+        ladderModel.setErrorText(issue);
     }
 
     private String getSymbol() {
@@ -412,38 +403,43 @@ public class LadderView implements UiEventHandler {
 
     private void drawMetaData() {
 
-        ui.cls(HTML.BOOK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == bookView);
-        ui.cls(HTML.STACK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == stackView);
+        final LeftHandPanel leftHandPanel = ladderModel.getLeftHandPanel();
+
+        ladderModel.setClass(HTML.BOOK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == bookView);
+        ladderModel.setClass(HTML.STACK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == stackView);
 
         final IBook<?> book = marketData.getBook();
         if (null != book) {
-            ui.cls(HTML.SYMBOL, CSSClass.REVERSE_SPREAD,
+            ladderModel.setClass(HTML.SYMBOL, CSSClass.REVERSE_SPREAD,
                     InstType.FUTURE_SPREAD == book.getInstType() && book.getMIC().exchange.isReverseSpreadVenue);
         }
 
         if (null != metaData && null != extraDataForSymbol) {
+
+            final HeaderPanel headerPanel = ladderModel.getHeaderPanel();
+
             if (metaData.spreadContractSet != null) {
-                ui.cls(HTML.SYMBOL, CSSClass.SPREAD, symbol.equals(metaData.spreadContractSet.contractAfterNext));
-                ui.cls(HTML.SYMBOL, CSSClass.BACK, symbol.equals(metaData.spreadContractSet.nextContract));
+                ladderModel.setClass(HTML.SYMBOL, CSSClass.SPREAD, symbol.equals(metaData.spreadContractSet.contractAfterNext));
+                ladderModel.setClass(HTML.SYMBOL, CSSClass.BACK, symbol.equals(metaData.spreadContractSet.nextContract));
             }
             // Desk position
+
             if (null != metaData.formattedDeskPosition) {
-                ui.txt(HTML.DESK_POSITION, metaData.formattedDeskPosition);
-                decorateUpDown(ui, HTML.DESK_POSITION, metaData.deskPosition);
+                leftHandPanel.setDeskPosition(metaData.deskPosition, metaData.formattedDeskPosition);
             }
             // Day position
             if (null != metaData.formattedMrPhilNetPosition) {
-                decorateUpDown(ui, HTML.POSITION, metaData.mrPhilNetPosition);
-                ui.txt(HTML.POSITION, metaData.formattedMrPhilNetPosition);
-                ui.txt(HTML.TOTAL_TRADED, metaData.formattedMrPhilVolume);
+                leftHandPanel.setDayPosition(metaData.mrPhilNetPosition, metaData.formattedMrPhilNetPosition);
+                leftHandPanel.setOurTotalTradedQty(metaData.mrPhilVolume, metaData.formattedMrPhilVolume);
 
-                ui.cls(HTML.POSITION, CSSClass.INVISIBLE, showTotalTraded);
-                ui.cls(HTML.TOTAL_TRADED, CSSClass.INVISIBLE, !showTotalTraded);
+                ladderModel.setClass(HTML.POSITION, CSSClass.INVISIBLE, showTotalTraded);
+                ladderModel.setClass(HTML.TOTAL_TRADED, CSSClass.INVISIBLE, !showTotalTraded);
             }
 
-            if (null != metaData.pksExposure) {
-                ui.txt(HTML.PKS_EXPOSURE, metaData.pksExposure);
-                ui.txt(HTML.PKS_POSITION, metaData.pksPosition);
+            final PKSExposure pksExposure = metaData.getPKSData();
+            if (null != pksExposure) {
+                headerPanel.setPksExposure(pksExposure.exposure, metaData.pksExposure);
+                headerPanel.setPksPosition(pksExposure.position, metaData.pksPosition);
             }
 
             // Ladder text
@@ -451,56 +447,22 @@ public class LadderView implements UiEventHandler {
 
                 final FreeTextCell cell = ladderText.getKey();
                 final String text = ladderText.getValue();
-                ui.txt(cell.htmlID, text);
+                headerPanel.setFreeText(cell, text);
             }
 
-            setCellTest(HTML.BID_BEST_OFFSET_BPS, stackData.getBidTopOrderOffsetBPS());
-            setCellTest(HTML.ASK_BEST_OFFSET_BPS, stackData.getAskTopOrderOffsetBPS());
+            headerPanel.setBestBidOffsetBPS(stackData.getBidTopOrderOffsetBPS());
+            headerPanel.setBestAskOffsetBPS(stackData.getAskTopOrderOffsetBPS());
 
             final TheoValue theoValue = stackData.getTheoValue();
-            if (null != theoValue) {
-
-                if (theoValue.isValid()) {
-                    if (theoValue.getAfterHoursPct() < Constants.EPSILON) {
-                        ui.txt(HTML.AFTER_HOURS_WEIGHT, "0");
-                    } else {
-                        ui.txt(HTML.AFTER_HOURS_WEIGHT, Math.ceil(theoValue.getAfterHoursPct()));
-                    }
-                    ui.txt(HTML.TEXT_PREFIX + "r2c5", (int) Math.ceil(theoValue.getRawAfterHoursPct()));
-                } else {
-                    ui.txt(HTML.AFTER_HOURS_WEIGHT, "XXX");
-                    ui.txt(HTML.TEXT_PREFIX + "r2c5", "XXX");
-                }
-            }
+            headerPanel.setTheoValue(theoValue);
 
             // Going ex
             checkGoingEx();
-            ui.cls(HTML.TEXT, CSSClass.GOING_EX, exState == GoingExState.YES);
+            ladderModel.setClass(HTML.TEXT, CSSClass.GOING_EX, exState == GoingExState.YES);
         }
 
         final double uppyDownyValue = stackData.getPriceOffsetTickSize();
-        if (0 < uppyDownyValue) {
-            final String bps = twoDF.format(uppyDownyValue) + "bps";
-            ui.tooltip('#' + HTML.BUY_OFFSET_UP, bps);
-            ui.tooltip('#' + HTML.SELL_OFFSET_UP, bps);
-            ui.tooltip('#' + HTML.BUY_OFFSET_DOWN, '-' + bps);
-            ui.tooltip('#' + HTML.SELL_OFFSET_DOWN, '-' + bps);
-        } else {
-            ui.tooltip('#' + HTML.BUY_OFFSET_UP, "");
-            ui.tooltip('#' + HTML.SELL_OFFSET_UP, "");
-            ui.tooltip('#' + HTML.BUY_OFFSET_DOWN, "");
-            ui.tooltip('#' + HTML.SELL_OFFSET_DOWN, "");
-        }
-    }
-
-    private void setCellTest(final String cellID, final double value) {
-
-        if (Double.isNaN(value)) {
-            ui.txt(cellID, "---");
-        } else {
-            ui.txt(cellID, twoDF.format(value));
-
-        }
+        leftHandPanel.setBPSTooltip(uppyDownyValue);
     }
 
     private void recenterIfTimeoutElapsed() {
@@ -510,7 +472,7 @@ public class LadderView implements UiEventHandler {
         if (!activeView.canMoveTowardsCenter() || (RECENTER_TIME_MS < milliSinceLastCentered && activeView.moveTowardsCenter())) {
             resetLastCenteredTime();
         }
-        ui.cls(HTML.LADDER, CSSClass.RECENTERING, 0 < lastCenteredTime && RECENTER_WARN_TIME_MS <= milliSinceLastCentered);
+        ladderModel.setClass(HTML.LADDER, CSSClass.RECENTERING, 0 < lastCenteredTime && RECENTER_WARN_TIME_MS <= milliSinceLastCentered);
     }
 
     void recenterLadderForUser(final RecenterLaddersForUser recenterLaddersForUser) {
@@ -540,9 +502,8 @@ public class LadderView implements UiEventHandler {
     }
 
     // Inbound
-
     void onRawInboundData(final String data) {
-        ui.onInbound(data);
+        ladderModel.inboundFromUI(data);
     }
 
     @Override
@@ -858,9 +819,10 @@ public class LadderView implements UiEventHandler {
     // Heartbeats
 
     void sendHeartbeat() {
+
         if (lastHeartbeatSentMillis == null) {
             lastHeartbeatSentMillis = System.currentTimeMillis();
-            ui.send(UiPipeImpl.cmd("heartbeat", lastHeartbeatSentMillis, heartbeatSeqNo.getAndIncrement()));
+            ladderModel.sendHeartbeat(lastHeartbeatSentMillis, heartbeatSeqNo.getAndIncrement());
         }
     }
 
@@ -874,17 +836,6 @@ public class LadderView implements UiEventHandler {
             clientSpeedState = ClientSpeedState.SLOW;
         } else {
             clientSpeedState = ClientSpeedState.FINE;
-        }
-    }
-
-    static String formatClickQty(final Integer qty) {
-
-        if (qty < 1000) {
-            return Integer.toString(qty);
-        } else if (qty < 100000) {
-            return qty / 1000 + "K";
-        } else {
-            return MILLIONS_QTY_FORMAT.format(qty / 1000000d) + 'M';
         }
     }
 

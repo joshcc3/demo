@@ -28,8 +28,9 @@ public class UiPipeImpl {
     private static final String SCROLLABLE_CMD = "scrollable";
     private static final String TITLE_CMD = "title";
 
-    private final Joiner commandJoiner = Joiner.on(COMMAND_SEPARATOR);
     private final Publisher<WebSocketOutboundData> pipe;
+    private final Joiner commandJoiner;
+    private final StringBuilder cmdSB;
 
     private final KeyedBatcher text = new KeyedBatcher(TXT_CMD);
     private final ClassBatcher classes = new ClassBatcher(CLS_CMD);
@@ -46,6 +47,8 @@ public class UiPipeImpl {
 
     public UiPipeImpl(final Publisher<WebSocketOutboundData> pipe) {
         this.pipe = pipe;
+        this.commandJoiner = Joiner.on(COMMAND_SEPARATOR);
+        this.cmdSB = new StringBuilder();
     }
 
     // Attaches {dataKey:value} pair to element #key
@@ -70,7 +73,7 @@ public class UiPipeImpl {
 
     // Moves top of element #moveId to the center of #refId, offset by heightFraction * height of #refId (positive is up)
     public void height(final String moveId, final String refId, final double heightFraction) {
-        final String value = cmd(refId, String.format("%.1f", heightFraction));
+        final String value = cmd(cmdSB, refId, String.format("%.1f", heightFraction));
         height.put(moveId, value);
     }
 
@@ -80,7 +83,7 @@ public class UiPipeImpl {
 
     public void eval(final String eval) {
         flush();
-        send(cmd(EVAL_CMD, eval));
+        send(cmd(cmdSB, EVAL_CMD, eval));
     }
 
     public void clickable(final String id) {
@@ -107,7 +110,7 @@ public class UiPipeImpl {
         clickable.clear();
         scrollable.clear();
         titleBatcher.clear();
-        send(cmd(CLEAR_CMD));
+        send(cmd(cmdSB, CLEAR_CMD));
     }
 
     public void flush() {
@@ -122,7 +125,9 @@ public class UiPipeImpl {
         scrollable.flushPendingIntoCommandList(commands);
         titleBatcher.flushPendingIntoCommandList(commands);
         if (!commands.isEmpty()) {
-            send(commandJoiner.join(commands));
+            cmdSB.setLength(0);
+            commandJoiner.appendTo(cmdSB, commands);
+            send(cmdSB.toString());
         }
     }
 
@@ -156,8 +161,9 @@ public class UiPipeImpl {
         pipe.publish(new WebSocketOutboundData(cmd));
     }
 
-    public static String cmd(final Object... args) {
-        return Joiner.on(DATA_SEPARATOR).join(args);
+    public static String cmd(final StringBuilder sb, final Object... args) {
+        sb.setLength(0);
+        return Joiner.on(DATA_SEPARATOR).appendTo(sb, args).toString();
     }
 
     public static Map<String, String> getDataArg(final String[] args) {

@@ -389,11 +389,10 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     public void displayTradeIssue(final String symbol, final String text) {
 
-        final LadderClickTradingIssue ladderClickTradingIssue = new LadderClickTradingIssue(symbol, text);
         final Collection<LadderView> views = viewsBySymbol.get(symbol);
         for (final LadderView view : views) {
-            view.clickTradingIssue(ladderClickTradingIssue);
-            fiber.schedule(() -> view.clickTradingIssue(new LadderClickTradingIssue(symbol, "")), 5000, TimeUnit.MILLISECONDS);
+            view.clickTradingIssue(text);
+            fiber.schedule(() -> view.clickTradingIssue(""), 5000, TimeUnit.MILLISECONDS);
         }
     }
 

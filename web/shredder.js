@@ -73,7 +73,7 @@ function updateWidth() {
 }
 
 function draw(levels, ordersPerRow) {
-	console.log(`Redrawing ${levels} levels with ${ordersPerRow} orders per row`);
+
 	currentLevels = levels;
 	let rows = $("#rows");
 
