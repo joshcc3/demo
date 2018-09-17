@@ -1090,7 +1090,9 @@ public class StackFamilyView implements IStackRelationshipListener {
                 final String familyName = getExistingFamily(searchResult.instID.isin);
                 final String rfqSymbol = searchResult.symbol;
 
-                if (null != familyName && childrenToFamily.containsKey(rfqSymbol)) {
+                final String currentFamilyName = childrenToFamily.get(rfqSymbol);
+
+                if (null != familyName && null != currentFamilyName && !familyName.equals(currentFamilyName)) {
                     communityManager.setRelationship(SOURCE_UI, familyName, rfqSymbol);
                     communityManager.setChildQtyMultipliers(SOURCE_UI, rfqSymbol, 10, 10);
                 }
