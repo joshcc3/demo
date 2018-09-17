@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.util;
 
 import com.google.common.base.Preconditions;
-import sun.misc.SharedSecrets;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,25 +11,23 @@ public class EnumSwitcher<E extends Enum<E>> {
     private final E[] universe;
     private final EnumSet<E> validChoices;
 
-    E current = null;
-    int currentIdx = 0;
+    private E current = null;
 
     @SafeVarargs
     public EnumSwitcher(final Class<E> clazz, final E... validChoices) {
-
-        this.universe = getUniverse(clazz);
+        this.universe = clazz.getEnumConstants();
         Preconditions.checkArgument(universe.length > 0,
                 "Need at least one element enum switcher " + clazz.getName() + ", got " + Arrays.asList(universe));
 
         this.validChoices = EnumSet.noneOf(clazz);
         setValidChoices(validChoices);
-
-        current = universe[currentIdx];
+        if (validChoices.length > 0) {
+            current = validChoices[0];
+        }
     }
 
     @SafeVarargs
     public final void setValidChoices(final E... validChoices) {
-
         if (validChoices.length < 1) {
             throw new IllegalArgumentException("Need at least one valid choice from [" + Arrays.toString(universe) + "].");
         } else {
@@ -40,16 +37,18 @@ public class EnumSwitcher<E extends Enum<E>> {
     }
 
     public E next() {
-        int iters = universe.length;
-        do {
-            if (iters-- < 0) {
-                throw new IllegalArgumentException(
-                        "Cannot find next(): " + validChoices + " current: " + current + " currentIdx: " + currentIdx);
+        final int previousIdx = current.ordinal();
+
+        for (int i = 1; i <= universe.length; i++) {
+            final E next = universe[(previousIdx + i) % universe.length];
+            if (validChoices.contains(next)) {
+                current = next;
+                return next;
             }
-            currentIdx = (currentIdx + 1) % universe.length;
-            current = universe[currentIdx];
-        } while (!validChoices.contains(current));
-        return current;
+        }
+
+        throw new IllegalArgumentException(
+                "Cannot find next(): " + validChoices + " current: " + current + " currentIdx: " + current.ordinal());
     }
 
     public E get() {
@@ -57,18 +56,13 @@ public class EnumSwitcher<E extends Enum<E>> {
     }
 
     public void set(final E choice) {
-        int iters = universe.length;
-        while (choice != next()) {
-            if (iters-- < 0) {
-                throw new IllegalArgumentException(
-                        "Cannot find valid choice " + choice + " in " + validChoices + " current: " + current + " currentIdx: " +
-                                currentIdx);
-            }
+        if (validChoices.contains(choice)) {
+            current = choice;
+        } else {
+            throw new IllegalArgumentException(
+                    "Cannot find valid choice " + choice + " in " + validChoices + " current: " + current + " currentIdx: " +
+                            choice.ordinal());
         }
-    }
-
-    private static <E extends Enum<E>> E[] getUniverse(final Class<E> elementType) {
-        return SharedSecrets.getJavaLangAccess().getEnumConstantsShared(elementType);
     }
 
     public E[] getUniverse() {
