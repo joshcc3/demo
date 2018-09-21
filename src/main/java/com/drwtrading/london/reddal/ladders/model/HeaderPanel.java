@@ -162,7 +162,7 @@ public class HeaderPanel {
 
     public void setBestBidOffsetBPS(final double offsetBPS) {
 
-        if (Constants.EPSILON < Math.abs(this.bestBidOffsetBPS - offsetBPS)) {
+        if (Double.isNaN(this.bestBidOffsetBPS) || Constants.EPSILON < Math.abs(this.bestBidOffsetBPS - offsetBPS)) {
 
             this.bestBidOffsetBPS = offsetBPS;
             setCellTest(HTML.BID_BEST_OFFSET_BPS, offsetBPS);
@@ -172,7 +172,7 @@ public class HeaderPanel {
 
     public void setBestAskOffsetBPS(final double offsetBPS) {
 
-        if (Constants.EPSILON < Math.abs(this.bestAskOffsetBPS - offsetBPS)) {
+        if (Double.isNaN(this.bestAskOffsetBPS) || Constants.EPSILON < Math.abs(this.bestAskOffsetBPS - offsetBPS)) {
 
             this.bestAskOffsetBPS = offsetBPS;
             setCellTest(HTML.ASK_BEST_OFFSET_BPS, offsetBPS);
@@ -188,28 +188,4 @@ public class HeaderPanel {
             ui.txt(cellID, formattedValue);
         }
     }
-    /*
-    			<div id="header">
-				<div id="buy_qty" class="total_qty invisible"></div>
-				<div id="symbol"></div>
-				<div id="sell_qty" class="total_qty invisible"></div>
-			</div>
-			<div id="text">
-				<div id="text_r1c1" class="text_cell"></div>
-				<div id="text_r1c2" class="text_cell" title="Click to front month"></div>
-				<div id="text_r1c3" class="text_cell" title="Click to back month"></div>
-				<div id="text_r1c4" class="text_cell" title="Click to spread"></div>
-				<div id="after_hours_weight" class="text_cell" title="AH weight"></div>
-				<div id="text_r2c1" class="text_cell"></div>
-				<div id="bid_best_offset_bps" class="text_cell" title="Stacks Bid Offset BPS"></div>
-				<div id="text_r2c3" class="text_cell"></div>
-				<div id="ask_best_offset_bps" class="text_cell" title="Stacks Ask Offset BPS"></div>
-				<div id="text_r2c5" class="text_cell" title="Raw AH weight"></div>
-				<div id="pks_exposure" class="text_cell" title="PKS Exposure"></div>
-				<div id="text_r3c2" class="text_cell"></div>
-				<div id="text_r3c3" class="text_cell"></div>
-				<div id="text_r3c4" class="text_cell"></div>
-				<div id="pks_position" class="text_cell" title="PKS Position"></div>
-			</div>
-     */
 }

@@ -745,10 +745,10 @@ public class LadderBookView implements ILadderBoard {
             final long laserLinePrice = laserLine.getValue();
 
             if (topPrice <= laserLinePrice) {
-                final BookPanelRow priceRow = bookPanel.getRow(levels - 1);
+                final BookPanelRow priceRow = bookPanel.getRow(0);
                 ladderModel.setHeight(laserKey, priceRow.htmlData.bookPriceKey, 0.5);
             } else if (laserLinePrice < bottomPrice) {
-                final BookPanelRow priceRow = bookPanel.getRow(0);
+                final BookPanelRow priceRow = bookPanel.getRow(levels - 1);
                 ladderModel.setHeight(laserKey, priceRow.htmlData.bookPriceKey, -0.5);
             } else {
                 long price = bottomPrice;
