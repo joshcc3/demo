@@ -101,7 +101,7 @@ public class WorkingOrdersForSymbol {
 
                 final WorkingOrderUpdateFromServer working = workingOrderIter.next();
                 if (working.fromServer.equals(server)) {
-                    iter.remove();
+                    workingOrderIter.remove();
                 }
             }
             if (priceLevel.isEmpty()) {
