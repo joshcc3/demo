@@ -1,14 +1,11 @@
 package com.drwtrading.london.reddal.fastui;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-class KeyedBatcher {
+class KeyedBatcher implements ICmdAppender {
 
     private final String command;
-    private final StringBuilder cmdSB;
 
     private final Map<String, String> values;
     private final Map<String, String> pendingValues;
@@ -16,8 +13,6 @@ class KeyedBatcher {
     KeyedBatcher(final String command) {
 
         this.command = command;
-        this.cmdSB = new StringBuilder();
-
         this.values = new HashMap<>();
         this.pendingValues = new HashMap<>();
     }
@@ -31,24 +26,33 @@ class KeyedBatcher {
         }
     }
 
-    void flushPendingIntoCommandList(final List<String> commands) {
+    @Override
+    public boolean appendCommand(final StringBuilder cmdSB, final char separator) {
 
         if (!pendingValues.isEmpty()) {
-            commands.add(getCommand());
+
+            appendCmd(cmdSB, separator);
+
             values.putAll(pendingValues);
             pendingValues.clear();
+
+            return true;
+        } else {
+            return false;
         }
     }
 
-    String getCommand() {
+    private void appendCmd(final StringBuilder cmdSB, final char separator) {
 
-        final List<String> updates = new ArrayList<>();
+        cmdSB.append(command);
         for (final Map.Entry<String, String> entry : pendingValues.entrySet()) {
-            updates.add(entry.getKey());
-            updates.add(entry.getValue());
+
+            cmdSB.append(separator);
+            cmdSB.append(entry.getKey());
+
+            cmdSB.append(separator);
+            cmdSB.append(entry.getValue());
         }
-        final String updateCmds = UiPipeImpl.cmd(cmdSB, updates.toArray());
-        return UiPipeImpl.cmd(cmdSB, this.command, updateCmds);
     }
 
     void clear() {

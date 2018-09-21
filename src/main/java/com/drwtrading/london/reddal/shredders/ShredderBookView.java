@@ -28,6 +28,7 @@ import eeif.execution.WorkingOrderUpdate;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
@@ -199,33 +200,37 @@ class ShredderBookView {
     }
 
     void augmentIfOurOrder(final IBookOrder order, final ShreddedOrder shreddedOrder) {
+
         shreddedOrder.isOurs = false;
 
-        for (final WorkingOrderUpdateFromServer workingOrderUpdateFromServer : workingOrdersForSymbol.ordersByPrice.get(order.getPrice())) {
-            final WorkingOrderUpdate ourOrder = workingOrderUpdateFromServer.workingOrderUpdate;
-            final boolean sameSide = sameSide(order.getSide(), ourOrder.getSide());
-            final boolean sameSize = ourOrder.getTotalQuantity() - ourOrder.getFilledQuantity() == order.getRemainingQty();
+        final Collection<WorkingOrderUpdateFromServer> priceLevel = workingOrdersForSymbol.getWorkingOrdersAtPrice(order.getPrice());
+        if (!priceLevel.isEmpty()) {
+            for (final WorkingOrderUpdateFromServer workingOrderUpdateFromServer : priceLevel) {
+                final WorkingOrderUpdate ourOrder = workingOrderUpdateFromServer.workingOrderUpdate;
+                final boolean sameSide = isSameSide(order.getSide(), ourOrder.getSide());
+                final boolean sameSize = ourOrder.getTotalQuantity() - ourOrder.getFilledQuantity() == order.getRemainingQty();
 
-            if (sameSide && sameSize) {
-                shreddedOrder.tag = ourOrder.getTag();
-                shreddedOrder.orderType = ourOrder.getWorkingOrderType().toString();
-                shreddedOrder.isOurs = true;
+                if (sameSide && sameSize) {
+                    shreddedOrder.tag = ourOrder.getTag();
+                    shreddedOrder.orderType = ourOrder.getWorkingOrderType().toString();
+                    shreddedOrder.isOurs = true;
 
-                final ShreddedOrder closestSimilarOrder = ourOrders.floor(shreddedOrder);
-                if (closestSimilarOrder != null) {
-                    if (closestSimilarOrder.quantity == shreddedOrder.quantity) {
-                        closestSimilarOrder.canOnlyBeOurs = false;
-                        shreddedOrder.canOnlyBeOurs = false;
+                    final ShreddedOrder closestSimilarOrder = ourOrders.floor(shreddedOrder);
+                    if (closestSimilarOrder != null) {
+                        if (closestSimilarOrder.quantity == shreddedOrder.quantity) {
+                            closestSimilarOrder.canOnlyBeOurs = false;
+                            shreddedOrder.canOnlyBeOurs = false;
+                        }
                     }
-                }
 
-                ourOrders.add(shreddedOrder);
-                break;
+                    ourOrders.add(shreddedOrder);
+                    break;
+                }
             }
         }
     }
 
-    private boolean sameSide(final BookSide bookSide, final Side side) {
+    private static boolean isSameSide(final BookSide bookSide, final Side side) {
         return (bookSide == BookSide.BID && side == Side.BID) || (bookSide == BookSide.ASK && side == Side.OFFER);
     }
 

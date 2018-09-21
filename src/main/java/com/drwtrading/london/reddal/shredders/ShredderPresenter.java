@@ -112,13 +112,7 @@ public class ShredderPresenter implements IStackPresenterCallback {
                         iter.remove();
                     }
                 }
-                for (final Iterator<WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByPrice.values().iterator();
-                     iter.hasNext(); ) {
-                    final WorkingOrderUpdateFromServer working = iter.next();
-                    if (working.fromServer.equals(serverTradingStatus.server)) {
-                        iter.remove();
-                    }
-                }
+                ordersForSymbol.removeOrdersFromServer(serverTradingStatus.server);
             }
         }
     }

@@ -1,8 +1,6 @@
 package com.drwtrading.london.reddal.fastui;
 
-import java.util.List;
-
-class StringBatcher {
+class StringBatcher implements ICmdAppender {
 
     private final String command;
     private final StringBuilder cmdSB;
@@ -23,11 +21,17 @@ class StringBatcher {
         pendingValue = value;
     }
 
-    void flushPendingIntoCommandList(final List<String> commands) {
+    @Override
+    public boolean appendCommand(final StringBuilder cmdSB, final char separator) {
 
         if (!pendingValue.equals(value)) {
-            commands.add(UiPipeImpl.cmd(cmdSB, this.command, pendingValue));
+            cmdSB.append(command);
+            cmdSB.append(separator);
+            cmdSB.append(pendingValue);
             value = pendingValue;
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -35,5 +39,4 @@ class StringBatcher {
         pendingValue = "";
         value = "";
     }
-
 }

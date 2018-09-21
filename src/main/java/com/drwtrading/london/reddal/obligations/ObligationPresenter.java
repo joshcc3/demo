@@ -32,7 +32,7 @@ public class ObligationPresenter {
     private final Predicate<String> symbolFilter;
     private RFQObligationSet rfqObligationMap = ObligationOPXL.EMPTY_OBLIGATIONS;
 
-    public ObligationPresenter(FXCalc<?> fxCalc, Predicate<String> symbolFilter) {
+    public ObligationPresenter(final FXCalc<?> fxCalc, final Predicate<String> symbolFilter) {
         this.fxCalc = fxCalc;
         this.symbolFilter = symbolFilter;
     }
@@ -45,9 +45,9 @@ public class ObligationPresenter {
         }
     }
 
-    private void refreshView(View view) {
+    private void refreshView(final View view) {
         view.setNotionals(rfqObligationMap.notionals);
-        for (String symbol : Sets.union(searchResults.keySet(), Sets.union(rfqObligationMap.obligationMap.keySet(), orders.keySet()))) {
+        for (final String symbol : Sets.union(searchResults.keySet(), Sets.union(rfqObligationMap.obligationMap.keySet(), orders.keySet()))) {
             updateView(view, symbol);
         }
     }
@@ -64,14 +64,14 @@ public class ObligationPresenter {
     }
 
     @Subscribe
-    public void onSearchResult(SearchResult instrument) {
+    public void onSearchResult(final SearchResult instrument) {
         if (symbolFilter.test(instrument.symbol)) {
             searchResults.put(instrument.symbol, instrument);
         }
     }
 
-    public void updateObligations(RFQObligationSet rfqObligationMap) {
-        boolean notionalsChanged = this.rfqObligationMap == null || !rfqObligationMap.notionals.equals(this.rfqObligationMap.notionals);
+    public void updateObligations(final RFQObligationSet rfqObligationMap) {
+        final boolean notionalsChanged = this.rfqObligationMap == null || !rfqObligationMap.notionals.equals(this.rfqObligationMap.notionals);
         this.rfqObligationMap = rfqObligationMap;
         changedSymbols.addAll(rfqObligationMap.obligationMap.keySet());
         if (notionalsChanged) {
@@ -79,36 +79,36 @@ public class ObligationPresenter {
         }
     }
 
-    public void onWorkingOrders(Map<String, WorkingOrderUpdateFromServer> workingOrderUpdateMap) {
-        for (WorkingOrderUpdateFromServer update : workingOrderUpdateMap.values()) {
+    public void onWorkingOrders(final Map<String, WorkingOrderUpdateFromServer> workingOrderUpdateMap) {
+        for (final WorkingOrderUpdateFromServer update : workingOrderUpdateMap.values()) {
             final String symbol = update.workingOrderUpdate.getSymbol();
             if (symbolFilter.test(symbol)) {
-                WorkingOrdersForSymbol ordersForSymbol = orders.computeIfAbsent(symbol, WorkingOrdersForSymbol::new);
+                final WorkingOrdersForSymbol ordersForSymbol = orders.computeIfAbsent(symbol, WorkingOrdersForSymbol::new);
                 ordersForSymbol.onWorkingOrderUpdate(update);
                 changedSymbols.add(symbol);
             }
         }
     }
 
-    public void onWorkingOrderConnected(WorkingOrderConnectionEstablished connectionEstablished) {
-        for (WorkingOrdersForSymbol workingOrdersForSymbol : orders.values()) {
+    public void onWorkingOrderConnected(final WorkingOrderConnectionEstablished connectionEstablished) {
+        for (final WorkingOrdersForSymbol workingOrdersForSymbol : orders.values()) {
             workingOrdersForSymbol.onServerDisconnected(connectionEstablished);
         }
 
     }
 
     public void update() {
-        for (String changedSymbol : changedSymbols) {
+        for (final String changedSymbol : changedSymbols) {
             updateView(views.all(), changedSymbol);
         }
         changedSymbols.clear();
     }
 
-    public void updateView(View view, String symbol) {
+    public void updateView(final View view, final String symbol) {
 
-        SearchResult searchResult = searchResults.get(symbol);
-        WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
-        RFQObligation obligation = rfqObligationMap.obligationMap.getOrDefault(symbol, DEFAULT);
+        final SearchResult searchResult = searchResults.get(symbol);
+        final WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
+        final RFQObligation obligation = rfqObligationMap.obligationMap.getOrDefault(symbol, DEFAULT);
 
         if (obligation.obligations.isEmpty()) {
             view.hide(symbol);
@@ -125,12 +125,13 @@ public class ObligationPresenter {
 
         final double fxRate = fxCalc.getLastValidMid(searchResult.instID.ccy, CCY.EUR);
 
-        for (Long price : ordersForSymbol.ordersByPrice.keySet()) {
+        for (final Long price : ordersForSymbol.getWorkingOrderPrices()) {
+
             long bidQty = 0;
             long askQty = 0;
 
-            for (WorkingOrderUpdateFromServer update : ordersForSymbol.ordersByPrice.get(price)) {
-                int unfilledQty = update.workingOrderUpdate.getTotalQuantity()
+            for (final WorkingOrderUpdateFromServer update : ordersForSymbol.getWorkingOrdersAtPrice(price)) {
+                final int unfilledQty = update.workingOrderUpdate.getTotalQuantity()
                         - update.workingOrderUpdate.getFilledQuantity();
                 switch (update.workingOrderUpdate.getSide()) {
                     case BID:
@@ -142,7 +143,7 @@ public class ObligationPresenter {
                 }
             }
 
-            double dblPx = (double) (price) / Constants.NORMALISING_FACTOR;
+            final double dblPx = (double) (price) / Constants.NORMALISING_FACTOR;
 
             if (bidQty > 0) {
                 bids.put(dblPx, dblPx * bidQty * fxRate);
@@ -173,7 +174,7 @@ public class ObligationPresenter {
         }
     }
 
-    private List<Obligation> computeMissedObligations(double midPx, TreeMap<Double, Double> pxToNotional, List<Obligation> obligations) {
+    private List<Obligation> computeMissedObligations(final double midPx, final TreeMap<Double, Double> pxToNotional, final List<Obligation> obligations) {
 
         final List<Obligation> missedObligations = new ArrayList<>();
 
@@ -181,7 +182,7 @@ public class ObligationPresenter {
         double lastPx = midPx;
 
         final Iterator<Map.Entry<Double, Double>> pxIter = pxToNotional.entrySet().iterator();
-        for (Obligation obligation : obligations) {
+        for (final Obligation obligation : obligations) {
 
             while (aggregateNotional < obligation.notional && pxIter.hasNext()) {
                 final Map.Entry<Double, Double> e = pxIter.next();

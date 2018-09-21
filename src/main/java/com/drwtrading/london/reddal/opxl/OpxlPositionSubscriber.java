@@ -31,7 +31,7 @@ public class OpxlPositionSubscriber extends AOpxlReader<ReddalComponents, OPXLDe
     @Override
     protected OPXLDeskPositions parseTable(final Object[][] opxlTable) {
 
-        final Map<String, Long> positions = new HashMap<>();
+        final Map<String, Long> positions = new HashMap<>(opxlTable.length);
 
         for (final Object[] data : opxlTable) {
 

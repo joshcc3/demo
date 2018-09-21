@@ -15,11 +15,15 @@ public class ShredderBookViewTest {
 
     @Test
     public void highlightingTwoOrdersTest() {
+
+        final String symbol = "operation cwal";
+        final long price = 1;
+
         final IBookOrder firstOrder = Mockito.mock(IBookOrder.class);
         final IBookOrder secondOrder = Mockito.mock(IBookOrder.class);
 
         Mockito.when(firstOrder.getSide()).thenReturn(BookSide.BID);
-        Mockito.when(firstOrder.getPrice()).thenReturn(1L);
+        Mockito.when(firstOrder.getPrice()).thenReturn(price);
         Mockito.when(firstOrder.getRemainingQty()).thenReturn(1337L);
 
         Mockito.when(secondOrder.getSide()).thenReturn(BookSide.BID);
@@ -29,11 +33,15 @@ public class ShredderBookViewTest {
         final WorkingOrderUpdate firstWorkingOrder = Mockito.mock(WorkingOrderUpdate.class);
         final WorkingOrderUpdate secondWorkingOrder = Mockito.mock(WorkingOrderUpdate.class);
 
+        Mockito.doReturn(symbol).when(firstWorkingOrder).getSymbol();
+        Mockito.doReturn(price).when(firstWorkingOrder).getPrice();
         Mockito.when(firstWorkingOrder.getSide()).thenReturn(Side.BID);
         Mockito.when(firstWorkingOrder.getTotalQuantity()).thenReturn(1337);
         Mockito.when(firstWorkingOrder.getFilledQuantity()).thenReturn(0);
         Mockito.when(firstWorkingOrder.getWorkingOrderType()).thenReturn(WorkingOrderType.MARKET);
 
+        Mockito.doReturn(symbol).when(secondWorkingOrder).getSymbol();
+        Mockito.doReturn(price).when(secondWorkingOrder).getPrice();
         Mockito.when(secondWorkingOrder.getSide()).thenReturn(Side.BID);
         Mockito.when(secondWorkingOrder.getTotalQuantity()).thenReturn(58008);
         Mockito.when(secondWorkingOrder.getFilledQuantity()).thenReturn(0);
@@ -43,9 +51,9 @@ public class ShredderBookViewTest {
         final WorkingOrderUpdateFromServer secondWorkingOrderContainer =
                 new WorkingOrderUpdateFromServer("UpUpDownDownLeftRightBA", secondWorkingOrder);
 
-        final WorkingOrdersForSymbol workingOrdersForSymbol = new WorkingOrdersForSymbol("operation cwal");
-        workingOrdersForSymbol.ordersByPrice.put(firstOrder.getPrice(), firstWorkingOrderContainer);
-        workingOrdersForSymbol.ordersByPrice.put(secondOrder.getPrice(), secondWorkingOrderContainer);
+        final WorkingOrdersForSymbol workingOrdersForSymbol = new WorkingOrdersForSymbol(symbol);
+        workingOrdersForSymbol.onWorkingOrderUpdate(firstWorkingOrderContainer);
+        workingOrdersForSymbol.onWorkingOrderUpdate(secondWorkingOrderContainer);
 
         final ShredderBookView shredderBookView = new ShredderBookView(null, null, null, null, 10, workingOrdersForSymbol, null);
 

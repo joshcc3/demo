@@ -7,6 +7,8 @@ public enum ReddalComponents implements IMonitoredComponent {
     SELECT_IO,
     MONITOR,
 
+    OLD_ERRORS,
+
     INDY,
 
     UI_SELECT_IO,

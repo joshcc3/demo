@@ -4,11 +4,10 @@ import com.drwtrading.london.eeif.utils.collections.MapUtils;
 
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-class DataBatcher<E extends Enum<E> & IEnumKey> {
+class DataBatcher<E extends Enum<E> & IEnumKey> implements ICmdAppender {
 
     private final String command;
 
@@ -34,43 +33,40 @@ class DataBatcher<E extends Enum<E> & IEnumKey> {
         pendingEnabledClasses.put(enumKey, value);
     }
 
-    void flushPendingIntoCommandList(final List<String> commands) {
+    @Override
+    public boolean appendCommand(final StringBuilder cmdSB, final char separator) {
 
+        boolean isCmdHeaderNeeded = true;
         if (!pendingValues.isEmpty()) {
-            final StringBuilder sb = new StringBuilder();
-            appendCommands(sb);
-            if (this.command.length() < sb.length()) {
-                commands.add(sb.toString());
-            }
-        }
-    }
+            for (final Map.Entry<String, EnumMap<E, Object>> entry : pendingValues.entrySet()) {
 
-    private void appendCommands(final StringBuilder sb) {
+                final EnumMap<E, Object> pendingEnabledClasses = entry.getValue();
+                final EnumMap<E, Object> oldEnabledClasses = MapUtils.getMappedEnumMap(values, entry.getKey(), enumKeyClass);
 
-        sb.append(this.command);
-        for (final Map.Entry<String, EnumMap<E, Object>> entry : pendingValues.entrySet()) {
+                for (int i = 0; i < enumKeyClasses.length; ++i) {
 
-            final EnumMap<E, Object> pendingEnabledClasses = entry.getValue();
-            final EnumMap<E, Object> oldEnabledClasses = MapUtils.getMappedEnumMap(values, entry.getKey(), enumKeyClass);
+                    final E enumKey = enumKeyClasses[i];
 
-            for (int i = 0; i < enumKeyClasses.length; ++i) {
+                    final Object value = pendingEnabledClasses.get(enumKey);
+                    final Object oldValue = oldEnabledClasses.put(enumKey, value);
 
-                final E enumKey = enumKeyClasses[i];
+                    if (!Objects.equals(oldValue, value)) {
 
-                final Object value = pendingEnabledClasses.get(enumKey);
-                final Object oldValue = oldEnabledClasses.put(enumKey, value);
-
-                if (!Objects.equals(oldValue, value)) {
-
-                    sb.append(UiPipeImpl.DATA_SEPARATOR);
-                    sb.append(entry.getKey());
-                    sb.append(UiPipeImpl.DATA_SEPARATOR);
-                    sb.append(enumKey.getHTMLKey());
-                    sb.append(UiPipeImpl.DATA_SEPARATOR);
-                    sb.append(value);
+                        if (isCmdHeaderNeeded) {
+                            cmdSB.append(this.command);
+                            isCmdHeaderNeeded = false;
+                        }
+                        cmdSB.append(separator);
+                        cmdSB.append(entry.getKey());
+                        cmdSB.append(separator);
+                        cmdSB.append(enumKey.getHTMLKey());
+                        cmdSB.append(separator);
+                        cmdSB.append(value);
+                    }
                 }
             }
         }
+        return !isCmdHeaderNeeded;
     }
 
     void clear() {

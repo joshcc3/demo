@@ -287,6 +287,7 @@ public class LadderView implements UiEventHandler {
 
         ladderModel.clear();
         view.draw(levels);
+        ladderModel.getBookPanel().sendLevelData(levels);
 
         for (final CSSClass type : CSSClass.values()) {
             ladderModel.setClass(HTML.ORDER_TYPE_LEFT, type, false);

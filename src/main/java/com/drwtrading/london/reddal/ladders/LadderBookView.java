@@ -489,6 +489,7 @@ public class LadderBookView implements ILadderBoard {
                 bottomPrice = price;
                 price = marketData.getBook().getTickTable().addTicks(price, -1);
             }
+            bookPanel.sendLevelData(levels);
         }
     }
 
@@ -884,19 +885,22 @@ public class LadderBookView implements ILadderBoard {
                 int totalQty = 0;
                 BookSide side = null;
 
-                for (final WorkingOrderUpdateFromServer orderFromServer : workingOrdersForSymbol.ordersByPrice.get(price)) {
-                    final WorkingOrderUpdate order = orderFromServer.workingOrderUpdate;
-                    final int orderQty = order.getTotalQuantity() - order.getFilledQuantity();
-                    side = LadderView.convertSide(order.getSide());
-                    keys.append(orderFromServer.key());
-                    keys.append('!');
-                    if (0 < orderQty) {
-                        orderTypes.add(orderFromServer.workingOrderUpdate.getWorkingOrderType());
-                    }
-                    if (WorkingOrderType.HIDDEN_TICKTAKER == order.getWorkingOrderType()) {
-                        hiddenTickTakerQty += orderQty;
-                    } else {
-                        totalQty += orderQty;
+                final Collection<WorkingOrderUpdateFromServer> workingOrders = workingOrdersForSymbol.getWorkingOrdersAtPrice(price);
+                if (!workingOrders.isEmpty()) {
+                    for (final WorkingOrderUpdateFromServer orderFromServer : workingOrders) {
+                        final WorkingOrderUpdate order = orderFromServer.workingOrderUpdate;
+                        final int orderQty = order.getTotalQuantity() - order.getFilledQuantity();
+                        side = LadderView.convertSide(order.getSide());
+                        keys.append(orderFromServer.key());
+                        keys.append('!');
+                        if (0 < orderQty) {
+                            orderTypes.add(orderFromServer.workingOrderUpdate.getWorkingOrderType());
+                        }
+                        if (WorkingOrderType.HIDDEN_TICKTAKER == order.getWorkingOrderType()) {
+                            hiddenTickTakerQty += orderQty;
+                        } else {
+                            totalQty += orderQty;
+                        }
                     }
                 }
 
@@ -1240,7 +1244,7 @@ public class LadderBookView implements ILadderBoard {
             if (label.startsWith(HTML.ORDER)) {
                 final String price = data.get("price");
                 final String url = "/orders#" + symbol + ',' + price;
-                final Collection<WorkingOrderUpdateFromServer> orders = workingOrdersForSymbol.ordersByPrice.get(Long.valueOf(price));
+                final Collection<WorkingOrderUpdateFromServer> orders = workingOrdersForSymbol.getWorkingOrdersAtPrice(Long.valueOf(price));
                 if (!orders.isEmpty()) {
                     view.popUp(url, "orders", 270, 20 * (1 + orders.size()));
                 }
@@ -1425,14 +1429,16 @@ public class LadderBookView implements ILadderBoard {
             if (null != modifyFromPrice) {
                 if (modifyFromPrice != price) {
 
-                    for (final WorkingOrderUpdateFromServer order : workingOrdersForSymbol.ordersByPrice.get(modifyFromPrice)) {
+                    final Collection<WorkingOrderUpdateFromServer> workingOrders =
+                            workingOrdersForSymbol.getWorkingOrdersAtPrice(modifyFromPrice);
+                    for (final WorkingOrderUpdateFromServer order : workingOrders) {
                         final WorkingOrderUpdate workingOrderUpdate = order.workingOrderUpdate;
                         modifyOrder(clientSpeedState, price, order, workingOrderUpdate.getTotalQuantity());
                     }
                 }
                 modifyFromPrice = null;
                 modifyFromPriceSelectedTime = 0L;
-            } else if (workingOrdersForSymbol.ordersByPrice.containsKey(price)) {
+            } else if (workingOrdersForSymbol.hasPriceLevel(price)) {
                 modifyFromPrice = price;
                 modifyFromPriceSelectedTime = System.currentTimeMillis();
             }
@@ -1471,8 +1477,9 @@ public class LadderBookView implements ILadderBoard {
 
     private void cancelWorkingOrders(final Long price) {
 
-        if (!pendingRefDataAndSettle && workingOrdersForSymbol != null) {
-            for (final WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrdersForSymbol.ordersByPrice.get(price)) {
+        if (!pendingRefDataAndSettle && null != workingOrdersForSymbol) {
+            final Collection<WorkingOrderUpdateFromServer> workingOrders = workingOrdersForSymbol.getWorkingOrdersAtPrice(price);
+            for (final WorkingOrderUpdateFromServer orderUpdateFromServer : workingOrders) {
                 cancelOrder(orderUpdateFromServer);
             }
         }

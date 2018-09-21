@@ -3,7 +3,6 @@ package com.drwtrading.london.reddal.safety;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.time.Clock;
-import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.status.StatusStat;
 import org.jetlang.channels.Publisher;
 
@@ -18,7 +17,7 @@ public class TradingStatusWatchdog {
 
     private final long maxAgeMillis;
     private final Clock clock;
-    private final Publisher<StatsMsg> statsPublisher;
+    private final Publisher<StatusStat> statsPublisher;
 
     private final Map<String, Long> lastWorkingOrderEventFromServer;
     private final Set<String> connectedNibblerTransports;
@@ -26,7 +25,7 @@ public class TradingStatusWatchdog {
     private final Map<String, ServerTradingStatus> tradingStatusMap;
 
     public TradingStatusWatchdog(final Publisher<ServerTradingStatus> tradingStatusPublisher, final long maxAgeMillis, final Clock clock,
-            final Publisher<StatsMsg> statsPublisher) {
+            final Publisher<StatusStat> statsPublisher) {
 
         this.tradingStatusPublisher = tradingStatusPublisher;
         this.maxAgeMillis = maxAgeMillis;

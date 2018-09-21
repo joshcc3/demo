@@ -5,11 +5,10 @@ import com.drwtrading.london.reddal.fastui.html.CSSClass;
 
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-class ClassBatcher {
+class ClassBatcher implements ICmdAppender {
 
     private final String command;
 
@@ -33,43 +32,40 @@ class ClassBatcher {
         pendingEnabledClasses.put(cssClass, enabled);
     }
 
-    void flushPendingIntoCommandList(final List<String> commands) {
+    @Override
+    public boolean appendCommand(final StringBuilder cmdSB, final char separator) {
 
+        boolean isCmdHeaderNeeded = true;
         if (!pendingValues.isEmpty()) {
-            final StringBuilder sb = new StringBuilder();
-            appendCommands(sb);
-            if (this.command.length() < sb.length()) {
-                commands.add(sb.toString());
-            }
-        }
-    }
+            for (final Map.Entry<String, EnumMap<CSSClass, Boolean>> entry : pendingValues.entrySet()) {
 
-    private void appendCommands(final StringBuilder sb) {
+                final EnumMap<CSSClass, Boolean> pendingEnabledClasses = entry.getValue();
+                final EnumMap<CSSClass, Boolean> oldEnabledClasses = MapUtils.getMappedEnumMap(values, entry.getKey(), CSSClass.class);
 
-        sb.append(this.command);
-        for (final Map.Entry<String, EnumMap<CSSClass, Boolean>> entry : pendingValues.entrySet()) {
+                for (int i = 0; i < cssClasses.length; ++i) {
 
-            final EnumMap<CSSClass, Boolean> pendingEnabledClasses = entry.getValue();
-            final EnumMap<CSSClass, Boolean> oldEnabledClasses = MapUtils.getMappedEnumMap(values, entry.getKey(), CSSClass.class);
+                    final CSSClass cssClass = cssClasses[i];
 
-            for (int i = 0; i < cssClasses.length; ++i) {
+                    final Boolean cssEnabled = pendingEnabledClasses.get(cssClass);
+                    final Boolean oldValue = oldEnabledClasses.put(cssClass, cssEnabled);
 
-                final CSSClass cssClass = cssClasses[i];
+                    if (!Objects.equals(oldValue, cssEnabled)) {
 
-                final Boolean cssEnabled = pendingEnabledClasses.get(cssClass);
-                final Boolean oldValue = oldEnabledClasses.put(cssClass, cssEnabled);
-
-                if (!Objects.equals(oldValue, cssEnabled)) {
-
-                    sb.append(UiPipeImpl.DATA_SEPARATOR);
-                    sb.append(entry.getKey());
-                    sb.append(UiPipeImpl.DATA_SEPARATOR);
-                    sb.append(cssClass.cssText);
-                    sb.append(UiPipeImpl.DATA_SEPARATOR);
-                    sb.append(cssEnabled);
+                        if (isCmdHeaderNeeded) {
+                            cmdSB.append(this.command);
+                            isCmdHeaderNeeded = false;
+                        }
+                        cmdSB.append(separator);
+                        cmdSB.append(entry.getKey());
+                        cmdSB.append(separator);
+                        cmdSB.append(cssClass.cssText);
+                        cmdSB.append(separator);
+                        cmdSB.append(cssEnabled);
+                    }
                 }
             }
         }
+        return !isCmdHeaderNeeded;
     }
 
     void clear() {

@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.util;
 
 import com.drwtrading.london.time.Clock;
-import com.drwtrading.monitoring.stats.StatsMsg;
 import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
@@ -9,12 +8,12 @@ import org.jetlang.channels.Publisher;
 
 public class PhotocolsStatsPublisher<I, O> implements PhotocolsHandler<I, O> {
 
-    private final Publisher<StatsMsg> statsPublisher;
+    private final Publisher<StatusStat> statsPublisher;
     private final String statsName;
     private final int secondsValid;
     private final DoOnceEveryXMillis doOnceEveryXMillis;
 
-    public PhotocolsStatsPublisher(final Publisher<StatsMsg> statsPublisher, final String statsName, final int secondsValid) {
+    public PhotocolsStatsPublisher(final Publisher<StatusStat> statsPublisher, final String statsName, final int secondsValid) {
         this.statsPublisher = statsPublisher;
         this.statsName = statsName;
         this.secondsValid = secondsValid;

@@ -1,9 +1,9 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.builder.FiberBuilder;
+import com.drwtrading.london.jetlang.DefaultJetlangFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
 import com.drwtrading.london.jetlang.JetlangFactory;
-import com.drwtrading.london.jetlang.stats.MonitoredJetlangFactory;
 import org.jetlang.fibers.Fiber;
 
 class ReddalFibers {
@@ -26,7 +26,7 @@ class ReddalFibers {
     final FiberBuilder shredderRouter;
     final FiberBuilder contracts;
 
-    ReddalFibers(final ReddalChannels channels, final MonitoredJetlangFactory factory) {
+    ReddalFibers(final ReddalChannels channels, final DefaultJetlangFactory factory) {
         jetlangFactory = factory;
         fiberGroup = new FiberGroup(jetlangFactory, "Fibers", channels.error);
         starter = jetlangFactory.createFiber("Starter");

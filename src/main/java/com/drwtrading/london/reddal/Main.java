@@ -1,8 +1,5 @@
 package com.drwtrading.london.reddal;
 
-import com.drw.nns.api.MulticastGroup;
-import com.drw.nns.api.NnsApi;
-import com.drw.nns.api.NnsFactory;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
@@ -63,7 +60,7 @@ import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.indy.transport.data.Source;
 import com.drwtrading.london.indy.transport.io.IndyServer;
 import com.drwtrading.london.jetlang.ChannelFactory;
-import com.drwtrading.london.jetlang.stats.MonitoredJetlangFactory;
+import com.drwtrading.london.jetlang.DefaultJetlangFactory;
 import com.drwtrading.london.jetlang.transport.LowTrafficMulticastTransport;
 import com.drwtrading.london.logging.JsonChannelLogger;
 import com.drwtrading.london.network.NetworkInterfaces;
@@ -159,11 +156,8 @@ import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.london.reddal.workspace.WorkspaceRequestHandler;
 import com.drwtrading.london.time.Clock;
 import com.drwtrading.monitoring.stats.MsgCodec;
-import com.drwtrading.monitoring.stats.StatsPublisher;
 import com.drwtrading.monitoring.stats.Transport;
-import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
-import com.drwtrading.monitoring.transport.LoggingTransport;
-import com.drwtrading.monitoring.transport.MultiplexTransport;
+import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
 import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
@@ -190,6 +184,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -238,40 +233,28 @@ public class Main {
 
         final String localAppName = app.appName + ':' + app.env.name();
 
-        final NnsApi nnsApi = new NnsFactory().create();
-        final LoggingTransport fileTransport = new LoggingTransport(logDir.resolve("jetlang.log").toFile());
-        fileTransport.start();
-        final MulticastGroup statsGroup = nnsApi.multicastGroupFor(environment.getStatsNns());
-        final LowTrafficMulticastTransport lowTrafficMulticastTransport =
-                new LowTrafficMulticastTransport(statsGroup.getAddress(), statsGroup.getPort(), environment.getStatsInterface());
-        final AtomicBoolean multicastEnabled = new AtomicBoolean(false);
-        final Transport enableMulticastTransport = createEnableAbleTransport(lowTrafficMulticastTransport, multicastEnabled);
-        final StatsPublisher statsPublisher =
-                new StatsPublisher(environment.getStatsName(), new MultiplexTransport(fileTransport, enableMulticastTransport));
-
-        final MonitoredJetlangFactory monitoredJetlangFactory = new MonitoredJetlangFactory(statsPublisher, ERROR_CHANNEL);
-        final ReddalChannels channels = new ReddalChannels(monitoredJetlangFactory);
-        final ReddalFibers fibers = new ReddalFibers(channels, monitoredJetlangFactory);
+        final DefaultJetlangFactory jetlangFactory = new DefaultJetlangFactory(ERROR_CHANNEL);
+        final ReddalChannels channels = new ReddalChannels(jetlangFactory);
+        final ReddalFibers fibers = new ReddalFibers(channels, jetlangFactory);
 
         final SelectIOFiber selectIOFiber = new SelectIOFiber(selectIO, errorLog, "Main Select IO Fiber");
 
         final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER = (t, e) -> channels.errorPublisher.publish(e);
 
-        channels.stats.subscribe(fibers.stats.getFiber(), statsPublisher::publish);
-        fibers.stats.getFiber().schedule(() -> {
-            statsPublisher.start();
-            multicastEnabled.set(true);
-        }, 10, TimeUnit.SECONDS);
+        final Set<String> errorStates = new HashSet<>();
+        channels.stats.subscribe(selectIOFiber, msg -> {
+            if (StatusStat.State.GREEN == msg.getState()) {
+                if (errorStates.remove(msg.getName()) && errorStates.isEmpty()) {
+                    monitor.setOK(ReddalComponents.OLD_ERRORS);
+                }
+            } else if (errorStates.add(msg.getName())) {
+                monitor.logError(ReddalComponents.OLD_ERRORS, "Error on [" + msg.getName() + "].");
+            }
+        });
 
         channels.error.subscribe(fibers.logging.getFiber(), message -> {
             System.out.println(new Date());
             message.printStackTrace();
-        });
-        channels.stats.subscribe(fibers.logging.getFiber(), message -> {
-            if (message instanceof AdvisoryStat) {
-                System.out.println(new Date());
-                System.out.println(message);
-            }
         });
 
         final UILogger webLog = new UILogger(new SystemClock(), logDir);

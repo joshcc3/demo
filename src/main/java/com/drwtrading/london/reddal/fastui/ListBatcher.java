@@ -4,18 +4,15 @@ import com.drwtrading.london.reddal.util.FastUtilCollections;
 
 import java.util.List;
 
-class ListBatcher {
+class ListBatcher implements ICmdAppender {
 
     private final String command;
-    private final StringBuilder cmdSB;
 
     private final List<String> pendingValues;
 
     ListBatcher(final String command) {
 
         this.command = command;
-        this.cmdSB = new StringBuilder();
-
         this.pendingValues = FastUtilCollections.newFastList();
     }
 
@@ -23,16 +20,22 @@ class ListBatcher {
         pendingValues.add(value);
     }
 
-    void flushPendingIntoCommandList(final List<String> commands) {
-        if (!pendingValues.isEmpty()) {
-            commands.add(getCommand());
-            pendingValues.clear();
-        }
-    }
+    @Override
+    public boolean appendCommand(final StringBuilder cmdSB, final char separator) {
 
-    String getCommand() {
-        final String pendingCmds = UiPipeImpl.cmd(cmdSB, pendingValues.toArray());
-        return UiPipeImpl.cmd(cmdSB, this.command, pendingCmds);
+        if (!pendingValues.isEmpty()) {
+
+            cmdSB.append(this.command);
+
+            for (final String part : pendingValues) {
+                cmdSB.append(separator);
+                cmdSB.append(part);
+            }
+            pendingValues.clear();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     void clear() {

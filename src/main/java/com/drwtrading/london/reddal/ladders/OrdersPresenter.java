@@ -130,7 +130,7 @@ public class OrdersPresenter {
             final long price = symbolPrice.price;
 
             if (symbol.equals(symbolPrice.symbol) && (newPrice == price || prevPrice == price)) {
-                final Collection<WorkingOrderUpdateFromServer> orders = workingOrders.ordersByPrice.get(price);
+                final Collection<WorkingOrderUpdateFromServer> orders = workingOrders.getWorkingOrdersAtPrice(price);
                 entry.getValue().orders(orders);
                 entry.getValue().managedOrders(managed.getOrdersForPrice(price));
             }

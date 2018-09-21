@@ -6,15 +6,13 @@ import com.drwtrading.websockets.WebSocketOutboundData;
 import com.google.common.base.Joiner;
 import org.jetlang.channels.Publisher;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class UiPipeImpl {
 
-    static final char DATA_SEPARATOR = '\0';
-    private static final char COMMAND_SEPARATOR = '\1';
+    private static final char DATA_SEPARATOR = '\0';
+    private static final char CMD_SEPARATOR = '\1';
 
     private static final String CLEAR_CMD = "clear";
     private static final String TXT_CMD = "txt";
@@ -29,7 +27,6 @@ public class UiPipeImpl {
     private static final String TITLE_CMD = "title";
 
     private final Publisher<WebSocketOutboundData> pipe;
-    private final Joiner commandJoiner;
     private final StringBuilder cmdSB;
 
     private final KeyedBatcher text = new KeyedBatcher(TXT_CMD);
@@ -47,7 +44,6 @@ public class UiPipeImpl {
 
     public UiPipeImpl(final Publisher<WebSocketOutboundData> pipe) {
         this.pipe = pipe;
-        this.commandJoiner = Joiner.on(COMMAND_SEPARATOR);
         this.cmdSB = new StringBuilder();
     }
 
@@ -114,20 +110,27 @@ public class UiPipeImpl {
     }
 
     public void flush() {
-        final List<String> commands = new ArrayList<>();
-        text.flushPendingIntoCommandList(commands);
-        data.flushPendingIntoCommandList(commands);
-        tooltip.flushPendingIntoCommandList(commands);
-        classes.flushPendingIntoCommandList(commands);
-        height.flushPendingIntoCommandList(commands);
-        width.flushPendingIntoCommandList(commands);
-        clickable.flushPendingIntoCommandList(commands);
-        scrollable.flushPendingIntoCommandList(commands);
-        titleBatcher.flushPendingIntoCommandList(commands);
-        if (!commands.isEmpty()) {
-            cmdSB.setLength(0);
-            commandJoiner.appendTo(cmdSB, commands);
+
+        cmdSB.setLength(0);
+        appendCmd(cmdSB, text);
+        appendCmd(cmdSB, data);
+        appendCmd(cmdSB, tooltip);
+        appendCmd(cmdSB, classes);
+        appendCmd(cmdSB, height);
+        appendCmd(cmdSB, width);
+        appendCmd(cmdSB, clickable);
+        appendCmd(cmdSB, scrollable);
+        appendCmd(cmdSB, titleBatcher);
+        if (0 < cmdSB.length()) {
+            cmdSB.setLength(cmdSB.length() - 1);
             send(cmdSB.toString());
+        }
+    }
+
+    private static void appendCmd(final StringBuilder cmdSB, final ICmdAppender cmdAppender) {
+
+        if (cmdAppender.appendCommand(cmdSB, DATA_SEPARATOR)) {
+            cmdSB.append(CMD_SEPARATOR);
         }
     }
 

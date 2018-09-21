@@ -79,6 +79,17 @@ public class BookPanel {
         rowsByPrice.put(price, row);
     }
 
+    public void sendLevelData(final int levels) {
+
+        for (int i = 0; i < levels; ++i) {
+
+            final BookPanelRow row = rows.get(i);
+            ui.data(row.htmlData.bookBidKey, DataKey.PRICE, row.getPrice());
+            ui.data(row.htmlData.bookAskKey, DataKey.PRICE, row.getPrice());
+            ui.data(row.htmlData.bookOrderKey, DataKey.PRICE, row.getPrice());
+        }
+    }
+
     public BookPanelRow getRowByPrice(final long price) {
         return rowsByPrice.get(price);
     }
@@ -91,8 +102,6 @@ public class BookPanel {
             if (row.setRawDisplayPrice()) {
                 ui.txt(row.htmlData.bookPriceKey, row.getRawFormattedPrice());
             }
-
-            setPriceData(row);
         }
     }
 
@@ -102,8 +111,6 @@ public class BookPanel {
             final String bpsText = bpsDF.format(bps);
             ui.txt(row.htmlData.bookPriceKey, bpsText);
         }
-
-        setPriceData(row);
     }
 
     public void setEFP(final BookPanelRow row, final double efp) {
@@ -112,15 +119,6 @@ public class BookPanel {
             final String efpText = efpDF.format(efp);
             ui.txt(row.htmlData.bookPriceKey, efpText);
         }
-
-        setPriceData(row);
-    }
-
-    private void setPriceData(final BookPanelRow row) {
-
-        ui.data(row.htmlData.bookBidKey, DataKey.PRICE, row.getPrice());
-        ui.data(row.htmlData.bookAskKey, DataKey.PRICE, row.getPrice());
-        ui.data(row.htmlData.bookOrderKey, DataKey.PRICE, row.getPrice());
     }
 
     public void setCCY(final CCY ccy) {

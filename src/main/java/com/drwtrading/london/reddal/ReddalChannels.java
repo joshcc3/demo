@@ -40,7 +40,7 @@ import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.LeanDef;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
-import com.drwtrading.monitoring.stats.StatsMsg;
+import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.mrphil.Position;
 import com.google.common.collect.MapMaker;
@@ -66,7 +66,7 @@ class ReddalChannels {
     final TypedChannel<WorkingOrderConnectionEstablished> workingOrderConnectionEstablished;
     final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents;
     final TypedChannel<NibblerTransportConnected> nibblerTransportConnected;
-    final TypedChannel<StatsMsg> stats;
+    final TypedChannel<StatusStat> stats;
     final Publisher<RemoteOrderCommandToServer> remoteOrderCommand;
     final Map<String, TypedChannel<IOrderCmd>> remoteOrderCommandByServer;
     final TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded;
@@ -123,7 +123,7 @@ class ReddalChannels {
         this.workingOrderConnectionEstablished = create(WorkingOrderConnectionEstablished.class);
         this.workingOrderEvents = create(WorkingOrderEventFromServer.class);
         this.nibblerTransportConnected = create(NibblerTransportConnected.class);
-        this.stats = create(StatsMsg.class);
+        this.stats = create(StatusStat.class);
         this.remoteOrderCommandByServer = new MapMaker().makeComputingMap(from -> create(IOrderCmd.class));
         this.remoteOrderCommand = msg -> remoteOrderCommandByServer.get(msg.toServer).publish(msg.value);
         this.ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);

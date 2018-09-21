@@ -201,7 +201,7 @@ public class AutoPuller {
         final TreeSet<Long> prices = new TreeSet<>(Comparator.reverseOrder());
 
         final WorkingOrdersForSymbol workingOrdersForSymbol = orders.get(symbol);
-        prices.addAll(workingOrdersForSymbol.ordersByPrice.keySet());
+        prices.addAll(workingOrdersForSymbol.getWorkingOrderPrices());
 
         for (final EnabledPullRule enabledPullRule : rulesBySymbol.get(symbol)) {
             prices.add(enabledPullRule.getPullRule().mktCondition.price);

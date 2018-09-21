@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.util;
 
-import com.drwtrading.monitoring.stats.StatsMsg;
-import com.drwtrading.monitoring.stats.advisory.AdvisoryStat;
+import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.handlers.Notifier;
 import org.jetlang.channels.Publisher;
@@ -11,11 +10,11 @@ import java.util.Set;
 
 public class ConnectionCloser implements Notifier {
 
-    private final Publisher<StatsMsg> status;
+    private final Publisher<StatusStat> status;
     private final String name;
     private final Set<PhotocolsConnection<?>> closedConnections;
 
-    public ConnectionCloser(final Publisher<StatsMsg> status, final String name) {
+    public ConnectionCloser(final Publisher<StatusStat> status, final String name) {
 
         this.status = status;
         this.name = name;
@@ -26,8 +25,8 @@ public class ConnectionCloser implements Notifier {
     public void onTimeout(final PhotocolsConnection connection, final Long millisSinceLastMessage) {
         if (closedConnections.add(connection)) {
             connection.close();
-            status.publish(new AdvisoryStat(name, AdvisoryStat.Level.INFO,
-                    "Disconnected " + name + ", idle for " + millisSinceLastMessage + "ms"));
+            status.publish(
+                    new StatusStat(name, StatusStat.State.RED, 1, "Disconnected " + name + ", idle for " + millisSinceLastMessage + "ms"));
         }
     }
 }
