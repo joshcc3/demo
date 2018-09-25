@@ -7,12 +7,14 @@ import com.drwtrading.london.reddal.ReddalComponents;
 import com.google.common.base.Strings;
 import org.jetlang.channels.Publisher;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 public class OpxlPositionSubscriber extends AOpxlReader<ReddalComponents, OPXLDeskPositions> {
 
+    private final IResourceMonitor<ReddalComponents> monitor;
     private final Publisher<OPXLDeskPositions> positionPublisher;
 
     public OpxlPositionSubscriber(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
@@ -20,6 +22,7 @@ public class OpxlPositionSubscriber extends AOpxlReader<ReddalComponents, OPXLDe
             final Publisher<OPXLDeskPositions> positionPublisher) {
 
         super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_POSITION_SUBSCRIBER, topics, "OPXLPositionSubscriber");
+        this.monitor = monitor;
         this.positionPublisher = positionPublisher;
     }
 
@@ -30,32 +33,35 @@ public class OpxlPositionSubscriber extends AOpxlReader<ReddalComponents, OPXLDe
 
     @Override
     protected OPXLDeskPositions parseTable(final Object[][] opxlTable) {
-
         final Map<String, Long> positions = new HashMap<>(opxlTable.length);
-
         for (final Object[] data : opxlTable) {
 
-            if (2 == data.length) {
+            try {
+                if (2 == data.length) {
 
-                final String symbol = data[0].toString();
-                final String position = data[1].toString();
+                    final String symbol = data[0].toString();
+                    final String position = data[1].toString();
 
-                if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(position)) {
-                    final long pos = Long.parseLong(position);
-                    positions.put(symbol, pos);
+                    if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(position)) {
+                        final long pos = Long.parseLong(position);
+                        positions.put(symbol, pos);
+                    }
+                } else if (3 == data.length) {
+
+                    final String symbol = data[1].toString();
+                    final String position = data[2].toString();
+
+                    if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(position)) {
+                        final long pos = Long.parseLong(position);
+                        positions.put(symbol.toUpperCase(), pos);
+                    }
                 }
-            } else if (3 == data.length) {
-
-                final String symbol = data[1].toString();
-                final String position = data[2].toString();
-
-                if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(position)) {
-                    final long pos = Long.parseLong(position);
-                    positions.put(symbol.toUpperCase(), pos);
-                }
+            } catch (Throwable throwable) {
+                monitor.logError(ReddalComponents.OPXL_POSITION_SUBSCRIBER, "Failed to load: " + Arrays.asList(data), throwable);
             }
         }
 
+        monitor.setOK(ReddalComponents.OPXL_POSITION_SUBSCRIBER);
         return new OPXLDeskPositions(positions);
     }
 
