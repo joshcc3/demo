@@ -45,6 +45,10 @@ public class HeaderPanel {
 
         this.pksExposure = Long.MIN_VALUE;
         this.pksPosition = Long.MIN_VALUE;
+
+        this.ahPercent = -1;
+        this.rawAHPercent = -1;
+
         this.bestBidOffsetBPS = Double.NaN;
         this.bestAskOffsetBPS = Double.NaN;
 
