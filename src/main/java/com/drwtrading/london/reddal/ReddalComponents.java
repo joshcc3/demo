@@ -41,20 +41,12 @@ public enum ReddalComponents implements IMonitoredComponent {
 
     SAFETY_WORKING_ORDER_VIEWER,
 
-    OPXL_ULTIMATE_PARENT,
-    OPXL_FX_CALC,
-    OPXL_ETF_STACK_MANAGER_FILTERS,
-    OPXL_SPREAD_STACK_MANAGER_FILTERS,
-    OPXL_SPREAD_PREMIUM_WRITER,
-    OPXL_ISINS_GOING_EX,
-    OPXL_LADDER_TEXT,
-    OPXL_POSITION_SUBSCRIBER,
+    OPXL_READERS,
 
     FX_OK,
     FX_ERROR,
     FX_SELECT_IO,
-    INDY_SERVER,
-    OBLIGATIONS_RFQ;
+    INDY_SERVER;
 
     @Override
     public String getMnemonic() {

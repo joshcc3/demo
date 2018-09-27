@@ -7,7 +7,7 @@ import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
-import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.OPXLComponents;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -26,17 +26,17 @@ public class PremiumOPXLWriter {
 
     private static final long PUBLISH_INTERVAL = 5000;
 
-    private final OpxlClient<ReddalComponents> writer;
+    private final OpxlClient<OPXLComponents> writer;
     private final String topic;
 
     private final Map<String, Object[]> rows;
 
     private Object[][] writeTable;
 
-    public PremiumOPXLWriter(final SelectIO selectIO, final ConfigGroup config, final IResourceMonitor<ReddalComponents> monitor)
+    public PremiumOPXLWriter(final SelectIO selectIO, final ConfigGroup config, final IResourceMonitor<OPXLComponents> monitor)
             throws ConfigException {
 
-        this.writer = new OpxlClient<>(selectIO, config, monitor, ReddalComponents.OPXL_SPREAD_PREMIUM_WRITER);
+        this.writer = new OpxlClient<>(selectIO, config, monitor, OPXLComponents.OPXL_SPREAD_PREMIUM_WRITER);
         this.writer.start();
 
         final String topicPrefix = config.getString(TOPIC_PREFIX_PARAM);

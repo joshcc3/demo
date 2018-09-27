@@ -5,7 +5,7 @@ import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
-import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.OPXLComponents;
 import org.jetlang.channels.Publisher;
 
 import java.nio.file.Path;
@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Set;
 
-public class OpxlExDateSubscriber extends AOpxlLoggingReader<ReddalComponents, ISINsGoingEx> {
+public class OpxlExDateSubscriber extends AOpxlLoggingReader<OPXLComponents, ISINsGoingEx> {
 
     private static final String TOPIC_PREFIX = "eeif(isin_going_ex_";
     private static final String TOPIC_SUFFIX = ")";
@@ -22,10 +22,10 @@ public class OpxlExDateSubscriber extends AOpxlLoggingReader<ReddalComponents, I
 
     private final Publisher<ISINsGoingEx> publisher;
 
-    public OpxlExDateSubscriber(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
-            final IResourceMonitor<ReddalComponents> monitor, final Path logDir, final Publisher<ISINsGoingEx> publisher) {
+    public OpxlExDateSubscriber(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor, final Path logDir,
+            final Publisher<ISINsGoingEx> publisher) {
 
-        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_ISINS_GOING_EX, getTopic(callbackSelectIO), logDir);
+        super(selectIO, selectIO, monitor, OPXLComponents.OPXL_ISINS_GOING_EX, getTopic(selectIO), logDir);
 
         this.publisher = publisher;
     }
@@ -70,12 +70,12 @@ public class OpxlExDateSubscriber extends AOpxlLoggingReader<ReddalComponents, I
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg) {
+    protected void handleError(final OPXLComponents component, final String msg) {
         monitor.logError(component, msg);
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg, final Throwable t) {
+    protected void handleError(final OPXLComponents component, final String msg, final Throwable t) {
         monitor.logError(component, msg, t);
     }
 }

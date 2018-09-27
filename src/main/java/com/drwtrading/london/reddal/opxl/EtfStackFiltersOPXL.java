@@ -5,7 +5,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
-import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.OPXLComponents;
 import com.drwtrading.london.reddal.stacks.family.StackChildFilter;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyPresenter;
 
@@ -20,10 +20,10 @@ public class EtfStackFiltersOPXL extends AFiltersOPXL {
 
     private final StackFamilyPresenter stackFamilyPresenter;
 
-    public EtfStackFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
-            final IResourceMonitor<ReddalComponents> monitor, final Path logDir, final StackFamilyPresenter stackFamilyPresenter) {
+    public EtfStackFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<OPXLComponents> monitor,
+            final Path logDir, final StackFamilyPresenter stackFamilyPresenter) {
 
-        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_ETF_STACK_MANAGER_FILTERS, getTopic(callbackSelectIO), logDir);
+        super(opxlSelectIO, callbackSelectIO, monitor, OPXLComponents.OPXL_ETF_STACK_MANAGER_FILTERS, getTopic(callbackSelectIO), logDir);
         this.stackFamilyPresenter = stackFamilyPresenter;
     }
 

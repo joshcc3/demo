@@ -220,14 +220,14 @@ public class Main {
 
     public static void main(final String[] args) throws Exception {
 
-        final Application<ReddalComponents> app = new Application<>(args, "Reddal", ReddalComponents.class);
+        final Application<ReddalComponents> app =
+                new Application<>(args, "Reddal", ReddalComponents.class, Constants::NO_OP, Constants::NO_OP, true);
 
         final IClock clock = app.clock;
         final ConfigGroup root = app.config;
         final Path logDir = app.logDir;
         final IErrorLogger errorLog = app.errorLog;
         final IResourceMonitor<ReddalComponents> monitor = app.monitor;
-        final SelectIO selectIO = app.selectIO;
 
         final Environment environment = new Environment(root);
 
@@ -237,7 +237,16 @@ public class Main {
         final ReddalChannels channels = new ReddalChannels(jetlangFactory);
         final ReddalFibers fibers = new ReddalFibers(channels, jetlangFactory);
 
-        final SelectIOFiber selectIOFiber = new SelectIOFiber(selectIO, errorLog, "Main Select IO Fiber");
+        final IResourceMonitor<OPXLComponents> opxlMonitor =
+                new ExpandedDetailResourceMonitor<>(app.monitor, "OPXL Select IO", app.errorLog, OPXLComponents.class,
+                        ReddalComponents.OPXL_READERS);
+        final IResourceMonitor<SelectIOComponents> opxlSelectIOMonitor =
+                new ExpandedDetailResourceMonitor<>(opxlMonitor, "OPXL Select IO", app.errorLog, SelectIOComponents.class,
+                        OPXLComponents.SELECT_IO);
+
+        final SelectIO opxlSelectIO = new SelectIO(opxlSelectIOMonitor);
+
+        final SelectIOFiber selectIOFiber = new SelectIOFiber(app.selectIO, errorLog, "Main Select IO Fiber");
 
         final Thread.UncaughtExceptionHandler EXCEPTION_HANDLER = (t, e) -> channels.errorPublisher.publish(e);
 
@@ -346,7 +355,7 @@ public class Main {
         final TypedChannel<WebSocketControlMessage> stackManagerWebSocket = TypedChannels.create(WebSocketControlMessage.class);
         final SelectIOFiber stackManagerSelectIOFiber = new SelectIOFiber(stackManagerSelectIO, errorLog, stackManagerThreadName);
 
-        final FXCalc<?> stackManagerFXCalc = createOPXLFXCalc(app);
+        final FXCalc<?> stackManagerFXCalc = createOPXLFXCalc(app, opxlSelectIO, opxlMonitor);
         final FiberBuilder stackManagerFiberBuilder = fibers.fiberGroup.wrap(stackManagerSelectIOFiber, stackManagerThreadName);
         final LadderPresenter stackManagerLadderPresenter =
                 getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment, stackManagerFXCalc, noBookSubscription,
@@ -383,8 +392,8 @@ public class Main {
             final ExpandedDetailResourceMonitor<ReddalComponents, IndyTransportComponents> indyMonitor =
                     new ExpandedDetailResourceMonitor<>(monitor, "indyServer", app.errorLog, IndyTransportComponents.class,
                             ReddalComponents.INDY_SERVER);
-            final IndyCache cache = new IndyCache(selectIO, indyMonitor);
-            final IndyServer server = new IndyServer(selectIO, indyServerConfig, indyMonitor, cache);
+            final IndyCache cache = new IndyCache(app.selectIO, indyMonitor);
+            final IndyServer server = new IndyServer(app.selectIO, indyServerConfig, indyMonitor, cache);
             app.addStartUpAction(server::start);
             channels.leanDefs.subscribe(selectIOFiber, message -> {
                 if (message.instType == InstType.EQUITY || message.instType == InstType.DR) {
@@ -396,7 +405,8 @@ public class Main {
         final SpreadContractSetGenerator contractSetGenerator = new SpreadContractSetGenerator(channels.contractSets, channels.leanDefs);
         channels.searchResults.subscribe(selectIOFiber, contractSetGenerator::setSearchResult);
 
-        setupStackManager(app, fibers, channels, webApp, webLog, selectIOFiber, contractSetGenerator, isEquitiesSearchable);
+        setupStackManager(app, fibers, channels, webApp, webLog, selectIOFiber, opxlSelectIO, opxlMonitor, contractSetGenerator,
+                isEquitiesSearchable);
         final Map<MDSource, LinkedList<ConfigGroup>> nibblers = setupNibblerTransport(app, fibers, webApp, webLog, selectIOFiber, channels);
 
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> webSockets = new EnumMap<>(MDSource.class);
@@ -414,15 +424,15 @@ public class Main {
             }
         }
 
-        setupPicardUI(selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
+        setupPicardUI(app.selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
                 channels.displaySymbol, webApp);
 
         // Spreadnought Premium OPXL publisher
         final ConfigGroup premiumConfig = root.getEnabledGroup("premiumOPXL");
         if (null != premiumConfig) {
-            final PremiumOPXLWriter writer = new PremiumOPXLWriter(selectIO, premiumConfig, app.monitor);
+            final PremiumOPXLWriter writer = new PremiumOPXLWriter(opxlSelectIO, premiumConfig, opxlMonitor);
             channels.spreadnoughtPremiums.subscribe(selectIOFiber, writer::onPremium);
-            selectIO.addDelayedAction(1000, writer::flush);
+            app.selectIO.addDelayedAction(1000, writer::flush);
         }
 
         // MD Sources
@@ -453,7 +463,7 @@ public class Main {
                 final FiberBuilder fiberBuilder =
                         fibers.fiberGroup.wrap(new SelectIOFiber(displaySelectIO, errorLog, threadName), threadName);
 
-                final FXCalc<?> fxCalc = createOPXLFXCalc(app);
+                final FXCalc<?> fxCalc = createOPXLFXCalc(app, opxlSelectIO, opxlMonitor);
 
                 final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, fxCalc);
                 displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
@@ -693,12 +703,11 @@ public class Main {
         if (app.config.getEnabledGroup("obligations") != null) {
             final ConfigGroup config = app.config.getGroup("obligations");
             final Pattern filterRegex = Pattern.compile(config.getString("filterRegex"));
-            final FXCalc<?> opxlfxCalc = createOPXLFXCalc(app);
+            final FXCalc<?> opxlfxCalc = createOPXLFXCalc(app, opxlSelectIO, opxlMonitor);
             final MemoryChannel<RFQObligationSet> rfqObligationChannel = new MemoryChannel<>();
             final ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, filterRegex.asPredicate());
-            final ObligationOPXL obligationOPXL =
-                    new ObligationOPXL(app.selectIO, app.selectIO, app.monitor, ReddalComponents.OBLIGATIONS_RFQ, logDir,
-                            rfqObligationChannel::publish);
+            final ObligationOPXL obligationOPXL = new ObligationOPXL(opxlSelectIO, opxlMonitor, OPXLComponents.OPXL_OBLIGATIONS_RFQ, logDir,
+                    rfqObligationChannel::publish);
             channels.workingOrders.subscribe(
                     new KeyedBatchSubscriber<>(fibers.ui.getFiber(), obligationPresenter::onWorkingOrders, 1, TimeUnit.SECONDS,
                             WorkingOrderUpdateFromServer::key));
@@ -844,6 +853,7 @@ public class Main {
 
         // Working orders
         for (final String server : environment.getList(Environment.WORKING_ORDERS)) {
+
             final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.WORKING_ORDERS, server);
             final OnHeapBufferPhotocolsNioClient<WorkingOrderEvent, Void> client =
                     OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), WorkingOrderEvent.class,
@@ -926,11 +936,11 @@ public class Main {
             final IResourceMonitor<IndyTransportComponents> indyMonitor =
                     new ExpandedDetailResourceMonitor<>(monitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
             final TransportTCPKeepAliveConnection<?, ?> indyConnection =
-                    IndyCacheFactory.createClient(selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
-            selectIO.execute(indyConnection::restart);
+                    IndyCacheFactory.createClient(app.selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
+            app.selectIO.execute(indyConnection::restart);
         }
 
-        setupYodaSignals(selectIO, monitor, errorLog, root, app.appName, channels.stockAlerts, channels.yodaPicardRows);
+        setupYodaSignals(app.selectIO, monitor, errorLog, root, app.appName, channels.stockAlerts, channels.yodaPicardRows);
 
         final ConfigGroup opxlConfig = root.getEnabledGroup("opxl");
 
@@ -939,8 +949,7 @@ public class Main {
         if (null != deskPositionConfig) {
 
             final Set<String> keys = deskPositionConfig.getSet("keys");
-            final OpxlPositionSubscriber opxlReader =
-                    new OpxlPositionSubscriber(app.selectIO, app.selectIO, app.monitor, keys, channels.deskPositions);
+            final OpxlPositionSubscriber opxlReader = new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
             app.addStartUpAction(opxlReader::start);
         }
 
@@ -955,9 +964,10 @@ public class Main {
             channels.searchResults.subscribe(selectIOFiber, pksClient::setSearchResult);
 
             final PositionClientHandler cache =
-                    PositionCacheFactory.createClientCache(selectIO, pksMonitor, "PKS", app.appName, pksClient, pksClient, true);
+                    PositionCacheFactory.createClientCache(app.selectIO, pksMonitor, "PKS", app.appName, pksClient, pksClient, true);
 
-            final TransportTCPKeepAliveConnection<?, ?> client = PositionCacheFactory.createClient(selectIO, pksConfig, pksMonitor, cache);
+            final TransportTCPKeepAliveConnection<?, ?> client =
+                    PositionCacheFactory.createClient(app.selectIO, pksConfig, pksMonitor, cache);
             client.restart();
         }
 
@@ -967,17 +977,15 @@ public class Main {
 
             final Set<String> keys = ladderTextConfig.getSet("keys");
             final OpxlLadderTextSubscriber ladderTextReader =
-                    new OpxlLadderTextSubscriber(app.selectIO, app.selectIO, app.monitor, keys, channels.opxlLaserLineData,
-                            channels.ladderText);
+                    new OpxlLadderTextSubscriber(opxlSelectIO, opxlMonitor, keys, channels.opxlLaserLineData, channels.ladderText);
             app.addStartUpAction(ladderTextReader::start);
         }
 
-        final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(selectIO, selectIO, monitor, channels.ultimateParents, logDir);
+        final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(opxlSelectIO, opxlMonitor, logDir, channels.ultimateParents);
         app.addStartUpAction(ultimateParentOPXL::start);
 
         // Ex-dates
-        final OpxlExDateSubscriber isinsGoingEx =
-                new OpxlExDateSubscriber(app.selectIO, app.selectIO, monitor, logDir, channels.isinsGoingEx);
+        final OpxlExDateSubscriber isinsGoingEx = new OpxlExDateSubscriber(opxlSelectIO, opxlMonitor, logDir, channels.isinsGoingEx);
         app.addStartUpAction(isinsGoingEx::start);
 
         // Logging
@@ -1152,8 +1160,9 @@ public class Main {
     }
 
     private static void setupStackManager(final Application<ReddalComponents> app, final ReddalFibers fibers, final ReddalChannels channels,
-            final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
-            final SpreadContractSetGenerator contractSetGenerator, final boolean isForETF) throws Exception {
+            final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber, final SelectIO opxlSelectIO,
+            final IResourceMonitor<OPXLComponents> opxlMonitor, final SpreadContractSetGenerator contractSetGenerator,
+            final boolean isForETF) throws Exception {
 
         final ConfigGroup stackConfig = app.config.getEnabledGroup("stacks");
         if (null != stackConfig) {
@@ -1254,7 +1263,7 @@ public class Main {
             if (isForETF) {
 
                 final EtfStackFiltersOPXL etfStackFiltersOPXL =
-                        new EtfStackFiltersOPXL(app.selectIO, app.selectIO, app.monitor, app.logDir, stackFamilyPresenter);
+                        new EtfStackFiltersOPXL(opxlSelectIO, app.selectIO, opxlMonitor, app.logDir, stackFamilyPresenter);
                 app.addStartUpAction(etfStackFiltersOPXL::start);
 
             }
@@ -1262,7 +1271,7 @@ public class Main {
             if (asylumFamilies.values().contains(SpreadnoughtFiltersOPXL.FAMILY_NAME)) {
 
                 final SpreadnoughtFiltersOPXL spreadnoughtFiltersOPXL =
-                        new SpreadnoughtFiltersOPXL(app.selectIO, app.selectIO, app.monitor, app.logDir, stackFamilyPresenter);
+                        new SpreadnoughtFiltersOPXL(opxlSelectIO, app.selectIO, opxlMonitor, app.logDir, stackFamilyPresenter);
                 app.addStartUpAction(spreadnoughtFiltersOPXL::start);
             }
 
@@ -1395,11 +1404,12 @@ public class Main {
         webSocketChannel.subscribe(fiber, picardUI::webControl);
     }
 
-    private static FXCalc<?> createOPXLFXCalc(final Application<ReddalComponents> app) {
+    private static FXCalc<?> createOPXLFXCalc(final Application<ReddalComponents> app, final SelectIO opxlSelectIO,
+            final IResourceMonitor<OPXLComponents> opxlMonitor) {
 
         final IResourceMonitor<PicardFXCalcComponents> fxMonitor = new ResourceIgnorer<>();
         final FXCalc<PicardFXCalcComponents> fxCalc = new FXCalc<>(fxMonitor, PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
-        final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(app.selectIO, app.selectIO, app.monitor, fxCalc, app.logDir);
+        final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(opxlSelectIO, app.selectIO, opxlMonitor, fxCalc, app.logDir);
         app.addStartUpAction(opxlFXCalcUpdater::start);
 
         return fxCalc;

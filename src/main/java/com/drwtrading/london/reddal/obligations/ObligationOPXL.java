@@ -3,7 +3,7 @@ package com.drwtrading.london.reddal.obligations;
 import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
-import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.OPXLComponents;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -15,17 +15,17 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class ObligationOPXL extends AOpxlLoggingReader<ReddalComponents, RFQObligationSet> {
+public class ObligationOPXL extends AOpxlLoggingReader<OPXLComponents, RFQObligationSet> {
 
     private static final String TOPIC = "eeif(etf_rfq_obligation)";
     public static final RFQObligationSet EMPTY_OBLIGATIONS = new RFQObligationSet(Collections.emptyList(), Collections.emptyMap());
 
     private final Consumer<RFQObligationSet> updates;
 
-    public ObligationOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<ReddalComponents> monitor,
-            final ReddalComponents component, final Path path, final Consumer<RFQObligationSet> updates) {
+    public ObligationOPXL(final SelectIO opxlSelectIO, final IResourceMonitor<OPXLComponents> monitor, final OPXLComponents component,
+            final Path path, final Consumer<RFQObligationSet> updates) {
 
-        super(opxlSelectIO, callbackSelectIO, monitor, component, TOPIC, path);
+        super(opxlSelectIO, opxlSelectIO, monitor, component, TOPIC, path);
         this.updates = updates;
     }
 
@@ -73,12 +73,12 @@ public class ObligationOPXL extends AOpxlLoggingReader<ReddalComponents, RFQObli
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg) {
+    protected void handleError(final OPXLComponents component, final String msg) {
 
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg, final Throwable t) {
+    protected void handleError(final OPXLComponents component, final String msg, final Throwable t) {
 
     }
 

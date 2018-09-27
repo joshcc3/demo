@@ -4,7 +4,7 @@ import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
-import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.OPXLComponents;
 import org.jetlang.channels.Publisher;
 
 import java.nio.file.Path;
@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UltimateParentOPXL extends AOpxlLoggingReader<ReddalComponents, Collection<UltimateParentMapping>> {
+public class UltimateParentOPXL extends AOpxlLoggingReader<OPXLComponents, Collection<UltimateParentMapping>> {
 
     private static final String TOPIC = "eeif.parent.original";
 
@@ -23,11 +23,10 @@ public class UltimateParentOPXL extends AOpxlLoggingReader<ReddalComponents, Col
 
     private final Publisher<UltimateParentMapping> ultimateParentPublisher;
 
-    public UltimateParentOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
-            final IResourceMonitor<ReddalComponents> monitor, final Publisher<UltimateParentMapping> ultimateParentPublisher,
-            final Path logPath) {
+    public UltimateParentOPXL(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor, final Path logPath,
+            final Publisher<UltimateParentMapping> ultimateParentPublisher) {
 
-        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_ULTIMATE_PARENT, TOPIC, logPath);
+        super(selectIO, selectIO, monitor, OPXLComponents.OPXL_ULTIMATE_PARENT, TOPIC, logPath);
 
         this.ultimateParentPublisher = ultimateParentPublisher;
     }
@@ -102,12 +101,12 @@ public class UltimateParentOPXL extends AOpxlLoggingReader<ReddalComponents, Col
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg) {
+    protected void handleError(final OPXLComponents component, final String msg) {
         monitor.logError(component, msg);
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg, final Throwable t) {
+    protected void handleError(final OPXLComponents component, final String msg, final Throwable t) {
         monitor.logError(component, msg, t);
     }
 }

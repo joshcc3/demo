@@ -4,7 +4,7 @@ import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
-import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.OPXLComponents;
 import com.drwtrading.london.reddal.stacks.family.StackChildFilter;
 
 import java.nio.file.Path;
@@ -12,12 +12,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-abstract class AFiltersOPXL extends AOpxlLoggingReader<ReddalComponents, Collection<StackChildFilter>> {
+abstract class AFiltersOPXL extends AOpxlLoggingReader<OPXLComponents, Collection<StackChildFilter>> {
 
     private static final String SYMBOL_COL = "Symbol";
 
-    AFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<ReddalComponents> monitor,
-            final ReddalComponents component, final String topic, final Path logDir) {
+    AFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<OPXLComponents> monitor,
+            final OPXLComponents component, final String topic, final Path logDir) {
 
         super(opxlSelectIO, callbackSelectIO, monitor, component, topic, logDir);
     }
@@ -102,12 +102,12 @@ abstract class AFiltersOPXL extends AOpxlLoggingReader<ReddalComponents, Collect
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg) {
+    protected void handleError(final OPXLComponents component, final String msg) {
         monitor.logError(component, msg);
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg, final Throwable t) {
+    protected void handleError(final OPXLComponents component, final String msg, final Throwable t) {
         monitor.logError(component, msg, t);
     }
 }

@@ -4,7 +4,7 @@ import com.drwtrading.london.eeif.opxl.reader.AOpxlReader;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
-import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.OPXLComponents;
 import com.drwtrading.london.reddal.data.LaserLineType;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class OpxlLadderTextSubscriber extends AOpxlReader<ReddalComponents, OpxlLadderTextRow> {
+public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLadderTextRow> {
 
     private static final int SYMBOL_COL = 0;
     private static final int CELL_COL = 1;
@@ -26,11 +26,11 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<ReddalComponents, Opxl
     private final Publisher<LaserLineValue> laserLinePublisher;
     private final Publisher<OpxlLadderText> ladderTextPublisher;
 
-    public OpxlLadderTextSubscriber(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
-            final IResourceMonitor<ReddalComponents> monitor, final Collection<String> topics,
-            final Publisher<LaserLineValue> laserLinePublisher, final Publisher<OpxlLadderText> ladderTextPublisher) {
+    public OpxlLadderTextSubscriber(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor,
+            final Collection<String> topics, final Publisher<LaserLineValue> laserLinePublisher,
+            final Publisher<OpxlLadderText> ladderTextPublisher) {
 
-        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_LADDER_TEXT, topics, "OpxlLadderTextSubscriber");
+        super(selectIO, selectIO, monitor, OPXLComponents.OPXL_LADDER_TEXT, topics, "OpxlLadderTextSubscriber");
 
         this.laserLinePublisher = laserLinePublisher;
         this.ladderTextPublisher = ladderTextPublisher;
@@ -122,12 +122,12 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<ReddalComponents, Opxl
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg) {
+    protected void handleError(final OPXLComponents component, final String msg) {
         monitor.logError(component, msg);
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg, final Throwable t) {
+    protected void handleError(final OPXLComponents component, final String msg, final Throwable t) {
         monitor.logError(component, msg, t);
     }
 }

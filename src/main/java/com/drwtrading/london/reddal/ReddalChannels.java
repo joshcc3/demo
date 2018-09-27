@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
+import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.reddal.data.LaserLineValue;
@@ -165,6 +166,6 @@ class ReddalChannels {
     }
 
     private <T> TypedChannel<T> create(final Class<T> clazz) {
-        return channelFactory.createChannel(clazz, clazz.getSimpleName());
+        return TypedChannels.create(clazz);
     }
 }

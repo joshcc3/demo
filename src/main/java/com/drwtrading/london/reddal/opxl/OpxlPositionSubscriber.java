@@ -3,7 +3,7 @@ package com.drwtrading.london.reddal.opxl;
 import com.drwtrading.london.eeif.opxl.reader.AOpxlReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
-import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.OPXLComponents;
 import com.google.common.base.Strings;
 import org.jetlang.channels.Publisher;
 
@@ -12,16 +12,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class OpxlPositionSubscriber extends AOpxlReader<ReddalComponents, OPXLDeskPositions> {
+public class OpxlPositionSubscriber extends AOpxlReader<OPXLComponents, OPXLDeskPositions> {
 
-    private final IResourceMonitor<ReddalComponents> monitor;
+    private final IResourceMonitor<OPXLComponents> monitor;
     private final Publisher<OPXLDeskPositions> positionPublisher;
 
-    public OpxlPositionSubscriber(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
-            final IResourceMonitor<ReddalComponents> monitor, final Collection<String> topics,
+    public OpxlPositionSubscriber(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor, final Collection<String> topics,
             final Publisher<OPXLDeskPositions> positionPublisher) {
 
-        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_POSITION_SUBSCRIBER, topics, "OPXLPositionSubscriber");
+        super(selectIO, selectIO, monitor, OPXLComponents.OPXL_POSITION_SUBSCRIBER, topics, "OPXLPositionSubscriber");
         this.monitor = monitor;
         this.positionPublisher = positionPublisher;
     }
@@ -57,11 +56,11 @@ public class OpxlPositionSubscriber extends AOpxlReader<ReddalComponents, OPXLDe
                     }
                 }
             } catch (Throwable throwable) {
-                monitor.logError(ReddalComponents.OPXL_POSITION_SUBSCRIBER, "Failed to load: " + Arrays.asList(data), throwable);
+                monitor.logError(OPXLComponents.OPXL_POSITION_SUBSCRIBER, "Failed to load: " + Arrays.asList(data), throwable);
             }
         }
 
-        monitor.setOK(ReddalComponents.OPXL_POSITION_SUBSCRIBER);
+        monitor.setOK(OPXLComponents.OPXL_POSITION_SUBSCRIBER);
         return new OPXLDeskPositions(positions);
     }
 
@@ -72,12 +71,12 @@ public class OpxlPositionSubscriber extends AOpxlReader<ReddalComponents, OPXLDe
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg) {
+    protected void handleError(final OPXLComponents component, final String msg) {
         monitor.logError(component, msg);
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg, final Throwable t) {
+    protected void handleError(final OPXLComponents component, final String msg, final Throwable t) {
         monitor.logError(component, msg, t);
     }
 }

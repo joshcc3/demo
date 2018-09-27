@@ -7,7 +7,7 @@ import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
-import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.OPXLComponents;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 
 import java.nio.file.Path;
@@ -16,7 +16,7 @@ import java.util.Calendar;
 import java.util.EnumMap;
 import java.util.Map;
 
-public class OpxlFXCalcUpdater extends AOpxlLoggingReader<ReddalComponents, Map<CCY, EnumMap<CCY, Double>>> {
+public class OpxlFXCalcUpdater extends AOpxlLoggingReader<OPXLComponents, Map<CCY, EnumMap<CCY, Double>>> {
 
     private static final String TOPIC_PREFIX = "eeif(fx_prices_";
     private static final String TOPIC_SUFFIX = ")";
@@ -28,10 +28,10 @@ public class OpxlFXCalcUpdater extends AOpxlLoggingReader<ReddalComponents, Map<
     private final FXCalc<PicardFXCalcComponents> fxCalc;
     private boolean awaitingData = true;
 
-    public OpxlFXCalcUpdater(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<ReddalComponents> monitor,
+    public OpxlFXCalcUpdater(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<OPXLComponents> monitor,
             final FXCalc<PicardFXCalcComponents> fxCalc, final Path path) {
 
-        super(opxlSelectIO, callbackSelectIO, monitor, ReddalComponents.OPXL_FX_CALC, getTopic(), path);
+        super(opxlSelectIO, callbackSelectIO, monitor, OPXLComponents.OPXL_FX_CALC, getTopic(), path);
         this.fxCalc = fxCalc;
     }
 
@@ -78,22 +78,22 @@ public class OpxlFXCalcUpdater extends AOpxlLoggingReader<ReddalComponents, Map<
         }
 
         if (fxRates.isEmpty()) {
-            monitor.logError(ReddalComponents.OPXL_FX_CALC, "No fx rates in [" + super.topic + "].");
+            monitor.logError(OPXLComponents.OPXL_FX_CALC, "No fx rates in [" + super.topic + "].");
             return null;
         } else {
             awaitingData = false;
-            monitor.setOK(ReddalComponents.OPXL_FX_CALC);
+            monitor.setOK(OPXLComponents.OPXL_FX_CALC);
             return fxRates;
         }
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg) {
+    protected void handleError(final OPXLComponents component, final String msg) {
         monitor.logError(component, msg);
     }
 
     @Override
-    protected void handleError(final ReddalComponents component, final String msg, final Throwable t) {
+    protected void handleError(final OPXLComponents component, final String msg, final Throwable t) {
         monitor.logError(component, msg, t);
     }
 
