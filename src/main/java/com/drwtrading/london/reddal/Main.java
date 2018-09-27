@@ -245,6 +245,7 @@ public class Main {
                         OPXLComponents.SELECT_IO);
 
         final SelectIO opxlSelectIO = new SelectIO(opxlSelectIOMonitor);
+        app.addStartUpAction(() -> opxlSelectIO.start("OPXL Select IO"));
 
         final SelectIOFiber selectIOFiber = new SelectIOFiber(app.selectIO, errorLog, "Main Select IO Fiber");
 
