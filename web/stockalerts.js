@@ -9,9 +9,12 @@ var twapSound;
 var tweetSound;
 var unknownSound;
 
+
+var AutoOpenRFQ = false;
+
 $(function () {
     ws = connect();
-    ws.logToConsole = false;
+    ws.logToConsole = true;
     ws.onmessage = function (x) {
         eval(x)
     };
@@ -26,7 +29,23 @@ $(function () {
     twapSound = new Audio("stockAlerts/TWAP.wav");
     tweetSound = new Audio("stockAlerts/tweet.wav");
     unknownSound = new Audio("stockAlerts/huh-humm.wav");
+
+    setTimeout(function() { 
+	if (localStorage['auto-open-rfq']) {
+	    setAutoOpen(JSON.parse(localStorage['auto-open-rfq']));
+	}
+    }, 2000);
+
+    $(".autoButton").unbind().bind("click", function() {
+	setAutoOpen(!AutoOpenRFQ);
+    });
 });
+
+function setAutoOpen(autoOpen) {
+    AutoOpenRFQ = autoOpen;
+    localStorage['auto-open-rfq'] =  JSON.stringify(autoOpen);
+    $(".autoButton").val(AutoOpenRFQ ? "auto":"no-auto");
+}
 
 function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 
@@ -61,6 +80,15 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 
     if (isOriginal) {
         playSound(type);
+    }
+
+    if(type == "ETF_RFQ") {
+        var o = symbol.split(" ")[0];
+        var origSymbol = o.slice(0,-2) + " " + o.slice(-2);
+        if (AutoOpenRFQ) {
+            launchLadder(symbol);
+            launchLadder(origSymbol);
+        }
     }
 }
 
