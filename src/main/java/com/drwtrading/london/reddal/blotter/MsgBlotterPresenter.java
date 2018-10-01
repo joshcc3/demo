@@ -64,11 +64,17 @@ public class MsgBlotterPresenter {
         final MsgBlotterRow oldRow = rows.putIfAbsent(row, row);
 
         if (null == oldRow) {
+
             if (MAX_ROWS < rows.size()) {
+
                 final MsgBlotterRow oldestRow = rows.pollFirstEntry().getValue();
-                views.all().removeRow(oldestRow.id);
+                if (oldestRow.id != row.id) {
+                    views.all().removeRow(oldestRow.id);
+                    views.all().addRow(row.id, row.timestamp, row.source, row.text);
+                }
+            } else {
+                views.all().addRow(row.id, row.timestamp, row.source, row.text);
             }
-            views.all().addRow(row.id, row.timestamp, row.source, row.text);
         }
     }
 
