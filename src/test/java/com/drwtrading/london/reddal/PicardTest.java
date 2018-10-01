@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal;
 
-import com.drwtrading.eeif.md.utils.L2DebugAdapter;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
@@ -99,9 +98,8 @@ public class PicardTest {
 
     private static void setUpBook(final IMDSubscriber bookSubscriber, final CCY ccy, final BookMarketState marketState) {
         final InstrumentID instrumentID = new InstrumentID("AAPL12345678", ccy, MIC.XCME);
-        final LevelTwoBook book =
-                new LevelTwoBook(new L2DebugAdapter(System.out, new BookLevelTwoMonitorAdaptor()), "AAPL", 1, instrumentID, InstType.FUTURE,
-                        new SingleBandTickTable(Constants.NORMALISING_FACTOR), MDSource.LSE, 1, 100);
+        final LevelTwoBook book = new LevelTwoBook(new BookLevelTwoMonitorAdaptor(), "AAPL", 1, instrumentID, InstType.FUTURE,
+                new SingleBandTickTable(Constants.NORMALISING_FACTOR), MDSource.LSE, 1, 100);
         book.setLevel(BookSide.ASK, 103 * Constants.NORMALISING_FACTOR, 10);
         book.setLevel(BookSide.ASK, 102 * Constants.NORMALISING_FACTOR, 5);
         book.setLevel(BookSide.ASK, 101 * Constants.NORMALISING_FACTOR, 1);
