@@ -70,6 +70,9 @@ public class ResolverTest {
                 "Resolved server.");
         Assert.assertEquals(resolver.resolveToServerName("SAN SQ", RemoteOrderType.HAWK, "CHAD", null), "nibbler-baml", "Resolved server.");
         Assert.assertEquals(resolver.resolveToServerName("EFP:CLU8", RemoteOrderType.GTC, "CHAD", null), "internal", "Resolved server.");
+
+        Assert.assertEquals(resolver.resolveToServerName("SP5 FP", RemoteOrderType.MKT_CLOSE, "CHAD", null), "nibbler-baml",
+                "Resolved server.");
     }
 
     @Test
