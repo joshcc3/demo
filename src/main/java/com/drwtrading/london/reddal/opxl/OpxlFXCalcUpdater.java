@@ -78,11 +78,11 @@ public class OpxlFXCalcUpdater extends AOpxlLoggingReader<OPXLComponents, Map<CC
         }
 
         if (fxRates.isEmpty()) {
-            monitor.logError(OPXLComponents.OPXL_FX_CALC, "No fx rates in [" + super.topic + "].");
+            monitor.logError(component, "No fx rates in [" + super.topic + "].");
             return null;
         } else {
             awaitingData = false;
-            monitor.setOK(OPXLComponents.OPXL_FX_CALC);
+            monitor.setOK(component);
             return fxRates;
         }
     }
