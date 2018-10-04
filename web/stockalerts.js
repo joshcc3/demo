@@ -28,6 +28,7 @@ $(function () {
     sweepSound = new Audio("stockAlerts/sword-schwing.wav");
     twapSound = new Audio("stockAlerts/TWAP.wav");
     tweetSound = new Audio("stockAlerts/tweet.wav");
+    bigRfqSound = new Audio("stockAlerts/pulp.wav");
     unknownSound = new Audio("stockAlerts/huh-humm.wav");
 
     setTimeout(function() { 
@@ -82,7 +83,7 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
         playSound(type);
     }
 
-    if(type == "ETF_RFQ") {
+    if(type.includes("ETF_RFQ")) {
         var o = symbol.split(" ")[0];
         var origSymbol = o.slice(0,-2) + " " + o.slice(-2);
         if (AutoOpenRFQ) {
@@ -95,7 +96,9 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 function playSound(type) {
 
     var sound;
-    if ("RFQ" == type) {
+    if (type.startsWith("BIG_")) {
+    	sound = bigRfqSound;
+	} else if ("RFQ" == type) {
         sound = rfqSound;
     } else if ("AT_CLOSE" == type) {
         sound = atCloseSound;

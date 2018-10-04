@@ -1,13 +1,21 @@
 package com.drwtrading.london.reddal.stockAlerts;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
+import com.drwtrading.london.eeif.utils.staticData.CCY;
+import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
+import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -16,6 +24,7 @@ import java.util.Set;
 public class StockAlertPresenter {
 
     private static final Set<String> UNWANTED_RFQ_FUTURES = new HashSet<>();
+    private static final double RFQ_BIG_THRESHOLD = 10_000_000;
 
     static {
         UNWANTED_RFQ_FUTURES.add("FGBS");
@@ -29,14 +38,23 @@ public class StockAlertPresenter {
 
     private final IClock clock;
     private final UILogger webLog;
+    private final FXCalc<?> fxCalc;
 
+    private final DecimalFormat qtyDF;
+    private final SimpleDateFormat sdf;
     private final WebSocketViews<IStockAlertsView> views;
     private final LinkedHashSet<StockAlert> alerts;
+    private final long millisAtMidnightUTC = DateTimeUtil.getMillisAtMidnight();
 
-    public StockAlertPresenter(final IClock clock, final UILogger webLog) {
+    public StockAlertPresenter(final IClock clock, final FXCalc<?> fxCalc, final UILogger webLog) {
 
         this.clock = clock;
+        this.fxCalc = fxCalc;
         this.webLog = webLog;
+
+        this.qtyDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 0);
+        this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
+        this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
 
         this.views = WebSocketViews.create(IStockAlertsView.class, this);
         this.alerts = new LinkedHashSet<>();
@@ -62,25 +80,41 @@ public class StockAlertPresenter {
     }
 
     public void addAlert(final StockAlert stockAlert) {
+        if (alerts.add(stockAlert)) {
 
-        if (!"RFQ".equals(stockAlert.type) || !isRFQFiltered(stockAlert.symbol)) {
+            final boolean isRecent = Math.abs(stockAlert.milliSinceMidnight - clock.getMillisSinceMidnightUTC()) < MAX_RFQ_ALERT_MILLIS;
 
-            if (alerts.add(stockAlert)) {
+            views.all().stockAlert(stockAlert.timestamp, stockAlert.type, stockAlert.symbol, stockAlert.msg, isRecent);
 
-                final boolean isRecent = Math.abs(stockAlert.milliSinceMidnight - clock.getMillisSinceMidnightUTC()) < MAX_RFQ_ALERT_MILLIS;
-
-                views.all().stockAlert(stockAlert.timestamp, stockAlert.type, stockAlert.symbol, stockAlert.msg, isRecent);
-
-                if (MAX_HISTORY < alerts.size()) {
-                    final Iterator<?> it = alerts.iterator();
-                    it.next();
-                    it.remove();
-                }
+            if (MAX_HISTORY < alerts.size()) {
+                final Iterator<?> it = alerts.iterator();
+                it.next();
+                it.remove();
             }
         }
     }
 
     private static boolean isRFQFiltered(final String symbol) {
         return 4 < symbol.length() && UNWANTED_RFQ_FUTURES.contains(symbol.substring(0, 4));
+    }
+
+    public void addRfq(final RfqAlert alert) {
+        if (!isRFQFiltered(alert.symbol)) {
+
+            final StockAlert stockAlert = getStockAlertFromRfq(alert);
+            addAlert(stockAlert);
+        }
+    }
+
+    StockAlert getStockAlertFromRfq(final RfqAlert alert) {
+        final double value = alert.price * alert.qty * (alert.ccy.isMinor ? 0.01d : 1d) * fxCalc.getMid(alert.ccy.major, CCY.EUR) /
+                Constants.NORMALISING_FACTOR;
+        final String notional = qtyDF.format(value);
+
+        final boolean bigRfq = value > RFQ_BIG_THRESHOLD;
+        final String type = (bigRfq ? "BIG_" : "") + (alert.isETF ? "ETF_RFQ" : "RFQ");
+
+        return new StockAlert(alert.milliSinceMidnight, sdf.format(alert.milliSinceMidnight + millisAtMidnightUTC), type, alert.symbol,
+                "Qty: " + qtyDF.format(alert.qty) + ", notional: " + notional + ' ' + CCY.EUR.name());
     }
 }
