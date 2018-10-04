@@ -1,9 +1,12 @@
 package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.builder.FiberBuilder;
+import com.drwtrading.london.eeif.utils.io.SelectIO;
+import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.jetlang.DefaultJetlangFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
 import com.drwtrading.london.jetlang.JetlangFactory;
+import com.drwtrading.london.reddal.util.SelectIOFiber;
 import org.jetlang.fibers.Fiber;
 
 class ReddalFibers {
@@ -26,13 +29,14 @@ class ReddalFibers {
     final FiberBuilder shredderRouter;
     final FiberBuilder contracts;
 
-    ReddalFibers(final ReddalChannels channels, final DefaultJetlangFactory factory) {
+    ReddalFibers(final ReddalChannels channels, final DefaultJetlangFactory factory, final SelectIO uiSelectIO, final IErrorLogger logger) {
+
         jetlangFactory = factory;
         fiberGroup = new FiberGroup(jetlangFactory, "Fibers", channels.error);
         starter = jetlangFactory.createFiber("Starter");
         fiberGroup.wrap(starter, "Starter");
         logging = fiberGroup.create("Logging");
-        ui = fiberGroup.create("UI");
+        ui = fiberGroup.wrap(new SelectIOFiber(uiSelectIO, logger, "UI"), "UI");
         ladderRouter = fiberGroup.create("Ladder");
         shredderRouter = fiberGroup.create("Shredder");
         stats = fiberGroup.create("Stats");

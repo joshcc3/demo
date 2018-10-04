@@ -236,7 +236,12 @@ public class Main {
 
         final DefaultJetlangFactory jetlangFactory = new DefaultJetlangFactory(ERROR_CHANNEL);
         final ReddalChannels channels = new ReddalChannels(jetlangFactory);
-        final ReddalFibers fibers = new ReddalFibers(channels, jetlangFactory);
+
+        final IResourceMonitor<SelectIOComponents> uiSelectIOMonitor =
+                new ExpandedDetailResourceMonitor<>(app.monitor, "UI Select IO", app.errorLog, SelectIOComponents.class,
+                        ReddalComponents.UI_SELECT_IO);
+        final SelectIO uiSelectIO = new SelectIO(app.clock, uiSelectIOMonitor, Constants::NO_OP, Constants::NO_OP);
+        final ReddalFibers fibers = new ReddalFibers(channels, jetlangFactory, uiSelectIO, app.errorLog);
 
         final IResourceMonitor<OPXLComponents> opxlMonitor =
                 new ExpandedDetailResourceMonitor<>(app.monitor, "OPXL Select IO", app.errorLog, OPXLComponents.class,
@@ -323,7 +328,7 @@ public class Main {
             channels.workingOrderConnectionEstablished.subscribe(fibers.ui.getFiber(), presenter::nibblerConnectionEstablished);
         }
 
-        final FXCalc<?> stockAlertsFXCalc = createOPXLFXCalc(app, opxlSelectIO, opxlMonitor);
+        final FXCalc<?> stockAlertsFXCalc = createOPXLFXCalc(app, opxlSelectIO, uiSelectIO, opxlMonitor);
         { // Stock alert screen
             final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("stockalerts", "stockalerts", fibers.ui, webApp, ws);
@@ -358,7 +363,7 @@ public class Main {
         final TypedChannel<WebSocketControlMessage> stackManagerWebSocket = TypedChannels.create(WebSocketControlMessage.class);
         final SelectIOFiber stackManagerSelectIOFiber = new SelectIOFiber(stackManagerSelectIO, errorLog, stackManagerThreadName);
 
-        final FXCalc<?> stackManagerFXCalc = createOPXLFXCalc(app, opxlSelectIO, opxlMonitor);
+        final FXCalc<?> stackManagerFXCalc = createOPXLFXCalc(app, opxlSelectIO, stackManagerSelectIO, opxlMonitor);
         final FiberBuilder stackManagerFiberBuilder = fibers.fiberGroup.wrap(stackManagerSelectIOFiber, stackManagerThreadName);
         final LadderPresenter stackManagerLadderPresenter =
                 getLadderPresenter(stackManagerMonitor, stackManagerSelectIO, channels, environment, stackManagerFXCalc, noBookSubscription,
@@ -466,7 +471,7 @@ public class Main {
                 final FiberBuilder fiberBuilder =
                         fibers.fiberGroup.wrap(new SelectIOFiber(displaySelectIO, errorLog, threadName), threadName);
 
-                final FXCalc<?> fxCalc = createOPXLFXCalc(app, opxlSelectIO, opxlMonitor);
+                final FXCalc<?> fxCalc = createOPXLFXCalc(app, opxlSelectIO, stackManagerSelectIO, opxlMonitor);
 
                 final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, fxCalc);
                 displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
@@ -706,7 +711,7 @@ public class Main {
         if (app.config.getEnabledGroup("obligations") != null) {
             final ConfigGroup config = app.config.getGroup("obligations");
             final Pattern filterRegex = Pattern.compile(config.getString("filterRegex"));
-            final FXCalc<?> opxlfxCalc = createOPXLFXCalc(app, opxlSelectIO, opxlMonitor);
+            final FXCalc<?> opxlfxCalc = createOPXLFXCalc(app, opxlSelectIO, app.selectIO, opxlMonitor);
             final MemoryChannel<RFQObligationSet> rfqObligationChannel = new MemoryChannel<>();
             final ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, filterRegex.asPredicate());
             final ObligationOPXL obligationOPXL = new ObligationOPXL(opxlSelectIO, opxlMonitor, OPXLComponents.OPXL_OBLIGATIONS_RFQ, logDir,
@@ -1408,11 +1413,11 @@ public class Main {
     }
 
     private static FXCalc<?> createOPXLFXCalc(final Application<ReddalComponents> app, final SelectIO opxlSelectIO,
-            final IResourceMonitor<OPXLComponents> opxlMonitor) {
+            final SelectIO callbackSelectIO, final IResourceMonitor<OPXLComponents> opxlMonitor) {
 
         final IResourceMonitor<PicardFXCalcComponents> fxMonitor = new ResourceIgnorer<>();
         final FXCalc<PicardFXCalcComponents> fxCalc = new FXCalc<>(fxMonitor, PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
-        final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(opxlSelectIO, app.selectIO, opxlMonitor, fxCalc, app.logDir);
+        final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(opxlSelectIO, callbackSelectIO, opxlMonitor, fxCalc, app.logDir);
         app.addStartUpAction(opxlFXCalcUpdater::start);
 
         return fxCalc;
