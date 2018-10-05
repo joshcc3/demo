@@ -51,7 +51,16 @@ body {
 	background-color: #7d4a3c;
 }
 
+.BIG_RFQ div {
+	background-color: #7d4a3c;
+}
+
 .ETF_RFQ div {
+	background-color: #d6a1d0;
+	color: black;
+}
+
+.BIG_ETF_RFQ div {
 	background-color: #d6a1d0;
 	color: black;
 }
