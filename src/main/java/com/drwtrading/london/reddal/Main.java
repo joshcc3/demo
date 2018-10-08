@@ -952,14 +952,27 @@ public class Main {
 
         final ConfigGroup opxlConfig = root.getEnabledGroup("opxl");
 
-        // Desk Position
-        final ConfigGroup deskPositionConfig = opxlConfig.getEnabledGroup("deskposition");
-        if (null != deskPositionConfig) {
+        if (null != opxlConfig) {
+            // Desk Position
+            final ConfigGroup deskPositionConfig = opxlConfig.getEnabledGroup("deskposition");
+            if (null != deskPositionConfig) {
 
-            final Set<String> keys = deskPositionConfig.getSet("keys");
-            final OpxlPositionSubscriber opxlReader = new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
-            app.addStartUpAction(opxlReader::start);
+                final Set<String> keys = deskPositionConfig.getSet("keys");
+                final OpxlPositionSubscriber opxlReader = new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
+                app.addStartUpAction(opxlReader::start);
+            }
+
+            // Ladder Text
+            final ConfigGroup ladderTextConfig = opxlConfig.getEnabledGroup("laddertext");
+            if (null != ladderTextConfig) {
+
+                final Set<String> keys = ladderTextConfig.getSet("keys");
+                final OpxlLadderTextSubscriber ladderTextReader =
+                        new OpxlLadderTextSubscriber(opxlSelectIO, opxlMonitor, keys, channels.opxlLaserLineData, channels.ladderText);
+                app.addStartUpAction(ladderTextReader::start);
+            }
         }
+
 
         final ConfigGroup pksConfig = root.getEnabledGroup("pks");
         if (null != pksConfig) {
@@ -977,16 +990,6 @@ public class Main {
             final TransportTCPKeepAliveConnection<?, ?> client =
                     PositionCacheFactory.createClient(app.selectIO, pksConfig, pksMonitor, cache);
             client.restart();
-        }
-
-        // Ladder Text
-        final ConfigGroup ladderTextConfig = opxlConfig.getEnabledGroup("laddertext");
-        if (null != ladderTextConfig) {
-
-            final Set<String> keys = ladderTextConfig.getSet("keys");
-            final OpxlLadderTextSubscriber ladderTextReader =
-                    new OpxlLadderTextSubscriber(opxlSelectIO, opxlMonitor, keys, channels.opxlLaserLineData, channels.ladderText);
-            app.addStartUpAction(ladderTextReader::start);
         }
 
         final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(opxlSelectIO, opxlMonitor, logDir, channels.ultimateParents);
