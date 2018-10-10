@@ -36,8 +36,8 @@ public class ShredderBookViewTest {
         Mockito.doReturn(WORKING_ORDER_ID_ONE).when(workingOrderOne).getWorkingOrderID();
         Mockito.doReturn(WORKING_ORDER_ID_TWO).when(workingOrderTwo).getWorkingOrderID();
 
-        Mockito.doReturn(ORDER_BOOK_ID_ONE).when(workingOrderOne).getOrderBookID();
-        Mockito.doReturn(ORDER_BOOK_ID_TWO).when(workingOrderTwo).getOrderBookID();
+        Mockito.doReturn(ORDER_BOOK_ID_ONE).when(workingOrderOne).getBookOrderID();
+        Mockito.doReturn(ORDER_BOOK_ID_TWO).when(workingOrderTwo).getBookOrderID();
 
         Mockito.doReturn(OrderType.LIMIT).when(workingOrderOne).getOrderType();
         Mockito.doReturn(OrderType.LIMIT).when(workingOrderTwo).getOrderType();
