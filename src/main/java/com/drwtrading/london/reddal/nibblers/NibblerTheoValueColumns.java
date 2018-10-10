@@ -4,7 +4,6 @@ public enum NibblerTheoValueColumns {
 
     timestamp,
     SYMBOL,
-    TIME,
 
     IS_VALID,
     THEO_TYPE,

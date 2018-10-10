@@ -12,8 +12,6 @@ import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.ShutdownOMSCmd;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -27,7 +25,11 @@ import org.jetlang.channels.Publisher;
 import org.jetlang.core.Scheduler;
 
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
@@ -41,8 +43,6 @@ public class WorkingOrdersPresenter {
     private final IResourceMonitor<ReddalComponents> monitor;
     private final UILogger webLog;
 
-    private final Publisher<RemoteOrderCommandToServer> commands;
-
     private final Map<String, NibblerView> nibblers;
     private final Map<String, SearchResult> searchResults;
 
@@ -53,16 +53,13 @@ public class WorkingOrdersPresenter {
     private int numViewers;
     private long lastViewerHeartbeatNanoSinceMidnight;
 
-
     public WorkingOrdersPresenter(final IClock clock, final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
-                                  final Scheduler scheduler, final Publisher<RemoteOrderCommandToServer> commands, final Collection<String> nibblers,
-                                  final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
+            final Scheduler scheduler, final Publisher<RemoteOrderCommandToServer> commands, final Collection<String> nibblers,
+            final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
 
         this.clock = clock;
         this.monitor = monitor;
         this.webLog = webLog;
-
-        this.commands = commands;
 
         this.searchResults = new HashMap<>();
         this.nibblers = new MapMaker().makeComputingMap(server -> new NibblerView(server, commands, managedOrderCommands, searchResults));
@@ -115,7 +112,7 @@ public class WorkingOrdersPresenter {
     }
 
     public void nibblerConnectionEstablished(final WorkingOrderConnectionEstablished connectionEstablished) {
-        NibblerView nibblerView = nibblers.get(connectionEstablished.server);
+        final NibblerView nibblerView = nibblers.get(connectionEstablished.server);
         nibblerView.setConnected(connectionEstablished.established);
         dirtyServers.add(connectionEstablished.server);
         views.all().addNibbler(connectionEstablished.server, connectionEstablished.established, nibblerView.getOrderCount());
@@ -135,7 +132,7 @@ public class WorkingOrdersPresenter {
     public void onDisconnected(final WebSocketDisconnected disconnected) {
         webLog.write("workingOrders", disconnected, false, --numViewers);
         views.unregister(disconnected);
-        for (NibblerView nibblerView : nibblers.values()) {
+        for (final NibblerView nibblerView : nibblers.values()) {
             nibblerView.unregister(disconnected.getOutboundChannel());
         }
     }
@@ -147,7 +144,6 @@ public class WorkingOrdersPresenter {
     }
 
     // --------------
-
 
     @FromWebSocketView
     public void watchServer(final String server, final WebSocketInboundData client) {
@@ -183,7 +179,7 @@ public class WorkingOrdersPresenter {
     }
 
     private void cancelAllNonGTC(final String user, final String reason, final boolean isAutomated) {
-        for (NibblerView nibblerView : nibblers.values()) {
+        for (final NibblerView nibblerView : nibblers.values()) {
             nibblerView.cancelAllNonGTC(user, reason, isAutomated);
 
         }
@@ -198,7 +194,7 @@ public class WorkingOrdersPresenter {
     @FromWebSocketView
     public void cancelAll(final WebSocketInboundData data) {
         final String user = data.getClient().getUserName();
-        for (NibblerView nibblerView : nibblers.values()) {
+        for (final NibblerView nibblerView : nibblers.values()) {
             nibblerView.cancelAll(user, "Working orders - Cancel ALL exchange.", false);
         }
     }
@@ -209,11 +205,10 @@ public class WorkingOrdersPresenter {
         nibblers.get(nibbler).cancelAll(user, "Working orders - Cancel ALL.", false);
     }
 
-
     @FromWebSocketView
     public void cancelOrder(final String server, final String key, final WebSocketInboundData data) {
         final String user = data.getClient().getUserName();
-        NibblerView nibblerView = nibblers.get(server);
+        final NibblerView nibblerView = nibblers.get(server);
         nibblerView.cancelOrder(user, key);
     }
 
@@ -222,8 +217,8 @@ public class WorkingOrdersPresenter {
     private void repaint() {
 
         if (0 < numViewers) {
-            for (String dirtyServer : dirtyServers) {
-                NibblerView nibblerView = nibblers.get(dirtyServer);
+            for (final String dirtyServer : dirtyServers) {
+                final NibblerView nibblerView = nibblers.get(dirtyServer);
                 nibblerView.sendUpdates();
                 views.all().refreshWorkingOrderCounts(dirtyServer, nibblerView.getOrderCount());
             }

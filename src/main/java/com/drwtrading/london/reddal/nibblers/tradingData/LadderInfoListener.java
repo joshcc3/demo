@@ -8,6 +8,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterSymbolLi
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 
 public class LadderInfoListener implements INibblerTradingDataListener, INibblerTransportConnectionListener, INibblerBlotterListener {
@@ -45,6 +46,21 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     @Override
     public boolean updateSpreadnoughtTheo(final SpreadnoughtTheo theo) {
         ladderPresenter.setSpreadnoughtTheo(theo);
+        return true;
+    }
+
+    @Override
+    public boolean addWorkingOrder(final WorkingOrder workingOrder) {
+        return true;
+    }
+
+    @Override
+    public boolean updateWorkingOrder(final WorkingOrder workingOrder) {
+        return true;
+    }
+
+    @Override
+    public boolean deleteWorkingOrder(final WorkingOrder workingOrder) {
         return true;
     }
 

@@ -4,6 +4,7 @@ import com.drwtrading.london.eeif.nibbler.transport.cache.tradingData.INibblerTr
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableRow;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableWriter;
@@ -34,6 +35,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
 
     private final FileTableRow<NibblerMetaTables, NibblerTheoValueColumns> theoRow;
     private final FileTableRow<NibblerMetaTables, NibblerSpreadnoughtTheoColumns> spreadnoughtRow;
+    private final FileTableRow<NibblerMetaTables, NibblerWorkingOrderColumns> workingOrderRow;
     private final FileTableRow<NibblerMetaTables, NibblerLastTradeColumns> lastTradeRow;
 
     public NibblerMetaDataLogger(final IClock clock, final IResourceMonitor<ReddalComponents> monitor, final Path logDir,
@@ -52,6 +54,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
 
         this.theoRow = fileTableWriter.addTable(NibblerMetaTables.THEO_VALUE, NibblerTheoValueColumns.values());
         this.spreadnoughtRow = fileTableWriter.addTable(NibblerMetaTables.SPREADNOUGHT_THEO, NibblerSpreadnoughtTheoColumns.values());
+        this.workingOrderRow = fileTableWriter.addTable(NibblerMetaTables.WORKING_ORDER, NibblerWorkingOrderColumns.values());
         this.lastTradeRow = fileTableWriter.addTable(NibblerMetaTables.LAST_TRADE, NibblerLastTradeColumns.values());
     }
 
@@ -73,8 +76,9 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         final long millis = millisAtMidnight + theoValue.getNanoSinceMidnightUTC() / DateTimeUtil.NANOS_IN_MILLIS;
         final String time = timeFormat.format(millis);
 
+        theoRow.set(NibblerTheoValueColumns.timestamp, time);
+
         theoRow.set(NibblerTheoValueColumns.SYMBOL, theoValue.getSymbol());
-        theoRow.set(NibblerTheoValueColumns.TIME, time);
 
         theoRow.set(NibblerTheoValueColumns.IS_VALID, theoValue.isValid());
         theoRow.set(NibblerTheoValueColumns.THEO_TYPE, theoValue.getTheoType());
@@ -112,8 +116,8 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         final long millis = millisAtMidnight + theo.getNanoSinceMidnightUTC() / DateTimeUtil.NANOS_IN_MILLIS;
         final String time = timeFormat.format(millis);
 
+        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.timestamp, time);
         spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.SYMBOL, theo.getSymbol());
-        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.TIME, time);
 
         spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.IS_BID_VALID, theo.isBidValid());
         spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.BID, priceDF.format(theo.getBidValue() / (double) Constants.NORMALISING_FACTOR));
@@ -125,6 +129,54 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
             this.fileTableWriter.writeRow(spreadnoughtRow, false);
         } catch (final IOException e) {
             monitor.logError(ReddalComponents.META_DATA_LOG, "Failed to write spreadnought theo row.", e);
+        }
+    }
+
+    @Override
+    public boolean addWorkingOrder(final WorkingOrder workingOrder) {
+        //        writeWorkingOrderRow(workingOrder, true);
+        return true;
+    }
+
+    @Override
+    public boolean updateWorkingOrder(final WorkingOrder workingOrder) {
+        //        writeWorkingOrderRow(workingOrder, true);
+        return true;
+    }
+
+    @Override
+    public boolean deleteWorkingOrder(final WorkingOrder workingOrder) {
+        //        writeWorkingOrderRow(workingOrder, false);
+        return true;
+    }
+
+    private void writeWorkingOrderRow(final WorkingOrder workingOrder, final boolean isAlive) {
+
+        final String timestamp = timeFormat.format(workingOrder.getLastUpdateMilliSinceUTC());
+
+        workingOrderRow.set(NibblerWorkingOrderColumns.timestamp, timestamp);
+        workingOrderRow.set(NibblerWorkingOrderColumns.IS_ALIVE, isAlive);
+
+        workingOrderRow.set(NibblerWorkingOrderColumns.WORKING_ORDER_ID, workingOrder.getWorkingOrderID());
+        workingOrderRow.set(NibblerWorkingOrderColumns.ORDER_BOOK_ID, workingOrder.getBookOrderID());
+
+        workingOrderRow.set(NibblerWorkingOrderColumns.CHAIN_ID, workingOrder.getChainID());
+        workingOrderRow.set(NibblerWorkingOrderColumns.SYMBOL, workingOrder.getSymbol());
+        workingOrderRow.set(NibblerWorkingOrderColumns.TAG, workingOrder.getTag());
+
+        workingOrderRow.set(NibblerWorkingOrderColumns.SIDE, workingOrder.getSide());
+
+        workingOrderRow.set(NibblerWorkingOrderColumns.ALGO_TYPE, workingOrder.getAlgoType());
+        workingOrderRow.set(NibblerWorkingOrderColumns.ORDER_TYPE, workingOrder.getOrderType());
+
+        workingOrderRow.set(NibblerWorkingOrderColumns.PRICE, workingOrder.getPrice());
+        workingOrderRow.set(NibblerWorkingOrderColumns.ORDER_QTY, workingOrder.getOrderQty());
+        workingOrderRow.set(NibblerWorkingOrderColumns.FILLED_QTY, workingOrder.getFilledQty());
+
+        try {
+            this.fileTableWriter.writeRow(workingOrderRow, false);
+        } catch (final IOException e) {
+            monitor.logError(ReddalComponents.META_DATA_LOG, "Failed to write working order row.", e);
         }
     }
 
@@ -145,8 +197,8 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         final long millis = lastTrade.getMilliSinceUTC();
         final String time = timeFormat.format(millis);
 
+        lastTradeRow.set(NibblerLastTradeColumns.timestamp, time);
         lastTradeRow.set(NibblerLastTradeColumns.SYMBOL, lastTrade.getSymbol());
-        lastTradeRow.set(NibblerLastTradeColumns.TIME, time);
 
         lastTradeRow.set(NibblerLastTradeColumns.SIDE, lastTrade.getSide());
         lastTradeRow.set(NibblerLastTradeColumns.PRICE, priceDF.format(lastTrade.getPrice() / (double) Constants.NORMALISING_FACTOR));

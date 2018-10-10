@@ -17,7 +17,7 @@ import java.util.Set;
 
 public class WorkingOrdersForSymbol {
 
-    public final String symbol;
+    private final String symbol;
     public final Map<String, WorkingOrderUpdateFromServer> ordersByKey;
     private final Map<Long, LinkedHashSet<WorkingOrderUpdateFromServer>> ordersByPrice;
 

@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.shredders;
 
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -13,7 +14,6 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.SymbolStackData;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
@@ -22,16 +22,10 @@ import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.ladders.LadderBoardRow;
 import com.drwtrading.london.reddal.ladders.LadderBookView;
 import com.drwtrading.london.reddal.ladders.model.BookHTMLRow;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
-import eeif.execution.Side;
-import eeif.execution.WorkingOrderUpdate;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
-import java.util.TreeSet;
 
 class ShredderBookView {
 
@@ -50,12 +44,9 @@ class ShredderBookView {
     private final int levels;
     private final LongMap<LadderBoardRow> priceRows = new LongMap<>();
     private final LadderHTMLTable ladderHTMLKeys = new LadderHTMLTable();
-    private final WorkingOrdersForSymbol workingOrdersForSymbol;
+    private final WorkingOrders workingOrders;
 
     private final List<ShreddedOrder> shreddedOrders = new ArrayList<>();
-
-    //TODO:: Remove this when we have access to the orderIds
-    private final TreeSet<ShreddedOrder> ourOrders = new TreeSet<>(Comparator.comparingLong(o -> o.quantity));
 
     private long centeredPrice = 0;
     private long topPrice = Long.MIN_VALUE;
@@ -67,14 +58,14 @@ class ShredderBookView {
     Integer shreddedRowWidth = 0;
 
     ShredderBookView(final UiPipeImpl ui, final IShredderUI view, final MDForSymbol marketData, final String symbol, final int levels,
-            final WorkingOrdersForSymbol workingOrdersForSymbol, final SymbolStackData stackData) {
+            final WorkingOrders workingOrders, final SymbolStackData stackData) {
 
         this.ui = ui;
         this.view = view;
         this.marketData = marketData;
         this.symbol = symbol;
         this.levels = levels;
-        this.workingOrdersForSymbol = workingOrdersForSymbol;
+        this.workingOrders = workingOrders;
         this.stackData = stackData;
 
         ladderHTMLKeys.extendToLevels(levels);
@@ -201,37 +192,14 @@ class ShredderBookView {
 
     void augmentIfOurOrder(final IBookOrder order, final ShreddedOrder shreddedOrder) {
 
-        shreddedOrder.isOurs = false;
+        final WorkingOrder workingOrder = workingOrders.getWorkingOrder(order.getOrderID());
 
-        final Collection<WorkingOrderUpdateFromServer> priceLevel = workingOrdersForSymbol.getWorkingOrdersAtPrice(order.getPrice());
-        if (!priceLevel.isEmpty()) {
-            for (final WorkingOrderUpdateFromServer workingOrderUpdateFromServer : priceLevel) {
-                final WorkingOrderUpdate ourOrder = workingOrderUpdateFromServer.workingOrderUpdate;
-                final boolean sameSide = isSameSide(order.getSide(), ourOrder.getSide());
-                final boolean sameSize = ourOrder.getTotalQuantity() - ourOrder.getFilledQuantity() == order.getRemainingQty();
+        shreddedOrder.isOurs = null != workingOrder;
 
-                if (sameSide && sameSize) {
-                    shreddedOrder.tag = ourOrder.getTag();
-                    shreddedOrder.orderType = ourOrder.getWorkingOrderType().toString();
-                    shreddedOrder.isOurs = true;
-
-                    final ShreddedOrder closestSimilarOrder = ourOrders.floor(shreddedOrder);
-                    if (closestSimilarOrder != null) {
-                        if (closestSimilarOrder.quantity == shreddedOrder.quantity) {
-                            closestSimilarOrder.canOnlyBeOurs = false;
-                            shreddedOrder.canOnlyBeOurs = false;
-                        }
-                    }
-
-                    ourOrders.add(shreddedOrder);
-                    break;
-                }
-            }
+        if (shreddedOrder.isOurs) {
+            shreddedOrder.tag = workingOrder.getTag();
+            shreddedOrder.orderType = workingOrder.getOrderType().name();
         }
-    }
-
-    private static boolean isSameSide(final BookSide bookSide, final Side side) {
-        return (bookSide == BookSide.BID && side == Side.BID) || (bookSide == BookSide.ASK && side == Side.OFFER);
     }
 
     private void wipeDisplayedOrders() {
@@ -254,7 +222,6 @@ class ShredderBookView {
 
             long price = topPrice;
             for (int level = 0; level < levels; level++) {
-                ourOrders.clear();
                 if (book.getBidLevel(price) != null) {
                     final IBookOrder order = book.getBidLevel(price).getFirstOrder();
                     gatherShreddedOrdersAtLevel(order, level);
@@ -270,7 +237,7 @@ class ShredderBookView {
     }
 
     private void gatherShreddedOrdersAtLevel(IBookOrder order, final int level) {
-        ourOrders.clear();
+
         int queuePosition = 0;
         long previousQuantity = 0;
 
@@ -361,7 +328,7 @@ class ShredderBookView {
         }
     }
 
-    public void setCenteredPrice(final long newCenterPrice) {
+    private void setCenteredPrice(final long newCenterPrice) {
         if (null != marketData && null != marketData.getBook()) {
 
             this.centeredPrice = this.marketData.getBook().getTickTable().roundAwayToTick(BookSide.BID, newCenterPrice);

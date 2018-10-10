@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.shredders;
 
 import com.drwtrading.london.reddal.data.SymbolStackData;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiEventHandler;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
@@ -46,13 +45,13 @@ public class ShredderView implements UiEventHandler {
         uiPipe.scrollable('#' + HTML.LADDER);
     }
 
-    void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
-            final WorkingOrdersForSymbol workingOrdersForSymbol, final SymbolStackData stackData) {
+    void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData, final WorkingOrders workingOrders,
+            final SymbolStackData stackData) {
 
         this.symbol = symbol;
         this.levels = levels;
 
-        this.shredderBookView = new ShredderBookView(uiPipe, view, marketData, symbol, levels, workingOrdersForSymbol, stackData);
+        this.shredderBookView = new ShredderBookView(uiPipe, view, marketData, symbol, levels, workingOrders, stackData);
 
         setup();
     }

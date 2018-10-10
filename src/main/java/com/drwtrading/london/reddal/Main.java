@@ -599,10 +599,9 @@ public class Main {
                 shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
 
                 final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
-                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket, channels.workingOrders);
+                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket);
 
                 channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), shredderPresenter::overrideLaserLine);
-                channels.tradingStatus.subscribe(fiberBuilder.getFiber(), shredderPresenter::setTradingStatus);
                 displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
                 displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
 
@@ -623,8 +622,6 @@ public class Main {
                     }
                 }
 
-                final ShredderInfoListener shredderInfoListener = new ShredderInfoListener(shredderPresenter);
-
                 final List<ConfigGroup> nibblerConfigs = nibblers.get(mdSource);
                 if (null != nibblerConfigs) {
 
@@ -636,6 +633,9 @@ public class Main {
                             new MultiLayeredResourceMonitor<>(nibblerMonitor, NibblerTransportComponents.class, errorLog);
 
                     for (final ConfigGroup nibblerConfig : nibblerConfigs) {
+
+                        final ShredderInfoListener shredderInfoListener = new ShredderInfoListener(shredderPresenter);
+
                         final IResourceMonitor<NibblerTransportComponents> childMonitor =
                                 nibblerParentMonitor.createChildResourceMonitor(nibblerConfig.getKey());
                         final NibblerClientHandler client =
@@ -649,6 +649,7 @@ public class Main {
 
                                             @Override
                                             public void connectionLost(final String s) {
+                                                shredderInfoListener.connectionLost();
                                             }
                                         });
                         client.getCaches().addTradingDataListener(shredderInfoListener);
@@ -958,7 +959,8 @@ public class Main {
             if (null != deskPositionConfig) {
 
                 final Set<String> keys = deskPositionConfig.getSet("keys");
-                final OpxlPositionSubscriber opxlReader = new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
+                final OpxlPositionSubscriber opxlReader =
+                        new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
                 app.addStartUpAction(opxlReader::start);
             }
 
@@ -972,7 +974,6 @@ public class Main {
                 app.addStartUpAction(ladderTextReader::start);
             }
         }
-
 
         final ConfigGroup pksConfig = root.getEnabledGroup("pks");
         if (null != pksConfig) {

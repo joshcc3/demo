@@ -1,23 +1,19 @@
 package com.drwtrading.london.reddal.shredders;
 
-import com.drwtrading.jetlang.autosubscribe.KeyedBatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.SymbolStackData;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
-import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
@@ -29,9 +25,7 @@ import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class ShredderPresenter implements IStackPresenterCallback {
 
@@ -42,14 +36,15 @@ public class ShredderPresenter implements IStackPresenterCallback {
     private final Multimap<String, ShredderView> viewsBySymbol = HashMultimap.create();
     private final Multimap<String, ShredderView> viewsByUser = HashMultimap.create();
     private final IMDSubscriber bookSubscriber;
-    private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
     private final Map<String, SymbolStackData> stackBySymbol;
+    private final Map<String, WorkingOrders> workingOrdersBySymbol;
 
     public ShredderPresenter(final IMDSubscriber depthBookSubscriber) {
 
         this.bookSubscriber = depthBookSubscriber;
 
         this.stackBySymbol = new MapMaker().makeComputingMap(symbol -> new SymbolStackData(symbol, Constants::NO_OP, Constants::NO_OP));
+        this.workingOrdersBySymbol = new MapMaker().makeComputingMap(symbol -> new WorkingOrders());
     }
 
     @Subscribe
@@ -92,7 +87,7 @@ public class ShredderPresenter implements IStackPresenterCallback {
 
                 final SymbolStackData stackData = stackBySymbol.get(symbol);
 
-                view.subscribeToSymbol(symbol, levels, mdForSymbol, ordersBySymbol.get(symbol), stackData);
+                view.subscribeToSymbol(symbol, levels, mdForSymbol, workingOrdersBySymbol.get(symbol), stackData);
 
                 viewsBySymbol.put(symbol, view);
             } else {
@@ -102,27 +97,16 @@ public class ShredderPresenter implements IStackPresenterCallback {
         }
     }
 
-    public void setTradingStatus(final ServerTradingStatus serverTradingStatus) {
-        if (!serverTradingStatus.isWorkingOrderConnected) {
-            for (final WorkingOrdersForSymbol ordersForSymbol : ordersBySymbol.values()) {
-                for (final Iterator<WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByKey.values().iterator();
-                     iter.hasNext(); ) {
-                    final WorkingOrderUpdateFromServer working = iter.next();
-                    if (working.fromServer.equals(serverTradingStatus.server)) {
-                        iter.remove();
-                    }
-                }
-                ordersForSymbol.removeOrdersFromServer(serverTradingStatus.server);
-            }
-        }
+    public void setWorkingOrder(final WorkingOrder workingOrder) {
+
+        final WorkingOrders workingOrders = workingOrdersBySymbol.get(workingOrder.getSymbol());
+        workingOrders.setWorkingOrder(workingOrder);
     }
 
-    @KeyedBatchSubscriber(converter = WorkingOrdersPresenter.WOConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
-    @Subscribe
-    public void onWorkingOrders(final Map<String, WorkingOrderUpdateFromServer> workingOrderUpdates) {
-        for (final WorkingOrderUpdateFromServer workingOrderUpdate : workingOrderUpdates.values()) {
-            ordersBySymbol.get(workingOrderUpdate.workingOrderUpdate.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
-        }
+    public void deleteWorkingOrder(final WorkingOrder workingOrder) {
+
+        final WorkingOrders workingOrders = workingOrdersBySymbol.get(workingOrder.getSymbol());
+        workingOrders.removeWorkingOrder(workingOrder);
     }
 
     public void setTheo(final TheoValue theoValue) {

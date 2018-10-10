@@ -4,7 +4,6 @@ public enum NibblerLastTradeColumns {
 
     timestamp,
     SYMBOL,
-    TIME,
 
     SIDE,
     PRICE,

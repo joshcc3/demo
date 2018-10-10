@@ -4,7 +4,6 @@ public enum NibblerSpreadnoughtTheoColumns {
 
     timestamp,
     SYMBOL,
-    TIME,
 
     IS_BID_VALID,
     BID,
