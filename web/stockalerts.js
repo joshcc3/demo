@@ -87,8 +87,8 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
         var o = symbol.split(" ")[0];
         var origSymbol = o.slice(0,-2) + " " + o.slice(-2);
         if (AutoOpenRFQ) {
-            launchLadder(symbol);
-            launchLadder(origSymbol);
+            launchLadder(symbol, true);
+            launchLadder(origSymbol, true);
         }
     }
 }

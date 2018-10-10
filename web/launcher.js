@@ -33,7 +33,7 @@ function getLadderUrl(symbol) {
 	return getLadderHosts(symbol).ladderHost + "/ladder#" + symbol;
 }
 
-function launchLadder(symbol) {
+function launchLadder(symbol, skipBasket) {
 	symbol = symbol.toUpperCase();
 	const hosts = getLadderHosts(symbol);
 	$.ajax({
@@ -49,7 +49,9 @@ function launchLadder(symbol) {
 		dataType: "jsonp",
 		crossDomain: true
 	});
-	launchBasket(symbol, true);
+	if (!skipBasket) {
+        launchBasket(symbol, true);
+    }
 }
 
 function launchBasket(symbol, noPopUp) {
