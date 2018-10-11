@@ -21,14 +21,10 @@ class WorkingOrders {
             workingOrdersByID.remove(prevOrderID);
         }
 
-        System.out.println("Set working Order [" + workingOrder.getBookOrderID() + "], [" + prevOrderID + "].");
-
         workingOrdersByID.put(workingOrder.getBookOrderID(), workingOrder);
     }
 
     void removeWorkingOrder(final WorkingOrder workingOrder) {
-
-        System.out.println("Remove working Order [" + workingOrder.getBookOrderID() + "].");
 
         prevOrderIDs.remove(workingOrder.getWorkingOrderID());
         workingOrdersByID.remove(workingOrder.getBookOrderID());
