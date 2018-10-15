@@ -107,14 +107,15 @@ public class StockAlertPresenter {
     }
 
     StockAlert getStockAlertFromRfq(final RfqAlert alert) {
-        final double value = alert.price * alert.qty * (alert.ccy.isMinor ? 0.01d : 1d) * fxCalc.getMid(alert.ccy.major, CCY.EUR) /
-                Constants.NORMALISING_FACTOR;
+        final boolean validFx = fxCalc.isValid(alert.ccy, CCY.EUR);
+        final double fxRate = validFx ? fxCalc.getMid(alert.ccy, CCY.EUR) : 1;
+        final double value = alert.price * alert.qty * fxRate / Constants.NORMALISING_FACTOR;
         final String notional = qtyDF.format(value);
 
         final boolean bigRfq = value > RFQ_BIG_THRESHOLD;
         final String type = (bigRfq ? "BIG_" : "") + (alert.isETF ? "ETF_RFQ" : "RFQ");
 
         return new StockAlert(alert.milliSinceMidnight, sdf.format(alert.milliSinceMidnight + millisAtMidnightUTC), type, alert.symbol,
-                "Qty: " + qtyDF.format(alert.qty) + ", notional: " + notional + ' ' + CCY.EUR.name());
+                "Qty: " + qtyDF.format(alert.qty) + ", notional: " + notional + ' ' + (validFx ? CCY.EUR.name() : alert.ccy.name()));
     }
 }
