@@ -18,7 +18,12 @@ import eeif.execution.WorkingOrderState;
 import eeif.execution.WorkingOrderUpdate;
 import org.jetlang.channels.Publisher;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 class NibblerView {
@@ -39,7 +44,8 @@ class NibblerView {
 
     private boolean connected;
 
-    NibblerView(String server, Publisher<RemoteOrderCommandToServer> commands, Publisher<OrderEntryCommandToServer> managedOrderCommands, Map<String, SearchResult> searchResults) {
+    NibblerView(final String server, final Publisher<RemoteOrderCommandToServer> commands,
+            final Publisher<OrderEntryCommandToServer> managedOrderCommands, final Map<String, SearchResult> searchResults) {
         this.server = server;
         this.commands = commands;
         this.managedOrderCommands = managedOrderCommands;
@@ -50,15 +56,14 @@ class NibblerView {
         this.dirtyManaged = new HashMap<>();
         this.connected = false;
         this.channels = new HashSet<>();
-        this.all = new WebSocketOutputDispatcher<>(IWorkingOrderView.class).wrap(msg ->
-                channels.forEach(p -> p.publish(msg)));
+        this.all = new WebSocketOutputDispatcher<>(IWorkingOrderView.class).wrap(msg -> channels.forEach(p -> p.publish(msg)));
     }
 
     public boolean isConnected() {
         return connected;
     }
 
-    public void setConnected(boolean connected) {
+    public void setConnected(final boolean connected) {
         if (connected == this.connected) {
             return;
         }
@@ -78,7 +83,7 @@ class NibblerView {
         }
     }
 
-    public void on(WorkingOrderUpdateFromServer order) {
+    public void on(final WorkingOrderUpdateFromServer order) {
         if (order.workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
             workingOrders.remove(order.key());
         } else {
@@ -88,7 +93,7 @@ class NibblerView {
 
     }
 
-    public void on(UpdateFromServer update) {
+    public void on(final UpdateFromServer update) {
         if (update.update.isDead()) {
             managedOrders.remove(update.key);
         } else {
@@ -101,7 +106,7 @@ class NibblerView {
         return workingOrders.size() + managedOrders.size();
     }
 
-    public void on(ServerDisconnected serverDisconnected) {
+    public void on(final ServerDisconnected serverDisconnected) {
         final List<UpdateFromServer> collect = managedOrders.values().stream().filter(
                 updateFromServer -> serverDisconnected.server.equals(updateFromServer.server)).collect(Collectors.toList());
         for (final UpdateFromServer updateFromServer : collect) {
@@ -116,17 +121,17 @@ class NibblerView {
         dirtyManaged.clear();
     }
 
-    public void register(Publisher<WebSocketOutboundData> client, IWorkingOrderView view) {
+    public void register(final Publisher<WebSocketOutboundData> client, final IWorkingOrderView view) {
         channels.add(client);
         sendUpdates(view, workingOrders, managedOrders);
     }
 
-    public void unregister(Publisher<WebSocketOutboundData> client) {
+    public void unregister(final Publisher<WebSocketOutboundData> client) {
         channels.remove(client);
     }
 
     private void sendUpdates(final IWorkingOrderView view, final Map<String, WorkingOrderUpdateFromServer> workingOrders,
-                             final Map<String, UpdateFromServer> managedOrders) {
+            final Map<String, UpdateFromServer> managedOrders) {
 
         for (final WorkingOrderUpdateFromServer updated : workingOrders.values()) {
             publishWorkingOrderUpdate(view, updated);
@@ -142,7 +147,8 @@ class NibblerView {
         if (null != searchResult) {
             WorkingOrdersPresenter.DECIMAL_FORMAT.setMinimumFractionDigits(searchResult.decimalPlaces);
             WorkingOrdersPresenter.DECIMAL_FORMAT.setMaximumFractionDigits(searchResult.decimalPlaces);
-            price = WorkingOrdersPresenter.DECIMAL_FORMAT.format(order.update.getOrder().getPrice() / (double) Constants.NORMALISING_FACTOR);
+            price = WorkingOrdersPresenter.DECIMAL_FORMAT.format(
+                    order.update.getOrder().getPrice() / (double) Constants.NORMALISING_FACTOR);
         } else {
             price = order.update.getOrder().getPrice() + " (raw)";
         }
@@ -173,13 +179,13 @@ class NibblerView {
                 update.getTag(), order.fromServer, update.getWorkingOrderState() == WorkingOrderState.DEAD);
     }
 
-    public void cancelAllNonGTC(String user, String reason, boolean isAutomated) {
+    public void cancelAllNonGTC(final String user, final String reason, final boolean isAutomated) {
         workingOrders.values().stream().filter(WorkingOrdersPresenter.NON_GTC_FILTER).forEach(order -> cancel(user, order, isAutomated));
         managedOrders.values().forEach(this::cancel);
         stopAllStrategies(reason);
     }
 
-    public void cancelAll(String user, String reason, boolean isAUtomated) {
+    public void cancelAll(final String user, final String reason, final boolean isAUtomated) {
         workingOrders.values().forEach(order -> cancel(user, order, false));
         managedOrders.values().forEach(this::cancel);
         stopAllStrategies("Working orders - Cancel ALL exchange.");
@@ -215,7 +221,7 @@ class NibblerView {
                 new OrderEntryCommandToServer(order.server, new Cancel(order.update.getSystemOrderId(), order.update.getOrder())));
     }
 
-    public void cancelOrder(String user, String key) {
+    public void cancelOrder(final String user, final String key) {
         final UpdateFromServer updateFromServer = managedOrders.get(key);
         if (null != updateFromServer) {
             cancel(updateFromServer);

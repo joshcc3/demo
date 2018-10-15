@@ -24,7 +24,8 @@ public interface MktCondition extends Jsonable {
         public final Condition qtyCondition;
         public final int qtyThreshold;
 
-        QtyAtPriceCondition(String symbol, BookSide side, long price, Condition qtyCondition, int qtyThreshold) {
+        QtyAtPriceCondition(final String symbol, final BookSide side, final long price, final Condition qtyCondition,
+                final int qtyThreshold) {
             this.symbol = symbol;
             this.side = side;
             this.price = price;
@@ -33,7 +34,7 @@ public interface MktCondition extends Jsonable {
         }
 
         @Override
-        public boolean conditionMet(WorkingOrdersForSymbol orders, IBook<?> book) {
+        public boolean conditionMet(final WorkingOrdersForSymbol orders, final IBook<?> book) {
             if (book.getSymbol().equals(symbol) && book.getStatus() == BookMarketState.CONTINUOUS && book.isValid()) {
 
                 final IBookLevel lvl;
@@ -45,45 +46,38 @@ public interface MktCondition extends Jsonable {
                         lvl = book.getAskLevel(price);
                         break;
                     default:
-                        throw new IllegalArgumentException("Unknown side [" + side + "]");
+                        throw new IllegalArgumentException("Unknown side [" + side + ']');
                 }
 
-                long qty = null == lvl ? 0 : lvl.getQty();
+                final long qty = null == lvl ? 0 : lvl.getQty();
                 return qtyCondition.test((int) qty, qtyThreshold);
             }
             return false;
         }
 
-
-        public static QtyAtPriceCondition fromJSON(JSONObject object) throws JSONException {
-            return new QtyAtPriceCondition(
-                    object.getString("symbol"),
-                    BookSide.valueOf(object.getString("side")),
-                    object.getLong("price"),
-                    Condition.valueOf(object.getString("qtyCondition")),
-                    object.getInt("qtyThreshold")
-            );
+        public static QtyAtPriceCondition fromJSON(final JSONObject object) throws JSONException {
+            return new QtyAtPriceCondition(object.getString("symbol"), BookSide.valueOf(object.getString("side")), object.getLong("price"),
+                    Condition.valueOf(object.getString("qtyCondition")), object.getInt("qtyThreshold"));
         }
     }
 
     enum Condition implements BiPredicate<Integer, Integer> {
         GT {
             @Override
-            public boolean test(Integer integer, Integer integer2) {
+            public boolean test(final Integer integer, final Integer integer2) {
                 return integer > integer2;
             }
         },
         LT {
             @Override
-            public boolean test(Integer integer, Integer integer2) {
+            public boolean test(final Integer integer, final Integer integer2) {
                 return integer < integer2;
             }
         };
     }
 
-
-    public static MktCondition fromJSON(JSONObject object) throws JSONException {
-        String type = object.getString("_type");
+    public static MktCondition fromJSON(final JSONObject object) throws JSONException {
+        final String type = object.getString("_type");
         switch (type) {
             case "QtyAtPriceCondition":
                 return QtyAtPriceCondition.fromJSON(object);

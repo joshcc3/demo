@@ -3,29 +3,34 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.london.eeif.utils.config.Config;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderType;
-import com.google.common.collect.ImmutableSet;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.regex.Pattern;
 
 public class ResolverTest {
 
     @Test
-    public void resolverTest() throws Exception {
+    public void resolverTest() {
 
         final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<>();
-        matchers.put("chix", new RemoteOrderMatcher(Pattern.compile(" IX$"), ImmutableSet.of("HAWK", "MANUAL"), null, null));
-        matchers.put("xetra", new RemoteOrderMatcher(Pattern.compile(" GY$"), ImmutableSet.of("HAWK", "MANUAL", "MKT_CLOSE"), null, null));
-        matchers.put("euronext", new RemoteOrderMatcher(Pattern.compile(" (FP|BB|PL|NA)$"), ImmutableSet.of("HAWK", "MANUAL"), null, null));
+        matchers.put("chix",
+                new RemoteOrderMatcher(Pattern.compile(" IX$"), EnumSet.of(RemoteOrderType.HAWK, RemoteOrderType.MANUAL), null, null));
+        matchers.put("xetra", new RemoteOrderMatcher(Pattern.compile(" GY$"),
+                EnumSet.of(RemoteOrderType.HAWK, RemoteOrderType.MANUAL, RemoteOrderType.MKT_CLOSE), null, null));
+        matchers.put("euronext",
+                new RemoteOrderMatcher(Pattern.compile(" (FP|BB|PL|NA)$"), EnumSet.of(RemoteOrderType.HAWK, RemoteOrderType.MANUAL), null,
+                        null));
         matchers.put("eurex-fast", new RemoteOrderMatcher(Pattern.compile("^(FESB|FSTB|FXXP|FSTX)(H|M|U|Z)(1|2|3|4|5|6|7|8|9|0)$"),
-                ImmutableSet.of("HAWK", "MANUAL"), null, null));
-        matchers.put("baml", new RemoteOrderMatcher(Pattern.compile(".*"), ImmutableSet.of("HAWK", "MANUAL", "MKT_CLOSE"), null, null));
+                EnumSet.of(RemoteOrderType.HAWK, RemoteOrderType.MANUAL), null, null));
+        matchers.put("baml", new RemoteOrderMatcher(Pattern.compile(".*"),
+                EnumSet.of(RemoteOrderType.HAWK, RemoteOrderType.MANUAL, RemoteOrderType.MKT_CLOSE), null, null));
 
-        final Environment.IRemoteOrderServerResolver resolver = Environment.getRemoteOrderServerResolver(matchers);
+        final RemoteOrderServerResolver resolver = new RemoteOrderServerResolver(matchers);
 
         Assert.assertEquals(resolver.resolveToServerName("FOO IX", RemoteOrderType.HAWK, "CHAD", null), "chix", "Resolved server.");
         Assert.assertEquals(resolver.resolveToServerName("FOO GY IX", RemoteOrderType.HAWK, "CHAD", null), "chix", "Resolved server.");
@@ -49,7 +54,7 @@ public class ResolverTest {
     public void prodEquitiesResolverTest() throws Exception {
 
         final Environment environment = new Environment(new Config(Paths.get("etc/prod-equities.properties")).getRoot());
-        final Environment.IRemoteOrderServerResolver resolver = environment.getServerResolver();
+        final RemoteOrderServerResolver resolver = environment.getServerResolver();
 
         Assert.assertEquals(resolver.resolveToServerName("FOO IX", RemoteOrderType.HAWK, "CHAD", null), "nibbler-chix", "Resolved server.");
         Assert.assertEquals(resolver.resolveToServerName("FOO GY IX", RemoteOrderType.HAWK, "CHAD", null), "nibbler-chix",
@@ -76,7 +81,7 @@ public class ResolverTest {
     public void prodFuturesResolverTest() throws Exception {
 
         final Environment environment = new Environment(new Config(Paths.get("etc/prod-futures.properties")).getRoot());
-        final Environment.IRemoteOrderServerResolver resolver = environment.getServerResolver();
+        final RemoteOrderServerResolver resolver = environment.getServerResolver();
 
         Assert.assertEquals(resolver.resolveToServerName("ERZ4", RemoteOrderType.MANUAL, "CHAD", null), "nibbler-ice", "Resolved server.");
         Assert.assertEquals(resolver.resolveToServerName("ERZ4", RemoteOrderType.GTC, "CHAD", null), "nibbler-ice", "Resolved server.");

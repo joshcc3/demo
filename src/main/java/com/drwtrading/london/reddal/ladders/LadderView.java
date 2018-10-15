@@ -17,7 +17,7 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.data.WorkingOrders;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiEventHandler;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
@@ -214,9 +214,8 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData,
-            final WorkingOrdersForSymbol workingOrdersForSymbol, final LadderMetaData metaData,
-            final LastTradeDataForSymbol extraDataForSymbol, final SymbolStackData stackData,
+    void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData, final WorkingOrders workingOrders,
+            final LadderMetaData metaData, final LastTradeDataForSymbol extraDataForSymbol, final SymbolStackData stackData,
             final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
         this.symbol = symbol;
@@ -233,8 +232,8 @@ public class LadderView implements UiEventHandler {
         this.bookView =
                 new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc,
                         feeDF, ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher,
-                        eeifCommandToServer, tradingStatusForAll, marketData, workingOrdersForSymbol, extraDataForSymbol,
-                        orderUpdatesForSymbol, levels, stackData, metaData, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
+                        eeifCommandToServer, tradingStatusForAll, marketData, workingOrders, extraDataForSymbol, orderUpdatesForSymbol,
+                        levels, stackData, metaData, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
                         disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
@@ -820,7 +819,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    void onSingleOrderCommand(final OrdersPresenter.SingleOrderCommand singleOrderCommand) {
+    void onSingleOrderCommand(final ISingleOrderCommand singleOrderCommand) {
 
         bookView.onSingleOrderCommand(clientSpeedState, singleOrderCommand);
     }

@@ -17,8 +17,8 @@ public enum RemoteOrderType {
     HAWK(OrderType.LIMIT, AlgoType.HAWK),
     TAKER(OrderType.LIMIT, AlgoType.TAKER);
 
-    final OrderType orderType;
-    final AlgoType algoType;
+    public final OrderType orderType;
+    public final AlgoType algoType;
 
     private RemoteOrderType(final OrderType orderType, final AlgoType algoType) {
 

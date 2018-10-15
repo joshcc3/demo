@@ -47,11 +47,7 @@ public class StackGroupCallbackBatcher
     @Override
     public IStackGroupUpdateCallback getStackListener(final String symbol, final InstrumentID instID, final BookSide side) {
 
-        if (null == stackPresenter) {
-            throw new IllegalStateException("Ladder presenter has not been set.");
-        } else {
-            return this;
-        }
+        return this;
     }
 
     @Override

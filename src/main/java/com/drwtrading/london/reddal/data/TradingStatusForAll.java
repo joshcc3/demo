@@ -1,19 +1,28 @@
 package com.drwtrading.london.reddal.data;
 
-import com.drwtrading.london.reddal.safety.ServerTradingStatus;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 
-import java.util.Map;
-
-import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TradingStatusForAll {
 
-    public Map<String, ServerTradingStatus> serverTradingStatusMap = newFastMap();
+    private final Set<String> connectedNibblers;
 
     public TradingStatusForAll() {
+        this.connectedNibblers = new HashSet<>();
     }
 
-    public void on(final ServerTradingStatus tradingStatus) {
-        serverTradingStatusMap.put(tradingStatus.server, tradingStatus);
+    public void setNibblerConnected(final NibblerTransportConnected tradingStatus) {
+
+        if (tradingStatus.isConnected) {
+            connectedNibblers.add(tradingStatus.nibblerName);
+        } else {
+            connectedNibblers.remove(tradingStatus.nibblerName);
+        }
+    }
+
+    public boolean isNibblerConnected(final String nibblerName) {
+        return connectedNibblers.contains(nibblerName);
     }
 }

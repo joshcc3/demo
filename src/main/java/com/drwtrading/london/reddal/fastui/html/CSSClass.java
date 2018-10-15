@@ -1,6 +1,8 @@
 package com.drwtrading.london.reddal.fastui.html;
 
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 
 public enum CSSClass {
 
@@ -92,7 +94,6 @@ public enum CSSClass {
     BID_ORDER("bid_order"),
 
     WORKING_ORDER_TYPE_HIDDEN_TICKTAKER("working_order_type_hidden_ticktaker"),
-    WORKING_ORDER_TYPE_TICKTAKER("working_order_type_ticktaker"),
     WORKING_ORDER_TYPE_TAKER("working_order_type_taker"),
     WORKING_ORDER_TYPE_MANUAL("working_order_type_manual"),
     WORKING_ORDER_TYPE_HAWK("working_order_type_hawk"),
@@ -105,15 +106,7 @@ public enum CSSClass {
     WORKING_ORDER_TYPE_QUOTE("working_order_type_quote"),
     WORKING_ORDER_TYPE_DARK("working_order_type_dark"),
     WORKING_ORDER_TYPE_HIDDEN("working_order_type_hidden"),
-    WORKING_ORDER_TYPE_LITTERBOX_HEDGE("working_order_type_litterbox_hedge"),
-    WORKING_ORDER_TYPE_STRING("working_order_type_string"),
-    WORKING_ORDER_TYPE_ICEBERG("working_order_type_iceberg"),
-    WORKING_ORDER_TYPE_ICEBERG_RANDOM("working_order_type_iceberg_random"),
-    WORKING_ORDER_TYPE_ICEBERG_TIP("working_order_type_iceberg_tip"),
-    WORKING_ORDER_TYPE_AUTOSPREADER("working_order_type_autospreader"),
-    WORKING_ORDER_TYPE_AUTOSPREADER_QUOTE("working_order_type_autospreader_quote"),
-    WORKING_ORDER_TYPE_AUTOSPREAD_TAKER("working_order_type_autospread_taker"),
-    WORKING_ORDER_TYPE_HAWKEYE("working_order_type_hawkeye"),
+
     GOING_EX("going_ex");
 
     public final String cssText;
@@ -124,9 +117,19 @@ public enum CSSClass {
 
     public static final EnumSet<CSSClass> STACK_TYPES;
     public static final EnumSet<CSSClass> STACK_ORDER_TYPES;
+    private static final Map<String, CSSClass> CSS_CLASS_BY_NAME;
 
     static {
         STACK_TYPES = EnumSet.of(QUOTER, PICARD);
         STACK_ORDER_TYPES = EnumSet.of(ONE_SHOT, AUTO_MANAGE, REFRESHABLE);
+
+        CSS_CLASS_BY_NAME = new HashMap<>();
+        for (final CSSClass cssClass : CSSClass.values()) {
+            CSS_CLASS_BY_NAME.put(cssClass.name(), cssClass);
+        }
+    }
+
+    public static CSSClass getCSSClass(final String name) {
+        return CSS_CLASS_BY_NAME.get(name);
     }
 }

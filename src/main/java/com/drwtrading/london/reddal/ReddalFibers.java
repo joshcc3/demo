@@ -26,7 +26,6 @@ class ReddalFibers {
     final FiberBuilder watchdog;
     final FiberBuilder settings;
     final FiberBuilder ladderRouter;
-    final FiberBuilder shredderRouter;
     final FiberBuilder contracts;
 
     ReddalFibers(final ReddalChannels channels, final DefaultJetlangFactory factory, final SelectIO uiSelectIO, final IErrorLogger logger) {
@@ -38,7 +37,6 @@ class ReddalFibers {
         logging = fiberGroup.create("Logging");
         ui = fiberGroup.wrap(new SelectIOFiber(uiSelectIO, logger, "UI"), "UI");
         ladderRouter = fiberGroup.create("Ladder");
-        shredderRouter = fiberGroup.create("Shredder");
         stats = fiberGroup.create("Stats");
         metaData = fiberGroup.create("Metadata");
         workingOrders = fiberGroup.create("Working orders");

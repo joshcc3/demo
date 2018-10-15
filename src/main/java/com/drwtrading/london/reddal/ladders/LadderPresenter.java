@@ -23,9 +23,10 @@ import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
+import com.drwtrading.london.reddal.data.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
+import com.drwtrading.london.reddal.data.WorkingOrders;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
@@ -38,10 +39,10 @@ import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.premium.IPremiumCalc;
-import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
@@ -50,8 +51,6 @@ import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.symbols.SymbolDescription;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
@@ -73,7 +72,6 @@ import org.jetlang.fibers.Fiber;
 import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -99,7 +97,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<>();
     private final Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
     private final Multimap<String, LadderView> viewsByUser = HashMultimap.create();
-    private final Map<String, WorkingOrdersForSymbol> ordersBySymbol = new MapMaker().makeComputingMap(WorkingOrdersForSymbol::new);
+    private final Map<String, WorkingOrders> ordersBySymbol = new MapMaker().makeComputingMap(symbol -> new WorkingOrders());
     private final Map<String, OrderUpdatesForSymbol> eeifOrdersBySymbol = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
     private final Map<String, LastTradeDataForSymbol> lastTradeBySymbol = new MapMaker().makeComputingMap(LastTradeDataForSymbol::new);
     private final Map<String, LadderMetaData> metaDataBySymbol = new MapMaker().makeComputingMap(LadderMetaData::new);
@@ -191,6 +189,18 @@ public class LadderPresenter implements IStackPresenterCallback {
         stackData.setSpreadnoughtTheo(theo);
     }
 
+    public void setWorkingOrder(final SourcedWorkingOrder workingOrder) {
+
+        final WorkingOrders workingOrders = ordersBySymbol.get(workingOrder.order.getSymbol());
+        workingOrders.setWorkingOrder(workingOrder);
+    }
+
+    public void deleteWorkingOrder(final SourcedWorkingOrder workingOrder) {
+
+        final WorkingOrders workingOrders = ordersBySymbol.get(workingOrder.order.getSymbol());
+        workingOrders.removeWorkingOrder(workingOrder);
+    }
+
     public void setLastTrade(final LastTrade lastTrade) {
 
         final LastTradeDataForSymbol data = lastTradeBySymbol.get(lastTrade.getSymbol());
@@ -240,7 +250,7 @@ public class LadderPresenter implements IStackPresenterCallback {
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(symbol, this);
 
-                final WorkingOrdersForSymbol workingOrders = ordersBySymbol.get(symbol);
+                final WorkingOrders workingOrders = ordersBySymbol.get(symbol);
                 final LadderMetaData ladderMetaData = metaDataBySymbol.get(symbol);
                 final LastTradeDataForSymbol lastTradeData = lastTradeBySymbol.get(symbol);
                 final SymbolStackData stackData = stackBySymbol.get(symbol);
@@ -335,14 +345,6 @@ public class LadderPresenter implements IStackPresenterCallback {
         return -1;
     }
 
-    @KeyedBatchSubscriber(converter = WorkingOrdersPresenter.WOConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
-    @Subscribe
-    public void onWorkingOrderUpdates(final Map<String, WorkingOrderUpdateFromServer> workingOrderUpdates) {
-        for (final WorkingOrderUpdateFromServer workingOrderUpdate : workingOrderUpdates.values()) {
-            ordersBySymbol.get(workingOrderUpdate.workingOrderUpdate.getSymbol()).onWorkingOrderUpdate(workingOrderUpdate);
-        }
-    }
-
     public void overrideLaserLine(final LaserLineValue laserLine) {
 
         final SymbolStackData stackData = stackBySymbol.get(laserLine.symbol);
@@ -416,21 +418,8 @@ public class LadderPresenter implements IStackPresenterCallback {
         metaDataBySymbol.get(chixSymbolPair.chixSymbol).setChixSwitchSymbol(chixSymbolPair.primarySymbol);
     }
 
-    @Subscribe
-    public void on(final ServerTradingStatus serverTradingStatus) {
-        tradingStatusForAll.on(serverTradingStatus);
-        if (!serverTradingStatus.isWorkingOrderConnected) {
-            for (final WorkingOrdersForSymbol ordersForSymbol : ordersBySymbol.values()) {
-                for (final Iterator<WorkingOrderUpdateFromServer> iter = ordersForSymbol.ordersByKey.values().iterator();
-                     iter.hasNext(); ) {
-                    final WorkingOrderUpdateFromServer working = iter.next();
-                    if (working.fromServer.equals(serverTradingStatus.server)) {
-                        iter.remove();
-                    }
-                }
-                ordersForSymbol.removeOrdersFromServer(serverTradingStatus.server);
-            }
-        }
+    public void setNibblerConnected(final NibblerTransportConnected serverTradingStatus) {
+        tradingStatusForAll.setNibblerConnected(serverTradingStatus);
     }
 
     @Subscribe
@@ -459,7 +448,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     }
 
     @Subscribe
-    public void on(final OrdersPresenter.SingleOrderCommand singleOrderCommand) {
+    public void on(final ISingleOrderCommand singleOrderCommand) {
         for (final LadderView view : viewsByUser.get(singleOrderCommand.getUsername())) {
             if (view.symbol.equals(singleOrderCommand.getSymbol())) {
                 view.onSingleOrderCommand(singleOrderCommand);

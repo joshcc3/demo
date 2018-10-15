@@ -14,13 +14,21 @@ import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.google.common.collect.Sets;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 
 public class ObligationPresenter {
 
-    static final RFQObligation DEFAULT = new RFQObligation("", Collections.singletonList(new Obligation(5e6, 10)));
-    static final List<Obligation> NOT_FOUND = Collections.singletonList(new Obligation(Double.POSITIVE_INFINITY, 10));
+    private static final RFQObligation DEFAULT = new RFQObligation("", Collections.singletonList(new Obligation(5e6, 10)));
+    private static final List<Obligation> NOT_FOUND = Collections.singletonList(new Obligation(Double.POSITIVE_INFINITY, 10));
 
     private final FXCalc<?> fxCalc;
     private final HashMap<String, SearchResult> searchResults = new HashMap<>();
@@ -47,7 +55,8 @@ public class ObligationPresenter {
 
     private void refreshView(final View view) {
         view.setNotionals(rfqObligationMap.notionals);
-        for (final String symbol : Sets.union(searchResults.keySet(), Sets.union(rfqObligationMap.obligationMap.keySet(), orders.keySet()))) {
+        for (final String symbol : Sets.union(searchResults.keySet(),
+                Sets.union(rfqObligationMap.obligationMap.keySet(), orders.keySet()))) {
             updateView(view, symbol);
         }
     }
@@ -71,7 +80,8 @@ public class ObligationPresenter {
     }
 
     public void updateObligations(final RFQObligationSet rfqObligationMap) {
-        final boolean notionalsChanged = this.rfqObligationMap == null || !rfqObligationMap.notionals.equals(this.rfqObligationMap.notionals);
+        final boolean notionalsChanged =
+                this.rfqObligationMap == null || !rfqObligationMap.notionals.equals(this.rfqObligationMap.notionals);
         this.rfqObligationMap = rfqObligationMap;
         changedSymbols.addAll(rfqObligationMap.obligationMap.keySet());
         if (notionalsChanged) {
@@ -104,7 +114,7 @@ public class ObligationPresenter {
         changedSymbols.clear();
     }
 
-    public void updateView(final View view, final String symbol) {
+    private void updateView(final View view, final String symbol) {
 
         final SearchResult searchResult = searchResults.get(symbol);
         final WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
@@ -131,8 +141,7 @@ public class ObligationPresenter {
             long askQty = 0;
 
             for (final WorkingOrderUpdateFromServer update : ordersForSymbol.getWorkingOrdersAtPrice(price)) {
-                final int unfilledQty = update.workingOrderUpdate.getTotalQuantity()
-                        - update.workingOrderUpdate.getFilledQuantity();
+                final int unfilledQty = update.workingOrderUpdate.getTotalQuantity() - update.workingOrderUpdate.getFilledQuantity();
                 switch (update.workingOrderUpdate.getSide()) {
                     case BID:
                         bidQty += unfilledQty;
@@ -143,7 +152,7 @@ public class ObligationPresenter {
                 }
             }
 
-            final double dblPx = (double) (price) / Constants.NORMALISING_FACTOR;
+            final double dblPx = (double) price / Constants.NORMALISING_FACTOR;
 
             if (bidQty > 0) {
                 bids.put(dblPx, dblPx * bidQty * fxRate);
@@ -153,7 +162,6 @@ public class ObligationPresenter {
                 asks.put(dblPx, dblPx * askQty * fxRate);
             }
         }
-
 
         if (bids.isEmpty() || asks.isEmpty()) {
             view.update(symbol, obligation.obligations, obligation.obligations);
@@ -174,7 +182,8 @@ public class ObligationPresenter {
         }
     }
 
-    private List<Obligation> computeMissedObligations(final double midPx, final TreeMap<Double, Double> pxToNotional, final List<Obligation> obligations) {
+    private List<Obligation> computeMissedObligations(final double midPx, final TreeMap<Double, Double> pxToNotional,
+            final List<Obligation> obligations) {
 
         final List<Obligation> missedObligations = new ArrayList<>();
 
@@ -205,8 +214,8 @@ public class ObligationPresenter {
         return missedObligations;
     }
 
-
     public interface View {
+
         void setNotionals(List<Double> notionals);
 
         void update(String symbol, List<Obligation> missedBid, List<Obligation> missedAsk);

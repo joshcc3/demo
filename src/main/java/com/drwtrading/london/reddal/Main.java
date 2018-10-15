@@ -3,7 +3,6 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
-import com.drwtrading.london.eeif.nibbler.transport.INibblerTransportConnectionListener;
 import com.drwtrading.london.eeif.nibbler.transport.NibblerTransportComponents;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerCacheFactory;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerTransportCaches;
@@ -59,7 +58,6 @@ import com.drwtrading.london.indy.transport.cache.IndyCacheFactory;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.indy.transport.data.Source;
 import com.drwtrading.london.indy.transport.io.IndyServer;
-import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.jetlang.DefaultJetlangFactory;
 import com.drwtrading.london.jetlang.transport.LowTrafficMulticastTransport;
 import com.drwtrading.london.logging.JsonChannelLogger;
@@ -119,12 +117,13 @@ import com.drwtrading.london.reddal.premium.IPremiumCalc;
 import com.drwtrading.london.reddal.premium.PremiumCalculator;
 import com.drwtrading.london.reddal.premium.PremiumOPXLWriter;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
-import com.drwtrading.london.reddal.shredders.ShredderInfoListener;
 import com.drwtrading.london.reddal.shredders.ShredderMessageRouter;
 import com.drwtrading.london.reddal.shredders.ShredderPresenter;
+import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
 import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackManagerGroupCallbackBatcher;
+import com.drwtrading.london.reddal.stacks.StackPresenterMultiplexor;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.family.StackChildListener;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyListener;
@@ -155,7 +154,6 @@ import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.LadderWorkspace;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.london.reddal.workspace.WorkspaceRequestHandler;
-import com.drwtrading.london.time.Clock;
 import com.drwtrading.monitoring.stats.MsgCodec;
 import com.drwtrading.monitoring.stats.Transport;
 import com.drwtrading.monitoring.stats.status.StatusStat;
@@ -169,7 +167,6 @@ import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
-import com.google.common.collect.Maps;
 import com.sun.jndi.toolkit.url.Uri;
 import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
@@ -185,6 +182,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -209,15 +207,10 @@ public class Main {
     private static final String IS_STACK_MANAGER_PARAM = "isManager";
     private static final String MD_SOURCES_PARAM = "mdSources";
 
-    private static final String TRANSPORT_REMOTE_CMDS_NAME_PARAM = "remoteCommands";
+    private static final String IS_FOR_TRADING_PARAM = "isTradable";
     private static final Pattern PARENT_STACK_SUFFIX = Pattern.compile(";S", Pattern.LITERAL);
-    private static final ChannelFactory CHANNEL_FACTORY = new ChannelFactory() {
-        @Override
-        public <T> TypedChannel<T> createChannel(final Class<T> type, final String name) {
-            return TypedChannels.create(type);
-        }
-    };
-    public static final String INDY_SERVER_GROUP = "indyServer";
+
+    private static final String INDY_SERVER_GROUP = "indyServer";
 
     public static void main(final String[] args) throws Exception {
 
@@ -235,7 +228,7 @@ public class Main {
         final String localAppName = app.appName + ':' + app.env.name();
 
         final DefaultJetlangFactory jetlangFactory = new DefaultJetlangFactory(ERROR_CHANNEL);
-        final ReddalChannels channels = new ReddalChannels(jetlangFactory);
+        final ReddalChannels channels = new ReddalChannels();
 
         final IResourceMonitor<SelectIOComponents> uiSelectIOMonitor =
                 new ExpandedDetailResourceMonitor<>(app.monitor, "UI Select IO", app.errorLog, SelectIOComponents.class,
@@ -279,7 +272,7 @@ public class Main {
                 !root.paramExists(IS_EQUITIES_SEARCHABLE_PARAM) || root.getBoolean(IS_EQUITIES_SEARCHABLE_PARAM);
         final boolean isFuturesSearchable = !root.paramExists(IS_FUTURES_SEARCHABLE_PARAM) || root.getBoolean(IS_FUTURES_SEARCHABLE_PARAM);
 
-        final Map<String, TypedChannel<WebSocketControlMessage>> webSocketsForLogging = Maps.newHashMap();
+        final Map<String, TypedChannel<WebSocketControlMessage>> webSocketsForLogging = new HashMap<>();
 
         final WebApplication webApp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
         System.out.println("http://localhost:" + environment.getWebPort());
@@ -463,10 +456,24 @@ public class Main {
 
                 final IMDSubscriber depthBookSubscriber =
                         getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName,
-                                mdSource == MDSource.RFQ ? channels.rfqStockAlerts : Constants::NO_OP);
+                                channels.rfqStockAlerts);
+
+                final IMDSubscriber shredderBookSubscriber;
+                if (shredderOverrides.containsKey(mdSource)) {
+
+                    final ReddalChannels noOpChannels = new ReddalChannels();
+                    shredderBookSubscriber =
+                            getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource), noOpChannels,
+                                    localAppName, Constants::NO_OP);
+                } else {
+                    shredderBookSubscriber = depthBookSubscriber;
+                }
 
                 final TypedChannel<WebSocketControlMessage> webSocket = TypedChannels.create(WebSocketControlMessage.class);
                 webSockets.put(mdSource, webSocket);
+
+                final TypedChannel<WebSocketControlMessage> shredderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                shredderWebSockets.put(mdSource, shredderWebSocket);
 
                 final FiberBuilder fiberBuilder =
                         fibers.fiberGroup.wrap(new SelectIOFiber(displaySelectIO, errorLog, threadName), threadName);
@@ -483,18 +490,27 @@ public class Main {
                         getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, fxCalc, depthBookSubscriber, ewokBaseURL,
                                 webSocket, fiberBuilder, picardSpotter, premiumCalc);
 
+                final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
+                fiberBuilder.subscribe(shredderPresenter, shredderWebSocket);
+
+                channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), shredderPresenter::overrideLaserLine);
+                displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
+                displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
+
                 final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
                 if (null != mdSourceStackConfigs) {
 
                     final MultiLayeredResourceMonitor<ReddalComponents> stackParentMonitor =
                             new MultiLayeredResourceMonitor<>(displayMonitor, ReddalComponents.class, errorLog);
 
+                    final IStackPresenterCallback presenterSharer = new StackPresenterMultiplexor(ladderPresenter, shredderPresenter);
+
                     for (final ConfigGroup stackClientConfig : mdSourceStackConfigs) {
 
                         final IResourceMonitor<ReddalComponents> stackMonitor =
                                 stackParentMonitor.createChildResourceMonitor(threadName + '-' + stackClientConfig.getKey());
 
-                        final StackGroupCallbackBatcher stackUpdateBatcher = new StackGroupCallbackBatcher(ladderPresenter);
+                        final StackGroupCallbackBatcher stackUpdateBatcher = new StackGroupCallbackBatcher(presenterSharer);
                         createStackClient(errorLog, stackMonitor, displaySelectIO, threadName, stackClientConfig, stackUpdateBatcher,
                                 localAppName);
                     }
@@ -511,13 +527,17 @@ public class Main {
 
                     for (final ConfigGroup nibblerConfig : nibblerConfigs) {
 
-                        final IResourceMonitor<NibblerTransportComponents> childMonitor =
-                                nibblerParentMonitor.createChildResourceMonitor(nibblerConfig.getKey());
+                        final String sourceNibbler = nibblerConfig.getKey();
 
-                        final LadderInfoListener ladderInfoListener = new LadderInfoListener(ladderPresenter);
+                        final IResourceMonitor<NibblerTransportComponents> childMonitor =
+                                nibblerParentMonitor.createChildResourceMonitor(sourceNibbler);
+
+                        final LadderInfoListener ladderInfoListener =
+                                new LadderInfoListener(sourceNibbler, ladderPresenter, shredderPresenter);
+
                         final NibblerClientHandler client =
                                 NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
-                                        threadName + "-transport-" + nibblerConfig.getKey(), localAppName + mdSource.name(), true,
+                                        threadName + "-transport-" + sourceNibbler, localAppName + mdSource.name(), true,
                                         ladderInfoListener);
 
                         client.getCaches().addTradingDataListener(ladderInfoListener);
@@ -561,101 +581,6 @@ public class Main {
             createWebPageWithWebSocket("fx", "fx", fiberBuilder, webApp, ws);
             final FxUi ui = new FxUi(fxCalc);
             fiberBuilder.subscribe(ui, ws);
-        }
-
-        // Shredder view
-        for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
-
-            final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
-            if (null == mdSource) {
-                throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
-            } else {
-
-                final String threadName = "Shredder-" + mdSource.name();
-
-                final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(threadName);
-                final IResourceMonitor<SelectIOComponents> selectIOMonitor =
-                        new ExpandedDetailResourceMonitor<>(displayMonitor, threadName, errorLog, SelectIOComponents.class,
-                                ReddalComponents.SHREDDER_SELECT_IO);
-
-                final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
-                final FiberBuilder fiberBuilder =
-                        fibers.fiberGroup.wrap(new SelectIOFiber(displaySelectIO, errorLog, threadName), threadName);
-
-                final IMDSubscriber shredderBookSubscriber;
-                if (shredderOverrides.containsKey(mdSource)) {
-                    final ReddalChannels noOpChannels = new ReddalChannels(CHANNEL_FACTORY);
-                    shredderBookSubscriber =
-                            getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource), noOpChannels,
-                                    localAppName, Constants::NO_OP);
-                } else {
-                    shredderBookSubscriber =
-                            getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName,
-                                    channels.rfqStockAlerts);
-                }
-
-                final TypedChannel<WebSocketControlMessage> shredderPresenterWebSocket =
-                        TypedChannels.create(WebSocketControlMessage.class);
-                shredderWebSockets.put(mdSource, shredderPresenterWebSocket);
-
-                final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
-                fiberBuilder.subscribe(shredderPresenter, shredderPresenterWebSocket);
-
-                channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), shredderPresenter::overrideLaserLine);
-                displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
-                displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
-
-                final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
-                if (null != mdSourceStackConfigs) {
-
-                    final MultiLayeredResourceMonitor<ReddalComponents> stackParentMonitor =
-                            new MultiLayeredResourceMonitor<>(displayMonitor, ReddalComponents.class, errorLog);
-
-                    for (final ConfigGroup stackClientConfig : mdSourceStackConfigs) {
-
-                        final IResourceMonitor<ReddalComponents> stackMonitor =
-                                stackParentMonitor.createChildResourceMonitor(threadName + '-' + stackClientConfig.getKey());
-
-                        final StackGroupCallbackBatcher stackUpdateBatcher = new StackGroupCallbackBatcher(shredderPresenter);
-                        createStackClient(errorLog, stackMonitor, displaySelectIO, threadName, stackClientConfig, stackUpdateBatcher,
-                                localAppName);
-                    }
-                }
-
-                final List<ConfigGroup> nibblerConfigs = nibblers.get(mdSource);
-                if (null != nibblerConfigs) {
-
-                    final IResourceMonitor<NibblerTransportComponents> nibblerMonitor =
-                            new ExpandedDetailResourceMonitor<>(displayMonitor, threadName + "-Nibblers", errorLog,
-                                    NibblerTransportComponents.class, ReddalComponents.TRADING_DATA);
-
-                    final MultiLayeredResourceMonitor<NibblerTransportComponents> nibblerParentMonitor =
-                            new MultiLayeredResourceMonitor<>(nibblerMonitor, NibblerTransportComponents.class, errorLog);
-
-                    for (final ConfigGroup nibblerConfig : nibblerConfigs) {
-
-                        final ShredderInfoListener shredderInfoListener = new ShredderInfoListener(shredderPresenter);
-
-                        final IResourceMonitor<NibblerTransportComponents> childMonitor =
-                                nibblerParentMonitor.createChildResourceMonitor(nibblerConfig.getKey());
-                        final NibblerClientHandler client =
-                                NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
-                                        threadName + "-transport-" + nibblerConfig.getKey(), localAppName + mdSource.name(), true,
-                                        new INibblerTransportConnectionListener() {
-                                            @Override
-                                            public boolean connectionEstablished(final String s) {
-                                                return true;
-                                            }
-
-                                            @Override
-                                            public void connectionLost(final String s) {
-                                                shredderInfoListener.connectionLost();
-                                            }
-                                        });
-                        client.getCaches().addTradingDataListener(shredderInfoListener);
-                    }
-                }
-            }
         }
 
         // Auto-puller thread
@@ -748,14 +673,11 @@ public class Main {
         channels.stackParentSymbolPublisher.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setParentStackSymbol);
 
         // Shredder router
-        {
-            final TypedChannel<WebSocketControlMessage> shredderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("shredder", "shredder", fibers.shredderRouter, webApp, shredderWebSocket);
-
-            final ShredderMessageRouter shredderMessageRouter = new ShredderMessageRouter(monitor, webLog, shredderWebSockets, fibers.ui);
-            fibers.shredderRouter.subscribe(shredderMessageRouter, shredderWebSocket);
-            channels.searchResults.subscribe(fibers.shredderRouter.getFiber(), shredderMessageRouter::setSearchResult);
-        }
+        final TypedChannel<WebSocketControlMessage> shredderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+        createWebPageWithWebSocket("shredder", "shredder", fibers.ladderRouter, webApp, shredderWebSocket);
+        final ShredderMessageRouter shredderMessageRouter = new ShredderMessageRouter(monitor, webLog, shredderWebSockets, fibers.ui);
+        fibers.ladderRouter.subscribe(shredderMessageRouter, shredderWebSocket);
+        channels.searchResults.subscribe(fibers.ladderRouter.getFiber(), shredderMessageRouter::setSearchResult);
 
         // Non SSO-protected web App to allow AJAX requests
         {
@@ -801,7 +723,7 @@ public class Main {
                 final OrderEntryClient client =
                         new OrderEntryClient(instanceName, new SystemClock(), server, fibers.remoteOrders.getFiber(),
                                 channels.orderEntrySymbols, channels.ladderClickTradingIssues);
-                final Environment.HostAndNic command = environment.getHostAndNic(Environment.EEIF_OE + "Command", server);
+                final HostAndNic command = environment.getHostAndNic(Environment.EEIF_OE + "Command", server);
                 final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
                         OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
                                 OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
@@ -815,7 +737,7 @@ public class Main {
                 fibers.remoteOrders.execute(cmdClient::start);
                 System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
 
-                final Environment.HostAndNic update = environment.getHostAndNic(Environment.EEIF_OE + "Update", server);
+                final HostAndNic update = environment.getHostAndNic(Environment.EEIF_OE + "Update", server);
                 final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
                         OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
                                 fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
@@ -849,7 +771,7 @@ public class Main {
 
         // Meta data
         for (final String server : environment.getList(Environment.METADATA)) {
-            final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.METADATA, server);
+            final HostAndNic hostAndNic = environment.getHostAndNic(Environment.METADATA, server);
             final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client =
                     OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
                             Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
@@ -863,7 +785,7 @@ public class Main {
         // Working orders
         for (final String server : environment.getList(Environment.WORKING_ORDERS)) {
 
-            final Environment.HostAndNic hostAndNic = environment.getHostAndNic(Environment.WORKING_ORDERS, server);
+            final HostAndNic hostAndNic = environment.getHostAndNic(Environment.WORKING_ORDERS, server);
             final OnHeapBufferPhotocolsNioClient<WorkingOrderEvent, Void> client =
                     OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), WorkingOrderEvent.class,
                             Void.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
@@ -909,16 +831,12 @@ public class Main {
         }
 
         // Working orders and remote commands watchdog
-        final TradingStatusWatchdog watchdog =
-                new TradingStatusWatchdog(channels.tradingStatus, SERVER_TIMEOUT, Clock.SYSTEM, channels.stats);
-        channels.workingOrderEvents.subscribe(fibers.watchdog.getFiber(), watchdog::setWorkingOrderHeartbeat);
-        fibers.watchdog.getFiber().scheduleWithFixedDelay(watchdog::checkHeartbeats, HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS,
-                TimeUnit.MILLISECONDS);
+        final TradingStatusWatchdog watchdog = new TradingStatusWatchdog(SERVER_TIMEOUT, channels.stats);
         channels.nibblerTransportConnected.subscribe(fibers.watchdog.getFiber(), watchdog::setNibblerTransportConnected);
 
         // Mr. Phil position
         {
-            final Environment.HostAndNic hostAndNic = environment.getMrPhilHostAndNic();
+            final HostAndNic hostAndNic = environment.getMrPhilHostAndNic();
             final OnHeapBufferPhotocolsNioClient<Position, Subscription> client =
                     OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic, Position.class, Subscription.class,
                             fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
@@ -1004,7 +922,7 @@ public class Main {
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "working-orders.json", channels.errorPublisher),
                 channels.workingOrderEvents);
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trading-status.json", channels.errorPublisher),
-                channels.tradingStatus);
+                channels.nibblerTransportConnected);
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "preferences.json", channels.errorPublisher),
                 channels.ladderPrefsLoaded, channels.storeLadderPref);
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "status.json", channels.errorPublisher), channels.stats);
@@ -1063,11 +981,12 @@ public class Main {
                         channels.ladderClickTradingIssues, channels.userCycleContractPublisher, channels.orderEntryCommandToServer,
                         channels.userWorkspaceRequests);
 
-        fiberBuilder.subscribe(ladderPresenter, webSocket, channels.workingOrders, channels.metaData, channels.position,
-                channels.tradingStatus, channels.ladderPrefsLoaded, channels.displaySymbol, channels.recenterLaddersForUser,
-                channels.contractSets, channels.chixSymbolPairs, channels.singleOrderCommand, channels.replaceCommand,
-                channels.userCycleContractPublisher, channels.orderEntrySymbols, channels.orderEntryFromServer, channels.searchResults,
-                channels.symbolDescs);
+        fiberBuilder.subscribe(ladderPresenter, webSocket, channels.metaData, channels.position, channels.ladderPrefsLoaded,
+                channels.displaySymbol, channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs,
+                channels.singleOrderCommand, channels.replaceCommand, channels.userCycleContractPublisher, channels.orderEntrySymbols,
+                channels.orderEntryFromServer, channels.searchResults, channels.symbolDescs);
+
+        channels.nibblerTransportConnected.subscribe(fiberBuilder.getFiber(), ladderPresenter::setNibblerConnected);
         channels.ladderText.subscribe(fiberBuilder.getFiber(), ladderPresenter::setLadderText);
         channels.isinsGoingEx.subscribe(fiberBuilder.getFiber(), ladderPresenter::setISINsGoingEx);
 
@@ -1331,12 +1250,13 @@ public class Main {
                     }
                 }
 
-                final boolean isTransportForTrading = nibblerConfig.paramExists(TRANSPORT_REMOTE_CMDS_NAME_PARAM);
+                final boolean isTransportForTrading =
+                        nibblerConfig.paramExists(IS_FOR_TRADING_PARAM) && nibblerConfig.getBoolean(IS_FOR_TRADING_PARAM);
                 final Publisher<NibblerTransportConnected> connectedNibblerChannel;
                 final String remoteOrderNibblerName;
                 if (isTransportForTrading) {
                     connectedNibblerChannel = channels.nibblerTransportConnected;
-                    remoteOrderNibblerName = nibblerConfig.getString(TRANSPORT_REMOTE_CMDS_NAME_PARAM);
+                    remoteOrderNibblerName = nibblerConfig.getKey();
                 } else {
                     connectedNibblerChannel = Constants::NO_OP;
                     remoteOrderNibblerName = null;

@@ -139,7 +139,7 @@ public class BookPanel {
         }
     }
 
-    public void setWorkingQty(final BookPanelRow row, final int qty) {
+    public void setWorkingQty(final BookPanelRow row, final long qty) {
 
         if (row.setWorkingOrderQty(qty)) {
             final String formattedQty = formatMktQty(qty);

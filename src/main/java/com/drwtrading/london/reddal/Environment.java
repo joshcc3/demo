@@ -16,7 +16,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class Environment {
@@ -47,28 +47,8 @@ public class Environment {
         return settingsFile;
     }
 
-    public static class HostAndNic {
-
-        public final InetSocketAddress host;
-        public final String nic;
-
-        public HostAndNic(final InetSocketAddress host, final String nic) {
-            this.host = host;
-            this.nic = nic;
-        }
-    }
-
     public String getStatsName() throws ConfigException {
         return config.getGroup("stats").getString("name");
-    }
-
-    public String getStatsNns() throws ConfigException {
-        return config.getGroup("stats").getString("nns");
-    }
-
-    public String getStatsInterface() throws SocketException, ConfigException {
-        final String nic = config.getGroup("stats").getString("interface");
-        return NetworkInterfaces.find(nic);
     }
 
     public int getWebPort() throws ConfigException {
@@ -144,7 +124,7 @@ public class Environment {
      * Remote commands server are matched in order.
      * If the symbol matches the regex AND (no order types are specified OR the order is among the types specified) THEN it matches
      */
-    public IRemoteOrderServerResolver getServerResolver() throws ConfigException {
+    public RemoteOrderServerResolver getServerResolver() throws ConfigException {
 
         System.out.println("Loading server resolver:");
         final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<>();
@@ -164,9 +144,9 @@ public class Environment {
                 }
                 final Pattern pattern = Pattern.compile(symbolRegex);
 
-                final Collection<String> orderTypesRaw;
+                final Set<RemoteOrderType> orderTypesRaw;
                 if (null != remoteServerCMDs && remoteServerCMDs.paramExists("orderTypes")) {
-                    orderTypesRaw = remoteServerCMDs.getParam("orderTypes").getSet(Pattern.compile(","));
+                    orderTypesRaw = remoteServerCMDs.getEnumSet("orderTypes", RemoteOrderType.class);
                 } else {
                     orderTypesRaw = null;
                 }
@@ -190,27 +170,6 @@ public class Environment {
                 matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypesRaw, tagsRaw, micsRaw));
             }
         }
-        return getRemoteOrderServerResolver(matchers);
+        return new RemoteOrderServerResolver(matchers);
     }
-
-    public static IRemoteOrderServerResolver getRemoteOrderServerResolver(final LinkedHashMap<String, RemoteOrderMatcher> matchers) {
-        return (symbol, orderType, tag, mic) -> {
-            for (Map.Entry<String, RemoteOrderMatcher> entry : matchers.entrySet()) {
-                if (entry.getValue().matches(symbol, orderType, tag, mic)) {
-                    return entry.getKey();
-                }
-            }
-            return null;
-        };
-    }
-
-    public static interface IRemoteOrderServerResolver {
-
-        public String resolveToServerName(final String symbol, final String orderType, final String tag, final String mic);
-
-        default String resolveToServerName(final String symbol, final RemoteOrderType remoteOrderType, final String tag, final String mic) {
-            return resolveToServerName(symbol, remoteOrderType.name(), tag, mic);
-        }
-    }
-
 }

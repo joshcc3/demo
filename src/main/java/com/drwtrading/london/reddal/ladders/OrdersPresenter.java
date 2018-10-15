@@ -31,7 +31,7 @@ public class OrdersPresenter {
 
     private final UILogger webLog;
 
-    private final Publisher<SingleOrderCommand> singleOrderCommandPublisher;
+    private final Publisher<ISingleOrderCommand> singleOrderCommandPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServer;
     private final WebSocketViews<View> views = new WebSocketViews<>(View.class, this);
 
@@ -39,7 +39,7 @@ public class OrdersPresenter {
     private final Map<String, OrderUpdatesForSymbol> managedOrders = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
     private final Multimap<SymbolPrice, View> subscribed = HashMultimap.create();
 
-    public OrdersPresenter(final UILogger webLog, final Publisher<SingleOrderCommand> singleOrderCommandPublisher, final Publisher<OrderEntryCommandToServer> orderEntryCommandToServer) {
+    public OrdersPresenter(final UILogger webLog, final Publisher<ISingleOrderCommand> singleOrderCommandPublisher, final Publisher<OrderEntryCommandToServer> orderEntryCommandToServer) {
         this.webLog = webLog;
         this.singleOrderCommandPublisher = singleOrderCommandPublisher;
         this.orderEntryCommandToServer = orderEntryCommandToServer;
@@ -104,12 +104,12 @@ public class OrdersPresenter {
 
     @FromWebSocketView
     public void modifyQuantity(final String symbol, final String key, final int newRemainingQty, final WebSocketClient client) {
-        singleOrderCommandPublisher.publish(new ModifyOrderQuantity(symbol, key, client.getUserName(), newRemainingQty));
+        singleOrderCommandPublisher.publish(new ModifyOrderQtyCmd(symbol, key, client.getUserName(), newRemainingQty));
     }
 
     @FromWebSocketView
     public void cancelOrder(final String symbol, final String key, final WebSocketClient client) {
-        singleOrderCommandPublisher.publish(new CancelOrder(symbol, key, client.getUserName()));
+        singleOrderCommandPublisher.publish(new CancelOrderCmd(symbol, key, client.getUserName()));
     }
 
     @FromWebSocketView
@@ -150,74 +150,6 @@ public class OrdersPresenter {
         SymbolPrice(final String symbol, final long price) {
             this.symbol = symbol;
             this.price = price;
-        }
-    }
-
-    public static interface SingleOrderCommand {
-
-        public String getSymbol();
-
-        public String getOrderKey();
-
-        public String getUsername();
-    }
-
-    public static class ModifyOrderQuantity extends Struct implements SingleOrderCommand {
-
-        public final String symbol;
-
-        final String orderKey;
-        public final String username;
-        public final int newRemainingQuantity;
-
-        ModifyOrderQuantity(final String symbol, final String orderKey, final String username, final int newRemainingQuantity) {
-            this.symbol = symbol;
-            this.orderKey = orderKey;
-            this.username = username;
-            this.newRemainingQuantity = newRemainingQuantity;
-        }
-
-        @Override
-        public String getSymbol() {
-            return symbol;
-        }
-
-        @Override
-        public String getOrderKey() {
-            return orderKey;
-        }
-
-        @Override
-        public String getUsername() {
-            return username;
-        }
-    }
-
-    public static class CancelOrder extends Struct implements SingleOrderCommand {
-
-        public final String symbol;
-        final String orderKey;
-        public final String username;
-
-        CancelOrder(final String symbol, final String orderKey, final String username) {
-            this.symbol = symbol;
-            this.orderKey = orderKey;
-            this.username = username;
-        }
-
-        @Override
-        public String getSymbol() {
-            return symbol;
-        }
-
-        @Override
-        public String getOrderKey() {
-            return orderKey;
-        }
-
-        @Override
-        public String getUsername() {
-            return username;
         }
     }
 

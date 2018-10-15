@@ -33,40 +33,30 @@ public class WorkingOrdersForSymbol {
 
         final WorkingOrderUpdate workingOrderUpdate = workingOrderUpdateFromServer.workingOrderUpdate;
 
-        if (workingOrderUpdate.getSymbol().equals(symbol)) {
-
-            final WorkingOrderUpdateFromServer previous;
-            if (workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
-                previous = ordersByKey.remove(workingOrderUpdateFromServer.key());
-            } else {
-                previous = ordersByKey.put(workingOrderUpdateFromServer.key(), workingOrderUpdateFromServer);
-
-                final long price = workingOrderUpdate.getPrice();
-                final Set<WorkingOrderUpdateFromServer> workingOrders = MapUtils.getMappedLinkedSet(ordersByPrice, price);
-                workingOrders.add(workingOrderUpdateFromServer);
-            }
-
-            if (null != previous && !workingOrderUpdateFromServer.equals(previous)) {
-                final long prevPrice = previous.workingOrderUpdate.getPrice();
-                final Set<WorkingOrderUpdateFromServer> workingOrders = ordersByPrice.get(prevPrice);
-                workingOrders.remove(previous);
-                if (workingOrders.isEmpty()) {
-                    ordersByPrice.remove(prevPrice);
-                }
-            }
-            return previous;
+        final WorkingOrderUpdateFromServer previous;
+        if (workingOrderUpdate.getWorkingOrderState() == WorkingOrderState.DEAD) {
+            previous = ordersByKey.remove(workingOrderUpdateFromServer.key());
         } else {
-            return null;
+            previous = ordersByKey.put(workingOrderUpdateFromServer.key(), workingOrderUpdateFromServer);
+
+            final long price = workingOrderUpdate.getPrice();
+            final Set<WorkingOrderUpdateFromServer> workingOrders = MapUtils.getMappedLinkedSet(ordersByPrice, price);
+            workingOrders.add(workingOrderUpdateFromServer);
         }
+
+        if (null != previous && !workingOrderUpdateFromServer.equals(previous)) {
+            final long prevPrice = previous.workingOrderUpdate.getPrice();
+            final Set<WorkingOrderUpdateFromServer> workingOrders = ordersByPrice.get(prevPrice);
+            workingOrders.remove(previous);
+            if (workingOrders.isEmpty()) {
+                ordersByPrice.remove(prevPrice);
+            }
+        }
+        return previous;
     }
 
     public Collection<Long> getWorkingOrderPrices() {
         return ordersByPrice.keySet();
-    }
-
-    public boolean hasPriceLevel(final long price) {
-
-        return ordersByPrice.containsKey(price);
     }
 
     public Collection<WorkingOrderUpdateFromServer> getWorkingOrdersAtPrice(final long price) {
@@ -85,27 +75,6 @@ public class WorkingOrdersForSymbol {
             if (next.fromServer.equals(connectionEstablished.server)) {
                 it.remove();
                 ordersByPrice.remove(next.workingOrderUpdate.getPrice(), next);
-            }
-        }
-    }
-
-    public void removeOrdersFromServer(final String server) {
-
-        final Iterator<LinkedHashSet<WorkingOrderUpdateFromServer>> iter = ordersByPrice.values().iterator();
-        while (iter.hasNext()) {
-
-            final LinkedHashSet<WorkingOrderUpdateFromServer> priceLevel = iter.next();
-
-            final Iterator<WorkingOrderUpdateFromServer> workingOrderIter = priceLevel.iterator();
-            while (workingOrderIter.hasNext()) {
-
-                final WorkingOrderUpdateFromServer working = workingOrderIter.next();
-                if (working.fromServer.equals(server)) {
-                    workingOrderIter.remove();
-                }
-            }
-            if (priceLevel.isEmpty()) {
-                iter.remove();
             }
         }
     }

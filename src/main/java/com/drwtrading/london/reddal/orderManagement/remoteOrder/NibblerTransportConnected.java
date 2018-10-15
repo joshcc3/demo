@@ -1,6 +1,11 @@
 package com.drwtrading.london.reddal.orderManagement.remoteOrder;
 
-public class NibblerTransportConnected {
+import drw.london.json.JSONGenerator;
+import drw.london.json.Jsonable;
+
+import java.io.IOException;
+
+public class NibblerTransportConnected implements Jsonable {
 
     public final String nibblerName;
     public final boolean isConnected;
@@ -9,5 +14,10 @@ public class NibblerTransportConnected {
 
         this.nibblerName = nibblerName;
         this.isConnected = isConnected;
+    }
+
+    @Override
+    public void toJson(final Appendable appendable) throws IOException {
+        JSONGenerator.jsObject(appendable, "nibbler", nibblerName, "isConnected", isConnected);
     }
 }

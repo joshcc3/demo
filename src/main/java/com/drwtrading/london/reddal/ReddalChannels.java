@@ -3,12 +3,11 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
-import com.drwtrading.london.jetlang.ChannelFactory;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
+import com.drwtrading.london.reddal.ladders.ISingleOrderCommand;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
-import com.drwtrading.london.reddal.ladders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.RecenterLadder;
 import com.drwtrading.london.reddal.ladders.RecenterLaddersForUser;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
@@ -25,7 +24,6 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransport
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.premium.Premium;
-import com.drwtrading.london.reddal.safety.ServerTradingStatus;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
@@ -53,8 +51,6 @@ import java.util.Map;
 
 class ReddalChannels {
 
-    private final ChannelFactory channelFactory;
-
     final TypedChannel<Throwable> error;
     final Publisher<Throwable> errorPublisher;
     final TypedChannel<LaserLineValue> opxlLaserLineData;
@@ -63,7 +59,6 @@ class ReddalChannels {
     final TypedChannel<OPXLDeskPositions> deskPositions;
     final TypedChannel<Position> position;
     final TypedChannel<PKSExposure> pksExposure;
-    final TypedChannel<ServerTradingStatus> tradingStatus;
     final TypedChannel<WorkingOrderUpdateFromServer> workingOrders;
     final TypedChannel<WorkingOrderConnectionEstablished> workingOrderConnectionEstablished;
     final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents;
@@ -86,7 +81,7 @@ class ReddalChannels {
     final TypedChannel<SpreadContractSet> contractSets;
     final TypedChannel<HostWorkspaceRequest> userWorkspaceRequests;
     final TypedChannel<ChixSymbolPair> chixSymbolPairs;
-    final TypedChannel<OrdersPresenter.SingleOrderCommand> singleOrderCommand;
+    final TypedChannel<ISingleOrderCommand> singleOrderCommand;
     final TypedChannel<Jsonable> trace;
     final TypedChannel<ReplaceCommand> replaceCommand;
     final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
@@ -109,9 +104,8 @@ class ReddalChannels {
     final TypedChannel<LeanDef> leanDefs;
     final TypedChannel<Premium> spreadnoughtPremiums;
 
-    ReddalChannels(final ChannelFactory channelFactory) {
+    ReddalChannels() {
 
-        this.channelFactory = channelFactory;
         this.error = Main.ERROR_CHANNEL;
         this.errorPublisher = new BogusErrorFilteringPublisher(error);
         this.opxlLaserLineData = create(LaserLineValue.class);
@@ -120,7 +114,6 @@ class ReddalChannels {
         this.deskPositions = create(OPXLDeskPositions.class);
         this.position = create(Position.class);
         this.pksExposure = create(PKSExposure.class);
-        this.tradingStatus = create(ServerTradingStatus.class);
         this.workingOrders = create(WorkingOrderUpdateFromServer.class);
         this.workingOrderConnectionEstablished = create(WorkingOrderConnectionEstablished.class);
         this.workingOrderEvents = create(WorkingOrderEventFromServer.class);
@@ -141,7 +134,7 @@ class ReddalChannels {
         this.contractSets = create(SpreadContractSet.class);
         this.userWorkspaceRequests = create(HostWorkspaceRequest.class);
         this.chixSymbolPairs = create(ChixSymbolPair.class);
-        this.singleOrderCommand = create(OrdersPresenter.SingleOrderCommand.class);
+        this.singleOrderCommand = create(ISingleOrderCommand.class);
         this.trace = create(Jsonable.class);
         this.ladderClickTradingIssues = create(LadderClickTradingIssue.class);
         this.userCycleContractPublisher = create(UserCycleRequest.class);

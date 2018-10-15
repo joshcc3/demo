@@ -7,7 +7,6 @@ import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
-import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
@@ -112,7 +111,7 @@ public class StockAlertPresenter {
         final double value = alert.price * alert.qty * fxRate / Constants.NORMALISING_FACTOR;
         final String notional = qtyDF.format(value);
 
-        final boolean bigRfq = value > RFQ_BIG_THRESHOLD;
+        final boolean bigRfq = alert.isETF && RFQ_BIG_THRESHOLD < value;
         final String type = (bigRfq ? "BIG_" : "") + (alert.isETF ? "ETF_RFQ" : "RFQ");
 
         return new StockAlert(alert.milliSinceMidnight, sdf.format(alert.milliSinceMidnight + millisAtMidnightUTC), type, alert.symbol,

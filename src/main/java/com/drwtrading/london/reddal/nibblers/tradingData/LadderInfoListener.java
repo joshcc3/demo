@@ -9,15 +9,28 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
+import com.drwtrading.london.eeif.utils.collections.LongMap;
+import com.drwtrading.london.eeif.utils.collections.LongMapNode;
+import com.drwtrading.london.reddal.data.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
+import com.drwtrading.london.reddal.shredders.ShredderPresenter;
 
 public class LadderInfoListener implements INibblerTradingDataListener, INibblerTransportConnectionListener, INibblerBlotterListener {
 
+    private final String sourceNibbler;
     private final LadderPresenter ladderPresenter;
+    private final ShredderPresenter shredderPresenter;
 
-    public LadderInfoListener(final LadderPresenter ladderPresenter) {
+    private final LongMap<SourcedWorkingOrder> sourcedWorkingOrder;
 
+    public LadderInfoListener(final String sourceNibbler, final LadderPresenter ladderPresenter,
+            final ShredderPresenter shredderPresenter) {
+
+        this.sourceNibbler = sourceNibbler;
         this.ladderPresenter = ladderPresenter;
+        this.shredderPresenter = shredderPresenter;
+
+        this.sourcedWorkingOrder = new LongMap<>();
     }
 
     @Override
@@ -28,39 +41,59 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     @Override
     public boolean addTheoValue(final TheoValue theoValue) {
         ladderPresenter.setTheo(theoValue);
+        shredderPresenter.setTheo(theoValue);
         return true;
     }
 
     @Override
     public boolean updateTheoValue(final TheoValue theoValue) {
         ladderPresenter.setTheo(theoValue);
+        shredderPresenter.setTheo(theoValue);
         return true;
     }
 
     @Override
     public boolean addSpreadnoughtTheo(final SpreadnoughtTheo theo) {
         ladderPresenter.setSpreadnoughtTheo(theo);
+        shredderPresenter.setSpreadnoughtTheo(theo);
         return true;
     }
 
     @Override
     public boolean updateSpreadnoughtTheo(final SpreadnoughtTheo theo) {
         ladderPresenter.setSpreadnoughtTheo(theo);
+        shredderPresenter.setSpreadnoughtTheo(theo);
         return true;
     }
 
     @Override
-    public boolean addWorkingOrder(final WorkingOrder workingOrder) {
+    public boolean addWorkingOrder(final WorkingOrder order) {
+
+        final SourcedWorkingOrder sourcedOrder = new SourcedWorkingOrder(sourceNibbler, order);
+        sourcedWorkingOrder.put(order.getWorkingOrderID(), sourcedOrder);
+        ladderPresenter.setWorkingOrder(sourcedOrder);
+
+        shredderPresenter.setWorkingOrder(order);
         return true;
     }
 
     @Override
-    public boolean updateWorkingOrder(final WorkingOrder workingOrder) {
+    public boolean updateWorkingOrder(final WorkingOrder order) {
+
+        final SourcedWorkingOrder sourcedOrder = sourcedWorkingOrder.get(order.getWorkingOrderID());
+        ladderPresenter.setWorkingOrder(sourcedOrder);
+
+        shredderPresenter.setWorkingOrder(order);
         return true;
     }
 
     @Override
-    public boolean deleteWorkingOrder(final WorkingOrder workingOrder) {
+    public boolean deleteWorkingOrder(final WorkingOrder order) {
+
+        final SourcedWorkingOrder sourcedOrder = sourcedWorkingOrder.remove(order.getWorkingOrderID());
+        ladderPresenter.deleteWorkingOrder(sourcedOrder);
+
+        shredderPresenter.deleteWorkingOrder(order);
         return true;
     }
 
@@ -83,6 +116,15 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     @Override
     public void connectionLost(final String remoteAppName) {
 
+        for (final LongMapNode<SourcedWorkingOrder> sourcedOrderNode : sourcedWorkingOrder) {
+
+            final SourcedWorkingOrder sourcedWorkingOrder = sourcedOrderNode.getValue();
+            ladderPresenter.deleteWorkingOrder(sourcedWorkingOrder);
+
+            shredderPresenter.deleteWorkingOrder(sourcedWorkingOrder.order);
+        }
+
+        sourcedWorkingOrder.clear();
     }
 
     @Override

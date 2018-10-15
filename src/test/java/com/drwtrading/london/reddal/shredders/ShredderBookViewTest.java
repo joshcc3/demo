@@ -3,9 +3,6 @@ package com.drwtrading.london.reddal.shredders;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
-import eeif.execution.Side;
-import eeif.execution.WorkingOrderType;
-import eeif.execution.WorkingOrderUpdate;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -45,26 +42,6 @@ public class ShredderBookViewTest {
 
     @Test
     public void highlightingTwoOrdersTest() {
-
-        final String symbol = "operation cwal";
-        final long price = 1;
-
-        final WorkingOrderUpdate firstWorkingOrder = Mockito.mock(WorkingOrderUpdate.class);
-        final WorkingOrderUpdate secondWorkingOrder = Mockito.mock(WorkingOrderUpdate.class);
-
-        Mockito.doReturn(symbol).when(firstWorkingOrder).getSymbol();
-        Mockito.doReturn(price).when(firstWorkingOrder).getPrice();
-        Mockito.when(firstWorkingOrder.getSide()).thenReturn(Side.BID);
-        Mockito.when(firstWorkingOrder.getTotalQuantity()).thenReturn(1337);
-        Mockito.when(firstWorkingOrder.getFilledQuantity()).thenReturn(0);
-        Mockito.when(firstWorkingOrder.getWorkingOrderType()).thenReturn(WorkingOrderType.MARKET);
-
-        Mockito.doReturn(symbol).when(secondWorkingOrder).getSymbol();
-        Mockito.doReturn(price).when(secondWorkingOrder).getPrice();
-        Mockito.when(secondWorkingOrder.getSide()).thenReturn(Side.BID);
-        Mockito.when(secondWorkingOrder.getTotalQuantity()).thenReturn(58008);
-        Mockito.when(secondWorkingOrder.getFilledQuantity()).thenReturn(0);
-        Mockito.when(secondWorkingOrder.getWorkingOrderType()).thenReturn(WorkingOrderType.MARKET);
 
         final WorkingOrders workingOrdersForSymbol = new WorkingOrders();
         workingOrdersForSymbol.setWorkingOrder(workingOrderOne);
