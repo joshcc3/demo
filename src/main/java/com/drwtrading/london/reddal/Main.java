@@ -82,9 +82,12 @@ import com.drwtrading.london.reddal.data.ibook.NoMDSubscriptions;
 import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
-import com.drwtrading.london.reddal.ladders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.RecenterLadder;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
+import com.drwtrading.london.reddal.ladders.orders.OrderPresenterMsgRouter;
+import com.drwtrading.london.reddal.ladders.orders.OrdersPresenter;
+import com.drwtrading.london.reddal.ladders.shredders.ShredderMessageRouter;
+import com.drwtrading.london.reddal.ladders.shredders.ShredderPresenter;
 import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
 import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
 import com.drwtrading.london.reddal.obligations.ObligationOPXL;
@@ -117,8 +120,6 @@ import com.drwtrading.london.reddal.premium.IPremiumCalc;
 import com.drwtrading.london.reddal.premium.PremiumCalculator;
 import com.drwtrading.london.reddal.premium.PremiumOPXLWriter;
 import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
-import com.drwtrading.london.reddal.shredders.ShredderMessageRouter;
-import com.drwtrading.london.reddal.shredders.ShredderPresenter;
 import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
 import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
@@ -149,8 +150,9 @@ import com.drwtrading.london.reddal.util.SelectIOFiber;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderListener;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
+import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.LadderWorkspace;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.london.reddal.workspace.WorkspaceRequestHandler;
@@ -170,6 +172,7 @@ import com.drwtrading.websockets.WebSocketControlMessage;
 import com.sun.jndi.toolkit.url.Uri;
 import eeif.execution.WorkingOrderEvent;
 import eeif.execution.WorkingOrderUpdate;
+import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.KeyedBatchSubscriber;
 import org.jetlang.channels.MemoryChannel;
@@ -197,7 +200,6 @@ public class Main {
     private static final int MD_SERVER_TIMEOUT = 5000;
 
     private static final long SERVER_TIMEOUT = 3000L;
-    private static final long HEARTBEAT_INTERVAL_MS = 3000;
     private static final long RECONNECT_INTERVAL_MILLIS = 10000;
 
     private static final String EWOK_BASE_URL_PARAM = "ewokBaseURL";
@@ -296,31 +298,6 @@ public class Main {
             channels.searchResults.subscribe(fibers.ui.getFiber(), indexPresenter::addSearchResult);
         }
 
-        { // Orders presenter
-            final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("orders", "orders", fibers.ui, webApp, websocket);
-            webSocketsForLogging.put("orders", websocket);
-            final OrdersPresenter ordersPresenter =
-                    new OrdersPresenter(webLog, channels.singleOrderCommand, channels.orderEntryCommandToServer);
-            fibers.ui.subscribe(ordersPresenter, websocket, channels.orderEntryFromServer);
-            channels.workingOrders.subscribe(
-                    new KeyedBatchSubscriber<>(fibers.ui.getFiber(), ordersPresenter::onWorkingOrderBatch, 1, TimeUnit.SECONDS,
-                            WorkingOrderUpdateFromServer::key));
-        }
-
-        { // Working orders screen
-            final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("workingorders", "workingorders", fibers.ui, webApp, ws);
-
-            final Collection<String> nibblers = environment.getList(Environment.WORKING_ORDERS);
-            final WorkingOrdersPresenter presenter =
-                    new WorkingOrdersPresenter(clock, monitor, webLog, fibers.ui.getFiber(), channels.remoteOrderCommand, nibblers,
-                            channels.orderEntryCommandToServer);
-            fibers.ui.subscribe(presenter, ws, channels.orderEntryFromServer, channels.workingOrders);
-            channels.searchResults.subscribe(fibers.ui.getFiber(), presenter::addSearchResult);
-            channels.workingOrderConnectionEstablished.subscribe(fibers.ui.getFiber(), presenter::nibblerConnectionEstablished);
-        }
-
         final FXCalc<?> stockAlertsFXCalc = createOPXLFXCalc(app, opxlSelectIO, uiSelectIO, opxlMonitor);
         { // Stock alert screen
             final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
@@ -410,7 +387,8 @@ public class Main {
                 isEquitiesSearchable);
         final Map<MDSource, LinkedList<ConfigGroup>> nibblers = setupNibblerTransport(app, fibers, webApp, webLog, selectIOFiber, channels);
 
-        final Map<MDSource, TypedChannel<WebSocketControlMessage>> webSockets = new EnumMap<>(MDSource.class);
+        final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderWebSockets = new EnumMap<>(MDSource.class);
+        final Map<MDSource, TypedChannel<WebSocketControlMessage>> orderWebSockets = new EnumMap<>(MDSource.class);
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderWebSockets = new EnumMap<>(MDSource.class);
 
         final EnumMap<MDSource, ConfigGroup> shredderOverrides = new EnumMap<>(MDSource.class);
@@ -469,8 +447,11 @@ public class Main {
                     shredderBookSubscriber = depthBookSubscriber;
                 }
 
-                final TypedChannel<WebSocketControlMessage> webSocket = TypedChannels.create(WebSocketControlMessage.class);
-                webSockets.put(mdSource, webSocket);
+                final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                ladderWebSockets.put(mdSource, ladderWebSocket);
+
+                final TypedChannel<WebSocketControlMessage> orderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+                orderWebSockets.put(mdSource, orderWebSocket);
 
                 final TypedChannel<WebSocketControlMessage> shredderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
                 shredderWebSockets.put(mdSource, shredderWebSocket);
@@ -488,7 +469,12 @@ public class Main {
 
                 final LadderPresenter ladderPresenter =
                         getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, fxCalc, depthBookSubscriber, ewokBaseURL,
-                                webSocket, fiberBuilder, picardSpotter, premiumCalc);
+                                ladderWebSocket, fiberBuilder, picardSpotter, premiumCalc);
+
+                final OrdersPresenter orderPresenter = new OrdersPresenter(channels.singleOrderCommand, channels.orderEntryCommandToServer);
+                fiberBuilder.subscribe(orderPresenter, orderWebSocket);
+
+                channels.orderEntryFromServer.subscribe(fiberBuilder.getFiber(), orderPresenter::setOrderEntryUpdate);
 
                 final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
                 fiberBuilder.subscribe(shredderPresenter, shredderWebSocket);
@@ -533,7 +519,7 @@ public class Main {
                                 nibblerParentMonitor.createChildResourceMonitor(sourceNibbler);
 
                         final LadderInfoListener ladderInfoListener =
-                                new LadderInfoListener(sourceNibbler, ladderPresenter, shredderPresenter);
+                                new LadderInfoListener(sourceNibbler, ladderPresenter, orderPresenter, shredderPresenter);
 
                         final NibblerClientHandler client =
                                 NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
@@ -667,10 +653,17 @@ public class Main {
         final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
         createWebPageWithWebSocket("ladder", "ladder", fibers.ladderRouter, webApp, ladderWebSocket);
         final LadderMessageRouter ladderMessageRouter =
-                new LadderMessageRouter(monitor, webLog, channels.symbolSelections, stackManagerWebSocket, webSockets, fibers.ui);
+                new LadderMessageRouter(monitor, webLog, channels.symbolSelections, stackManagerWebSocket, ladderWebSockets, fibers.ui);
         fibers.ladderRouter.subscribe(ladderMessageRouter, ladderWebSocket, channels.replaceCommand);
         channels.searchResults.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setSearchResult);
         channels.stackParentSymbolPublisher.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setParentStackSymbol);
+
+        // Orders router
+        final TypedChannel<WebSocketControlMessage> orderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+        createWebPageWithWebSocket("orders", "orders", fibers.ladderRouter, webApp, orderWebSocket);
+        final OrderPresenterMsgRouter ordersPresenterMsgRouter = new OrderPresenterMsgRouter(monitor, fibers.ui, webLog, orderWebSockets);
+        fibers.ladderRouter.subscribe(ordersPresenterMsgRouter, orderWebSocket);
+        channels.searchResults.subscribe(fibers.ladderRouter.getFiber(), ordersPresenterMsgRouter::setSearchResult);
 
         // Shredder router
         final TypedChannel<WebSocketControlMessage> shredderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
@@ -1232,6 +1225,13 @@ public class Main {
             final MsgBlotterPresenter msgBlotter = new MsgBlotterPresenter(app.selectIO, fibers.ui, webLog);
             final SafetiesBlotterPresenter safetiesBlotter = new SafetiesBlotterPresenter(fibers.ui, webLog);
 
+            final WorkingOrdersPresenter workingOrderPresenter =
+                    new WorkingOrdersPresenter(app.selectIO, app.monitor, webLog, fibers.logging, channels.remoteOrderCommand,
+                            channels.orderEntryCommandToServer);
+
+            channels.orderEntryFromServer.subscribe(selectIOFiber,
+                    new BatchSubscriber<>(selectIOFiber, workingOrderPresenter::oeUpdate, 250, TimeUnit.MILLISECONDS));
+
             final MultiLayeredResourceMonitor<ReddalComponents> clientMonitorParent =
                     new MultiLayeredResourceMonitor<>(app.monitor, ReddalComponents.class, app.errorLog);
 
@@ -1254,6 +1254,7 @@ public class Main {
                         nibblerConfig.paramExists(IS_FOR_TRADING_PARAM) && nibblerConfig.getBoolean(IS_FOR_TRADING_PARAM);
                 final Publisher<NibblerTransportConnected> connectedNibblerChannel;
                 final String remoteOrderNibblerName;
+
                 if (isTransportForTrading) {
                     connectedNibblerChannel = channels.nibblerTransportConnected;
                     remoteOrderNibblerName = nibblerConfig.getKey();
@@ -1267,7 +1268,8 @@ public class Main {
                                 NibblerTransportComponents.class, ReddalComponents.BLOTTER_CONNECTION);
 
                 final BlotterClient blotterClient =
-                        new BlotterClient(nibbler, msgBlotter, safetiesBlotter, connectedNibblerChannel, remoteOrderNibblerName);
+                        new BlotterClient(nibbler, msgBlotter, safetiesBlotter, workingOrderPresenter, connectedNibblerChannel,
+                                remoteOrderNibblerName);
 
                 final NibblerClientHandler client =
                         NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,
@@ -1288,6 +1290,10 @@ public class Main {
                     final NibblerMetaDataLogger logger =
                             new NibblerMetaDataLogger(app.selectIO, app.monitor, app.logDir, remoteOrderNibblerName);
                     cache.addTradingDataListener(logger);
+
+                    workingOrderPresenter.addNibbler(nibbler);
+                    final WorkingOrderListener workingOrderListener = new WorkingOrderListener(nibbler, workingOrderPresenter);
+                    cache.addTradingDataListener(workingOrderListener);
                 }
             }
 
@@ -1298,6 +1304,10 @@ public class Main {
             final TypedChannel<WebSocketControlMessage> safetiesWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("safeties", "safeties", fibers.ladderRouter, webApp, safetiesWebSocket);
             safetiesWebSocket.subscribe(selectIOFiber, safetiesBlotter::webControl);
+
+            final TypedChannel<WebSocketControlMessage> workingOrderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("workingorders", "workingorders", fibers.ladderRouter, webApp, workingOrderWebSocket);
+            workingOrderWebSocket.subscribe(selectIOFiber, workingOrderPresenter::webControl);
         }
 
         return result;

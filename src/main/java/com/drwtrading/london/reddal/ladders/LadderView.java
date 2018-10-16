@@ -17,7 +17,7 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.data.WorkingOrders;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiEventHandler;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
@@ -214,7 +214,7 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData, final WorkingOrders workingOrders,
+    void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders,
             final LadderMetaData metaData, final LastTradeDataForSymbol extraDataForSymbol, final SymbolStackData stackData,
             final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 

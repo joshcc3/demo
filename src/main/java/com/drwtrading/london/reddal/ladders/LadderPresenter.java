@@ -23,10 +23,10 @@ import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
-import com.drwtrading.london.reddal.data.SourcedWorkingOrder;
+import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.data.WorkingOrders;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
@@ -97,7 +97,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<>();
     private final Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
     private final Multimap<String, LadderView> viewsByUser = HashMultimap.create();
-    private final Map<String, WorkingOrders> ordersBySymbol = new MapMaker().makeComputingMap(symbol -> new WorkingOrders());
+    private final Map<String, WorkingOrdersByPrice> ordersBySymbol = new MapMaker().makeComputingMap(symbol -> new WorkingOrdersByPrice());
     private final Map<String, OrderUpdatesForSymbol> eeifOrdersBySymbol = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
     private final Map<String, LastTradeDataForSymbol> lastTradeBySymbol = new MapMaker().makeComputingMap(LastTradeDataForSymbol::new);
     private final Map<String, LadderMetaData> metaDataBySymbol = new MapMaker().makeComputingMap(LadderMetaData::new);
@@ -191,13 +191,13 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     public void setWorkingOrder(final SourcedWorkingOrder workingOrder) {
 
-        final WorkingOrders workingOrders = ordersBySymbol.get(workingOrder.order.getSymbol());
+        final WorkingOrdersByPrice workingOrders = ordersBySymbol.get(workingOrder.order.getSymbol());
         workingOrders.setWorkingOrder(workingOrder);
     }
 
     public void deleteWorkingOrder(final SourcedWorkingOrder workingOrder) {
 
-        final WorkingOrders workingOrders = ordersBySymbol.get(workingOrder.order.getSymbol());
+        final WorkingOrdersByPrice workingOrders = ordersBySymbol.get(workingOrder.order.getSymbol());
         workingOrders.removeWorkingOrder(workingOrder);
     }
 
@@ -250,7 +250,7 @@ public class LadderPresenter implements IStackPresenterCallback {
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(symbol, this);
 
-                final WorkingOrders workingOrders = ordersBySymbol.get(symbol);
+                final WorkingOrdersByPrice workingOrders = ordersBySymbol.get(symbol);
                 final LadderMetaData ladderMetaData = metaDataBySymbol.get(symbol);
                 final LastTradeDataForSymbol lastTradeData = lastTradeBySymbol.get(symbol);
                 final SymbolStackData stackData = stackBySymbol.get(symbol);

@@ -10,7 +10,7 @@ public class ModifyOrderQtyCmd extends Struct implements ISingleOrderCommand {
     public final String username;
     public final int newRemainingQuantity;
 
-    ModifyOrderQtyCmd(final String symbol, final String orderKey, final String username, final int newRemainingQuantity) {
+    public ModifyOrderQtyCmd(final String symbol, final String orderKey, final String username, final int newRemainingQuantity) {
         this.symbol = symbol;
         this.orderKey = orderKey;
         this.username = username;

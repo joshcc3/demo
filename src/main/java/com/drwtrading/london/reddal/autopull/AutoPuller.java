@@ -1,15 +1,14 @@
 package com.drwtrading.london.reddal.autopull;
 
-import com.drwtrading.jetlang.autosubscribe.KeyedBatchSubscriber;
-import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
-import com.drwtrading.london.reddal.data.WorkingOrdersForSymbol;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrdersPresenter;
+import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
@@ -18,15 +17,14 @@ import org.joda.time.DateTime;
 import org.joda.time.Instant;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
 
 public class AutoPuller {
 
@@ -34,46 +32,52 @@ public class AutoPuller {
 
     private final Publisher<RemoteOrderCommandToServer> commandPublisher;
     private final PullerBookSubscriber bookSubscriber;
-    private final Map<String, WorkingOrdersForSymbol> orders = new HashMap<>();
-    private final Map<String, IBook<?>> md = new HashMap<>();
-    private final Multimap<String, EnabledPullRule> rulesBySymbol = HashMultimap.create();
-    private final Map<Long, EnabledPullRule> rulesByID = new TreeMap<>();
     private final AutoPullPersistence persistence;
+
+    private final Map<String, HashSet<SourcedWorkingOrder>> orders;
+    private final Map<String, IBook<?>> md = new HashMap<>();
+    private final Multimap<String, AutoPullerEnabledPullRule> rulesBySymbol = HashMultimap.create();
+    private final Map<Long, AutoPullerEnabledPullRule> rulesByID = new TreeMap<>();
     private IAutoPullCallbacks refreshCallback = IAutoPullCallbacks.DEFAULT;
 
     public AutoPuller(final Publisher<RemoteOrderCommandToServer> commandPublisher, final PullerBookSubscriber bookSubscriber,
             final AutoPullPersistence persistence) {
+
         this.commandPublisher = commandPublisher;
         this.bookSubscriber = bookSubscriber;
         this.persistence = persistence;
+
+        this.orders = new HashMap<>();
+
         bookSubscriber.setCreatedCallback(this::onNewBook);
         persistence.getPullRules().values().forEach(this::addOrUpdateRule);
     }
 
-    @KeyedBatchSubscriber(converter = WorkingOrdersPresenter.WOConverter.class, flushInterval = 500, timeUnit = TimeUnit.MILLISECONDS)
-    @Subscribe
-    public void on(final Map<String, WorkingOrderUpdateFromServer> woEvents) {
+    public void updateWorkingOrder(final SourcedWorkingOrder sourcedOrder, final boolean isAlive) {
 
-        final HashSet<String> updatedSymbols = new HashSet<>();
-        boolean newSymbols = false;
-        for (final WorkingOrderUpdateFromServer e : woEvents.values()) {
+        final WorkingOrder order = sourcedOrder.order;
+        final String symbol = order.getSymbol();
 
-            final String symbol = e.workingOrderUpdate.getSymbol();
+        if (OrderType.GTC == order.getOrderType() && isSpread(symbol)) {
 
-            if (e.isLikelyGTC() && isSpread(symbol)) {
+            final boolean isNewSymbol = createIfNewSymbol(symbol);
 
-                newSymbols |= createIfNewSymbol(symbol);
+            final HashSet<SourcedWorkingOrder> sourcedOrders = MapUtils.getMappedSet(orders, symbol);
+            if (isAlive) {
+                sourcedOrders.add(sourcedOrder);
+            } else {
+                sourcedOrders.remove(sourcedOrder);
+                if (sourcedOrders.isEmpty()) {
+                    orders.remove(symbol);
+                }
+            }
 
-                orders.get(symbol).onWorkingOrderUpdate(e);
-                updatedSymbols.add(symbol);
+            onOrdersUpdated(order.getSymbol());
+
+            if (isNewSymbol) {
+                refreshCallback.runRefreshView(null);
             }
         }
-
-        updatedSymbols.forEach(this::onOrdersUpdated);
-        if (newSymbols) {
-            refreshCallback.runRefreshView(null);
-        }
-
     }
 
     private static boolean isSpread(final String symbol) {
@@ -89,27 +93,24 @@ public class AutoPuller {
     }
 
     private boolean createIfNewSymbol(final String symbol) {
-        boolean symbolIsNew = false;
-        WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
-        if (null == ordersForSymbol) {
-            ordersForSymbol = new WorkingOrdersForSymbol(symbol);
-            orders.put(symbol, ordersForSymbol);
-            symbolIsNew = true;
-        }
+
+        final Set<SourcedWorkingOrder> ordersForSymbol = MapUtils.getMappedSet(orders, symbol);
+        boolean isSymbolIsNew = ordersForSymbol.isEmpty();
 
         IBook<?> book = md.get(symbol);
         if (null == book) {
             book = bookSubscriber.subscribeToSymbol(symbol, this::onBookUpdated);
             if (null != book) {
                 md.put(symbol, book);
-                symbolIsNew = true;
+                isSymbolIsNew = true;
             }
         }
-        return symbolIsNew;
+        return isSymbolIsNew;
     }
 
     void addOrUpdateRule(final PullRule pullRule) {
-        final EnabledPullRule enabledPullRule = rulesByID.computeIfAbsent(pullRule.ruleID, aLong -> new EnabledPullRule(pullRule));
+        final AutoPullerEnabledPullRule enabledPullRule =
+                rulesByID.computeIfAbsent(pullRule.ruleID, aLong -> new AutoPullerEnabledPullRule(pullRule));
         final PullRule prevRule = enabledPullRule.getPullRule();
         if (null != prevRule) {
             rulesBySymbol.remove(prevRule.symbol, enabledPullRule);
@@ -124,7 +125,7 @@ public class AutoPuller {
     }
 
     void deleteRule(final Long ruleID) {
-        final EnabledPullRule enabledPullRule = rulesByID.remove(ruleID);
+        final AutoPullerEnabledPullRule enabledPullRule = rulesByID.remove(ruleID);
         if (null != enabledPullRule) {
             rulesBySymbol.remove(enabledPullRule.getPullRule().symbol, enabledPullRule);
             persistence.deleteRule(enabledPullRule.getPullRule());
@@ -132,14 +133,14 @@ public class AutoPuller {
     }
 
     void enableRule(final String username, final Long ruleID) {
-        final EnabledPullRule enabledPullRule = rulesByID.get(ruleID);
+        final AutoPullerEnabledPullRule enabledPullRule = rulesByID.get(ruleID);
         if (null != enabledPullRule) {
             enabledPullRule.enable(username);
         }
     }
 
-    EnabledPullRule disableRule(final Long ruleID) {
-        final EnabledPullRule enabledPullRule = rulesByID.get(ruleID);
+    AutoPullerEnabledPullRule disableRule(final Long ruleID) {
+        final AutoPullerEnabledPullRule enabledPullRule = rulesByID.get(ruleID);
         if (null != enabledPullRule) {
             enabledPullRule.disable();
             return enabledPullRule;
@@ -147,7 +148,7 @@ public class AutoPuller {
         return null;
     }
 
-    Map<Long, EnabledPullRule> getRules() {
+    Map<Long, AutoPullerEnabledPullRule> getRules() {
         return ImmutableMap.copyOf(rulesByID);
     }
 
@@ -172,18 +173,18 @@ public class AutoPuller {
 
     private void runSymbol(final String symbol) {
         timeChecker();
-        for (final EnabledPullRule pullRule : rulesBySymbol.get(symbol)) {
-            final WorkingOrdersForSymbol workingOrdersForSymbol = orders.get(symbol);
+        for (final AutoPullerEnabledPullRule pullRule : rulesBySymbol.get(symbol)) {
+            final Set<SourcedWorkingOrder> workingOrders = orders.get(symbol);
             final IBook<?> book = md.get(symbol);
-            if (pullRule.isEnabled() && null != book && null != workingOrdersForSymbol) {
-                final List<RemoteOrderCommandToServer> cancels = pullRule.ordersToPull(workingOrdersForSymbol, book);
+            if (pullRule.isEnabled() && null != book && null != workingOrders) {
+                final List<RemoteOrderCommandToServer> cancels = pullRule.ordersToPull(workingOrders, book);
                 cancels.forEach(commandPublisher::publish);
                 if (!cancels.isEmpty()) {
                     System.out.println("---- Auto puller Fired --- " + new DateTime());
                     System.out.println("Rule:\n" + pullRule.pullRule);
                     System.out.println("Book:");
                     debugPrintMdBook(book);
-                    System.out.println("Working orders: \n" + new ArrayList<>(workingOrdersForSymbol.ordersByKey.values()));
+                    System.out.println("Working orders: \n" + new ArrayList<>(workingOrders));
                     pullRule.disable();
                     refreshCallback.ruleFired(pullRule);
                 }
@@ -200,10 +201,10 @@ public class AutoPuller {
 
         final TreeSet<Long> prices = new TreeSet<>(Comparator.reverseOrder());
 
-        final WorkingOrdersForSymbol workingOrdersForSymbol = orders.get(symbol);
-        prices.addAll(workingOrdersForSymbol.getWorkingOrderPrices());
+        final Set<SourcedWorkingOrder> sourcedOrders = orders.get(symbol);
+        addAllPrices(sourcedOrders, prices);
 
-        for (final EnabledPullRule enabledPullRule : rulesBySymbol.get(symbol)) {
+        for (final AutoPullerEnabledPullRule enabledPullRule : rulesBySymbol.get(symbol)) {
             prices.add(enabledPullRule.getPullRule().mktCondition.price);
             prices.add(enabledPullRule.getPullRule().orderSelection.fromPrice);
             prices.add(enabledPullRule.getPullRule().orderSelection.toPrice);
@@ -240,7 +241,14 @@ public class AutoPuller {
         return new ArrayList<>(prices);
     }
 
-    EnabledPullRule getRule(final long ruleID) {
+    private static void addAllPrices(final Set<SourcedWorkingOrder> orders, final Set<Long> prices) {
+
+        for (final SourcedWorkingOrder order : orders) {
+            prices.add(order.order.getPrice());
+        }
+    }
+
+    AutoPullerEnabledPullRule getRule(final long ruleID) {
         return rulesByID.get(ruleID);
     }
 
@@ -248,9 +256,9 @@ public class AutoPuller {
         this.refreshCallback = callbacks;
     }
 
-    int getPullCount(final EnabledPullRule enabledPullRule) {
+    int getPullCount(final AutoPullerEnabledPullRule enabledPullRule) {
         final String symbol = enabledPullRule.pullRule.symbol;
-        final WorkingOrdersForSymbol ordersForSymbol = orders.get(symbol);
+        final Set<SourcedWorkingOrder> ordersForSymbol = orders.get(symbol);
         final IBook<?> book = md.get(symbol);
         if (null != book && null != ordersForSymbol) {
             final List<RemoteOrderCommandToServer> example = enabledPullRule.pullRule.ordersToPull("example", ordersForSymbol, book);
@@ -260,7 +268,7 @@ public class AutoPuller {
     }
 
     void disableAllRules() {
-        rulesBySymbol.values().forEach(EnabledPullRule::disable);
+        rulesBySymbol.values().forEach(AutoPullerEnabledPullRule::disable);
     }
 
     public void timeChecker() {
@@ -270,66 +278,7 @@ public class AutoPuller {
         }
     }
 
-    static class EnabledPullRule {
-
-        PullRule pullRule;
-        String enabledByUser;
-
-        EnabledPullRule(final PullRule pullRule) {
-            this.pullRule = pullRule;
-        }
-
-        boolean isEnabled() {
-            return null != enabledByUser;
-        }
-
-        void disable() {
-            this.enabledByUser = null;
-        }
-
-        PullRule getPullRule() {
-            return pullRule;
-        }
-
-        List<RemoteOrderCommandToServer> ordersToPull(final WorkingOrdersForSymbol workingOrders, final IBook<?> book) {
-            if (isEnabled()) {
-                return this.pullRule.ordersToPull(enabledByUser, workingOrders, book);
-            } else {
-                return Collections.emptyList();
-            }
-        }
-
-        private void enable(final String user) {
-            this.enabledByUser = user;
-        }
-
-        private void setPullRule(final PullRule pullRule) {
-            this.pullRule = pullRule;
-        }
-
-        String getEnabledByUser() {
-            return enabledByUser;
-        }
-    }
-
-    public interface IAutoPullCallbacks {
-
-        void runRefreshView(String message);
-
-        void ruleFired(EnabledPullRule rule);
-
-        IAutoPullCallbacks DEFAULT = new IAutoPullCallbacks() {
-            @Override
-            public void runRefreshView(final String message) {
-            }
-
-            @Override
-            public void ruleFired(final EnabledPullRule rule) {
-            }
-        };
-    }
-
-    public void debugPrintMdBook(final IBook<?> book) {
+    private void debugPrintMdBook(final IBook<?> book) {
         System.out.println("\t instid " + book.getInstID() + ", source " + book.getSourceExch() + " status " + book.getStatus());
         System.out.println("\t seqno " + book.getLastPacketSeqNum() + " reftime " + book.getReferenceNanoSinceMidnightUTC());
         System.out.println("\t valid " + book.isValid());
@@ -337,7 +286,7 @@ public class AutoPuller {
         debugPrintLevels(book.getBestAsk());
     }
 
-    public void debugPrintLevels(final IBookLevel bid) {
+    private void debugPrintLevels(final IBookLevel bid) {
         for (IBookLevel lvl = bid; lvl != null; lvl = lvl.next()) {
             System.out.print("\t" + lvl.getSide() + '\t' + lvl.getPrice() + '\t' + lvl.getQty() + '\t');
             if (lvl instanceof IBookLevelWithOrders) {
@@ -349,5 +298,4 @@ public class AutoPuller {
             System.out.print("\n");
         }
     }
-
 }

@@ -22,11 +22,9 @@ import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
-import com.drwtrading.london.reddal.data.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradeTracker;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.data.WorkingOrders;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.fastui.html.DataKey;
@@ -53,7 +51,9 @@ import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
+import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.google.common.collect.ImmutableSet;
 import drw.eeif.fees.FeesCalc;
 import drw.london.json.Jsonable;
@@ -135,7 +135,7 @@ public class LadderBookView implements ILadderBoard {
     private final TradingStatusForAll tradingStatusForAll;
 
     private final MDForSymbol marketData;
-    private final WorkingOrders workingOrders;
+    private final WorkingOrdersByPrice workingOrders;
     private final LastTradeDataForSymbol dataForSymbol;
     private final OrderUpdatesForSymbol orderUpdatesForSymbol;
 
@@ -176,7 +176,7 @@ public class LadderBookView implements ILadderBoard {
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
             final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
             final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
-            final MDForSymbol marketData, final WorkingOrders workingOrders, final LastTradeDataForSymbol extraDataForSymbol,
+            final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders, final LastTradeDataForSymbol extraDataForSymbol,
             final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final SymbolStackData stackData,
             final LadderMetaData metaData, final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
@@ -1546,7 +1546,7 @@ public class LadderBookView implements ILadderBoard {
                 order.getSide().toString(), order.getTag(), clickTradingBoxQty, order.getChainID()));
 
         if (isTrader) {
-            final RemoteOrderCommandToServer cancel = sourcedOrder.buildCancelCommand(username);
+            final RemoteOrderCommandToServer cancel = sourcedOrder.buildCancel(username, false);
             remoteOrderCommandToServerPublisher.publish(cancel);
         }
     }
@@ -1564,7 +1564,7 @@ public class LadderBookView implements ILadderBoard {
 
         } else if (singleOrderCommand instanceof ModifyOrderQtyCmd) {
 
-            final long totalQuantity = order.order.getOrderQty() + ((ModifyOrderQtyCmd) singleOrderCommand).newRemainingQuantity;
+            final long totalQuantity = order.order.getFilledQty() + ((ModifyOrderQtyCmd) singleOrderCommand).newRemainingQuantity;
             modifyOrder(clientSpeedState, order.order.getPrice(), order, totalQuantity);
         }
     }

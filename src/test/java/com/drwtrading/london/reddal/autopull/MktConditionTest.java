@@ -13,13 +13,13 @@ public class MktConditionTest {
     @Test
     public void jsonTest() throws IOException, JSONException {
 
-        final MktCondition.QtyAtPriceCondition before =
-                new MktCondition.QtyAtPriceCondition("SYM", BookSide.ASK, 10000, MktCondition.Condition.GT, 6969);
+        final MktConditionQtyAtPriceCondition before =
+                new MktConditionQtyAtPriceCondition("SYM", BookSide.ASK, 10000, MktConditionConditional.GT, 6969);
 
         final StringBuilder builder = new StringBuilder();
         before.toJson(builder);
 
-        final MktCondition after = MktCondition.fromJSON(new JSONObject(builder.toString()));
+        final IMktCondition after = IMktCondition.fromJSON(new JSONObject(builder.toString()));
         Assert.assertEquals(before, after, "Rule equality.");
 
         final StringBuffer builder2 = new StringBuffer();

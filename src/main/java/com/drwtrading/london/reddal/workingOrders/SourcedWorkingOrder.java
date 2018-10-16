@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.data;
+package com.drwtrading.london.reddal.workingOrders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
@@ -34,15 +34,7 @@ public class SourcedWorkingOrder {
         return new RemoteOrderCommandToServer(source, cmd);
     }
 
-    public RemoteOrderCommandToServer buildCancelCommand(final String username) {
-        return buildCancel(username, false);
-    }
-
-    public RemoteOrderCommandToServer buildAutoCancel(final String username) {
-        return buildCancel(username, true);
-    }
-
-    private RemoteOrderCommandToServer buildCancel(final String username, final boolean isAuto) {
+    public RemoteOrderCommandToServer buildCancel(final String username, final boolean isAuto) {
 
         final IOrderCmd cmd = new CancelOrderCmd(username, isAuto, order.getChainID(), order.getSymbol());
         return new RemoteOrderCommandToServer(source, cmd);
@@ -89,5 +81,17 @@ public class SourcedWorkingOrder {
         } else {
             throw new IllegalArgumentException("Unknown workingOrderUpdate AlgoType: " + order.getAlgoType());
         }
+    }
+
+    @Override
+    public String toString() {
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append("Sourced Order: ");
+        sb.append(source);
+        sb.append(',');
+        sb.append(' ');
+        sb.append(order);
+        return sb.toString();
     }
 }

@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.shredders;
+package com.drwtrading.london.reddal.ladders.shredders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
@@ -22,6 +22,7 @@ import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.ladders.LadderBoardRow;
 import com.drwtrading.london.reddal.ladders.LadderBookView;
 import com.drwtrading.london.reddal.ladders.model.BookHTMLRow;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ class ShredderBookView {
     private final int levels;
     private final LongMap<LadderBoardRow> priceRows = new LongMap<>();
     private final LadderHTMLTable ladderHTMLKeys = new LadderHTMLTable();
-    private final WorkingOrders workingOrders;
+    private final WorkingOrdersByID workingOrders;
 
     private final List<ShreddedOrder> shreddedOrders = new ArrayList<>();
 
@@ -58,7 +59,7 @@ class ShredderBookView {
     Integer shreddedRowWidth = 0;
 
     ShredderBookView(final UiPipeImpl ui, final IShredderUI view, final MDForSymbol marketData, final String symbol, final int levels,
-            final WorkingOrders workingOrders, final SymbolStackData stackData) {
+            final WorkingOrdersByID workingOrders, final SymbolStackData stackData) {
 
         this.ui = ui;
         this.view = view;

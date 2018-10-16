@@ -16,8 +16,8 @@ public class AutoPullPersistenceTest {
 
         final Path tempFile = Files.createTempFile("pull", ".json");
         final PullRule pullRule =
-                new PullRule(PullRule.nextID(), "SYMBOL1", new OrderSelection.PriceRangeSelection("SYMBOL1", BookSide.BID, -999, 999),
-                        new MktCondition.QtyAtPriceCondition("SYMBOL1", BookSide.BID, 10069, MktCondition.Condition.GT, 50));
+                new PullRule(PullRule.nextID(), "SYMBOL1", new OrderSelectionPriceRangeSelection("SYMBOL1", BookSide.BID, -999, 999),
+                        new MktConditionQtyAtPriceCondition("SYMBOL1", BookSide.BID, 10069, MktConditionConditional.GT, 50));
 
         final AutoPullPersistence persistenceOne = new AutoPullPersistence(tempFile);
         persistenceOne.updateRule(pullRule);

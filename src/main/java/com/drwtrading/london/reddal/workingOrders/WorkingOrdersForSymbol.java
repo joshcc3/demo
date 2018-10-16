@@ -1,8 +1,6 @@
-package com.drwtrading.london.reddal.data;
+package com.drwtrading.london.reddal.workingOrders;
 
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import eeif.execution.WorkingOrderState;
 import eeif.execution.WorkingOrderUpdate;
 

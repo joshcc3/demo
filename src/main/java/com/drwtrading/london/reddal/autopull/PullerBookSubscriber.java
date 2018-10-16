@@ -18,10 +18,10 @@ import java.util.HashSet;
 
 public class PullerBookSubscriber {
 
-    final HashMap<String, IBook<?>> knownBooks = new HashMap<>();
-    final HashMap<String, Callback<IBook<?>>> callbacks = new HashMap<>();
-    final EnumMap<MDSource, MDTransportClient> clientMap = new EnumMap<>(MDSource.class);
-    Callback<IBook<?>> createdCallback = message -> {
+    private final HashMap<String, IBook<?>> knownBooks = new HashMap<>();
+    private final HashMap<String, Callback<IBook<?>>> callbacks = new HashMap<>();
+    private final EnumMap<MDSource, MDTransportClient> clientMap = new EnumMap<>(MDSource.class);
+    private Callback<IBook<?>> createdCallback = message -> {
     };
 
     public void setCreatedCallback(final Callback<IBook<?>> createdCallback) {
@@ -38,7 +38,7 @@ public class PullerBookSubscriber {
         return book;
     }
 
-    public void bookCreated(final IBook<?> book) {
+    private void bookCreated(final IBook<?> book) {
         knownBooks.put(book.getSymbol(), book);
         final Callback<IBook<?>> callback = callbacks.get(book.getSymbol());
         if (null != callback) {
@@ -48,7 +48,7 @@ public class PullerBookSubscriber {
         createdCallback.onMessage(book);
     }
 
-    public void bookChanged(final IBook<?> book) {
+    private void bookChanged(final IBook<?> book) {
         final Callback<IBook<?>> iBookCallback = callbacks.get(book.getSymbol());
         if (null != iBookCallback) {
             iBookCallback.onMessage(book);
@@ -227,5 +227,4 @@ public class PullerBookSubscriber {
             }
         };
     }
-
 }

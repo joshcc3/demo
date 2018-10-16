@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.data;
+package com.drwtrading.london.reddal.workingOrders;
 
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 
@@ -7,18 +7,18 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 
-public class WorkingOrders {
+public class WorkingOrdersByPrice {
 
     private final Map<SourcedWorkingOrder, Long> currentPricesByWorkingOrderID;
     private final Map<Long, LinkedHashSet<SourcedWorkingOrder>> ordersByPrice;
 
-    public WorkingOrders() {
+    public WorkingOrdersByPrice() {
 
         this.currentPricesByWorkingOrderID = new HashMap<>();
         this.ordersByPrice = new HashMap<>();
     }
 
-    public void setWorkingOrder(final SourcedWorkingOrder workingOrder) {
+    public Long setWorkingOrder(final SourcedWorkingOrder workingOrder) {
 
         final long newPrice = workingOrder.order.getPrice();
 
@@ -33,6 +33,8 @@ public class WorkingOrders {
             removeWorkingOrder(oldPrice, workingOrder);
             addWorkingOrder(workingOrder);
         }
+
+        return oldPrice;
     }
 
     private void addWorkingOrder(final SourcedWorkingOrder workingOrder) {

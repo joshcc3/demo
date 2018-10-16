@@ -1,8 +1,9 @@
-package com.drwtrading.london.reddal.shredders;
+package com.drwtrading.london.reddal.ladders.shredders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -43,7 +44,7 @@ public class ShredderBookViewTest {
     @Test
     public void highlightingTwoOrdersTest() {
 
-        final WorkingOrders workingOrdersForSymbol = new WorkingOrders();
+        final WorkingOrdersByID workingOrdersForSymbol = new WorkingOrdersByID();
         workingOrdersForSymbol.setWorkingOrder(workingOrderOne);
         workingOrdersForSymbol.setWorkingOrder(workingOrderTwo);
 

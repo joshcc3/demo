@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.shredders;
+package com.drwtrading.london.reddal.ladders.shredders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;

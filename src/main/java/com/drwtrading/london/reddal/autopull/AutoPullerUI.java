@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
+public class AutoPullerUI implements IAutoPullCallbacks {
 
     private final AutoPuller autoPuller;
     private final WebSocketViews<IAutoPullerView> views = new WebSocketViews<>(IAutoPullerView.class, this);
@@ -56,9 +56,9 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
         final Long id = "NEW".equals(ruleID) ? PullRule.nextID() : Long.valueOf(ruleID);
 
         final PullRule pullRule = new PullRule(id, symbol,
-                new OrderSelection.PriceRangeSelection(symbol, BookSide.valueOf(side), parsePx(fromPrice), parsePx(toPrice)),
-                new MktCondition.QtyAtPriceCondition(symbol, BookSide.valueOf(conditionSide), parsePx(priceCondition),
-                        MktCondition.Condition.valueOf(qtyCondition), Integer.valueOf(qtyThreshold)));
+                new OrderSelectionPriceRangeSelection(symbol, BookSide.valueOf(side), parsePx(fromPrice), parsePx(toPrice)),
+                new MktConditionQtyAtPriceCondition(symbol, BookSide.valueOf(conditionSide), parsePx(priceCondition),
+                        MktConditionConditional.valueOf(qtyCondition), Integer.valueOf(qtyThreshold)));
         autoPuller.addOrUpdateRule(pullRule);
         displayRule(views.all(), autoPuller.getRule(pullRule.ruleID));
     }
@@ -94,7 +94,7 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
     @FromWebSocketView
     public void stopRule(final String ruleID) {
         final Long id = Long.valueOf(ruleID);
-        final AutoPuller.EnabledPullRule pullRule = autoPuller.disableRule(id);
+        final AutoPullerEnabledPullRule pullRule = autoPuller.disableRule(id);
         displayRule(views.all(), pullRule);
     }
 
@@ -104,7 +104,7 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
     }
 
     private void enableRuleIfNoInstantPull(final String username, final Long id) {
-        final AutoPuller.EnabledPullRule rule = autoPuller.getRule(id);
+        final AutoPullerEnabledPullRule rule = autoPuller.getRule(id);
         if (0 == autoPuller.getPullCount(rule)) {
             autoPuller.enableRule(username, id);
         }
@@ -127,7 +127,7 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
         view.updateGlobals(symbols, relevantPrices, relevantPrices);
     }
 
-    private void displayRule(final IAutoPullerView view, final AutoPuller.EnabledPullRule enabledPullRule) {
+    private void displayRule(final IAutoPullerView view, final AutoPullerEnabledPullRule enabledPullRule) {
         final PullRule rule = enabledPullRule.getPullRule();
         final int pullCount = autoPuller.getPullCount(enabledPullRule);
         view.displayRule(Long.toString(rule.ruleID), rule.symbol, rule.orderSelection.side.toString(),
@@ -156,7 +156,7 @@ public class AutoPullerUI implements AutoPuller.IAutoPullCallbacks {
     }
 
     @Override
-    public void ruleFired(final AutoPuller.EnabledPullRule rule) {
+    public void ruleFired(final AutoPullerEnabledPullRule rule) {
         displayRule(views.all(), rule);
         views.all().ruleFired(Long.toString(rule.getPullRule().ruleID));
     }

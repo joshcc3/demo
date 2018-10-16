@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.shredders;
+package com.drwtrading.london.reddal.ladders.shredders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
@@ -14,6 +14,7 @@ import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
@@ -37,14 +38,14 @@ public class ShredderPresenter implements IStackPresenterCallback {
     private final Multimap<String, ShredderView> viewsByUser = HashMultimap.create();
     private final IMDSubscriber bookSubscriber;
     private final Map<String, SymbolStackData> stackBySymbol;
-    private final Map<String, WorkingOrders> workingOrdersBySymbol;
+    private final Map<String, WorkingOrdersByID> workingOrdersBySymbol;
 
     public ShredderPresenter(final IMDSubscriber depthBookSubscriber) {
 
         this.bookSubscriber = depthBookSubscriber;
 
         this.stackBySymbol = new MapMaker().makeComputingMap(symbol -> new SymbolStackData(symbol, Constants::NO_OP, Constants::NO_OP));
-        this.workingOrdersBySymbol = new MapMaker().makeComputingMap(symbol -> new WorkingOrders());
+        this.workingOrdersBySymbol = new MapMaker().makeComputingMap(symbol -> new WorkingOrdersByID());
     }
 
     @Subscribe
@@ -99,13 +100,13 @@ public class ShredderPresenter implements IStackPresenterCallback {
 
     public void setWorkingOrder(final WorkingOrder workingOrder) {
 
-        final WorkingOrders workingOrders = workingOrdersBySymbol.get(workingOrder.getSymbol());
+        final WorkingOrdersByID workingOrders = workingOrdersBySymbol.get(workingOrder.getSymbol());
         workingOrders.setWorkingOrder(workingOrder);
     }
 
     public void deleteWorkingOrder(final WorkingOrder workingOrder) {
 
-        final WorkingOrders workingOrders = workingOrdersBySymbol.get(workingOrder.getSymbol());
+        final WorkingOrdersByID workingOrders = workingOrdersBySymbol.get(workingOrder.getSymbol());
         workingOrders.removeWorkingOrder(workingOrder);
     }
 

@@ -1,20 +1,21 @@
-package com.drwtrading.london.reddal.shredders;
+package com.drwtrading.london.reddal.workingOrders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
+import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 
-class WorkingOrders {
+public class WorkingOrdersByID {
 
     private final LongMap<Long> prevOrderIDs;
     private final LongMap<WorkingOrder> workingOrdersByID;
 
-    WorkingOrders() {
+    public WorkingOrdersByID() {
 
         this.prevOrderIDs = new LongMap<>();
         this.workingOrdersByID = new LongMap<>();
     }
 
-    void setWorkingOrder(final WorkingOrder workingOrder) {
+    public void setWorkingOrder(final WorkingOrder workingOrder) {
 
         final Long prevOrderID = prevOrderIDs.put(workingOrder.getWorkingOrderID(), workingOrder.getBookOrderID());
         if (null != prevOrderID) {
@@ -24,14 +25,18 @@ class WorkingOrders {
         workingOrdersByID.put(workingOrder.getBookOrderID(), workingOrder);
     }
 
-    void removeWorkingOrder(final WorkingOrder workingOrder) {
+    public void removeWorkingOrder(final WorkingOrder workingOrder) {
 
         prevOrderIDs.remove(workingOrder.getWorkingOrderID());
         workingOrdersByID.remove(workingOrder.getBookOrderID());
     }
 
-    WorkingOrder getWorkingOrder(final long orderID) {
+    public WorkingOrder getWorkingOrder(final long orderID) {
 
         return workingOrdersByID.get(orderID);
+    }
+
+    public Iterable<LongMapNode<WorkingOrder>> getWorkingOrders() {
+        return workingOrdersByID;
     }
 }

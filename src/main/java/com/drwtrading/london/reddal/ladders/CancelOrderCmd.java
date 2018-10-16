@@ -8,7 +8,7 @@ public class CancelOrderCmd extends Struct implements ISingleOrderCommand {
     private final String orderKey;
     public final String username;
 
-    CancelOrderCmd(final String symbol, final String orderKey, final String username) {
+    public CancelOrderCmd(final String symbol, final String orderKey, final String username) {
         this.symbol = symbol;
         this.orderKey = orderKey;
         this.username = username;
