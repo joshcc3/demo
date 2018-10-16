@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
@@ -35,6 +36,7 @@ import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
+import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.websockets.WebSocketClient;
@@ -49,7 +51,6 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Predicate;
 
 public class LadderView implements UiEventHandler {
 
@@ -135,8 +136,8 @@ public class LadderView implements UiEventHandler {
     private final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
     private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
-    private final Predicate<String> symbolExists;
-    private final Map<String, String> symbolDesc;
+    private final Map<String, SearchResult> refData;
+    private final Map<InstrumentID, String> symbolDesc;
 
     private final LadderViewModel ladderModel;
 
@@ -172,8 +173,8 @@ public class LadderView implements UiEventHandler {
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
             final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Predicate<String> symbolExists,
-            final Map<String, String> symbolDesc) {
+            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Map<String, SearchResult> refData,
+            final Map<InstrumentID, String> symbolDesc) {
 
         this.monitor = monitor;
 
@@ -198,7 +199,7 @@ public class LadderView implements UiEventHandler {
         this.heartbeatRoundTripPublisher = heartbeatRoundTripPublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
         this.userWorkspaceRequests = userWorkspaceRequests;
-        this.symbolExists = symbolExists;
+        this.refData = refData;
         this.symbolDesc = symbolDesc;
 
         this.ladderModel = new LadderViewModel(ui);
@@ -295,7 +296,14 @@ public class LadderView implements UiEventHandler {
             ladderModel.setClass(HTML.WORKING_ORDER_TAG, type, false);
         }
 
-        final String symbolDescription = symbolDesc.getOrDefault(symbol, symbol);
+
+        SearchResult searchResult = refData.get(symbol);
+        final String symbolDescription;
+        if (null != searchResult) {
+            symbolDescription = symbolDesc.getOrDefault(searchResult.instID, symbol);
+        } else {
+            symbolDescription = symbol;
+        }
 
         final HeaderPanel headerPanel = ladderModel.getHeaderPanel();
         headerPanel.setSymbol(symbol);
@@ -730,14 +738,14 @@ public class LadderView implements UiEventHandler {
         final SpreadContractSet contracts = metaData.spreadContractSet;
         String nextContract = contracts.next(symbol);
         int count = 3;
-        while (!symbolExists.test(nextContract) && 0 < count--) {
+        while (!refData.containsKey(nextContract) && 0 < count--) {
             nextContract = contracts.next(nextContract);
         }
         return goToContract(nextContract);
     }
 
     private boolean goToContract(final String targetSymbol) {
-        if (targetSymbol != null && !symbol.equals(targetSymbol) && symbolExists.test(targetSymbol)) {
+        if (targetSymbol != null && !symbol.equals(targetSymbol) && refData.containsKey(targetSymbol)) {
             view.goToSymbol(targetSymbol);
             return true;
         } else {
@@ -746,7 +754,7 @@ public class LadderView implements UiEventHandler {
     }
 
     private boolean switchChixSymbol() {
-        if (null != metaData && null != metaData.chixSwitchSymbol && symbolExists.test(metaData.chixSwitchSymbol)) {
+        if (null != metaData && null != metaData.chixSwitchSymbol && refData.containsKey(metaData.chixSwitchSymbol)) {
             view.goToSymbol(metaData.chixSwitchSymbol);
             return true;
         } else {

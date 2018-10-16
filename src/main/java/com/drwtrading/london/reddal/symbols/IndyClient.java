@@ -31,7 +31,7 @@ public class IndyClient implements IIndyCacheListener {
     @Override
     public boolean setETFDef(final ETFDef etfDef) {
         for (InstrumentDef instDef : etfDef.instDefs) {
-            symbolDescriptions.publish(new SymbolDescription(instDef.bbgCode, etfDef.indexDef.name));
+            symbolDescriptions.publish(new SymbolDescription(instDef.instID, instDef.bbgCode, etfDef.indexDef.name));
         }
         return true;
     }

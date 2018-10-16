@@ -9,6 +9,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -107,7 +108,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Map<String, SymbolStackData> stackBySymbol;
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap;
     private final Map<String, SearchResult> refData;
-    private final Map<String, String> symbolDesc = new HashMap<>();
+    private final Map<InstrumentID, String> symbolDesc = new HashMap<>();
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher;
@@ -205,7 +206,7 @@ public class LadderPresenter implements IStackPresenterCallback {
                         feesCalc, feeDF, tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, trace,
                         ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
                         orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
-                        disableSiblingsCmdPublisher, refData::containsKey, symbolDesc);
+                        disableSiblingsCmdPublisher, refData, symbolDesc);
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }
@@ -512,7 +513,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     @Subscribe
     public void on(final SymbolDescription description) {
-        symbolDesc.put(description.symbol, description.description);
+        symbolDesc.put(description.instrumentID, description.description);
     }
 
     public long flushAllLadders() {
