@@ -9,6 +9,7 @@ import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.reddal.data.TradeTracker;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -27,6 +28,8 @@ public class MDForSymbol {
     private DecimalFormat df;
     private DecimalFormat nonTrailingDF;
 
+    private final ArrayList<IMDCallback> bookUpdateCallbacks;
+
     public MDForSymbol(final String symbol) {
 
         this.symbol = symbol;
@@ -35,6 +38,8 @@ public class MDForSymbol {
 
         this.isPriceInverted = symbol.startsWith("6R");
         this.tradeTracker = new TradeTracker();
+
+        this.bookUpdateCallbacks = new ArrayList<>();
     }
 
     public void setL3Book(final IBook<IBookLevelWithOrders> book) {
@@ -90,10 +95,20 @@ public class MDForSymbol {
         return result;
     }
 
+    boolean addMDCallback(final IMDCallback callback) {
+
+        bookUpdateCallbacks.add(callback);
+        return 1 == bookUpdateCallbacks.size();
+    }
+
+    boolean isListeningForUpdates() {
+        return !bookUpdateCallbacks.isEmpty();
+    }
+
     boolean removeListener(final Object listener) {
 
         listeners.remove(listener);
-        return listeners.isEmpty();
+        return listeners.isEmpty() && bookUpdateCallbacks.isEmpty();
     }
 
     public boolean isPriceInverted() {
@@ -126,6 +141,14 @@ public class MDForSymbol {
 
     public void trade(final long price, final long qty) {
         tradeTracker.addTrade(price, qty);
+    }
+
+    public void bookUpdated() {
+
+        for (int i = 0; i < bookUpdateCallbacks.size(); ++i) {
+            final IMDCallback callback = bookUpdateCallbacks.get(i);
+            callback.bookUpdated(this);
+        }
     }
 
     public void unsubscribed() {

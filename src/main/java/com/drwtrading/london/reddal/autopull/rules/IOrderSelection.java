@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.autopull;
+package com.drwtrading.london.reddal.autopull.rules;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import drw.london.json.Jsonable;
@@ -13,9 +13,9 @@ public interface IOrderSelection extends Jsonable {
 
         final String objType = object.getString("_type");
         switch (objType) {
-            case "PriceRangeSelection":
+            case "OrderSelectionPriceRangeSelection":
                 return OrderSelectionPriceRangeSelection.fromJSON(object);
-            case "None":
+            case "OrderSelectionNone":
                 return OrderSelectionNone.NONE;
             default:
                 throw new IllegalArgumentException("Cannot parse " + object + " into OrderSelection");

@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.autopull;
+package com.drwtrading.london.reddal.autopull.rules;
 
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -16,8 +16,9 @@ public class MktConditionQtyAtPriceCondition extends Struct implements IMktCondi
     public final MktConditionConditional qtyCondition;
     public final int qtyThreshold;
 
-    MktConditionQtyAtPriceCondition(final String symbol, final BookSide side, final long price, final MktConditionConditional qtyCondition,
-            final int qtyThreshold) {
+    public MktConditionQtyAtPriceCondition(final String symbol, final BookSide side, final long price,
+            final MktConditionConditional qtyCondition, final int qtyThreshold) {
+
         this.symbol = symbol;
         this.side = side;
         this.price = price;
@@ -44,8 +45,9 @@ public class MktConditionQtyAtPriceCondition extends Struct implements IMktCondi
 
             final long qty = null == lvl ? 0 : lvl.getQty();
             return qtyCondition.test((int) qty, qtyThreshold);
+        } else {
+            return false;
         }
-        return false;
     }
 
     public static MktConditionQtyAtPriceCondition fromJSON(final JSONObject object) throws JSONException {

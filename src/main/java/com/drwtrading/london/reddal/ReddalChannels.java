@@ -3,6 +3,8 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
+import com.drwtrading.london.reddal.autopull.msgs.cmds.IAutoPullerCmd;
+import com.drwtrading.london.reddal.autopull.msgs.updates.IAutoPullerUpdate;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
 import com.drwtrading.london.reddal.ladders.ISingleOrderCommand;
@@ -104,6 +106,9 @@ class ReddalChannels {
     final TypedChannel<LeanDef> leanDefs;
     final TypedChannel<Premium> spreadnoughtPremiums;
 
+    final TypedChannel<IAutoPullerCmd> autoPullerCmds;
+    final TypedChannel<IAutoPullerUpdate> autoPullerUpdates;
+
     ReddalChannels() {
 
         this.error = Main.ERROR_CHANNEL;
@@ -157,6 +162,9 @@ class ReddalChannels {
         this.leanDefs = create(LeanDef.class);
         this.rfqStockAlerts = create(RfqAlert.class);
         this.spreadnoughtPremiums = create(Premium.class);
+
+        this.autoPullerCmds = create(IAutoPullerCmd.class);
+        this.autoPullerUpdates = create(IAutoPullerUpdate.class);
     }
 
     private <T> TypedChannel<T> create(final Class<T> clazz) {

@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.autopull;
+package com.drwtrading.london.reddal.autopull.rules;
 
 import java.util.function.BiPredicate;
 

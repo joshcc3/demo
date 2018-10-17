@@ -8,6 +8,11 @@ public class NoMDSubscriptions implements IMDSubscriber {
     }
 
     @Override
+    public MDForSymbol subscribeForMDCallbacks(final String symbol, final IMDCallback callback) {
+        return new MDForSymbol(symbol);
+    }
+
+    @Override
     public void unsubscribeForMD(final String symbol, final Object listener) {
         // no-op
     }

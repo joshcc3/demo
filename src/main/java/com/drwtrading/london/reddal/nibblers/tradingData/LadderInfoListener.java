@@ -11,6 +11,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
+import com.drwtrading.london.reddal.autopull.onMD.AutoPuller;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.orders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.shredders.ShredderPresenter;
@@ -22,16 +23,18 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     private final LadderPresenter ladderPresenter;
     private final OrdersPresenter orderPresenter;
     private final ShredderPresenter shredderPresenter;
+    private final AutoPuller autoPuller;
 
     private final LongMap<SourcedWorkingOrder> sourcedWorkingOrder;
 
     public LadderInfoListener(final String sourceNibbler, final LadderPresenter ladderPresenter, final OrdersPresenter orderPresenter,
-            final ShredderPresenter shredderPresenter) {
+            final ShredderPresenter shredderPresenter, final AutoPuller autoPuller) {
 
         this.sourceNibbler = sourceNibbler;
         this.ladderPresenter = ladderPresenter;
         this.orderPresenter = orderPresenter;
         this.shredderPresenter = shredderPresenter;
+        this.autoPuller = autoPuller;
 
         this.sourcedWorkingOrder = new LongMap<>();
     }
@@ -76,6 +79,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
         sourcedWorkingOrder.put(order.getWorkingOrderID(), sourcedOrder);
         ladderPresenter.setWorkingOrder(sourcedOrder);
         orderPresenter.setWorkingOrder(sourcedOrder);
+        autoPuller.setWorkingOrder(sourcedOrder);
 
         shredderPresenter.setWorkingOrder(order);
         return true;
@@ -87,6 +91,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
         final SourcedWorkingOrder sourcedOrder = sourcedWorkingOrder.get(order.getWorkingOrderID());
         ladderPresenter.setWorkingOrder(sourcedOrder);
         orderPresenter.setWorkingOrder(sourcedOrder);
+        autoPuller.setWorkingOrder(sourcedOrder);
 
         shredderPresenter.setWorkingOrder(order);
         return true;
@@ -98,6 +103,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
         final SourcedWorkingOrder sourcedOrder = sourcedWorkingOrder.remove(order.getWorkingOrderID());
         ladderPresenter.deleteWorkingOrder(sourcedOrder);
         orderPresenter.deleteWorkingOrder(sourcedOrder);
+        autoPuller.deleteWorkingOrder(sourcedOrder);
 
         shredderPresenter.deleteWorkingOrder(order);
         return true;

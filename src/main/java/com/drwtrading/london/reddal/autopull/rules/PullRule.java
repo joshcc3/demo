@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.autopull;
+package com.drwtrading.london.reddal.autopull.rules;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
@@ -25,7 +25,7 @@ public class PullRule extends Struct {
     public final OrderSelectionPriceRangeSelection orderSelection;
     public final MktConditionQtyAtPriceCondition mktCondition;
 
-    PullRule(final long ruleID, final String symbol, final OrderSelectionPriceRangeSelection orderSelection,
+    public PullRule(final long ruleID, final String symbol, final OrderSelectionPriceRangeSelection orderSelection,
             final MktConditionQtyAtPriceCondition mktCondition) {
 
         this.ruleID = ruleID;
@@ -34,16 +34,16 @@ public class PullRule extends Struct {
         this.mktCondition = mktCondition;
     }
 
-    public List<RemoteOrderCommandToServer> ordersToPull(final String username, final Set<SourcedWorkingOrder> workingOrders,
+    public List<RemoteOrderCommandToServer> getPullCmds(final String username, final Set<SourcedWorkingOrder> workingOrders,
             final IBook<?> book) {
 
-        if (mktCondition.conditionMet(book)) {
+        if (mktCondition.conditionMet(book) && !workingOrders.isEmpty()) {
 
             final List<RemoteOrderCommandToServer> result = new ArrayList<>();
 
             for (final SourcedWorkingOrder sourcedOrder : workingOrders) {
 
-                if (orderIsInMarketData(sourcedOrder.order, book) && orderSelection.isSelectionMet(sourcedOrder.order)) {
+                if (isOrderInMarketData(sourcedOrder.order, book) && orderSelection.isSelectionMet(sourcedOrder.order)) {
 
                     final RemoteOrderCommandToServer cmd = sourcedOrder.buildCancel(username, true);
                     result.add(cmd);
@@ -55,7 +55,7 @@ public class PullRule extends Struct {
         }
     }
 
-    private boolean orderIsInMarketData(final WorkingOrder order, final IBook<?> book) {
+    private static boolean isOrderInMarketData(final WorkingOrder order, final IBook<?> book) {
 
         if (!order.getSymbol().equals(book.getSymbol()) || !book.isValid() || book.getStatus() != BookMarketState.CONTINUOUS ||
                 book.getBestBid() == null && book.getBestAsk() == null) {

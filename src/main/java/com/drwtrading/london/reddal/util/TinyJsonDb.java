@@ -22,24 +22,22 @@ import java.util.stream.Collectors;
 
 public class TinyJsonDb implements TinyDb<JSONObject> {
 
-
     public static class JsonFileDbEntry implements Jsonable {
 
         public final String id;
         public final Long time;
         public final JSONObject value;
-        public final boolean deleted;
+        final boolean deleted;
 
-        public JsonFileDbEntry(final String id, final Long time, final JSONObject data, boolean deleted) {
+        JsonFileDbEntry(final String id, final Long time, final JSONObject data, final boolean deleted) {
             this.id = id;
             this.time = time;
             this.value = data;
             this.deleted = deleted;
         }
 
-        public static JsonFileDbEntry fromJson(final JSONObject jsonObject) throws JSONException {
-            return new JsonFileDbEntry(
-                    jsonObject.getString("id"), jsonObject.getLong("time"), jsonObject.getJSONObject("value"),
+        static JsonFileDbEntry fromJson(final JSONObject jsonObject) throws JSONException {
+            return new JsonFileDbEntry(jsonObject.getString("id"), jsonObject.getLong("time"), jsonObject.getJSONObject("value"),
                     jsonObject.has("deleted") && jsonObject.getBoolean("deleted"));
         }
 
@@ -57,11 +55,11 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
         }
     }
 
-    public final File dataFile;
-    public final Map<String, JsonFileDbEntry> objectById = new HashMap<>();
-    public final PrintWriter printWriter;
-    public boolean isLoaded = false;
-    public boolean isClosed = false;
+    private final File dataFile;
+    private final Map<String, JsonFileDbEntry> objectById = new HashMap<>();
+    private final PrintWriter printWriter;
+    private boolean isLoaded = false;
+    private boolean isClosed = false;
 
     public TinyJsonDb(final Path dataFile) throws IOException {
         this.dataFile = dataFile.toFile();
@@ -108,7 +106,6 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
         return null;
     }
 
-
     @Override
     public void put(final String id, final JSONObject value) {
 
@@ -124,7 +121,7 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
 
     }
 
-    private void write(JsonFileDbEntry entry) {
+    private void write(final JsonFileDbEntry entry) {
         try {
             // Store in log
             entry.toJson(printWriter);
@@ -135,11 +132,10 @@ public class TinyJsonDb implements TinyDb<JSONObject> {
         }
     }
 
-    public void remove(String id) {
-        JsonFileDbEntry oldEntry = objectById.remove(id);
+    public void remove(final String id) {
+        final JsonFileDbEntry oldEntry = objectById.remove(id);
         if (null != oldEntry) {
-            write(new JsonFileDbEntry(oldEntry.id, System.currentTimeMillis(),
-                    oldEntry.value, true));
+            write(new JsonFileDbEntry(oldEntry.id, System.currentTimeMillis(), oldEntry.value, true));
         }
     }
 

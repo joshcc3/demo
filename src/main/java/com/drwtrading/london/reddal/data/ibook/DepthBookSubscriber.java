@@ -17,7 +17,21 @@ public class DepthBookSubscriber implements IMDSubscriber {
     }
 
     @Override
+    public MDForSymbol subscribeForMDCallbacks(final String symbol, final IMDCallback callback) {
+
+        final MDForSymbol mdForSymbol = subscribeForMD(symbol, this);
+        if (mdForSymbol.addMDCallback(callback)) {
+
+            this.l3BookSubscriber.addUpdateCallback(mdForSymbol);
+            this.l2BookSubscriber.addUpdateCallback(mdForSymbol);
+        }
+
+        return mdForSymbol;
+    }
+
+    @Override
     public MDForSymbol subscribeForMD(final String symbol, final Object listener) {
+
         final MDForSymbol mdForSymbol = mdForSymbols.get(symbol);
         if (null == mdForSymbol) {
             final MDForSymbol newMDForSymbol = new MDForSymbol(symbol);
@@ -33,10 +47,8 @@ public class DepthBookSubscriber implements IMDSubscriber {
         if (mdForSymbol.addListener(listener)) {
             this.l3BookSubscriber.subscribeForMD(mdForSymbol);
             this.l2BookSubscriber.subscribeForMD(mdForSymbol);
-            return mdForSymbol;
-        } else {
-            return mdForSymbol;
         }
+        return mdForSymbol;
     }
 
     @Override

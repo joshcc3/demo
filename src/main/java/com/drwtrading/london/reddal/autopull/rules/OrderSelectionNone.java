@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.autopull;
+package com.drwtrading.london.reddal.autopull.rules;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.util.Struct;

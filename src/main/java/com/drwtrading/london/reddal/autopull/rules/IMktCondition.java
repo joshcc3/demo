@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.autopull;
+package com.drwtrading.london.reddal.autopull.rules;
 
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import drw.london.json.Jsonable;
@@ -12,7 +12,7 @@ public interface IMktCondition extends Jsonable {
     public static IMktCondition fromJSON(final JSONObject object) throws JSONException {
         final String type = object.getString("_type");
         switch (type) {
-            case "QtyAtPriceCondition":
+            case "MktConditionQtyAtPriceCondition":
                 return MktConditionQtyAtPriceCondition.fromJSON(object);
             default:
                 throw new IllegalArgumentException("Could not parse [" + object + "] into MktCondition");

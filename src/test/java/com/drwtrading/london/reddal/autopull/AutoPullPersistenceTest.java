@@ -1,6 +1,11 @@
 package com.drwtrading.london.reddal.autopull;
 
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.reddal.autopull.rules.MktConditionConditional;
+import com.drwtrading.london.reddal.autopull.rules.MktConditionQtyAtPriceCondition;
+import com.drwtrading.london.reddal.autopull.rules.OrderSelectionPriceRangeSelection;
+import com.drwtrading.london.reddal.autopull.rules.PullRule;
+import com.drwtrading.london.reddal.autopull.ui.AutoPullPersistence;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -26,7 +31,7 @@ public class AutoPullPersistenceTest {
         final Map<Long, PullRule> pullRules = persistenceTwo.getPullRules();
         Assert.assertEquals(pullRule, pullRules.get(pullRule.ruleID), "Rule equality.");
 
-        persistenceTwo.deleteRule(pullRule);
+        persistenceTwo.deleteRule(pullRule.ruleID);
         Assert.assertNull(persistenceTwo.getPullRules().get(pullRule.ruleID), "Rule result.");
 
         final AutoPullPersistence persistenceThree = new AutoPullPersistence(tempFile);

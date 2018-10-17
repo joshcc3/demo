@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.autopull;
+package com.drwtrading.london.reddal.autopull.rules;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -13,7 +13,8 @@ public class OrderSelectionPriceRangeSelection extends Struct implements IOrderS
     public final long fromPrice;
     public final long toPrice;
 
-    OrderSelectionPriceRangeSelection(final String symbol, final BookSide side, final long fromPrice, final long toPrice) {
+    public OrderSelectionPriceRangeSelection(final String symbol, final BookSide side, final long fromPrice, final long toPrice) {
+
         this.symbol = symbol;
         this.side = side;
         this.fromPrice = fromPrice;

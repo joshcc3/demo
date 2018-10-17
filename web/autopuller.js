@@ -180,6 +180,7 @@ function showMessage(message) {
 function removeRule(key) {
 	const row = Rows[key];
 	row.remove();
+	delete Rows[key];
 }
 
 // Send commands to server

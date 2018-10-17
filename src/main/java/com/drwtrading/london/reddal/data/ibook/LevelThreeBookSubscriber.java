@@ -1,10 +1,13 @@
 package com.drwtrading.london.reddal.data.ibook;
 
+import com.drwtrading.london.eeif.utils.collections.LongMap;
+import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.AggressorSide;
-import com.drwtrading.london.eeif.utils.marketData.book.BookLevelThreeMonitorAdaptor;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
+import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelThreeMonitor;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
+import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
@@ -21,7 +24,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
+public class LevelThreeBookSubscriber implements IBookLevelThreeMonitor {
 
     private final IResourceMonitor<ReddalComponents> monitor;
 
@@ -32,6 +35,8 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
     private final Map<String, IBook<IBookLevelWithOrders>> books;
     private final Map<String, MDForSymbol> mdForSymbols;
 
+    private final LongMap<IBook<?>> dirtyBooks;
+    private final LongMap<MDForSymbol> mdCallbacks;
 
     public LevelThreeBookSubscriber(final IResourceMonitor<ReddalComponents> monitor, final Channel<SearchResult> searchResults,
             final Publisher<RfqAlert> stockAlertChannel) {
@@ -43,6 +48,9 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
         this.mdClients = new EnumMap<>(MDSource.class);
         this.books = new HashMap<>();
         this.mdForSymbols = new HashMap<>();
+
+        this.dirtyBooks = new LongMap<>();
+        this.mdCallbacks = new LongMap<>();
     }
 
     public void setMDClient(final MDSource mdSource, final MDTransportClient client) {
@@ -59,6 +67,9 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
         final MDForSymbol mdForSymbol = mdForSymbols.get(book.getSymbol());
         if (null != mdForSymbol) {
             bookSubscribe(mdForSymbol, book);
+            if (mdForSymbol.isListeningForUpdates()) {
+                mdCallbacks.put(book.getLocalID(), mdForSymbol);
+            }
         }
         final SearchResult searchResult = new SearchResult(book);
         searchResults.publish(searchResult);
@@ -90,6 +101,14 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
         }
     }
 
+    void addUpdateCallback(final MDForSymbol mdForSymbol) {
+
+        final IBook<?> book = books.get(mdForSymbol.symbol);
+        if (null != book) {
+            mdCallbacks.put(book.getLocalID(), mdForSymbol);
+        }
+    }
+
     void subscribeForMD(final MDForSymbol mdForSymbol) {
 
         final MDForSymbol prevMDForSymbol = mdForSymbols.putIfAbsent(mdForSymbol.symbol, mdForSymbol);
@@ -117,7 +136,6 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
     void unsubscribeForMD(final MDForSymbol mdForSymbol) {
 
         if (null != mdForSymbols.remove(mdForSymbol.symbol)) {
-
             final IBook<IBookLevelWithOrders> book = books.get(mdForSymbol.symbol);
             if (null != book) {
                 final MDTransportClient client = mdClients.get(book.getSourceExch());
@@ -135,6 +153,60 @@ public class LevelThreeBookSubscriber extends BookLevelThreeMonitorAdaptor {
         if (null != mdForSymbol) {
             mdForSymbol.trade(price, qty);
         }
+    }
+
+    @Override
+    public void bookValidated(final IBook<IBookLevelWithOrders> book) {
+
+    }
+
+    @Override
+    public void statusUpdate(final IBook<IBookLevelWithOrders> book) {
+
+    }
+
+    @Override
+    public void clearBook(final IBook<IBookLevelWithOrders> book) {
+
+        dirtyBooks.put(book.getLocalID(), book);
+    }
+
+    @Override
+    public void impliedQty(final IBook<IBookLevelWithOrders> book, final IBookLevelWithOrders level) {
+
+        dirtyBooks.put(book.getLocalID(), book);
+    }
+
+    @Override
+    public void addOrder(final IBook<IBookLevelWithOrders> book, final IBookOrder order) {
+
+        dirtyBooks.put(book.getLocalID(), book);
+    }
+
+    @Override
+    public void modifyOrder(final IBook<IBookLevelWithOrders> book, final IBookLevelWithOrders oldLevel, final IBookOrder order) {
+
+        dirtyBooks.put(book.getLocalID(), book);
+    }
+
+    @Override
+    public void deleteOrder(final IBook<IBookLevelWithOrders> book, final IBookOrder order) {
+
+        dirtyBooks.put(book.getLocalID(), book);
+    }
+
+    @Override
+    public void batchComplete() {
+
+        for (final LongMapNode<IBook<?>> dirtyBook : dirtyBooks) {
+
+            final IBook<?> book = dirtyBook.getValue();
+            final MDForSymbol callback = mdCallbacks.get(book.getLocalID());
+            if (null != callback) {
+                callback.bookUpdated();
+            }
+        }
+        dirtyBooks.clear();
     }
 
     @Override

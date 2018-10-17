@@ -67,10 +67,9 @@ import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
 import com.drwtrading.london.photons.eeifoe.OrderUpdateEvent;
 import com.drwtrading.london.photons.eeifoe.OrderUpdateEventMsg;
 import com.drwtrading.london.photons.eeifoe.Update;
-import com.drwtrading.london.reddal.autopull.AutoPullPersistence;
-import com.drwtrading.london.reddal.autopull.AutoPuller;
-import com.drwtrading.london.reddal.autopull.AutoPullerUI;
-import com.drwtrading.london.reddal.autopull.PullerBookSubscriber;
+import com.drwtrading.london.reddal.autopull.onMD.AutoPuller;
+import com.drwtrading.london.reddal.autopull.ui.AutoPullPersistence;
+import com.drwtrading.london.reddal.autopull.ui.AutoPullerUI;
 import com.drwtrading.london.reddal.blotter.BlotterClient;
 import com.drwtrading.london.reddal.blotter.MsgBlotterPresenter;
 import com.drwtrading.london.reddal.blotter.SafetiesBlotterPresenter;
@@ -414,6 +413,16 @@ public class Main {
             app.selectIO.addDelayedAction(1000, writer::flush);
         }
 
+        // Auto-puller
+        final AutoPullPersistence persistence = new AutoPullPersistence(Paths.get("/site/drw/reddal/data/").resolve("autopull.json"));
+        final AutoPullerUI autoPullerUI = new AutoPullerUI(persistence, channels.autoPullerCmds);
+        channels.autoPullerUpdates.subscribe(fibers.ui.getFiber(), update -> update.executeOn(autoPullerUI));
+        uiSelectIO.execute(() -> autoPullerUI.start(uiSelectIO));
+
+        final TypedChannel<WebSocketControlMessage> autoPullerWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+        createWebPageWithWebSocket("autopuller", "autopuller", fibers.ui, webApp, autoPullerWebSocket);
+        fibers.ui.subscribe(autoPullerUI, autoPullerWebSocket);
+
         // MD Sources
         final ConfigGroup mdConfig = root.getGroup("md");
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
@@ -511,6 +520,10 @@ public class Main {
                     final MultiLayeredResourceMonitor<NibblerTransportComponents> nibblerParentMonitor =
                             new MultiLayeredResourceMonitor<>(nibblerMonitor, NibblerTransportComponents.class, errorLog);
 
+                    final AutoPuller autoPuller =
+                            new AutoPuller(mdSource, depthBookSubscriber, channels.remoteOrderCommand, channels.autoPullerUpdates);
+                    channels.autoPullerCmds.subscribe(fiberBuilder.getFiber(), cmd -> cmd.executeOn(autoPuller));
+
                     for (final ConfigGroup nibblerConfig : nibblerConfigs) {
 
                         final String sourceNibbler = nibblerConfig.getKey();
@@ -519,7 +532,7 @@ public class Main {
                                 nibblerParentMonitor.createChildResourceMonitor(sourceNibbler);
 
                         final LadderInfoListener ladderInfoListener =
-                                new LadderInfoListener(sourceNibbler, ladderPresenter, orderPresenter, shredderPresenter);
+                                new LadderInfoListener(sourceNibbler, ladderPresenter, orderPresenter, shredderPresenter, autoPuller);
 
                         final NibblerClientHandler client =
                                 NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
@@ -567,56 +580,6 @@ public class Main {
             createWebPageWithWebSocket("fx", "fx", fiberBuilder, webApp, ws);
             final FxUi ui = new FxUi(fxCalc);
             fiberBuilder.subscribe(ui, ws);
-        }
-
-        // Auto-puller thread
-        {
-            final String name = "AutoPuller";
-            final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
-            final IResourceMonitor<SelectIOComponents> selectIOMonitor =
-                    new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class,
-                            ReddalComponents.AUTO_PULLER_SELECT_IO);
-            final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
-            final MultiLayeredResourceMonitor<MDTransportComponents> mdParentMonitor =
-                    MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Thread MD", errorLog,
-                            MDTransportComponents.class, ReddalComponents.MD_TRANSPORT);
-
-            final PullerBookSubscriber subscriber = new PullerBookSubscriber();
-
-            for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
-
-                final MDSource mdSource = MDSource.get(mdSourceGroup.getKey());
-                if (null == mdSource) {
-                    throw new ConfigException("MDSource [" + mdSourceGroup.getKey() + "] is not known.");
-                }
-
-                final IResourceMonitor<MDTransportComponents> mdClientMonitor = mdParentMonitor.createChildResourceMonitor(mdSource.name());
-
-                final MDTransportClient mdClient =
-                        MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource, app.appName + "-pull",
-                                subscriber.getL3(), subscriber.getL2(), MD_SERVER_TIMEOUT, true);
-
-                final TransportTCPKeepAliveConnection<?, ?> connection =
-                        MDTransportClientFactory.createConnection(displaySelectIO, mdSourceGroup, mdClientMonitor, mdClient);
-                subscriber.setClient(mdSource, mdClient);
-                final long staggeringDelay = 1500L;
-                displaySelectIO.execute(() -> displaySelectIO.addDelayedAction(staggeringDelay, () -> {
-                    connection.restart();
-                    return -1;
-                }));
-            }
-
-            final SelectIOFiber displaySelectIOFiber = new SelectIOFiber(displaySelectIO, errorLog, name);
-            final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(displaySelectIOFiber, name);
-
-            final AutoPullPersistence persistence = new AutoPullPersistence(Paths.get("/site/drw/reddal/data/").resolve("autopull.json"));
-            final AutoPuller puller = new AutoPuller(channels.remoteOrderCommand, subscriber, persistence);
-            fiberBuilder.subscribe(puller, channels.workingOrders);
-            fiberBuilder.getFiber().scheduleWithFixedDelay(puller::timeChecker, 1, 1, TimeUnit.MINUTES);
-            final AutoPullerUI autoPullerUI = new AutoPullerUI(puller);
-            final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("autopuller", "autopuller", fiberBuilder, webApp, ws);
-            fiberBuilder.subscribe(autoPullerUI, ws);
         }
 
         // Obligations presenter
