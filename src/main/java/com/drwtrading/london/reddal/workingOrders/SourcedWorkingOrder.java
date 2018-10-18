@@ -78,8 +78,11 @@ public class SourcedWorkingOrder {
             return CSSClass.WORKING_ORDER_TYPE_MANUAL;
         } else if (order.getAlgoType() == AlgoType.HIDDEN_TICK_TAKER) {
             return CSSClass.WORKING_ORDER_TYPE_HIDDEN_TICKTAKER;
+        } else if (order.getAlgoType() == AlgoType.PICARD) {
+            return CSSClass.WORKING_ORDER_TYPE_QUICKDRAW;
         } else {
-            throw new IllegalArgumentException("Unknown workingOrderUpdate AlgoType: " + order.getAlgoType());
+            throw new IllegalArgumentException(
+                    "Unknown CSSClass for [" + order.getSymbol() + "] for [" + order.getAlgoType() + "], [" + order.getOrderType() + "].");
         }
     }
 

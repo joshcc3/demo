@@ -13,14 +13,12 @@ import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
-import org.jetlang.channels.Converter;
 import org.jetlang.channels.Publisher;
 
 import java.util.HashMap;
@@ -75,14 +73,18 @@ public class WorkingOrdersPresenter {
     }
 
     public void addNibbler(final String nibbler) {
-        this.nibblers.put(nibbler, new NibblerView(nibbler, commands, managedOrderCommands));
+        getNibbler(nibbler);
     }
 
-    public static class WOConverter implements Converter<WorkingOrderUpdateFromServer, String> {
+    private NibblerView getNibbler(final String nibbler) {
 
-        @Override
-        public String convert(final WorkingOrderUpdateFromServer msg) {
-            return msg.key();
+        final NibblerView existingView = nibblers.get(nibbler);
+        if (null == existingView) {
+            final NibblerView result = new NibblerView(nibbler, commands, managedOrderCommands);
+            this.nibblers.put(nibbler, result);
+            return result;
+        } else {
+            return existingView;
         }
     }
 
@@ -126,13 +128,14 @@ public class WorkingOrdersPresenter {
     }
 
     private void setOEUpdate(final UpdateFromServer update) {
-        nibblers.get(update.server).on(update);
+        final NibblerView nibblerView = getNibbler(update.server);
+        nibblerView.on(update);
         dirtyServers.add(update.server);
     }
 
     private void setOEDisconnected(final ServerDisconnected serverDisconnected) {
-        nibblers.get(serverDisconnected.server).on(serverDisconnected);
-
+        final NibblerView nibblerView = getNibbler(serverDisconnected.server);
+        nibblerView.on(serverDisconnected);
     }
 
     public void webControl(final WebSocketControlMessage webMsg) {

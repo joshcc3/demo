@@ -17,7 +17,6 @@ import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiEventHandler;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
@@ -37,6 +36,7 @@ import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.websockets.WebSocketClient;
@@ -295,7 +295,6 @@ public class LadderView implements UiEventHandler {
             ladderModel.setClass(HTML.WORKING_ORDER_TAG, type, false);
         }
 
-
         SearchResult searchResult = refData.get(symbol);
         final String symbolDescription;
         if (null != searchResult) {
@@ -416,8 +415,8 @@ public class LadderView implements UiEventHandler {
         ladderModel.setClass(HTML.BOOK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == bookView);
         ladderModel.setClass(HTML.STACK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == stackView);
 
-        final IBook<?> book = marketData.getBook();
-        if (null != book) {
+        if (null != marketData && null != marketData.getBook()) {
+            final IBook<?> book = marketData.getBook();
             ladderModel.setClass(HTML.SYMBOL, CSSClass.REVERSE_SPREAD,
                     InstType.FUTURE_SPREAD == book.getInstType() && book.getMIC().exchange.isReverseSpreadVenue);
         }
