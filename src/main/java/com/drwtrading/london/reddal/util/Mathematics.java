@@ -20,8 +20,8 @@ public class Mathematics {
         TO_EUR_RATES.put(CCY.GBX, 0.012067);
         TO_EUR_RATES.put(CCY.JPY, 0.00701);
         TO_EUR_RATES.put(CCY.NOK, 0.118807);
+        TO_EUR_RATES.put(CCY.PLN, 0.232775);
         TO_EUR_RATES.put(CCY.SEK, 0.112606);
-        TO_EUR_RATES.put(CCY.USD, 0.7332);
         TO_EUR_RATES.put(CCY.USD, 0.7332);
         TO_EUR_RATES.put(CCY.RUB, 0.018);
     }
