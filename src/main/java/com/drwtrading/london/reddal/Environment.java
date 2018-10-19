@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 
 public class Environment {
 
-    public static final String WORKING_ORDERS = "workingOrders";
     public static final String REMOTE_COMMANDS = "remoteCommands";
     public static final String EEIF_OE = "eeifoe";
     public static final String METADATA = "metadata";

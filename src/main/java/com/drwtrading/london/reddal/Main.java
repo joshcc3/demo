@@ -89,9 +89,6 @@ import com.drwtrading.london.reddal.ladders.shredders.ShredderMessageRouter;
 import com.drwtrading.london.reddal.ladders.shredders.ShredderPresenter;
 import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
 import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
-import com.drwtrading.london.reddal.obligations.ObligationOPXL;
-import com.drwtrading.london.reddal.obligations.ObligationPresenter;
-import com.drwtrading.london.reddal.obligations.RFQObligationSet;
 import com.drwtrading.london.reddal.opxl.EtfStackFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlFXCalcUpdater;
@@ -118,7 +115,6 @@ import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandle
 import com.drwtrading.london.reddal.premium.IPremiumCalc;
 import com.drwtrading.london.reddal.premium.PremiumCalculator;
 import com.drwtrading.london.reddal.premium.PremiumOPXLWriter;
-import com.drwtrading.london.reddal.safety.TradingStatusWatchdog;
 import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
 import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
@@ -147,10 +143,12 @@ import com.drwtrading.london.reddal.util.FileLogger;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.reddal.util.SelectIOFiber;
 import com.drwtrading.london.reddal.util.UILogger;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderListener;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
+import com.drwtrading.london.reddal.workingOrders.obligations.IRFQObligationPresenter;
+import com.drwtrading.london.reddal.workingOrders.obligations.NoRFQObligationsPresenter;
+import com.drwtrading.london.reddal.workingOrders.obligations.RFQObligationOPXL;
+import com.drwtrading.london.reddal.workingOrders.obligations.RFQObligationPresenter;
+import com.drwtrading.london.reddal.workingOrders.obligations.RFQObligationSet;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.LadderWorkspace;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
@@ -159,7 +157,6 @@ import com.drwtrading.monitoring.stats.MsgCodec;
 import com.drwtrading.monitoring.stats.Transport;
 import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photocols.PhotocolsConnection;
-import com.drwtrading.photocols.PhotocolsHandler;
 import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
@@ -169,11 +166,8 @@ import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.sun.jndi.toolkit.url.Uri;
-import eeif.execution.WorkingOrderEvent;
-import eeif.execution.WorkingOrderUpdate;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Channel;
-import org.jetlang.channels.KeyedBatchSubscriber;
 import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 
@@ -181,6 +175,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -279,7 +274,7 @@ public class Main {
         System.out.println("http://localhost:" + environment.getWebPort());
         webApp.enableSingleSignOn();
 
-        fibers.onStart(() -> fibers.ui.execute(() -> {
+        app.addStartUpAction(() -> fibers.ui.execute(() -> {
             try {
                 webApp.serveStaticContent("web");
                 webApp.start();
@@ -384,7 +379,8 @@ public class Main {
 
         setupStackManager(app, fibers, channels, webApp, webLog, selectIOFiber, opxlSelectIO, opxlMonitor, contractSetGenerator,
                 isEquitiesSearchable);
-        final Map<MDSource, LinkedList<ConfigGroup>> nibblers = setupNibblerTransport(app, fibers, webApp, webLog, selectIOFiber, channels);
+        final Map<MDSource, LinkedList<ConfigGroup>> nibblers =
+                setupBackgroundNibblerTransport(app, opxlSelectIO, opxlMonitor, fibers, webApp, webLog, selectIOFiber, channels);
 
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderWebSockets = new EnumMap<>(MDSource.class);
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> orderWebSockets = new EnumMap<>(MDSource.class);
@@ -582,29 +578,8 @@ public class Main {
             fiberBuilder.subscribe(ui, ws);
         }
 
-        // Obligations presenter
-        if (app.config.getEnabledGroup("obligations") != null) {
-            final ConfigGroup config = app.config.getGroup("obligations");
-            final Pattern filterRegex = Pattern.compile(config.getString("filterRegex"));
-            final FXCalc<?> opxlfxCalc = createOPXLFXCalc(app, opxlSelectIO, app.selectIO, opxlMonitor);
-            final MemoryChannel<RFQObligationSet> rfqObligationChannel = new MemoryChannel<>();
-            final ObligationPresenter obligationPresenter = new ObligationPresenter(opxlfxCalc, filterRegex.asPredicate());
-            final ObligationOPXL obligationOPXL = new ObligationOPXL(opxlSelectIO, opxlMonitor, OPXLComponents.OPXL_OBLIGATIONS_RFQ, logDir,
-                    rfqObligationChannel::publish);
-            channels.workingOrders.subscribe(
-                    new KeyedBatchSubscriber<>(fibers.ui.getFiber(), obligationPresenter::onWorkingOrders, 1, TimeUnit.SECONDS,
-                            WorkingOrderUpdateFromServer::key));
-            final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
-            fibers.ui.subscribe(obligationPresenter, ws, channels.searchResults);
-            fibers.ui.getFiber().scheduleWithFixedDelay(obligationPresenter::update, 1, 1, TimeUnit.SECONDS);
-            fibers.ui.subscribe(obligationPresenter::updateObligations, rfqObligationChannel);
-            fibers.ui.subscribe(obligationPresenter::onWorkingOrderConnected, channels.workingOrderConnectionEstablished);
-            fibers.ui.execute(obligationOPXL::start);
-        }
-
         final ChixInstMatcher chixInstMatcher = new ChixInstMatcher(channels.chixSymbolPairs);
-        channels.searchResults.subscribe(fibers.contracts.getFiber(), chixInstMatcher::setSearchResult);
+        channels.searchResults.subscribe(selectIOFiber, chixInstMatcher::setSearchResult);
 
         final TypedChannel<WebSocketControlMessage> historyWebSocket = TypedChannels.create(WebSocketControlMessage.class);
         createWebPageWithWebSocket("history", "history", fibers.ladderRouter, webApp, historyWebSocket);
@@ -639,7 +614,7 @@ public class Main {
         {
             final WebApplication nonSSOWebapp = new WebApplication(environment.getWebPort() + 1, channels.errorPublisher);
 
-            fibers.onStart(() -> fibers.ui.execute(() -> {
+            app.addStartUpAction(() -> fibers.ui.execute(() -> {
                 try {
                     nonSSOWebapp.serveStaticContent("web");
                     nonSSOWebapp.start();
@@ -663,11 +638,9 @@ public class Main {
         }
 
         // Settings
-        {
-            final LadderSettings ladderSettings = new LadderSettings(environment.getSettingsFile(), channels.ladderPrefsLoaded);
-            fibers.settings.subscribe(ladderSettings, channels.storeLadderPref);
-            fibers.onStart(() -> fibers.settings.execute(ladderSettings::load));
-        }
+        final LadderSettings ladderSettings = new LadderSettings(environment.getSettingsFile(), channels.ladderPrefsLoaded);
+        fibers.settings.subscribe(ladderSettings, channels.storeLadderPref);
+        app.addStartUpAction(() -> fibers.settings.execute(ladderSettings::load));
 
         // EEIF-OE
         {
@@ -735,60 +708,8 @@ public class Main {
             client.logFile(logDir.resolve("metadata." + server + ".log").toFile(), fibers.logging.getFiber(), true);
             client.handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10));
             client.handler(new JetlangChannelHandler<>(channels.metaData));
-            fibers.onStart(client::start);
+            app.addStartUpAction(client::start);
         }
-
-        // Working orders
-        for (final String server : environment.getList(Environment.WORKING_ORDERS)) {
-
-            final HostAndNic hostAndNic = environment.getHostAndNic(Environment.WORKING_ORDERS, server);
-            final OnHeapBufferPhotocolsNioClient<WorkingOrderEvent, Void> client =
-                    OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), WorkingOrderEvent.class,
-                            Void.class, fibers.workingOrders.getFiber(), EXCEPTION_HANDLER);
-            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
-            client.logFile(logDir.resolve("working-orders." + server + ".log").toFile(), fibers.logging.getFiber(), true);
-            client.handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10));
-            client.handler(new JetlangChannelHandler<>(msg -> {
-                if (msg instanceof WorkingOrderUpdate) {
-                    channels.workingOrders.publish(new WorkingOrderUpdateFromServer(server, (WorkingOrderUpdate) msg));
-                }
-                channels.workingOrderEvents.publish(new WorkingOrderEventFromServer(server, msg));
-            }));
-            client.handler(new InboundTimeoutWatchdog<>(fibers.workingOrders.getFiber(),
-                    new ConnectionCloser(channels.stats, "Working order: " + server), SERVER_TIMEOUT));
-
-            final WorkingOrderConnectionEstablished connectionEstablished = new WorkingOrderConnectionEstablished(server, true);
-            final WorkingOrderConnectionEstablished connectionLost = new WorkingOrderConnectionEstablished(server, false);
-            final PhotocolsHandler<WorkingOrderEvent, Void> workingOrderLostPublisher = new PhotocolsHandler<WorkingOrderEvent, Void>() {
-                @Override
-                public PhotocolsConnection<Void> onOpen(final PhotocolsConnection<Void> connection) {
-                    channels.workingOrderConnectionEstablished.publish(connectionEstablished);
-                    return connection;
-                }
-
-                @Override
-                public void onConnectFailure() {
-                    channels.workingOrderConnectionEstablished.publish(connectionLost);
-                }
-
-                @Override
-                public void onClose(final PhotocolsConnection<Void> connection) {
-                    channels.workingOrderConnectionEstablished.publish(connectionLost);
-                }
-
-                @Override
-                public void onMessage(final PhotocolsConnection<Void> connection, final WorkingOrderEvent message) {
-                    // no-op
-                }
-            };
-            client.handler(workingOrderLostPublisher);
-
-            fibers.onStart(client::start);
-        }
-
-        // Working orders and remote commands watchdog
-        final TradingStatusWatchdog watchdog = new TradingStatusWatchdog(SERVER_TIMEOUT, channels.stats);
-        channels.nibblerTransportConnected.subscribe(fibers.watchdog.getFiber(), watchdog::setNibblerTransportConnected);
 
         // Mr. Phil position
         {
@@ -800,7 +721,7 @@ public class Main {
             channels.searchResults.subscribe(fibers.mrPhil.getFiber(), positionHandler::setSearchResult);
             client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("mr-phil.log").toFile(), fibers.logging.getFiber(),
                     true).handler(positionHandler);
-            fibers.onStart(client::start);
+            app.addStartUpAction(client::start);
         }
 
         // Display symbols
@@ -875,8 +796,6 @@ public class Main {
         app.addStartUpAction(isinsGoingEx::start);
 
         // Logging
-        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "working-orders.json", channels.errorPublisher),
-                channels.workingOrderEvents);
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trading-status.json", channels.errorPublisher),
                 channels.nibblerTransportConnected);
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "preferences.json", channels.errorPublisher),
@@ -1176,9 +1095,10 @@ public class Main {
         }
     }
 
-    private static Map<MDSource, LinkedList<ConfigGroup>> setupNibblerTransport(final Application<ReddalComponents> app,
-            final ReddalFibers fibers, final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
-            final ReddalChannels channels) throws ConfigException, IOException {
+    private static Map<MDSource, LinkedList<ConfigGroup>> setupBackgroundNibblerTransport(final Application<ReddalComponents> app,
+            final SelectIO opxlSelectIO, final IResourceMonitor<OPXLComponents> opxlMonitor, final ReddalFibers fibers,
+            final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber, final ReddalChannels channels)
+            throws ConfigException, IOException {
 
         final Map<MDSource, LinkedList<ConfigGroup>> result = new EnumMap<>(MDSource.class);
 
@@ -1194,6 +1114,36 @@ public class Main {
 
             channels.orderEntryFromServer.subscribe(selectIOFiber,
                     new BatchSubscriber<>(selectIOFiber, workingOrderPresenter::oeUpdate, 250, TimeUnit.MILLISECONDS));
+
+            final NoRFQObligationsPresenter noObligationsPresenter = new NoRFQObligationsPresenter();
+            final IRFQObligationPresenter obligationPresenter;
+            final Set<String> obligationNibblers;
+
+            final ConfigGroup obligationsConfig = app.config.getEnabledGroup("obligations");
+            if (null == obligationsConfig) {
+
+                obligationPresenter = noObligationsPresenter;
+                obligationNibblers = Collections.emptySet();
+            } else {
+
+                obligationNibblers = obligationsConfig.getSet("nibblers");
+                final Pattern filterRegex = Pattern.compile(obligationsConfig.getString("filterRegex"));
+                final FXCalc<?> fxCalc = createOPXLFXCalc(app, opxlSelectIO, app.selectIO, opxlMonitor);
+                final MemoryChannel<RFQObligationSet> rfqObligationChannel = new MemoryChannel<>();
+                final RFQObligationPresenter presenter = new RFQObligationPresenter(fxCalc, filterRegex.asPredicate());
+                final RFQObligationOPXL obligationOPXL =
+                        new RFQObligationOPXL(opxlSelectIO, opxlMonitor, OPXLComponents.OPXL_OBLIGATIONS_RFQ, app.logDir,
+                                rfqObligationChannel::publish);
+
+                final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
+                fibers.ui.subscribe(presenter, ws, channels.searchResults);
+                fibers.ui.getFiber().scheduleWithFixedDelay(presenter::update, 1, 1, TimeUnit.SECONDS);
+                fibers.ui.subscribe(presenter::updateObligations, rfqObligationChannel);
+                fibers.ui.execute(obligationOPXL::start);
+
+                obligationPresenter = presenter;
+            }
 
             final MultiLayeredResourceMonitor<ReddalComponents> clientMonitorParent =
                     new MultiLayeredResourceMonitor<>(app.monitor, ReddalComponents.class, app.errorLog);
@@ -1230,9 +1180,16 @@ public class Main {
                         new ExpandedDetailResourceMonitor<>(childMonitor, "Nibbler Transport", app.errorLog,
                                 NibblerTransportComponents.class, ReddalComponents.BLOTTER_CONNECTION);
 
+                final IRFQObligationPresenter obligationsCallback;
+                if (obligationNibblers.contains(nibbler)) {
+                    obligationsCallback = obligationPresenter;
+                } else {
+                    obligationsCallback = noObligationsPresenter;
+                }
+
                 final BlotterClient blotterClient =
-                        new BlotterClient(nibbler, msgBlotter, safetiesBlotter, workingOrderPresenter, connectedNibblerChannel,
-                                remoteOrderNibblerName);
+                        new BlotterClient(nibbler, msgBlotter, safetiesBlotter, workingOrderPresenter, obligationsCallback,
+                                connectedNibblerChannel, remoteOrderNibblerName);
 
                 final NibblerClientHandler client =
                         NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,
@@ -1255,7 +1212,8 @@ public class Main {
                     cache.addTradingDataListener(logger);
 
                     workingOrderPresenter.addNibbler(nibbler);
-                    final WorkingOrderListener workingOrderListener = new WorkingOrderListener(nibbler, workingOrderPresenter);
+                    final WorkingOrderListener workingOrderListener =
+                            new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback);
                     cache.addTradingDataListener(workingOrderListener);
                 }
             }

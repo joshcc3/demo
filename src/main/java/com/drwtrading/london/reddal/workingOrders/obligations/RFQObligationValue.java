@@ -1,16 +1,16 @@
-package com.drwtrading.london.reddal.obligations;
+package com.drwtrading.london.reddal.workingOrders.obligations;
 
 import drw.london.json.JSONGenerator;
 import drw.london.json.Jsonable;
 
 import java.io.IOException;
 
-class Obligation implements Jsonable {
+class RFQObligationValue implements Jsonable {
 
     public final double notional;
     public final double bps;
 
-    Obligation(final double notional, final double bps) {
+    RFQObligationValue(final double notional, final double bps) {
         this.notional = notional;
         this.bps = bps;
     }

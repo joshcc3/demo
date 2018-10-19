@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
-import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
@@ -42,8 +41,6 @@ import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.websockets.WebSocketClient;
 import drw.eeif.fees.FeesCalc;
 import drw.london.json.Jsonable;
-import eeif.execution.Side;
-import eeif.execution.WorkingOrderType;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
@@ -53,8 +50,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class LadderView implements UiEventHandler {
-
-    private static final DecimalFormat MILLIONS_QTY_FORMAT = NumberFormatUtil.getDF(".0");
 
     private static final AtomicLong heartbeatSeqNo = new AtomicLong(0L);
 
@@ -798,24 +793,8 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    static BookSide convertSide(final Side s1) {
-        if (s1 == Side.BID) {
-            return BookSide.BID;
-        } else {
-            return BookSide.ASK;
-        }
-    }
-
     private boolean isTrader() {
         return ladderOptions.traders.contains(client.getUserName());
-    }
-
-    static String getOrderType(final WorkingOrderType workingOrderType) {
-        if (workingOrderType == WorkingOrderType.MARKET) {
-            return "MKT_CLOSE";
-        } else {
-            return workingOrderType.name();
-        }
     }
 
     void onSingleOrderCommand(final ISingleOrderCommand singleOrderCommand) {

@@ -10,6 +10,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerDoubleS
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerOMSEnabledState;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerSafety;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
+import com.drwtrading.london.reddal.workingOrders.obligations.IRFQObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 import org.jetlang.channels.Publisher;
 
@@ -20,6 +21,7 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
     private final MsgBlotterPresenter msgBlotter;
     private final SafetiesBlotterPresenter safetiesBlotter;
     private final WorkingOrdersPresenter workingOrderPresenter;
+    private final IRFQObligationPresenter obligationsCallback;
 
     private final Publisher<NibblerTransportConnected> connectedNibblerChannel;
 
@@ -27,14 +29,15 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
     private final NibblerTransportConnected nibblerDisconnected;
 
     public BlotterClient(final String source, final MsgBlotterPresenter msgBlotter, final SafetiesBlotterPresenter safetiesBlotter,
-            final WorkingOrdersPresenter workingOrderPresenter, final Publisher<NibblerTransportConnected> connectedNibblerChannel,
-            final String nibblerName) {
+            final WorkingOrdersPresenter workingOrderPresenter, final IRFQObligationPresenter obligationsCallback,
+            final Publisher<NibblerTransportConnected> connectedNibblerChannel, final String nibblerName) {
 
         this.source = source;
 
         this.msgBlotter = msgBlotter;
         this.safetiesBlotter = safetiesBlotter;
         this.workingOrderPresenter = workingOrderPresenter;
+        this.obligationsCallback = obligationsCallback;
 
         this.connectedNibblerChannel = connectedNibblerChannel;
         this.nibblerConnected = new NibblerTransportConnected(nibblerName, true);
@@ -61,6 +64,7 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
         msgBlotter.setNibblerConnected(source, false);
         safetiesBlotter.setNibblerConnected(source, false);
         workingOrderPresenter.setNibblerConnectionEstablished(source, false);
+        obligationsCallback.setNibblerDisconnected(source);
 
         connectedNibblerChannel.publish(nibblerDisconnected);
     }

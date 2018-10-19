@@ -52,7 +52,6 @@ import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.google.common.collect.ImmutableSet;
 import drw.eeif.fees.FeesCalc;
@@ -659,7 +658,7 @@ public class LadderBookView implements ILadderBoard {
 
     private boolean isOrderTypeSupported(final CSSClass orderTypeCSS, final String mic) {
 
-        final RemoteOrderType orderType = WorkingOrderUpdateFromServer.getRemoteOrderType(orderTypeCSS.name());
+        final RemoteOrderType orderType = getRemoteOrderType(orderTypeCSS.name());
 
         return null != orderType && TAGS.stream().anyMatch(tag -> {
             final boolean oldOrderType = null != ladderOptions.serverResolver.resolveToServerName(symbol, orderType, tag, mic);
@@ -1402,7 +1401,7 @@ public class LadderBookView implements ILadderBoard {
             ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
         } else {
 
-            final RemoteOrderType remoteOrderType = WorkingOrderUpdateFromServer.getRemoteOrderType(orderType);
+            final RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
             final String serverName =
                     ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType, tag, marketData.getBook().getMIC().name());
 
@@ -1577,5 +1576,15 @@ public class LadderBookView implements ILadderBoard {
             }
         }
         return null;
+    }
+
+    private static RemoteOrderType getRemoteOrderType(final String orderType) {
+
+        for (final RemoteOrderType remoteOrderType : RemoteOrderType.values()) {
+            if (remoteOrderType.toString().toUpperCase().equals(orderType.toUpperCase())) {
+                return remoteOrderType;
+            }
+        }
+        return RemoteOrderType.MANUAL;
     }
 }

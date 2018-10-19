@@ -4,6 +4,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrde
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.photons.eeifoe.Cancel;
 import com.drwtrading.london.photons.eeifoe.OrderSide;
 import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
@@ -16,7 +17,6 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.StopAllStrategie
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.websockets.WebSocketOutboundData;
-import eeif.execution.Side;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
@@ -151,7 +151,7 @@ class NibblerView {
         final String chainID = Integer.toString(order.update.getSystemOrderId());
         final OrderSide side = order.update.getOrder().getSide();
 
-        view.setWorkingOrder(order.key, chainID, order.symbol, side == OrderSide.BUY ? Side.BID.toString() : Side.OFFER.toString(), price,
+        view.setWorkingOrder(order.key, chainID, order.symbol, side == OrderSide.BUY ? BookSide.BID.name() : BookSide.ASK.name(), price,
                 order.update.getFilledQty(), order.update.getFilledQty() + order.update.getRemainingQty(), "MANAGED",
                 order.update.getOrder().getUser(), order.server);
     }

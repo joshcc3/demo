@@ -36,9 +36,6 @@ import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.symbols.SymbolDescription;
 import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderConnectionEstablished;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderEventFromServer;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrderUpdateFromServer;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.LeanDef;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
@@ -61,9 +58,6 @@ class ReddalChannels {
     final TypedChannel<OPXLDeskPositions> deskPositions;
     final TypedChannel<Position> position;
     final TypedChannel<PKSExposure> pksExposure;
-    final TypedChannel<WorkingOrderUpdateFromServer> workingOrders;
-    final TypedChannel<WorkingOrderConnectionEstablished> workingOrderConnectionEstablished;
-    final TypedChannel<WorkingOrderEventFromServer> workingOrderEvents;
     final TypedChannel<NibblerTransportConnected> nibblerTransportConnected;
     final TypedChannel<StatusStat> stats;
     final Publisher<RemoteOrderCommandToServer> remoteOrderCommand;
@@ -119,9 +113,6 @@ class ReddalChannels {
         this.deskPositions = create(OPXLDeskPositions.class);
         this.position = create(Position.class);
         this.pksExposure = create(PKSExposure.class);
-        this.workingOrders = create(WorkingOrderUpdateFromServer.class);
-        this.workingOrderConnectionEstablished = create(WorkingOrderConnectionEstablished.class);
-        this.workingOrderEvents = create(WorkingOrderEventFromServer.class);
         this.nibblerTransportConnected = create(NibblerTransportConnected.class);
         this.stats = create(StatusStat.class);
         this.remoteOrderCommandByServer = new MapMaker().makeComputingMap(from -> create(IOrderCmd.class));
@@ -167,7 +158,7 @@ class ReddalChannels {
         this.autoPullerUpdates = create(IAutoPullerUpdate.class);
     }
 
-    private <T> TypedChannel<T> create(final Class<T> clazz) {
+    private static <T> TypedChannel<T> create(final Class<T> clazz) {
         return TypedChannels.create(clazz);
     }
 }

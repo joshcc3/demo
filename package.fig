@@ -60,8 +60,6 @@ config default
 	include com.drwtrading.london.photons.reddal/2
 	include com.drwtrading.london.photons.eeifoe/16
 
-	include nns/2.0.0.69
-
 	# Execution
 	include eeif.execution/0
 	include com.drwtrading.photons.ladder/38

@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.obligations;
+package com.drwtrading.london.reddal.workingOrders.obligations;
 
 import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
@@ -15,14 +15,14 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class ObligationOPXL extends AOpxlLoggingReader<OPXLComponents, RFQObligationSet> {
+public class RFQObligationOPXL extends AOpxlLoggingReader<OPXLComponents, RFQObligationSet> {
 
     private static final String TOPIC = "eeif(etf_rfq_obligation)";
     public static final RFQObligationSet EMPTY_OBLIGATIONS = new RFQObligationSet(Collections.emptyList(), Collections.emptyMap());
 
     private final Consumer<RFQObligationSet> updates;
 
-    public ObligationOPXL(final SelectIO opxlSelectIO, final IResourceMonitor<OPXLComponents> monitor, final OPXLComponents component,
+    public RFQObligationOPXL(final SelectIO opxlSelectIO, final IResourceMonitor<OPXLComponents> monitor, final OPXLComponents component,
             final Path path, final Consumer<RFQObligationSet> updates) {
 
         super(opxlSelectIO, opxlSelectIO, monitor, component, TOPIC, path);
@@ -50,7 +50,7 @@ public class ObligationOPXL extends AOpxlLoggingReader<OPXLComponents, RFQObliga
         Arrays.stream(opxlTable).skip(1).filter(objects -> objects.length == headerRow.length && !objects[0].toString().isEmpty()).map(
                 Arrays::asList).forEach(objects -> {
             final String symbol = objects.get(0).toString();
-            final List<Obligation> obligations = new ArrayList<>();
+            final List<RFQObligationValue> obligations = new ArrayList<>();
             for (int i = 0; i < notionals.size() && 1 + i < objects.size(); i++) {
                 final Object bpsString = objects.get(1 + i);
                 if (bpsString.toString().trim().isEmpty()) {
@@ -58,7 +58,7 @@ public class ObligationOPXL extends AOpxlLoggingReader<OPXLComponents, RFQObliga
                 }
                 final double bps = Double.valueOf(bpsString.toString());
                 final double notional = notionals.get(i);
-                obligations.add(new Obligation(notional, bps));
+                obligations.add(new RFQObligationValue(notional, bps));
             }
             final RFQObligation obligation = new RFQObligation(symbol, obligations);
             obligationHashMap.put(symbol, obligation);

@@ -174,7 +174,7 @@ function setWorkingOrder(key, chainID, instrument, side, price, filledQuantity, 
 		row.find(".server").text(server);
 
 		row.toggleClass("bid", side == "BID");
-		row.toggleClass("offer", side == "OFFER");
+		row.toggleClass("offer", side == "ASK");
 
 		row.find(".cancelOrder").unbind().bind("click", function () {
 			ws.send(command("cancelOrder", [server, key]));
@@ -193,7 +193,7 @@ function setWorkingOrder(key, chainID, instrument, side, price, filledQuantity, 
 	row.toggleClass("notEnder", tag != "Ender");
 }
 
-function removeWorkingOrder(key) {
+function deleteWorkingOrder(key) {
 
 	let row = Rows[key];
 	if (row) {

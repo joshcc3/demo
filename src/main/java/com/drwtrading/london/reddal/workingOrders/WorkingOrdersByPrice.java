@@ -60,7 +60,7 @@ public class WorkingOrdersByPrice {
     }
 
     public boolean hasAnyWorkingOrder() {
-        return ordersByPrice.isEmpty();
+        return !ordersByPrice.isEmpty();
     }
 
     public Collection<Long> getWorkingOrderPrices() {

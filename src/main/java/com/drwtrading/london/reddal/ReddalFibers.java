@@ -5,52 +5,31 @@ import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.jetlang.DefaultJetlangFactory;
 import com.drwtrading.london.jetlang.FiberGroup;
-import com.drwtrading.london.jetlang.JetlangFactory;
 import com.drwtrading.london.reddal.util.SelectIOFiber;
-import org.jetlang.fibers.Fiber;
 
 class ReddalFibers {
 
-    final JetlangFactory jetlangFactory;
     final FiberGroup fiberGroup;
-    final Fiber starter;
     final FiberBuilder logging;
     final FiberBuilder ui;
-    final FiberBuilder stats;
     final FiberBuilder metaData;
-    final FiberBuilder workingOrders;
     final FiberBuilder remoteOrders;
-    final FiberBuilder opxlPosition;
     final FiberBuilder mrPhil;
     final FiberBuilder indy;
-    final FiberBuilder watchdog;
     final FiberBuilder settings;
     final FiberBuilder ladderRouter;
-    final FiberBuilder contracts;
 
     ReddalFibers(final ReddalChannels channels, final DefaultJetlangFactory factory, final SelectIO uiSelectIO, final IErrorLogger logger) {
 
-        jetlangFactory = factory;
-        fiberGroup = new FiberGroup(jetlangFactory, "Fibers", channels.error);
-        starter = jetlangFactory.createFiber("Starter");
-        fiberGroup.wrap(starter, "Starter");
+        fiberGroup = new FiberGroup(factory, "Fibers", channels.error);
         logging = fiberGroup.create("Logging");
         ui = fiberGroup.wrap(new SelectIOFiber(uiSelectIO, logger, "UI"), "UI");
         ladderRouter = fiberGroup.create("Ladder");
-        stats = fiberGroup.create("Stats");
         metaData = fiberGroup.create("Metadata");
-        workingOrders = fiberGroup.create("Working orders");
         remoteOrders = fiberGroup.create("Remote orders");
-        opxlPosition = fiberGroup.create("OPXL Position");
         mrPhil = fiberGroup.create("Mr Phil");
         indy = fiberGroup.create("Indy");
-        watchdog = fiberGroup.create("Watchdog");
         settings = fiberGroup.create("Settings");
-        contracts = fiberGroup.create("Contracts");
-    }
-
-    void onStart(final Runnable runnable) {
-        starter.execute(runnable);
     }
 
     void start() {

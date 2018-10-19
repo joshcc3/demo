@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.obligations;
+package com.drwtrading.london.reddal.workingOrders.obligations;
 
 import java.util.Collections;
 import java.util.List;
