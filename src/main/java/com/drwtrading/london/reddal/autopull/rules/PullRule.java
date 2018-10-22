@@ -75,7 +75,7 @@ public class PullRule extends Struct {
                     break;
             }
 
-            return null != level && order.getOrderQty() - order.getFilledQty() < level.getQty();
+            return null != level && (order.getOrderQty() - order.getFilledQty() <= level.getQty());
         }
     }
 
