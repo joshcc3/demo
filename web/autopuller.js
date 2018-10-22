@@ -100,7 +100,13 @@ function updateGlobals(symbols, symbolToWorkingPrice, symbolToMdPrice) {
 
 //noinspection JSUnusedLocalSymbols
 function ruleFired(key) {
+
 	playSound();
+
+	let row = Rows[key];
+	if (row) {
+		row.toggleClass("fired", true);
+	}
 }
 
 //noinspection JSUnusedLocalSymbols
@@ -134,6 +140,7 @@ function displayRule(key, symbol, side, orderPriceFrom, orderPriceTo, conditionP
 
 		row.find("button.update").unbind('click').bind('click', function () {
 			sendWriteRule(row);
+			row.toggleClass("fired", false);
 		});
 
 		row.find("button.delete").unbind('click').bind('click', function () {
@@ -149,9 +156,11 @@ function displayRule(key, symbol, side, orderPriceFrom, orderPriceTo, conditionP
 
 		row.find("button.start").unbind('click').bind('click', function () {
 			sendStartRule(row);
+			row.toggleClass("fired", false);
 		});
 		row.find("button.stop").unbind('click').bind('click', function () {
 			sendStopRule(row);
+			row.toggleClass("fired", false);
 		});
 	}
 

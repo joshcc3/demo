@@ -81,3 +81,8 @@ tr.alert {
 	background-color: #d2a1d4;
 	border: 1px solid #ff0008;
 }
+
+tr.fired {
+	background-color: #d4c842;
+	border: 1px solid #ff0008;
+}
