@@ -1,8 +1,12 @@
-package com.drwtrading.london.reddal.workingOrders.obligations;
+package com.drwtrading.london.reddal.workingOrders;
 
-import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
+public class NoWorkingOrdersCallback implements IWorkingOrdersCallback {
 
-public class NoRFQObligationsPresenter implements IRFQObligationPresenter {
+    public static final NoWorkingOrdersCallback INSTANCE = new NoWorkingOrdersCallback();
+
+    private NoWorkingOrdersCallback() {
+        // singleton
+    }
 
     @Override
     public void setWorkingOrder(final SourcedWorkingOrder sourcedOrder) {

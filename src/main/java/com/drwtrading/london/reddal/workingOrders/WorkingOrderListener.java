@@ -6,7 +6,6 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.Spreadnough
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
-import com.drwtrading.london.reddal.workingOrders.obligations.IRFQObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 
 public class WorkingOrderListener implements INibblerTradingDataListener {
@@ -14,17 +13,19 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
     private final String sourceNibbler;
 
     private final WorkingOrdersPresenter workingOrdersPresenter;
-    private final IRFQObligationPresenter obligationPresenter;
+    private final IWorkingOrdersCallback obligationPresenter;
+    private final IWorkingOrdersCallback bestWorkingOrderMaintainer;
 
     private final LongMap<SourcedWorkingOrder> sourcedWorkingOrder;
 
     public WorkingOrderListener(final String sourceNibbler, final WorkingOrdersPresenter workingOrdersPresenter,
-            final IRFQObligationPresenter obligationPresenter) {
+            final IWorkingOrdersCallback obligationPresenter, final IWorkingOrdersCallback bestWorkingOrderMaintainer) {
 
         this.sourceNibbler = sourceNibbler;
 
         this.workingOrdersPresenter = workingOrdersPresenter;
         this.obligationPresenter = obligationPresenter;
+        this.bestWorkingOrderMaintainer = bestWorkingOrderMaintainer;
 
         this.sourcedWorkingOrder = new LongMap<>();
     }
@@ -57,6 +58,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
 
         workingOrdersPresenter.setWorkingOrder(sourcedOrder);
         obligationPresenter.setWorkingOrder(sourcedOrder);
+        bestWorkingOrderMaintainer.setWorkingOrder(sourcedOrder);
         return true;
     }
 
@@ -67,6 +69,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
 
         workingOrdersPresenter.setWorkingOrder(sourcedOrder);
         obligationPresenter.setWorkingOrder(sourcedOrder);
+        bestWorkingOrderMaintainer.setWorkingOrder(sourcedOrder);
         return true;
     }
 
@@ -77,6 +80,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
 
         workingOrdersPresenter.deleteWorkingOrder(sourcedOrder);
         obligationPresenter.deleteWorkingOrder(sourcedOrder);
+        bestWorkingOrderMaintainer.deleteWorkingOrder(sourcedOrder);
         return true;
     }
 

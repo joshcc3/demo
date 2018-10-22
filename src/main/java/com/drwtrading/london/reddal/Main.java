@@ -143,12 +143,14 @@ import com.drwtrading.london.reddal.util.FileLogger;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.reddal.util.SelectIOFiber;
 import com.drwtrading.london.reddal.util.UILogger;
+import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
+import com.drwtrading.london.reddal.workingOrders.NoWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderListener;
-import com.drwtrading.london.reddal.workingOrders.obligations.IRFQObligationPresenter;
-import com.drwtrading.london.reddal.workingOrders.obligations.NoRFQObligationsPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.RFQObligationOPXL;
 import com.drwtrading.london.reddal.workingOrders.obligations.RFQObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.RFQObligationSet;
+import com.drwtrading.london.reddal.workingOrders.opxl.BestWorkingOrderMaintainer;
+import com.drwtrading.london.reddal.workingOrders.opxl.OPXLBestWorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.LadderWorkspace;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
@@ -1115,14 +1117,13 @@ public class Main {
             channels.orderEntryFromServer.subscribe(selectIOFiber,
                     new BatchSubscriber<>(selectIOFiber, workingOrderPresenter::oeUpdate, 250, TimeUnit.MILLISECONDS));
 
-            final NoRFQObligationsPresenter noObligationsPresenter = new NoRFQObligationsPresenter();
-            final IRFQObligationPresenter obligationPresenter;
+            final IWorkingOrdersCallback obligationPresenter;
             final Set<String> obligationNibblers;
 
             final ConfigGroup obligationsConfig = app.config.getEnabledGroup("obligations");
             if (null == obligationsConfig) {
 
-                obligationPresenter = noObligationsPresenter;
+                obligationPresenter = NoWorkingOrdersCallback.INSTANCE;
                 obligationNibblers = Collections.emptySet();
             } else {
 
@@ -1143,6 +1144,18 @@ public class Main {
                 fibers.ui.execute(obligationOPXL::start);
 
                 obligationPresenter = presenter;
+            }
+
+            final IWorkingOrdersCallback bestWorkingOrderMaintainer;
+
+            if (null != app.config.getEnabledGroup("bestWorkingOrders")) {
+
+                final OPXLBestWorkingOrdersPresenter bestWorkingOrdersOPXLWriter =
+                        new OPXLBestWorkingOrdersPresenter(opxlSelectIO, opxlMonitor, app.env);
+                bestWorkingOrderMaintainer = new BestWorkingOrderMaintainer(bestWorkingOrdersOPXLWriter);
+                opxlSelectIO.addDelayedAction(5000, bestWorkingOrdersOPXLWriter::flush);
+            } else {
+                bestWorkingOrderMaintainer = NoWorkingOrdersCallback.INSTANCE;
             }
 
             final MultiLayeredResourceMonitor<ReddalComponents> clientMonitorParent =
@@ -1180,16 +1193,16 @@ public class Main {
                         new ExpandedDetailResourceMonitor<>(childMonitor, "Nibbler Transport", app.errorLog,
                                 NibblerTransportComponents.class, ReddalComponents.BLOTTER_CONNECTION);
 
-                final IRFQObligationPresenter obligationsCallback;
+                final IWorkingOrdersCallback obligationsCallback;
                 if (obligationNibblers.contains(nibbler)) {
                     obligationsCallback = obligationPresenter;
                 } else {
-                    obligationsCallback = noObligationsPresenter;
+                    obligationsCallback = NoWorkingOrdersCallback.INSTANCE;
                 }
 
                 final BlotterClient blotterClient =
                         new BlotterClient(nibbler, msgBlotter, safetiesBlotter, workingOrderPresenter, obligationsCallback,
-                                connectedNibblerChannel, remoteOrderNibblerName);
+                                bestWorkingOrderMaintainer, connectedNibblerChannel, remoteOrderNibblerName);
 
                 final NibblerClientHandler client =
                         NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,
@@ -1213,7 +1226,7 @@ public class Main {
 
                     workingOrderPresenter.addNibbler(nibbler);
                     final WorkingOrderListener workingOrderListener =
-                            new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback);
+                            new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer);
                     cache.addTradingDataListener(workingOrderListener);
                 }
             }

@@ -1,8 +1,6 @@
-package com.drwtrading.london.reddal.workingOrders.obligations;
+package com.drwtrading.london.reddal.workingOrders;
 
-import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
-
-public interface IRFQObligationPresenter {
+public interface IWorkingOrdersCallback {
 
     public void setWorkingOrder(final SourcedWorkingOrder sourcedOrder);
 

@@ -5,6 +5,7 @@ import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.websocket.WebSocketViews;
@@ -24,7 +25,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Predicate;
 
-public class RFQObligationPresenter implements IRFQObligationPresenter {
+public class RFQObligationPresenter implements IWorkingOrdersCallback {
 
     private static final RFQObligation DEFAULT = new RFQObligation("", Collections.singletonList(new RFQObligationValue(5e6, 10)));
     private static final List<RFQObligationValue> NOT_FOUND =
