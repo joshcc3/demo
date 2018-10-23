@@ -81,5 +81,4 @@ public class RFQObligationOPXL extends AOpxlLoggingReader<OPXLComponents, RFQObl
     protected void handleError(final OPXLComponents component, final String msg, final Throwable t) {
 
     }
-
 }

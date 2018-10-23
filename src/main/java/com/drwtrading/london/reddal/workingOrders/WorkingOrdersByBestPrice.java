@@ -91,7 +91,7 @@ public class WorkingOrdersByBestPrice {
         return clearOrders(bidOrdersByPrice, source) || clearOrders(askOrdersByPrice, source);
     }
 
-    private static boolean clearOrders(final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> orders, final String source) {
+    private boolean clearOrders(final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> orders, final String source) {
 
         boolean isSomethingDeleted = false;
 
@@ -104,6 +104,8 @@ public class WorkingOrdersByBestPrice {
 
                 final SourcedWorkingOrder workingOrder = workingOrderIterator.next();
                 if (source.equals(workingOrder.source)) {
+
+                    currentPricesByWorkingOrderID.remove(workingOrder);
                     workingOrderIterator.remove();
                     isSomethingDeleted = true;
                 }
@@ -114,15 +116,6 @@ public class WorkingOrdersByBestPrice {
             }
         }
         return isSomethingDeleted;
-    }
-
-    public boolean hasBestPrice(final BookSide side) {
-
-        if (BookSide.BID == side) {
-            return !bidOrdersByPrice.isEmpty();
-        } else {
-            return !askOrdersByPrice.isEmpty();
-        }
     }
 
     public long getBestPrice(final BookSide side) {
@@ -162,7 +155,7 @@ public class WorkingOrdersByBestPrice {
         return new BestWorkingPriceForSymbol(symbol, bidPrice, bidQty, askPrice, askQty);
     }
 
-    private long getTotalQty(final Set<SourcedWorkingOrder> workingOrders) {
+    private static long getTotalQty(final Set<SourcedWorkingOrder> workingOrders) {
 
         long result = 0;
         for (final SourcedWorkingOrder workingOrder : workingOrders) {

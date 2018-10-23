@@ -2,13 +2,13 @@ package com.drwtrading.london.reddal.workingOrders.opxl;
 
 public class BestWorkingPriceForSymbol {
 
-    final String symbol;
+    public final String symbol;
 
-    final Long bidPrice;
-    final Long bidQty;
+    public final Long bidPrice;
+    public final Long bidQty;
 
-    final Long askPrice;
-    final Long askQty;
+    public final Long askPrice;
+    public final Long askQty;
 
     public BestWorkingPriceForSymbol(final String symbol, final Long bidPrice, final Long bidQty, final Long askPrice, final Long askQty) {
 
