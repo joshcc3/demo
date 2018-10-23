@@ -94,14 +94,8 @@ body#search_page {
 	display: none;
 }
 
-.maybe_our_order {
-	border-left: solid 1px yellow !important;
-	background-color: yellow !important;
-	color: black !important;
-}
-
 .our_order {
-	border-left: solid 1px greenyellow !important;
+	border-left: solid 1px forestgreen;
 	background-color: greenyellow !important;
 	color: black !important;
 }
