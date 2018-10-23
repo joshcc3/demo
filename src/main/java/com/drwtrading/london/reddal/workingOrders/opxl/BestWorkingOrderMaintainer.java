@@ -26,10 +26,12 @@ public class BestWorkingOrderMaintainer implements IWorkingOrdersCallback {
         final WorkingOrdersByBestPrice orderedWorkingOrders = getWorkingOrdersByBestPrice(workingOrder.order.getSymbol());
         final Long prevPrice = orderedWorkingOrders.setWorkingOrder(workingOrder);
 
-        final long bestPrice = orderedWorkingOrders.getBestPrice(workingOrder.order.getSide());
+        if (orderedWorkingOrders.hasBestPrice(workingOrder.order.getSide())) {
+            final long bestPrice = orderedWorkingOrders.getBestPrice(workingOrder.order.getSide());
 
-        if (bestPrice == workingOrder.order.getPrice() || (null != prevPrice && bestPrice == prevPrice)) {
-            setBestWorkingPrice(orderedWorkingOrders);
+            if (bestPrice == workingOrder.order.getPrice() || (null != prevPrice && bestPrice == prevPrice)) {
+                setBestWorkingPrice(orderedWorkingOrders);
+            }
         }
     }
 

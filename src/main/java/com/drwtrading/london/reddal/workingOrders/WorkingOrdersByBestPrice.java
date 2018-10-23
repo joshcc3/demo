@@ -116,6 +116,15 @@ public class WorkingOrdersByBestPrice {
         return isSomethingDeleted;
     }
 
+    public boolean hasBestPrice(final BookSide side) {
+
+        if (BookSide.BID == side) {
+            return !bidOrdersByPrice.isEmpty();
+        } else {
+            return !askOrdersByPrice.isEmpty();
+        }
+    }
+
     public long getBestPrice(final BookSide side) {
 
         if (BookSide.BID == side) {
