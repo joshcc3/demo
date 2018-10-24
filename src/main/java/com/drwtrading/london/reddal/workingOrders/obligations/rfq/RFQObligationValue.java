@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.workingOrders.obligations;
+package com.drwtrading.london.reddal.workingOrders.obligations.rfq;
 
 import drw.london.json.JSONGenerator;
 import drw.london.json.Jsonable;

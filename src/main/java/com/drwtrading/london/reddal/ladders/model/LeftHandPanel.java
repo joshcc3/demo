@@ -52,11 +52,11 @@ public class LeftHandPanel {
         this.twoToTenDP = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2, 10);
 
         this.clockTime = 0;
-        this.lastTradeCOD = 0;
-        this.yesterdaySettlePrice = 0;
-        this.totalTradedQty = 0;
-        this.dayPosition = 0;
-        this.ourTradedQty = 0;
+        this.lastTradeCOD = Long.MIN_VALUE;
+        this.yesterdaySettlePrice = Long.MIN_VALUE;
+        this.totalTradedQty = Long.MIN_VALUE;
+        this.dayPosition = Long.MIN_VALUE;
+        this.ourTradedQty = Long.MIN_VALUE;
 
         this.bpsTooltip = 0d;
 
