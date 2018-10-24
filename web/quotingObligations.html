@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Quoting Obligations</title>
+	<link rel="stylesheet" type="text/css" href="quotingObligations.css">
+	<script src="jquery-1.8.3.js"></script>
+	<script src="js/websocket.js"></script>
+	<script src="js/websocket-ui.js"></script>
+	<script src="/launcher.js"></script>
+	<script src="quotingObligations.js"></script>
+</head>
+<body>
+
+<div id="background"></div>
+
+<div id="header"></div>
+
+<div id="main">
+
+	<label for="showAll">Show all</label>
+	<input type="checkbox" name="showAll" value="showAll" id="showAll">
+
+	<div id="strategies" class="hideMetObligations">
+		<div id="strategyTemplate" class="headerRow row">
+			<div class="infoCell symbol">Symbol</div>
+			<div class="infoCell percentageOn">Current %</div>
+		</div>
+	</div>
+</div>
+
+<div id="footer"></div>
+
+</body>
+</html>

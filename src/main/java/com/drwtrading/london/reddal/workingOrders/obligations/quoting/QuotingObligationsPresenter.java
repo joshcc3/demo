@@ -1,46 +1,34 @@
-package com.drwtrading.london.reddal.workingOrders.obligations.lse;
-
-//import com.drwtrading.jetlang.autosubscribe.Subscribe;
-//import com.drwtrading.london.eeif.utils.io.SelectIO;
-//import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
-//import com.drwtrading.london.eeif.utils.time.IClock;
-//import com.drwtrading.london.fastui.FastUiOutbound;
-//import com.drwtrading.london.photons.selecta.State;
-//import com.drwtrading.london.photons.selecta.StrategyState;
-//import com.drwtrading.london.photons.selecta.StrategyType;
-//import com.drwtrading.london.selecta.UIConnectedUser;
-//import com.drwtrading.london.selecta.UIView;
-//import com.drwtrading.london.selecta.UiManager;
-//import com.drwtrading.websockets.WebSocketConnected;
-//import com.drwtrading.websockets.WebSocketDisconnected;
-//import com.drwtrading.websockets.WebSocketInboundData;
-//import org.jetlang.fibers.Fiber;
-//
-//import java.util.Calendar;
-//import java.util.HashMap;
-//import java.util.Map;
-//import java.util.concurrent.TimeUnit;
+package com.drwtrading.london.reddal.workingOrders.obligations.quoting;
 
 public class QuotingObligationsPresenter {
-//    implements UiManager.UiCallbacks {
 //
 //    private static final int CHECK_OBLIGATION_PERIOD_MILLIS = 30000;
 //
-//    private static final String UI_TITLE = "Quote Obligations.";
 //    private static final int MIN_PERCENT = 90;
 //
 //    private final IClock clock;
+//
+//    private final UILogger webLog;
+//    private final FiberBuilder logFiber;
+//
+//    private final WebSocketViews<IQuotingObligationView> views;
+//
 //    private final long minMilliSinceMidnight;
 //    private final long maxMilliSinceMidnight;
 //    private final long sysStartMillisSinceMidnight;
 //
-//    private final UiManager uiManager;
-//
 //    private final Map<String, QuotingObligationState> obligations;
 //
-//    public QuotingObligationsPresenter(final SelectIO clock, final Fiber ui) {
+//    public QuotingObligationsPresenter(final SelectIO clock, final UILogger webLog, final FiberBuilder logFiber, final Fiber ui) {
 //
 //        this.clock = clock;
+//
+//        this.webLog = webLog;
+//        this.logFiber = logFiber;
+//
+//        this.views = WebSocketViews.create(IQuotingObligationView.class, this);
+//
+//        this.obligations = new HashMap<>();
 //
 //        final Calendar cal = DateTimeUtil.getCalendar();
 //        cal.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
@@ -53,10 +41,6 @@ public class QuotingObligationsPresenter {
 //
 //        this.sysStartMillisSinceMidnight = getNowMilliSinceMidnightNow();
 //
-//        this.uiManager = new UiManager(this);
-//
-//        this.obligations = new HashMap<>();
-//
 //        ui.scheduleWithFixedDelay(this::checkObligations, CHECK_OBLIGATION_PERIOD_MILLIS, CHECK_OBLIGATION_PERIOD_MILLIS,
 //                TimeUnit.MILLISECONDS);
 //    }
@@ -68,7 +52,7 @@ public class QuotingObligationsPresenter {
 //    }
 //
 //    private void checkObligations() {
-//        uiManager.ui.eval("checkWarning()");
+//        views.all().checkWarning();
 //    }
 //
 //    public void setStrategyState(final StrategyState state) {
@@ -82,7 +66,6 @@ public class QuotingObligationsPresenter {
 //    @Override
 //    public void onUserConnected(final UIConnectedUser user) {
 //
-//        user.view.setName(UI_TITLE);
 //        for (final QuotingObligationState state : obligations.values()) {
 //            setObligation(user.ui, user.view, state);
 //        }
@@ -157,7 +140,7 @@ public class QuotingObligationsPresenter {
 //        uiManager.ui.flush();
 //    }
 //
-//    private static void setRowDetails(final FastUiOutbound ui, final QuotingObligationState obligation) {
+//    private static void setRowDetails(final IQuotingObligationView ui, final QuotingObligationState obligation) {
 //
 //        final String key = obligation.getKey();
 //        ui.txt(key + "_percentageOn", Long.toString(obligation.getOnPercent()));

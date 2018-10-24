@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.workingOrders;
 
 import com.drwtrading.london.eeif.nibbler.transport.cache.tradingData.INibblerTradingDataListener;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
@@ -47,6 +48,16 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
 
     @Override
     public boolean updateSpreadnoughtTheo(final SpreadnoughtTheo theo) {
+        return true;
+    }
+
+    @Override
+    public boolean addQuotingState(final QuotingState quotingState) {
+        return true;
+    }
+
+    @Override
+    public boolean updateQuotingState(final QuotingState quotingState) {
         return true;
     }
 

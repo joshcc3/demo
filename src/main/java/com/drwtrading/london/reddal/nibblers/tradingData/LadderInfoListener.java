@@ -6,6 +6,7 @@ import com.drwtrading.london.eeif.nibbler.transport.cache.tradingData.INibblerTr
 import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.blotter.BlotterSymbolLine;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
@@ -69,6 +70,16 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     public boolean updateSpreadnoughtTheo(final SpreadnoughtTheo theo) {
         ladderPresenter.setSpreadnoughtTheo(theo);
         shredderPresenter.setSpreadnoughtTheo(theo);
+        return true;
+    }
+
+    @Override
+    public boolean addQuotingState(final QuotingState quotingState) {
+        return true;
+    }
+
+    @Override
+    public boolean updateQuotingState(final QuotingState quotingState) {
         return true;
     }
 

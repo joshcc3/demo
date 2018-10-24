@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.workingOrders.obligations.lse;
+package com.drwtrading.london.reddal.workingOrders.obligations.quoting;
 
 import java.util.regex.Pattern;
 
