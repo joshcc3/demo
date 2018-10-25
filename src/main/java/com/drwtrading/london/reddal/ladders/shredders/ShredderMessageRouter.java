@@ -2,7 +2,6 @@ package com.drwtrading.london.reddal.ladders.shredders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
-import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -29,7 +28,6 @@ public class ShredderMessageRouter {
 
     private final IResourceMonitor<ReddalComponents> monitor;
 
-    private final FiberBuilder logFiber;
     private final UILogger webLog;
 
     private final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderPresenters;
@@ -40,10 +38,9 @@ public class ShredderMessageRouter {
     private final Map<Publisher<WebSocketOutboundData>, LinkedList<WebSocketControlMessage>> queue;
 
     public ShredderMessageRouter(final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
-            final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderPresenters, final FiberBuilder logFiber) {
+            final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderPresenters) {
         this.monitor = monitor;
 
-        this.logFiber = logFiber;
         this.webLog = webLog;
 
         this.shredderPresenters = shredderPresenters;
@@ -101,7 +98,7 @@ public class ShredderMessageRouter {
     public void onMessage(final WebSocketInboundData msg) {
         final String data = msg.getData();
         if (!data.startsWith("heartbeat")) {
-            logFiber.execute(() -> webLog.write("shredderMsgRouter", msg));
+            webLog.write("shredderMsgRouter", msg);
         }
 
         final Publisher<WebSocketControlMessage> publisher = redirects.get(msg.getOutboundChannel());

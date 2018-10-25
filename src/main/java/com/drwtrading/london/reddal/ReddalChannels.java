@@ -50,6 +50,8 @@ import java.util.Map;
 
 class ReddalChannels {
 
+    static final TypedChannel<Throwable> ERROR_CHANNEL = TypedChannels.create(Throwable.class);
+
     final TypedChannel<Throwable> error;
     final Publisher<Throwable> errorPublisher;
     final TypedChannel<LaserLineValue> opxlLaserLineData;
@@ -105,7 +107,7 @@ class ReddalChannels {
 
     ReddalChannels() {
 
-        this.error = Main.ERROR_CHANNEL;
+        this.error = ERROR_CHANNEL;
         this.errorPublisher = new BogusErrorFilteringPublisher(error);
         this.opxlLaserLineData = create(LaserLineValue.class);
         this.ladderText = create(OpxlLadderText.class);

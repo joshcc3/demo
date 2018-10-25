@@ -2,7 +2,6 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
-import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -32,7 +31,6 @@ public class LadderMessageRouter {
 
     private final IResourceMonitor<ReddalComponents> monitor;
 
-    private final FiberBuilder logFiber;
     private final UILogger webLog;
 
     private final TypedChannel<SymbolSelection> symbolSelections;
@@ -47,11 +45,10 @@ public class LadderMessageRouter {
 
     public LadderMessageRouter(final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
             final TypedChannel<SymbolSelection> symbolSelections, final TypedChannel<WebSocketControlMessage> stackManagerLadderPresenter,
-            final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderPresenters, final FiberBuilder logFiber) {
+            final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderPresenters) {
 
         this.monitor = monitor;
 
-        this.logFiber = logFiber;
         this.webLog = webLog;
 
         this.symbolSelections = symbolSelections;
@@ -134,7 +131,7 @@ public class LadderMessageRouter {
 
         final String data = msg.getData();
         if (!data.startsWith("heartbeat")) {
-            logFiber.execute(() -> webLog.write("ladderMsgRouter", msg));
+            webLog.write("ladderMsgRouter", msg);
         }
 
         final Publisher<WebSocketControlMessage> publisher = redirects.get(msg.getOutboundChannel());

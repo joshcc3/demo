@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.stacks.configui;
 
-import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackAdditiveConfig;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackFXConfig;
@@ -42,7 +41,6 @@ public class StackConfigPresenter {
         }
     }
 
-    private final FiberBuilder logFiber;
     private final UILogger uiLogger;
 
     private final WebSocketViews<IStackConfigUI> views;
@@ -50,9 +48,8 @@ public class StackConfigPresenter {
     private final Map<String, LongMap<StackConfigGroup>> nibblerConfigs;
     private final Map<String, StackClientHandler> configClients;
 
-    public StackConfigPresenter(final FiberBuilder logFiber, final UILogger uiLogger) {
+    public StackConfigPresenter(final UILogger uiLogger) {
 
-        this.logFiber = logFiber;
         this.uiLogger = uiLogger;
 
         this.views = WebSocketViews.create(IStackConfigUI.class, this);
@@ -87,7 +84,7 @@ public class StackConfigPresenter {
 
     private void inboundData(final WebSocketInboundData msg) {
 
-        logFiber.execute(() -> uiLogger.write("StackConfig", msg));
+        uiLogger.write("StackConfig", msg);
 
         final String data = msg.getData();
         if ("subscribe".equals(data)) {

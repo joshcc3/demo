@@ -225,8 +225,8 @@ public class Main {
 
         final String localAppName = app.appName + ':' + app.env.name();
 
-        final DefaultJetlangFactory jetlangFactory = new DefaultJetlangFactory(ERROR_CHANNEL);
         final ReddalChannels channels = new ReddalChannels();
+        final DefaultJetlangFactory jetlangFactory = new DefaultJetlangFactory(channels.error);
 
         final IResourceMonitor<SelectIOComponents> uiSelectIOMonitor =
                 new ExpandedDetailResourceMonitor<>(app.monitor, "UI Select IO", app.errorLog, SelectIOComponents.class,
@@ -264,7 +264,7 @@ public class Main {
             message.printStackTrace();
         });
 
-        final UILogger webLog = new UILogger(new SystemClock(), logDir);
+        final UILogger webLog = new UILogger(uiSelectIO, logDir);
 
         final boolean isEquitiesSearchable =
                 !root.paramExists(IS_EQUITIES_SEARCHABLE_PARAM) || root.getBoolean(IS_EQUITIES_SEARCHABLE_PARAM);
@@ -593,7 +593,7 @@ public class Main {
         final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
         createWebPageWithWebSocket("ladder", "ladder", fibers.ladderRouter, webApp, ladderWebSocket);
         final LadderMessageRouter ladderMessageRouter =
-                new LadderMessageRouter(monitor, webLog, channels.symbolSelections, stackManagerWebSocket, ladderWebSockets, fibers.ui);
+                new LadderMessageRouter(monitor, webLog, channels.symbolSelections, stackManagerWebSocket, ladderWebSockets);
         fibers.ladderRouter.subscribe(ladderMessageRouter, ladderWebSocket, channels.replaceCommand);
         channels.searchResults.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setSearchResult);
         channels.stackParentSymbolPublisher.subscribe(fibers.ladderRouter.getFiber(), ladderMessageRouter::setParentStackSymbol);
@@ -601,14 +601,14 @@ public class Main {
         // Orders router
         final TypedChannel<WebSocketControlMessage> orderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
         createWebPageWithWebSocket("orders", "orders", fibers.ladderRouter, webApp, orderWebSocket);
-        final OrderPresenterMsgRouter ordersPresenterMsgRouter = new OrderPresenterMsgRouter(monitor, fibers.ui, webLog, orderWebSockets);
+        final OrderPresenterMsgRouter ordersPresenterMsgRouter = new OrderPresenterMsgRouter(monitor, webLog, orderWebSockets);
         fibers.ladderRouter.subscribe(ordersPresenterMsgRouter, orderWebSocket);
         channels.searchResults.subscribe(fibers.ladderRouter.getFiber(), ordersPresenterMsgRouter::setSearchResult);
 
         // Shredder router
         final TypedChannel<WebSocketControlMessage> shredderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
         createWebPageWithWebSocket("shredder", "shredder", fibers.ladderRouter, webApp, shredderWebSocket);
-        final ShredderMessageRouter shredderMessageRouter = new ShredderMessageRouter(monitor, webLog, shredderWebSockets, fibers.ui);
+        final ShredderMessageRouter shredderMessageRouter = new ShredderMessageRouter(monitor, webLog, shredderWebSockets);
         fibers.ladderRouter.subscribe(shredderMessageRouter, shredderWebSocket);
         channels.searchResults.subscribe(fibers.ladderRouter.getFiber(), shredderMessageRouter::setSearchResult);
 
@@ -903,8 +903,6 @@ public class Main {
 
     }
 
-    public static final TypedChannel<Throwable> ERROR_CHANNEL = TypedChannels.create(Throwable.class);
-
     private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,
             final AtomicBoolean multicastEnabled) {
         return new Transport() {
@@ -994,9 +992,9 @@ public class Main {
             }
 
             final StackFamilyPresenter stackFamilyPresenter =
-                    new StackFamilyPresenter(fibers.ui, webLog, contractSetGenerator, defaultInstType, asylumFamilies);
-            final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(fibers.ui, webLog);
-            final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(fibers.ui, webLog);
+                    new StackFamilyPresenter(webLog, contractSetGenerator, defaultInstType, asylumFamilies);
+            final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
+            final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(webLog);
 
             stackFamilyPresenter.setCommunityManager(communityManager);
             channels.increaseParentOffsetCmds.subscribe(selectIOFiber, msg -> {
@@ -1107,11 +1105,11 @@ public class Main {
         final ConfigGroup nibblerConfigs = app.config.getEnabledGroup("nibblers");
         if (null != nibblerConfigs) {
 
-            final MsgBlotterPresenter msgBlotter = new MsgBlotterPresenter(app.selectIO, fibers.ui, webLog);
-            final SafetiesBlotterPresenter safetiesBlotter = new SafetiesBlotterPresenter(fibers.ui, webLog);
+            final MsgBlotterPresenter msgBlotter = new MsgBlotterPresenter(app.selectIO, webLog);
+            final SafetiesBlotterPresenter safetiesBlotter = new SafetiesBlotterPresenter(webLog);
 
             final WorkingOrdersPresenter workingOrderPresenter =
-                    new WorkingOrdersPresenter(app.selectIO, app.monitor, webLog, fibers.logging, channels.remoteOrderCommand,
+                    new WorkingOrdersPresenter(app.selectIO, app.monitor, webLog, channels.remoteOrderCommand,
                             channels.orderEntryCommandToServer);
 
             channels.orderEntryFromServer.subscribe(selectIOFiber,
@@ -1138,10 +1136,11 @@ public class Main {
 
                 final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
-                fibers.ui.subscribe(presenter, ws, channels.searchResults);
-                fibers.ui.getFiber().scheduleWithFixedDelay(presenter::update, 1, 1, TimeUnit.SECONDS);
-                fibers.ui.subscribe(presenter::updateObligations, rfqObligationChannel);
-                fibers.ui.execute(obligationOPXL::start);
+                ws.subscribe(selectIOFiber, presenter::webControl);
+                channels.searchResults.subscribe(selectIOFiber, presenter::onSearchResult);
+                rfqObligationChannel.subscribe(selectIOFiber, presenter::updateObligations);
+                app.selectIO.addDelayedAction(10000, presenter::update);
+                selectIOFiber.execute(obligationOPXL::start);
 
                 obligationPresenter = presenter;
             }

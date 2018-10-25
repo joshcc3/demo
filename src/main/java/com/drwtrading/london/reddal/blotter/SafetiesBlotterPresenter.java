@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.blotter;
 
-import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.ANibblerSafety;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerDoubleSafety;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerOMSEnabledState;
@@ -22,7 +21,6 @@ import java.util.Map;
 
 public class SafetiesBlotterPresenter {
 
-    private final FiberBuilder logFiber;
     private final UILogger uiLogger;
 
     private final WebSocketViews<ISafetiesBlotterView> views;
@@ -35,9 +33,8 @@ public class SafetiesBlotterPresenter {
 
     private int lastRowID;
 
-    public SafetiesBlotterPresenter(final FiberBuilder logFiber, final UILogger uiLogger) {
+    public SafetiesBlotterPresenter(final UILogger uiLogger) {
 
-        this.logFiber = logFiber;
         this.uiLogger = uiLogger;
 
         this.views = WebSocketViews.create(ISafetiesBlotterView.class, this);
@@ -147,7 +144,7 @@ public class SafetiesBlotterPresenter {
 
     private void inboundData(final WebSocketInboundData msg) {
 
-        logFiber.execute(() -> uiLogger.write("Blotter", msg));
+        uiLogger.write("Blotter", msg);
 
         final String data = msg.getData();
         final String[] args = data.split(",");

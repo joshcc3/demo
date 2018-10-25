@@ -5,6 +5,7 @@ import java.util.regex.Pattern;
 public class QuotingObligationState {
 
     private static final Pattern SPACE_REPLACE = Pattern.compile(" ", Pattern.LITERAL);
+
     private final String symbol;
     private final String key;
 
@@ -14,7 +15,8 @@ public class QuotingObligationState {
     private boolean isOn;
     private long lastCheckMillisSinceMidnight;
 
-    QuotingObligationState(final String symbol, final long systemOnMilliSinceMidnight, final long nowMilliSinceMidnight, final boolean isOn) {
+    QuotingObligationState(final String symbol, final long systemOnMilliSinceMidnight, final long nowMilliSinceMidnight,
+            final boolean isOn) {
 
         this.symbol = symbol;
         this.key = SPACE_REPLACE.matcher(symbol + "_obligation").replaceAll("_");

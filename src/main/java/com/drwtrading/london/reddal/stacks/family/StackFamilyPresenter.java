@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.stacks.family;
 
-import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
@@ -24,7 +23,6 @@ import java.util.Map;
 
 public class StackFamilyPresenter implements IStackRelationshipListener {
 
-    private final FiberBuilder logFiber;
     private final UILogger uiLogger;
 
     private final StackFamilyView familyView;
@@ -32,10 +30,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     private final Map<Publisher<WebSocketOutboundData>, StackFamilyView> userViews;
 
-    public StackFamilyPresenter(final FiberBuilder logFiber, final UILogger uiLogger, final SpreadContractSetGenerator contractSetGenerator,
+    public StackFamilyPresenter(final UILogger uiLogger, final SpreadContractSetGenerator contractSetGenerator,
             final InstType defaultInstType, final Map<InstType, String> families) {
 
-        this.logFiber = logFiber;
         this.uiLogger = uiLogger;
 
         this.familyView = new StackFamilyView(contractSetGenerator, false, defaultInstType);
@@ -174,7 +171,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     private void inboundData(final WebSocketInboundData msg) {
 
-        logFiber.execute(() -> uiLogger.write("stackFamilyPresenter", msg));
+        uiLogger.write("stackFamilyPresenter", msg);
 
         final Publisher<WebSocketOutboundData> outChannel = msg.getOutboundChannel();
         final String username = msg.getClient().getUserName();

@@ -57,7 +57,6 @@ public class StackCallbackBatcher implements IStackClientListener {
     @Override
     public void addTradableSymbol(final StackTradableSymbol tradableSymbol) {
 
-        strategiesPresenter.addTradableSymbol(nibblerName, tradableSymbol);
         childListener.addTradableSymbol(nibblerName, tradableSymbol);
     }
 

@@ -2,7 +2,6 @@ package com.drwtrading.london.reddal.ladders.orders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
-import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
@@ -32,7 +31,6 @@ public class OrderPresenterMsgRouter {
     private static final Pattern QUOTE_REMOVER = Pattern.compile("\"", Pattern.LITERAL);
     private final IResourceMonitor<ReddalComponents> monitor;
 
-    private final FiberBuilder logFiber;
     private final UILogger webLog;
 
     private final Map<MDSource, TypedChannel<WebSocketControlMessage>> presenters;
@@ -42,12 +40,11 @@ public class OrderPresenterMsgRouter {
     private final Map<Publisher<WebSocketOutboundData>, Publisher<WebSocketControlMessage>> redirects;
     private final Map<Publisher<WebSocketOutboundData>, LinkedList<WebSocketControlMessage>> queue;
 
-    public OrderPresenterMsgRouter(final IResourceMonitor<ReddalComponents> monitor, final FiberBuilder logFiber, final UILogger webLog,
+    public OrderPresenterMsgRouter(final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
             final Map<MDSource, TypedChannel<WebSocketControlMessage>> presenters) {
 
         this.monitor = monitor;
 
-        this.logFiber = logFiber;
         this.webLog = webLog;
 
         this.presenters = presenters;
@@ -105,7 +102,7 @@ public class OrderPresenterMsgRouter {
 
         final String data = msg.getData();
         if (!data.startsWith("heartbeat")) {
-            logFiber.execute(() -> webLog.write("orderPresenterRouter", msg));
+            webLog.write("orderPresenterRouter", msg);
         }
 
         final Publisher<WebSocketControlMessage> publisher = redirects.get(msg.getOutboundChannel());

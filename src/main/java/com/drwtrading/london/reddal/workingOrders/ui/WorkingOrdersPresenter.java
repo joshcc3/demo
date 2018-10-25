@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.workingOrders.ui;
 
-import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
@@ -35,7 +34,6 @@ public class WorkingOrdersPresenter {
     private final IResourceMonitor<ReddalComponents> monitor;
 
     private final UILogger webLog;
-    private final FiberBuilder logFiber;
 
     private final Map<String, NibblerView> nibblers;
 
@@ -50,14 +48,12 @@ public class WorkingOrdersPresenter {
     private long lastViewerHeartbeatNanoSinceMidnight;
 
     public WorkingOrdersPresenter(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
-            final FiberBuilder logFiber, final Publisher<RemoteOrderCommandToServer> commands,
-            final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
+            final Publisher<RemoteOrderCommandToServer> commands, final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
 
         this.clock = selectIO;
         this.monitor = monitor;
 
         this.webLog = webLog;
-        this.logFiber = logFiber;
 
         this.nibblers = new HashMap<>();
 
@@ -157,7 +153,7 @@ public class WorkingOrdersPresenter {
     private void onConnected(final WebSocketConnected connected) {
 
         final int remainingViewers = ++numViewers;
-        logFiber.execute(() -> webLog.write("workingOrders", connected, true, remainingViewers));
+        webLog.write("workingOrders", connected, true, remainingViewers);
 
         final IWorkingOrderView view = views.register(connected);
         for (final Map.Entry<String, NibblerView> nibbler : nibblers.entrySet()) {
@@ -169,7 +165,7 @@ public class WorkingOrdersPresenter {
     private void onDisconnected(final WebSocketDisconnected disconnected) {
 
         final int remainingViewers = --numViewers;
-        logFiber.execute(() -> webLog.write("workingOrders", disconnected, false, remainingViewers));
+        webLog.write("workingOrders", disconnected, false, remainingViewers);
 
         views.unregister(disconnected);
         for (final NibblerView nibblerView : nibblers.values()) {
@@ -179,7 +175,7 @@ public class WorkingOrdersPresenter {
 
     public void onMessage(final WebSocketInboundData msg) {
 
-        logFiber.execute(() -> webLog.write("workingOrders", msg));
+        webLog.write("workingOrders", msg);
         views.invoke(msg);
     }
 

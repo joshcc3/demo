@@ -1,8 +1,6 @@
 package com.drwtrading.london.reddal.stacks.strategiesUI;
 
-import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
-import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
@@ -28,26 +26,22 @@ public class StackStrategiesPresenter {
             Lists.newArrayList(InstType.EQUITY.name(), InstType.DR.name(), InstType.INDEX.name(), InstType.SYNTHETIC.name(),
                     InstType.FUTURE.name());
 
-    private final FiberBuilder logFiber;
     private final UILogger uiLogger;
 
     private final WebSocketViews<IStackStrategiesUI> views;
 
     private final Map<String, InstrumentID> instIDs;
-    private final Map<String, String> tradableSymbols;
     private final Map<String, LongMap<StackStrategy>> nibblerStrategies;
 
     private final Map<String, StackClientHandler> strategyClients;
 
-    public StackStrategiesPresenter(final FiberBuilder logFiber, final UILogger uiLogger) {
+    public StackStrategiesPresenter(final UILogger uiLogger) {
 
-        this.logFiber = logFiber;
         this.uiLogger = uiLogger;
 
         this.views = WebSocketViews.create(IStackStrategiesUI.class, this);
 
         this.instIDs = new HashMap<>();
-        this.tradableSymbols = new HashMap<>();
         this.nibblerStrategies = new HashMap<>();
 
         this.strategyClients = new HashMap<>();
@@ -61,11 +55,6 @@ public class StackStrategiesPresenter {
 
     public void addInstID(final String symbol, final InstrumentID instID) {
         instIDs.put(symbol, instID);
-    }
-
-    public void addTradableSymbol(final String nibblerName, final StackTradableSymbol tradableSymbol) {
-
-        tradableSymbols.put(tradableSymbol.symbol, nibblerName);
     }
 
     public void strategyUpdated(final String nibblerName, final StackStrategy strategy) {
@@ -89,7 +78,7 @@ public class StackStrategiesPresenter {
 
     private void inboundData(final WebSocketInboundData msg) {
 
-        logFiber.execute(() -> uiLogger.write("StackStrategies", msg));
+        uiLogger.write("StackStrategies", msg);
 
         final String data = msg.getData();
         final String[] args = data.split(",");

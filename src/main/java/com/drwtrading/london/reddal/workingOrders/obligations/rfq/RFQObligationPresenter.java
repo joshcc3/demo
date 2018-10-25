@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.workingOrders.obligations.rfq;
 
-import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
@@ -10,8 +9,8 @@ import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
+import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
-import com.drwtrading.websockets.WebSocketInboundData;
 import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
@@ -98,8 +97,20 @@ public class RFQObligationPresenter implements IWorkingOrdersCallback {
         }
     }
 
-    @Subscribe
-    public void on(final WebSocketConnected connected) {
+    public void webControl(final WebSocketControlMessage webMsg) {
+
+        if (webMsg instanceof WebSocketConnected) {
+
+            onConnected((WebSocketConnected) webMsg);
+
+        } else if (webMsg instanceof WebSocketDisconnected) {
+
+            onDisconnected((WebSocketDisconnected) webMsg);
+
+        }
+    }
+
+    private void onConnected(final WebSocketConnected connected) {
         final View view = views.register(connected);
         if (null != rfqObligationMap) {
             refreshView(view);
@@ -114,17 +125,10 @@ public class RFQObligationPresenter implements IWorkingOrdersCallback {
         }
     }
 
-    @Subscribe
-    public void on(final WebSocketDisconnected disconnected) {
+    private void onDisconnected(final WebSocketDisconnected disconnected) {
         views.unregister(disconnected);
     }
 
-    @Subscribe
-    public void on(final WebSocketInboundData data) {
-        // Ignore
-    }
-
-    @Subscribe
     public void onSearchResult(final SearchResult instrument) {
         if (symbolFilter.test(instrument.symbol)) {
             searchResults.put(instrument.symbol, instrument);
@@ -141,11 +145,12 @@ public class RFQObligationPresenter implements IWorkingOrdersCallback {
         }
     }
 
-    public void update() {
+    public long update() {
         for (final String changedSymbol : changedSymbols) {
             updateView(views.all(), changedSymbol);
         }
         changedSymbols.clear();
+        return 1000;
     }
 
     private void updateView(final View view, final String symbol) {

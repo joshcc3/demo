@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.blotter;
 
-import com.drwtrading.jetlang.builder.FiberBuilder;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -22,7 +21,6 @@ public class MsgBlotterPresenter {
     private static final int MAX_ROWS = 1000;
 
     private final long milliAtMidnightUTC;
-    private final FiberBuilder logFiber;
     private final UILogger uiLogger;
 
     private final WebSocketViews<IMsgBlotterView> views;
@@ -34,10 +32,9 @@ public class MsgBlotterPresenter {
 
     private int rowCount;
 
-    public MsgBlotterPresenter(final IClock clock, final FiberBuilder logFiber, final UILogger uiLogger) {
+    public MsgBlotterPresenter(final IClock clock, final UILogger uiLogger) {
 
         this.milliAtMidnightUTC = clock.getMillisAtMidnightUTC();
-        this.logFiber = logFiber;
         this.uiLogger = uiLogger;
 
         this.views = WebSocketViews.create(IMsgBlotterView.class, this);
@@ -92,7 +89,7 @@ public class MsgBlotterPresenter {
 
     private void inboundData(final WebSocketInboundData msg) {
 
-        logFiber.execute(() -> uiLogger.write("Blotter", msg));
+        uiLogger.write("Blotter", msg);
 
         final String data = msg.getData();
         final String[] args = data.split(",");
