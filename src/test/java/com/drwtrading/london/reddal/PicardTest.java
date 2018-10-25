@@ -63,6 +63,7 @@ public class PicardTest {
         Assert.assertEquals(picardRow.ccy, CCY.EUR, "Did not convert to EUR even though FX was present.");
         Assert.assertEquals(picardRow.opportunitySize, (2 + 5) * fxCalc.getMid(CCY.USD, CCY.EUR),
                 "Did not calculate opportunity size correctly");
+
     }
 
     @Test

@@ -7,23 +7,39 @@
 	<script src="js/websocket.js"></script>
 	<script src="js/websocket-ui.js"></script>
 	<script src="/launcher.js"></script>
+	<script src="cell-functions.js"></script>
 	<script src="quotingObligations.js"></script>
 </head>
 <body>
 
 <div id="background"></div>
 
-<div id="header"></div>
+<div id="header">
+	<div class="buttons">
+		<button id="everythingOn" class="bigGreenButton">▶▶▶</button>
+		<button id="everythingOff" class="bigRedButton">■■■</button>
+	</div>
+	<label for="showAll">Show all</label>
+	<input type="checkbox" name="showAll" value="showAll" id="showAll">
+</div>
 
 <div id="main">
 
-	<label for="showAll">Show all</label>
-	<input type="checkbox" name="showAll" value="showAll" id="showAll">
 
 	<div id="strategies" class="hideMetObligations">
 		<div id="strategyTemplate" class="headerRow row">
+			<div class="onOffControls">
+				<div>
+					<button class="smallButton strategyOn">▶</button>
+				</div>
+				<div>
+					<button class="smallButton strategyOff">■</button>
+				</div>
+			</div>
 			<div class="infoCell symbol">Symbol</div>
 			<div class="infoCell percentageOn">Current %</div>
+			<div class="infoCell nibblerName">Nibbler</div>
+			<div class="infoCell description">Desc</div>
 		</div>
 	</div>
 </div>

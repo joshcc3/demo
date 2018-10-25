@@ -1,14 +1,14 @@
-let handler;
-
 let meowSound;
 const LastMeowTime = new Date().getTime();
 
 $(function () {
 
 	ws = connect();
-	handler = new Handler(ws);
 	ws.logToConsole = false;
-	ws.onmessage = handler.msg;
+
+	ws.onmessage = function (m) {
+		eval(m);
+	};
 
 	$(window).trigger("startup-done");
 
@@ -17,6 +17,13 @@ $(function () {
 	const strategies = $("#strategies");
 	$("#showAll").change(function () {
 		strategies.toggleClass("hideMetObligations", !this.checked);
+	});
+
+	$("#everythingOn").click(function () {
+		ws.send(command("everythingOn", []));
+	});
+	$("#everythingOff").click(function () {
+		ws.send(command("everythingOff", []));
 	});
 });
 
@@ -43,7 +50,7 @@ function checkWarning() {
 	}
 }
 
-function setRow(rowID, symbol, percentageOn, isStrategyOn, isObligationFail) {
+function setRow(rowID, symbol, sourceNibbler, percentageOn, isStrategyOn, stateDescription, isObligationFail) {
 
 	let row = $("#" + rowID);
 	if (row.size() < 1) {
@@ -54,7 +61,19 @@ function setRow(rowID, symbol, percentageOn, isStrategyOn, isObligationFail) {
 		row.removeClass("headerRow");
 
 		row.attr("id", rowID);
-		row.find(".symbol").text(symbol);
+		const symbolCell = row.find(".symbol");
+		symbolCell.text(symbol);
+		row.find(".nibblerName").text(sourceNibbler);
+
+		symbolCell.unbind().bind("click", function () {
+			launchLadder(symbol);
+		});
+		row.find(".smallButton.strategyOn").click(function () {
+			ws.send(command("startStrategy", [symbol]));
+		});
+		row.find(".smallButton.strategyOff").click(function () {
+			ws.send(command("stopStrategy", [symbol]));
+		});
 
 		addSortedDiv(table.find(".row"), row, function (a, b) {
 			const aID = a.attr("id");
@@ -63,9 +82,13 @@ function setRow(rowID, symbol, percentageOn, isStrategyOn, isObligationFail) {
 		});
 	}
 
+	const wasOn = row.hasClass("strategyOn");
+	row.toggleClass("wasOn", wasOn);
+
 	row.toggleClass("obligationFail", isObligationFail);
 	row.toggleClass("strategyOn", isStrategyOn);
 	row.find(".percentageOn").text(percentageOn);
+	row.find(".description").text(stateDescription);
 
 	row.toggleClass("hidden", false);
 }

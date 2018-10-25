@@ -146,6 +146,7 @@ import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.NoWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderListener;
+import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationOPXL;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationSet;
@@ -1115,17 +1116,17 @@ public class Main {
             channels.orderEntryFromServer.subscribe(selectIOFiber,
                     new BatchSubscriber<>(selectIOFiber, workingOrderPresenter::oeUpdate, 250, TimeUnit.MILLISECONDS));
 
-            final IWorkingOrdersCallback obligationPresenter;
-            final Set<String> obligationNibblers;
+            final IWorkingOrdersCallback rfqObligationPresenter;
+            final Set<String> rfqObligationNibblers;
 
             final ConfigGroup obligationsConfig = app.config.getEnabledGroup("obligations");
             if (null == obligationsConfig) {
 
-                obligationPresenter = NoWorkingOrdersCallback.INSTANCE;
-                obligationNibblers = Collections.emptySet();
+                rfqObligationPresenter = NoWorkingOrdersCallback.INSTANCE;
+                rfqObligationNibblers = Collections.emptySet();
             } else {
 
-                obligationNibblers = obligationsConfig.getSet("nibblers");
+                rfqObligationNibblers = obligationsConfig.getSet("nibblers");
                 final Pattern filterRegex = Pattern.compile(obligationsConfig.getString("filterRegex"));
                 final FXCalc<?> fxCalc = createOPXLFXCalc(app, opxlSelectIO, app.selectIO, opxlMonitor);
                 final MemoryChannel<RFQObligationSet> rfqObligationChannel = new MemoryChannel<>();
@@ -1142,8 +1143,10 @@ public class Main {
                 app.selectIO.addDelayedAction(10000, presenter::update);
                 selectIOFiber.execute(obligationOPXL::start);
 
-                obligationPresenter = presenter;
+                rfqObligationPresenter = presenter;
             }
+
+            final QuotingObligationsPresenter quotingObligationsPresenter = new QuotingObligationsPresenter(app.selectIO, webLog);
 
             final IWorkingOrdersCallback bestWorkingOrderMaintainer;
 
@@ -1193,8 +1196,8 @@ public class Main {
                                 NibblerTransportComponents.class, ReddalComponents.BLOTTER_CONNECTION);
 
                 final IWorkingOrdersCallback obligationsCallback;
-                if (obligationNibblers.contains(nibbler)) {
-                    obligationsCallback = obligationPresenter;
+                if (rfqObligationNibblers.contains(nibbler)) {
+                    obligationsCallback = rfqObligationPresenter;
                 } else {
                     obligationsCallback = NoWorkingOrdersCallback.INSTANCE;
                 }
@@ -1214,6 +1217,8 @@ public class Main {
 
                 if (isTransportForTrading) {
 
+                    quotingObligationsPresenter.setNibblerHandler(nibbler, client);
+
                     final TypedChannel<IOrderCmd> sendCmds = channels.remoteOrderCommandByServer.get(remoteOrderNibblerName);
                     final NibblerTransportOrderEntry orderEntry =
                             new NibblerTransportOrderEntry(app.selectIO, childMonitor, client, app.logDir);
@@ -1225,7 +1230,8 @@ public class Main {
 
                     workingOrderPresenter.addNibbler(nibbler);
                     final WorkingOrderListener workingOrderListener =
-                            new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer);
+                            new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
+                                    quotingObligationsPresenter);
                     cache.addTradingDataListener(workingOrderListener);
                 }
             }
@@ -1241,6 +1247,10 @@ public class Main {
             final TypedChannel<WebSocketControlMessage> workingOrderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("workingorders", "workingorders", fibers.ladderRouter, webApp, workingOrderWebSocket);
             workingOrderWebSocket.subscribe(selectIOFiber, workingOrderPresenter::webControl);
+
+            final TypedChannel<WebSocketControlMessage> quotingObligationsWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("quotingObligations", "quotingObligations", fibers.ui, webApp, quotingObligationsWebSocket);
+            quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsPresenter::webControl);
         }
 
         return result;

@@ -18,12 +18,53 @@ body {
 	z-index: -1;
 }
 
+#header {
+
+	background: black;
+	height: 60px;
+
+	border-bottom: solid 1px gray;
+	padding: 10px;
+
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+}
+
+button.bigGreenButton {
+	background-color: lightgreen;
+	font-size: 13px;
+	font-weight: bold;
+	width: 80px;
+	height: 30px;
+	margin: 5px;
+	padding: 2px;
+
+}
+
+button.bigRedButton {
+	background-color: lightcoral;
+	font-size: 13px;
+	font-weight: bold;
+	width: 80px;
+	height: 30px;
+	margin: 8px;
+	padding: 2px;
+}
+
 #main {
+	margin-top: 80px;
 	white-space: nowrap;
 }
 
 .hidden {
 	display: none;
+}
+
+#strategies .headerRow div.onOffControls {
+	visibility: hidden;
 }
 
 #strategies .row div {
@@ -32,6 +73,36 @@ body {
 
 #strategies .row div.infoCell {
 	width: 75px;
+}
+
+.onOffControls .button.smallButton {
+	padding: 0;
+	margin: 0;
+	width: 14px;
+	border: 1px solid #989898;
+	background-color: #9a9a9a;
+}
+
+.onOffControls {
+	padding: 2px;
+}
+
+#strategies .strategyOn .onOffControls {
+	border: solid 2px #62ff58;
+	padding: 0;
+}
+
+#strategies .wasOn:not(.strategyOn) .onOffControls {
+	border: solid 2px #ff3852;
+	padding: 0;
+}
+
+.onOffControls .strategyOn {
+	background-color: lightgreen;
+}
+
+.onOffControls .strategyOff {
+	background-color: lightcoral;
 }
 
 #strategies .row div.percentageOn {
@@ -48,6 +119,6 @@ body {
 	color: black;
 }
 
-#strategies.hideMetObligations .strategyOn:not(.obligationFail) {
+#strategies.hideMetObligations div.strategyOn:not(.obligationFail) {
 	display: none;
 }

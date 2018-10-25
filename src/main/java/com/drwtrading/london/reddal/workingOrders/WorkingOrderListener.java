@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.Spreadnough
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
+import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 
 public class WorkingOrderListener implements INibblerTradingDataListener {
@@ -16,17 +17,20 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
     private final WorkingOrdersPresenter workingOrdersPresenter;
     private final IWorkingOrdersCallback obligationPresenter;
     private final IWorkingOrdersCallback bestWorkingOrderMaintainer;
+    private final QuotingObligationsPresenter quotingObligationsPresenter;
 
     private final LongMap<SourcedWorkingOrder> sourcedWorkingOrder;
 
     public WorkingOrderListener(final String sourceNibbler, final WorkingOrdersPresenter workingOrdersPresenter,
-            final IWorkingOrdersCallback obligationPresenter, final IWorkingOrdersCallback bestWorkingOrderMaintainer) {
+            final IWorkingOrdersCallback obligationPresenter, final IWorkingOrdersCallback bestWorkingOrderMaintainer,
+            final QuotingObligationsPresenter quotingObligationsPresenter) {
 
         this.sourceNibbler = sourceNibbler;
 
         this.workingOrdersPresenter = workingOrdersPresenter;
         this.obligationPresenter = obligationPresenter;
         this.bestWorkingOrderMaintainer = bestWorkingOrderMaintainer;
+        this.quotingObligationsPresenter = quotingObligationsPresenter;
 
         this.sourcedWorkingOrder = new LongMap<>();
     }
@@ -53,11 +57,13 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
 
     @Override
     public boolean addQuotingState(final QuotingState quotingState) {
+        quotingObligationsPresenter.setQuotingState(sourceNibbler, quotingState);
         return true;
     }
 
     @Override
     public boolean updateQuotingState(final QuotingState quotingState) {
+        quotingObligationsPresenter.setQuotingState(sourceNibbler, quotingState);
         return true;
     }
 
