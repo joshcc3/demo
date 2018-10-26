@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Future Obligations</title>
+	<link rel="stylesheet" type="text/css" href="futureObligations.css">
+	<script src="jquery-1.8.3.js"></script>
+	<script src="js/jquery-extras.js"></script>
+	<script src="js/websocket.js"></script>
+	<script src="js/websocket-ui.js"></script>
+	<script src="/launcher.js"></script>
+	<script src="futureObligations.js"></script>
+</head>
+<body>
+<table>
+	<thead>
+	<tr class="header_row">
+		<th>
+			<button class="toggleOK">OK</button>
+			<button class="toggleFake">Fake</button>
+		</th>
+		<th>Oblig Bps</th>
+		<th>Oblig Qty</th>
+		<th>Showing Bps</th>
+		<th>Showing Qty</th>
+	</tr>
+	</thead>
+	<tbody id="spreadTable">
+	<tr class="template spread">
+		<td class="symbol"></td>
+		<td class="bpsObligation bps"></td>
+		<td class="qtyObligation"></td>
+		<td class="bpsWide bps"></td>
+		<td class="qtyShowing"></td>
+	</tr>
+	</tbody>
+</table>
+<p>Meeting <span class="met"></span> out of <span class="total"></span></p>
+</body>
+</html>

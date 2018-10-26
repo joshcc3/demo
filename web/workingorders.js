@@ -211,3 +211,20 @@ function setOrderCount(server, count) {
 	const orderCountDiv = server.find(".orderCount");
 	orderCountDiv.text(count);
 }
+
+function addLoggedInUser(username) {
+
+	const id = "id_" + username;
+	const currentUserDiv = $("#" + id)[0];
+
+	console.log("USER", username, currentUserDiv, !currentUserDiv);
+
+	if (!currentUserDiv) {
+
+		const userBlock = $("#userBlock");
+		const newUserDiv = $("<div></div>");
+		userBlock.append(newUserDiv);
+		newUserDiv.attr("id", id);
+		newUserDiv.text(username);
+	}
+}

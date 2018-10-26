@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.workingOrders.ui;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.photons.eeifoe.Cancel;
@@ -14,6 +15,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.ShutdownOMSCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.StopAllStrategiesCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.TraderLoginCmd;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.websockets.WebSocketOutboundData;
@@ -47,6 +49,7 @@ class NibblerView {
 
     NibblerView(final String server, final Publisher<RemoteOrderCommandToServer> commands,
             final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
+
         this.server = server;
         this.commands = commands;
         this.managedOrderCommands = managedOrderCommands;
@@ -182,7 +185,6 @@ class NibblerView {
         workingOrders.values().forEach(order -> cancel(user, order, isAutomated));
         managedOrders.values().forEach(this::cancel);
         stopAllStrategies(reason);
-
     }
 
     private void stopAllStrategies(final String reason) {
@@ -219,5 +221,12 @@ class NibblerView {
                 cancel(user, order, false);
             }
         }
+    }
+
+    void traderLogin(final Set<User> users) {
+
+        final TraderLoginCmd login = new TraderLoginCmd(users);
+        final RemoteOrderCommandToServer cmd = new RemoteOrderCommandToServer(server, login);
+        commands.publish(cmd);
     }
 }

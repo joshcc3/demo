@@ -32,6 +32,10 @@ public class WorkingOrdersByBestPrice {
         this.askOrdersByPrice = new TreeMap<>();
     }
 
+    public String getSymbol() {
+        return symbol;
+    }
+
     public Long setWorkingOrder(final SourcedWorkingOrder workingOrder) {
 
         final long newPrice = workingOrder.order.getPrice();
@@ -162,5 +166,29 @@ public class WorkingOrdersByBestPrice {
             result += workingOrder.order.getOrderQty() - workingOrder.order.getFilledQty();
         }
         return result;
+    }
+
+    public PriceQtyPair getPriceToQty(final BookSide side, final long qty) {
+
+        final Iterator<Map.Entry<Long, LinkedHashSet<SourcedWorkingOrder>>> ordersByPrice;
+        if (BookSide.BID == side) {
+            ordersByPrice = bidOrdersByPrice.entrySet().iterator();
+        } else {
+            ordersByPrice = askOrdersByPrice.entrySet().iterator();
+        }
+
+        long worstPrice = 0;
+        long foundQty = 0;
+        while (foundQty < qty && ordersByPrice.hasNext()) {
+
+            final Map.Entry<Long, LinkedHashSet<SourcedWorkingOrder>> level = ordersByPrice.next();
+            worstPrice = level.getKey();
+
+            for (final SourcedWorkingOrder order : level.getValue()) {
+                foundQty += order.order.getOrderQty() - order.order.getFilledQty();
+            }
+        }
+
+        return new PriceQtyPair(worstPrice, foundQty);
     }
 }

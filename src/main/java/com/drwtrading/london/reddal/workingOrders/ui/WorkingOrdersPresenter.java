@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.workingOrders.ui;
 
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
@@ -20,10 +21,12 @@ import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import org.jetlang.channels.Publisher;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class WorkingOrdersPresenter {
 
@@ -43,6 +46,7 @@ public class WorkingOrdersPresenter {
     private final WebSocketViews<IWorkingOrderView> views;
 
     private final HashSet<String> dirtyServers;
+    private final Set<User> users;
 
     private int numViewers;
     private long lastViewerHeartbeatNanoSinceMidnight;
@@ -64,6 +68,7 @@ public class WorkingOrdersPresenter {
         this.numViewers = 0;
 
         this.dirtyServers = new HashSet<>();
+        this.users = EnumSet.noneOf(User.class);
 
         selectIO.addDelayedAction(3000, this::repaint);
     }
@@ -108,6 +113,10 @@ public class WorkingOrdersPresenter {
             nibblerView.setConnected(isConnected);
             dirtyServers.add(sourceNibbler);
             views.all().addNibbler(sourceNibbler, isConnected, nibblerView.getOrderCount());
+
+            if (isConnected) {
+                nibblerView.traderLogin(users);
+            }
         }
     }
 
@@ -159,6 +168,20 @@ public class WorkingOrdersPresenter {
         for (final Map.Entry<String, NibblerView> nibbler : nibblers.entrySet()) {
             view.addNibbler(nibbler.getKey(), nibbler.getValue().isConnected(), nibbler.getValue().getOrderCount());
             view.refreshWorkingOrderCounts(nibbler.getKey(), nibbler.getValue().getOrderCount());
+        }
+
+        for (final User user : users) {
+            view.addLoggedInUser(user.name().toUpperCase());
+        }
+
+        final User user = User.get(connected.getClient().getUserName());
+
+        if (null != user && users.add(user)) {
+
+            for (final NibblerView nibbler : nibblers.values()) {
+                nibbler.traderLogin(EnumSet.of(user));
+            }
+            views.all().addLoggedInUser(user.name().toUpperCase());
         }
     }
 

@@ -59,6 +59,30 @@ div .hidden, #workingOrders.hideNoneEnder .row.notEnder {
 	vertical-align: middle;
 }
 
+.masterControls .users {
+	float: right;
+	background-color: white;
+	color: black;
+	font-size: 12px;
+	height: 50%;
+	vertical-align: bottom;
+}
+
+.masterControls .userBlock {
+	display: none;
+}
+
+.masterControls .users:hover + .userBlock {
+	display: block;
+	float: right;
+}
+
+.masterControls .userBlock div {
+	display: block;
+	background-color: white;
+	color: black;
+}
+
 .connectionLost {
 	background-color: #dd989a;
 }

@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.orderManagement.remoteOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableRow;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableWriter;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -14,6 +15,7 @@ import com.drwtrading.london.reddal.ReddalComponents;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
+import java.util.Set;
 
 public class NibblerTransportOrderEntry {
 
@@ -30,6 +32,7 @@ public class NibblerTransportOrderEntry {
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteCancelColumns> cancelRow;
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteStopAllStrategiesColumns> stopStrategiesRow;
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteShutdownOMSColumns> shutdownRow;
+    private final FileTableRow<NibblerRemoteTables, NibblerRemoteTraderLoginColumns> traderLoginRow;
 
     public NibblerTransportOrderEntry(final IClock clock, final IResourceMonitor<ReddalComponents> monitor,
             final NibblerClientHandler nibblerClient, final Path logDir) throws IOException {
@@ -49,6 +52,7 @@ public class NibblerTransportOrderEntry {
         this.cancelRow = log.addTable(NibblerRemoteTables.CANCEL, NibblerRemoteCancelColumns.values());
         this.stopStrategiesRow = log.addTable(NibblerRemoteTables.STOP_ALL_STRATEGIES, NibblerRemoteStopAllStrategiesColumns.values());
         this.shutdownRow = log.addTable(NibblerRemoteTables.SHUTDOWN_OMS, NibblerRemoteShutdownOMSColumns.values());
+        this.traderLoginRow = log.addTable(NibblerRemoteTables.TRADER_LOGIN, NibblerRemoteTraderLoginColumns.values());
     }
 
     public void submit(final IOrderCmd cmd) {
@@ -119,6 +123,24 @@ public class NibblerTransportOrderEntry {
         nibblerClient.batchComplete();
 
         writeRow(shutdownRow, NibblerRemoteShutdownOMSColumns.timestamp);
+    }
+
+    public void traderLogin(final Set<User> users) {
+
+        final StringBuilder userNames = new StringBuilder();
+        for (final User user : users) {
+            nibblerClient.loginTrader(user);
+            userNames.append(user.name());
+            userNames.append(',');
+            userNames.append(' ');
+        }
+        nibblerClient.batchComplete();
+
+        if (0 < userNames.length()) {
+            userNames.setLength(userNames.length() - 2);
+        }
+        traderLoginRow.set(NibblerRemoteTraderLoginColumns.users, userNames.toString());
+        writeRow(traderLoginRow, NibblerRemoteTraderLoginColumns.timestamp);
     }
 
     private <C extends Enum<C>> void writeRow(final FileTableRow<NibblerRemoteTables, C> row, final C timestampCol) {

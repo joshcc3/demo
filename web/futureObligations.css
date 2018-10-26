@@ -1,0 +1,292 @@
+
+*:not(input) {
+	cursor: default;
+}
+
+.hidden {
+	display: none !important;
+}
+
+.template {
+	display: none !important;
+}
+
+body {
+	background-color: #2a2927;
+	color: #ffffff;;
+	font-size: 11px;
+	font-family: Arial, sans-serif;
+	padding: 0px;
+	margin: 0;
+	font-smooth: always;
+	-webkit-font-smoothing: subpixel-antialiased;
+}
+
+table {
+	border-spacing: 0px !important;
+}
+
+/* listings */
+
+th {
+	text-align: center;
+}
+
+td {
+	height: 3px;
+	padding: 0px;
+	padding-right: 2px;
+	box-sizing: border-box;
+	margin: 0px;
+	text-align: center;
+	white-space: nowrap;
+}
+
+td.window_title {
+	white-space: normal;
+	width: 100px;
+	margin: 0px;
+	padding: 0px;
+	font-size: 9px;
+}
+
+td.bidQuoter, td.askQuoter {
+	text-align: center;
+}
+
+div.buttons {
+	width: 20px;
+	white-space: normal !important;
+}
+
+button {
+	padding: 0px;
+	margin: 2px;
+	border: 1px solid #989898;
+	background-color: #9a9a9a;
+}
+
+button:not(.nohover):hover {
+	border: 1px red solid !important;
+}
+
+button:active {
+	background-color: darkgray;
+}
+
+button.adjust {
+	width: 14px;
+	height: 8px;
+}
+
+button.all {
+	background-color: #e394bd;
+}
+
+button.smallButton {
+	width: 14px;
+	margin: 0px;
+}
+
+button.smallButton.bigger {
+	width: 14px;
+	margin: 2px;
+	font-size: larger;
+
+}
+
+button.smallButton.profileSelected {
+	border: 1px solid #eeb685;
+	background-color: #3d3d3d;
+	color: #d1d1d1;
+}
+
+button.checkButton {
+	width: 14px;
+	top: 0px;
+	margin: 0px;
+}
+
+button.checkButton:active.checkButton:not(.locked) {
+	background-color: yellow;
+}
+
+button.bigGreenButton {
+	background-color: lightgreen;
+	font-size: 13px;
+	font-weight: bold;
+	width: 120px;
+	height: 40px;
+	margin: 8px;
+	padding: 2px;
+
+}
+
+button.bigRedButton {
+	background-color: lightcoral;
+	font-size: 13px;
+	font-weight: bold;
+	width: 120px;
+	height: 40px;
+	margin: 8px;
+	padding: 2px;
+}
+
+button.locked {
+	opacity: 0.5;
+}
+
+tr.header_row {
+	opacity: 0.8;
+	border-bottom: 1px solid #b8b8b8;
+	background-color: #252928;
+}
+
+tr.etf_row:hover {
+	background-color: #3a3a3a;
+}
+
+tr.etf_row td {
+	border-bottom: 1px solid #000000;
+}
+
+tr.row:hover {
+	background-color: #3a3a3a;
+}
+
+tr.row td {
+	border-bottom: 1px solid #000000;
+}
+
+td.bps {
+	min-width: 50px;
+	text-align: right;
+}
+
+td.button {
+	width: 10px;
+}
+
+td div.buttons {
+	display: inline-block;
+	float: right;
+}
+
+td.symbol {
+	text-align: right;
+	min-width: 100px;
+	white-space: nowrap;
+}
+
+td.listing {
+	min-width: 80px;
+	white-space: nowrap;
+	font-size: larger;
+}
+
+td.execution:hover {
+	text-decoration: underline;
+}
+
+td.tiny {
+	white-space: nowrap;
+	text-align: right;
+	width: 50px;
+	font-size: smaller;
+}
+
+td.reallyTiny {
+	white-space: nowrap;
+	text-align: right;
+	width: 50px;
+	font-size: 4px;
+}
+
+td.reallyTiny:hover {
+	font-size: 16px;
+}
+
+.bidButtons {
+	background-color: #30365e;
+	width: 60px;
+}
+
+.askButtons {
+	background-color: #653335;
+	width: 60px;
+}
+
+.status {
+	font-size: 8px;
+	min-width: 60px;
+}
+
+.workingQty {
+	min-width: 60px;
+}
+
+.on {
+	border: solid 2px #62ff58 !important;
+}
+
+.wasOn.off {
+	border: solid 2px #ff3852 !important;
+}
+
+.zero {
+	color: gray;
+}
+
+.narrow {
+
+}
+
+.notionalTraded {
+	width: 100px;
+}
+
+td.afterHours.medium {
+	background-color: #241e29;
+}
+
+td.afterHours.high {
+	background-color: #3b3043;
+}
+
+#header {
+	position: absolute;
+	z-index: 3;
+	left: 15px;
+	top: 5px;
+	background-color: #3b3b3b;
+	border: solid 1px gray;
+	width: 50px;
+}
+
+tr.spread {
+	font-size: 12px;
+}
+
+tr.spread td.symbol {
+	padding: 5px;
+}
+
+tr.spread td {
+	border-bottom: solid 2px black !important;
+}
+
+tr.spread:hover {
+	background-color: #3a3a3a;
+}
+
+.obligationMet {
+	background-color: #166659;
+}
+
+.fakeObligation.obligationNotMet {
+	background-color: #443b07;
+}
+
+.realObligation.obligationNotMet {
+	background-color: #6b1721;
+}

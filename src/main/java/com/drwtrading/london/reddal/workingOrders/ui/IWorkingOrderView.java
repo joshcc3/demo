@@ -10,4 +10,6 @@ public interface IWorkingOrderView {
     public void deleteWorkingOrder(final String key);
 
     public void refreshWorkingOrderCounts(final String server, int orderCount);
+
+    public void addLoggedInUser(final String username);
 }

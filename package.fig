@@ -59,6 +59,7 @@ config default
 	include com.drwtrading.photons.mrphil/1.0.0.4
 	include com.drwtrading.london.photons.reddal/2
 	include com.drwtrading.london.photons.eeifoe/16
+	include com.drwtrading.photons.eeif.configuration/11
 
 	# Execution
 	include eeif.execution/0

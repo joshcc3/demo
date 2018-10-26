@@ -40,6 +40,7 @@ import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.LeanDef;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.monitoring.stats.status.StatusStat;
+import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.mrphil.Position;
 import com.google.common.collect.MapMaker;
@@ -50,7 +51,7 @@ import java.util.Map;
 
 class ReddalChannels {
 
-    static final TypedChannel<Throwable> ERROR_CHANNEL = TypedChannels.create(Throwable.class);
+    private static final TypedChannel<Throwable> ERROR_CHANNEL = TypedChannels.create(Throwable.class);
 
     final TypedChannel<Throwable> error;
     final Publisher<Throwable> errorPublisher;
@@ -105,6 +106,8 @@ class ReddalChannels {
     final TypedChannel<IAutoPullerCmd> autoPullerCmds;
     final TypedChannel<IAutoPullerUpdate> autoPullerUpdates;
 
+    final TypedChannel<EeifConfiguration> eeifConfiguration;
+
     ReddalChannels() {
 
         this.error = ERROR_CHANNEL;
@@ -158,6 +161,8 @@ class ReddalChannels {
 
         this.autoPullerCmds = create(IAutoPullerCmd.class);
         this.autoPullerUpdates = create(IAutoPullerUpdate.class);
+
+        this.eeifConfiguration = create(EeifConfiguration.class);
     }
 
     private static <T> TypedChannel<T> create(final Class<T> clazz) {

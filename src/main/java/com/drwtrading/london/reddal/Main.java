@@ -146,6 +146,7 @@ import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.NoWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderListener;
+import com.drwtrading.london.reddal.workingOrders.obligations.futures.FutureObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationOPXL;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationPresenter;
@@ -163,6 +164,7 @@ import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
+import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.photons.mrphil.Subscription;
@@ -383,7 +385,8 @@ public class Main {
         setupStackManager(app, fibers, channels, webApp, webLog, selectIOFiber, opxlSelectIO, opxlMonitor, contractSetGenerator,
                 isEquitiesSearchable);
         final Map<MDSource, LinkedList<ConfigGroup>> nibblers =
-                setupBackgroundNibblerTransport(app, opxlSelectIO, opxlMonitor, fibers, webApp, webLog, selectIOFiber, channels);
+                setupBackgroundNibblerTransport(app, opxlSelectIO, opxlMonitor, fibers, webApp, webLog, selectIOFiber, channels,
+                        EXCEPTION_HANDLER);
 
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderWebSockets = new EnumMap<>(MDSource.class);
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> orderWebSockets = new EnumMap<>(MDSource.class);
@@ -1098,8 +1101,8 @@ public class Main {
 
     private static Map<MDSource, LinkedList<ConfigGroup>> setupBackgroundNibblerTransport(final Application<ReddalComponents> app,
             final SelectIO opxlSelectIO, final IResourceMonitor<OPXLComponents> opxlMonitor, final ReddalFibers fibers,
-            final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber, final ReddalChannels channels)
-            throws ConfigException, IOException {
+            final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber, final ReddalChannels channels,
+            final Thread.UncaughtExceptionHandler uncaughtExceptionHandler) throws ConfigException, IOException {
 
         final Map<MDSource, LinkedList<ConfigGroup>> result = new EnumMap<>(MDSource.class);
 
@@ -1147,6 +1150,7 @@ public class Main {
             }
 
             final QuotingObligationsPresenter quotingObligationsPresenter = new QuotingObligationsPresenter(app.selectIO, webLog);
+            final FutureObligationPresenter futureObligationPresenter = new FutureObligationPresenter();
 
             final IWorkingOrdersCallback bestWorkingOrderMaintainer;
 
@@ -1231,7 +1235,7 @@ public class Main {
                     workingOrderPresenter.addNibbler(nibbler);
                     final WorkingOrderListener workingOrderListener =
                             new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
-                                    quotingObligationsPresenter);
+                                    futureObligationPresenter, quotingObligationsPresenter);
                     cache.addTradingDataListener(workingOrderListener);
                 }
             }
@@ -1251,6 +1255,28 @@ public class Main {
             final TypedChannel<WebSocketControlMessage> quotingObligationsWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("quotingObligations", "quotingObligations", fibers.ui, webApp, quotingObligationsWebSocket);
             quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsPresenter::webControl);
+
+            final ConfigGroup indyConfigGroup = app.config.getEnabledGroup("indyConfig");
+            if (null != indyConfigGroup) {
+
+                channels.eeifConfiguration.subscribe(selectIOFiber, futureObligationPresenter::setEeifConfig);
+                app.addStartUpAction(() -> futureObligationPresenter.start(app.selectIO));
+
+                final HostAndNic indyAddress = Environment.getHostAndNic(indyConfigGroup);
+                final OnHeapBufferPhotocolsNioClient<EeifConfiguration, Void> client =
+                        OnHeapBufferPhotocolsNioClient.client(indyAddress.host, indyAddress.nic, EeifConfiguration.class, Void.class,
+                                fibers.indy.getFiber(), uncaughtExceptionHandler);
+
+                client.reconnectMillis(1000);
+                client.logFile(app.logDir.resolve("eeif-config.photocols.log").toFile(), fibers.logging.getFiber());
+                client.handler(new JetlangChannelHandler<>(channels.eeifConfiguration));
+                app.addStartUpAction(client::start);
+
+                final TypedChannel<WebSocketControlMessage> futureObligationsWebSocket =
+                        TypedChannels.create(WebSocketControlMessage.class);
+                createWebPageWithWebSocket("futureObligations", "futureObligations", fibers.ui, webApp, futureObligationsWebSocket);
+                futureObligationsWebSocket.subscribe(selectIOFiber, futureObligationPresenter::webControl);
+            }
         }
 
         return result;

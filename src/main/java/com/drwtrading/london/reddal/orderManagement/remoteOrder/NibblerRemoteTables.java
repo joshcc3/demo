@@ -7,5 +7,6 @@ public enum NibblerRemoteTables {
     CANCEL,
 
     STOP_ALL_STRATEGIES,
-    SHUTDOWN_OMS
+    SHUTDOWN_OMS,
+    TRADER_LOGIN
 }
