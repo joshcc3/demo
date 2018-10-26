@@ -109,7 +109,7 @@ button.bigRedButton {
 	text-align: center;
 }
 
-#strategies .strategyOn .symbol {
+#strategies .strategyQuoting .symbol {
 	background-color: lightgreen;
 	color: black;
 }

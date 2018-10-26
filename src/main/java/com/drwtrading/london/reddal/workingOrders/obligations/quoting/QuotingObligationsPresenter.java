@@ -203,10 +203,11 @@ public class QuotingObligationsPresenter {
 
         final String symbol = obligation.getSymbol();
         final String key = obligation.getKey();
-        final boolean isOn = obligation.isOn();
+        final boolean isStrategyOn = obligation.isStrategyOn();
+        final boolean isQuoting = obligation.isQuoting();
         final boolean isFailingObligation = obligation.getOnPercent() < MIN_PERCENT;
 
-        view.setRow(key, symbol, obligation.getSourceNibbler(), obligation.getOnPercent(), isOn, obligation.getStateDescription(),
-                isFailingObligation);
+        view.setRow(key, symbol, obligation.getSourceNibbler(), obligation.getOnPercent(), isStrategyOn, isQuoting,
+                obligation.getStateDescription(), isFailingObligation);
     }
 }

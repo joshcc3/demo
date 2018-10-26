@@ -50,7 +50,7 @@ function checkWarning() {
 	}
 }
 
-function setRow(rowID, symbol, sourceNibbler, percentageOn, isStrategyOn, stateDescription, isObligationFail) {
+function setRow(rowID, symbol, sourceNibbler, percentageOn, isStrategyOn, isStrategyQuoting, stateDescription, isObligationFail) {
 
 	let row = $("#" + rowID);
 	if (row.size() < 1) {
@@ -87,6 +87,7 @@ function setRow(rowID, symbol, sourceNibbler, percentageOn, isStrategyOn, stateD
 
 	row.toggleClass("obligationFail", isObligationFail);
 	row.toggleClass("strategyOn", isStrategyOn);
+	row.toggleClass("strategyQuoting", isStrategyQuoting);
 	row.find(".percentageOn").text(percentageOn);
 	row.find(".description").text(stateDescription);
 
