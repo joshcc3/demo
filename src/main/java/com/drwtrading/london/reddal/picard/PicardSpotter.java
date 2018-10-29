@@ -183,7 +183,7 @@ public class PicardSpotter implements IPicardSpotter {
 
         double fx = fxCalc.get(book.getCCY(), CCY.EUR, side);
         final CCY opportunityCcy;
-        if (!Double.isNaN(fx)) {
+        if (fxCalc.isValid(book.getCCY(), CCY.EUR)) {
             opportunityCcy = CCY.EUR;
         } else {
             opportunityCcy = book.getCCY();
