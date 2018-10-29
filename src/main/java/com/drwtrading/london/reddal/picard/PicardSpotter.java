@@ -181,10 +181,11 @@ public class PicardSpotter implements IPicardSpotter {
             final boolean isNewRow, final String description, final long nowMilliSinceUTC, final boolean isInAuction, final long bestPrice,
             final String bestPricePrint, final double bpsThrough) {
 
-        double fx = fxCalc.get(book.getCCY(), CCY.EUR, side);
+        final double fx;
         final CCY opportunityCcy;
         if (fxCalc.isValid(book.getCCY(), CCY.EUR)) {
             opportunityCcy = CCY.EUR;
+            fx = fxCalc.get(book.getCCY(), CCY.EUR, side);
         } else {
             opportunityCcy = book.getCCY();
             fx = 1;
