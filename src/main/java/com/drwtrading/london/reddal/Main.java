@@ -1142,7 +1142,7 @@ public class Main {
                 createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
                 ws.subscribe(selectIOFiber, presenter::webControl);
                 channels.searchResults.subscribe(selectIOFiber, presenter::onSearchResult);
-                rfqObligationChannel.subscribe(selectIOFiber, presenter::updateObligations);
+                rfqObligationChannel.subscribe(selectIOFiber, presenter::onObligations);
                 app.selectIO.addDelayedAction(10000, presenter::update);
                 selectIOFiber.execute(obligationOPXL::start);
 

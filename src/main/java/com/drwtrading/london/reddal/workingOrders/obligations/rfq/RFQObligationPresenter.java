@@ -52,6 +52,23 @@ public class RFQObligationPresenter implements IWorkingOrdersCallback {
         this.symbolFilter = symbolFilter;
     }
 
+    public void onSearchResult(final SearchResult instrument) {
+        if (symbolFilter.test(instrument.symbol)) {
+            searchResults.put(instrument.symbol, instrument);
+            changedSymbols.add(instrument.symbol);
+        }
+    }
+
+    public void onObligations(final RFQObligationSet rfqObligationMap) {
+        final boolean notionalsChanged =
+                this.rfqObligationMap == null || !rfqObligationMap.notionals.equals(this.rfqObligationMap.notionals);
+        this.rfqObligationMap = rfqObligationMap;
+        changedSymbols.addAll(rfqObligationMap.obligationMap.keySet());
+        if (notionalsChanged) {
+            refreshView(views.all());
+        }
+    }
+
     @Override
     public void setWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
 
@@ -127,22 +144,6 @@ public class RFQObligationPresenter implements IWorkingOrdersCallback {
 
     private void onDisconnected(final WebSocketDisconnected disconnected) {
         views.unregister(disconnected);
-    }
-
-    public void onSearchResult(final SearchResult instrument) {
-        if (symbolFilter.test(instrument.symbol)) {
-            searchResults.put(instrument.symbol, instrument);
-        }
-    }
-
-    public void updateObligations(final RFQObligationSet rfqObligationMap) {
-        final boolean notionalsChanged =
-                this.rfqObligationMap == null || !rfqObligationMap.notionals.equals(this.rfqObligationMap.notionals);
-        this.rfqObligationMap = rfqObligationMap;
-        changedSymbols.addAll(rfqObligationMap.obligationMap.keySet());
-        if (notionalsChanged) {
-            refreshView(views.all());
-        }
     }
 
     public long update() {
