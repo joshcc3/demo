@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.stacks.family;
 
+import com.drwtrading.london.eeif.stack.manager.persistence.StackPersistenceReader;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
 import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
@@ -16,6 +17,7 @@ import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -70,6 +72,9 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private static final double GLOBAL_OFFSET_INCREMENT_BPS = 1d;
 
+    private final SelectIO managementSelectIO;
+    private final SelectIO backgroundSelectIO;
+
     private final SpreadContractSetGenerator contractSetGenerator;
     private final boolean isSecondaryView;
     private final InstType displayableInstType;
@@ -102,8 +107,11 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private double globalPriceOffsetBPS;
 
-    StackFamilyView(final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
-            final InstType displayableInstType) {
+    StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO,
+            final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView, final InstType displayableInstType) {
+
+        this.managementSelectIO = managementSelectIO;
+        this.backgroundSelectIO = backgroundSelectIO;
 
         this.contractSetGenerator = contractSetGenerator;
         this.isSecondaryView = isSecondaryView;
@@ -510,7 +518,15 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void loadOffsets() {
-        communityManager.loadOffsets();
+
+        backgroundSelectIO.execute(() -> {
+            try {
+                final StackPersistenceReader loadedOffsets = communityManager.readSavedOffsets();
+                managementSelectIO.execute(() -> communityManager.loadOffsets(loadedOffsets));
+            } catch (final Exception e) {
+                managementSelectIO.execute(() -> views.all().displayErrorMsg(e.getMessage()));
+            }
+        });
     }
 
     @FromWebSocketView
@@ -954,46 +970,45 @@ public class StackFamilyView implements IStackRelationshipListener {
             try {
                 final String familyName = family.getKey();
 
-                if (!familySymbol.equals(familyName) && !familySymbol.equals("*")) {
-                    continue;
-                }
+                if (familySymbol.equals(familyName) || "*".equals(familySymbol)) {
 
-                final StackUIData parentUIData = parentData.get(familyName);
+                    final StackUIData parentUIData = parentData.get(familyName);
 
-                if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
+                    if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
 
-                    final Map<String, StackUIRelationship> children = family.getValue();
-                    final List<String> childSymbols =
-                            children.keySet().stream().filter(childData::containsKey).collect(Collectors.toList());
+                        final Map<String, StackUIRelationship> children = family.getValue();
+                        final List<String> childSymbols =
+                                children.keySet().stream().filter(childData::containsKey).collect(Collectors.toList());
 
-                    boolean familyMatchesDefaults = true;
+                        boolean familyMatchesDefaults = true;
 
-                    for (final String childSymbol : childSymbols) {
-                        final StackUIRelationship childData = children.get(childSymbol);
-                        final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
-                        final double bidOffset = Math.abs(childData.bidPriceOffsetBPS);
-                        final double askOffset = childData.askPriceOffsetBPS;
-                        if (bidOffset != offset || askOffset != offset) {
-                            familyMatchesDefaults = false;
+                        for (final String childSymbol : childSymbols) {
+                            final StackUIRelationship childData = children.get(childSymbol);
+                            final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
+                            final double bidOffset = Math.abs(childData.bidPriceOffsetBPS);
+                            final double askOffset = childData.askPriceOffsetBPS;
+                            if (bidOffset != offset || askOffset != offset) {
+                                familyMatchesDefaults = false;
+                            }
                         }
-                    }
 
-                    if (skipNonDefaults && !familyMatchesDefaults) {
-                        continue;
-                    }
-
-                    for (final String childSymbol : childSymbols) {
-                        final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
-                        if (offset == 0.0) {
+                        if (skipNonDefaults && !familyMatchesDefaults) {
                             continue;
                         }
-                        communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset - bpsWider, offset + bpsWider);
-                        final SearchResult searchResult = searchResults.get(childSymbol);
-                        if (null != searchResult && searchResult.mdSource == MDSource.RFQ) {
-                            communityManager.setChildQtyMultipliers(SOURCE_UI, childSymbol, 10, 10);
-                        }
-                    }
 
+                        for (final String childSymbol : childSymbols) {
+                            final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
+                            if (offset == 0.0) {
+                                continue;
+                            }
+                            communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset - bpsWider, offset + bpsWider);
+                            final SearchResult searchResult = searchResults.get(childSymbol);
+                            if (null != searchResult && searchResult.mdSource == MDSource.RFQ) {
+                                communityManager.setChildQtyMultipliers(SOURCE_UI, childSymbol, 10, 10);
+                            }
+                        }
+
+                    }
                 }
             } catch (final Exception e) {
                 final IStackFamilyUI ui = views.get(data.getOutboundChannel());
@@ -1107,9 +1122,9 @@ public class StackFamilyView implements IStackRelationshipListener {
                 final String rfqSymbol = searchResult.symbol;
                 if (null != familyName && childrenToFamily.containsKey(rfqSymbol)) {
                     communityManager.setRelationship(SOURCE_UI, familyName, rfqSymbol);
-                    NavigableMap<String, StackUIRelationship> map = families.get(familyName);
+                    final NavigableMap<String, StackUIRelationship> map = families.get(familyName);
                     if (null != map) {
-                        StackUIRelationship stackUIRelationship = map.get(rfqSymbol);
+                        final StackUIRelationship stackUIRelationship = map.get(rfqSymbol);
                         if (null != stackUIRelationship) {
                             if (Math.abs(stackUIRelationship.bidQtyMultiplier) < 0.1 &&
                                     Math.abs(stackUIRelationship.askQtyMultiplier) < 0.1) {
