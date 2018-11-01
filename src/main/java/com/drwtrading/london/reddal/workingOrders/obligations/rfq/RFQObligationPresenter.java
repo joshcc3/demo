@@ -98,6 +98,7 @@ public class RFQObligationPresenter implements IWorkingOrdersCallback {
 
         final WorkingOrdersByPrice result = orders.get(sourcedOrder.order.getSymbol());
         result.removeWorkingOrder(sourcedOrder);
+        changedSymbols.add(sourcedOrder.order.getSymbol());
     }
 
     @Override

@@ -996,7 +996,7 @@ public class Main {
             }
 
             final StackFamilyPresenter stackFamilyPresenter =
-                    new StackFamilyPresenter(webLog, contractSetGenerator, defaultInstType, asylumFamilies);
+                    new StackFamilyPresenter(app.selectIO, opxlSelectIO, webLog, contractSetGenerator, defaultInstType, asylumFamilies);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(webLog);
 
