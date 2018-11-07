@@ -12,17 +12,16 @@ public final class NibblerNotificationHandler implements INibblerTradingNotifica
 
     @Override
     public void submitAcknowledged(final int clOrdID, final int chainID) {
-        System.out.println(clOrdID + " -> " + chainID);
+        // no-op
     }
 
     @Override
     public void submitFullyFilled(final int clOrdID, final int chainID) {
-
-        System.out.println("Filled: " + clOrdID + " -> " + chainID);
+        // no-op
     }
 
     @Override
     public void submitRejected(final int clOrdID) {
-        System.out.println("Reject: " + clOrdID);
+        // no-op
     }
 }
