@@ -5,6 +5,7 @@ public class StopAllStrategiesCmd implements IOrderCmd {
     private final String reason;
 
     public StopAllStrategiesCmd(final String reason) {
+
         this.reason = reason;
     }
 

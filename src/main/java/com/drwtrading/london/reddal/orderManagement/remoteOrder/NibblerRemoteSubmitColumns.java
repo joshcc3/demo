@@ -4,6 +4,7 @@ public enum NibblerRemoteSubmitColumns {
 
     timestamp,
 
+    CLORDID,
     USERNAME,
     SYMBOL,
     SIDE,

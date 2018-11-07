@@ -3,8 +3,8 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
-import com.drwtrading.london.reddal.autopull.msgs.cmds.IAutoPullerCmd;
-import com.drwtrading.london.reddal.autopull.msgs.updates.IAutoPullerUpdate;
+import com.drwtrading.london.reddal.autopull.autopuller.msgs.cmds.IAutoPullerCmd;
+import com.drwtrading.london.reddal.autopull.autopuller.msgs.updates.IAutoPullerUpdate;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
 import com.drwtrading.london.reddal.ladders.ISingleOrderCommand;
@@ -65,6 +65,7 @@ class ReddalChannels {
     final TypedChannel<StatusStat> stats;
     final Publisher<RemoteOrderCommandToServer> remoteOrderCommand;
     final Map<String, TypedChannel<IOrderCmd>> remoteOrderCommandByServer;
+    final Publisher<IOrderCmd> cmdsForAllNibblers;
     final TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded;
     final TypedChannel<LadderSettings.StoreLadderPref> storeLadderPref;
     final TypedChannel<InstrumentDef> instDefs;
@@ -120,8 +121,12 @@ class ReddalChannels {
         this.pksExposure = create(PKSExposure.class);
         this.nibblerTransportConnected = create(NibblerTransportConnected.class);
         this.stats = create(StatusStat.class);
+
         this.remoteOrderCommandByServer = new MapMaker().makeComputingMap(from -> create(IOrderCmd.class));
         this.remoteOrderCommand = msg -> remoteOrderCommandByServer.get(msg.toServer).publish(msg.value);
+
+        this.cmdsForAllNibblers = msg -> remoteOrderCommandByServer.values().forEach(p -> p.publish(msg));
+
         this.ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);
         this.storeLadderPref = create(LadderSettings.StoreLadderPref.class);
         this.instDefs = create(InstrumentDef.class);

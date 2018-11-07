@@ -1,6 +1,6 @@
-var ws;
+let ws;
 
-var dogBarkSound;
+let dogBarkSound;
 
 $(function () {
 	ws = connect();
@@ -39,10 +39,10 @@ function checkWarning() {
 
 function checkWarnedForAWhile() {
 
-	var isLongEnough = false;
-	var minTime = new Date().getTime() - 15000;
+	let isLongEnough = false;
+	const minTime = new Date().getTime() - 15000;
 	$(".isWarning, .isError").each(function () {
-		var warningTime =  parseInt($(this).attr("data-warningTime"), 10);
+		const warningTime = parseInt($(this).attr("data-warningTime"), 10);
 		if (warningTime < minTime) {
 			$(this).toggleClass("pinned", true);
 			return isLongEnough = true;
@@ -53,20 +53,20 @@ function checkWarnedForAWhile() {
 
 function setNibblerConnected(source, isConnected) {
 
-	var table = $('#' + source);
+	let table = $('#' + source);
 	if (table.length < 1) {
 
 		table = $("#nibblerTemplate").clone();
 		table.attr("id", source);
 		table.removeClass("hidden");
 
-		var nibblerName = table.find(".nibblerName");
+		const nibblerName = table.find(".nibblerName");
 		nibblerName.text(source);
 		nibblerName.unbind("click").bind("click", function () {
 			table.toggleClass("minimised", !table.hasClass("minimised"));
 		});
 
-		var nibblers = $("#nibblers");
+		const nibblers = $("#nibblers");
 		addSortedDiv(nibblers.find(".nibblerBlock"), table, compareNibblerRow);
 
 		table.find(".enableOMS").off("click").click(function () {
@@ -74,7 +74,7 @@ function setNibblerConnected(source, isConnected) {
 		});
 
 		table.find(".debugButton").off("click").click(function () {
-			var text = table.find(".debugText").val();
+			const text = table.find(".debugText").val();
 			ws.send("sendDebug," + source + "," + text);
 		});
 	}
@@ -84,21 +84,21 @@ function setNibblerConnected(source, isConnected) {
 
 function compareNibblerRow(a, b) {
 
-	var aName = a.find(".nibblerName").text();
-	var bName = b.find(".nibblerName").text();
+	const aName = a.find(".nibblerName").text();
+	const bName = b.find(".nibblerName").text();
 
 	return aName < bName ? -1 : aName == bName ? 0 : 1;
 }
 
 function setOMS(id, source, remoteOMSID, omsName, isEnabled, stateText) {
 
-	var row = $("#" + id);
+	let row = $("#" + id);
 
 	if (row.length < 1) {
 
-		var table = $('#' + source);
+		const table = $('#' + source);
 
-		var header = table.find(".omsRow.headerRow");
+		const header = table.find(".omsRow.headerRow");
 		row = header.clone();
 
 		row.attr("id", id);
@@ -116,13 +116,13 @@ function setOMS(id, source, remoteOMSID, omsName, isEnabled, stateText) {
 
 function setRow(id, source, remoteSafetyID, safetyName, limit, warning, current, lastSymbol, isEditable, isWarning, isError) {
 
-	var row = $("#" + id);
+	let row = $("#" + id);
 
 	if (row.length < 1) {
 
-		var table = $('#' + source);
+		const table = $('#' + source);
 
-		var header = table.find(".safetyRow.headerRow");
+		const header = table.find(".safetyRow.headerRow");
 		row = header.clone();
 
 		row.attr("id", id);
@@ -161,8 +161,8 @@ function setRow(id, source, remoteSafetyID, safetyName, limit, warning, current,
 
 function setEditableCell(row, selector, value) {
 
-	var d = row.find(selector);
-	var input = d.find("input");
+	const d = row.find(selector);
+	let input = d.find("input");
 	if (!input.length) {
 		input = $("<input type=\"text\"/>");
 		d.text("");
@@ -183,9 +183,9 @@ function setEditableCell(row, selector, value) {
 function submitRow(row) {
 
 	if (row.find(".notPersisted").length) {
-		var nibblerName = row.parent().attr("id");
-		var rowID = row.attr("data-remoteSafetyID");
-		var limitStr = row.find(".limit input").val().replace(/,| /g, "");
+		const nibblerName = row.parent().attr("id");
+		const rowID = row.attr("data-remoteSafetyID");
+		const limitStr = row.find(".limit input").val().replace(/,| /g, "");
 
 		ws.send("setLimit," + nibblerName + "," + rowID + "," + limitStr);
 	}
@@ -193,37 +193,37 @@ function submitRow(row) {
 
 function removeRow(id) {
 
-	var row = $("#" + id);
+	const row = $("#" + id);
 	row.remove();
 }
 
 function compareOMSRow(a, b) {
 
-	var aTime = a.find(".omsName").text();
-	var bTime = b.find(".omsName").text();
+	const aTime = a.find(".omsName").text();
+	const bTime = b.find(".omsName").text();
 
 	return bTime < aTime ? 1 : aTime == bTime ? 0 : -1;
 }
 
 function compareBlotterRow(a, b) {
 
-	var aTime = a.find(".safetyName").text();
-	var bTime = b.find(".safetyName").text();
+	const aTime = a.find(".safetyName").text();
+	const bTime = b.find(".safetyName").text();
 
 	return bTime < aTime ? 1 : aTime == bTime ? 0 : -1;
 }
 
 function removeAllRows(source) {
 
-	var table = $('#' + source);
-	var omsRows = table.find(".omsRow:not(.headerRow)");
+	const table = $('#' + source);
+	const omsRows = table.find(".omsRow:not(.headerRow)");
 	omsRows.remove();
-	var safetyows = table.find(".safetyRow:not(.headerRow)");
+	const safetyows = table.find(".safetyRow:not(.headerRow)");
 	safetyows.remove();
 }
 
 function showAdmin(event) {
-	var adminDiv = $("#adminBlock");
+	const adminDiv = $("#adminBlock");
 	if (event.ctrlKey) {
 		adminDiv.toggleClass("hideAdmin", !adminDiv.hasClass("hideAdmin"));
 	} else {

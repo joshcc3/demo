@@ -67,9 +67,10 @@ import com.drwtrading.london.photons.eeifoe.OrderEntryReplyMsg;
 import com.drwtrading.london.photons.eeifoe.OrderUpdateEvent;
 import com.drwtrading.london.photons.eeifoe.OrderUpdateEventMsg;
 import com.drwtrading.london.photons.eeifoe.Update;
-import com.drwtrading.london.reddal.autopull.onMD.AutoPuller;
-import com.drwtrading.london.reddal.autopull.ui.AutoPullPersistence;
-import com.drwtrading.london.reddal.autopull.ui.AutoPullerUI;
+import com.drwtrading.london.reddal.autopull.autopuller.onMD.AutoPuller;
+import com.drwtrading.london.reddal.autopull.autopuller.ui.AutoPullPersistence;
+import com.drwtrading.london.reddal.autopull.autopuller.ui.AutoPullerUI;
+import com.drwtrading.london.reddal.autopull.marketNumbers.MarketNumberPresenter;
 import com.drwtrading.london.reddal.blotter.BlotterClient;
 import com.drwtrading.london.reddal.blotter.MsgBlotterPresenter;
 import com.drwtrading.london.reddal.blotter.SafetiesBlotterPresenter;
@@ -140,6 +141,7 @@ import com.drwtrading.london.reddal.symbols.IndyClient;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.FXMDClient;
 import com.drwtrading.london.reddal.util.FileLogger;
+import com.drwtrading.london.reddal.util.NibblerNotificationHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
 import com.drwtrading.london.reddal.util.SelectIOFiber;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -165,6 +167,7 @@ import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
 import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
+import com.drwtrading.photons.eeif.configuration.MarketNumbers;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.photons.mrphil.Subscription;
@@ -539,7 +542,7 @@ public class Main {
                         final NibblerClientHandler client =
                                 NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
                                         threadName + "-transport-" + sourceNibbler, localAppName + mdSource.name(), true,
-                                        ladderInfoListener);
+                                        ladderInfoListener, NibblerNotificationHandler.INSTANCE);
 
                         client.getCaches().addTradingDataListener(ladderInfoListener);
                         client.getCaches().blotterCache.addListener(ladderInfoListener);
@@ -711,7 +714,7 @@ public class Main {
                     OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
                             Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
             client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
-            client.logFile(logDir.resolve("metadata." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+            client.logFile(logDir.resolve("ladderText." + server + ".log").toFile(), fibers.logging.getFiber(), true);
             client.handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10));
             client.handler(new JetlangChannelHandler<>(channels.metaData));
             app.addStartUpAction(client::start);
@@ -1212,7 +1215,7 @@ public class Main {
 
                 final NibblerClientHandler client =
                         NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,
-                                connectionName, true, blotterClient);
+                                connectionName, true, blotterClient, NibblerNotificationHandler.INSTANCE);
 
                 final NibblerTransportCaches cache = client.getCaches();
                 cache.addListener(blotterClient);
@@ -1255,6 +1258,20 @@ public class Main {
             final TypedChannel<WebSocketControlMessage> quotingObligationsWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("quotingObligations", "quotingObligations", fibers.ui, webApp, quotingObligationsWebSocket);
             quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsPresenter::webControl);
+
+            final MarketNumberPresenter marketNumberPresenter =
+                    new MarketNumberPresenter(app.selectIO, webLog, channels.cmdsForAllNibblers);
+
+            final TypedChannel<WebSocketControlMessage> marketNumbersWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("marketNumbers", "marketNumbers", fibers.ui, webApp, marketNumbersWebSocket);
+            marketNumbersWebSocket.subscribe(selectIOFiber, marketNumberPresenter::webControl);
+
+            channels.eeifConfiguration.subscribe(selectIOFiber, eeifConfig -> {
+                if (EeifConfiguration.Type.MARKET_NUMBERS == eeifConfig.typeEnum()) {
+                    final MarketNumbers marketNumber = (MarketNumbers) eeifConfig;
+                    marketNumberPresenter.setMarketNumber(marketNumber);
+                }
+            });
 
             final ConfigGroup indyConfigGroup = app.config.getEnabledGroup("indyConfig");
             if (null != indyConfigGroup) {

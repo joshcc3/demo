@@ -1,0 +1,451 @@
+
+.hidden {
+	display: none;
+}
+
+.template {
+	display: none;
+}
+
+body {
+	background-color: #2a2927;
+	color: #ffffff;;
+	font-size: 11px;
+	font-family: Arial, sans-serif;
+	padding: 0;
+	margin: 0;
+	font-smooth: always;
+	-webkit-font-smoothing: subpixel-antialiased;
+}
+
+table {
+	border-spacing: 0;
+}
+
+th {
+	text-align: center;
+}
+
+td {
+	height: 3px;
+	padding: 0;
+	padding-right: 2px;
+	box-sizing: border-box;
+	margin: 0;
+	text-align: center;
+	white-space: nowrap;
+}
+
+td.window_title {
+	white-space: normal;
+	width: 100px;
+	margin: 0;
+	padding: 0;
+	font-size: 9px;
+}
+
+td.bidQuoter, td.askQuoter {
+	text-align: center;
+}
+
+div.buttons {
+	width: 20px;
+	white-space: normal;
+}
+
+button {
+	padding: 0;
+	margin: 2px;
+	border: 1px solid #989898;
+	background-color: #9a9a9a;
+}
+
+button:not(.nohover):hover {
+	border: 1px red solid;
+}
+
+button:active {
+	background-color: darkgray;
+}
+
+button.smallButton {
+	width: 14px;
+	margin: 0;
+}
+
+button.smallButton.bigger {
+	width: 14px;
+	margin: 2px;
+	font-size: larger;
+
+}
+
+button.smallButton.profileSelected {
+	border: 1px solid #eeb685;
+	background-color: #3d3d3d;
+	color: #d1d1d1;
+}
+
+button.checkButton {
+	width: 14px;
+	top: 0;
+	margin: 0;
+}
+
+button.checkButton:active.checkButton:not(.locked) {
+	background-color: yellow;
+}
+
+button.bigGreenButton {
+	background-color: lightgreen;
+	font-size: 13px;
+	font-weight: bold;
+	width: 120px;
+	height: 40px;
+	margin: 8px;
+	padding: 2px;
+
+}
+
+button.bigRedButton {
+	background-color: lightcoral;
+	font-size: 13px;
+	font-weight: bold;
+	width: 120px;
+	height: 40px;
+	margin: 8px;
+	padding: 2px;
+}
+
+button.locked {
+	opacity: 0.5;
+}
+
+tr.header_row {
+	opacity: 0.8;
+	border-bottom: 1px solid #b8b8b8;
+	background-color: #252928;
+}
+
+tr.etf_row:hover {
+	background-color: #3a3a3a;
+}
+
+tr.etf_row td {
+	border-bottom: 1px solid #000000;
+}
+
+tr.row:hover {
+	background-color: #3a3a3a;
+}
+
+tr.row td {
+	border-bottom: 1px solid #000000;
+}
+
+td.bps {
+	min-width: 50px;
+	text-align: right;
+}
+
+td.button {
+	width: 10px;
+}
+
+td div.buttons {
+	display: inline-block;
+	float: right;
+}
+
+td.symbol {
+	text-align: right;
+	min-width: 100px;
+	white-space: nowrap;
+}
+
+td.listing {
+	min-width: 80px;
+	white-space: nowrap;
+	font-size: larger;
+}
+
+td.execution:hover {
+	text-decoration: underline;
+}
+
+td.tiny {
+	white-space: nowrap;
+	text-align: right;
+	width: 50px;
+	font-size: smaller;
+}
+
+td.reallyTiny {
+	white-space: nowrap;
+	text-align: right;
+	width: 50px;
+	font-size: 4px;
+}
+
+td.reallyTiny:hover {
+	font-size: 16px;
+}
+
+.bidButtons {
+	background-color: #30365e;
+	width: 60px;
+}
+
+.askButtons {
+	background-color: #653335;
+	width: 60px;
+}
+
+.status {
+	font-size: 8px;
+	min-width: 60px;
+}
+
+.workingQty {
+	min-width: 60px;
+}
+
+.on {
+	border: solid 2px #62ff58;
+}
+
+.wasOn.off {
+	border: solid 2px #ff3852;
+}
+
+.zero {
+	color: gray;
+}
+
+.narrow {
+
+}
+
+.notionalTraded {
+	width: 100px;
+}
+
+td.afterHours.medium {
+	background-color: #241e29;
+}
+
+td.afterHours.high {
+	background-color: #3b3043;
+}
+
+td.chiX.medium {
+	background-color: #192129;
+}
+
+td.chiX.high {
+	background-color: #262f40;
+}
+
+/** buttons **/
+
+#buttons {
+	position: absolute;
+	top: 15px;
+	left: 15px;
+	border: 1px white solid;
+}
+
+#header {
+	position: absolute;
+	z-index: 3;
+	left: 15px;
+	top: 5px;
+	background-color: #3b3b3b;
+	border: solid 1px gray;
+	width: 50px;
+}
+
+.menu_row {
+	background-color: #504e52;
+	border-bottom: solid 1px #bababa;
+	width: 100%;
+}
+
+.menu_row div {
+	display: inline-block;
+	margin-left: 15px;
+}
+
+table.menu {
+	width: 100%;
+}
+
+.enabledCheck.checkButton {
+	width: 20px;
+	height: 20px;
+	font-size: 15px;
+}
+
+td.bpsThrough {
+	font-size: larger;
+}
+
+.workingBest {
+	border: solid #6ad23d 1px;
+}
+
+.workingNotBest {
+	border: solid #a6a66d 1px;
+}
+
+select.profile {
+	background-color: #525252;
+	color: #ffffff;
+	border: solid 1px #2d270c;
+	width: 50px;
+	padding: 1px;
+	margin: 0;
+}
+
+.bid {
+	background-color: #30365e;
+	width: 60px;
+}
+
+.ask {
+	background-color: #5e2134;
+	width: 60px;
+}
+
+tr.spread {
+	font-size: 12px;
+}
+
+tr.spread td.symbol {
+	padding: 5px;
+}
+
+tr.spread td {
+	border-bottom: solid 2px black;
+}
+
+tr.spread:hover {
+	background-color: #3a3a3a;
+}
+
+td.crossed {
+	background-color: darkorange;
+	color: black;
+}
+
+#filters {
+	position: absolute;
+	left: 50px;
+	top: 50px;
+	width: 220px;
+	z-index: 999;
+	background-color: #FEF9EB;
+	border: solid 1px #000000;
+	color: #2b2b2b;
+	padding: 15px;
+}
+
+#filters div.filterGroup {
+	padding: 0;
+	margin: 0;
+}
+
+#filters h1 {
+	font-size: 16px;
+	font-weight: normal;
+	padding: 0;
+	margin: 0;
+}
+
+#filters ul {
+	width: 200px;
+	padding: 3px;
+	list-style: none;
+	margin-left: 0;
+	margin-top: 5px;
+	font-size: 14px;
+}
+
+#filters ul li {
+	border-right: solid 1px #c8c8c8;
+	padding-left: 1em;
+	text-indent: -1em;
+}
+
+#filters ul li:before {
+	content: "";
+	padding-right: 10px;
+}
+
+#filters li:hover {
+	background-color: #ffcab6;
+}
+
+#filters li.checked {
+	background-color: #ffbb9f;
+}
+
+#filters ul li.checked:before {
+	content: "";
+}
+
+div.alert {
+	height: 30px;
+	background-color: pink;
+	font-weight: bold;
+	font-size: 20px;
+	color: black;
+	text-align: left;
+	padding-left: 20px;
+	padding-top: 10px;
+}
+
+button#ack:disabled {
+	background: darkgray;
+	border: none;
+}
+
+button#ack:disabled:hover {
+	border: none;
+}
+
+button#ack {
+	width: 400px;
+	height: 50px;
+	font-size: 30px;
+	background-color: #fdffb9;
+	color: black;
+}
+
+button#ack:enabled.blink {
+	background-color: #fff84a;
+}
+
+#body {
+	padding: 10px;
+}
+
+table#marketnumbers {
+	background-color: #737373;
+	width: 400px;
+}
+
+tr.marketnumber td {
+	margin: 3px;
+	text-align: left;
+	word-wrap: normal;
+}
+
+td.time {
+	font-size: 10px;
+}
+
+td.description {
+	font-size: 13px;
+	width: 100%;
+}

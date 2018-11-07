@@ -34,6 +34,8 @@ public class NibblerTransportOrderEntry {
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteShutdownOMSColumns> shutdownRow;
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteTraderLoginColumns> traderLoginRow;
 
+    private int prevClOrdID;
+
     public NibblerTransportOrderEntry(final IClock clock, final IResourceMonitor<ReddalComponents> monitor,
             final NibblerClientHandler nibblerClient, final Path logDir) throws IOException {
 
@@ -53,6 +55,8 @@ public class NibblerTransportOrderEntry {
         this.stopStrategiesRow = log.addTable(NibblerRemoteTables.STOP_ALL_STRATEGIES, NibblerRemoteStopAllStrategiesColumns.values());
         this.shutdownRow = log.addTable(NibblerRemoteTables.SHUTDOWN_OMS, NibblerRemoteShutdownOMSColumns.values());
         this.traderLoginRow = log.addTable(NibblerRemoteTables.TRADER_LOGIN, NibblerRemoteTraderLoginColumns.values());
+
+        this.prevClOrdID = -1;
     }
 
     public void submit(final IOrderCmd cmd) {
@@ -62,9 +66,10 @@ public class NibblerTransportOrderEntry {
     void submitOrder(final String username, final String symbol, final BookSide side, final OrderType orderType, final AlgoType algoType,
             final String tag, final long price, final int qty) {
 
-        nibblerClient.submitOrder(username, symbol, side, orderType, algoType, tag, price, qty);
+        nibblerClient.submitOrder(++prevClOrdID, 0, username, symbol, side, orderType, algoType, tag, price, qty);
         nibblerClient.batchComplete();
 
+        submitRow.set(NibblerRemoteSubmitColumns.CLORDID, prevClOrdID);
         submitRow.set(NibblerRemoteSubmitColumns.USERNAME, username);
         submitRow.set(NibblerRemoteSubmitColumns.SYMBOL, symbol);
         submitRow.set(NibblerRemoteSubmitColumns.SIDE, side);
@@ -114,6 +119,20 @@ public class NibblerTransportOrderEntry {
         nibblerClient.stopAllStrategies(reason);
         nibblerClient.batchComplete();
 
+        stopStrategiesRow.set(NibblerRemoteStopAllStrategiesColumns.IS_MARKET_NUMBER, false);
+        stopStrategiesRow.set(NibblerRemoteStopAllStrategiesColumns.IS_MARKET_NUMBER_ACKNOWLEDGED, false);
+        stopStrategiesRow.set(NibblerRemoteStopAllStrategiesColumns.REASON, reason);
+        writeRow(stopStrategiesRow, NibblerRemoteStopAllStrategiesColumns.timestamp);
+    }
+
+    public void stopAllForMarketNumber(final boolean isAcknowledged, final String reason) {
+
+        nibblerClient.stopAllForMarketNumber(isAcknowledged, reason);
+        nibblerClient.batchComplete();
+
+        stopStrategiesRow.set(NibblerRemoteStopAllStrategiesColumns.IS_MARKET_NUMBER, true);
+        stopStrategiesRow.set(NibblerRemoteStopAllStrategiesColumns.IS_MARKET_NUMBER_ACKNOWLEDGED, isAcknowledged);
+        stopStrategiesRow.set(NibblerRemoteStopAllStrategiesColumns.REASON, reason);
         writeRow(stopStrategiesRow, NibblerRemoteStopAllStrategiesColumns.timestamp);
     }
 
