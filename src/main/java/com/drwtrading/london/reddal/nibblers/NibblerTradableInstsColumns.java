@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.nibblers;
 
 public enum NibblerTradableInstsColumns {
 
+    timestamp,
     ISIN,
     CCY,
     MIC,
