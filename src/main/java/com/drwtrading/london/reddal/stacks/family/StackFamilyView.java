@@ -514,6 +514,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void saveOffsets() {
         communityManager.saveOffsets();
+        views.all().offsetsSaved();
     }
 
     @FromWebSocketView
@@ -526,6 +527,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             } catch (final Exception e) {
                 managementSelectIO.execute(() -> views.all().displayErrorMsg(e.getMessage()));
             }
+            views.all().offsetsLoaded();
         });
     }
 
