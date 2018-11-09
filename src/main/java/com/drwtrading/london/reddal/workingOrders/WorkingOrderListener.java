@@ -5,6 +5,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TradableInstrument;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
@@ -35,6 +36,11 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
         this.quotingObligationsPresenter = quotingObligationsPresenter;
 
         this.sourcedWorkingOrder = new LongMap<>();
+    }
+
+    @Override
+    public boolean addTradableInst(final TradableInstrument tradableInstrument) {
+        return true;
     }
 
     @Override

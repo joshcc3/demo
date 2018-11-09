@@ -541,10 +541,10 @@ public class Main {
 
                         final NibblerClientHandler client =
                                 NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
-                                        threadName + "-transport-" + sourceNibbler, localAppName + mdSource.name(), true,
+                                        threadName + "-transport-" + sourceNibbler, localAppName + mdSource.name(), true, true,
                                         ladderInfoListener, NibblerNotificationHandler.INSTANCE);
 
-                        client.getCaches().addTradingDataListener(ladderInfoListener);
+                        client.getCaches().addTradingDataListener(ladderInfoListener, true, true);
                         client.getCaches().blotterCache.addListener(ladderInfoListener);
                     }
                 }
@@ -1215,7 +1215,8 @@ public class Main {
 
                 final NibblerClientHandler client =
                         NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,
-                                connectionName, true, blotterClient, NibblerNotificationHandler.INSTANCE);
+                                connectionName, isTransportForTrading, isTransportForTrading, blotterClient,
+                                NibblerNotificationHandler.INSTANCE);
 
                 final NibblerTransportCaches cache = client.getCaches();
                 cache.addListener(blotterClient);
@@ -1233,13 +1234,13 @@ public class Main {
 
                     final NibblerMetaDataLogger logger =
                             new NibblerMetaDataLogger(app.selectIO, app.monitor, app.logDir, remoteOrderNibblerName);
-                    cache.addTradingDataListener(logger);
+                    cache.addTradingDataListener(logger, true, true);
 
                     workingOrderPresenter.addNibbler(nibbler);
                     final WorkingOrderListener workingOrderListener =
                             new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
                                     futureObligationPresenter, quotingObligationsPresenter);
-                    cache.addTradingDataListener(workingOrderListener);
+                    cache.addTradingDataListener(workingOrderListener, true, true);
                 }
             }
 

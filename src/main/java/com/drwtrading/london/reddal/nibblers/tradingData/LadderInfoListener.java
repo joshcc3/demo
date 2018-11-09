@@ -9,6 +9,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TradableInstrument;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
@@ -42,6 +43,11 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
 
     @Override
     public boolean connectionEstablished(final String remoteAppName) {
+        return true;
+    }
+
+    @Override
+    public boolean addTradableInst(final TradableInstrument tradableInstrument) {
         return true;
     }
 
