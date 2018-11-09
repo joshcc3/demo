@@ -1260,21 +1260,32 @@ public class Main {
             createWebPageWithWebSocket("quotingObligations", "quotingObligations", fibers.ui, webApp, quotingObligationsWebSocket);
             quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsPresenter::webControl);
 
-            final MarketNumberPresenter marketNumberPresenter =
-                    new MarketNumberPresenter(app.selectIO, webLog, channels.cmdsForAllNibblers);
-
-            final TypedChannel<WebSocketControlMessage> marketNumbersWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("marketNumbers", "marketNumbers", fibers.ui, webApp, marketNumbersWebSocket);
-            marketNumbersWebSocket.subscribe(selectIOFiber, marketNumberPresenter::webControl);
-
-            channels.eeifConfiguration.subscribe(selectIOFiber, eeifConfig -> {
-                if (EeifConfiguration.Type.MARKET_NUMBERS == eeifConfig.typeEnum()) {
-                    final MarketNumbers marketNumber = (MarketNumbers) eeifConfig;
-                    marketNumberPresenter.setMarketNumber(marketNumber);
-                }
-            });
-
+            final boolean isMarketNumbersWanted = app.config.paramExists("marketNumbers") && app.config.getBoolean("marketNumbers");
             final ConfigGroup indyConfigGroup = app.config.getEnabledGroup("indyConfig");
+
+            if (isMarketNumbersWanted) {
+
+                if (null == indyConfigGroup) {
+                    throw new IllegalStateException("Market numbers wanted without Indy config.");
+                } else {
+
+                    final MarketNumberPresenter marketNumberPresenter =
+                            new MarketNumberPresenter(app.selectIO, webLog, channels.cmdsForAllNibblers);
+
+                    final TypedChannel<WebSocketControlMessage> marketNumbersWebSocket =
+                            TypedChannels.create(WebSocketControlMessage.class);
+                    createWebPageWithWebSocket("marketNumbers", "marketNumbers", fibers.ui, webApp, marketNumbersWebSocket);
+                    marketNumbersWebSocket.subscribe(selectIOFiber, marketNumberPresenter::webControl);
+
+                    channels.eeifConfiguration.subscribe(selectIOFiber, eeifConfig -> {
+                        if (EeifConfiguration.Type.MARKET_NUMBERS == eeifConfig.typeEnum()) {
+                            final MarketNumbers marketNumber = (MarketNumbers) eeifConfig;
+                            marketNumberPresenter.setMarketNumber(marketNumber);
+                        }
+                    });
+                }
+            }
+
             if (null != indyConfigGroup) {
 
                 channels.eeifConfiguration.subscribe(selectIOFiber, futureObligationPresenter::setEeifConfig);
