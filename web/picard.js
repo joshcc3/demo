@@ -134,10 +134,9 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 				picard.toggleClass("toPlaySound", true);
 			}
 
-			if (priceFloat > displayThreshold) {
-
-				picard.removeClass("hidden");
-
+			let bigEnough = priceFloat > displayThreshold;
+			picard.toggleClass("hidden", !bigEnough);
+			if (bigEnough) {
 				if (picard.hasClass("toPlaySound")) {
 					picard.removeClass("toPlaySound");
 					playSound();
