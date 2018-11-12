@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.ladders.orders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
-import com.drwtrading.london.photons.eeifoe.Cancel;
+import drw.eeif.eeifoe.Cancel;
 import com.drwtrading.london.reddal.ladders.CancelOrderCmd;
 import com.drwtrading.london.reddal.ladders.IOrdersView;
 import com.drwtrading.london.reddal.ladders.ISingleOrderCommand;

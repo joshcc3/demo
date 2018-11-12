@@ -1,16 +1,16 @@
 package com.drwtrading.london.reddal.orderManagement.oe;
 
-import com.drwtrading.london.photons.eeifoe.BookParameters;
-import com.drwtrading.london.photons.eeifoe.BookPegLevel;
-import com.drwtrading.london.photons.eeifoe.OrderParameters;
-import com.drwtrading.london.photons.eeifoe.OrderSide;
-import com.drwtrading.london.photons.eeifoe.PegPriceToTheoOnSubmit;
-import com.drwtrading.london.photons.eeifoe.PegToBook;
-import com.drwtrading.london.photons.eeifoe.PegToPrice;
-import com.drwtrading.london.photons.eeifoe.PegToTheo;
-import com.drwtrading.london.photons.eeifoe.PredictionParameters;
-import com.drwtrading.london.photons.eeifoe.QuotingParameters;
-import com.drwtrading.london.photons.eeifoe.TakingParameters;
+import drw.eeif.eeifoe.BookParameters;
+import drw.eeif.eeifoe.BookPegLevel;
+import drw.eeif.eeifoe.OrderParameters;
+import drw.eeif.eeifoe.OrderSide;
+import drw.eeif.eeifoe.PegPriceToTheoOnSubmit;
+import drw.eeif.eeifoe.PegToBook;
+import drw.eeif.eeifoe.PegToPrice;
+import drw.eeif.eeifoe.PegToTheo;
+import drw.eeif.eeifoe.PredictionParameters;
+import drw.eeif.eeifoe.QuotingParameters;
+import drw.eeif.eeifoe.TakingParameters;
 
 public enum ManagedOrderType {
 
@@ -163,7 +163,7 @@ public enum ManagedOrderType {
         @Override
         public OrderParameters getOrder(final long price, int qty, OrderSide orderSide) {
             return new OrderParameters(new PegToPrice(price),
-                    new BookParameters(false, true, false, false, false),
+                    new BookParameters(false, true, false, false, false, false, 0),
                     new TakingParameters(true, 0, 200, 25, false, 0),
                     Constants.NO_QUOTING,
                     new PredictionParameters(false));
@@ -195,7 +195,7 @@ public enum ManagedOrderType {
 
     private static class Constants {
 
-        public static final BookParameters ALLOW_ALL_EXCEPT_STATE_TRANSITION = new BookParameters(true, true, false, true, true);
+        public static final BookParameters ALLOW_ALL_EXCEPT_STATE_TRANSITION = new BookParameters(true, true, false, true, true, false, 0);
         public static final TakingParameters TAKE_BETTER_BY_ONE = new TakingParameters(true, 0, 100, 2, true, 1);
         public static final TakingParameters NO_TAKING = new TakingParameters(false, 0, 0, 0, false, 0);
         public static final QuotingParameters NO_QUOTING = new QuotingParameters(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false);

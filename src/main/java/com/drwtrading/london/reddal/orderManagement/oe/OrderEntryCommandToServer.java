@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.orderManagement.oe;
 
-import com.drwtrading.london.photons.eeifoe.OrderEntryCommand;
+import drw.eeif.eeifoe.OrderEntryCommand;
 import com.drwtrading.london.util.Struct;
 
 public class OrderEntryCommandToServer extends Struct {

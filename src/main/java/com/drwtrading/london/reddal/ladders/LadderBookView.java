@@ -13,10 +13,10 @@ import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
-import com.drwtrading.london.photons.eeifoe.Cancel;
-import com.drwtrading.london.photons.eeifoe.Metadata;
-import com.drwtrading.london.photons.eeifoe.OrderSide;
-import com.drwtrading.london.photons.eeifoe.Submit;
+import drw.eeif.eeifoe.Cancel;
+import drw.eeif.eeifoe.Metadata;
+import drw.eeif.eeifoe.OrderSide;
+import drw.eeif.eeifoe.Submit;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
@@ -1374,8 +1374,8 @@ public class LadderBookView implements ILadderBoard {
                 tradingBoxQty = clickTradingBoxQty;
             }
             final OrderSide orderSide = BookSide.BID == side ? OrderSide.BUY : OrderSide.SELL;
-            final com.drwtrading.london.photons.eeifoe.RemoteOrder remoteOrder =
-                    new com.drwtrading.london.photons.eeifoe.RemoteOrder(symbol, orderSide, price, tradingBoxQty, username,
+            final drw.eeif.eeifoe.RemoteOrder remoteOrder =
+                    new drw.eeif.eeifoe.RemoteOrder(symbol, orderSide, price, tradingBoxQty, username,
                             managedOrderType.getOrder(price, tradingBoxQty, orderSide),
                             new ObjectArrayList<>(Arrays.asList(LADDER_SOURCE_METADATA, new Metadata("TAG", tag))));
             final Submit submit = new Submit(remoteOrder);
@@ -1501,7 +1501,7 @@ public class LadderBookView implements ILadderBoard {
 
     private void cancelManagedOrder(final UpdateFromServer updateFromServer) {
 
-        final com.drwtrading.london.photons.eeifoe.RemoteOrder order = updateFromServer.update.getOrder();
+        final drw.eeif.eeifoe.RemoteOrder order = updateFromServer.update.getOrder();
         trace.publish(new CommandTrace("cancelManaged", username, symbol, "MANAGED", false, updateFromServer.update.getIndicativePrice(),
                 order.getSide().name(), "?", clickTradingBoxQty, updateFromServer.update.getSystemOrderId()));
         if (isTrader) {
