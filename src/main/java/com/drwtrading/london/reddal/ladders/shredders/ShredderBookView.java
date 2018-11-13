@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.ladders.shredders;
 
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -22,6 +21,7 @@ import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.ladders.LadderBoardRow;
 import com.drwtrading.london.reddal.ladders.LadderBookView;
 import com.drwtrading.london.reddal.ladders.model.BookHTMLRow;
+import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 
 import java.text.NumberFormat;
@@ -193,13 +193,13 @@ class ShredderBookView {
 
     void augmentIfOurOrder(final IBookOrder order, final ShreddedOrder shreddedOrder) {
 
-        final WorkingOrder workingOrder = workingOrders.getWorkingOrder(order.getOrderID());
+        final SourcedWorkingOrder workingOrder = workingOrders.getWorkingOrder(order.getOrderID());
 
         shreddedOrder.isOurs = null != workingOrder;
 
         if (shreddedOrder.isOurs) {
-            shreddedOrder.tag = workingOrder.getTag();
-            shreddedOrder.orderType = workingOrder.getOrderType().name();
+            shreddedOrder.tag = workingOrder.order.getTag();
+            shreddedOrder.orderType = workingOrder.order.getOrderType().name();
         }
     }
 

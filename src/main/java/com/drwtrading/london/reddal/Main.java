@@ -62,11 +62,6 @@ import com.drwtrading.london.jetlang.DefaultJetlangFactory;
 import com.drwtrading.london.jetlang.transport.LowTrafficMulticastTransport;
 import com.drwtrading.london.logging.JsonChannelLogger;
 import com.drwtrading.london.network.NetworkInterfaces;
-import drw.eeif.eeifoe.OrderEntryCommandMsg;
-import drw.eeif.eeifoe.OrderEntryReplyMsg;
-import drw.eeif.eeifoe.OrderUpdateEvent;
-import drw.eeif.eeifoe.OrderUpdateEventMsg;
-import drw.eeif.eeifoe.Update;
 import com.drwtrading.london.reddal.autopull.autopuller.onMD.AutoPuller;
 import com.drwtrading.london.reddal.autopull.autopuller.ui.AutoPullPersistence;
 import com.drwtrading.london.reddal.autopull.autopuller.ui.AutoPullerUI;
@@ -97,13 +92,13 @@ import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.opxl.SpreadnoughtFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.UltimateParentOPXL;
+import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
 import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderServerRouter;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 import com.drwtrading.london.reddal.picard.PicardRow;
@@ -174,6 +169,11 @@ import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.sun.jndi.toolkit.url.Uri;
+import drw.eeif.eeifoe.OrderEntryCommandMsg;
+import drw.eeif.eeifoe.OrderEntryReplyMsg;
+import drw.eeif.eeifoe.OrderUpdateEvent;
+import drw.eeif.eeifoe.OrderUpdateEventMsg;
+import drw.eeif.eeifoe.Update;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.MemoryChannel;
@@ -182,6 +182,7 @@ import org.jetlang.channels.Publisher;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -526,7 +527,8 @@ public class Main {
                             new MultiLayeredResourceMonitor<>(nibblerMonitor, NibblerTransportComponents.class, errorLog);
 
                     final AutoPuller autoPuller =
-                            new AutoPuller(mdSource, depthBookSubscriber, channels.remoteOrderCommand, channels.autoPullerUpdates);
+                            new AutoPuller(mdSource, depthBookSubscriber, channels.cmdsForNibblers, channels.ladderClickTradingIssues,
+                                    channels.autoPullerUpdates);
                     channels.autoPullerCmds.subscribe(fiberBuilder.getFiber(), cmd -> cmd.executeOn(autoPuller));
 
                     for (final ConfigGroup nibblerConfig : nibblerConfigs) {
@@ -858,12 +860,11 @@ public class Main {
             final FiberBuilder fiberBuilder, final IPicardSpotter picardSpotter, final IPremiumCalc premiumCalc) throws ConfigException {
 
         final LadderPresenter ladderPresenter =
-                new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.remoteOrderCommand,
-                        environment.ladderOptions(), picardSpotter, premiumCalc, fxCalc, channels.storeLadderPref,
-                        channels.heartbeatRoundTrips, channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace,
-                        channels.increaseParentOffsetCmds, channels.increaseChildOffsetBPSCmds, channels.setSiblingsEnabledCmds,
-                        channels.ladderClickTradingIssues, channels.userCycleContractPublisher, channels.orderEntryCommandToServer,
-                        channels.userWorkspaceRequests);
+                new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.cmdsForNibblers, environment.ladderOptions(),
+                        picardSpotter, premiumCalc, fxCalc, channels.storeLadderPref, channels.heartbeatRoundTrips,
+                        channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffsetCmds,
+                        channels.increaseChildOffsetBPSCmds, channels.setSiblingsEnabledCmds, channels.ladderClickTradingIssues,
+                        channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
 
         fiberBuilder.subscribe(ladderPresenter, webSocket, channels.metaData, channels.position, channels.ladderPrefsLoaded,
                 channels.displaySymbol, channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs,
@@ -1113,11 +1114,13 @@ public class Main {
         if (null != nibblerConfigs) {
 
             final MsgBlotterPresenter msgBlotter = new MsgBlotterPresenter(app.selectIO, webLog);
+            channels.ladderClickTradingIssues.subscribe(selectIOFiber,
+                    msg -> msgBlotter.addLine("OrderRouter", app.clock.getReferenceNanoSinceMidnightUTC(), msg.symbol + ": " + msg.issue));
             final SafetiesBlotterPresenter safetiesBlotter = new SafetiesBlotterPresenter(webLog);
 
             final WorkingOrdersPresenter workingOrderPresenter =
-                    new WorkingOrdersPresenter(app.selectIO, app.monitor, webLog, channels.remoteOrderCommand,
-                            channels.orderEntryCommandToServer);
+                    new WorkingOrdersPresenter(app.selectIO, app.monitor, webLog, channels.cmdsForNibblers,
+                            channels.ladderClickTradingIssues, channels.orderEntryCommandToServer);
 
             channels.orderEntryFromServer.subscribe(selectIOFiber,
                     new BatchSubscriber<>(selectIOFiber, workingOrderPresenter::oeUpdate, 250, TimeUnit.MILLISECONDS));
@@ -1170,6 +1173,16 @@ public class Main {
             final MultiLayeredResourceMonitor<ReddalComponents> clientMonitorParent =
                     new MultiLayeredResourceMonitor<>(app.monitor, ReddalComponents.class, app.errorLog);
 
+            final String[] remoteOrderPriorities = app.config.getString("nibblerPriorities").split(",");
+            for (int i = 0; i < remoteOrderPriorities.length; ++i) {
+                remoteOrderPriorities[i] = remoteOrderPriorities[i].trim();
+            }
+            final RemoteOrderServerRouter orderRouter =
+                    new RemoteOrderServerRouter(channels.ladderClickTradingIssues, remoteOrderPriorities);
+            channels.cmdsForNibblers.subscribe(selectIOFiber, cmd -> cmd.route(orderRouter));
+
+            final Set<String> prioritisedNibblers = new HashSet<>(Arrays.asList(remoteOrderPriorities));
+
             for (final ConfigGroup nibblerConfig : nibblerConfigs.groups()) {
 
                 final String nibbler = nibblerConfig.getKey();
@@ -1188,14 +1201,11 @@ public class Main {
                 final boolean isTransportForTrading =
                         nibblerConfig.paramExists(IS_FOR_TRADING_PARAM) && nibblerConfig.getBoolean(IS_FOR_TRADING_PARAM);
                 final Publisher<NibblerTransportConnected> connectedNibblerChannel;
-                final String remoteOrderNibblerName;
 
                 if (isTransportForTrading) {
                     connectedNibblerChannel = channels.nibblerTransportConnected;
-                    remoteOrderNibblerName = nibblerConfig.getKey();
                 } else {
                     connectedNibblerChannel = Constants::NO_OP;
-                    remoteOrderNibblerName = null;
                 }
 
                 final IResourceMonitor<NibblerTransportComponents> nibblerMonitor =
@@ -1211,7 +1221,7 @@ public class Main {
 
                 final BlotterClient blotterClient =
                         new BlotterClient(nibbler, msgBlotter, safetiesBlotter, workingOrderPresenter, obligationsCallback,
-                                bestWorkingOrderMaintainer, connectedNibblerChannel, remoteOrderNibblerName);
+                                bestWorkingOrderMaintainer, connectedNibblerChannel, nibbler);
 
                 final NibblerClientHandler client =
                         NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,
@@ -1225,22 +1235,25 @@ public class Main {
 
                 if (isTransportForTrading) {
 
-                    quotingObligationsPresenter.setNibblerHandler(nibbler, client);
+                    if (!prioritisedNibblers.contains(nibbler)) {
+                        throw new IllegalStateException("Trading nibbler [" + nibbler + "] configured without priority.");
+                    } else {
 
-                    final TypedChannel<IOrderCmd> sendCmds = channels.remoteOrderCommandByServer.get(remoteOrderNibblerName);
-                    final NibblerTransportOrderEntry orderEntry =
-                            new NibblerTransportOrderEntry(app.selectIO, childMonitor, client, app.logDir);
-                    sendCmds.subscribe(selectIOFiber, orderEntry::submit);
+                        quotingObligationsPresenter.setNibblerHandler(nibbler, client);
 
-                    final NibblerMetaDataLogger logger =
-                            new NibblerMetaDataLogger(app.selectIO, app.monitor, app.logDir, remoteOrderNibblerName);
-                    cache.addTradingDataListener(logger, true, true);
+                        final NibblerTransportOrderEntry orderEntry =
+                                new NibblerTransportOrderEntry(app.selectIO, childMonitor, client, app.logDir);
+                        orderRouter.addNibbler(nibbler, orderEntry);
 
-                    workingOrderPresenter.addNibbler(nibbler);
-                    final WorkingOrderListener workingOrderListener =
-                            new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
-                                    futureObligationPresenter, quotingObligationsPresenter);
-                    cache.addTradingDataListener(workingOrderListener, true, true);
+                        final NibblerMetaDataLogger logger = new NibblerMetaDataLogger(app.selectIO, app.monitor, app.logDir, nibbler);
+                        cache.addTradingDataListener(logger, true, true);
+
+                        workingOrderPresenter.addNibbler(nibbler);
+                        final WorkingOrderListener workingOrderListener =
+                                new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
+                                        futureObligationPresenter, quotingObligationsPresenter, orderRouter);
+                        cache.addTradingDataListener(workingOrderListener, true, true);
+                    }
                 }
             }
 
@@ -1270,7 +1283,7 @@ public class Main {
                 } else {
 
                     final MarketNumberPresenter marketNumberPresenter =
-                            new MarketNumberPresenter(app.selectIO, webLog, channels.cmdsForAllNibblers);
+                            new MarketNumberPresenter(app.selectIO, webLog, channels.cmdsForNibblers);
 
                     final TypedChannel<WebSocketControlMessage> marketNumbersWebSocket =
                             TypedChannels.create(WebSocketControlMessage.class);

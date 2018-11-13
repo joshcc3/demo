@@ -6,11 +6,12 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.ReddalComponents;
-import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
 import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -40,7 +41,8 @@ public class WorkingOrdersPresenter {
 
     private final Map<String, NibblerView> nibblers;
 
-    private final Publisher<RemoteOrderCommandToServer> commands;
+    private final Publisher<IOrderCmd> commands;
+    private final Publisher<LadderClickTradingIssue> cmdRejectPublisher;
     private final Publisher<OrderEntryCommandToServer> managedOrderCommands;
 
     private final WebSocketViews<IWorkingOrderView> views;
@@ -52,7 +54,8 @@ public class WorkingOrdersPresenter {
     private long lastViewerHeartbeatNanoSinceMidnight;
 
     public WorkingOrdersPresenter(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
-            final Publisher<RemoteOrderCommandToServer> commands, final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
+            final Publisher<IOrderCmd> commands, final Publisher<LadderClickTradingIssue> cmdRejectPublisher,
+            final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
 
         this.clock = selectIO;
         this.monitor = monitor;
@@ -62,6 +65,7 @@ public class WorkingOrdersPresenter {
         this.nibblers = new HashMap<>();
 
         this.commands = commands;
+        this.cmdRejectPublisher = cmdRejectPublisher;
         this.managedOrderCommands = managedOrderCommands;
 
         this.views = WebSocketViews.create(IWorkingOrderView.class, this);
@@ -81,7 +85,7 @@ public class WorkingOrdersPresenter {
 
         final NibblerView existingView = nibblers.get(nibbler);
         if (null == existingView) {
-            final NibblerView result = new NibblerView(nibbler, commands, managedOrderCommands);
+            final NibblerView result = new NibblerView(nibbler, commands, cmdRejectPublisher, managedOrderCommands);
             this.nibblers.put(nibbler, result);
             return result;
         } else {

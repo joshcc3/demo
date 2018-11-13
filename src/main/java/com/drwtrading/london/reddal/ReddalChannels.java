@@ -17,12 +17,11 @@ import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
 import com.drwtrading.london.reddal.opxl.OpxlLadderText;
 import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
-import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.premium.Premium;
@@ -43,11 +42,8 @@ import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.mrphil.Position;
-import com.google.common.collect.MapMaker;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Publisher;
-
-import java.util.Map;
 
 class ReddalChannels {
 
@@ -63,9 +59,7 @@ class ReddalChannels {
     final TypedChannel<PKSExposure> pksExposure;
     final TypedChannel<NibblerTransportConnected> nibblerTransportConnected;
     final TypedChannel<StatusStat> stats;
-    final Publisher<RemoteOrderCommandToServer> remoteOrderCommand;
-    final Map<String, TypedChannel<IOrderCmd>> remoteOrderCommandByServer;
-    final Publisher<IOrderCmd> cmdsForAllNibblers;
+    final TypedChannel<IOrderCmd> cmdsForNibblers;
     final TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded;
     final TypedChannel<LadderSettings.StoreLadderPref> storeLadderPref;
     final TypedChannel<InstrumentDef> instDefs;
@@ -121,12 +115,7 @@ class ReddalChannels {
         this.pksExposure = create(PKSExposure.class);
         this.nibblerTransportConnected = create(NibblerTransportConnected.class);
         this.stats = create(StatusStat.class);
-
-        this.remoteOrderCommandByServer = new MapMaker().makeComputingMap(from -> create(IOrderCmd.class));
-        this.remoteOrderCommand = msg -> remoteOrderCommandByServer.get(msg.toServer).publish(msg.value);
-
-        this.cmdsForAllNibblers = msg -> remoteOrderCommandByServer.values().forEach(p -> p.publish(msg));
-
+        this.cmdsForNibblers = create(IOrderCmd.class);
         this.ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);
         this.storeLadderPref = create(LadderSettings.StoreLadderPref.class);
         this.instDefs = create(InstrumentDef.class);

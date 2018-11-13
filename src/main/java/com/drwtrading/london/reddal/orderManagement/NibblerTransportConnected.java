@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.orderManagement.remoteOrder;
+package com.drwtrading.london.reddal.orderManagement;
 
 import drw.london.json.JSONGenerator;
 import drw.london.json.Jsonable;

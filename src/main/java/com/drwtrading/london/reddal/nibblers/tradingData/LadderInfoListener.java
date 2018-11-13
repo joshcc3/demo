@@ -48,6 +48,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
 
     @Override
     public boolean addTradableInst(final TradableInstrument tradableInstrument) {
+        ladderPresenter.addTradableInstrument(tradableInstrument);
         return true;
     }
 
@@ -97,8 +98,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
         ladderPresenter.setWorkingOrder(sourcedOrder);
         orderPresenter.setWorkingOrder(sourcedOrder);
         autoPuller.setWorkingOrder(sourcedOrder);
-
-        shredderPresenter.setWorkingOrder(order);
+        shredderPresenter.setWorkingOrder(sourcedOrder);
         return true;
     }
 
@@ -109,8 +109,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
         ladderPresenter.setWorkingOrder(sourcedOrder);
         orderPresenter.setWorkingOrder(sourcedOrder);
         autoPuller.setWorkingOrder(sourcedOrder);
-
-        shredderPresenter.setWorkingOrder(order);
+        shredderPresenter.setWorkingOrder(sourcedOrder);
         return true;
     }
 
@@ -121,8 +120,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
         ladderPresenter.deleteWorkingOrder(sourcedOrder);
         orderPresenter.deleteWorkingOrder(sourcedOrder);
         autoPuller.deleteWorkingOrder(sourcedOrder);
-
-        shredderPresenter.deleteWorkingOrder(order);
+        shredderPresenter.deleteWorkingOrder(sourcedOrder);
         return true;
     }
 
@@ -150,8 +148,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
             final SourcedWorkingOrder sourcedWorkingOrder = sourcedOrderNode.getValue();
             ladderPresenter.deleteWorkingOrder(sourcedWorkingOrder);
             orderPresenter.deleteWorkingOrder(sourcedWorkingOrder);
-
-            shredderPresenter.deleteWorkingOrder(sourcedWorkingOrder.order);
+            shredderPresenter.deleteWorkingOrder(sourcedWorkingOrder);
         }
 
         sourcedWorkingOrder.clear();

@@ -4,9 +4,11 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrde
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
-import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.util.Struct;
+import org.jetlang.channels.Publisher;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -34,18 +36,18 @@ public class PullRule extends Struct {
         this.mktCondition = mktCondition;
     }
 
-    public List<RemoteOrderCommandToServer> getPullCmds(final String username, final Set<SourcedWorkingOrder> workingOrders,
-            final IBook<?> book) {
+    public List<IOrderCmd> getPullCmds(final Publisher<LadderClickTradingIssue> rejectChannel, final String username,
+            final Set<SourcedWorkingOrder> workingOrders, final IBook<?> book) {
 
         if (mktCondition.conditionMet(book) && !workingOrders.isEmpty()) {
 
-            final List<RemoteOrderCommandToServer> result = new ArrayList<>();
+            final List<IOrderCmd> result = new ArrayList<>();
 
             for (final SourcedWorkingOrder sourcedOrder : workingOrders) {
 
                 if (isOrderInMarketData(sourcedOrder.order, book) && orderSelection.isSelectionMet(sourcedOrder.order)) {
 
-                    final RemoteOrderCommandToServer cmd = sourcedOrder.buildCancel(username, true);
+                    final IOrderCmd cmd = sourcedOrder.buildCancel(rejectChannel, username, true);
                     result.add(cmd);
                 }
             }

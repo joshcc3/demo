@@ -5,7 +5,6 @@ import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.ladders.LadderOptions;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderType;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -15,19 +14,16 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.LinkedHashMap;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 public class Environment {
 
-    public static final String REMOTE_COMMANDS = "remoteCommands";
     public static final String EEIF_OE = "eeifoe";
     public static final String METADATA = "metadata";
 
     private final ConfigGroup config;
 
-    public Environment(final ConfigGroup config) {
+    Environment(final ConfigGroup config) {
         this.config = config;
     }
 
@@ -75,7 +71,7 @@ public class Environment {
         } else {
             basketURL = null;
         }
-        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, getServerResolver(), reloadFraction, basketURL);
+        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, reloadFraction, basketURL);
     }
 
     private static Collection<CSSClass> getClickOrderTypes(final ConfigGroup config, final String groupName) throws ConfigException {
@@ -100,7 +96,7 @@ public class Environment {
         return getHostAndNic(serverConfig);
     }
 
-    public HostAndNic getHostAndNic(final String prefix) throws SocketException, ConfigException {
+    private HostAndNic getHostAndNic(final String prefix) throws SocketException, ConfigException {
 
         final ConfigGroup serverConfig = config.getGroup(prefix);
         return getHostAndNic(serverConfig);
@@ -117,58 +113,5 @@ public class Environment {
         }
         return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])),
                 NetworkInterfaces.find(nic));
-    }
-
-    /**
-     * Remote commands server are matched in order.
-     * If the symbol matches the regex AND (no order types are specified OR the order is among the types specified) THEN it matches
-     */
-    public RemoteOrderServerResolver getServerResolver() throws ConfigException {
-
-        System.out.println("Loading server resolver:");
-        final LinkedHashMap<String, RemoteOrderMatcher> matchers = new LinkedHashMap<>();
-
-        final String[] orderedServers = config.getString(REMOTE_COMMANDS).trim().split(",");
-        for (final String orderedServer : orderedServers) {
-            final String remoteServer = orderedServer.trim();
-            if (!remoteServer.isEmpty()) {
-
-                final ConfigGroup remoteServerCMDs = config.getEnabledGroup(REMOTE_COMMANDS, remoteServer);
-
-                final String symbolRegex;
-                if (null != remoteServerCMDs && remoteServerCMDs.paramExists("symbolRegex")) {
-                    symbolRegex = remoteServerCMDs.getString("symbolRegex");
-                } else {
-                    symbolRegex = ".*";
-                }
-                final Pattern pattern = Pattern.compile(symbolRegex);
-
-                final Set<RemoteOrderType> orderTypesRaw;
-                if (null != remoteServerCMDs && remoteServerCMDs.paramExists("orderTypes")) {
-                    orderTypesRaw = remoteServerCMDs.getEnumSet("orderTypes", RemoteOrderType.class);
-                } else {
-                    orderTypesRaw = null;
-                }
-
-                final Collection<String> tagsRaw;
-                if (null != remoteServerCMDs && remoteServerCMDs.paramExists("tags")) {
-                    tagsRaw = remoteServerCMDs.getParam("tags").getSet(Pattern.compile(","));
-                } else {
-                    tagsRaw = null;
-                }
-
-                final Collection<String> micsRaw;
-                if (null != remoteServerCMDs && remoteServerCMDs.paramExists("mics")) {
-                    micsRaw = remoteServerCMDs.getParam("mics").getSet(Pattern.compile(","));
-                } else {
-                    micsRaw = null;
-                }
-
-                System.out.println(
-                        '\t' + remoteServer + ": regex '" + symbolRegex + "', order types: " + orderTypesRaw + ", tags: " + tagsRaw);
-                matchers.put(remoteServer, new RemoteOrderMatcher(pattern, orderTypesRaw, tagsRaw, micsRaw));
-            }
-        }
-        return new RemoteOrderServerResolver(matchers);
     }
 }

@@ -5,6 +5,9 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
+import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TradableInstrument;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
@@ -23,23 +26,21 @@ import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
-import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
 import com.drwtrading.london.reddal.opxl.OpxlLadderText;
-import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.premium.IPremiumCalc;
@@ -51,6 +52,8 @@ import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.symbols.SymbolDescription;
+import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
@@ -71,6 +74,7 @@ import org.jetlang.fibers.Fiber;
 
 import java.text.DecimalFormat;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -85,7 +89,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final IMDSubscriber bookSubscriber;
     private final String ewokBaseURL;
 
-    private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer;
+    private final Publisher<IOrderCmd> remoteOrderCommandByServer;
     private final LadderOptions ladderOptions;
 
     private final FXCalc<?> fxCalc;
@@ -97,6 +101,10 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Map<Publisher<WebSocketOutboundData>, LadderView> viewBySocket = new HashMap<>();
     private final Multimap<String, LadderView> viewsBySymbol = HashMultimap.create();
     private final Multimap<String, LadderView> viewsByUser = HashMultimap.create();
+    private final Map<String, Set<OrderType>> supportedOrderTypesBySymbol =
+            new MapMaker().makeComputingMap(symbol -> EnumSet.noneOf(OrderType.class));
+    private final Map<String, Set<AlgoType>> supportedAlgoTypesBySymbol =
+            new MapMaker().makeComputingMap(symbol -> EnumSet.noneOf(AlgoType.class));
     private final Map<String, WorkingOrdersByPrice> ordersBySymbol = new MapMaker().makeComputingMap(symbol -> new WorkingOrdersByPrice());
     private final Map<String, OrderUpdatesForSymbol> eeifOrdersBySymbol = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
     private final Map<String, LastTradeDataForSymbol> lastTradeBySymbol = new MapMaker().makeComputingMap(LastTradeDataForSymbol::new);
@@ -126,8 +134,8 @@ public class LadderPresenter implements IStackPresenterCallback {
     private Set<String> isinsGoingEx;
 
     public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
-            final Publisher<RemoteOrderCommandToServer> remoteOrderCommandByServer, final LadderOptions ladderOptions,
-            final IPicardSpotter picardSpotter, final IPremiumCalc premiumCalc, final FXCalc<?> fxCalc,
+            final Publisher<IOrderCmd> remoteOrderCommandByServer, final LadderOptions ladderOptions, final IPicardSpotter picardSpotter,
+            final IPremiumCalc premiumCalc, final FXCalc<?> fxCalc,
             final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
             final Fiber fiber, final Publisher<Jsonable> trace, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
@@ -187,6 +195,15 @@ public class LadderPresenter implements IStackPresenterCallback {
 
         final SymbolStackData stackData = stackBySymbol.get(theo.getSymbol());
         stackData.setSpreadnoughtTheo(theo);
+    }
+
+    public void addTradableInstrument(final TradableInstrument tradableInstrument) {
+
+        final Set<OrderType> symbolOrderTypes = supportedOrderTypesBySymbol.get(tradableInstrument.getSymbol());
+        symbolOrderTypes.addAll(tradableInstrument.getSupportedOrderTypes());
+
+        final Set<AlgoType> symbolAlgoTypes = supportedAlgoTypesBySymbol.get(tradableInstrument.getSymbol());
+        symbolAlgoTypes.addAll(tradableInstrument.getSupportedAlgoTypes());
     }
 
     public void setWorkingOrder(final SourcedWorkingOrder workingOrder) {
@@ -250,6 +267,8 @@ public class LadderPresenter implements IStackPresenterCallback {
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(symbol, this);
 
+                final Set<OrderType> supportedOrderTypes = supportedOrderTypesBySymbol.get(symbol);
+                final Set<AlgoType> supportedAlgoTypes = supportedAlgoTypesBySymbol.get(symbol);
                 final WorkingOrdersByPrice workingOrders = ordersBySymbol.get(symbol);
                 final LadderMetaData ladderMetaData = metaDataBySymbol.get(symbol);
                 final LastTradeDataForSymbol lastTradeData = lastTradeBySymbol.get(symbol);
@@ -257,8 +276,8 @@ public class LadderPresenter implements IStackPresenterCallback {
                 final OrderUpdatesForSymbol orderUpdates = eeifOrdersBySymbol.get(symbol);
 
                 final String userName = msg.getClient().getUserName();
-                view.subscribeToSymbol(symbol, levels, mdForSymbol, workingOrders, ladderMetaData, lastTradeData, stackData,
-                        getLadderPrefsForSymbolUser(symbol, userName), orderUpdates);
+                view.subscribeToSymbol(symbol, levels, supportedOrderTypes, supportedAlgoTypes, mdForSymbol, workingOrders, ladderMetaData,
+                        lastTradeData, stackData, getLadderPrefsForSymbolUser(symbol, userName), orderUpdates);
 
                 if (3 < args.length) {
                     if ("S".equals(args[3])) {

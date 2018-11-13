@@ -63,7 +63,7 @@ public class OrderPresenterMsgRouter {
         final Publisher<WebSocketControlMessage> presenter = presenters.get(mdSource);
 
         if (null == presenter) {
-            monitor.logError(ReddalComponents.ORDER_ROUTER,
+            monitor.logError(ReddalComponents.ORDER_PRESENTER,
                     "No market data handling exchange [" + mdSource + "] for symbol [" + symbol + "].");
         } else {
             setPresenter(symbol, presenter);

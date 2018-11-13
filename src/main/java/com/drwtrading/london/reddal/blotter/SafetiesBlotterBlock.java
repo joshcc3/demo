@@ -39,7 +39,7 @@ class SafetiesBlotterBlock {
         return row;
     }
 
-    SafetiesOMSRow udpateOMSEnabledState(final NibblerOMSEnabledState omsEnabledState) {
+    SafetiesOMSRow updateOMSEnabledState(final NibblerOMSEnabledState omsEnabledState) {
 
         final SafetiesOMSRow row = omsEnabledStates.get(omsEnabledState.getOMSID());
         row.update(omsEnabledState);

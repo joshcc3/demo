@@ -6,19 +6,19 @@ import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import drw.eeif.eeifoe.Cancel;
-import drw.eeif.eeifoe.OrderSide;
-import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.ShutdownOMSCmd;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.StopAllStrategiesCmd;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.TraderLoginCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.ShutdownOMSCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.StopAllStrategiesCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.TraderLoginCmd;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.websockets.WebSocketOutboundData;
+import drw.eeif.eeifoe.Cancel;
+import drw.eeif.eeifoe.OrderSide;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
@@ -32,7 +32,8 @@ import java.util.stream.Collectors;
 class NibblerView {
 
     private final String server;
-    private final Publisher<RemoteOrderCommandToServer> commands;
+    private final Publisher<IOrderCmd> commands;
+    private final Publisher<LadderClickTradingIssue> cmdRejectPublisher;
     private final Publisher<OrderEntryCommandToServer> managedOrderCommands;
 
     private final Map<String, SourcedWorkingOrder> workingOrders;
@@ -47,11 +48,12 @@ class NibblerView {
     private final DecimalFormat priceDF;
     private boolean isConnected;
 
-    NibblerView(final String server, final Publisher<RemoteOrderCommandToServer> commands,
+    NibblerView(final String server, final Publisher<IOrderCmd> commands, final Publisher<LadderClickTradingIssue> cmdRejectPublisher,
             final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
 
         this.server = server;
         this.commands = commands;
+        this.cmdRejectPublisher = cmdRejectPublisher;
         this.managedOrderCommands = managedOrderCommands;
         this.workingOrders = new HashMap<>();
         this.managedOrders = new HashMap<>();
@@ -188,21 +190,19 @@ class NibblerView {
     }
 
     private void stopAllStrategies(final String reason) {
-        final IOrderCmd cmd = new StopAllStrategiesCmd(reason);
-        final RemoteOrderCommandToServer command = new RemoteOrderCommandToServer(server, cmd);
-        commands.publish(command);
+        final IOrderCmd cmd = new StopAllStrategiesCmd(server, reason);
+        commands.publish(cmd);
     }
 
     public void shutdownOMS(final String reason) {
-        final IOrderCmd remoteCommand = new ShutdownOMSCmd(reason);
-        final RemoteOrderCommandToServer command = new RemoteOrderCommandToServer(server, remoteCommand);
-        commands.publish(command);
+        final IOrderCmd cmd = new ShutdownOMSCmd(server, reason);
+        commands.publish(cmd);
         stopAllStrategies("Shutdown OMS - " + reason);
     }
 
     private void cancel(final String username, final SourcedWorkingOrder order, final boolean isAutomated) {
 
-        final RemoteOrderCommandToServer cmd = order.buildCancel(username, isAutomated);
+        final IOrderCmd cmd = order.buildCancel(cmdRejectPublisher, username, isAutomated);
         commands.publish(cmd);
     }
 
@@ -225,8 +225,7 @@ class NibblerView {
 
     void traderLogin(final Set<User> users) {
 
-        final TraderLoginCmd login = new TraderLoginCmd(users);
-        final RemoteOrderCommandToServer cmd = new RemoteOrderCommandToServer(server, login);
+        final TraderLoginCmd cmd = new TraderLoginCmd(server, users);
         commands.publish(cmd);
     }
 }

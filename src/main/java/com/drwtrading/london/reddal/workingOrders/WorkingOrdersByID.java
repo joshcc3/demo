@@ -1,13 +1,12 @@
 package com.drwtrading.london.reddal.workingOrders;
 
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 
 public class WorkingOrdersByID {
 
     private final LongMap<Long> prevOrderIDs;
-    private final LongMap<WorkingOrder> workingOrdersByID;
+    private final LongMap<SourcedWorkingOrder> workingOrdersByID;
 
     public WorkingOrdersByID() {
 
@@ -15,28 +14,28 @@ public class WorkingOrdersByID {
         this.workingOrdersByID = new LongMap<>();
     }
 
-    public void setWorkingOrder(final WorkingOrder workingOrder) {
+    public void setWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
 
-        final Long prevOrderID = prevOrderIDs.put(workingOrder.getWorkingOrderID(), workingOrder.getBookOrderID());
+        final Long prevOrderID = prevOrderIDs.put(sourcedOrder.order.getWorkingOrderID(), sourcedOrder.order.getBookOrderID());
         if (null != prevOrderID) {
             workingOrdersByID.remove(prevOrderID);
         }
 
-        workingOrdersByID.put(workingOrder.getBookOrderID(), workingOrder);
+        workingOrdersByID.put(sourcedOrder.order.getBookOrderID(), sourcedOrder);
     }
 
-    public void removeWorkingOrder(final WorkingOrder workingOrder) {
+    public void removeWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
 
-        prevOrderIDs.remove(workingOrder.getWorkingOrderID());
-        workingOrdersByID.remove(workingOrder.getBookOrderID());
+        prevOrderIDs.remove(sourcedOrder.order.getWorkingOrderID());
+        workingOrdersByID.remove(sourcedOrder.order.getBookOrderID());
     }
 
-    public WorkingOrder getWorkingOrder(final long orderID) {
+    public SourcedWorkingOrder getWorkingOrder(final long orderID) {
 
         return workingOrdersByID.get(orderID);
     }
 
-    public Iterable<LongMapNode<WorkingOrder>> getWorkingOrders() {
+    public Iterable<LongMapNode<SourcedWorkingOrder>> getWorkingOrders() {
         return workingOrdersByID;
     }
 }

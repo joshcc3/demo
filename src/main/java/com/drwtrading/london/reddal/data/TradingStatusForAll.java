@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.data;
 
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
+import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 
 import java.util.HashSet;
 import java.util.Set;

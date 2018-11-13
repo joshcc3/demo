@@ -1,6 +1,8 @@
 package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
@@ -26,10 +28,10 @@ import com.drwtrading.london.reddal.ladders.model.HeaderPanel;
 import com.drwtrading.london.reddal.ladders.model.LadderViewModel;
 import com.drwtrading.london.reddal.ladders.model.LeftHandPanel;
 import com.drwtrading.london.reddal.ladders.model.QtyButton;
-import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
@@ -114,7 +116,7 @@ public class LadderView implements UiEventHandler {
     private final WebSocketClient client;
     private final ILadderUI view;
     private final String ewokBaseURL;
-    private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
+    private final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher;
     private final LadderOptions ladderOptions;
     private final FXCalc<?> fxCalc;
     private final FeesCalc feesCalc;
@@ -158,11 +160,10 @@ public class LadderView implements UiEventHandler {
     private GoingExState exState = GoingExState.Unknown;
 
     LadderView(final IResourceMonitor<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view,
-            final String ewokBaseURL, final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-            final LadderOptions ladderOptions, final FXCalc<?> fxCalc, final FeesCalc feesCalc, final DecimalFormat feeDF,
-            final TradingStatusForAll tradingStatusForAll, final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher,
-            final Publisher<RecenterLaddersForUser> recenterLaddersForUser, final Publisher<Jsonable> trace,
-            final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
+            final String ewokBaseURL, final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
+            final FXCalc<?> fxCalc, final FeesCalc feesCalc, final DecimalFormat feeDF, final TradingStatusForAll tradingStatusForAll,
+            final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
+            final Publisher<Jsonable> trace, final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
@@ -209,7 +210,8 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders,
+    void subscribeToSymbol(final String symbol, final int levels, final Set<OrderType> supportedOrderTypes,
+            final Set<AlgoType> supportedAlgoTypes, final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders,
             final LadderMetaData metaData, final LastTradeDataForSymbol extraDataForSymbol, final SymbolStackData stackData,
             final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
@@ -227,9 +229,9 @@ public class LadderView implements UiEventHandler {
         this.bookView =
                 new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc,
                         feeDF, ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher,
-                        eeifCommandToServer, tradingStatusForAll, marketData, workingOrders, extraDataForSymbol, orderUpdatesForSymbol,
-                        levels, stackData, metaData, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
-                        disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
+                        eeifCommandToServer, tradingStatusForAll, supportedOrderTypes, supportedAlgoTypes, marketData, workingOrders,
+                        extraDataForSymbol, orderUpdatesForSymbol, levels, stackData, metaData, increaseParentOffsetPublisher,
+                        increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
         final Map<QtyButton, Integer> buttonQties;

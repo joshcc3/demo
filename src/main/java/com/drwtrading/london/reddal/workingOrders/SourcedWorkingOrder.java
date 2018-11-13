@@ -4,10 +4,11 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrde
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
-import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.CancelOrderCmd;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.ModifyOrderCmd;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.CancelOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.ModifyOrderCmd;
+import org.jetlang.channels.Publisher;
 
 public class SourcedWorkingOrder {
 
@@ -26,18 +27,16 @@ public class SourcedWorkingOrder {
         this.cssClass = getCSSClass(order);
     }
 
-    public RemoteOrderCommandToServer buildModify(final String username, final long toPrice, final int toQty) {
+    public IOrderCmd buildModify(final Publisher<LadderClickTradingIssue> rejectChannel, final String username, final long toPrice,
+            final int toQty) {
 
-        final IOrderCmd cmd = new ModifyOrderCmd(username, order.getChainID(), order.getSymbol(), order.getSide(), order.getOrderType(),
-                order.getAlgoType(), order.getTag(), order.getPrice(), (int) order.getOrderQty(), toPrice, toQty);
-
-        return new RemoteOrderCommandToServer(source, cmd);
+        return new ModifyOrderCmd(source, rejectChannel, username, order.getChainID(), order.getSymbol(), order.getSide(),
+                order.getOrderType(), order.getAlgoType(), order.getTag(), order.getPrice(), (int) order.getOrderQty(), toPrice, toQty);
     }
 
-    public RemoteOrderCommandToServer buildCancel(final String username, final boolean isAuto) {
+    public IOrderCmd buildCancel(final Publisher<LadderClickTradingIssue> rejectChannel, final String username, final boolean isAuto) {
 
-        final IOrderCmd cmd = new CancelOrderCmd(username, isAuto, order.getChainID(), order.getSymbol());
-        return new RemoteOrderCommandToServer(source, cmd);
+        return new CancelOrderCmd(source, rejectChannel, username, isAuto, order.getChainID(), order.getSymbol());
     }
 
     @Override

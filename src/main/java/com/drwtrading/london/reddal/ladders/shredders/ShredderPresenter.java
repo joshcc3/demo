@@ -3,7 +3,6 @@ package com.drwtrading.london.reddal.ladders.shredders;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
@@ -14,6 +13,7 @@ import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
+import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.websockets.WebSocketConnected;
@@ -98,16 +98,16 @@ public class ShredderPresenter implements IStackPresenterCallback {
         }
     }
 
-    public void setWorkingOrder(final WorkingOrder workingOrder) {
+    public void setWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
 
-        final WorkingOrdersByID workingOrders = workingOrdersBySymbol.get(workingOrder.getSymbol());
-        workingOrders.setWorkingOrder(workingOrder);
+        final WorkingOrdersByID workingOrders = workingOrdersBySymbol.get(sourcedOrder.order.getSymbol());
+        workingOrders.setWorkingOrder(sourcedOrder);
     }
 
-    public void deleteWorkingOrder(final WorkingOrder workingOrder) {
+    public void deleteWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
 
-        final WorkingOrdersByID workingOrders = workingOrdersBySymbol.get(workingOrder.getSymbol());
-        workingOrders.removeWorkingOrder(workingOrder);
+        final WorkingOrdersByID workingOrders = workingOrdersBySymbol.get(sourcedOrder.order.getSymbol());
+        workingOrders.removeWorkingOrder(sourcedOrder);
     }
 
     public void setTheo(final TheoValue theoValue) {

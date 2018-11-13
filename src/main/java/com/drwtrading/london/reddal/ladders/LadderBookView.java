@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -36,15 +37,14 @@ import com.drwtrading.london.reddal.ladders.model.HeaderPanel;
 import com.drwtrading.london.reddal.ladders.model.LadderViewModel;
 import com.drwtrading.london.reddal.ladders.model.LeftHandPanel;
 import com.drwtrading.london.reddal.ladders.model.QtyButton;
-import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.ManagedOrderType;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderType;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.SubmitOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.SubmitOrderCmd;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
@@ -129,9 +129,12 @@ public class LadderBookView implements ILadderBoard {
     private final Map<String, String> defaultPrefs;
 
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher;
-    private final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher;
+    private final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher;
     private final Publisher<OrderEntryCommandToServer> eeifCommandToServer;
     private final TradingStatusForAll tradingStatusForAll;
+
+    private final Set<OrderType> supportedOrderTypes;
+    private final Set<AlgoType> supportedAlgoTypes;
 
     private final MDForSymbol marketData;
     private final WorkingOrdersByPrice workingOrders;
@@ -173,8 +176,8 @@ public class LadderBookView implements ILadderBoard {
             final LadderViewModel ladderModel, final ILadderUI view, final LadderOptions ladderOptions, final FXCalc<?> fxCalc,
             final FeesCalc feesCalc, final DecimalFormat feeDF, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
-            final Publisher<RemoteOrderCommandToServer> remoteOrderCommandToServerPublisher,
-            final Publisher<OrderEntryCommandToServer> eeifCommandToServer, final TradingStatusForAll tradingStatusForAll,
+            final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final Publisher<OrderEntryCommandToServer> eeifCommandToServer,
+            final TradingStatusForAll tradingStatusForAll, final Set<OrderType> supportedOrderTypes, final Set<AlgoType> supportedAlgoTypes,
             final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders, final LastTradeDataForSymbol extraDataForSymbol,
             final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final SymbolStackData stackData,
             final LadderMetaData metaData, final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
@@ -219,6 +222,8 @@ public class LadderBookView implements ILadderBoard {
         this.eeifCommandToServer = eeifCommandToServer;
         this.tradingStatusForAll = tradingStatusForAll;
 
+        this.supportedOrderTypes = supportedOrderTypes;
+        this.supportedAlgoTypes = supportedAlgoTypes;
         this.marketData = marketData;
         this.workingOrders = workingOrders;
         this.dataForSymbol = extraDataForSymbol;
@@ -661,10 +666,10 @@ public class LadderBookView implements ILadderBoard {
         final RemoteOrderType orderType = getRemoteOrderType(orderTypeCSS.name());
 
         return null != orderType && TAGS.stream().anyMatch(tag -> {
-            final boolean oldOrderType = null != ladderOptions.serverResolver.resolveToServerName(symbol, orderType, tag, mic);
+            final boolean manualOrderType = supportedOrderTypes.contains(orderType.orderType);
             final boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(orderType.name()) &&
                     orderEntryMap.get(symbol).supportedTypes.contains(ManagedOrderType.valueOf(orderType.name()));
-            return oldOrderType || newOrderType;
+            return manualOrderType || newOrderType;
         });
     }
 
@@ -1402,29 +1407,11 @@ public class LadderBookView implements ILadderBoard {
         } else {
 
             final RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
-            final String serverName =
-                    ladderOptions.serverResolver.resolveToServerName(symbol, remoteOrderType, tag, marketData.getBook().getMIC().name());
 
-            if (null == serverName) {
-                final String message = "Cannot submit order " + orderType + ' ' + side + ' ' + clickTradingBoxQty + " for " + symbol +
-                        ", no valid server found.";
-                monitor.logError(ReddalComponents.LADDER_PRESENTER, message);
-                ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
-
-            } else if (!tradingStatusForAll.isNibblerConnected(serverName)) {
-                final String message =
-                        "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", server " + serverName +
-                                " is not connected.";
-                monitor.logError(ReddalComponents.LADDER_PRESENTER, message);
-                ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
-            } else {
-
-                final IOrderCmd submit =
-                        new SubmitOrderCmd(username, symbol, side, remoteOrderType.orderType, remoteOrderType.algoType, tag, price,
-                                clickTradingBoxQty);
-
-                remoteOrderCommandToServerPublisher.publish(new RemoteOrderCommandToServer(serverName, submit));
-            }
+            final IOrderCmd submit =
+                    new SubmitOrderCmd(symbol, ladderClickTradingIssuesPublisher, username, side, remoteOrderType.orderType,
+                            remoteOrderType.algoType, tag, price, clickTradingBoxQty);
+            remoteOrderCommandToServerPublisher.publish(submit);
         }
     }
 
@@ -1476,7 +1463,7 @@ public class LadderBookView implements ILadderBoard {
 
             } else {
 
-                final RemoteOrderCommandToServer cmd = sourcedOrder.buildModify(username, price, (int) totalQuantity);
+                final IOrderCmd cmd = sourcedOrder.buildModify(ladderClickTradingIssuesPublisher, username, price, (int) totalQuantity);
                 remoteOrderCommandToServerPublisher.publish(cmd);
             }
         }
@@ -1545,7 +1532,7 @@ public class LadderBookView implements ILadderBoard {
                 order.getSide().toString(), order.getTag(), clickTradingBoxQty, order.getChainID()));
 
         if (isTrader) {
-            final RemoteOrderCommandToServer cancel = sourcedOrder.buildCancel(username, false);
+            final IOrderCmd cancel = sourcedOrder.buildCancel(ladderClickTradingIssuesPublisher, username, false);
             remoteOrderCommandToServerPublisher.publish(cancel);
         }
     }

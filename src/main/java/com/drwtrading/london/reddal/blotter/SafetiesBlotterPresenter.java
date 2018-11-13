@@ -81,7 +81,7 @@ public class SafetiesBlotterPresenter {
     void updateOMSEnabledState(final String source, final NibblerOMSEnabledState omsEnabledState) {
 
         final SafetiesBlotterBlock block = nibblers.get(source);
-        final SafetiesOMSRow omsRow = block.udpateOMSEnabledState(omsEnabledState);
+        final SafetiesOMSRow omsRow = block.updateOMSEnabledState(omsEnabledState);
         views.all().setOMS(omsRow.id, omsRow.source, omsRow.remoteOMSID, omsRow.omsName, omsRow.isEnabled, omsRow.stateText);
     }
 

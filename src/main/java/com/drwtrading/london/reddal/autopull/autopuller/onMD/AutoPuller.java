@@ -21,7 +21,8 @@ import com.drwtrading.london.reddal.autopull.autopuller.rules.PullRule;
 import com.drwtrading.london.reddal.data.ibook.IMDCallback;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
-import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import org.jetlang.channels.Publisher;
 import org.joda.time.DateTime;
@@ -41,7 +42,8 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
     private final MDSource mdSource;
     private final IMDSubscriber mdSubscriber;
 
-    private final Publisher<RemoteOrderCommandToServer> commandPublisher;
+    private final Publisher<IOrderCmd> commandPublisher;
+    private final Publisher<LadderClickTradingIssue> cancelRejectMsgs;
     private final Publisher<IAutoPullerUpdate> updatePublisher;
 
     private final Map<String, HashSet<SourcedWorkingOrder>> workingOrders;
@@ -50,13 +52,14 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
     private final Map<String, LongMap<AutoPullerPullRule>> rulesBySymbol;
     private final LongMap<AutoPullerRuleState> lastRuleStates;
 
-    public AutoPuller(final MDSource mdSource, final IMDSubscriber mdSubscriber,
-            final Publisher<RemoteOrderCommandToServer> commandPublisher, final Publisher<IAutoPullerUpdate> updatePublisher) {
+    public AutoPuller(final MDSource mdSource, final IMDSubscriber mdSubscriber, final Publisher<IOrderCmd> commandPublisher,
+            final Publisher<LadderClickTradingIssue> cancelRejectMsgs, final Publisher<IAutoPullerUpdate> updatePublisher) {
 
         this.mdSource = mdSource;
         this.mdSubscriber = mdSubscriber;
 
         this.commandPublisher = commandPublisher;
+        this.cancelRejectMsgs = cancelRejectMsgs;
         this.updatePublisher = updatePublisher;
 
         this.workingOrders = new HashMap<>();
@@ -222,7 +225,7 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
 
         final Set<SourcedWorkingOrder> orders = workingOrders.get(rule.pullRule.symbol);
 
-        final Collection<RemoteOrderCommandToServer> cmds = rule.getOrdersToPull(orders);
+        final Collection<IOrderCmd> cmds = rule.getOrdersToPull(cancelRejectMsgs, orders);
 
         if (cmds.isEmpty()) {
             rule.enable(username);
@@ -296,11 +299,11 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
 
     private void runRule(final Set<SourcedWorkingOrder> workingOrders, final AutoPullerPullRule rule) {
 
-        final List<RemoteOrderCommandToServer> cancels = rule.getOrdersToPull(workingOrders);
+        final List<IOrderCmd> cancels = rule.getOrdersToPull(cancelRejectMsgs, workingOrders);
 
         if (!cancels.isEmpty() && rule.isEnabled()) {
 
-            for (final RemoteOrderCommandToServer cmd : cancels) {
+            for (final IOrderCmd cmd : cancels) {
                 commandPublisher.publish(cmd);
             }
 

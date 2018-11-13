@@ -2,8 +2,10 @@ package com.drwtrading.london.reddal.autopull.autopuller.onMD;
 
 import com.drwtrading.london.reddal.autopull.autopuller.rules.PullRule;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
-import com.drwtrading.london.reddal.orderManagement.RemoteOrderCommandToServer;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
+import org.jetlang.channels.Publisher;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,10 +39,10 @@ class AutoPullerPullRule {
         return null != enabledByUser;
     }
 
-    List<RemoteOrderCommandToServer> getOrdersToPull(final Set<SourcedWorkingOrder> workingOrders) {
+    List<IOrderCmd> getOrdersToPull(final Publisher<LadderClickTradingIssue> rejectChannel, final Set<SourcedWorkingOrder> workingOrders) {
 
         if (null != md.getBook() && null != workingOrders && !workingOrders.isEmpty()) {
-            return this.pullRule.getPullCmds(enabledByUser, workingOrders, md.getBook());
+            return this.pullRule.getPullCmds(rejectChannel, enabledByUser, workingOrders, md.getBook());
         } else {
             return Collections.emptyList();
         }

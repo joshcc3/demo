@@ -1,8 +1,10 @@
 package com.drwtrading.london.reddal.ladders.shredders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
+import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -39,14 +41,20 @@ public class ShredderBookViewTest {
 
         Mockito.doReturn(OrderType.LIMIT).when(workingOrderOne).getOrderType();
         Mockito.doReturn(OrderType.LIMIT).when(workingOrderTwo).getOrderType();
+
+        Mockito.doReturn(AlgoType.MANUAL).when(workingOrderOne).getAlgoType();
+        Mockito.doReturn(AlgoType.MANUAL).when(workingOrderTwo).getAlgoType();
     }
 
     @Test
     public void highlightingTwoOrdersTest() {
 
+        final SourcedWorkingOrder sourcedOrderOne = new SourcedWorkingOrder("Nibbler 1", workingOrderOne);
+        final SourcedWorkingOrder sourcedOrderTwo = new SourcedWorkingOrder("Nibbler 2", workingOrderTwo);
+
         final WorkingOrdersByID workingOrdersForSymbol = new WorkingOrdersByID();
-        workingOrdersForSymbol.setWorkingOrder(workingOrderOne);
-        workingOrdersForSymbol.setWorkingOrder(workingOrderTwo);
+        workingOrdersForSymbol.setWorkingOrder(sourcedOrderOne);
+        workingOrdersForSymbol.setWorkingOrder(sourcedOrderTwo);
 
         final ShredderBookView shredderBookView = new ShredderBookView(null, null, null, null, 10, workingOrdersForSymbol, null);
 

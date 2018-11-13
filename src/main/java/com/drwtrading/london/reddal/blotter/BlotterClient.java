@@ -9,7 +9,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.safeties.ANibblerSafety
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerDoubleSafety;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerOMSEnabledState;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerSafety;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportConnected;
+import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 import org.jetlang.channels.Publisher;

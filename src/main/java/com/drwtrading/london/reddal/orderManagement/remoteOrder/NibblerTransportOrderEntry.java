@@ -11,6 +11,15 @@ import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteCancelColumns;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteModifyColumns;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteShutdownOMSColumns;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteStopAllStrategiesColumns;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteSubmitColumns;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteTables;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteTraderLoginColumns;
+import org.jetlang.channels.Publisher;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -59,15 +68,13 @@ public class NibblerTransportOrderEntry {
         this.prevClOrdID = -1;
     }
 
-    public void submit(final IOrderCmd cmd) {
-        cmd.execute(this);
-    }
-
-    void submitOrder(final String username, final String symbol, final BookSide side, final OrderType orderType, final AlgoType algoType,
-            final String tag, final long price, final int qty) {
+    public void submitOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final String username, final String symbol,
+            final BookSide side, final OrderType orderType, final AlgoType algoType, final String tag, final long price, final int qty) {
 
         nibblerClient.submitOrder(++prevClOrdID, 0, username, symbol, side, orderType, algoType, tag, price, qty);
-        nibblerClient.batchComplete();
+        if (!nibblerClient.batchComplete()) {
+            rejectChannel.publish(new LadderClickTradingIssue(symbol, "Submit failed. Nibbler disconnected."));
+        }
 
         submitRow.set(NibblerRemoteSubmitColumns.CLORDID, prevClOrdID);
         submitRow.set(NibblerRemoteSubmitColumns.USERNAME, username);
@@ -81,11 +88,14 @@ public class NibblerTransportOrderEntry {
         writeRow(submitRow, NibblerRemoteSubmitColumns.timestamp);
     }
 
-    void modifyOrder(final String username, final int chainID, final String symbol, final BookSide side, final OrderType orderType,
-            final AlgoType algoType, final String tag, final long fromPrice, final int fromQty, final long toPrice, final int toQty) {
+    public void modifyOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final String username, final int chainID,
+            final String symbol, final BookSide side, final OrderType orderType, final AlgoType algoType, final String tag,
+            final long fromPrice, final int fromQty, final long toPrice, final int toQty) {
 
         nibblerClient.modifyOrder(username, chainID, symbol, side, orderType, algoType, tag, fromPrice, fromQty, toPrice, toQty);
-        nibblerClient.batchComplete();
+        if (!nibblerClient.batchComplete()) {
+            rejectChannel.publish(new LadderClickTradingIssue(symbol, "Modify failed. Nibbler disconnected."));
+        }
 
         modifyRow.set(NibblerRemoteModifyColumns.USERNAME, username);
         modifyRow.set(NibblerRemoteModifyColumns.CHAIN_ID, chainID);
@@ -103,10 +113,13 @@ public class NibblerTransportOrderEntry {
         writeRow(modifyRow, NibblerRemoteModifyColumns.timestamp);
     }
 
-    void cancelOrder(final String username, final boolean isAuto, final int chainID, final String symbol) {
+    public void cancelOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final String username, final boolean isAuto,
+            final int chainID, final String symbol) {
 
         nibblerClient.cancelOrder(username, isAuto, chainID, symbol);
-        nibblerClient.batchComplete();
+        if (!nibblerClient.batchComplete()) {
+            rejectChannel.publish(new LadderClickTradingIssue(symbol, "Cancel failed. Nibbler disconnected."));
+        }
 
         cancelRow.set(NibblerRemoteCancelColumns.USERNAME, username);
         cancelRow.set(NibblerRemoteCancelColumns.CHAIN_ID, chainID);
