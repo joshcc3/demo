@@ -1,12 +1,11 @@
 package com.drwtrading.london.reddal.orderManagement.remoteOrder;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
-import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.SubmitOrderCmd;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
-import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
+import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrdersByUIKey;
 import org.jetlang.channels.Channel;
 
 import java.util.HashMap;
@@ -22,7 +21,7 @@ public class RemoteOrderServerRouter {
     private final Map<String, NibblerTransportOrderEntry> nibblers;
     private final Map<String, NibblerSymbolHandler> symbolVenues;
 
-    private final Map<String, WorkingOrdersByID> symbolWorkingOrder;
+    private final Map<String, SourcedWorkingOrdersByUIKey> symbolWorkingOrder;
 
     public RemoteOrderServerRouter(final Channel<LadderClickTradingIssue> cancelRejectPublisher, final String[] nibblerPriorities) {
 
@@ -65,11 +64,11 @@ public class RemoteOrderServerRouter {
         }
     }
 
-    public void setWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
 
-        final WorkingOrdersByID workingOrders = symbolWorkingOrder.get(sourcedOrder.order.getSymbol());
+    public void setWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
+        final SourcedWorkingOrdersByUIKey workingOrders = symbolWorkingOrder.get(sourcedOrder.order.getSymbol());
         if (null == workingOrders) {
-            final WorkingOrdersByID newWorkingOrders = new WorkingOrdersByID();
+            final SourcedWorkingOrdersByUIKey newWorkingOrders = new SourcedWorkingOrdersByUIKey();
             symbolWorkingOrder.put(sourcedOrder.order.getSymbol(), newWorkingOrders);
             newWorkingOrders.setWorkingOrder(sourcedOrder);
         } else {
@@ -78,21 +77,15 @@ public class RemoteOrderServerRouter {
     }
 
     public void deleteWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
-
-        final WorkingOrdersByID workingOrders = symbolWorkingOrder.get(sourcedOrder.order.getSymbol());
+        final SourcedWorkingOrdersByUIKey workingOrders = symbolWorkingOrder.get(sourcedOrder.order.getSymbol());
         workingOrders.removeWorkingOrder(sourcedOrder);
     }
 
     private void cancelAllOldSymbolOrders(final String symbol, final String currentNibblerName) {
-
-        final WorkingOrdersByID workingOrders = symbolWorkingOrder.get(symbol);
+        final SourcedWorkingOrdersByUIKey workingOrders = symbolWorkingOrder.get(symbol);
         if (null != workingOrders) {
-            for (final LongMapNode<SourcedWorkingOrder> workingOrderNode : workingOrders.getWorkingOrders()) {
-
-                final SourcedWorkingOrder sourcedOrder = workingOrderNode.getValue();
-
+            for (final SourcedWorkingOrder sourcedOrder : workingOrders.getWorkingOrders()) {
                 if (!currentNibblerName.equals(sourcedOrder.source)) {
-
                     final NibblerTransportOrderEntry nibbler = nibblers.get(sourcedOrder.source);
                     nibbler.cancelOrder(cancelRejectPublisher, "AUTOMATED", true, sourcedOrder.order.getChainID(),
                             sourcedOrder.order.getSymbol());
