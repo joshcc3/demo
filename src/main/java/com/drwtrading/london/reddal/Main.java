@@ -1221,7 +1221,7 @@ public class Main {
 
                 final BlotterClient blotterClient =
                         new BlotterClient(nibbler, msgBlotter, safetiesBlotter, workingOrderPresenter, obligationsCallback,
-                                bestWorkingOrderMaintainer, connectedNibblerChannel, nibbler);
+                                bestWorkingOrderMaintainer, orderRouter, connectedNibblerChannel, nibbler);
 
                 final NibblerClientHandler client =
                         NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,

@@ -64,7 +64,6 @@ public class RemoteOrderServerRouter {
         }
     }
 
-
     public void setWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
         final SourcedWorkingOrdersByUIKey workingOrders = symbolWorkingOrder.get(sourcedOrder.order.getSymbol());
         if (null == workingOrders) {
@@ -79,6 +78,14 @@ public class RemoteOrderServerRouter {
     public void deleteWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
         final SourcedWorkingOrdersByUIKey workingOrders = symbolWorkingOrder.get(sourcedOrder.order.getSymbol());
         workingOrders.removeWorkingOrder(sourcedOrder);
+    }
+
+    public void setNibblerDisconnected(final String disconnectedNibbler) {
+
+        for (final SourcedWorkingOrdersByUIKey workingOrders : symbolWorkingOrder.values()) {
+
+            workingOrders.clearNibblerOrders(disconnectedNibbler);
+        }
     }
 
     private void cancelAllOldSymbolOrders(final String symbol, final String currentNibblerName) {

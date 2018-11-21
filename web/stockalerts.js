@@ -22,7 +22,7 @@ $(function () {
     table = $("#stockAlerts");
     headerRow = $("#header");
 
-    rfqSound = new Audio("stockAlerts/eastsideRFQ.wav");
+    rfqSound = new Audio("stockAlerts/RFQ.wav");
     etfRfqSound = new Audio("sounds/honeybadgerdoesntcare.wav");
     atCloseSound = new Audio("stockAlerts/calf-slap.wav");
     sweepSound = new Audio("stockAlerts/sword-schwing.wav");
@@ -31,7 +31,7 @@ $(function () {
     bigRfqSound = new Audio("stockAlerts/pulp.wav");
     unknownSound = new Audio("stockAlerts/huh-humm.wav");
 
-    setTimeout(function() { 
+    setTimeout(function() {
 	if (localStorage['auto-open-rfq']) {
 	    setAutoOpen(JSON.parse(localStorage['auto-open-rfq']));
 	}
