@@ -412,11 +412,7 @@ public class LadderView implements UiEventHandler {
         ladderModel.setClass(HTML.BOOK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == bookView);
         ladderModel.setClass(HTML.STACK_VIEW_BUTTON, CSSClass.ACTIVE_MODE, activeView == stackView);
 
-        if (null != marketData && null != marketData.getBook()) {
-            final IBook<?> book = marketData.getBook();
-            ladderModel.setClass(HTML.SYMBOL, CSSClass.REVERSE_SPREAD,
-                    InstType.FUTURE_SPREAD == book.getInstType() && book.getMIC().exchange.isReverseSpreadVenue);
-        }
+        ladderModel.setClass(HTML.SYMBOL, CSSClass.REVERSE_SPREAD, null != marketData && marketData.isReverseSpread());
 
         if (null != metaData && null != extraDataForSymbol) {
 

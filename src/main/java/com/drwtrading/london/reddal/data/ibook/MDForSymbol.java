@@ -5,6 +5,8 @@ import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
 import com.drwtrading.london.eeif.utils.marketData.book.IInstrument;
+import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.reddal.data.TradeTracker;
 
@@ -22,13 +24,15 @@ public class MDForSymbol {
     private final boolean isPriceInverted;
     private final TradeTracker tradeTracker;
 
+    private final ArrayList<IMDCallback> bookUpdateCallbacks;
+
     private IBook<?> book;
     private MIC tradeMIC;
     private IBook<IBookLevelWithOrders> level3Book;
     private DecimalFormat df;
     private DecimalFormat nonTrailingDF;
 
-    private final ArrayList<IMDCallback> bookUpdateCallbacks;
+    private boolean isReverseSpread;
 
     public MDForSymbol(final String symbol) {
 
@@ -40,6 +44,8 @@ public class MDForSymbol {
         this.tradeTracker = new TradeTracker();
 
         this.bookUpdateCallbacks = new ArrayList<>();
+
+        this.isReverseSpread = false;
     }
 
     public void setL3Book(final IBook<IBookLevelWithOrders> book) {
@@ -50,6 +56,13 @@ public class MDForSymbol {
     public void setBook(final IBook<?> book) {
 
         this.book = book;
+        if (InstType.FUTURE_SPREAD == book.getInstType()) {
+
+            final String frontMonth = book.getSymbol().split("-")[0];
+            final FutureConstant future = FutureConstant.getFutureFromSymbol(frontMonth);
+            isReverseSpread = null != future && future.isReverseSpread;
+        }
+
         this.tradeMIC = getTradeMIC(book);
 
         final long smallestTick = book.getTickTable().getRawTickLevels().firstEntry().getValue();
@@ -121,6 +134,10 @@ public class MDForSymbol {
 
     public IBook<?> getBook() {
         return book;
+    }
+
+    public boolean isReverseSpread() {
+        return isReverseSpread;
     }
 
     public TradeTracker getTradeTracker() {
