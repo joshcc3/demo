@@ -1178,7 +1178,7 @@ public class Main {
                 remoteOrderPriorities[i] = remoteOrderPriorities[i].trim();
             }
             final RemoteOrderServerRouter orderRouter =
-                    new RemoteOrderServerRouter(channels.ladderClickTradingIssues, remoteOrderPriorities);
+                    new RemoteOrderServerRouter(remoteOrderPriorities);
             channels.cmdsForNibblers.subscribe(selectIOFiber, cmd -> cmd.route(orderRouter));
 
             final Set<String> prioritisedNibblers = new HashSet<>(Arrays.asList(remoteOrderPriorities));

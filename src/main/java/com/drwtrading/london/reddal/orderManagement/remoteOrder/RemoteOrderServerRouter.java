@@ -7,25 +7,22 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.SubmitOrder
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrdersByUIKey;
 import org.jetlang.channels.Channel;
+import org.jetlang.channels.Publisher;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class RemoteOrderServerRouter {
 
-    private final Channel<LadderClickTradingIssue> cancelRejectPublisher;
-
     private final Map<String, Integer> nibblerPriorities;
-
     private final Map<String, NibblerTransportOrderEntry> nibblers;
-    private final Map<String, NibblerSymbolHandler> symbolVenues;
+    private final EnumMap<OrderType, Map<String, NibblerSymbolHandler>> symbolVenuesByOrderType;
 
     private final Map<String, SourcedWorkingOrdersByUIKey> symbolWorkingOrder;
 
-    public RemoteOrderServerRouter(final Channel<LadderClickTradingIssue> cancelRejectPublisher, final String[] nibblerPriorities) {
-
-        this.cancelRejectPublisher = cancelRejectPublisher;
+    public RemoteOrderServerRouter(final String[] nibblerPriorities) {
 
         this.nibblerPriorities = new HashMap<>();
 
@@ -35,8 +32,7 @@ public class RemoteOrderServerRouter {
         }
 
         this.nibblers = new HashMap<>();
-        this.symbolVenues = new HashMap<>();
-
+        this.symbolVenuesByOrderType = new EnumMap<>(OrderType.class);
         this.symbolWorkingOrder = new HashMap<>();
     }
 
@@ -46,22 +42,24 @@ public class RemoteOrderServerRouter {
     }
 
     public void setInstrumentTradable(final String symbol, final Set<OrderType> supportedOrderTypes, final String nibblerName) {
+        for (OrderType supportedOrderType : supportedOrderTypes) {
+            Map<String, NibblerSymbolHandler> symbolVenues = getSymbolVenues(supportedOrderType);
 
-        final int priority = nibblerPriorities.get(nibblerName);
-        final NibblerTransportOrderEntry orderEntry = nibblers.get(nibblerName);
+            final int priority = nibblerPriorities.get(nibblerName);
+            final NibblerTransportOrderEntry orderEntry = nibblers.get(nibblerName);
+            final NibblerSymbolHandler prevVenue = symbolVenues.get(symbol);
 
-        final NibblerSymbolHandler prevVenue = symbolVenues.get(symbol);
-
-        if (null == prevVenue || priority < prevVenue.priority) {
-
-            final NibblerSymbolHandler nibblerSymbolHandler =
-                    new NibblerSymbolHandler(priority, nibblerName, supportedOrderTypes, orderEntry);
-            symbolVenues.put(symbol, nibblerSymbolHandler);
-
-            if (null != prevVenue) {
-                cancelAllOldSymbolOrders(symbol, nibblerName);
+            if (null == prevVenue || priority < prevVenue.priority) {
+                final NibblerSymbolHandler nibblerSymbolHandler =
+                        new NibblerSymbolHandler(priority, nibblerName, supportedOrderTypes, orderEntry);
+                symbolVenues.put(symbol, nibblerSymbolHandler);
             }
         }
+
+    }
+
+    private Map<String, NibblerSymbolHandler> getSymbolVenues(OrderType orderType) {
+        return symbolVenuesByOrderType.computeIfAbsent(orderType, s -> new HashMap<>());
     }
 
     public void setWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
@@ -81,30 +79,15 @@ public class RemoteOrderServerRouter {
     }
 
     public void setNibblerDisconnected(final String disconnectedNibbler) {
-
         for (final SourcedWorkingOrdersByUIKey workingOrders : symbolWorkingOrder.values()) {
-
             workingOrders.clearNibblerOrders(disconnectedNibbler);
-        }
-    }
-
-    private void cancelAllOldSymbolOrders(final String symbol, final String currentNibblerName) {
-        final SourcedWorkingOrdersByUIKey workingOrders = symbolWorkingOrder.get(symbol);
-        if (null != workingOrders) {
-            for (final SourcedWorkingOrder sourcedOrder : workingOrders.getWorkingOrders()) {
-                if (!currentNibblerName.equals(sourcedOrder.source)) {
-                    final NibblerTransportOrderEntry nibbler = nibblers.get(sourcedOrder.source);
-                    nibbler.cancelOrder(cancelRejectPublisher, "AUTOMATED", true, sourcedOrder.order.getChainID(),
-                            sourcedOrder.order.getSymbol());
-                }
-            }
         }
     }
 
     public void submitOrder(final SubmitOrderCmd submit) {
 
         final String symbol = submit.getSymbol();
-        final NibblerSymbolHandler nibbler = symbolVenues.get(symbol);
+        final NibblerSymbolHandler nibbler = getSymbolVenues(submit.getOrderType()).get(symbol);
 
         if (null == nibbler) {
             submit.rejectMsg("No nibbler to send submit.");
