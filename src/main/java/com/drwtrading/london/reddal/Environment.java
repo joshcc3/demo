@@ -92,6 +92,10 @@ public class Environment {
 
     public HostAndNic getHostAndNic(final String prefix, final String server) throws SocketException, ConfigException {
 
+        if (!config.groupExists(prefix) || !config.getGroup(prefix).groupExists(server)) {
+            return null;
+        }
+
         final ConfigGroup serverConfig = config.getGroup(prefix).getGroup(server);
         return getHostAndNic(serverConfig);
     }

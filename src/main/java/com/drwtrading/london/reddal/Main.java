@@ -663,49 +663,54 @@ public class Main {
                 final OrderEntryClient client =
                         new OrderEntryClient(instanceName, new SystemClock(), server, fibers.remoteOrders.getFiber(),
                                 channels.orderEntrySymbols, channels.ladderClickTradingIssues);
+
                 final HostAndNic command = environment.getHostAndNic(Environment.EEIF_OE + "Command", server);
-                final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
-                        OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
-                                OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
-                cmdClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
-                cmdClient.logFile(logDir.resolve("order-entry." + server + ".log").toFile(), fibers.logging.getFiber(), true);
-                cmdClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10));
-                cmdClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
-                        new ConnectionCloser(channels.stats, server + " OE Commands"), SERVER_TIMEOUT));
-                cmdClient.handler(client);
-                fibers.remoteOrders.subscribe(client, channels.orderEntryCommandToServer);
-                fibers.remoteOrders.execute(cmdClient::start);
-                System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
+                if (command != null) {
+                    final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
+                            OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
+                                    OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
+                    cmdClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
+                    cmdClient.logFile(logDir.resolve("order-entry." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+                    cmdClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10));
+                    cmdClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
+                            new ConnectionCloser(channels.stats, server + " OE Commands"), SERVER_TIMEOUT));
+                    cmdClient.handler(client);
+                    fibers.remoteOrders.subscribe(client, channels.orderEntryCommandToServer);
+                    fibers.remoteOrders.execute(cmdClient::start);
+                    System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
+                }
 
                 final HostAndNic update = environment.getHostAndNic(Environment.EEIF_OE + "Update", server);
-                final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
-                        OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
-                                fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
-                updateClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
-                updateClient.logFile(logDir.resolve("order-update." + server + ".log").toFile(), fibers.logging.getFiber(), true);
-                updateClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10));
-                updateClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
-                        new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT));
-                updateClient.handler(
-                        new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(Constants::NO_OP,
-                                channels.orderEntryFromServer, evt -> {
-                            if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
-                                final Update msg = (Update) evt.getMsg();
-                                channels.orderEntryFromServer.publish(new UpdateFromServer(evt.getFromInstance(), msg));
-                            }
-                        }) {
-                            @Override
-                            protected Void connected(final PhotocolsConnection<Void> connection) {
-                                return null;
-                            }
+                if (update != null) {
+                    final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
+                            OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
+                                    fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
+                    updateClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
+                    updateClient.logFile(logDir.resolve("order-update." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+                    updateClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10));
+                    updateClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
+                            new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT));
+                    updateClient.handler(
+                            new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(Constants::NO_OP,
+                                    channels.orderEntryFromServer, evt -> {
+                                if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
+                                    final Update msg = (Update) evt.getMsg();
+                                    channels.orderEntryFromServer.publish(new UpdateFromServer(evt.getFromInstance(), msg));
+                                }
+                            }) {
+                                @Override
+                                protected Void connected(final PhotocolsConnection<Void> connection) {
+                                    return null;
+                                }
 
-                            @Override
-                            protected OrderEntryFromServer disconnected(final PhotocolsConnection<Void> connection) {
-                                return new ServerDisconnected(server);
-                            }
-                        });
-                fibers.remoteOrders.execute(updateClient::start);
-                System.out.println("EEIF-OE: " + server + "\tUpdate: " + update.host);
+                                @Override
+                                protected OrderEntryFromServer disconnected(final PhotocolsConnection<Void> connection) {
+                                    return new ServerDisconnected(server);
+                                }
+                            });
+                    fibers.remoteOrders.execute(updateClient::start);
+                    System.out.println("EEIF-OE: " + server + "\tUpdate: " + update.host);
+                }
             }
         }
 
