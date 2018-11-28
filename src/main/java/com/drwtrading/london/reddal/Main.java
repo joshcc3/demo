@@ -797,7 +797,8 @@ public class Main {
             channels.searchResults.subscribe(selectIOFiber, pksClient::setSearchResult);
 
             final PositionClientHandler cache =
-                    PositionCacheFactory.createClientCache(app.selectIO, pksMonitor, "PKS", app.appName, pksClient, pksClient, true);
+                    PositionCacheFactory.createClientCache(app.selectIO, pksMonitor, "PKS", app.appName, pksClient);
+            cache.addConstituentListener(pksClient);
 
             final TransportTCPKeepAliveConnection<?, ?> client =
                     PositionCacheFactory.createClient(app.selectIO, pksConfig, pksMonitor, cache);

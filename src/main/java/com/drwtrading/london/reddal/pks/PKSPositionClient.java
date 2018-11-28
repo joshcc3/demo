@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.pks;
 
 import com.drwtrading.london.eeif.position.transport.cache.IPositionCmdListener;
-import com.drwtrading.london.eeif.position.transport.data.PositionValue;
+import com.drwtrading.london.eeif.position.transport.data.ConstituentExposure;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
@@ -13,12 +13,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class PKSPositionClient implements ITransportCacheListener<String, PositionValue>, IPositionCmdListener {
+public class PKSPositionClient implements ITransportCacheListener<String, ConstituentExposure>, IPositionCmdListener {
 
     private final Publisher<PKSExposure> positionPublisher;
 
     private final Map<String, HashSet<String>> isinToSymbols;
-    private final Map<String, PositionValue> isinExposures;
+    private final Map<String, ConstituentExposure> isinExposures;
 
     private final Map<String, UltimateParentMapping> ultimateParents;
     private final Map<String, HashSet<UltimateParentMapping>> ultimateParentChildren;
@@ -39,7 +39,7 @@ public class PKSPositionClient implements ITransportCacheListener<String, Positi
         final HashSet<String> symbols = MapUtils.getMappedSet(isinToSymbols, searchResult.instID.isin);
         symbols.add(searchResult.symbol);
 
-        final PositionValue pksPosition = isinExposures.get(searchResult.instID.isin);
+        final ConstituentExposure pksPosition = isinExposures.get(searchResult.instID.isin);
         if (null != pksPosition) {
             updateValue(pksPosition);
         }
@@ -58,16 +58,11 @@ public class PKSPositionClient implements ITransportCacheListener<String, Positi
             final Set<UltimateParentMapping> children = MapUtils.getMappedSet(ultimateParentChildren, ultimateParent.parentID.isin);
             children.add(ultimateParent);
 
-            final PositionValue parentPosition = isinExposures.get(ultimateParent.parentID.isin);
+            final ConstituentExposure parentPosition = isinExposures.get(ultimateParent.parentID.isin);
             if (null != parentPosition) {
                 updateValue(parentPosition);
             }
         }
-    }
-
-    @Override
-    public boolean setMasterDelta(final double masterDelta) {
-        return true;
     }
 
     @Override
@@ -76,26 +71,26 @@ public class PKSPositionClient implements ITransportCacheListener<String, Positi
     }
 
     @Override
-    public boolean initialValue(final int transportID, final PositionValue pksPosition) {
+    public boolean initialValue(final int transportID, final ConstituentExposure pksPosition) {
 
         isinExposures.put(pksPosition.getKey(), pksPosition);
         return updateValue(pksPosition);
     }
 
     @Override
-    public boolean updateValue(final int transportID, final PositionValue pksPosition) {
+    public boolean updateValue(final int transportID, final ConstituentExposure pksPosition) {
 
         return updateValue(pksPosition);
     }
 
-    private boolean updateValue(final PositionValue pksPosition) {
+    private boolean updateValue(final ConstituentExposure pksPosition) {
 
         final Set<UltimateParentMapping> children = ultimateParentChildren.get(pksPosition.getKey());
         if (null != children) {
 
             for (final UltimateParentMapping mapping : children) {
 
-                final PositionValue childPksPosition = isinExposures.get(mapping.childISIN);
+                final ConstituentExposure childPksPosition = isinExposures.get(mapping.childISIN);
                 if (null == childPksPosition) {
                     updateExposure(mapping.childISIN, mapping.parentToChildRatio * pksPosition.exposure, 0d);
                 } else {
@@ -108,7 +103,7 @@ public class PKSPositionClient implements ITransportCacheListener<String, Positi
         if (null == ultimateParent) {
             updateExposure(pksPosition.getKey(), pksPosition.exposure, pksPosition.position);
         } else {
-            final PositionValue parentPksPosition = isinExposures.get(ultimateParent.parentID.isin);
+            final ConstituentExposure parentPksPosition = isinExposures.get(ultimateParent.parentID.isin);
             if (null == parentPksPosition) {
                 updateExposure(pksPosition.getKey(), 0d, pksPosition.position);
             } else {
