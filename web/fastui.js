@@ -1,23 +1,23 @@
 // Constants
-var ARG_SEPARATOR = '\0';
-var CMD_SEPARATOR = '\1';
-var DATA_SEPARATOR = '\2';
+const ARG_SEPARATOR = '\0';
+const CMD_SEPARATOR = '\1';
+const DATA_SEPARATOR = '\2';
 
-var LEFT_CLICK_BUTTON = 1;
-var MIDDLE_CLICK_BUTTON = 2;
-var RIGHT_CLICK_BUTTON = 3;
+const LEFT_CLICK_BUTTON = 1;
+const MIDDLE_CLICK_BUTTON = 2;
+const RIGHT_CLICK_BUTTON = 3;
 
 // Globals
-var ws;
+let ws;
 
-var Handler = function (ws) {
+const Handler = function (ws) {
 
-	var Data = {};
-	var Regexps = {};
-	var self = this;
+	let Data = {};
+	const Regexps = {};
+	const self = this;
 
 	function toggleClass(id, cls, enabled) {
-		var elem = q(id);
+		const elem = q(id);
 		if (elem) {
 			if (enabled) {
 				elem.classList.add(cls);
@@ -39,7 +39,7 @@ var Handler = function (ws) {
 	}
 
 	function set(k, v) {
-		var elem = q(k);
+		const elem = q(k);
 		if (elem.tagName == "INPUT" && elem.type == "checkbox") {
 			elem.checked = v == "true";
 		} else if (elem.tagName == "INPUT" || elem.tagName == "SELECT") {
@@ -54,9 +54,9 @@ var Handler = function (ws) {
 	}
 
 	function packData(elementId, extra) {
-		var data = [];
-		var elem = q(elementId);
-		var stored = Data[elementId];
+		const data = [];
+		const elem = q(elementId);
+		const stored = Data[elementId];
 		if (stored) {
 			for (var k in stored) {
 				if (stored.hasOwnProperty(k)) {
@@ -85,7 +85,7 @@ var Handler = function (ws) {
 	}
 
 	function getButton(e) {
-		var button =
+		const button =
 			e.which == LEFT_CLICK_BUTTON ? "left"
 				: e.which == MIDDLE_CLICK_BUTTON ? "middle"
 				: e.which == RIGHT_CLICK_BUTTON ? "right" : "none";
@@ -93,8 +93,8 @@ var Handler = function (ws) {
 	}
 
 	function getRegexp(pattern, modifiers) {
-		var key = (pattern + "_" + modifiers);
-		var regExp = Regexps[key];
+		const key = (pattern + "_" + modifiers);
+		let regExp = Regexps[key];
 		if (!regExp) {
 			regExp = new RegExp(pattern, modifiers);
 			Regexps[key] = regExp;
@@ -111,9 +111,9 @@ var Handler = function (ws) {
 	};
 
 	self.msg = function (data) {
-		var cmds = data.split(CMD_SEPARATOR);
+		const cmds = data.split(CMD_SEPARATOR);
 		cmds.forEach(function (cmd) {
-			var args = cmd.split(ARG_SEPARATOR);
+			const args = cmd.split(ARG_SEPARATOR);
 			if (self[args[0]]) {
 				self[args[0]](args);
 			} else {
@@ -123,70 +123,71 @@ var Handler = function (ws) {
 	};
 
 	self.txt = function (args) {
-		for (var i = 1; i < args.length - 1; i += 2) {
+		for (let i = 1; i < args.length - 1; i += 2) {
 			set(args[i], args[i + 1]);
 		}
 	};
 
 	self.cls = function (args) {
-		for (var i = 1; i < args.length - 2; i += 3) {
+		for (let i = 1; i < args.length - 2; i += 3) {
 			toggleClass(args[i], args[i + 1], args[i + 2] == "true");
 		}
 	};
 
 	self.height = function (args) {
-		for (var i = 1; i < args.length - 2; i += 3) {
-			var moveId = args[i];
-			var refId = args[i + 1];
-			var heightFraction = 0.5 - parseFloat(args[i + 2]);
-			var refCell = $(q(refId));
-			var ladderTop = refCell.offsetParent().offsetParent().offset().top;
-			var refTop = refCell.offset().top;
-			var newTop = (refTop - ladderTop) + heightFraction * refCell.outerHeight(true);
+		for (let i = 1; i < args.length - 2; i += 3) {
+			const moveId = args[i];
+			const refId = args[i + 1];
+			const heightFraction = 0.5 - parseFloat(args[i + 2]);
+			const refCell = $(q(refId));
+			const ladderTop = refCell.offsetParent().offsetParent().offset().top;
+			const refTop = refCell.offset().top;
+			const newTop = (refTop - ladderTop) + heightFraction * refCell.outerHeight(true);
 			$(q(moveId)).css({top: newTop - 1});
 		}
 	};
 
 	self.width = function (args) {
-		for (var i = 1; i < args.length - 1; i += 2) {
-			var moveId = args[i];
-			var width = args[i + 1];
+		for (let i = 1; i < args.length - 1; i += 2) {
+			const moveId = args[i];
+			const width = args[i + 1];
 			$(q(moveId)).css({width: width});
 		}
 	};
 
 	self.data = function (args) {
-		for (var i = 1; i < args.length - 2; i += 3) {
-			var elementId = args[i];
-			var key = args[i + 1];
-			var value = args[i + 2];
+		for (let i = 1; i < args.length - 2; i += 3) {
+			const elementId = args[i];
+			const key = args[i + 1];
+			const value = args[i + 2];
 			setData(elementId, key, value);
 		}
 	};
 
 	self.eval = function (args) {
-		for (var i = 1; i < args.length; i++) {
+		for (let i = 1; i < args.length; i++) {
 			eval(args[i]);
 		}
 	};
 
 	self.clickable = function (args) {
-		for (var i = 1; i < args.length; i++) {
+		for (let i = 1; i < args.length; i++) {
 			toggleClass(args[i], 'clickable', true);
 			$(args[i]).unbind("dblclick")
 				.bind("dblclick", function (e) {
-					var event = 'dblclick';
-					var elementId = e.target.id;
-					var button = getButton(e);
+					const event = 'dblclick';
+					const elementId = e.target.id;
+					const button = getButton(e);
 					send(event, elementId, packData(elementId, {"button": button}));
 					e.stopPropagation();
 				})
 				.unbind("mousedown")
 				.bind("mousedown", function (e) {
-					var event = 'click';
-					var elementId = e.target.id;
-					var button = getButton(e);
-					send(event, elementId, packData(elementId, {"button": button}));
+					const event = 'click';
+					const elementId = e.target.id;
+					const button = getButton(e);
+					const isCtrl = e.ctrlKey ? "true" : "false";
+					send(event, elementId, packData(elementId, {"button": button, "isCtrlPressed": isCtrl}));
 					e.stopPropagation();
 				})
 				.unbind("contextmenu")
@@ -198,7 +199,7 @@ var Handler = function (ws) {
 	};
 
 	self.scrollable = function (args) {
-		for (var i = 1; i < args.length; i++) {
+		for (let i = 1; i < args.length; i++) {
 			$(args[i]).unbind('mousewheel').bind('mousewheel', function (event) {
 				send('scroll', event.wheelDelta > 0 ? "up" : "down", event.target.id, packData(event.target.id));
 			})

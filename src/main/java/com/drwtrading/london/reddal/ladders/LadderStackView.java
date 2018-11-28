@@ -505,27 +505,43 @@ public class LadderStackView implements ILadderBoard {
                 }
             } else if (label.startsWith(HTML.STACK_BID_PICARD)) {
 
+                final boolean isCtrlPressed = Boolean.parseBoolean(data.get("isCtrlPressed"));
+
                 final int price = Integer.valueOf(data.get("price"));
                 final String expectedLabel = ladderModel.getStackPanel().getRowByPrice(price).htmlData.stackBidPicardKey;
-                cancelBidStackOrders(price, label, expectedLabel, StackType.PICARD);
+                final String orderType = getPref(HTML.ORDER_TYPE_LEFT);
+
+                cancelStackOrders(clientSpeedState, BookSide.BID, price, label, expectedLabel, StackType.PICARD, isCtrlPressed, orderType);
 
             } else if (label.startsWith(HTML.STACK_BID_QUOTE)) {
 
+                final boolean isCtrlPressed = Boolean.parseBoolean(data.get("isCtrlPressed"));
+
                 final int price = Integer.valueOf(data.get("price"));
                 final String expectedLabel = ladderModel.getStackPanel().getRowByPrice(price).htmlData.stackBidQuoteKey;
-                cancelBidStackOrders(price, label, expectedLabel, StackType.QUOTER);
+                final String orderType = getPref(HTML.ORDER_TYPE_LEFT);
+
+                cancelStackOrders(clientSpeedState, BookSide.BID, price, label, expectedLabel, StackType.QUOTER, isCtrlPressed, orderType);
 
             } else if (label.startsWith(HTML.STACK_ASK_PICARD)) {
 
+                final boolean isCtrlPressed = Boolean.parseBoolean(data.get("isCtrlPressed"));
+
                 final int price = Integer.valueOf(data.get("price"));
                 final String expectedLabel = ladderModel.getStackPanel().getRowByPrice(price).htmlData.stackAskPicardKey;
-                cancelAskStackOrders(price, label, expectedLabel, StackType.PICARD);
+                final String orderType = getPref(HTML.ORDER_TYPE_LEFT);
+
+                cancelStackOrders(clientSpeedState, BookSide.ASK, price, label, expectedLabel, StackType.PICARD, isCtrlPressed, orderType);
 
             } else if (label.startsWith(HTML.STACK_ASK_QUOTE)) {
 
+                final boolean isCtrlPressed = Boolean.parseBoolean(data.get("isCtrlPressed"));
+
                 final int price = Integer.valueOf(data.get("price"));
                 final String expectedLabel = ladderModel.getStackPanel().getRowByPrice(price).htmlData.stackAskQuoteKey;
-                cancelAskStackOrders(price, label, expectedLabel, StackType.QUOTER);
+                final String orderType = getPref(HTML.ORDER_TYPE_LEFT);
+
+                cancelStackOrders(clientSpeedState, BookSide.ASK, price, label, expectedLabel, StackType.QUOTER, isCtrlPressed, orderType);
 
             } else if (label.equals(HTML.BUY_OFFSET_UP)) {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
@@ -592,13 +608,57 @@ public class LadderStackView implements ILadderBoard {
                     submitOrderRightClick(clientSpeedState, label, data);
                 }
             } else if (label.startsWith(HTML.STACK_BID_QUOTE)) {
-                rightClickBidModify(clientSpeedState, data, StackType.QUOTER);
+
+                if (Boolean.parseBoolean(data.get("isCtrlPressed"))) {
+
+                    final int price = Integer.valueOf(data.get("price"));
+                    final String expectedLabel = ladderModel.getStackPanel().getRowByPrice(price).htmlData.stackBidQuoteKey;
+                    final String orderType = getPref(HTML.ORDER_TYPE_RIGHT);
+
+                    cancelStackOrders(clientSpeedState, BookSide.BID, price, label, expectedLabel, StackType.QUOTER, true, orderType);
+                } else {
+                    rightClickBidModify(clientSpeedState, data, StackType.QUOTER);
+                }
+
             } else if (label.startsWith(HTML.STACK_BID_PICARD)) {
-                rightClickBidModify(clientSpeedState, data, StackType.PICARD);
+
+                if (Boolean.parseBoolean(data.get("isCtrlPressed"))) {
+
+                    final int price = Integer.valueOf(data.get("price"));
+                    final String expectedLabel = ladderModel.getStackPanel().getRowByPrice(price).htmlData.stackBidPicardKey;
+                    final String orderType = getPref(HTML.ORDER_TYPE_RIGHT);
+
+                    cancelStackOrders(clientSpeedState, BookSide.BID, price, label, expectedLabel, StackType.PICARD, true, orderType);
+                } else {
+                    rightClickBidModify(clientSpeedState, data, StackType.PICARD);
+                }
+
             } else if (label.startsWith(HTML.STACK_ASK_QUOTE)) {
-                rightClickAskModify(clientSpeedState, data, StackType.QUOTER);
+
+                if (Boolean.parseBoolean(data.get("isCtrlPressed"))) {
+
+                    final int price = Integer.valueOf(data.get("price"));
+                    final String expectedLabel = ladderModel.getStackPanel().getRowByPrice(price).htmlData.stackAskQuoteKey;
+                    final String orderType = getPref(HTML.ORDER_TYPE_RIGHT);
+
+                    cancelStackOrders(clientSpeedState, BookSide.ASK, price, label, expectedLabel, StackType.QUOTER, true, orderType);
+                } else {
+                    rightClickAskModify(clientSpeedState, data, StackType.QUOTER);
+                }
+
             } else if (label.startsWith(HTML.STACK_ASK_PICARD)) {
-                rightClickAskModify(clientSpeedState, data, StackType.PICARD);
+
+                if (Boolean.parseBoolean(data.get("isCtrlPressed"))) {
+
+                    final int price = Integer.valueOf(data.get("price"));
+                    final String expectedLabel = ladderModel.getStackPanel().getRowByPrice(price).htmlData.stackAskPicardKey;
+                    final String orderType = getPref(HTML.ORDER_TYPE_RIGHT);
+
+                    cancelStackOrders(clientSpeedState, BookSide.ASK, price, label, expectedLabel, StackType.PICARD, true, orderType);
+                } else {
+                    rightClickAskModify(clientSpeedState, data, StackType.PICARD);
+                }
+
             } else if (label.equals(HTML.BUY_OFFSET_UP)) {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     increaseChildOffsetCmdPublisher.publish(
@@ -693,29 +753,42 @@ public class LadderStackView implements ILadderBoard {
         final StackType stackType = StackType.getStackType(stackTypePref);
 
         final int price = Integer.valueOf(data.get("price"));
+        final long qty = Boolean.parseBoolean(data.get("isCtrlPressed")) ? -tradingBoxQty : tradingBoxQty;
 
         final StackPanelRow stackRow = ladderModel.getStackPanel().getRowByPrice(price);
 
-        if (ClientSpeedState.TOO_SLOW == clientSpeedState) {
-            throw new IllegalArgumentException("Client too slow [" + clientSpeedState + "].");
-        } else if (null == orderType) {
+        if (null == orderType) {
             throw new IllegalArgumentException("No order type [" + orderTypePref + "] provided.");
         } else if (null == stackType) {
             throw new IllegalArgumentException("No stack type [" + stackTypePref + "] provided.");
         } else if (label.equals(stackRow.htmlData.stackBidOffsetKey)) {
 
-            if (!stackData.addBidStackQty(stackType, orderType, price, tradingBoxQty)) {
-                throw new IllegalStateException("Could not send msg - stack connection down.");
-            }
+            addQtyOrderClick(clientSpeedState, BookSide.BID, stackType, orderType, price, qty);
 
         } else if (label.equals(stackRow.htmlData.stackAskOffsetKey)) {
 
-            if (!stackData.addAskStackQty(stackType, orderType, price, tradingBoxQty)) {
-                throw new IllegalStateException("Could not send msg - stack connection down.");
-            }
+            addQtyOrderClick(clientSpeedState, BookSide.ASK, stackType, orderType, price, qty);
 
         } else {
             throw new IllegalArgumentException("Price " + price + " did not match key " + label);
+        }
+    }
+
+    private void addQtyOrderClick(final ClientSpeedState clientSpeedState, final BookSide side, final StackType stackType,
+            final StackOrderType orderType, final int price, final long qty) {
+
+        if (ClientSpeedState.TOO_SLOW == clientSpeedState) {
+            throw new IllegalArgumentException("Client too slow [" + clientSpeedState + "].");
+        } else if (BookSide.BID == side) {
+
+            if (!stackData.addBidStackQty(stackType, orderType, price, qty)) {
+                throw new IllegalStateException("Could not send msg - stack connection down.");
+            }
+        } else {
+
+            if (!stackData.addAskStackQty(stackType, orderType, price, qty)) {
+                throw new IllegalStateException("Could not send msg - stack connection down.");
+            }
         }
 
         final int reloadBoxQty = Integer.valueOf(getPref(HTML.INP_RELOAD));
@@ -778,22 +851,27 @@ public class LadderStackView implements ILadderBoard {
         }
     }
 
-    private void cancelBidStackOrders(final int price, final String label, final String expectedLabel, final StackType stackType) {
+    private void cancelStackOrders(final ClientSpeedState clientSpeedState, final BookSide side, final int price, final String label,
+            final String expectedLabel, final StackType stackType, final boolean isReduceQty, final String orderTypePref) {
 
         if (label.equals(expectedLabel)) {
-            if (!stackData.clearBidStackPrice(stackType, price)) {
-                throw new IllegalStateException("Could not send msg - stack connection down.");
-            }
-        } else {
-            System.out.println("Mismatched label: " + price + ' ' + expectedLabel + ' ' + label);
-        }
-    }
 
-    private void cancelAskStackOrders(final int price, final String label, final String expectedLabel, final StackType stackType) {
+            if (isReduceQty) {
 
-        if (label.equals(expectedLabel)) {
-            if (!stackData.clearAskStackPrice(stackType, price)) {
-                throw new IllegalStateException("Could not send msg - stack connection down.");
+                final StackOrderType orderType = StackOrderType.getOrderType(orderTypePref);
+
+                addQtyOrderClick(clientSpeedState, side, stackType, orderType, price, -tradingBoxQty);
+
+            } else if (BookSide.BID == side) {
+
+                if (!stackData.clearBidStackPrice(stackType, price)) {
+                    throw new IllegalStateException("Could not send msg - stack connection down.");
+                }
+            } else {
+
+                if (!stackData.clearAskStackPrice(stackType, price)) {
+                    throw new IllegalStateException("Could not send msg - stack connection down.");
+                }
             }
         } else {
             System.out.println("Mismatched label: " + price + ' ' + expectedLabel + ' ' + label);
