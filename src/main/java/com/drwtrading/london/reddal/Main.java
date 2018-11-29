@@ -690,24 +690,23 @@ public class Main {
                     updateClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10));
                     updateClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
                             new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT));
-                    updateClient.handler(
-                            new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(Constants::NO_OP,
-                                    channels.orderEntryFromServer, evt -> {
-                                if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
-                                    final Update msg = (Update) evt.getMsg();
-                                    channels.orderEntryFromServer.publish(new UpdateFromServer(evt.getFromInstance(), msg));
-                                }
-                            }) {
-                                @Override
-                                protected Void connected(final PhotocolsConnection<Void> connection) {
-                                    return null;
-                                }
+                    updateClient.handler(new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(
+                            Constants::NO_OP, channels.orderEntryFromServer, evt -> {
+                        if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
+                            final Update msg = (Update) evt.getMsg();
+                            channels.orderEntryFromServer.publish(new UpdateFromServer(evt.getFromInstance(), msg));
+                        }
+                    }) {
+                        @Override
+                        protected Void connected(final PhotocolsConnection<Void> connection) {
+                            return null;
+                        }
 
-                                @Override
-                                protected OrderEntryFromServer disconnected(final PhotocolsConnection<Void> connection) {
-                                    return new ServerDisconnected(server);
-                                }
-                            });
+                        @Override
+                        protected OrderEntryFromServer disconnected(final PhotocolsConnection<Void> connection) {
+                            return new ServerDisconnected(server);
+                        }
+                    });
                     fibers.remoteOrders.execute(updateClient::start);
                     System.out.println("EEIF-OE: " + server + "\tUpdate: " + update.host);
                 }
@@ -1183,8 +1182,7 @@ public class Main {
             for (int i = 0; i < remoteOrderPriorities.length; ++i) {
                 remoteOrderPriorities[i] = remoteOrderPriorities[i].trim();
             }
-            final RemoteOrderServerRouter orderRouter =
-                    new RemoteOrderServerRouter(remoteOrderPriorities);
+            final RemoteOrderServerRouter orderRouter = new RemoteOrderServerRouter(remoteOrderPriorities);
             channels.cmdsForNibblers.subscribe(selectIOFiber, cmd -> cmd.route(orderRouter));
 
             final Set<String> prioritisedNibblers = new HashSet<>(Arrays.asList(remoteOrderPriorities));

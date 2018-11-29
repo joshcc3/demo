@@ -258,6 +258,11 @@ div {
 	color: #c5c5c5;
 }
 
+.EPHEMERAL {
+	background-color: #FF6F6F;
+	color: black;
+}
+
 .ONE_SHOT {
 	background-color: #5ACE62;
 	color: black;
@@ -414,12 +419,16 @@ div {
 	background: linear-gradient(to right, #5970B2, #FB6E75);
 }
 
-.column.stackQty.ONE_SHOT:after, .column.stackQty.AUTO_MANAGE:after, .column.stackQty.REFRESHABLE:after {
+.column.stackQty.EPHEMERAL:after, .column.stackQty.ONE_SHOT:after, .column.stackQty.AUTO_MANAGE:after, .column.stackQty.REFRESHABLE:after {
 	content: "";
 	height: 3px;
 	display: block;
 	margin-bottom: 0;
 	margin-top: 0;
+}
+
+.column.stackQty.EPHEMERAL:after {
+	background: #FF6F6F;
 }
 
 .column.stackQty.ONE_SHOT:after {
@@ -434,6 +443,18 @@ div {
 	background: #9154BE;
 }
 
+.column.stackQty.EPHEMERAL.ONE_SHOT:after {
+	background: linear-gradient(to right, #FF6F6F 50%, #5ACE62 50%);
+}
+
+.column.stackQty.EPHEMERAL.AUTO_MANAGE:after {
+	background: linear-gradient(to right, #FF6F6F 50%, #FFCE70 50%);
+}
+
+.column.stackQty.EPHEMERAL.REFRESHABLE:after {
+	background: linear-gradient(to right, #FF6F6F 50%, #9154BE 50%);
+}
+
 .column.stackQty.ONE_SHOT.AUTO_MANAGE:after {
 	background: linear-gradient(to right, #5ACE62 50%, #FFCE70 50%);
 }
@@ -446,8 +467,24 @@ div {
 	background: linear-gradient(to right, #FFCE70 50%, #9154BE 50%);
 }
 
+.column.stackQty.EPHEMERAL.ONE_SHOT.AUTO_MANAGE:after {
+	background: linear-gradient(to right, #FF6F6F 33%, #5ACE62 33%, #5ACE62 66%, #FFCE70 66%);
+}
+
+.column.stackQty.EPHEMERAL.ONE_SHOT.REFRESHABLE:after {
+	background: linear-gradient(to right, #FF6F6F 33%, #5ACE62 33%, #5ACE62 66%, #9154BE 66%);
+}
+
+.column.stackQty.EPHEMERAL.AUTO_MANAGE.REFRESHABLE:after {
+	background: linear-gradient(to right, #FF6F6F 33%, #FFCE70 33%, #FFCE70 66%, #9154BE 66%);
+}
+
 .column.stackQty.ONE_SHOT.AUTO_MANAGE.REFRESHABLE:after {
 	background: linear-gradient(to right, #5ACE62 33%, #FFCE70 33%, #FFCE70 66%, #9154BE 66%);
+}
+
+.column.stackQty.EPHEMERAL.ONE_SHOT.AUTO_MANAGE.REFRESHABLE:after {
+	background: linear-gradient(to right, #FF6F6F 25%, #5ACE62 25%, #5ACE62 50%, #FFCE70 50%, #FFCE70 75%, #9154BE 75%);
 }
 
 .volume {

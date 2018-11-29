@@ -63,9 +63,7 @@ public class LadderStackView implements ILadderBoard {
 
         STACK_ORDER_TYPES = new HashSet<>();
         for (final StackOrderType orderType : StackOrderType.values()) {
-            if (StackOrderType.CHILD_ONE_SHOT != orderType) {
-                STACK_ORDER_TYPES.add(orderType.name());
-            }
+            STACK_ORDER_TYPES.add(orderType.name());
         }
     }
 
@@ -357,22 +355,26 @@ public class LadderStackView implements ILadderBoard {
         if (null != level) {
 
             ladderModel.setClass(picardKey, CSSClass.STACK_QTY, 0 < picardQty);
+            ladderModel.setClass(picardKey, CSSClass.EPHEMERAL, level.isOrderTypePresent(StackType.PICARD, StackOrderType.EPHEMERAL));
             ladderModel.setClass(picardKey, CSSClass.ONE_SHOT, level.isOrderTypePresent(StackType.PICARD, StackOrderType.ONE_SHOT));
             ladderModel.setClass(picardKey, CSSClass.AUTO_MANAGE, level.isOrderTypePresent(StackType.PICARD, StackOrderType.AUTO_MANAGE));
             ladderModel.setClass(picardKey, CSSClass.REFRESHABLE, level.isOrderTypePresent(StackType.PICARD, StackOrderType.REFRESHABLE));
 
             ladderModel.setClass(quoteKey, CSSClass.STACK_QTY, 0 < quoteQty);
+            ladderModel.setClass(quoteKey, CSSClass.EPHEMERAL, level.isOrderTypePresent(StackType.QUOTER, StackOrderType.EPHEMERAL));
             ladderModel.setClass(quoteKey, CSSClass.ONE_SHOT, level.isOrderTypePresent(StackType.QUOTER, StackOrderType.ONE_SHOT));
             ladderModel.setClass(quoteKey, CSSClass.AUTO_MANAGE, level.isOrderTypePresent(StackType.QUOTER, StackOrderType.AUTO_MANAGE));
             ladderModel.setClass(quoteKey, CSSClass.REFRESHABLE, level.isOrderTypePresent(StackType.QUOTER, StackOrderType.REFRESHABLE));
         } else {
 
             ladderModel.setClass(picardKey, CSSClass.STACK_QTY, false);
+            ladderModel.setClass(picardKey, CSSClass.EPHEMERAL, false);
             ladderModel.setClass(picardKey, CSSClass.ONE_SHOT, false);
             ladderModel.setClass(picardKey, CSSClass.AUTO_MANAGE, false);
             ladderModel.setClass(picardKey, CSSClass.REFRESHABLE, false);
 
             ladderModel.setClass(quoteKey, CSSClass.STACK_QTY, false);
+            ladderModel.setClass(quoteKey, CSSClass.EPHEMERAL, false);
             ladderModel.setClass(quoteKey, CSSClass.ONE_SHOT, false);
             ladderModel.setClass(quoteKey, CSSClass.AUTO_MANAGE, false);
             ladderModel.setClass(quoteKey, CSSClass.REFRESHABLE, false);

@@ -13,11 +13,11 @@ config default
 	include :scripts
 
 	include drw.london.eeif-utils/263
-	include drw.london.eeif-md/391
+	include drw.london.eeif-md/392
 	include drw.london.eeif-nibbler-transport/84
 	include drw.london.eeif-opxl-client/32
-	include drw.london.eeif-position-transport/123
-	include drw.london.eeif-stack-transport/143
+	include drw.london.eeif-position-transport/124
+	include drw.london.eeif-stack-transport/144
 	include drw.london.eeif-yoda-transport/109
 	include drw.london.eeif-indy-transport/223
 

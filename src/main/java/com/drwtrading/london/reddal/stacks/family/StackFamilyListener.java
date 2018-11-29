@@ -77,13 +77,13 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
 
     @Override
     public boolean stackCreated(final String source, final long stackGroupID, final String symbol, final InstrumentID instID,
-            final BookSide side) {
+            final BookSide side, final int fillCount) {
 
         final StackUIData uiData = uiDataBySymbol.get(symbol);
         uiDataByStackID.put(stackGroupID, uiData);
 
         final StackGroup stackGroup =
-                stackGroupFactory.createStackGroup(stackGroupID, symbol, instID, side, StackNoOpCacheListener.INSTANCE, uiData);
+                stackGroupFactory.createStackGroup(stackGroupID, symbol, instID, side, fillCount, StackNoOpCacheListener.INSTANCE, uiData);
         stackGroups.put(stackGroupID, stackGroup);
 
         uiData.stackGroupCreated(stackGroup);
@@ -135,8 +135,8 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     }
 
     @Override
-    public boolean setStackQty(final String source, final long stackGroupID, final StackType stackType, final StackOrderType orderType,
-            final int pullbackTicks, final long qty) {
+    public boolean setStackQty(final String source, final long stackGroupID, final int fillCount, final StackType stackType,
+            final StackOrderType orderType, final int pullbackTicks, final long qty) {
 
         final StackGroup stackGroup = stackGroups.get(stackGroupID);
         stackGroup.setStackQty(source, stackType, orderType, pullbackTicks, qty);
@@ -145,8 +145,8 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     }
 
     @Override
-    public boolean addStackQty(final String source, final long stackGroupID, final StackType stackType, final StackOrderType orderType,
-            final int pullbackTicks, final long qty) {
+    public boolean addStackQty(final String source, final long stackGroupID, final int fillCount, final StackType stackType,
+            final StackOrderType orderType, final int pullbackTicks, final long qty) {
 
         final StackGroup stackGroup = stackGroups.get(stackGroupID);
         stackGroup.addStackQty(source, stackType, orderType, pullbackTicks, qty);
@@ -155,8 +155,8 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     }
 
     @Override
-    public boolean setStackImage(final String source, final long stackGroupID, final StackType stackType, final Stack stack,
-            final boolean isCrossCheckRequired) {
+    public boolean setStackImage(final String source, final long stackGroupID, final int fillCount, final StackType stackType,
+            final Stack stack, final boolean isCrossCheckRequired) {
 
         final LongMap<EnumMap<StackOrderType, Long>> pullbackLevels = new LongMap<>();
         StackLevel stackLevel = stack.getFirstLevel();

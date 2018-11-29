@@ -92,7 +92,9 @@ public class WorkingOrdersByBestPrice {
 
     public boolean connectionLost(final String source) {
 
-        return clearOrders(bidOrdersByPrice, source) || clearOrders(askOrdersByPrice, source);
+        final boolean isBidDeleted = clearOrders(bidOrdersByPrice, source);
+        final boolean isAskDeleted = clearOrders(askOrdersByPrice, source);
+        return isBidDeleted || isAskDeleted;
     }
 
     private boolean clearOrders(final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> orders, final String source) {

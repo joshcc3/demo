@@ -82,6 +82,7 @@ public enum CSSClass {
     PICARD("PICARD"),
     QUOTER("QUOTER"),
 
+    EPHEMERAL("EPHEMERAL"),
     ONE_SHOT("ONE_SHOT"),
     AUTO_MANAGE("AUTO_MANAGE"),
     REFRESHABLE("REFRESHABLE"),
@@ -121,7 +122,7 @@ public enum CSSClass {
 
     static {
         STACK_TYPES = EnumSet.of(QUOTER, PICARD);
-        STACK_ORDER_TYPES = EnumSet.of(ONE_SHOT, AUTO_MANAGE, REFRESHABLE);
+        STACK_ORDER_TYPES = EnumSet.of(EPHEMERAL, ONE_SHOT, AUTO_MANAGE, REFRESHABLE);
 
         CSS_CLASS_BY_NAME = new HashMap<>();
         for (final CSSClass cssClass : CSSClass.values()) {
