@@ -1239,7 +1239,7 @@ public class Main {
 
                 if (isTransportForTrading) {
 
-                    if (!prioritisedNibblers.contains(nibbler)) {
+                    if (!prioritisedNibblers.remove(nibbler)) {
                         throw new IllegalStateException("Trading nibbler [" + nibbler + "] configured without priority.");
                     } else {
 
@@ -1259,6 +1259,10 @@ public class Main {
                         cache.addTradingDataListener(workingOrderListener, true, true);
                     }
                 }
+            }
+
+            if (!prioritisedNibblers.isEmpty()) {
+                throw new IllegalStateException("Trading nibblers " + prioritisedNibblers.toString() + " were not configured");
             }
 
             final TypedChannel<WebSocketControlMessage> msgBlotterWebSocket = TypedChannels.create(WebSocketControlMessage.class);
