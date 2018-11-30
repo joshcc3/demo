@@ -19,10 +19,18 @@ public class AutoPullPersistenceTest {
     @Test
     public void worksTest() throws IOException {
 
+        final String orderSymbol = "SYMBOL1";
+        final String mdSymbol = "SYMBOL2";
+
         final Path tempFile = Files.createTempFile("pull", ".json");
-        final PullRule pullRule =
-                new PullRule(PullRule.nextID(), "SYMBOL1", new OrderSelectionPriceRangeSelection("SYMBOL1", BookSide.BID, -999, 999),
-                        new MktConditionQtyAtPriceCondition("SYMBOL1", BookSide.BID, 10069, MktConditionConditional.GT, 50));
+
+        final OrderSelectionPriceRangeSelection orderSelection =
+                new OrderSelectionPriceRangeSelection(orderSymbol, BookSide.BID, -999, 999);
+
+        final MktConditionQtyAtPriceCondition mdCondition =
+                new MktConditionQtyAtPriceCondition(mdSymbol, BookSide.BID, 10069, MktConditionConditional.GT, 50);
+
+        final PullRule pullRule = new PullRule(PullRule.nextID(), orderSymbol, orderSelection, mdSymbol, mdCondition);
 
         final AutoPullPersistence persistenceOne = new AutoPullPersistence(tempFile);
         persistenceOne.updateRule(pullRule);

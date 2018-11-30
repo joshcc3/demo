@@ -39,6 +39,8 @@ import java.util.TreeSet;
 
 public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
 
+    private static final int MAX_DEPTH_TO_DISPLAY = 25;
+
     private final MDSource mdSource;
     private final IMDSubscriber mdSubscriber;
 
@@ -130,9 +132,15 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
             for (final LongMapNode<AutoPullerPullRule> pullRuleNode : pullRules) {
 
                 final AutoPullerPullRule rule = pullRuleNode.getValue();
-                prices.add(rule.pullRule.mktCondition.price);
-                prices.add(rule.pullRule.orderSelection.fromPrice);
-                prices.add(rule.pullRule.orderSelection.toPrice);
+
+                final PullRule pullRule = rule.pullRule;
+                if (pullRule.mdSymbol.equals(symbol)) {
+                    prices.add(rule.pullRule.mktCondition.price);
+                }
+                if (pullRule.orderSymbol.equals(symbol)) {
+                    prices.add(rule.pullRule.orderSelection.fromPrice);
+                    prices.add(rule.pullRule.orderSelection.toPrice);
+                }
             }
         }
 
@@ -140,25 +148,18 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
         if (null != md && null != md.getBook()) {
 
             final IBook<?> book = md.getBook();
-            Long bidPrice = null;
-            for (IBookLevel lvl = book.getBestBid(); lvl != null; lvl = lvl.next()) {
-                bidPrice = lvl.getPrice();
-            }
+            IBookLevel bestBid = book.getBestBid();
+            IBookLevel bestAsk = book.getBestAsk();
 
-            Long askPrice = null;
-            for (IBookLevel lvl = book.getBestAsk(); lvl != null; lvl = lvl.next()) {
-                askPrice = lvl.getPrice();
+            if (bestBid == null && null != bestAsk) {
+                bestBid = bestAsk;
             }
-
-            if (bidPrice == null && null != askPrice) {
-                bidPrice = askPrice;
+            if (bestAsk == null && null != bestBid) {
+                bestAsk = bestBid;
             }
-            if (askPrice == null && null != bidPrice) {
-                askPrice = bidPrice;
-            }
-            if (bidPrice != null) {
-                prices.add(book.getTickTable().subtractTicks(bidPrice, 5));
-                prices.add(book.getTickTable().addTicks(askPrice, 5));
+            if (bestBid != null) {
+                prices.add(book.getTickTable().subtractTicks(bestBid.getPrice(), MAX_DEPTH_TO_DISPLAY));
+                prices.add(book.getTickTable().addTicks(bestAsk.getPrice(), MAX_DEPTH_TO_DISPLAY));
             }
             if (!prices.isEmpty()) {
                 for (long price = prices.first(); prices.last() <= price; price = book.getTickTable().subtractTicks(price, 1)) {
@@ -166,6 +167,7 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
                 }
             }
         }
+
         return new ArrayList<>(prices);
     }
 
@@ -179,16 +181,21 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
     @Override
     public void setRule(final PullRule rule) {
 
-        final MDForSymbol mdForSymbol = addMDSubscription(rule.symbol);
+        final MDForSymbol mdForSymbol = addMDSubscription(rule.mdSymbol);
         deleteRule(rule.ruleID);
 
         final AutoPullerPullRule newRule = new AutoPullerPullRule(rule, mdForSymbol);
         rulesByID.put(rule.ruleID, newRule);
 
-        final LongMap<AutoPullerPullRule> symbolRules = MapUtils.getMappedLongMap(rulesBySymbol, rule.symbol);
-        symbolRules.put(rule.ruleID, newRule);
+        final LongMap<AutoPullerPullRule> mdSymbolRules = MapUtils.getMappedLongMap(rulesBySymbol, rule.mdSymbol);
+        mdSymbolRules.put(rule.ruleID, newRule);
 
-        final Set<SourcedWorkingOrder> sourcedOrders = workingOrders.get(rule.symbol);
+        if (!rule.mdSymbol.equals(rule.orderSymbol)) {
+            final LongMap<AutoPullerPullRule> orderSymbolRules = MapUtils.getMappedLongMap(rulesBySymbol, rule.orderSymbol);
+            orderSymbolRules.put(rule.ruleID, newRule);
+        }
+
+        final Set<SourcedWorkingOrder> sourcedOrders = workingOrders.get(rule.orderSymbol);
         runRule(sourcedOrders, newRule);
     }
 
@@ -223,7 +230,7 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
 
     private void safeStart(final AutoPullerPullRule rule, final String username) {
 
-        final Set<SourcedWorkingOrder> orders = workingOrders.get(rule.pullRule.symbol);
+        final Set<SourcedWorkingOrder> orders = workingOrders.get(rule.pullRule.orderSymbol);
 
         final Collection<IOrderCmd> cmds = rule.getOrdersToPull(cancelRejectMsgs, orders);
 
@@ -264,13 +271,10 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
         final AutoPullerPullRule rule = rulesByID.remove(ruleID);
         if (null != rule) {
 
-            final String symbol = rule.pullRule.symbol;
+            deleteRule(rule.pullRule.mdSymbol, ruleID);
 
-            final LongMap<AutoPullerPullRule> symbolRules = rulesBySymbol.get(symbol);
-            symbolRules.remove(ruleID);
-
-            if (symbolRules.isEmpty()) {
-                rulesBySymbol.remove(symbol);
+            if (!rule.pullRule.mdSymbol.equals(rule.pullRule.orderSymbol)) {
+                deleteRule(rule.pullRule.orderSymbol, ruleID);
             }
 
             if (null != rule.md.getBook()) {
@@ -279,6 +283,16 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
             }
 
             lastRuleStates.remove(rule.pullRule.ruleID);
+        }
+    }
+
+    private void deleteRule(final String symbol, final long ruleID) {
+
+        final LongMap<AutoPullerPullRule> symbolRules = rulesBySymbol.get(symbol);
+        symbolRules.remove(ruleID);
+
+        if (symbolRules.isEmpty()) {
+            rulesBySymbol.remove(symbol);
         }
     }
 
@@ -319,7 +333,7 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
             final IBook<?> book = rule.md.getBook();
             System.out.println("---- Auto puller Fired --- " + new DateTime());
             System.out.println("Rule:\n" + rule.pullRule);
-            System.out.println("Book:");
+            System.out.println("Book: " + book.getSymbol());
             System.out.println("\tinstid " + book.getInstID() + ", source " + book.getSourceExch() + " status " + book.getStatus());
             System.out.println("\tseqno " + book.getLastPacketSeqNum() + " ref time " + book.getReferenceNanoSinceMidnightUTC());
             System.out.println("\tvalid " + book.isValid());

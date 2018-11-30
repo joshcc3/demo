@@ -17,9 +17,16 @@ public class PullRuleTest {
     @Test
     public void jsonTest() throws IOException, JSONException {
 
-        final PullRule pullRule =
-                new PullRule(PullRule.nextID(), "SYMBOL1", new OrderSelectionPriceRangeSelection("SYMBOL1", BookSide.BID, -999, 999),
-                        new MktConditionQtyAtPriceCondition("SYMBOL1", BookSide.BID, 10069, MktConditionConditional.GT, 50));
+        final String orderSymbol = "SYMBOL1";
+        final String mdSymbol = "SYMBOL2";
+
+        final OrderSelectionPriceRangeSelection orderSelection =
+                new OrderSelectionPriceRangeSelection(orderSymbol, BookSide.BID, -999, 999);
+
+        final MktConditionQtyAtPriceCondition mdCondition =
+                new MktConditionQtyAtPriceCondition(mdSymbol, BookSide.BID, 10069, MktConditionConditional.GT, 50);
+
+        final PullRule pullRule = new PullRule(PullRule.nextID(), orderSymbol, orderSelection, mdSymbol, mdCondition);
 
         final StringBuilder builder = new StringBuilder();
         pullRule.toJson(builder);

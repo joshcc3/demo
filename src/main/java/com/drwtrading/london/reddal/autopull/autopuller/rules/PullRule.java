@@ -23,29 +23,35 @@ public class PullRule extends Struct {
     private static final AtomicLong SUB_ID = new AtomicLong(0);
 
     public final long ruleID;
-    public final String symbol;
+
+    public final String orderSymbol;
     public final OrderSelectionPriceRangeSelection orderSelection;
+
+    public final String mdSymbol;
     public final MktConditionQtyAtPriceCondition mktCondition;
 
-    public PullRule(final long ruleID, final String symbol, final OrderSelectionPriceRangeSelection orderSelection,
-            final MktConditionQtyAtPriceCondition mktCondition) {
+    public PullRule(final long ruleID, final String orderSymbol, final OrderSelectionPriceRangeSelection orderSelection,
+            final String mdSymbol, final MktConditionQtyAtPriceCondition mktCondition) {
 
         this.ruleID = ruleID;
-        this.symbol = symbol;
+
+        this.orderSymbol = orderSymbol;
         this.orderSelection = orderSelection;
+
+        this.mdSymbol = mdSymbol;
         this.mktCondition = mktCondition;
     }
 
     public List<IOrderCmd> getPullCmds(final Publisher<LadderClickTradingIssue> rejectChannel, final String username,
             final Set<SourcedWorkingOrder> workingOrders, final IBook<?> book) {
 
-        if (mktCondition.conditionMet(book) && !workingOrders.isEmpty()) {
+        if (!workingOrders.isEmpty() && isBookValid(book) && mktCondition.conditionMet(book)) {
 
             final List<IOrderCmd> result = new ArrayList<>();
 
             for (final SourcedWorkingOrder sourcedOrder : workingOrders) {
 
-                if (isOrderInMarketData(sourcedOrder.order, book) && orderSelection.isSelectionMet(sourcedOrder.order)) {
+                if (isOrderSelectable(sourcedOrder.order, book) && orderSelection.isSelectionMet(sourcedOrder.order)) {
 
                     final IOrderCmd cmd = sourcedOrder.buildCancel(rejectChannel, username, true);
                     result.add(cmd);
@@ -57,12 +63,14 @@ public class PullRule extends Struct {
         }
     }
 
-    private static boolean isOrderInMarketData(final WorkingOrder order, final IBook<?> book) {
+    private static boolean isBookValid(final IBook<?> book) {
 
-        if (!order.getSymbol().equals(book.getSymbol()) || !book.isValid() || book.getStatus() != BookMarketState.CONTINUOUS ||
-                book.getBestBid() == null && book.getBestAsk() == null) {
-            return false;
-        } else {
+        return book.isValid() && BookMarketState.CONTINUOUS == book.getStatus();
+    }
+
+    private static boolean isOrderSelectable(final WorkingOrder order, final IBook<?> book) {
+
+        if (order.getSymbol().equals(book.getSymbol())) {
 
             final IBookLevel level;
             switch (order.getSide()) {
@@ -78,13 +86,22 @@ public class PullRule extends Struct {
             }
 
             return null != level && (order.getOrderQty() - order.getFilledQty() <= level.getQty());
+        } else {
+
+            return true;
         }
     }
 
     public static PullRule fromJSON(final JSONObject object) throws JSONException {
-        return new PullRule(object.getLong("ruleID"), object.getString("symbol"),
-                OrderSelectionPriceRangeSelection.fromJSON(object.getJSONObject("orderSelection")),
-                MktConditionQtyAtPriceCondition.fromJSON(object.getJSONObject("mktCondition")));
+
+        final String orderSymbol = object.has("orderSymbol") ? object.getString("orderSymbol") : object.getString("symbol");
+        final OrderSelectionPriceRangeSelection orderSelection =
+                OrderSelectionPriceRangeSelection.fromJSON(object.getJSONObject("orderSelection"));
+
+        final String mdSymbol = object.has("mdSymbol") ? object.getString("mdSymbol") : object.getString("symbol");
+        final MktConditionQtyAtPriceCondition mdCondition = MktConditionQtyAtPriceCondition.fromJSON(object.getJSONObject("mktCondition"));
+
+        return new PullRule(object.getLong("ruleID"), orderSymbol, orderSelection, mdSymbol, mdCondition);
     }
 
     public static long nextID() {

@@ -17,11 +17,17 @@ $(function () {
 });
 
 function setupInputBehavior() {
+
 	const inputRow = $("#rules").find("tr.ruleInput");
 	const symbolSelect = inputRow.find(".symbolSelect");
 	symbolSelect.unbind('change').bind('change', function () {
 		const symbol = symbolSelect.val();
 		populateRowPrices(inputRow, symbol);
+	});
+	const mdSymbolSelect = inputRow.find(".mdSymbolSelect");
+	mdSymbolSelect.unbind('change').bind('change', function () {
+		const symbol = mdSymbolSelect.val();
+		populateMDPrices(inputRow, symbol);
 	});
 	inputRow.find("button.update").unbind('click').bind('click', function () {
 		sendWriteRule(inputRow);
@@ -58,22 +64,25 @@ function populateRowPrices(inputRow, symbol) {
 		populateSelect(fromPrice, []);
 		populateSelect(toPrice, []);
 	}
+}
+
+function populateMDPrices(inputRow, symbol) {
 
 	const priceCondition = inputRow.find(".priceCondition");
 	if (MdPx[symbol]) {
-
 		populateSelect(priceCondition, MdPx[symbol], MdPx[symbol][MdPx[symbol].length / 2]);
 	} else {
 		populateSelect(priceCondition, []);
-
 	}
 }
 
-function populateRuleRow(row, side, symbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition, qtyThreshold) {
+function populateRuleRow(row, side, orderSymbol, mdSymbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition,
+						 qtyThreshold) {
+
 	row.find(".side").val(side);
-	populateSelect(row.find(".fromPrice"), WorkingPx[symbol], orderPriceFrom);
-	populateSelect(row.find(".toPrice"), WorkingPx[symbol], orderPriceTo);
-	populateSelect(row.find(".priceCondition"), MdPx[symbol], conditionPrice);
+	populateSelect(row.find(".fromPrice"), WorkingPx[orderSymbol], orderPriceFrom);
+	populateSelect(row.find(".toPrice"), WorkingPx[orderSymbol], orderPriceTo);
+	populateSelect(row.find(".priceCondition"), MdPx[mdSymbol], conditionPrice);
 	row.find(".conditionSide").val(conditionSide);
 	row.find(".qtyCondition").val(qtyCondition);
 	row.find(".qtyThreshold").val(qtyThreshold);
@@ -83,10 +92,8 @@ function playSound() {
 	Sound.play();
 }
 
-// Commands from server
-
-//noinspection JSUnusedLocalSymbols
 function updateGlobals(symbols, symbolToWorkingPrice, symbolToMdPrice) {
+
 	Symbols = symbols;
 	WorkingPx = symbolToWorkingPrice;
 	MdPx = symbolToMdPrice;
@@ -94,11 +101,15 @@ function updateGlobals(symbols, symbolToWorkingPrice, symbolToMdPrice) {
 	const currSymbol = Symbols[0];
 	const inputRow = $("#rules").find("tr.ruleInput");
 	const symbolSelect = inputRow.find(".symbolSelect");
+	const mdSymbolSelect = inputRow.find(".mdSymbolSelect");
+
 	populateSelect(symbolSelect, Symbols, currSymbol);
 	populateRowPrices(inputRow, currSymbol);
+
+	populateSelect(mdSymbolSelect, Symbols, currSymbol);
+	populateMDPrices(inputRow, currSymbol);
 }
 
-//noinspection JSUnusedLocalSymbols
 function ruleFired(key) {
 
 	playSound();
@@ -109,9 +120,8 @@ function ruleFired(key) {
 	}
 }
 
-//noinspection JSUnusedLocalSymbols
-function displayRule(key, symbol, side, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition, qtyThreshold,
-					 enabled, enabledByUser, instantPullCount) {
+function displayRule(key, orderSymbol, mdSymbol, side, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition,
+					 qtyThreshold, enabled, enabledByUser, instantPullCount) {
 
 	let row = Rows[key];
 	if (!row) {
@@ -127,11 +137,16 @@ function displayRule(key, symbol, side, orderPriceFrom, orderPriceTo, conditionP
 		Rows[key] = row;
 
 		const symbolSelect = row.find(".symbolSelect");
-		populateSelect(symbolSelect, [symbol], symbol);
+		populateSelect(symbolSelect, [orderSymbol], orderSymbol);
 		symbolSelect.attr('disabled', 'disabled');
-
 		symbolSelect.toggleClass("hidden", true);
-		row.find(".symbolDisplay").text(symbol).toggleClass("hidden", false);
+		row.find(".symbolDisplay").text(orderSymbol).toggleClass("hidden", false);
+
+		const mdSymbolSelect = row.find(".mdSymbolSelect");
+		populateSelect(mdSymbolSelect, [mdSymbol], mdSymbol);
+		mdSymbolSelect.attr('disabled', 'disabled');
+		mdSymbolSelect.toggleClass("hidden", true);
+		row.find(".mdSymbolDisplay").text(mdSymbol).toggleClass("hidden", false);
 
 		row.find("button.delete").toggleClass("hidden", false);
 		row.find("button.copy").toggleClass("hidden", false);
@@ -148,10 +163,17 @@ function displayRule(key, symbol, side, orderPriceFrom, orderPriceTo, conditionP
 		});
 
 		row.find("button.copy").unbind('click').bind('click', function () {
+
 			const inputRow = rules.find("tr.ruleInput");
+
 			const symbolSelect = inputRow.find(".symbolSelect");
-			populateSelect(symbolSelect, Symbols, symbol);
-			populateRuleRow(inputRow, side, symbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition, qtyThreshold);
+			populateSelect(symbolSelect, Symbols, orderSymbol);
+
+			const mdSymbolSelect = row.find(".mdSymbolSelect");
+			populateSelect(mdSymbolSelect, Symbols, mdSymbol);
+
+			populateRuleRow(inputRow, side, orderSymbol, mdSymbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide,
+				qtyCondition, qtyThreshold);
 		});
 
 		row.find("button.start").unbind('click').bind('click', function () {
@@ -164,7 +186,8 @@ function displayRule(key, symbol, side, orderPriceFrom, orderPriceTo, conditionP
 		});
 	}
 
-	populateRuleRow(row, side, symbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition, qtyThreshold);
+	populateRuleRow(row, side, orderSymbol, mdSymbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition,
+		qtyThreshold);
 	row.toggleClass("enabled", enabled);
 	row.find(".enabledByUser").text(enabledByUser);
 
@@ -177,7 +200,6 @@ function displayRule(key, symbol, side, orderPriceFrom, orderPriceTo, conditionP
 	}
 }
 
-//noinspection JSUnusedLocalSymbols
 function showMessage(message) {
 	const div = $("#message");
 	if (message != div.text()) {
@@ -192,30 +214,24 @@ function removeRule(key) {
 	delete Rows[key];
 }
 
-// Send commands to server
-
 function sendWriteRule(inputRow) {
 	let ruleID = inputRow.data('ruleID');
 	if (!ruleID) {
 		ruleID = "NEW";
 	}
-	const symbol = inputRow.find(".symbolSelect").val();
+	const orderSymbol = inputRow.find(".symbolSelect").val();
 	const side = inputRow.find(".side").val();
 	const fromPrice = inputRow.find(".fromPrice").val();
 	const toPrice = inputRow.find(".toPrice").val();
+
+	const mdSymbol = inputRow.find(".mdSymbolSelect").val();
 	const priceCondition = inputRow.find(".priceCondition").val();
 	const conditionSide = inputRow.find(".conditionSide").val();
 	const qtyCondition = inputRow.find(".qtyCondition").val();
 	const qtyThreshold = inputRow.find(".qtyThreshold").val();
-	ws.send(command("writeRule", [ruleID,
-		symbol,
-		side,
-		fromPrice,
-		toPrice,
-		priceCondition,
-		conditionSide,
-		qtyCondition,
-		qtyThreshold]));
+
+	const cmdArgs = [ruleID, orderSymbol, side, fromPrice, toPrice, mdSymbol, priceCondition, conditionSide, qtyCondition, qtyThreshold];
+	ws.send(command("writeRule", cmdArgs));
 }
 
 function sendDeleteRule(row) {

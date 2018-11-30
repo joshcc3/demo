@@ -71,7 +71,8 @@ public class AutoPullerUI implements IAutoPullerUpdateHandler {
 
         for (final PullRule rule : persistence.getPullRules().values()) {
             sendRule(rule);
-            relevantPrices.put(rule.symbol, Collections.emptyList());
+            relevantPrices.put(rule.orderSymbol, Collections.emptyList());
+            relevantPrices.put(rule.mdSymbol, Collections.emptyList());
         }
 
         final Calendar cal = DateTimeUtil.getCalendar();
@@ -120,15 +121,20 @@ public class AutoPullerUI implements IAutoPullerUpdateHandler {
     }
 
     @FromWebSocketView
-    public void writeRule(final String ruleID, final String symbol, final String side, final String fromPrice, final String toPrice,
-            final String priceCondition, final String conditionSide, final String qtyCondition, final String qtyThreshold) {
+    public void writeRule(final String ruleID, final String orderSymbol, final String side, final String fromPrice, final String toPrice,
+            final String mdSymbol, final String priceCondition, final String conditionSide, final String qtyCondition,
+            final String qtyThreshold) {
 
         final long id = "NEW".equals(ruleID) ? PullRule.nextID() : Long.parseLong(ruleID);
 
-        final PullRule pullRule = new PullRule(id, symbol,
-                new OrderSelectionPriceRangeSelection(symbol, BookSide.valueOf(side), parsePx(fromPrice), parsePx(toPrice)),
-                new MktConditionQtyAtPriceCondition(symbol, BookSide.valueOf(conditionSide), parsePx(priceCondition),
-                        MktConditionConditional.valueOf(qtyCondition), Integer.parseInt(qtyThreshold)));
+        final OrderSelectionPriceRangeSelection orderSelection =
+                new OrderSelectionPriceRangeSelection(orderSymbol, BookSide.valueOf(side), parsePx(fromPrice), parsePx(toPrice));
+
+        final MktConditionQtyAtPriceCondition mdCondition =
+                new MktConditionQtyAtPriceCondition(mdSymbol, BookSide.valueOf(conditionSide), parsePx(priceCondition),
+                        MktConditionConditional.valueOf(qtyCondition), Integer.parseInt(qtyThreshold));
+
+        final PullRule pullRule = new PullRule(id, orderSymbol, orderSelection, mdSymbol, mdCondition);
         persistence.updateRule(pullRule);
 
         sendRule(pullRule);
@@ -224,7 +230,7 @@ public class AutoPullerUI implements IAutoPullerUpdateHandler {
         final int pullCount = enabledPullRule.matchedOrders;
         final String associatedUser = null == enabledPullRule.associatedUser ? "" : enabledPullRule.associatedUser;
 
-        view.displayRule(Long.toString(rule.ruleID), rule.symbol, rule.orderSelection.side.toString(),
+        view.displayRule(Long.toString(rule.ruleID), rule.orderSymbol, rule.mdSymbol, rule.orderSelection.side.toString(),
                 formatPx(rule.orderSelection.fromPrice), formatPx(rule.orderSelection.toPrice), formatPx(rule.mktCondition.price),
                 rule.mktCondition.side.toString(), rule.mktCondition.qtyCondition.toString(),
                 Integer.toString(rule.mktCondition.qtyThreshold), enabledPullRule.isEnabled, associatedUser, pullCount);

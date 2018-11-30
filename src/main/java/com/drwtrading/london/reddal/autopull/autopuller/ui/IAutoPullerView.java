@@ -9,9 +9,9 @@ public interface IAutoPullerView {
     public void updateGlobals(final Collection<String> relevantSymbols, final Map<String, List<String>> symbolToWorkingPrice,
             final Map<String, List<String>> symbolToPossiblePrices);
 
-    public void displayRule(final String key, final String symbol, String side, final String orderPriceFrom, final String orderPriceTo,
-            final String conditionPrice, final String conditionSide, final String qtyCondition, final String qtyThreshold,
-            final boolean enabled, final String enabledByUser, final int pullCount);
+    public void displayRule(final String key, final String orderSymbol, final String mdSymbol, String side, final String orderPriceFrom,
+            final String orderPriceTo, final String conditionPrice, final String conditionSide, final String qtyCondition,
+            final String qtyThreshold, final boolean enabled, final String enabledByUser, final int pullCount);
 
     public void ruleFired(final String key);
 
