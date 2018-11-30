@@ -13,7 +13,6 @@ config default
 	include :scripts
 
 	include drw.london.eeif-utils/263
-	include drw.london.eeif-md/392
 	include drw.london.eeif-nibbler-transport/84
 	include drw.london.eeif-opxl-client/32
 	include drw.london.eeif-position-transport/124
@@ -22,6 +21,7 @@ config default
 	include drw.london.eeif-indy-transport/223
 
 	include drw.eeif.fees/60
+	include drw.opxl/1.5.1
 
 	# Libraries and containers
 	include google.guava/r06
