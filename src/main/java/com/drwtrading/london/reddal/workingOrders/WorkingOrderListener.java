@@ -8,6 +8,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TradableInstrument;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
+import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderServerRouter;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
@@ -26,9 +27,9 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
     private final LongMap<SourcedWorkingOrder> sourcedWorkingOrder;
 
     public WorkingOrderListener(final String sourceNibbler, final WorkingOrdersPresenter workingOrdersPresenter,
-            final IWorkingOrdersCallback obligationPresenter, final IWorkingOrdersCallback bestWorkingOrderMaintainer,
-            final IWorkingOrdersCallback futureObligationPresenter, final QuotingObligationsPresenter quotingObligationsPresenter,
-            final RemoteOrderServerRouter orderRouter) {
+                                final IWorkingOrdersCallback obligationPresenter, final IWorkingOrdersCallback bestWorkingOrderMaintainer,
+                                final IWorkingOrdersCallback futureObligationPresenter, final QuotingObligationsPresenter quotingObligationsPresenter,
+                                final RemoteOrderServerRouter orderRouter) {
 
         this.sourceNibbler = sourceNibbler;
 
@@ -109,15 +110,17 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
 
     @Override
     public boolean deleteWorkingOrder(final WorkingOrder order) {
-
         final SourcedWorkingOrder sourcedOrder = sourcedWorkingOrder.remove(order.getWorkingOrderID());
+        deleteSourcedOrder(sourcedOrder);
+        return true;
+    }
 
+    private void deleteSourcedOrder(SourcedWorkingOrder sourcedOrder) {
         workingOrdersPresenter.deleteWorkingOrder(sourcedOrder);
         obligationPresenter.deleteWorkingOrder(sourcedOrder);
         bestWorkingOrderMaintainer.deleteWorkingOrder(sourcedOrder);
         futureObligationPresenter.deleteWorkingOrder(sourcedOrder);
         orderRouter.deleteWorkingOrder(sourcedOrder);
-        return true;
     }
 
     @Override
@@ -133,5 +136,12 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
     @Override
     public boolean batchComplete() {
         return true;
+    }
+
+    public void setNibblerConnected(String source) {
+        for (LongMapNode<SourcedWorkingOrder> node : sourcedWorkingOrder) {
+            deleteSourcedOrder(node.getValue());
+        }
+        sourcedWorkingOrder.clear();
     }
 }

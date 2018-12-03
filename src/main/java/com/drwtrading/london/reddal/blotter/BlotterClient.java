@@ -12,8 +12,12 @@ import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerSafety;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderServerRouter;
 import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrderListener;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 import org.jetlang.channels.Publisher;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesListener, INibblerTransportConnectionListener {
 
@@ -30,6 +34,8 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
 
     private final NibblerTransportConnected nibblerConnected;
     private final NibblerTransportConnected nibblerDisconnected;
+
+    private final List<WorkingOrderListener> listeners;
 
     public BlotterClient(final String source, final MsgBlotterPresenter msgBlotter, final SafetiesBlotterPresenter safetiesBlotter,
             final WorkingOrdersPresenter workingOrderPresenter, final IWorkingOrdersCallback obligationsCallback,
@@ -50,6 +56,7 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
         this.nibblerDisconnected = new NibblerTransportConnected(nibblerName, false);
 
         connectionLost(null);
+        listeners = new ArrayList<>();
     }
 
     @Override
@@ -60,7 +67,9 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
         workingOrderPresenter.setNibblerConnectionEstablished(source, true);
 
         connectedNibblerChannel.publish(nibblerConnected);
-
+        for (WorkingOrderListener listener : listeners) {
+            listener.setNibblerConnected(source);
+        }
         return true;
     }
 
@@ -126,5 +135,9 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
     @Override
     public boolean batchComplete() {
         return true;
+    }
+
+    public void addConnectedListener(WorkingOrderListener workingOrderListener) {
+        listeners.add(workingOrderListener);
     }
 }

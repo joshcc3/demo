@@ -1257,6 +1257,7 @@ public class Main {
                                 new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
                                         futureObligationPresenter, quotingObligationsPresenter, orderRouter);
                         cache.addTradingDataListener(workingOrderListener, true, true);
+                        blotterClient.addConnectedListener(workingOrderListener);
                     }
                 }
             }
