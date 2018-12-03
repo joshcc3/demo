@@ -298,15 +298,18 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
 
     private void runSymbol(final String symbol) {
 
-        final Set<SourcedWorkingOrder> workingOrders = this.workingOrders.get(symbol);
         final LongMap<AutoPullerPullRule> rules = rulesBySymbol.get(symbol);
 
-        if (null != workingOrders && !workingOrders.isEmpty() && null != rules && !rules.isEmpty()) {
+        if (null != rules && !rules.isEmpty()) {
 
             for (final LongMapNode<AutoPullerPullRule> pullRuleNode : rules) {
 
                 final AutoPullerPullRule pullRule = pullRuleNode.getValue();
-                runRule(workingOrders, pullRule);
+                final Set<SourcedWorkingOrder> workingOrders = this.workingOrders.get(pullRule.pullRule.orderSymbol);
+
+                if (null != workingOrders && !workingOrders.isEmpty()) {
+                    runRule(workingOrders, pullRule);
+                }
             }
         }
     }
