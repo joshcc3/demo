@@ -95,6 +95,7 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
 
         if (null != sourcedOrders) {
             sourcedOrders.remove(sourcedOrder);
+            runSymbol(order.getSymbol());
         }
     }
 
@@ -230,15 +231,18 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
 
     private void safeStart(final AutoPullerPullRule rule, final String username) {
 
-        final Set<SourcedWorkingOrder> orders = workingOrders.get(rule.pullRule.orderSymbol);
+        if (null != rule.md) {
 
-        final Collection<IOrderCmd> cmds = rule.getOrdersToPull(cancelRejectMsgs, orders);
+            final Set<SourcedWorkingOrder> orders = workingOrders.get(rule.pullRule.orderSymbol);
 
-        if (cmds.isEmpty()) {
-            rule.enable(username);
-            runRule(orders, rule);
-        } else {
-            sendRuleStateUpdate(rule, cmds.size());
+            final Collection<IOrderCmd> cmds = rule.getOrdersToPull(cancelRejectMsgs, orders);
+
+            if (cmds.isEmpty()) {
+                rule.enable(username);
+                runRule(orders, rule);
+            } else {
+                sendRuleStateUpdate(rule, cmds.size());
+            }
         }
     }
 
@@ -307,45 +311,46 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
                 final AutoPullerPullRule pullRule = pullRuleNode.getValue();
                 final Set<SourcedWorkingOrder> workingOrders = this.workingOrders.get(pullRule.pullRule.orderSymbol);
 
-                if (null != workingOrders && !workingOrders.isEmpty()) {
-                    runRule(workingOrders, pullRule);
-                }
+                runRule(workingOrders, pullRule);
             }
         }
     }
 
     private void runRule(final Set<SourcedWorkingOrder> workingOrders, final AutoPullerPullRule rule) {
 
-        final List<IOrderCmd> cancels = rule.getOrdersToPull(cancelRejectMsgs, workingOrders);
+        if (null != rule.md.getBook()) {
 
-        if (!cancels.isEmpty() && rule.isEnabled()) {
+            final List<IOrderCmd> cancels = rule.getOrdersToPull(cancelRejectMsgs, workingOrders);
 
-            for (final IOrderCmd cmd : cancels) {
-                commandPublisher.publish(cmd);
+            if (!cancels.isEmpty() && rule.isEnabled()) {
+
+                for (final IOrderCmd cmd : cancels) {
+                    commandPublisher.publish(cmd);
+                }
+
+                rule.disable();
+
+                final AutoPullerRuleState ruleState =
+                        new AutoPullerRuleState(rule.pullRule, mdSource, rule.isEnabled(), rule.getAssociatedUser(), cancels.size());
+                lastRuleStates.put(rule.pullRule.ruleID, ruleState);
+
+                final AutoPullerRuleFired ruleFired = new AutoPullerRuleFired(ruleState);
+                updatePublisher.publish(ruleFired);
+
+                final IBook<?> book = rule.md.getBook();
+                System.out.println("---- Auto puller Fired --- " + new DateTime());
+                System.out.println("Rule:\n" + rule.pullRule);
+                System.out.println("Book: " + book.getSymbol());
+                System.out.println("\tinstid " + book.getInstID() + ", source " + book.getSourceExch() + " status " + book.getStatus());
+                System.out.println("\tseqno " + book.getLastPacketSeqNum() + " ref time " + book.getReferenceNanoSinceMidnightUTC());
+                System.out.println("\tvalid " + book.isValid());
+                debugPrintLevels(book.getBestBid());
+                debugPrintLevels(book.getBestAsk());
+                System.out.println("Working orders: \n" + new ArrayList<>(workingOrders));
+            } else {
+
+                sendRuleStateUpdate(rule, cancels.size());
             }
-
-            rule.disable();
-
-            final AutoPullerRuleState ruleState =
-                    new AutoPullerRuleState(rule.pullRule, mdSource, rule.isEnabled(), rule.getAssociatedUser(), cancels.size());
-            lastRuleStates.put(rule.pullRule.ruleID, ruleState);
-
-            final AutoPullerRuleFired ruleFired = new AutoPullerRuleFired(ruleState);
-            updatePublisher.publish(ruleFired);
-
-            final IBook<?> book = rule.md.getBook();
-            System.out.println("---- Auto puller Fired --- " + new DateTime());
-            System.out.println("Rule:\n" + rule.pullRule);
-            System.out.println("Book: " + book.getSymbol());
-            System.out.println("\tinstid " + book.getInstID() + ", source " + book.getSourceExch() + " status " + book.getStatus());
-            System.out.println("\tseqno " + book.getLastPacketSeqNum() + " ref time " + book.getReferenceNanoSinceMidnightUTC());
-            System.out.println("\tvalid " + book.isValid());
-            debugPrintLevels(book.getBestBid());
-            debugPrintLevels(book.getBestAsk());
-            System.out.println("Working orders: \n" + new ArrayList<>(workingOrders));
-        } else {
-
-            sendRuleStateUpdate(rule, cancels.size());
         }
     }
 
