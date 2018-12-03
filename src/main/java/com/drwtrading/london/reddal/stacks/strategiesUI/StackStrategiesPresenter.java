@@ -19,6 +19,7 @@ import org.jetlang.channels.Publisher;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class StackStrategiesPresenter {
 
@@ -42,7 +43,7 @@ public class StackStrategiesPresenter {
         this.views = WebSocketViews.create(IStackStrategiesUI.class, this);
 
         this.instIDs = new HashMap<>();
-        this.nibblerStrategies = new HashMap<>();
+        this.nibblerStrategies = new TreeMap<>();
 
         this.strategyClients = new HashMap<>();
     }
