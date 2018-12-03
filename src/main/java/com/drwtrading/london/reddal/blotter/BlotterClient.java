@@ -10,14 +10,8 @@ import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerDoubleS
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerOMSEnabledState;
 import com.drwtrading.london.eeif.nibbler.transport.data.safeties.NibblerSafety;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderServerRouter;
-import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderListener;
-import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 import org.jetlang.channels.Publisher;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesListener, INibblerTransportConnectionListener {
 
@@ -25,38 +19,32 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
 
     private final MsgBlotterPresenter msgBlotter;
     private final SafetiesBlotterPresenter safetiesBlotter;
-    private final WorkingOrdersPresenter workingOrderPresenter;
-    private final IWorkingOrdersCallback obligationsCallback;
-    private final IWorkingOrdersCallback bestWorkingOrderMaintainer;
-    private final RemoteOrderServerRouter orderRouter;
 
     private final Publisher<NibblerTransportConnected> connectedNibblerChannel;
 
     private final NibblerTransportConnected nibblerConnected;
     private final NibblerTransportConnected nibblerDisconnected;
 
-    private final List<WorkingOrderListener> listeners;
+    private WorkingOrderListener workingOrderListener;
 
     public BlotterClient(final String source, final MsgBlotterPresenter msgBlotter, final SafetiesBlotterPresenter safetiesBlotter,
-            final WorkingOrdersPresenter workingOrderPresenter, final IWorkingOrdersCallback obligationsCallback,
-            final IWorkingOrdersCallback bestWorkingOrderMaintainer, final RemoteOrderServerRouter orderRouter, final Publisher<NibblerTransportConnected> connectedNibblerChannel,
-            final String nibblerName) {
+            final Publisher<NibblerTransportConnected> connectedNibblerChannel, final String nibblerName) {
 
         this.source = source;
 
         this.msgBlotter = msgBlotter;
         this.safetiesBlotter = safetiesBlotter;
-        this.workingOrderPresenter = workingOrderPresenter;
-        this.obligationsCallback = obligationsCallback;
-        this.bestWorkingOrderMaintainer = bestWorkingOrderMaintainer;
-        this.orderRouter = orderRouter;
 
         this.connectedNibblerChannel = connectedNibblerChannel;
         this.nibblerConnected = new NibblerTransportConnected(nibblerName, true);
         this.nibblerDisconnected = new NibblerTransportConnected(nibblerName, false);
 
         connectionLost(null);
-        listeners = new ArrayList<>();
+    }
+
+    public void setWorkingOrderListener(final WorkingOrderListener workingOrderListener) {
+
+        this.workingOrderListener = workingOrderListener;
     }
 
     @Override
@@ -64,12 +52,13 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
 
         msgBlotter.setNibblerConnected(source, true);
         safetiesBlotter.setNibblerConnected(source, true);
-        workingOrderPresenter.setNibblerConnectionEstablished(source, true);
+
+        if (null != workingOrderListener) {
+            workingOrderListener.nibblerConnected();
+        }
 
         connectedNibblerChannel.publish(nibblerConnected);
-        for (WorkingOrderListener listener : listeners) {
-            listener.setNibblerConnected(source);
-        }
+
         return true;
     }
 
@@ -78,13 +67,10 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
 
         msgBlotter.setNibblerConnected(source, false);
         safetiesBlotter.setNibblerConnected(source, false);
-        workingOrderPresenter.setNibblerConnectionEstablished(source, false);
 
-        obligationsCallback.setNibblerDisconnected(source);
-        bestWorkingOrderMaintainer.setNibblerDisconnected(source);
-
-        orderRouter.setNibblerDisconnected(source);
-
+        if (null != workingOrderListener) {
+            workingOrderListener.nibblerDisconnected();
+        }
         connectedNibblerChannel.publish(nibblerDisconnected);
     }
 
@@ -135,9 +121,5 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
     @Override
     public boolean batchComplete() {
         return true;
-    }
-
-    public void addConnectedListener(WorkingOrderListener workingOrderListener) {
-        listeners.add(workingOrderListener);
     }
 }

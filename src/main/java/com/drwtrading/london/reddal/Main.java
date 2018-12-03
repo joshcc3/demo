@@ -1224,8 +1224,7 @@ public class Main {
                 }
 
                 final BlotterClient blotterClient =
-                        new BlotterClient(nibbler, msgBlotter, safetiesBlotter, workingOrderPresenter, obligationsCallback,
-                                bestWorkingOrderMaintainer, orderRouter, connectedNibblerChannel, nibbler);
+                        new BlotterClient(nibbler, msgBlotter, safetiesBlotter, connectedNibblerChannel, nibbler);
 
                 final NibblerClientHandler client =
                         NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,
@@ -1257,13 +1256,14 @@ public class Main {
                                 new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
                                         futureObligationPresenter, quotingObligationsPresenter, orderRouter);
                         cache.addTradingDataListener(workingOrderListener, true, true);
-                        blotterClient.addConnectedListener(workingOrderListener);
+
+                        blotterClient.setWorkingOrderListener(workingOrderListener);
                     }
                 }
             }
 
             if (!prioritisedNibblers.isEmpty()) {
-                throw new IllegalStateException("Trading nibblers " + prioritisedNibblers.toString() + " were not configured");
+                throw new IllegalStateException("Trading nibblers " + prioritisedNibblers + " were not configured");
             }
 
             final TypedChannel<WebSocketControlMessage> msgBlotterWebSocket = TypedChannels.create(WebSocketControlMessage.class);

@@ -1,13 +1,10 @@
 package com.drwtrading.london.reddal.orderManagement.remoteOrder;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
-import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.SubmitOrderCmd;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrdersByUIKey;
-import org.jetlang.channels.Channel;
-import org.jetlang.channels.Publisher;
 
 import java.util.EnumMap;
 import java.util.HashMap;
