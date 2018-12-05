@@ -125,6 +125,11 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     }
 
     @Override
+    public boolean workingOrderSnapshotComplete() {
+        return true;
+    }
+
+    @Override
     public boolean addLastTrade(final LastTrade lastTrade) {
         ladderPresenter.setLastTrade(lastTrade);
         return true;

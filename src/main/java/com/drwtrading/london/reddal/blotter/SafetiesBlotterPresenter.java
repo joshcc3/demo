@@ -193,6 +193,11 @@ public class SafetiesBlotterPresenter {
 
             client.setSafetyLimit(remoteSafetyID, limit);
             client.batchComplete();
+
+            final SafetiesBlotterBlock nibblerBlock = nibblers.get(nibblerName);
+            final SafetiesBlotterRow safetyRow = nibblerBlock.getRow(remoteSafetyID);
+            System.out.println("Nibbler [" + nibblerName + "] safety [" + safetyRow.safetyName + "] limit updated [" + limit + "].");
+
         } catch (final Exception e) {
             throw new RuntimeException("Could not handle [" + nibblerName + "] set limit [" + remoteSafetyID + "] to [" + limitStr + "].",
                     e);

@@ -121,6 +121,11 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
     }
 
     @Override
+    public boolean workingOrderSnapshotComplete() {
+        return true;
+    }
+
+    @Override
     public boolean addLastTrade(final LastTrade lastTrade) {
         return true;
     }

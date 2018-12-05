@@ -203,6 +203,11 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         return true;
     }
 
+    @Override
+    public boolean workingOrderSnapshotComplete() {
+        return true;
+    }
+
     private void writeWorkingOrderRow(final WorkingOrder workingOrder, final boolean isAlive) {
 
         final String timestamp = timeFormat.format(workingOrder.getLastUpdateMilliSinceUTC());
