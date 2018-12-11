@@ -126,6 +126,9 @@
 				<label for="familySymbolLookup">Family</label>
 				<input id="familySymbolLookup" type="text" name="quote">
 
+				<input type="checkbox" id="isADR"/>
+				<label for="isADR" class="forCheckbox">ADR</label>
+
 				<div class="button">
 					<button type="button" id="findFamilyMembers">find</button>
 				</div>
@@ -144,12 +147,13 @@
 				<input id="quoteSymbol" type="text" name="quote">
 
 				<div class="button">
+					<div id="foundFamilyName"></div>
 					<input type="checkbox" id="isAsylum"/>
 					<label for="isAsylum">Asylum</label>
 					<button type="button" id="createFamily">create</button>
 					<button type="button" id="createAllChildren">create children</button>
 					<button type="button" id="adoptAllChildren">adopt children</button>
-					<button type="button" id="resetOffets">reset offsets</button>
+					<button type="button" id="resetOffsets">reset offsets</button>
 				</div>
 			</div>
 

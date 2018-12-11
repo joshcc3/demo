@@ -177,22 +177,34 @@ $(function () {
 	});
 
 	const familyIsinInput = $("#familySymbolLookup");
+	const isADRCheckBox = $("#isADR");
+	const isADRCheck = isADRCheckBox[0];
+	const familyNameFeedback = $("#foundFamilyName");
 	familyIsinInput.on("input", function () {
 		const symbol = familyIsinInput.val();
 		ws.send(command("checkFamilyInst", [symbol, "#creationInfoRow"]));
+		familyNameFeedback.text("");
+	});
+	isADRCheckBox.change(function () {
+		familyNameFeedback.text("");
 	});
 	$("#findFamilyMembers").unbind().bind("click", function () {
 		const symbol = familyIsinInput.val();
+		const isADR = isADRCheck.checked;
 		$(".childCreationRow:not(.headerRow)").remove();
-		ws.send(command("findFamilyMembers", [symbol]));
+		ws.send(command("findFamilyMembers", [symbol, isADR]));
 	});
 
 	const familyNameInput = $("#quoteSymbol");
+	familyNameInput.on("input", function () {
+		familyNameFeedback.text("");
+	});
 	const isAsylumCheck = $("#isAsylum")[0];
 	$("#createFamily").unbind().bind("click", function () {
 		const symbol = familyNameInput.val();
 		const isAsylum = isAsylumCheck.checked;
-		ws.send(command("createFamily", [symbol, isAsylum]));
+		const isADR = isADRCheck.checked;
+		ws.send(command("createFamily", [symbol, isAsylum, isADR]));
 	});
 	$("#createAllChildren").unbind().bind("click", function () {
 
@@ -211,9 +223,10 @@ $(function () {
 		});
 	});
 
-	$("#resetOffets").unbind().bind("click", function () {
+	$("#resetOffsets").unbind().bind("click", function () {
 		const symbol = familyNameInput.val();
-		ws.send(command("resetOffsetsForFamily", [symbol]));
+		const isADR = isADRCheck.checked;
+		ws.send(command("resetOffsetsForFamily", [symbol, isADR]));
 	});
 
 	const familyInput = $("#familySymbol");
@@ -229,7 +242,8 @@ $(function () {
 	$("#adoptChild").unbind().bind("click", function () {
 		const family = familyInput.val();
 		const child = childInput.val();
-		ws.send(command("adoptChild", [family, child]));
+		const isADR = isADRCheck.checked;
+		ws.send(command("adoptChild", [family, child, isADR]));
 	});
 
 	$("#createMissingChildren").unbind().bind("click", function () {
@@ -404,11 +418,15 @@ function setFieldData(fieldID, text) {
 	infoRow.find("div").text(text);
 }
 
-function setCreateFamilyRow(symbol, isFamilyExists) {
+function setCreateFamilyRow(symbol, isFamilyExists, familyName) {
 
 	const familyNameInput = $("#quoteSymbol");
 	familyNameInput.val(symbol);
 	familyNameInput.toggleClass("childAvailable", isFamilyExists);
+
+	const familyNameFeedback = $("#foundFamilyName");
+	console.log(isFamilyExists, familyName, familyNameFeedback);
+	familyNameFeedback.text(familyName);
 }
 
 function addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblers, tradableNibbler, instTypes, leanInstType, leanSymbol) {
@@ -480,9 +498,12 @@ function createStackForChildRow(childCreationRow) {
 }
 
 function adoptStackForChildRow(childCreationRow) {
+
 	const family = $("#quoteSymbol").val();
 	const child = childCreationRow.find("input[name=quote]").val();
-	ws.send(command("adoptChild", [family, child]));
+	const isADRCheck = $("#isADR")[0];
+	const isADR = isADRCheck.checked;
+	ws.send(command("adoptChild", [family, child, isADR]));
 }
 
 function childCreationComparator(a, b) {

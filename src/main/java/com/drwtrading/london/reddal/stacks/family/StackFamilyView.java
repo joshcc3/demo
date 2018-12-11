@@ -547,15 +547,15 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void findFamilyMembers(final String symbol, final WebSocketInboundData data) {
+    public void findFamilyMembers(final String symbol, final boolean isADRName, final WebSocketInboundData data) {
 
         final SearchResult searchResult = searchResults.get(symbol);
         if (null != searchResult) {
 
             final IStackFamilyUI ui = views.get(data.getOutboundChannel());
-            final String family = getFamilyName(searchResult);
+            final String family = getFamilyName(searchResult, isADRName);
             final boolean isFamilyExists = families.containsKey(family);
-            ui.setCreateFamilyRow(symbol, isFamilyExists);
+            ui.setCreateFamilyRow(symbol, isFamilyExists, family);
 
             if (InstType.FUTURE == searchResult.instType) {
 
@@ -584,7 +584,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                     if (!isSecondaryView) {
                         ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), tradableNibbler,
                                 ALLOWED_INST_TYPES, InstType.INDEX.name(), childSymbol);
-                    } else if (!symbol.equals(childSymbol)) {
+                    } else if (!symbol.equals(childSymbol) || isADRName) {
                         ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), tradableNibbler,
                                 ALLOWED_INST_TYPES, InstType.EQUITY.name(), symbol);
                     }
@@ -608,7 +608,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void createFamily(final String symbol, final boolean isAsylum, final WebSocketInboundData data) {
+    public void createFamily(final String symbol, final boolean isAsylum, final boolean isADRName, final WebSocketInboundData data) {
 
         if (isAsylum) {
 
@@ -617,7 +617,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             final SearchResult searchResult = searchResults.get(symbol);
             if (null != searchResult) {
 
-                final String family = getFamilyName(searchResult);
+                final String family = getFamilyName(searchResult, isADRName);
                 final InstrumentID instID = searchResult.instID;
 
                 communityManager.createFamily(SOURCE_UI, family, instID, displayableInstType);
@@ -625,7 +625,7 @@ public class StackFamilyView implements IStackRelationshipListener {
         }
     }
 
-    private static String getFamilyName(final SearchResult searchResult) {
+    private static String getFamilyName(final SearchResult searchResult, final boolean isADR) {
 
         switch (searchResult.instType) {
             case FUTURE: {
@@ -636,7 +636,12 @@ public class StackFamilyView implements IStackRelationshipListener {
                 return FutureConstant.getFutureFromSymbol(frontMonth).name();
             }
             default: {
-                return searchResult.symbol.split(" ")[0];
+                final String familyBaseName = searchResult.symbol.split(" ")[0];
+                if (isADR) {
+                    return "adr" + familyBaseName;
+                } else {
+                    return familyBaseName;
+                }
             }
         }
     }
@@ -855,7 +860,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void adoptChild(final String family, final String child, final WebSocketInboundData data) {
+    public void adoptChild(final String family, final String child, final boolean isADRName, final WebSocketInboundData data) {
 
         final String familyName;
         if (families.containsKey(family)) {
@@ -863,7 +868,7 @@ public class StackFamilyView implements IStackRelationshipListener {
         } else {
 
             final SearchResult searchResult = searchResults.get(family);
-            familyName = getFamilyName(searchResult);
+            familyName = getFamilyName(searchResult, isADRName);
             if (!families.containsKey(familyName)) {
                 throw new IllegalArgumentException("Parent [" + family + "] is not known. Should it be created first?");
             }
@@ -931,7 +936,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void resetOffsetsForFamily(final String familySymbol, final WebSocketInboundData data) {
+    public void resetOffsetsForFamily(final String familySymbol, final boolean isADRName, final WebSocketInboundData data) {
         try {
 
             final SearchResult searchResult = searchResults.get(familySymbol);
@@ -939,7 +944,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                 return;
             }
 
-            final String familyName = getFamilyName(searchResult);
+            final String familyName = getFamilyName(searchResult, isADRName);
             final NavigableMap<String, StackUIRelationship> family = families.get(familyName);
 
             if (null == family) {
@@ -1137,7 +1142,6 @@ public class StackFamilyView implements IStackRelationshipListener {
                 }
             }
         }
-
     }
 
     private String getExistingFamily(final String isin) {
@@ -1147,9 +1151,15 @@ public class StackFamilyView implements IStackRelationshipListener {
 
             final SearchResult searchResult = searchResults.get(symbol);
             if (isin.equals(searchResult.instID.isin)) {
-                final String family = getFamilyName(searchResult);
+
+                final String family = getFamilyName(searchResult, false);
                 if (families.containsKey(family)) {
                     return family;
+                } else {
+                    final String adrFamily = getFamilyName(searchResult, true);
+                    if (families.containsKey(adrFamily)) {
+                        return adrFamily;
+                    }
                 }
             }
         }

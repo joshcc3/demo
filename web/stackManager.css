@@ -178,7 +178,11 @@ body {
 	text-align: right;
 }
 
-#familyLookup input, #familyCreationRow input[type=text], #childAdoption input, #stackCopy input {
+#familyLookup label.forCheckbox {
+	text-align: left;
+}
+
+#familyLookup input:not([type='checkbox']), #familyCreationRow input[type=text], #childAdoption input, #stackCopy input {
 	width: 240px;
 	margin-right: 5px;
 }
@@ -191,7 +195,7 @@ body {
 	margin-top: 5px;
 }
 
-.childCreationRow div {
+.childCreationRow div, #familyCreationRow .button div {
 	display: inline-block;
 }
 
