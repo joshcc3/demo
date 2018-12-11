@@ -644,7 +644,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             default: {
                 final String familyBaseName = searchResult.symbol.split(" ")[0];
                 if (isADR) {
-                    return "adr" + familyBaseName;
+                    return "ADR" + familyBaseName;
                 } else {
                     return familyBaseName;
                 }
