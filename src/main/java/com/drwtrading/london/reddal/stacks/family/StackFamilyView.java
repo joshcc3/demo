@@ -156,7 +156,13 @@ public class StackFamilyView implements IStackRelationshipListener {
         return displayableInstType == parentUIData.leanInstType;
     }
 
-    private boolean isFamilyAsylum(final StackUIData parentUIData) {
+    private boolean isFamilyAsylum(final String familyName) {
+
+        final StackUIData parentUIData = parentData.get(familyName);
+        return null != parentUIData && isFamilyAsylum(parentUIData);
+    }
+
+    private static boolean isFamilyAsylum(final StackUIData parentUIData) {
         return StackCommunityManager.ASYLUM_ISIN.equals(parentUIData.instID.isin);
     }
 
@@ -365,7 +371,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
                     familyToChildRatio);
 
-            if (!isSecondaryView) {
+            if (!parentSymbol.equals(StackOrphanage.ORPHANAGE) && !isFamilyAsylum(parentSymbol)) {
                 contractSetGenerator.setParentStack(childSymbol, parentSymbol);
             }
         }
