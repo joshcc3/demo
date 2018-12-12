@@ -39,6 +39,7 @@ public class OpxlFXCalcUpdater extends AOpxlLoggingReader<OPXLComponents, Map<CC
 
         final SimpleDateFormat sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.DATE_FILE_FORMAT);
         final Calendar cal = DateTimeUtil.getCalendar();
+        cal.add(Calendar.DAY_OF_YEAR, -1);
         while (Calendar.SATURDAY == cal.get(Calendar.DAY_OF_WEEK) || Calendar.SUNDAY == cal.get(Calendar.DAY_OF_WEEK)) {
             cal.add(Calendar.DAY_OF_YEAR, -1);
         }
