@@ -105,11 +105,11 @@ function draw(levels, ordersPerRow) {
 
 function subscribe() {
 
-	let symbolEnd = document.location.hash.indexOf(';', 0);
+	let symbolEnd = decodeURI(document.location.hash).indexOf(';', 0);
 	if (symbolEnd < 0) {
-		symbolEnd = document.location.hash.length;
+		symbolEnd = decodeURI(document.location.hash).length;
 	}
-	const symbol = document.location.hash.substr(1, symbolEnd - 1);
+	const symbol = decodeURI(document.location.hash).substr(1, symbolEnd - 1);
 	numLevels = calcLevels();
 
 	if (0 < symbolEnd) {
