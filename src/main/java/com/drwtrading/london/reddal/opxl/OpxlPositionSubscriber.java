@@ -56,6 +56,8 @@ public class OpxlPositionSubscriber extends AOpxlReader<OPXLComponents, OPXLDesk
                         positions.put(symbol.toUpperCase(), pos);
                     }
                 }
+            } catch (NumberFormatException exc) {
+                System.out.println(" - Couldn't parse " + exc.getMessage());
             } catch (Throwable throwable) {
                 monitor.logError(OPXLComponents.OPXL_POSITION_SUBSCRIBER, "Failed to load: " + Arrays.asList(data), throwable);
             }

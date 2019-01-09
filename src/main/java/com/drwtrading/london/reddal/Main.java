@@ -111,6 +111,7 @@ import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandle
 import com.drwtrading.london.reddal.premium.IPremiumCalc;
 import com.drwtrading.london.reddal.premium.PremiumCalculator;
 import com.drwtrading.london.reddal.premium.PremiumOPXLWriter;
+import com.drwtrading.london.reddal.signals.SignalsHandler;
 import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
 import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
@@ -174,6 +175,9 @@ import drw.eeif.eeifoe.OrderEntryReplyMsg;
 import drw.eeif.eeifoe.OrderUpdateEvent;
 import drw.eeif.eeifoe.OrderUpdateEventMsg;
 import drw.eeif.eeifoe.Update;
+import drw.eeif.phockets.Phockets;
+import drw.eeif.phockets.tcp.PhocketClient;
+import drw.eeif.photons.signals.Signals;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.MemoryChannel;
@@ -382,6 +386,9 @@ public class Main {
                 }
             });
         }
+
+
+
 
         final SpreadContractSetGenerator contractSetGenerator = new SpreadContractSetGenerator(channels.contractSets, channels.leanDefs);
         channels.searchResults.subscribe(selectIOFiber, contractSetGenerator::setSearchResult);
@@ -760,6 +767,7 @@ public class Main {
         }
 
         setupYodaSignals(app.selectIO, monitor, errorLog, root, app.appName, channels.stockAlerts, channels.yodaPicardRows);
+        setupSignals(app, channels.yodaPicardRows, channels.stockAlerts);
 
         final ConfigGroup opxlConfig = root.getEnabledGroup("opxl");
 
@@ -936,6 +944,17 @@ public class Main {
                 lowTrafficMulticastTransport.stop();
             }
         };
+    }
+
+
+    static void setupSignals(final Application<ReddalComponents> app, final Publisher<PicardRow> atClosePublisher, final Publisher<StockAlert> stockAlerts) throws ConfigException {
+        ConfigGroup signalConfig = app.config.getEnabledGroup("signals");
+        if (null == signalConfig) {
+            return;
+        }
+        PhocketClient<Signals, Void> client = Phockets.client(app, signalConfig, Signals.class, Void.class,
+                "Signals", new SignalsHandler(atClosePublisher, stockAlerts, app.clock));
+        app.addStartUpAction(client::restart);
     }
 
     private static void setupYodaSignals(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
@@ -1376,4 +1395,5 @@ public class Main {
 
         return fxCalc;
     }
+
 }

@@ -225,7 +225,7 @@ public class PicardSpotter implements IPicardSpotter {
         return opportunitySize;
     }
 
-    static double getBPSThrough(final long theoreticalValue, final long price) {
+    public static double getBPSThrough(final long theoreticalValue, final long price) {
 
         final long divisor = Math.min(price, theoreticalValue);
         if (0 == divisor) {
