@@ -9,7 +9,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelTwoMonitor;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
-import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
+import com.drwtrading.london.eeif.utils.marketData.transport.IMDSubscriber;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
@@ -30,7 +30,7 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
     private final Channel<SearchResult> searchResults;
     private final Publisher<RfqAlert> stockAlertChannel;
 
-    private final Map<MDSource, MDTransportClient> mdClients;
+    private final Map<MDSource, IMDSubscriber> mdClients;
     private final Map<String, IBook<IBookLevel>> books;
     private final Map<String, MDForSymbol> mdForSymbols;
 
@@ -52,7 +52,7 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
         this.mdCallbacks = new LongMap<>();
     }
 
-    public void setMDClient(final MDSource mdSource, final MDTransportClient client) {
+    public void setMDClient(final MDSource mdSource, final IMDSubscriber client) {
 
         if (null != mdClients.put(mdSource, client)) {
             monitor.logError(ReddalComponents.MD_L2_HANDLER, "Duplicate client for MDSource [" + mdSource + "].");
@@ -127,7 +127,7 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
 
         mdForSymbol.setBook(book);
 
-        final MDTransportClient client = mdClients.get(book.getSourceExch());
+        final IMDSubscriber client = mdClients.get(book.getSourceExch());
         client.subscribeToInst(book.getLocalID());
         monitor.setOK(ReddalComponents.MD_L2_HANDLER);
     }
@@ -137,7 +137,7 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
         if (null != mdForSymbols.remove(mdForSymbol.symbol)) {
             final IBook<IBookLevel> book = books.get(mdForSymbol.symbol);
             if (null != book) {
-                final MDTransportClient client = mdClients.get(book.getSourceExch());
+                final IMDSubscriber client = mdClients.get(book.getSourceExch());
                 client.unsubscribeToInst(book.getLocalID());
                 mdForSymbol.unsubscribed();
             }

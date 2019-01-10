@@ -11,8 +11,10 @@ public class DepthBookSubscriber implements IMDSubscriber {
     private final Map<String, MDForSymbol> mdForSymbols;
 
     public DepthBookSubscriber(final LevelThreeBookSubscriber l3BookSubscriber, final LevelTwoBookSubscriber l2BookSubscriber) {
+
         this.l3BookSubscriber = l3BookSubscriber;
         this.l2BookSubscriber = l2BookSubscriber;
+
         this.mdForSymbols = new HashMap<>();
     }
 
