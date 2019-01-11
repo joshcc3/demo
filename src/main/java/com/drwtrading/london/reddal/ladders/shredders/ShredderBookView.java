@@ -26,7 +26,9 @@ import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 class ShredderBookView {
 
@@ -161,6 +163,15 @@ class ShredderBookView {
         }
     }
 
+    Set<Long> sizeHighlights = new HashSet<>();
+
+    public void highlightSize(long size) {
+        if (!sizeHighlights.add(size)) {
+            sizeHighlights.remove(size);
+        }
+        drawShreddedOrders();
+    }
+
     private void drawShreddedOrders() {
         wipeDisplayedOrders();
 
@@ -184,6 +195,7 @@ class ShredderBookView {
             ui.cls(orderCellKey, shreddedOrder.getOppositeCSSCClass(), false);
             ui.cls(orderCellKey, shreddedOrder.getCorrespondingCSSClass(), true);
 
+            ui.cls(orderCellKey, CSSClass.HIGHLIGHT_ORDER, sizeHighlights.contains(shreddedOrder.quantity));
             ui.cls(orderCellKey, CSSClass.MAYBE_OUR_OURDER, shreddedOrder.isOurs);
             ui.cls(orderCellKey, CSSClass.OUR_ORDER, shreddedOrder.isOurs && shreddedOrder.canOnlyBeOurs);
             ui.data(orderCellKey, DataKey.TAG, shreddedOrder.tag);
@@ -466,4 +478,5 @@ class ShredderBookView {
             return Long.toString(qty);
         }
     }
+
 }

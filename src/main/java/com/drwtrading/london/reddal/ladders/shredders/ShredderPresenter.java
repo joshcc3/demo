@@ -25,6 +25,7 @@ import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -81,16 +82,14 @@ public class ShredderPresenter implements IStackPresenterCallback {
 
         if (null != view) {
             if ("shredder-subscribe".equals(cmd)) {
-
                 final String symbol = args[1];
                 final int levels = Integer.parseInt(args[2]);
                 final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(symbol, this);
-
                 final SymbolStackData stackData = stackBySymbol.get(symbol);
-
                 view.subscribeToSymbol(symbol, levels, mdForSymbol, workingOrdersBySymbol.get(symbol), stackData);
-
                 viewsBySymbol.put(symbol, view);
+            } else if ("highlightSize".equals(cmd)) {
+                view.highlightSize(Long.valueOf(args[1]));
             } else {
                 view.onRawInboundData(data);
                 view.refreshAndFlush();

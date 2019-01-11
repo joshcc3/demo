@@ -93,6 +93,7 @@ public enum CSSClass {
     MAYBE_OUR_OURDER("maybe_our_order"),
     ASK_ORDER("ask_order"),
     BID_ORDER("bid_order"),
+    HIGHLIGHT_ORDER("highlight_order"),
 
     WORKING_ORDER_TYPE_HIDDEN_TICKTAKER("working_order_type_hidden_ticktaker"),
     WORKING_ORDER_TYPE_TAKER("working_order_type_taker"),

@@ -131,4 +131,8 @@ public class ShredderView implements UiEventHandler {
         shredderBookView.refresh();
         uiPipe.flush();
     }
+
+    public void highlightSize(long size) {
+        shredderBookView.highlightSize(size);
+    }
 }

@@ -10,6 +10,7 @@ let maxOrderSizeInPixels = 400;
 let currentLevels = 0;
 let currentNumberOfColumns = 0;
 let currentNumberOfRows = 0;
+let HighlightSizes = {};
 
 $(function () {
 	ws = connect();
@@ -56,8 +57,10 @@ function addOrdersToRow(startingColumn, ordersPerRow, row, shreddedOrders) {
 		var hidePopupBox = function () {
 			$("#orderSummaryHoverBox").hide();
 		};
-
 		order.hover(showPopupBox, hidePopupBox);
+		order.bind('click', function () {
+			handler.send("highlightSize", handler.getData(orderId, "quantity"));
+		});
 		shreddedOrders.append(order)
 	}
 }

@@ -100,6 +100,11 @@ body#search_page {
 	color: black !important;
 }
 
+.highlight_order {
+	border: solid 1px greenyellow;
+	background-color: darkgreen !important;
+}
+
 
 #orderSummaryHoverBox {
 	display: none;
