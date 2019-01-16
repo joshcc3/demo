@@ -84,6 +84,10 @@ public class WorkingOrdersByBestPrice {
         }
 
         final LinkedHashSet<SourcedWorkingOrder> workingOrders = ordersByPrice.get(price);
+        if (null == workingOrders) {
+            return;
+        }
+
         workingOrders.remove(workingOrder);
         if (workingOrders.isEmpty()) {
             ordersByPrice.remove(price);
