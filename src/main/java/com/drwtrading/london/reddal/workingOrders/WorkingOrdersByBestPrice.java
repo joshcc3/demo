@@ -68,10 +68,11 @@ public class WorkingOrdersByBestPrice {
         workingOrders.add(workingOrder);
     }
 
-    public void removeWorkingOrder(final SourcedWorkingOrder workingOrder) {
+    public long removeWorkingOrder(final SourcedWorkingOrder workingOrder) {
 
         final Long oldPrice = currentPricesByWorkingOrderID.remove(workingOrder);
         removeWorkingOrder(oldPrice, workingOrder);
+        return oldPrice;
     }
 
     private void removeWorkingOrder(final long price, final SourcedWorkingOrder workingOrder) {

@@ -52,9 +52,9 @@ public class BestWorkingOrderMaintainer implements IWorkingOrdersCallback {
         final WorkingOrdersByBestPrice orderedWorkingOrders = workingOrders.get(workingOrder.order.getSymbol());
         final long bestPrice = orderedWorkingOrders.getBestPrice(workingOrder.order.getSide());
 
-        orderedWorkingOrders.removeWorkingOrder(workingOrder);
+        final long oldPrice = orderedWorkingOrders.removeWorkingOrder(workingOrder);
 
-        if (bestPrice == workingOrder.order.getPrice()) {
+        if (bestPrice == oldPrice) {
             setBestWorkingPrice(orderedWorkingOrders);
         }
     }
