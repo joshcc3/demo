@@ -70,8 +70,8 @@ public class WorkingOrdersByBestPrice {
 
     public void removeWorkingOrder(final SourcedWorkingOrder workingOrder) {
 
-        currentPricesByWorkingOrderID.remove(workingOrder);
-        removeWorkingOrder(workingOrder.order.getPrice(), workingOrder);
+        final Long oldPrice = currentPricesByWorkingOrderID.remove(workingOrder);
+        removeWorkingOrder(oldPrice, workingOrder);
     }
 
     private void removeWorkingOrder(final long price, final SourcedWorkingOrder workingOrder) {
@@ -84,9 +84,6 @@ public class WorkingOrdersByBestPrice {
         }
 
         final LinkedHashSet<SourcedWorkingOrder> workingOrders = ordersByPrice.get(price);
-        if (null == workingOrders) {
-            return;
-        }
 
         workingOrders.remove(workingOrder);
         if (workingOrders.isEmpty()) {
