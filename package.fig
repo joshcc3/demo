@@ -13,14 +13,14 @@ config default
 	include :scripts
 
 	include drw.london.eeif-utils/280
-	include drw.london.eeif-nibbler-transport/91
+	include drw.london.eeif-nibbler-transport/92
 	include drw.london.eeif-opxl-client/47
 	include drw.london.eeif-position-transport/129
-	include drw.london.eeif-stack-transport/150
+	include drw.london.eeif-stack-transport/151
 	include drw.london.eeif-yoda-transport/115
 	include drw.london.eeif-indy-transport/240
 
-	include drw.eeif.fees/65
+	include drw.eeif.fees/66
 	include drw.opxl/1.5.1
 
 	# Libraries and containers
