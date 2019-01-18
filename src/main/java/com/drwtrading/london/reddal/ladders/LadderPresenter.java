@@ -387,7 +387,9 @@ public class LadderPresenter implements IStackPresenterCallback {
     }
 
     public void setPKSExposure(final PKSExposure position) {
-        metaDataBySymbol.get(position.symbol).onPKSExposure(oneDP, position);
+        for (final String symbol : position.symbols) {
+            metaDataBySymbol.get(symbol).onPKSExposure(oneDP, position);
+        }
     }
 
     @Subscribe

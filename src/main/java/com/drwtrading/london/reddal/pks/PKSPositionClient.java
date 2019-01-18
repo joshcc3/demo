@@ -12,12 +12,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class PKSPositionClient implements ITransportCacheListener<String, ConstituentExposure>, IPositionCmdListener {
 
     private final Publisher<PKSExposure> positionPublisher;
 
-    private final Map<String, HashSet<String>> isinToSymbols;
+    private final Map<String, CopyOnWriteArraySet<String>> isinToSymbols;
     private final Map<String, ConstituentExposure> isinExposures;
 
     private final Map<String, UltimateParentMapping> ultimateParents;
@@ -36,7 +37,8 @@ public class PKSPositionClient implements ITransportCacheListener<String, Consti
 
     public void setSearchResult(final SearchResult searchResult) {
 
-        final HashSet<String> symbols = MapUtils.getMappedSet(isinToSymbols, searchResult.instID.isin);
+        final CopyOnWriteArraySet<String> symbols =
+                MapUtils.getMappedItem(isinToSymbols, searchResult.instID.isin, CopyOnWriteArraySet::new);
         symbols.add(searchResult.symbol);
 
         final ConstituentExposure pksPosition = isinExposures.get(searchResult.instID.isin);
@@ -117,16 +119,9 @@ public class PKSPositionClient implements ITransportCacheListener<String, Consti
 
         final Set<String> symbols = isinToSymbols.get(isin);
         if (null != symbols) {
-            for (final String symbol : symbols) {
-                publisherExposure(symbol, exposure, position);
-            }
+            final PKSExposure pks = new PKSExposure(symbols, exposure, position);
+            positionPublisher.publish(pks);
         }
-    }
-
-    private void publisherExposure(final String symbol, final double exposure, final double position) {
-
-        final PKSExposure pks = new PKSExposure(symbol, exposure, position);
-        positionPublisher.publish(pks);
     }
 
     @Override
