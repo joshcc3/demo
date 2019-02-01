@@ -43,6 +43,10 @@ body {
 	font-size: 11px;
 }
 
+.row div.timestamp {
+	width: 70px;
+}
+
 .symbol {
 	cursor: pointer;
 }
