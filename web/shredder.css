@@ -102,7 +102,30 @@ body#search_page {
 
 .highlight_order {
 	border: solid 1px greenyellow;
+}
+
+.highlight_order_0 {
 	background-color: darkgreen !important;
+}
+
+.highlight_order_1 {
+	background-color: #5e6412 !important;
+}
+
+.highlight_order_2 {
+	background-color: #0e4864 !important;
+}
+
+.highlight_order_3 {
+	background-color: #493564 !important;
+}
+
+.highlight_order_4 {
+	background-color: #643c57 !important;
+}
+
+.highlight_order_5 {
+	background-color: #643231 !important;
 }
 
 

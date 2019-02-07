@@ -93,7 +93,13 @@ public enum CSSClass {
     MAYBE_OUR_OURDER("maybe_our_order"),
     ASK_ORDER("ask_order"),
     BID_ORDER("bid_order"),
-    HIGHLIGHT_ORDER("highlight_order"),
+
+    HIGHLIGHT_ORDER_0("highlight_order_0"),
+    HIGHLIGHT_ORDER_1("highlight_order_1"),
+    HIGHLIGHT_ORDER_2("highlight_order_2"),
+    HIGHLIGHT_ORDER_3("highlight_order_3"),
+    HIGHLIGHT_ORDER_4("highlight_order_4"),
+    HIGHLIGHT_ORDER_5("highlight_order_5"),
 
     WORKING_ORDER_TYPE_HIDDEN_TICKTAKER("working_order_type_hidden_ticktaker"),
     WORKING_ORDER_TYPE_TAKER("working_order_type_taker"),
@@ -120,6 +126,7 @@ public enum CSSClass {
     public static final EnumSet<CSSClass> STACK_TYPES;
     public static final EnumSet<CSSClass> STACK_ORDER_TYPES;
     private static final Map<String, CSSClass> CSS_CLASS_BY_NAME;
+    static final CSSClass[] CLASSES = values();
 
     static {
         STACK_TYPES = EnumSet.of(QUOTER, PICARD);
@@ -133,5 +140,9 @@ public enum CSSClass {
 
     public static CSSClass getCSSClass(final String name) {
         return CSS_CLASS_BY_NAME.get(name);
+    }
+
+    public static CSSClass getByOrdinal(int ordinal) {
+        return CLASSES[ordinal];
     }
 }

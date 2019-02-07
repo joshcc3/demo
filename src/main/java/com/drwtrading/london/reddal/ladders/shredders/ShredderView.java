@@ -7,9 +7,7 @@ import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ShredderView implements UiEventHandler {
@@ -56,9 +54,8 @@ public class ShredderView implements UiEventHandler {
 
         ShredderBookView oldView = this.shredderBookView;
         this.shredderBookView = new ShredderBookView(uiPipe, view, marketData, symbol, levels, workingOrders, stackData);
-
         if (null != oldView) {
-            shredderBookView.sizeHighlights.addAll(oldView.sizeHighlights);
+            shredderBookView.highlightSizes.putAll(oldView.highlightSizes);
         }
 
         setup();

@@ -25,10 +25,7 @@ import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 
 import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 class ShredderBookView {
 
@@ -50,6 +47,8 @@ class ShredderBookView {
     private final WorkingOrdersByID workingOrders;
 
     private final List<ShreddedOrder> shreddedOrders = new ArrayList<>();
+    EnumMap<CSSClass, Long> highlightSizes = new EnumMap<CSSClass, Long>(CSSClass.class);
+    int nextHighlightBump;
 
     private long centeredPrice = 0;
     private long topPrice = Long.MIN_VALUE;
@@ -61,7 +60,7 @@ class ShredderBookView {
     Integer shreddedRowWidth = 0;
 
     ShredderBookView(final UiPipeImpl ui, final IShredderUI view, final MDForSymbol marketData, final String symbol, final int levels,
-            final WorkingOrdersByID workingOrders, final SymbolStackData stackData) {
+                     final WorkingOrdersByID workingOrders, final SymbolStackData stackData) {
 
         this.ui = ui;
         this.view = view;
@@ -163,11 +162,28 @@ class ShredderBookView {
         }
     }
 
-    Set<Long> sizeHighlights = new HashSet<>();
 
     public void highlightSize(long size) {
-        if (!sizeHighlights.add(size)) {
-            sizeHighlights.remove(size);
+        CSSClass firstEmpty = null;
+        boolean found = false;
+        for (int i = CSSClass.HIGHLIGHT_ORDER_0.ordinal(); i <= CSSClass.HIGHLIGHT_ORDER_5.ordinal(); i++) {
+            CSSClass byOrdinal = CSSClass.getByOrdinal(i);
+            Long prev = highlightSizes.get(byOrdinal);
+            if (null == prev && null == firstEmpty) {
+                firstEmpty = byOrdinal;
+            } else if (null != prev && prev == size) {
+                firstEmpty = null;
+                found = true;
+                highlightSizes.remove(byOrdinal);
+                break;
+            }
+        }
+        if (!found) {
+            if (null != firstEmpty) {
+                highlightSizes.put(firstEmpty, size);
+            } else {
+                highlightSizes.put(CSSClass.getByOrdinal(CSSClass.HIGHLIGHT_ORDER_0.ordinal() + (nextHighlightBump++ % 6)), size);
+            }
         }
         drawShreddedOrders();
     }
@@ -194,8 +210,10 @@ class ShredderBookView {
 
             ui.cls(orderCellKey, shreddedOrder.getOppositeCSSCClass(), false);
             ui.cls(orderCellKey, shreddedOrder.getCorrespondingCSSClass(), true);
-
-            ui.cls(orderCellKey, CSSClass.HIGHLIGHT_ORDER, sizeHighlights.contains(shreddedOrder.quantity));
+            for (int i = CSSClass.HIGHLIGHT_ORDER_0.ordinal(); i <= CSSClass.HIGHLIGHT_ORDER_5.ordinal(); i++) {
+                Long size = highlightSizes.get(CSSClass.getByOrdinal(i));
+                ui.cls(orderCellKey, CSSClass.getByOrdinal(i), null != size && size == shreddedOrder.quantity);
+            }
             ui.cls(orderCellKey, CSSClass.MAYBE_OUR_OURDER, shreddedOrder.isOurs);
             ui.cls(orderCellKey, CSSClass.OUR_ORDER, shreddedOrder.isOurs && shreddedOrder.canOnlyBeOurs);
             ui.data(orderCellKey, DataKey.TAG, shreddedOrder.tag);
