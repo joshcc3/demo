@@ -1,16 +1,16 @@
-var headerRow;
-var table;
+let headerRow;
+let table;
 
-var rfqSound;
-var etfRfqSound;
-var atCloseSound;
-var sweepSound;
-var twapSound;
-var tweetSound;
-var unknownSound;
+let rfqSound;
+let etfRfqSound;
+let atCloseSound;
+let sweepSound;
+let twapSound;
+let tweetSound;
+let onFireSound;
+let unknownSound;
 
-
-var AutoOpenRFQ = false;
+let AutoOpenRFQ = false;
 
 $(function () {
     ws = connect();
@@ -28,6 +28,7 @@ $(function () {
     sweepSound = new Audio("stockAlerts/sword-schwing.wav");
     twapSound = new Audio("stockAlerts/TWAP.wav");
     tweetSound = new Audio("stockAlerts/tweet.wav");
+    onFireSound = new Audio("stockAlerts/on_fire.ogg");
     bigRfqSound = new Audio("stockAlerts/pulp.wav");
     unknownSound = new Audio("stockAlerts/huh-humm.wav");
 
@@ -50,10 +51,10 @@ function setAutoOpen(autoOpen) {
 
 function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 
-    var id = (type + symbol + timestamp).replace(/ |\/|\.|:/g, "_");
-    var row = $('#' + id);
+	const id = (type + symbol + timestamp).replace(/ |\/|\.|:/g, "_");
+	let row = $('#' + id);
 
-    if (row[0]) {
+	if (row[0]) {
         row.remove();
     } else {
         row = table.find("#header").clone();
@@ -65,8 +66,8 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
     row.find(".timestamp").text(timestamp);
     row.find(".type").text(type);
 
-    var symbolCell = row.find(".symbol");
-    symbolCell.text(symbol);
+	const symbolCell = row.find(".symbol");
+	symbolCell.text(symbol);
     symbolCell.unbind().bind("click", function () {
         launchLadder(symbol);
     });
@@ -74,29 +75,29 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
     row.find(".msg").text(msg);
     row.insertAfter(headerRow);
 
-    var rows = table.children();
-    if (16 < rows.length) {
+	const rows = table.children();
+	if (16 < rows.length) {
         table.children().last().remove();
     }
 
     if (isOriginal) {
-        playSound(type);
+        playSound(type, msg);
     }
 
     if(type.includes("ETF_RFQ")) {
-        var o = symbol.split(" ")[0];
-        var origSymbol = o.slice(0,-2) + " " + o.slice(-2);
-        if (AutoOpenRFQ) {
+		const o = symbol.split(" ")[0];
+		const origSymbol = o.slice(0, -2) + " " + o.slice(-2);
+		if (AutoOpenRFQ) {
             launchLadder(symbol, true);
             launchLadder(origSymbol, true);
         }
     }
 }
 
-function playSound(type) {
+function playSound(type, msg) {
 
-    var sound;
-    if (type.startsWith("BIG_")) {
+	let sound;
+	if (type.startsWith("BIG_")) {
     	sound = bigRfqSound;
 	} else if ("RFQ" == type) {
         sound = rfqSound;
@@ -109,7 +110,11 @@ function playSound(type) {
     } else if ("ETF_RFQ" == type) {
         sound = etfRfqSound;
     } else if ("TWEET" == type) {
-    	sound = tweetSound;
+    	if (msg.includes("ON FIRE")) {
+    		sound = onFireSound;
+		} else {
+			sound = tweetSound;
+		}
 	} else {
         sound = unknownSound;
     }
