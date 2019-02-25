@@ -15,7 +15,6 @@ import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.reddal.autopull.autopuller.onMD.AutoPuller;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
-import com.drwtrading.london.reddal.ladders.impliedGenerator.ImpliedTheoInfoGenerator;
 import com.drwtrading.london.reddal.ladders.orders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.shredders.ShredderPresenter;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
@@ -27,19 +26,17 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     private final OrdersPresenter orderPresenter;
     private final ShredderPresenter shredderPresenter;
     private final AutoPuller autoPuller;
-    private final ImpliedTheoInfoGenerator impliedGenerator;
 
     private final LongMap<SourcedWorkingOrder> sourcedWorkingOrder;
 
     public LadderInfoListener(final String sourceNibbler, final LadderPresenter ladderPresenter, final OrdersPresenter orderPresenter,
-            final ShredderPresenter shredderPresenter, final AutoPuller autoPuller, final ImpliedTheoInfoGenerator impliedGenerator) {
+            final ShredderPresenter shredderPresenter, final AutoPuller autoPuller) {
 
         this.sourceNibbler = sourceNibbler;
         this.ladderPresenter = ladderPresenter;
         this.orderPresenter = orderPresenter;
         this.shredderPresenter = shredderPresenter;
         this.autoPuller = autoPuller;
-        this.impliedGenerator = impliedGenerator;
 
         this.sourcedWorkingOrder = new LongMap<>();
     }
@@ -64,7 +61,6 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     public boolean updateTheoValue(final TheoValue theoValue) {
         ladderPresenter.setTheo(theoValue);
         shredderPresenter.setTheo(theoValue);
-        impliedGenerator.setTheoValue(theoValue);
         return true;
     }
 

@@ -80,7 +80,6 @@ import com.drwtrading.london.reddal.ladders.LadderSettings;
 import com.drwtrading.london.reddal.ladders.RecenterLadder;
 import com.drwtrading.london.reddal.ladders.history.HistoryPresenter;
 import com.drwtrading.london.reddal.ladders.impliedGenerator.ImpliedMDInfoGenerator;
-import com.drwtrading.london.reddal.ladders.impliedGenerator.ImpliedTheoInfoGenerator;
 import com.drwtrading.london.reddal.ladders.orders.OrderPresenterMsgRouter;
 import com.drwtrading.london.reddal.ladders.orders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.shredders.ShredderMessageRouter;
@@ -537,19 +536,10 @@ public class Main {
                                     channels.autoPullerUpdates);
                     channels.autoPullerCmds.subscribe(fiberBuilder.getFiber(), cmd -> cmd.executeOn(autoPuller));
 
-                    final ImpliedTheoInfoGenerator impliedTheoGenerator =
-                            new ImpliedTheoInfoGenerator(clock, ladderPresenter, shredderPresenter);
-
-                    final ImpliedMDInfoGenerator impliedMDGenerator =
-                            new ImpliedMDInfoGenerator(clock, depthBookSubscriber, ladderPresenter, shredderPresenter);
-
-                    final ConfigGroup impliedConfig = root.getEnabledGroup("divImpliedTheo");
-                    if (null != impliedConfig) {
-                        if (impliedConfig.paramExists("theo")) {
-                            channels.searchResults.subscribe(displaySelectIOFiber, impliedTheoGenerator::addInstrument);
-                        } else if (impliedConfig.paramExists("md")) {
-                            channels.searchResults.subscribe(displaySelectIOFiber, impliedMDGenerator::addInstrument);
-                        }
+                    if (null != root.getEnabledGroup("divImpliedTheo")) {
+                        final ImpliedMDInfoGenerator impliedMDGenerator =
+                                new ImpliedMDInfoGenerator(clock, depthBookSubscriber, ladderPresenter, shredderPresenter);
+                        channels.searchResults.subscribe(displaySelectIOFiber, impliedMDGenerator::addInstrument);
                     }
 
                     for (final ConfigGroup nibblerConfig : nibblerConfigs) {
@@ -560,8 +550,7 @@ public class Main {
                                 nibblerParentMonitor.createChildResourceMonitor(sourceNibbler);
 
                         final LadderInfoListener ladderInfoListener =
-                                new LadderInfoListener(sourceNibbler, ladderPresenter, orderPresenter, shredderPresenter, autoPuller,
-                                        impliedTheoGenerator);
+                                new LadderInfoListener(sourceNibbler, ladderPresenter, orderPresenter, shredderPresenter, autoPuller);
 
                         final NibblerClientHandler client =
                                 NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,

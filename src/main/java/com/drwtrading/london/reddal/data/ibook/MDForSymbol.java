@@ -111,6 +111,7 @@ public class MDForSymbol {
     boolean addMDCallback(final IMDCallback callback) {
 
         bookUpdateCallbacks.add(callback);
+        callback.bookUpdated(this);
         return 1 == bookUpdateCallbacks.size();
     }
 
