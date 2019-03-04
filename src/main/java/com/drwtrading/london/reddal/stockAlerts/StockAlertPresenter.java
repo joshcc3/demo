@@ -23,7 +23,7 @@ import java.util.Set;
 public class StockAlertPresenter {
 
     private static final Set<String> UNWANTED_RFQ_FUTURES = new HashSet<>();
-    private static final double RFQ_BIG_THRESHOLD = 10_000_000;
+    private static final double RFQ_BIG_THRESHOLD = 5_000_000;
 
     static {
         UNWANTED_RFQ_FUTURES.add("FGBS");
