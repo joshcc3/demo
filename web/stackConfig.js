@@ -151,10 +151,11 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 				leanToQuoteRatio, leanPriceAdjustmentRaw, additiveIsEnabled, additiveMaxSignalAgeMillis, additiveMinRequiredBPS,
 				additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize, bidPlanMaxLevels, bidMinPicardQty,
 				bidMaxOrdersPerLevel, bidIsOnlySubmitBestLevel, bidIsQuoteBettermentOn, bidModTicks, bidQuoteFlickerBuffer,
-				bidQuotePicardMaxBPSThrough, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay,
-				askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMinPicardQty, askMaxOrdersPerLevel,
-				askIsOnlySubmitBestLevel, askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer, askQuotePicardMaxBPSThrough,
-				askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay) {
+				bidQuotePicardMaxBPSThrough, bidPicardMaxPapaWeight, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour,
+				bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMinPicardQty,
+				askMaxOrdersPerLevel, askIsOnlySubmitBestLevel, askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer,
+				askQuotePicardMaxBPSThrough, askPicardMaxPapaWeight, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour,
+				askPicardMaxPerDay) {
 
 	const rowID = nibblerName + configGroupID;
 	let row = $("#" + rowID);
@@ -278,6 +279,7 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 		setCellData(row, ".strategy.quoteModTicks .bid", bidModTicks);
 		setCellData(row, ".strategy.quoteFlickerBuffer .bid", bidQuoteFlickerBuffer);
 		setCellData(row, ".strategy.quotePicardMaxBPSThrough .bid", bidQuotePicardMaxBPSThrough);
+		setCellData(row, ".strategy.picardMaxPapaWeight .bid", bidPicardMaxPapaWeight);
 		setCellData(row, ".strategy.picardMaxPerSec .bid", bidPicardMaxPerSec);
 		setCellData(row, ".strategy.picardMaxPerMin .bid", bidPicardMaxPerMin);
 		setCellData(row, ".strategy.picardMaxPerHour .bid", bidPicardMaxPerHour);
@@ -295,6 +297,7 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 		setCellData(row, ".strategy.quoteModTicks .ask", askModTicks);
 		setCellData(row, ".strategy.quoteFlickerBuffer .ask", askQuoteFlickerBuffer);
 		setCellData(row, ".strategy.quotePicardMaxBPSThrough .ask", askQuotePicardMaxBPSThrough);
+		setCellData(row, ".strategy.picardMaxPapaWeight .ask", askPicardMaxPapaWeight);
 		setCellData(row, ".strategy.picardMaxPerSec .ask", askPicardMaxPerSec);
 		setCellData(row, ".strategy.picardMaxPerMin .ask", askPicardMaxPerMin);
 		setCellData(row, ".strategy.picardMaxPerHour .ask", askPicardMaxPerHour);
@@ -386,6 +389,7 @@ function submitRow(row) {
 	const bidModTicks = getCellData(row, ".strategy.quoteModTicks .bid");
 	const bidQuoteFlickerBuffer = getCellData(row, ".strategy.quoteFlickerBuffer .bid");
 	const bidQuotePicardMaxBPSThrough = getCellData(row, ".strategy.quotePicardMaxBPSThrough .bid");
+	const bidPicardMaxPapaWeight = getCellData(row, ".strategy.picardMaxPapaWeight .bid");
 	const bidPicardMaxPerSec = getCellData(row, ".strategy.picardMaxPerSec .bid");
 	const bidPicardMaxPerMin = getCellData(row, ".strategy.picardMaxPerMin .bid");
 	const bidPicardMaxPerHour = getCellData(row, ".strategy.picardMaxPerHour .bid");
@@ -403,20 +407,22 @@ function submitRow(row) {
 	const askModTicks = getCellData(row, ".strategy.quoteModTicks .ask");
 	const askQuoteFlickerBuffer = getCellData(row, ".strategy.quoteFlickerBuffer .ask");
 	const askQuotePicardMaxBPSThrough = getCellData(row, ".strategy.quotePicardMaxBPSThrough .ask");
+	const askPicardMaxPapaWeight = getCellData(row, ".strategy.picardMaxPapaWeight .ask");
 	const askPicardMaxPerSec = getCellData(row, ".strategy.picardMaxPerSec .ask");
 	const askPicardMaxPerMin = getCellData(row, ".strategy.picardMaxPerMin .ask");
 	const askPicardMaxPerHour = getCellData(row, ".strategy.picardMaxPerHour .ask");
 	const askPicardMaxPerDay = getCellData(row, ".strategy.picardMaxPerDay .ask");
 
 	ws.send(command("submitChange", [nibblerName, configGroupID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
-		quoteAuctionTheoMaxBPSThrough, quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS,
-		leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustment,
+		quoteAuctionTheoMaxBPSThrough, quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, fxMaxBookAgeMillis,
+		fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustment,
 		additiveIsEnabled, additiveMaxSignalAgeMillis, additiveMinRequiredBPS, additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty,
 		bidPlanLotSize, bidPlanMaxLevels, bidMinPicardQty, bidMaxOrdersPerLevel, bidIsOnlySubmitBestLevel, bidIsQuoteBettermentOn,
-		bidModTicks, bidQuoteFlickerBuffer, bidQuotePicardMaxBPSThrough, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour,
-		bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMinPicardQty, askMaxOrdersPerLevel,
-		askIsOnlySubmitBestLevel, askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer, askQuotePicardMaxBPSThrough,
-		askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay]));
+		bidModTicks, bidQuoteFlickerBuffer, bidQuotePicardMaxBPSThrough, bidPicardMaxPapaWeight, bidPicardMaxPerSec, bidPicardMaxPerMin,
+		bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMinPicardQty,
+		askMaxOrdersPerLevel, askIsOnlySubmitBestLevel, askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer,
+		askQuotePicardMaxBPSThrough, askPicardMaxPapaWeight, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour,
+		askPicardMaxPerDay]));
 }
 
 function getCellData(row, cellID) {

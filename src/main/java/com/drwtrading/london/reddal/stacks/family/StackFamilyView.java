@@ -845,8 +845,8 @@ public class StackFamilyView implements IStackRelationshipListener {
                 configClient.strategyConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.BID, bidStratConfig.getMaxOrdersPerLevel(),
                         bidStratConfig.isOnlySubmitBestLevel(), bidStratConfig.isQuoteBettermentOn(), bidStratConfig.getModTicks(),
                         bidStratConfig.getQuoteFlickerBufferPercent(), bidStratConfig.getQuotePicardMaxBPSThrough(),
-                        bidStratConfig.getPicardMaxPerSec(), bidStratConfig.getPicardMaxPerMin(), bidStratConfig.getPicardMaxPerHour(),
-                        bidStratConfig.getPicardMaxPerDay());
+                        bidStratConfig.getPicardMaxPapaWeight(), bidStratConfig.getPicardMaxPerSec(), bidStratConfig.getPicardMaxPerMin(),
+                        bidStratConfig.getPicardMaxPerHour(), bidStratConfig.getPicardMaxPerDay());
 
                 final StackPlanConfig askPlanConfig = fromConfig.askPlanConfig;
                 configClient.planConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.ASK, askPlanConfig.getMinLevelQty(),
@@ -857,8 +857,8 @@ public class StackFamilyView implements IStackRelationshipListener {
                 configClient.strategyConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.ASK, askStratConfig.getMaxOrdersPerLevel(),
                         askStratConfig.isOnlySubmitBestLevel(), askStratConfig.isQuoteBettermentOn(), askStratConfig.getModTicks(),
                         askStratConfig.getQuoteFlickerBufferPercent(), askStratConfig.getQuotePicardMaxBPSThrough(),
-                        askStratConfig.getPicardMaxPerSec(), askStratConfig.getPicardMaxPerMin(), askStratConfig.getPicardMaxPerHour(),
-                        askStratConfig.getPicardMaxPerDay());
+                        askStratConfig.getPicardMaxPapaWeight(), askStratConfig.getPicardMaxPerSec(), askStratConfig.getPicardMaxPerMin(),
+                        askStratConfig.getPicardMaxPerHour(), askStratConfig.getPicardMaxPerDay());
 
                 configClient.batchComplete();
             }

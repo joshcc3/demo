@@ -20,10 +20,10 @@ public interface IStackConfigUI {
             final int bidPlanMaxLevelQty, final int bidPlanLotSize, final int bidPlanMaxLevels, final int bidMinPicardQty,
             final int bidMaxOrdersPerLevel, final boolean bidIsOnlySubmitBestLevel, final boolean bidIsQuoteBettermentOn,
             final int bidModTicks, final byte bidQuoteFlickerBufferPercent, final int bidQuotePicardMaxBPSThrough,
-            final int bidPicardMaxPerSec, final int bidPicardMaxPerMin, final int bidPicardMaxPerHour, final int bidPicardMaxPerDay,
-            final int askPlanMinLevelQty, final int askPlanMaxLevelQty, final int askPlanLotSize, final int askPlanMaxLevels,
-            final int askMinPicardQty, final int askMaxOrdersPerLevel, final boolean askIsOnlySubmitBestLevel,
+            final byte bidMaxPapaWeight, final int bidPicardMaxPerSec, final int bidPicardMaxPerMin, final int bidPicardMaxPerHour,
+            final int bidPicardMaxPerDay, final int askPlanMinLevelQty, final int askPlanMaxLevelQty, final int askPlanLotSize,
+            final int askPlanMaxLevels, final int askMinPicardQty, final int askMaxOrdersPerLevel, final boolean askIsOnlySubmitBestLevel,
             final boolean askIsQuoteBettermentOn, final int askModTicks, final byte askQuoteFlickerBufferPercent,
-            final int askQuotePicardMaxBPSThrough, final int askPicardMaxPerSec, final int askPicardMaxPerMin,
+            final int askQuotePicardMaxBPSThrough, final byte askMaxPapaWeight, final int askPicardMaxPerSec, final int askPicardMaxPerMin,
             final int askPicardMaxPerHour, final int askPicardMaxPerDay);
 }
