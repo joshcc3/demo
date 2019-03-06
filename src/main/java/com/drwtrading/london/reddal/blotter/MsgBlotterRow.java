@@ -8,8 +8,10 @@ class MsgBlotterRow implements Comparable<MsgBlotterRow> {
     final String timestamp;
     final String source;
     final String text;
+    final boolean isLowPriority;
 
-    MsgBlotterRow(final int id, final long nanoSinceMidnight, final String timestamp, final String source, final String text) {
+    MsgBlotterRow(final int id, final long nanoSinceMidnight, final String timestamp, final String source, final String text,
+            final boolean isLowPriority) {
 
         this.id = id;
         this.nanoSinceMidnight = nanoSinceMidnight;
@@ -17,6 +19,7 @@ class MsgBlotterRow implements Comparable<MsgBlotterRow> {
         this.timestamp = timestamp;
         this.source = source;
         this.text = text;
+        this.isLowPriority = isLowPriority;
     }
 
     @Override

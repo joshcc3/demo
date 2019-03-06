@@ -1143,7 +1143,8 @@ public class Main {
 
             final MsgBlotterPresenter msgBlotter = new MsgBlotterPresenter(app.selectIO, webLog);
             channels.ladderClickTradingIssues.subscribe(selectIOFiber,
-                    msg -> msgBlotter.addLine("OrderRouter", app.clock.getReferenceNanoSinceMidnightUTC(), msg.symbol + ": " + msg.issue));
+                    msg -> msgBlotter.addLine("OrderRouter", app.clock.getReferenceNanoSinceMidnightUTC(), msg.symbol + ": " + msg.issue,
+                            false));
             final SafetiesBlotterPresenter safetiesBlotter = new SafetiesBlotterPresenter(webLog);
 
             final WorkingOrdersPresenter workingOrderPresenter =

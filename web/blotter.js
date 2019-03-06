@@ -14,6 +14,12 @@ $(function () {
 	nibblerFilterList.val("ALL");
 	nibblerFilterList.change(updateFilters);
 	updateFilters();
+
+	const blotterView = $("#blotter");
+	const isHiddenCheckBox = $("#isLowPriorityHidden");
+	isHiddenCheckBox.unbind('click').bind('click', function () {
+		blotterView.toggleClass("hideLowPriority", isHiddenCheckBox.prop('checked'));
+	});
 });
 
 function updateFilters() {
@@ -91,7 +97,7 @@ function compareOptionRow(a, b) {
 	return aName < bName ? -1 : aName == bName ? 0 : 1;
 }
 
-function addRow(id, timestamp, source, text) {
+function addRow(id, timestamp, source, text, isLowPriority) {
 
 	let row = $("#" + id);
 
@@ -106,8 +112,9 @@ function addRow(id, timestamp, source, text) {
 		row.find(".time").text(timestamp);
 		row.find(".source").text(source);
 		row.find(".text").text(text);
+		row.toggleClass("isLowPriority", isLowPriority);
 
-		addSortedDiv(table.find(".row"), row, compareBlotterRow)
+		addSortedDiv(table.find(".row"), row, compareBlotterRow);
 
 		row.toggleClass("hidden", isFiltered(row));
 	}

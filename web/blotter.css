@@ -43,7 +43,7 @@ body {
 	white-space: nowrap;
 }
 
-.hidden {
+.hidden, .hideLowPriority .isLowPriority {
 	display: none;
 }
 
@@ -68,7 +68,7 @@ body {
 	width: 100%;
 }
 
-#blotter .row:not(.hidden) {
+#blotter .row:not(.hidden, .hideLowPriority .isLowPriority) {
 	border-bottom: 1px solid #555555;
 	text-align: left;
 	padding: 0 6px;

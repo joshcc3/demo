@@ -77,14 +77,15 @@ public class BlotterClient implements INibblerBlotterListener, INibblerSafetiesL
     @Override
     public boolean addBlotterLine(final BlotterLine blotterLine) {
 
-        msgBlotter.addLine(source, blotterLine.nanoSinceMidnightUTC, blotterLine.text);
+        msgBlotter.addLine(source, blotterLine.nanoSinceMidnightUTC, blotterLine.text, false);
         return true;
     }
 
     @Override
     public boolean addBlotterSymbolLine(final BlotterSymbolLine blotterLine) {
 
-        msgBlotter.addLine(source, blotterLine.nanoSinceMidnightUTC, blotterLine.symbol + ": " + blotterLine.text);
+        msgBlotter.addLine(source, blotterLine.nanoSinceMidnightUTC, blotterLine.symbol + ": " + blotterLine.text,
+                blotterLine.isLowPriority);
         return true;
     }
 

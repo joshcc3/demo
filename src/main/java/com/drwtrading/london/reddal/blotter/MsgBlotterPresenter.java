@@ -54,10 +54,10 @@ public class MsgBlotterPresenter {
         views.all().setNibblerConnected(source, isConnected);
     }
 
-    public void addLine(final String source, final long nanoSinceMidnightUTC, final String text) {
+    public void addLine(final String source, final long nanoSinceMidnightUTC, final String text, final boolean isLowPriority) {
 
         final String time = sdf.format(milliAtMidnightUTC + nanoSinceMidnightUTC / DateTimeUtil.NANOS_IN_MILLIS);
-        final MsgBlotterRow row = new MsgBlotterRow(++rowCount, nanoSinceMidnightUTC, time, source, text);
+        final MsgBlotterRow row = new MsgBlotterRow(++rowCount, nanoSinceMidnightUTC, time, source, text, isLowPriority);
         final MsgBlotterRow oldRow = rows.putIfAbsent(row, row);
 
         if (null == oldRow) {
@@ -67,10 +67,10 @@ public class MsgBlotterPresenter {
                 final MsgBlotterRow oldestRow = rows.pollFirstEntry().getValue();
                 if (oldestRow.id != row.id) {
                     views.all().removeRow(oldestRow.id);
-                    views.all().addRow(row.id, row.timestamp, row.source, row.text);
+                    views.all().addRow(row.id, row.timestamp, row.source, row.text, isLowPriority);
                 }
             } else {
-                views.all().addRow(row.id, row.timestamp, row.source, row.text);
+                views.all().addRow(row.id, row.timestamp, row.source, row.text, isLowPriority);
             }
         }
     }
@@ -110,7 +110,7 @@ public class MsgBlotterPresenter {
         }
 
         for (final MsgBlotterRow row : rows.values()) {
-            newView.addRow(row.id, row.timestamp, row.source, row.text);
+            newView.addRow(row.id, row.timestamp, row.source, row.text, row.isLowPriority);
         }
     }
 }
