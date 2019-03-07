@@ -1260,6 +1260,9 @@ public class Main {
 
                 safetiesBlotter.setNibblerClient(nibbler, client);
 
+                final NibblerTransportOrderEntry orderEntry =
+                        new NibblerTransportOrderEntry(app.selectIO, childMonitor, client, app.logDir);
+
                 if (isTransportForTrading) {
 
                     if (!prioritisedNibblers.remove(nibbler)) {
@@ -1268,8 +1271,6 @@ public class Main {
 
                         quotingObligationsPresenter.setNibblerHandler(nibbler, client);
 
-                        final NibblerTransportOrderEntry orderEntry =
-                                new NibblerTransportOrderEntry(app.selectIO, childMonitor, client, app.logDir);
                         orderRouter.addNibbler(nibbler, orderEntry);
 
                         final NibblerMetaDataLogger logger = new NibblerMetaDataLogger(app.selectIO, app.monitor, app.logDir, nibbler);
@@ -1283,6 +1284,9 @@ public class Main {
 
                         blotterClient.setWorkingOrderListener(workingOrderListener);
                     }
+                } else {
+
+                    orderRouter.addNonTradableNibbler(nibbler, orderEntry);
                 }
             }
 

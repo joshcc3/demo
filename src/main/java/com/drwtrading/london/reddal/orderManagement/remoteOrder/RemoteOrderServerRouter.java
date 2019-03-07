@@ -15,6 +15,7 @@ public class RemoteOrderServerRouter {
 
     private final Map<String, Integer> nibblerPriorities;
     private final Map<String, NibblerTransportOrderEntry> nibblers;
+    private final Map<String, NibblerTransportOrderEntry> broadcastNibblers;
     private final EnumMap<OrderType, Map<String, NibblerSymbolHandler>> symbolVenuesByOrderType;
 
     private final Map<String, SourcedWorkingOrdersByUIKey> symbolWorkingOrder;
@@ -29,6 +30,7 @@ public class RemoteOrderServerRouter {
         }
 
         this.nibblers = new HashMap<>();
+        this.broadcastNibblers = new HashMap<>();
         this.symbolVenuesByOrderType = new EnumMap<>(OrderType.class);
         this.symbolWorkingOrder = new HashMap<>();
     }
@@ -36,11 +38,18 @@ public class RemoteOrderServerRouter {
     public void addNibbler(final String nibblerName, final NibblerTransportOrderEntry entry) {
 
         nibblers.put(nibblerName, entry);
+        broadcastNibblers.put(nibblerName, entry);
+    }
+
+    public void addNonTradableNibbler(final String nibblerName, final NibblerTransportOrderEntry entry) {
+
+        broadcastNibblers.put(nibblerName, entry);
     }
 
     public void setInstrumentTradable(final String symbol, final Set<OrderType> supportedOrderTypes, final String nibblerName) {
-        for (OrderType supportedOrderType : supportedOrderTypes) {
-            Map<String, NibblerSymbolHandler> symbolVenues = getSymbolVenues(supportedOrderType);
+
+        for (final OrderType supportedOrderType : supportedOrderTypes) {
+            final Map<String, NibblerSymbolHandler> symbolVenues = getSymbolVenues(supportedOrderType);
 
             final int priority = nibblerPriorities.get(nibblerName);
             final NibblerTransportOrderEntry orderEntry = nibblers.get(nibblerName);
@@ -55,7 +64,7 @@ public class RemoteOrderServerRouter {
 
     }
 
-    private Map<String, NibblerSymbolHandler> getSymbolVenues(OrderType orderType) {
+    private Map<String, NibblerSymbolHandler> getSymbolVenues(final OrderType orderType) {
         return symbolVenuesByOrderType.computeIfAbsent(orderType, s -> new HashMap<>());
     }
 
@@ -107,7 +116,7 @@ public class RemoteOrderServerRouter {
 
     public void broadcastCmd(final IOrderCmd cmd) {
 
-        for (final NibblerTransportOrderEntry nibbler : nibblers.values()) {
+        for (final NibblerTransportOrderEntry nibbler : broadcastNibblers.values()) {
             cmd.execute(nibbler);
         }
     }
