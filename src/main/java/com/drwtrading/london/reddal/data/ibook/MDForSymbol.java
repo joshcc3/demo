@@ -83,6 +83,9 @@ public class MDForSymbol {
     private static MIC getTradeMIC(final IInstrument book) {
 
         switch (book.getSourceExch()) {
+            case ARCA: {
+                return MIC.ARCX;
+            }
             case BATS_EUROPE: {
                 return MIC.BATE;
             }
