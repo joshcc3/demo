@@ -292,13 +292,7 @@ public class LadderView implements UiEventHandler {
             ladderModel.setClass(HTML.WORKING_ORDER_TAG, type, false);
         }
 
-        SearchResult searchResult = refData.get(symbol);
-        final String symbolDescription;
-        if (null != searchResult) {
-            symbolDescription = symbolDesc.getOrDefault(searchResult.instID, symbol);
-        } else {
-            symbolDescription = symbol;
-        }
+        final String symbolDescription = getSymbolDescription();
 
         final HeaderPanel headerPanel = ladderModel.getHeaderPanel();
         headerPanel.setSymbol(symbol);
@@ -359,6 +353,24 @@ public class LadderView implements UiEventHandler {
 
             ladderModel.setClass(HTML.OFFSET_CONTROL, CSSClass.INVISIBLE, false);
         }
+    }
+
+    private String getSymbolDescription() {
+
+
+        FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);
+        if (null != futureFromSymbol) {
+            return futureFromSymbol.contractDesc + "[" + futureFromSymbol.index + "]";
+        }
+
+        SearchResult searchResult = refData.get(symbol);
+        final String symbolDescription;
+        if (null != searchResult) {
+            symbolDescription = symbolDesc.getOrDefault(searchResult.instID, symbol);
+        } else {
+            symbolDescription = symbol;
+        }
+        return symbolDescription;
     }
 
     void timedRefresh() {
