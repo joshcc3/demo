@@ -29,6 +29,7 @@ $(function () {
     twapSound = new Audio("stockAlerts/TWAP.wav");
     tweetSound = new Audio("stockAlerts/tweet.wav");
     onFireSound = new Audio("stockAlerts/on_fire.ogg");
+    inFlamesSound = new Audio("stockAlerts/yogaflame.wav");
     bigRfqSound = new Audio("stockAlerts/pulp.wav");
     unknownSound = new Audio("stockAlerts/huh-humm.wav");
 
@@ -112,6 +113,8 @@ function playSound(type, msg) {
     } else if ("TWEET" == type) {
     	if (msg.includes("ON FIRE")) {
     		sound = onFireSound;
+		} else if (msg.includes("IN FLAMES")) {
+			sound = inFlamesSound;
 		} else {
 			sound = tweetSound;
 		}
