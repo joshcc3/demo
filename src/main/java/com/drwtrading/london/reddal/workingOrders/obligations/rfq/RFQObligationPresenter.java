@@ -94,7 +94,11 @@ public class RFQObligationPresenter implements IWorkingOrdersCallback {
     @Override
     public void deleteWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
 
-        sourcedOrders.put(sourcedOrder.uiKey, sourcedOrder);
+        sourcedOrders.remove(sourcedOrder.uiKey);
+        removeWorkingOrder(sourcedOrder);
+    }
+
+    private void removeWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
 
         final WorkingOrdersByPrice result = orders.get(sourcedOrder.order.getSymbol());
         result.removeWorkingOrder(sourcedOrder);
@@ -109,7 +113,7 @@ public class RFQObligationPresenter implements IWorkingOrdersCallback {
         while (ordersIterator.hasNext()) {
             final SourcedWorkingOrder order = ordersIterator.next();
             if (source.equals(order.source)) {
-                deleteWorkingOrder(order);
+                removeWorkingOrder(order);
                 ordersIterator.remove();
             }
         }
