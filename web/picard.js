@@ -101,6 +101,12 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 				let priceText = picard.find('.price').text();
 				launchLadderAtPrice(symbol, priceText);
 				ws.send('recenter' + "," + symbol + ",\"" + Math.round(parseFloat(priceText) * 1e9) + "\"");
+				if (symbol.endsWith(" RFQ")) {
+					let origSymbol = symbol.split(" ")[0];
+					let origSuffix = origSymbol.slice(origSymbol.length - 2, origSymbol.length);
+					let origPrefix = origSymbol.slice(0, origSymbol.length - 2);
+					launchLadderAtPrice(origPrefix + " " + origSuffix, priceText);
+				}
 			});
 			picards[key] = picard;
 			$('#picards').append(picard);
