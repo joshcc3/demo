@@ -60,6 +60,7 @@ public enum CSSClass {
     EEIF_ORDER_TYPE("eeif_order_type_managed"),
 
     MKT_CLOSE("MKT_CLOSE"),
+    MIDPOINT("MIDPOINT"),
     HIDDEN("HIDDEN"),
     HAM("HAM"),
     HAMON("HAMON"),

@@ -231,6 +231,10 @@ div {
 	background-color: #ff04ef;
 }
 
+.MIDPOINT, .MIDPOINT:hover {
+	background-color: #8ba7ff;
+}
+
 .IOC, .IOC:hover {
 	background-color: #16ffe1;
 }

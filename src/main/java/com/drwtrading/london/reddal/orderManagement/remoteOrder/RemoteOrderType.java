@@ -9,6 +9,7 @@ public enum RemoteOrderType {
     IOC(OrderType.IOC, AlgoType.MANUAL),
     GTC(OrderType.GTC, AlgoType.MANUAL),
     BATS_PEGGED_DARK_BOOK_ONLY(OrderType.DARK_PEGGED, AlgoType.MANUAL),
+    MIDPOINT(OrderType.DARK_PEGGED, AlgoType.MANUAL),
     MKT_CLOSE(OrderType.MKT_CLOSE, AlgoType.MANUAL),
     HIDDEN(OrderType.HIDDEN_LIMIT, AlgoType.MANUAL),
     HIDDEN_TICKTAKER(OrderType.LIMIT, AlgoType.HIDDEN_TICK_TAKER),
