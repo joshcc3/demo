@@ -137,6 +137,16 @@ public class QuotingObligationsPresenter {
     @FromWebSocketView
     public void everythingOn(final WebSocketInboundData inboundData) {
 
+        everythingOn();
+    }
+
+    public void enableQuotes(final QuoteObligationsEnableCmd quoteObligationsEnableCmd) {
+
+        everythingOn();
+    }
+
+    private void everythingOn() {
+
         final List<NibblerClientHandler> nibblers = new ArrayList<>();
 
         for (final QuotingObligationState quotingState : obligations.values()) {

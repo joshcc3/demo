@@ -5,17 +5,20 @@ import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRela
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
+import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuoteObligationsEnableCmd;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
+import org.jetlang.channels.Channel;
 import org.jetlang.channels.Publisher;
 
 import java.util.Collection;
@@ -32,18 +35,21 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Map<Publisher<WebSocketOutboundData>, StackFamilyView> userViews;
 
     public StackFamilyPresenter(final SelectIO presenterSelectIO, final SelectIO backgroundSelectIO, final UILogger uiLogger,
-            final SpreadContractSetGenerator contractSetGenerator, final InstType defaultInstType, final Map<InstType, String> families) {
+            final SpreadContractSetGenerator contractSetGenerator, final InstType defaultInstType, final Map<InstType, String> families,
+            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
 
         this.uiLogger = uiLogger;
 
-        this.familyView = new StackFamilyView(presenterSelectIO, backgroundSelectIO, contractSetGenerator, false, defaultInstType);
+        this.familyView = new StackFamilyView(presenterSelectIO, backgroundSelectIO, contractSetGenerator, false, defaultInstType,
+                quotingObligationsCmds);
 
         families.remove(defaultInstType);
 
         this.asylums = new HashMap<>();
         for (final Map.Entry<InstType, String> instType : families.entrySet()) {
             final StackFamilyView asylumView =
-                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, contractSetGenerator, true, instType.getKey());
+                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, contractSetGenerator, true, instType.getKey(),
+                            Constants::NO_OP);
             asylums.put(instType.getValue(), asylumView);
         }
 

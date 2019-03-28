@@ -30,6 +30,7 @@ import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuoteObligationsEnableCmd;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
@@ -79,6 +80,8 @@ public class StackFamilyView implements IStackRelationshipListener {
     private final boolean isSecondaryView;
     private final InstType displayableInstType;
 
+    private final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds;
+
     private final WebSocketViews<IStackFamilyUI> views;
     private final Map<String, HashSet<IStackFamilyUI>> userViews;
 
@@ -108,7 +111,8 @@ public class StackFamilyView implements IStackRelationshipListener {
     private double globalPriceOffsetBPS;
 
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO,
-            final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView, final InstType displayableInstType) {
+            final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView, final InstType displayableInstType,
+            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
@@ -116,6 +120,7 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.contractSetGenerator = contractSetGenerator;
         this.isSecondaryView = isSecondaryView;
         this.displayableInstType = displayableInstType;
+        this.quotingObligationsCmds = quotingObligationsCmds;
 
         this.userViews = new HashMap<>();
 
@@ -1323,19 +1328,18 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void startAll(final WebSocketInboundData data) {
 
-        if (isSecondaryView) {
-            for (final StackUIData familyUIData : parentData.values()) {
-                if (isFamilyDisplayable(familyUIData)) {
-                    for (final String childName : families.get(familyUIData.symbol).keySet()) {
-                        communityManager.startChild(familyUIData.symbol, childName, BookSide.BID);
-                        communityManager.startChild(familyUIData.symbol, childName, BookSide.ASK);
-                    }
+        for (final StackUIData familyUIData : parentData.values()) {
+            if (isFamilyDisplayable(familyUIData)) {
+                for (final String childName : families.get(familyUIData.symbol).keySet()) {
+                    communityManager.reestablishParentalRule(familyUIData.symbol);
+                    communityManager.startChild(familyUIData.symbol, childName, BookSide.BID);
+                    communityManager.startChild(familyUIData.symbol, childName, BookSide.ASK);
                 }
             }
-        } else {
-            communityManager.reestablishParentalRule();
-            communityManager.startFamilies(families.keySet(), BookSide.BID);
-            communityManager.startFamilies(families.keySet(), BookSide.ASK);
+        }
+
+        if (!isSecondaryView) {
+            quotingObligationsCmds.publish(new QuoteObligationsEnableCmd());
         }
     }
 

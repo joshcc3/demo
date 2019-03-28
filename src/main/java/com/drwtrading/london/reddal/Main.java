@@ -1028,7 +1028,8 @@ public class Main {
             }
 
             final StackFamilyPresenter stackFamilyPresenter =
-                    new StackFamilyPresenter(app.selectIO, opxlSelectIO, webLog, contractSetGenerator, defaultInstType, asylumFamilies);
+                    new StackFamilyPresenter(app.selectIO, opxlSelectIO, webLog, contractSetGenerator, defaultInstType, asylumFamilies,
+                            channels.quotingObligationsCmds);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(webLog);
 
@@ -1185,6 +1186,7 @@ public class Main {
             }
 
             final QuotingObligationsPresenter quotingObligationsPresenter = new QuotingObligationsPresenter(app.selectIO, webLog);
+            channels.quotingObligationsCmds.subscribe(selectIOFiber, quotingObligationsPresenter::enableQuotes);
             final FutureObligationPresenter futureObligationPresenter = new FutureObligationPresenter();
 
             final IWorkingOrdersCallback bestWorkingOrderMaintainer;

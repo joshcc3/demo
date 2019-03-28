@@ -35,6 +35,7 @@ import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.symbols.SymbolDescription;
 import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
+import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuoteObligationsEnableCmd;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.LeanDef;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
@@ -103,6 +104,8 @@ class ReddalChannels {
 
     final TypedChannel<EeifConfiguration> eeifConfiguration;
 
+    final TypedChannel<QuoteObligationsEnableCmd> quotingObligationsCmds;
+
     ReddalChannels() {
 
         this.error = ERROR_CHANNEL;
@@ -157,6 +160,8 @@ class ReddalChannels {
         this.autoPullerUpdates = create(IAutoPullerUpdate.class);
 
         this.eeifConfiguration = create(EeifConfiguration.class);
+
+        this.quotingObligationsCmds = create(QuoteObligationsEnableCmd.class);
     }
 
     private static <T> TypedChannel<T> create(final Class<T> clazz) {
