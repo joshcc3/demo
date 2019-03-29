@@ -18,7 +18,7 @@ config default
 	include drw.london.eeif-position-transport/143
 	include drw.london.eeif-stack-transport/171
 	include drw.london.eeif-yoda-transport/135
-	include drw.london.eeif-indy-transport/266
+	include drw.london.eeif-indy-transport/267
 
 	include drw.eeif.fees/79
 	include drw.opxl/1.5.1
