@@ -1328,15 +1328,16 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void startAll(final WebSocketInboundData data) {
 
+        final Set<String> familyNames = new HashSet<>();
         for (final StackUIData familyUIData : parentData.values()) {
             if (isFamilyDisplayable(familyUIData)) {
-                for (final String childName : families.get(familyUIData.symbol).keySet()) {
-                    communityManager.reestablishParentalRule(familyUIData.symbol);
-                    communityManager.startChild(familyUIData.symbol, childName, BookSide.BID);
-                    communityManager.startChild(familyUIData.symbol, childName, BookSide.ASK);
-                }
+                familyNames.add(familyUIData.symbol);
+                communityManager.reestablishParentalRule(familyUIData.symbol);
             }
         }
+
+        communityManager.startFamilies(familyNames, BookSide.BID);
+        communityManager.startFamilies(familyNames, BookSide.ASK);
 
         if (!isSecondaryView) {
             quotingObligationsCmds.publish(new QuoteObligationsEnableCmd());

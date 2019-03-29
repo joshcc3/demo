@@ -25,7 +25,7 @@ public class QuotingObligationsPresenter {
 
     private static final int MIN_PERCENT = 90;
 
-    private final IClock clock;
+    private final SelectIO uiSelectIO;
     private final UILogger webLog;
 
     private final WebSocketViews<IQuotingObligationView> views;
@@ -39,7 +39,7 @@ public class QuotingObligationsPresenter {
 
     public QuotingObligationsPresenter(final SelectIO uiSelectIO, final UILogger webLog) {
 
-        this.clock = uiSelectIO;
+        this.uiSelectIO = uiSelectIO;
         this.webLog = webLog;
 
         this.views = WebSocketViews.create(IQuotingObligationView.class, this);
@@ -51,10 +51,10 @@ public class QuotingObligationsPresenter {
         cal.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
 
         DateTimeUtil.setToTimeOfDay(cal, 8, 0, 0, 0);
-        this.minMilliSinceMidnight = cal.getTimeInMillis() - clock.getMillisAtMidnightUTC();
+        this.minMilliSinceMidnight = cal.getTimeInMillis() - uiSelectIO.getMillisAtMidnightUTC();
 
         DateTimeUtil.setToTimeOfDay(cal, 16, 35, 0, 0);
-        this.maxMilliSinceMidnight = cal.getTimeInMillis() - clock.getMillisAtMidnightUTC();
+        this.maxMilliSinceMidnight = cal.getTimeInMillis() - uiSelectIO.getMillisAtMidnightUTC();
 
         this.sysStartMillisSinceMidnight = getNowMilliSinceMidnightNow();
 
@@ -67,7 +67,7 @@ public class QuotingObligationsPresenter {
     }
 
     private long getNowMilliSinceMidnightNow() {
-        final long result = clock.getMillisSinceMidnightUTC();
+        final long result = uiSelectIO.getMillisSinceMidnightUTC();
         final long morningLimited = Math.max(result, minMilliSinceMidnight);
         return Math.min(morningLimited, maxMilliSinceMidnight);
     }
@@ -142,10 +142,10 @@ public class QuotingObligationsPresenter {
 
     public void enableQuotes(final QuoteObligationsEnableCmd quoteObligationsEnableCmd) {
 
-        everythingOn();
+        uiSelectIO.addDelayedAction(2_000, this::everythingOn);
     }
 
-    private void everythingOn() {
+    private long everythingOn() {
 
         final List<NibblerClientHandler> nibblers = new ArrayList<>();
 
@@ -159,6 +159,8 @@ public class QuotingObligationsPresenter {
         for (final NibblerClientHandler nibbler : nibblers) {
             nibbler.batchComplete();
         }
+
+        return -1;
     }
 
     @FromWebSocketView
