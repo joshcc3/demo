@@ -211,7 +211,9 @@ $(function () {
 		const childCreationRows = $("#createChildrenTable").find(".childCreationRow:not(.headerRow)");
 		childCreationRows.each(function () {
 			const childCreationRow = $(this);
-			createStackForChildRow(childCreationRow);
+			if (!childCreationRow.find(".hostNibblers").hasClass("notPersisted")) {
+				createStackForChildRow(childCreationRow);
+			}
 		});
 	});
 	$("#adoptAllChildren").unbind().bind("click", function () {
@@ -219,7 +221,9 @@ $(function () {
 		const childCreationRows = $("#createChildrenTable").find(".childCreationRow:not(.headerRow)");
 		childCreationRows.each(function () {
 			const childCreationRow = $(this);
-			adoptStackForChildRow(childCreationRow);
+			if (!childCreationRow.find(".hostNibblers").hasClass("notPersisted")) {
+				adoptStackForChildRow(childCreationRow);
+			}
 		});
 	});
 
