@@ -10,6 +10,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
+import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
@@ -32,7 +33,7 @@ public class PicardSpotter implements IPicardSpotter {
     private final IClock clock;
     private final IMDSubscriber bookSubscriber;
     private final Publisher<PicardRow> rowPublisher;
-    private final Publisher<PicardDistanceData> laserDistancesPublisher;
+    private final Publisher<LiquidityFinderData> laserDistancesPublisher;
 
     private final DecimalFormat df;
 
@@ -40,7 +41,7 @@ public class PicardSpotter implements IPicardSpotter {
     private final FXCalc<?> fxCalc;
 
     public PicardSpotter(final IClock clock, final IMDSubscriber bookSubscriber, final Publisher<PicardRow> rowPublisher,
-            final Publisher<PicardDistanceData> laserDistancesPublisher, final FXCalc<?> fxCalc) {
+            final Publisher<LiquidityFinderData> laserDistancesPublisher, final FXCalc<?> fxCalc) {
 
         this.clock = clock;
         this.bookSubscriber = bookSubscriber;
@@ -179,34 +180,41 @@ public class PicardSpotter implements IPicardSpotter {
                 }
             }
 
-            if (!isInAuction && null != bidLaserLine && bidLaserLine.isValid() && Long.MAX_VALUE != bestAsk) {
+            if (InstType.FUTURE_SPREAD != book.getInstType()) {
 
-                final double bpsFromTouch = getBPSAway(bidLaserLine.getValue(), bestAsk);
-                if (bpsFromTouch < MAX_DISTANCE_BPS) {
+                if (!isInAuction && null != bidLaserLine && bidLaserLine.isValid() && Long.MAX_VALUE != bestAsk) {
 
-                    if (Constants.EPSILON < Math.abs(bpsFromTouch - picardData.bidLaserDistance.bpsFromTouch)) {
-                        picardData.bidLaserDistance = new PicardDistanceData(picardData.symbol, true, BookSide.BID, bpsFromTouch);
+                    final double bpsFromTouch = getBPSAway(bidLaserLine.getValue(), bestAsk);
+                    if (bpsFromTouch < MAX_DISTANCE_BPS) {
+
+                        if (Constants.EPSILON < Math.abs(bpsFromTouch - picardData.bidLaserDistance.bpsFromTouch)) {
+                            picardData.bidLaserDistance = new LiquidityFinderData(picardData.symbol, true, BookSide.BID, bpsFromTouch);
+                            laserDistancesPublisher.publish(picardData.bidLaserDistance);
+                        }
+                    } else if (picardData.bidLaserDistance.isValid) {
+
+                        picardData.bidLaserDistance = picardData.invalidBidLaserDistanceRow;
                         laserDistancesPublisher.publish(picardData.bidLaserDistance);
                     }
+
                 } else if (picardData.bidLaserDistance.isValid) {
 
                     picardData.bidLaserDistance = picardData.invalidBidLaserDistanceRow;
                     laserDistancesPublisher.publish(picardData.bidLaserDistance);
                 }
 
-            } else if (picardData.bidLaserDistance.isValid) {
+                if (!isInAuction && null != askLaserLine && askLaserLine.isValid() && Long.MAX_VALUE != bestBid) {
 
-                picardData.bidLaserDistance = picardData.invalidBidLaserDistanceRow;
-                laserDistancesPublisher.publish(picardData.bidLaserDistance);
-            }
+                    final double bpsFromTouch = getBPSAway(bestBid, askLaserLine.getValue());
+                    if (bpsFromTouch < MAX_DISTANCE_BPS) {
 
-            if (!isInAuction && null != askLaserLine && askLaserLine.isValid() && Long.MAX_VALUE != bestBid) {
+                        if (Constants.EPSILON < Math.abs(bpsFromTouch - picardData.askLaserDistance.bpsFromTouch)) {
+                            picardData.askLaserDistance = new LiquidityFinderData(picardData.symbol, true, BookSide.ASK, bpsFromTouch);
+                            laserDistancesPublisher.publish(picardData.askLaserDistance);
+                        }
+                    } else if (picardData.askLaserDistance.isValid) {
 
-                final double bpsFromTouch = getBPSAway(bestBid, askLaserLine.getValue());
-                if (bpsFromTouch < MAX_DISTANCE_BPS) {
-
-                    if (Constants.EPSILON < Math.abs(bpsFromTouch - picardData.askLaserDistance.bpsFromTouch)) {
-                        picardData.askLaserDistance = new PicardDistanceData(picardData.symbol, true, BookSide.ASK, bpsFromTouch);
+                        picardData.askLaserDistance = picardData.invalidAskLaserDistanceRow;
                         laserDistancesPublisher.publish(picardData.askLaserDistance);
                     }
                 } else if (picardData.askLaserDistance.isValid) {
@@ -214,10 +222,6 @@ public class PicardSpotter implements IPicardSpotter {
                     picardData.askLaserDistance = picardData.invalidAskLaserDistanceRow;
                     laserDistancesPublisher.publish(picardData.askLaserDistance);
                 }
-            } else if (picardData.askLaserDistance.isValid) {
-
-                picardData.askLaserDistance = picardData.invalidAskLaserDistanceRow;
-                laserDistancesPublisher.publish(picardData.askLaserDistance);
             }
         }
     }

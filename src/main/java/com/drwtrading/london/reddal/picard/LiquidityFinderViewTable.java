@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
-class PicardDistanceTable {
+class LiquidityFinderViewTable {
 
     private static final int ROWS_TO_DISPLAY = 10;
 
@@ -17,12 +17,12 @@ class PicardDistanceTable {
 
     private final DecimalFormat bpsDF;
 
-    private final NavigableSet<PicardDistanceData> allRows;
+    private final NavigableSet<LiquidityFinderData> allRows;
 
-    private Map<String, PicardDistanceData> visibleRows;
-    private Map<String, PicardDistanceData> workingRows;
+    private Map<String, LiquidityFinderData> visibleRows;
+    private Map<String, LiquidityFinderData> workingRows;
 
-    PicardDistanceTable() {
+    LiquidityFinderViewTable() {
 
         this.uiSymbols = new HashMap<>();
 
@@ -38,23 +38,23 @@ class PicardDistanceTable {
         uiSymbols.put(symbol, displaySymbol);
     }
 
-    void setData(final PicardDistanceData data) {
+    void setData(final LiquidityFinderData data) {
         allRows.add(data);
     }
 
-    void removeData(final PicardDistanceData data) {
+    void removeData(final LiquidityFinderData data) {
         allRows.remove(data);
     }
 
-    void flushTo(final IPicardDistanceView view) {
+    void flushTo(final ILiquidityFinderView view) {
 
-        final Iterator<PicardDistanceData> orderedRows = allRows.iterator();
+        final Iterator<LiquidityFinderData> orderedRows = allRows.iterator();
 
         boolean moreToShow = true;
         int displayedRows = 0;
         while (moreToShow && displayedRows < ROWS_TO_DISPLAY && orderedRows.hasNext()) {
 
-            final PicardDistanceData data = orderedRows.next();
+            final LiquidityFinderData data = orderedRows.next();
 
             if (data.isValid) {
                 displayRow(view, data);
@@ -66,15 +66,15 @@ class PicardDistanceTable {
         }
     }
 
-    void update(final IPicardDistanceView allViews) {
+    void update(final ILiquidityFinderView allViews) {
 
-        final Iterator<PicardDistanceData> orderedRows = allRows.iterator();
+        final Iterator<LiquidityFinderData> orderedRows = allRows.iterator();
 
         boolean moreToShow = true;
         int displayedRows = 0;
         while (moreToShow && displayedRows < ROWS_TO_DISPLAY && orderedRows.hasNext()) {
 
-            final PicardDistanceData data = orderedRows.next();
+            final LiquidityFinderData data = orderedRows.next();
 
             if (data.isValid) {
 
@@ -89,17 +89,17 @@ class PicardDistanceTable {
             ++displayedRows;
         }
 
-        for (final PicardDistanceData oldRow : visibleRows.values()) {
+        for (final LiquidityFinderData oldRow : visibleRows.values()) {
             allViews.remove(oldRow.side.name(), oldRow.symbol);
         }
         visibleRows.clear();
 
-        final Map<String, PicardDistanceData> tmpRows = visibleRows;
+        final Map<String, LiquidityFinderData> tmpRows = visibleRows;
         visibleRows = workingRows;
         workingRows = tmpRows;
     }
 
-    private void displayRow(final IPicardDistanceView view, final PicardDistanceData data) {
+    private void displayRow(final ILiquidityFinderView view, final LiquidityFinderData data) {
 
         final String uiSymbol = getUISymbol(data.symbol);
         final String bpsAway = bpsDF.format(data.bpsFromTouch);

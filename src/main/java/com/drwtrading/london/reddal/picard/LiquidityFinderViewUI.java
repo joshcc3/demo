@@ -12,18 +12,18 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PicardDistanceUI {
+public class LiquidityFinderViewUI {
 
     private static final int FLUSH_PERIOD_MILLIS = 600;
 
     private final UILogger webLog;
 
-    private final Map<BookSide, Map<String, PicardDistanceData>> allDatas;
-    private final Map<BookSide, PicardDistanceTable> sideViews;
+    private final Map<BookSide, Map<String, LiquidityFinderData>> allDatas;
+    private final Map<BookSide, LiquidityFinderViewTable> sideViews;
 
-    private final WebSocketViews<IPicardDistanceView> views;
+    private final WebSocketViews<ILiquidityFinderView> views;
 
-    public PicardDistanceUI(final UILogger webLog) {
+    public LiquidityFinderViewUI(final UILogger webLog) {
 
         this.webLog = webLog;
 
@@ -32,18 +32,18 @@ public class PicardDistanceUI {
 
         for (final BookSide side : BookSide.values()) {
             this.allDatas.put(side, new HashMap<>());
-            this.sideViews.put(side, new PicardDistanceTable());
+            this.sideViews.put(side, new LiquidityFinderViewTable());
         }
 
-        this.views = new WebSocketViews<>(IPicardDistanceView.class, this);
+        this.views = new WebSocketViews<>(ILiquidityFinderView.class, this);
     }
 
     public void setDisplaySymbol(final DisplaySymbol displaySymbol) {
 
-        final PicardDistanceTable bidDistances = sideViews.get(BookSide.BID);
+        final LiquidityFinderViewTable bidDistances = sideViews.get(BookSide.BID);
         bidDistances.setDisplaySymbol(displaySymbol.marketDataSymbol, displaySymbol.displaySymbol);
 
-        final PicardDistanceTable askDistances = sideViews.get(BookSide.ASK);
+        final LiquidityFinderViewTable askDistances = sideViews.get(BookSide.ASK);
         askDistances.setDisplaySymbol(displaySymbol.marketDataSymbol, displaySymbol.displaySymbol);
     }
 
@@ -61,22 +61,22 @@ public class PicardDistanceUI {
 
     private void webUIConnected(final WebSocketConnected connected) {
 
-        final IPicardDistanceView view = views.register(connected);
+        final ILiquidityFinderView view = views.register(connected);
 
-        final PicardDistanceTable bidDistances = sideViews.get(BookSide.BID);
+        final LiquidityFinderViewTable bidDistances = sideViews.get(BookSide.BID);
         bidDistances.flushTo(view);
 
-        final PicardDistanceTable askDistances = sideViews.get(BookSide.ASK);
+        final LiquidityFinderViewTable askDistances = sideViews.get(BookSide.ASK);
         askDistances.flushTo(view);
 
     }
 
-    public void setDistanceData(final PicardDistanceData data) {
+    public void setDistanceData(final LiquidityFinderData data) {
 
-        final Map<String, PicardDistanceData> sideData = allDatas.get(data.side);
-        final PicardDistanceData oldData = sideData.put(data.symbol, data);
+        final Map<String, LiquidityFinderData> sideData = allDatas.get(data.side);
+        final LiquidityFinderData oldData = sideData.put(data.symbol, data);
 
-        final PicardDistanceTable table = this.sideViews.get(data.side);
+        final LiquidityFinderViewTable table = this.sideViews.get(data.side);
 
         if (null != oldData) {
             table.removeData(oldData);
@@ -87,10 +87,10 @@ public class PicardDistanceUI {
 
     public long updateUI() {
 
-        final PicardDistanceTable bidDistances = sideViews.get(BookSide.BID);
+        final LiquidityFinderViewTable bidDistances = sideViews.get(BookSide.BID);
         bidDistances.update(views.all());
 
-        final PicardDistanceTable askDistances = sideViews.get(BookSide.ASK);
+        final LiquidityFinderViewTable askDistances = sideViews.get(BookSide.ASK);
         askDistances.update(views.all());
 
         return FLUSH_PERIOD_MILLIS;

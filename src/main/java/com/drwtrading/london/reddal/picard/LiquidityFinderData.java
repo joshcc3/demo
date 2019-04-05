@@ -5,7 +5,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 
 import java.util.Objects;
 
-public class PicardDistanceData implements Comparable<PicardDistanceData> {
+public class LiquidityFinderData implements Comparable<LiquidityFinderData> {
 
     public final String symbol;
 
@@ -13,7 +13,7 @@ public class PicardDistanceData implements Comparable<PicardDistanceData> {
     public final BookSide side;
     public final double bpsFromTouch;
 
-    PicardDistanceData(final String symbol, final boolean isValid, final BookSide side, final double bpsFromTouch) {
+    LiquidityFinderData(final String symbol, final boolean isValid, final BookSide side, final double bpsFromTouch) {
 
         this.symbol = symbol;
 
@@ -23,7 +23,7 @@ public class PicardDistanceData implements Comparable<PicardDistanceData> {
     }
 
     @Override
-    public int compareTo(final PicardDistanceData o) {
+    public int compareTo(final LiquidityFinderData o) {
 
         if (this.isValid == o.isValid) {
 
@@ -49,7 +49,7 @@ public class PicardDistanceData implements Comparable<PicardDistanceData> {
         } else if (o == null || getClass() != o.getClass()) {
             return false;
         } else {
-            final PicardDistanceData that = (PicardDistanceData) o;
+            final LiquidityFinderData that = (LiquidityFinderData) o;
             return isValid == that.isValid && side == that.side && Objects.equals(symbol, that.symbol) &&
                     Math.abs(that.bpsFromTouch - bpsFromTouch) < Constants.EPSILON;
         }

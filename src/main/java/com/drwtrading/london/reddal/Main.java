@@ -101,8 +101,8 @@ import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderServerRouter;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
-import com.drwtrading.london.reddal.picard.PicardDistanceData;
-import com.drwtrading.london.reddal.picard.PicardDistanceUI;
+import com.drwtrading.london.reddal.picard.LiquidityFinderData;
+import com.drwtrading.london.reddal.picard.LiquidityFinderViewUI;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.picard.PicardSounds;
@@ -1400,17 +1400,17 @@ public class Main {
     }
 
     private static void setupLaserDistancesUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
-            final Channel<PicardDistanceData> laserDistances, final TypedChannel<DisplaySymbol> displaySymbol,
+            final Channel<LiquidityFinderData> laserDistances, final TypedChannel<DisplaySymbol> displaySymbol,
             final WebApplication webApp) {
 
-        final PicardDistanceUI distanceUI = new PicardDistanceUI(webLog);
+        final LiquidityFinderViewUI distanceUI = new LiquidityFinderViewUI(webLog);
         displaySymbol.subscribe(fiber, distanceUI::setDisplaySymbol);
         laserDistances.subscribe(fiber, distanceUI::setDistanceData);
         selectIO.addDelayedAction(5_000, distanceUI::updateUI);
 
-        webApp.alias("/picardDistance", "/picardDistance.html");
+        webApp.alias("/liquidityFinder", "/liquidityFinder.html");
         final TypedChannel<WebSocketControlMessage> webSocketChannel = TypedChannels.create(WebSocketControlMessage.class);
-        webApp.createWebSocket("/picardDistance/ws/", webSocketChannel, fiber);
+        webApp.createWebSocket("/liquidityFinder/ws/", webSocketChannel, fiber);
         webSocketChannel.subscribe(fiber, distanceUI::webControl);
     }
 

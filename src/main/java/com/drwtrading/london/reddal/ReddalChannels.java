@@ -22,7 +22,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
-import com.drwtrading.london.reddal.picard.PicardDistanceData;
+import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.premium.Premium;
@@ -96,7 +96,7 @@ class ReddalChannels {
     final TypedChannel<StacksSetSiblingsEnableCmd> setSiblingsEnabledCmds;
 
     final TypedChannel<PicardRow> picardRows;
-    final TypedChannel<PicardDistanceData> laserDistances;
+    final TypedChannel<LiquidityFinderData> laserDistances;
     final TypedChannel<PicardRow> yodaPicardRows;
     final TypedChannel<LeanDef> leanDefs;
     final TypedChannel<Premium> spreadnoughtPremiums;
@@ -153,7 +153,7 @@ class ReddalChannels {
         this.setSiblingsEnabledCmds = create(StacksSetSiblingsEnableCmd.class);
 
         this.picardRows = create(PicardRow.class);
-        this.laserDistances = create(PicardDistanceData.class);
+        this.laserDistances = create(LiquidityFinderData.class);
         this.yodaPicardRows = create(PicardRow.class);
         this.leanDefs = create(LeanDef.class);
         this.rfqStockAlerts = create(RfqAlert.class);

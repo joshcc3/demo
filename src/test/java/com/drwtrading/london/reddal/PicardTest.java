@@ -19,7 +19,7 @@ import com.drwtrading.london.reddal.data.LaserLineType;
 import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
-import com.drwtrading.london.reddal.picard.PicardDistanceData;
+import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.picard.PicardSpotter;
@@ -38,7 +38,7 @@ public class PicardTest {
     @SuppressWarnings("unchecked")
     private final Publisher<PicardRow> picardPublisher = Mockito.mock(Publisher.class);
     @SuppressWarnings("unchecked")
-    private final Publisher<PicardDistanceData> laserDistancesPublisher = Mockito.mock(Publisher.class);
+    private final Publisher<LiquidityFinderData> laserDistancesPublisher = Mockito.mock(Publisher.class);
 
     private FXCalc<PicardFXCalcComponents> fxCalc;
 
@@ -119,10 +119,10 @@ public class PicardTest {
 
         picardSpotter.checkAnyCrossed();
 
-        final ArgumentCaptor<PicardDistanceData> laserDistanceCapture = ArgumentCaptor.forClass(PicardDistanceData.class);
+        final ArgumentCaptor<LiquidityFinderData> laserDistanceCapture = ArgumentCaptor.forClass(LiquidityFinderData.class);
         Mockito.verify(laserDistancesPublisher).publish(laserDistanceCapture.capture());
 
-        final PicardDistanceData laserDistance = laserDistanceCapture.getValue();
+        final LiquidityFinderData laserDistance = laserDistanceCapture.getValue();
         Assert.assertEquals(laserDistance.symbol, SYMBOL, "Symbol.");
         Assert.assertTrue(laserDistance.isValid, "Is Valid.");
         Assert.assertEquals(laserDistance.side, BookSide.BID, "Side.");
@@ -139,7 +139,7 @@ public class PicardTest {
 
         Mockito.verify(laserDistancesPublisher, Mockito.times(2)).publish(laserDistanceCapture.capture());
 
-        final PicardDistanceData laserDistanceTwo = laserDistanceCapture.getValue();
+        final LiquidityFinderData laserDistanceTwo = laserDistanceCapture.getValue();
         Assert.assertEquals(laserDistanceTwo.symbol, SYMBOL, "Symbol.");
         Assert.assertTrue(laserDistanceTwo.isValid, "Is Valid.");
         Assert.assertEquals(laserDistanceTwo.side, BookSide.BID, "Side.");
@@ -152,7 +152,7 @@ public class PicardTest {
 
         Mockito.verify(laserDistancesPublisher, Mockito.times(3)).publish(laserDistanceCapture.capture());
 
-        final PicardDistanceData laserDistanceThree = laserDistanceCapture.getValue();
+        final LiquidityFinderData laserDistanceThree = laserDistanceCapture.getValue();
         Assert.assertEquals(laserDistanceThree.symbol, SYMBOL, "Symbol.");
         Assert.assertFalse(laserDistanceThree.isValid, "Is Valid.");
         Assert.assertEquals(laserDistanceThree.side, BookSide.BID, "Side.");
@@ -170,10 +170,10 @@ public class PicardTest {
 
         picardSpotter.checkAnyCrossed();
 
-        final ArgumentCaptor<PicardDistanceData> laserDistanceCapture = ArgumentCaptor.forClass(PicardDistanceData.class);
+        final ArgumentCaptor<LiquidityFinderData> laserDistanceCapture = ArgumentCaptor.forClass(LiquidityFinderData.class);
         Mockito.verify(laserDistancesPublisher).publish(laserDistanceCapture.capture());
 
-        final PicardDistanceData laserDistance = laserDistanceCapture.getValue();
+        final LiquidityFinderData laserDistance = laserDistanceCapture.getValue();
         Assert.assertEquals(laserDistance.symbol, SYMBOL, "Symbol.");
         Assert.assertTrue(laserDistance.isValid, "Is Valid.");
         Assert.assertEquals(laserDistance.side, BookSide.ASK, "Side.");
@@ -190,7 +190,7 @@ public class PicardTest {
 
         Mockito.verify(laserDistancesPublisher, Mockito.times(2)).publish(laserDistanceCapture.capture());
 
-        final PicardDistanceData laserDistanceTwo = laserDistanceCapture.getValue();
+        final LiquidityFinderData laserDistanceTwo = laserDistanceCapture.getValue();
         Assert.assertEquals(laserDistanceTwo.symbol, SYMBOL, "Symbol.");
         Assert.assertTrue(laserDistanceTwo.isValid, "Is Valid.");
         Assert.assertEquals(laserDistanceTwo.side, BookSide.ASK, "Side.");
@@ -203,7 +203,7 @@ public class PicardTest {
 
         Mockito.verify(laserDistancesPublisher, Mockito.times(3)).publish(laserDistanceCapture.capture());
 
-        final PicardDistanceData laserDistanceThree = laserDistanceCapture.getValue();
+        final LiquidityFinderData laserDistanceThree = laserDistanceCapture.getValue();
         Assert.assertEquals(laserDistanceThree.symbol, SYMBOL, "Symbol.");
         Assert.assertFalse(laserDistanceThree.isValid, "Is Valid.");
         Assert.assertEquals(laserDistanceThree.side, BookSide.ASK, "Side.");
