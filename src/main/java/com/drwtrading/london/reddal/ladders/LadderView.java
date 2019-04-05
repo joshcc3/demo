@@ -358,12 +358,12 @@ public class LadderView implements UiEventHandler {
     private String getSymbolDescription() {
 
 
-        FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);
+        final FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);
         if (null != futureFromSymbol) {
-            return futureFromSymbol.contractDesc + "[" + futureFromSymbol.index + "]";
+            return futureFromSymbol.contractDesc + '[' + futureFromSymbol.index + ']';
         }
 
-        SearchResult searchResult = refData.get(symbol);
+        final SearchResult searchResult = refData.get(symbol);
         final String symbolDescription;
         if (null != searchResult) {
             symbolDescription = symbolDesc.getOrDefault(searchResult.instID, symbol);

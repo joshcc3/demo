@@ -1,0 +1,60 @@
+
+body {
+	background-color: #2a2927;
+	font-family: sans-serif;
+}
+
+.distances {
+
+	white-space: nowrap;
+	display: inline-block;
+	vertical-align: top;
+}
+
+.distances div {
+	text-align: center;
+}
+
+#bidDistances div {
+	color: #babdff;
+	background-color: #000022;
+}
+
+#bidDistances div:hover, #bidDistances div:hover div {
+	background-color: #000066;
+}
+
+#askDistances div {
+	color: #ff9999;
+	background-color: #220000;
+}
+
+#askDistances div:hover, #askDistances div:hover div {
+	background-color: #660000;
+}
+
+.row {
+	border-bottom: 1px solid #555555;
+	padding: 0;
+	margin: 0;
+}
+
+.row div {
+	display: inline-block;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	margin: 0;
+}
+
+.row .symbol {
+	width: 250px;
+}
+
+.row .bpsAway {
+	width: 100px;
+}
+
+.hidden {
+	display: none;
+}

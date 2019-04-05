@@ -101,6 +101,8 @@ import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderServerRouter;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
+import com.drwtrading.london.reddal.picard.PicardDistanceData;
+import com.drwtrading.london.reddal.picard.PicardDistanceUI;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.picard.PicardSounds;
@@ -374,7 +376,6 @@ public class Main {
         // Indy LeanDefs
         final ConfigGroup indyServerConfig = app.config.getEnabledGroup(INDY_SERVER_GROUP);
         if (null != indyServerConfig) {
-            System.out.println("Indy server listening");
             final ExpandedDetailResourceMonitor<ReddalComponents, IndyTransportComponents> indyMonitor =
                     new ExpandedDetailResourceMonitor<>(monitor, "indyServer", app.errorLog, IndyTransportComponents.class,
                             ReddalComponents.INDY_SERVER);
@@ -416,7 +417,8 @@ public class Main {
         setupPicardUI(app.selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
                 channels.displaySymbol, webApp);
 
-        // Spreadnought Premium OPXL publisher
+        setupLaserDistancesUI(app.selectIO, selectIOFiber, webLog, channels.laserDistances, channels.displaySymbol, webApp);
+
         final ConfigGroup premiumConfig = root.getEnabledGroup("premiumOPXL");
         if (null != premiumConfig) {
             final PremiumOPXLWriter writer = new PremiumOPXLWriter(opxlSelectIO, premiumConfig, opxlMonitor);
@@ -481,7 +483,8 @@ public class Main {
 
                 final FXCalc<?> fxCalc = createOPXLFXCalc(app, opxlSelectIO, stackManagerSelectIO, opxlMonitor);
 
-                final PicardSpotter picardSpotter = new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, fxCalc);
+                final PicardSpotter picardSpotter =
+                        new PicardSpotter(displaySelectIO, depthBookSubscriber, channels.picardRows, channels.laserDistances, fxCalc);
                 displaySelectIO.addDelayedAction(1000, picardSpotter::checkAnyCrossed);
 
                 final PremiumCalculator premiumCalc = new PremiumCalculator(depthBookSubscriber, channels.spreadnoughtPremiums);
@@ -1394,6 +1397,21 @@ public class Main {
         final TypedChannel<WebSocketControlMessage> webSocketChannel = TypedChannels.create(WebSocketControlMessage.class);
         webApp.createWebSocket('/' + alias + "/ws/", webSocketChannel, fiber);
         webSocketChannel.subscribe(fiber, picardUI::webControl);
+    }
+
+    private static void setupLaserDistancesUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
+            final Channel<PicardDistanceData> laserDistances, final TypedChannel<DisplaySymbol> displaySymbol,
+            final WebApplication webApp) {
+
+        final PicardDistanceUI distanceUI = new PicardDistanceUI(webLog);
+        displaySymbol.subscribe(fiber, distanceUI::setDisplaySymbol);
+        laserDistances.subscribe(fiber, distanceUI::setDistanceData);
+        selectIO.addDelayedAction(5_000, distanceUI::updateUI);
+
+        webApp.alias("/picardDistance", "/picardDistance.html");
+        final TypedChannel<WebSocketControlMessage> webSocketChannel = TypedChannels.create(WebSocketControlMessage.class);
+        webApp.createWebSocket("/picardDistance/ws/", webSocketChannel, fiber);
+        webSocketChannel.subscribe(fiber, distanceUI::webControl);
     }
 
     private static FXCalc<?> createOPXLFXCalc(final Application<ReddalComponents> app, final SelectIO opxlSelectIO,

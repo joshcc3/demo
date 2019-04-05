@@ -27,9 +27,12 @@ public class PicardSpotter implements IPicardSpotter {
     private static final int FADE_TIMEOUT_MS = 1000;
     private static final int DEAD_TIMEOUT_MS = 8000;
 
+    private static final int MAX_DISTANCE_BPS = 10;
+
     private final IClock clock;
     private final IMDSubscriber bookSubscriber;
     private final Publisher<PicardRow> rowPublisher;
+    private final Publisher<PicardDistanceData> laserDistancesPublisher;
 
     private final DecimalFormat df;
 
@@ -37,11 +40,12 @@ public class PicardSpotter implements IPicardSpotter {
     private final FXCalc<?> fxCalc;
 
     public PicardSpotter(final IClock clock, final IMDSubscriber bookSubscriber, final Publisher<PicardRow> rowPublisher,
-            final FXCalc<?> fxCalc) {
+            final Publisher<PicardDistanceData> laserDistancesPublisher, final FXCalc<?> fxCalc) {
 
         this.clock = clock;
         this.bookSubscriber = bookSubscriber;
         this.rowPublisher = rowPublisher;
+        this.laserDistancesPublisher = laserDistancesPublisher;
         this.fxCalc = fxCalc;
 
         this.df = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 0, 10);
@@ -174,6 +178,47 @@ public class PicardSpotter implements IPicardSpotter {
                     rowPublisher.publish(picardData.previousRow);
                 }
             }
+
+            if (!isInAuction && null != bidLaserLine && bidLaserLine.isValid() && Long.MAX_VALUE != bestAsk) {
+
+                final double bpsFromTouch = getBPSAway(bidLaserLine.getValue(), bestAsk);
+                if (bpsFromTouch < MAX_DISTANCE_BPS) {
+
+                    if (Constants.EPSILON < Math.abs(bpsFromTouch - picardData.bidLaserDistance.bpsFromTouch)) {
+                        picardData.bidLaserDistance = new PicardDistanceData(picardData.symbol, true, BookSide.BID, bpsFromTouch);
+                        laserDistancesPublisher.publish(picardData.bidLaserDistance);
+                    }
+                } else if (picardData.bidLaserDistance.isValid) {
+
+                    picardData.bidLaserDistance = picardData.invalidBidLaserDistanceRow;
+                    laserDistancesPublisher.publish(picardData.bidLaserDistance);
+                }
+
+            } else if (picardData.bidLaserDistance.isValid) {
+
+                picardData.bidLaserDistance = picardData.invalidBidLaserDistanceRow;
+                laserDistancesPublisher.publish(picardData.bidLaserDistance);
+            }
+
+            if (!isInAuction && null != askLaserLine && askLaserLine.isValid() && Long.MAX_VALUE != bestBid) {
+
+                final double bpsFromTouch = getBPSAway(bestBid, askLaserLine.getValue());
+                if (bpsFromTouch < MAX_DISTANCE_BPS) {
+
+                    if (Constants.EPSILON < Math.abs(bpsFromTouch - picardData.askLaserDistance.bpsFromTouch)) {
+                        picardData.askLaserDistance = new PicardDistanceData(picardData.symbol, true, BookSide.ASK, bpsFromTouch);
+                        laserDistancesPublisher.publish(picardData.askLaserDistance);
+                    }
+                } else if (picardData.askLaserDistance.isValid) {
+
+                    picardData.askLaserDistance = picardData.invalidAskLaserDistanceRow;
+                    laserDistancesPublisher.publish(picardData.askLaserDistance);
+                }
+            } else if (picardData.askLaserDistance.isValid) {
+
+                picardData.askLaserDistance = picardData.invalidAskLaserDistanceRow;
+                laserDistancesPublisher.publish(picardData.askLaserDistance);
+            }
         }
     }
 
@@ -232,6 +277,16 @@ public class PicardSpotter implements IPicardSpotter {
             return 0d;
         } else {
             return 10000d * Math.abs(theoreticalValue - price) / divisor;
+        }
+    }
+
+    private static double getBPSAway(final long bid, final long ask) {
+
+        final long divisor = Math.min(bid, ask);
+        if (0 == divisor) {
+            return 0d;
+        } else {
+            return 10_000d * (ask - bid) / divisor;
         }
     }
 }
