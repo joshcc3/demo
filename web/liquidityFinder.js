@@ -48,7 +48,15 @@ function set(side, symbol, displaySymbol, bpsAway) {
 
 		row.find(".symbol").text(displaySymbol);
 
-		row.click(() => launchLadder(symbol));
+		row.click(() => {
+			launchLadder(symbol);
+			if (symbol.endsWith(" RFQ")) {
+				let origSymbol = symbol.split(" ")[0];
+				let origSuffix = origSymbol.slice(origSymbol.length - 2, origSymbol.length);
+				let origPrefix = origSymbol.slice(0, origSymbol.length - 2);
+				launchLadder(origPrefix + " " + origSuffix);
+			}
+		});
 		row.find(".bpsAway").text(bpsAway);
 
 		const table = getTable(side);
