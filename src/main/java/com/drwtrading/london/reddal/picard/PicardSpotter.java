@@ -289,8 +289,10 @@ public class PicardSpotter implements IPicardSpotter {
         final long divisor = Math.min(bid, ask);
         if (0 == divisor) {
             return 0d;
-        } else {
+        } else if (0 < ask) {
             return 10_000d * (ask - bid) / divisor;
+        } else {
+            return 10_000d * (bid - ask) / divisor;
         }
     }
 }
