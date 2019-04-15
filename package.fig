@@ -16,7 +16,7 @@ config default
 	include drw.london.eeif-nibbler-transport/120
 	include drw.london.eeif-opxl-client/84
 	include drw.london.eeif-position-transport/146
-	include drw.london.eeif-stack-transport/175
+	include drw.london.eeif-stack-transport/176
 	include drw.london.eeif-yoda-transport/139
 	include drw.london.eeif-indy-transport/275
 
