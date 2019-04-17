@@ -815,6 +815,7 @@ public class Main {
             final TransportTCPKeepAliveConnection<?, ?> client =
                     PositionCacheFactory.createClient(selectIO, pksConfig, pksMonitor, cache);
             client.restart();
+            app.addStartUpAction(fiber::start);
         }
 
         final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(opxlSelectIO, opxlMonitor, logDir, channels.ultimateParents);
