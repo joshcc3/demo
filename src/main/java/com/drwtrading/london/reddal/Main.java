@@ -36,12 +36,7 @@ import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTran
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.ILevelTwoClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.LevelTwoTransportComponents;
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.cache.LevelTwoCacheFactory;
-import com.drwtrading.london.eeif.utils.monitoring.ConcurrentMultiLayeredResourceMonitor;
-import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor;
-import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
-import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
-import com.drwtrading.london.eeif.utils.monitoring.ResourceIgnorer;
+import com.drwtrading.london.eeif.utils.monitoring.*;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
@@ -802,20 +797,23 @@ public class Main {
 
         final ConfigGroup pksConfig = root.getEnabledGroup("pks");
         if (null != pksConfig) {
+            BasicStdOutErrorLogger logger = new BasicStdOutErrorLogger();
+            SelectIO selectIO = new SelectIO(logger);
+            SelectIOFiber fiber = new SelectIOFiber(selectIO, logger, "PKS-Thread");
 
             final IResourceMonitor<PositionTransportComponents> pksMonitor =
-                    new ExpandedDetailResourceMonitor<>(monitor, "PKS", errorLog, PositionTransportComponents.class, ReddalComponents.PKS);
+                    new ExpandedDetailResourceMonitor<>(monitor, "PKS", logger, PositionTransportComponents.class, ReddalComponents.PKS);
 
             final PKSPositionClient pksClient = new PKSPositionClient(channels.pksExposure);
-            channels.ultimateParents.subscribe(selectIOFiber, pksClient::setUltimateParent);
-            channels.searchResults.subscribe(selectIOFiber, pksClient::setSearchResult);
+            channels.ultimateParents.subscribe(fiber, pksClient::setUltimateParent);
+            channels.searchResults.subscribe(fiber, pksClient::setSearchResult);
 
             final PositionClientHandler cache =
-                    PositionCacheFactory.createClientCache(app.selectIO, pksMonitor, "PKS", app.appName, pksClient);
+                    PositionCacheFactory.createClientCache(selectIO, pksMonitor, "PKS", app.appName, pksClient);
             cache.addConstituentListener(pksClient);
 
             final TransportTCPKeepAliveConnection<?, ?> client =
-                    PositionCacheFactory.createClient(app.selectIO, pksConfig, pksMonitor, cache);
+                    PositionCacheFactory.createClient(selectIO, pksConfig, pksMonitor, cache);
             client.restart();
         }
 
