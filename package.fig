@@ -59,7 +59,7 @@ config default
 	include drw.london.eeif-phockets/38
 	include com.drwtrading.photons.mrphil/1.0.0.4
 	include com.drwtrading.london.photons.reddal/2
-	include drw.eeif.eeifoe/2
+	include drw.eeif.eeifoe/0
 	include com.drwtrading.photons.eeif.configuration/11
 	include drw.eeif.photons.signals/1
 	include eeif.execution/0
