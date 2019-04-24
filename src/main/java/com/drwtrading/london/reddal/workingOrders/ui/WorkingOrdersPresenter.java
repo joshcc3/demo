@@ -180,7 +180,7 @@ public class WorkingOrdersPresenter {
 
         final User user = User.get(connected.getClient().getUserName());
 
-        if (null != user && users.add(user)) {
+        if (null != user && User.UNKNOWN != user && users.add(user)) {
 
             for (final NibblerView nibbler : nibblers.values()) {
                 nibbler.traderLogin(EnumSet.of(user));
