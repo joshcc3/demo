@@ -86,7 +86,7 @@ public enum ManagedOrderType {
     YODA {
         @Override
         public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
-            return new OrderParameters(new PegToBook(BookPegLevel.MID), Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
+            return new OrderParameters(new PegToBook(BookPegLevel.MID, 50), Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
                     new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
         }
 

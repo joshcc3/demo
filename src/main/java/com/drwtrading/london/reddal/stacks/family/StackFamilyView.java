@@ -1347,19 +1347,15 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void stopAll(final WebSocketInboundData data) {
 
-        if (isSecondaryView) {
-            for (final StackUIData familyUIData : parentData.values()) {
-                if (isFamilyDisplayable(familyUIData)) {
-                    for (final String childName : families.get(familyUIData.symbol).keySet()) {
-                        communityManager.stopChild(familyUIData.symbol, childName, BookSide.BID);
-                        communityManager.stopChild(familyUIData.symbol, childName, BookSide.ASK);
-                    }
-                }
+        final Set<String> familyNames = new HashSet<>();
+        for (final StackUIData familyUIData : parentData.values()) {
+            if (isFamilyDisplayable(familyUIData)) {
+                familyNames.add(familyUIData.symbol);
             }
-        } else {
-            communityManager.stopFamilies(families.keySet(), BookSide.BID);
-            communityManager.stopFamilies(families.keySet(), BookSide.ASK);
         }
+
+        communityManager.stopFamilies(familyNames, BookSide.BID);
+        communityManager.stopFamilies(familyNames, BookSide.ASK);
     }
 
     @FromWebSocketView
