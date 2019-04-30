@@ -243,23 +243,27 @@ public class StackFamilyView implements IStackRelationshipListener {
 
                 final FutureConstant future = FutureConstant.getFutureFromSymbol(symbol);
 
-                if (symbol.equals(expiryCalc.getFutureCode(future))) {
+                if (null == future) {
+                    System.out.println("Future unknown [" + symbol + "].");
+                } else {
+                    if (symbol.equals(expiryCalc.getFutureCode(future))) {
 
-                    final StackChildFilter frontMonths = getFilter(EXPIRY_FRONT_MONTH_FILTER, EXPIRY_FILTER_GROUP);
-                    frontMonths.addSymbol(symbol);
+                        final StackChildFilter frontMonths = getFilter(EXPIRY_FRONT_MONTH_FILTER, EXPIRY_FILTER_GROUP);
+                        frontMonths.addSymbol(symbol);
 
-                } else if (symbol.equals(expiryCalc.getFutureCode(future, 1))) {
+                    } else if (symbol.equals(expiryCalc.getFutureCode(future, 1))) {
 
-                    final StackChildFilter backMonths = getFilter(EXPIRY_BACK_MONTH_FILTER, EXPIRY_FILTER_GROUP);
-                    backMonths.addSymbol(symbol);
+                        final StackChildFilter backMonths = getFilter(EXPIRY_BACK_MONTH_FILTER, EXPIRY_FILTER_GROUP);
+                        backMonths.addSymbol(symbol);
+                    }
+
+                    expiryCalc.setToRollDate(expiryCal, symbol);
+                    final int calendarMonthCode = expiryCal.get(Calendar.MONTH);
+                    final ExpiryMonthCodes monthCode = ExpiryMonthCodes.getCode(calendarMonthCode);
+
+                    final StackChildFilter monthCodesFilter = getFilter(monthCode.name(), EXPIRY_FILTER_GROUP);
+                    monthCodesFilter.addSymbol(symbol);
                 }
-
-                expiryCalc.setToRollDate(expiryCal, symbol);
-                final int calendarMonthCode = expiryCal.get(Calendar.MONTH);
-                final ExpiryMonthCodes monthCode = ExpiryMonthCodes.getCode(calendarMonthCode);
-
-                final StackChildFilter monthCodesFilter = getFilter(monthCode.name(), EXPIRY_FILTER_GROUP);
-                monthCodesFilter.addSymbol(symbol);
             }
         }
     }
