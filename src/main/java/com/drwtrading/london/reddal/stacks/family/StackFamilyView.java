@@ -28,6 +28,7 @@ import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
+import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuoteObligationsEnableCmd;
@@ -80,6 +81,8 @@ public class StackFamilyView implements IStackRelationshipListener {
     private final boolean isSecondaryView;
     private final InstType displayableInstType;
 
+    private final OpxlStrategySymbolUI strategySymbolUI;
+
     private final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds;
 
     private final WebSocketViews<IStackFamilyUI> views;
@@ -112,7 +115,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO,
             final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView, final InstType displayableInstType,
-            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
+            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
@@ -120,6 +123,9 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.contractSetGenerator = contractSetGenerator;
         this.isSecondaryView = isSecondaryView;
         this.displayableInstType = displayableInstType;
+
+        this.strategySymbolUI = strategySymbolUI;
+
         this.quotingObligationsCmds = quotingObligationsCmds;
 
         this.userViews = new HashMap<>();
@@ -148,7 +154,6 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.globalPriceOffsetBPS = 0d;
 
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
-
     }
 
     private boolean isFamilyDisplayable(final String familyName) {
@@ -376,6 +381,8 @@ public class StackFamilyView implements IStackRelationshipListener {
         childrenToFamily.put(childSymbol, parentSymbol);
 
         if (isFamilyDisplayable(parentSymbol)) {
+
+            strategySymbolUI.addStrategySymbol(displayableInstType, childSymbol);
 
             views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
                     familyToChildRatio);

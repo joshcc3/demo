@@ -36,7 +36,13 @@ import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTran
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.ILevelTwoClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.LevelTwoTransportComponents;
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.cache.LevelTwoCacheFactory;
-import com.drwtrading.london.eeif.utils.monitoring.*;
+import com.drwtrading.london.eeif.utils.monitoring.BasicStdOutErrorLogger;
+import com.drwtrading.london.eeif.utils.monitoring.ConcurrentMultiLayeredResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
+import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.ResourceIgnorer;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
@@ -119,6 +125,7 @@ import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.family.StackChildListener;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyListener;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyPresenter;
+import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import com.drwtrading.london.reddal.stockAlerts.RfqAlert;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
@@ -808,12 +815,10 @@ public class Main {
             channels.ultimateParents.subscribe(fiber, pksClient::setUltimateParent);
             channels.searchResults.subscribe(fiber, pksClient::setSearchResult);
 
-            final PositionClientHandler cache =
-                    PositionCacheFactory.createClientCache(selectIO, pksMonitor, "PKS", app.appName, pksClient);
+            final PositionClientHandler cache = PositionCacheFactory.createClientCache(selectIO, pksMonitor, "PKS", app.appName, pksClient);
             cache.addConstituentListener(pksClient);
 
-            final TransportTCPKeepAliveConnection<?, ?> client =
-                    PositionCacheFactory.createClient(selectIO, pksConfig, pksMonitor, cache);
+            final TransportTCPKeepAliveConnection<?, ?> client = PositionCacheFactory.createClient(selectIO, pksConfig, pksMonitor, cache);
             client.restart();
             app.addStartUpAction(fiber::start);
         }
@@ -1020,6 +1025,10 @@ public class Main {
                             app.logDir);
             final StackCommunityManager communityManager = server.getCommunityManager();
 
+            final ConfigGroup symbolOPXLConfig = stackConfig.getGroup("symbolOPXL");
+            final OpxlStrategySymbolUI strategySymbolUI = new OpxlStrategySymbolUI(opxlSelectIO, symbolOPXLConfig, opxlMonitor);
+            app.selectIO.addDelayedAction(30_000, strategySymbolUI::flush);
+
             final InstType defaultInstType = InstType.valueOf(stackConfig.getString("defaultFamilyType"));
 
             final ConfigGroup asylumFamilyConfigs = stackConfig.getGroup("visibleAsylumNames");
@@ -1031,7 +1040,7 @@ public class Main {
 
             final StackFamilyPresenter stackFamilyPresenter =
                     new StackFamilyPresenter(app.selectIO, opxlSelectIO, webLog, contractSetGenerator, defaultInstType, asylumFamilies,
-                            channels.quotingObligationsCmds);
+                            strategySymbolUI, channels.quotingObligationsCmds);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(webLog);
 
