@@ -36,7 +36,6 @@ import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTran
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.ILevelTwoClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.LevelTwoTransportComponents;
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.cache.LevelTwoCacheFactory;
-import com.drwtrading.london.eeif.utils.monitoring.BasicStdOutErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.ConcurrentMultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
@@ -87,12 +86,13 @@ import com.drwtrading.london.reddal.ladders.shredders.ShredderMessageRouter;
 import com.drwtrading.london.reddal.ladders.shredders.ShredderPresenter;
 import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
 import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
-import com.drwtrading.london.reddal.opxl.EtfStackFiltersOPXL;
+import com.drwtrading.london.reddal.opxl.OPXLEtfStackFilters;
+import com.drwtrading.london.reddal.opxl.OPXLSpreadnoughtFilters;
+import com.drwtrading.london.reddal.opxl.OpxlDividendTweets;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlFXCalcUpdater;
 import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
-import com.drwtrading.london.reddal.opxl.SpreadnoughtFiltersOPXL;
 import com.drwtrading.london.reddal.opxl.UltimateParentOPXL;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
@@ -781,23 +781,21 @@ public class Main {
 
         final ConfigGroup pksConfig = root.getEnabledGroup("pks");
         if (null != pksConfig) {
-            BasicStdOutErrorLogger logger = new BasicStdOutErrorLogger();
-            SelectIO selectIO = new SelectIO(logger);
-            SelectIOFiber fiber = new SelectIOFiber(selectIO, logger, "PKS-Thread");
 
             final IResourceMonitor<PositionTransportComponents> pksMonitor =
-                    new ExpandedDetailResourceMonitor<>(monitor, "PKS", logger, PositionTransportComponents.class, ReddalComponents.PKS);
+                    new ExpandedDetailResourceMonitor<>(monitor, "PKS", errorLog, PositionTransportComponents.class, ReddalComponents.PKS);
 
             final PKSPositionClient pksClient = new PKSPositionClient(channels.pksExposure);
-            channels.ultimateParents.subscribe(fiber, pksClient::setUltimateParent);
-            channels.searchResults.subscribe(fiber, pksClient::setSearchResult);
+            channels.ultimateParents.subscribe(selectIOFiber, pksClient::setUltimateParent);
+            channels.searchResults.subscribe(selectIOFiber, pksClient::setSearchResult);
 
-            final PositionClientHandler cache = PositionCacheFactory.createClientCache(selectIO, pksMonitor, "PKS", app.appName, pksClient);
+            final PositionClientHandler cache =
+                    PositionCacheFactory.createClientCache(app.selectIO, pksMonitor, "PKS", app.appName, pksClient);
             cache.addConstituentListener(pksClient);
 
-            final TransportTCPKeepAliveConnection<?, ?> client = PositionCacheFactory.createClient(selectIO, pksConfig, pksMonitor, cache);
+            final TransportTCPKeepAliveConnection<?, ?> client =
+                    PositionCacheFactory.createClient(app.selectIO, pksConfig, pksMonitor, cache);
             client.restart();
-            app.addStartUpAction(fiber::start);
         }
 
         final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(opxlSelectIO, opxlMonitor, logDir, channels.ultimateParents);
@@ -807,6 +805,11 @@ public class Main {
         final OpxlExDateSubscriber isinsGoingEx = new OpxlExDateSubscriber(opxlSelectIO, opxlMonitor, logDir, channels.isinsGoingEx);
         app.addStartUpAction(isinsGoingEx::start);
 
+        if (isFuturesSearchable) {
+            final OpxlDividendTweets divTweets = new OpxlDividendTweets(opxlSelectIO, opxlMonitor, logDir, channels.stockAlerts);
+            app.addStartUpAction(divTweets::start);
+        }
+        
         // Logging
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trading-status.json", channels.errorPublisher),
                 channels.nibblerTransportConnected);
@@ -936,11 +939,11 @@ public class Main {
 
     static void setupSignals(final Application<ReddalComponents> app, final Publisher<PicardRow> atClosePublisher,
             final Publisher<StockAlert> stockAlerts) throws ConfigException {
-        ConfigGroup signalConfig = app.config.getEnabledGroup("signals");
+        final ConfigGroup signalConfig = app.config.getEnabledGroup("signals");
         if (null == signalConfig) {
             return;
         }
-        PhocketClient<Signals, Void> client = Phockets.client(app, signalConfig, Signals.class, Void.class, "Signals",
+        final PhocketClient<Signals, Void> client = Phockets.client(app, signalConfig, Signals.class, Void.class, "Signals",
                 new SignalsHandler(atClosePublisher, stockAlerts, app.clock));
         app.addStartUpAction(client::restart);
     }
@@ -1093,16 +1096,16 @@ public class Main {
 
             if (isForETF) {
 
-                final EtfStackFiltersOPXL etfStackFiltersOPXL =
-                        new EtfStackFiltersOPXL(opxlSelectIO, app.selectIO, opxlMonitor, app.logDir, stackFamilyPresenter);
+                final OPXLEtfStackFilters etfStackFiltersOPXL =
+                        new OPXLEtfStackFilters(opxlSelectIO, app.selectIO, opxlMonitor, app.logDir, stackFamilyPresenter);
                 app.addStartUpAction(etfStackFiltersOPXL::start);
 
             }
 
-            if (asylumFamilies.values().contains(SpreadnoughtFiltersOPXL.FAMILY_NAME)) {
+            if (asylumFamilies.values().contains(OPXLSpreadnoughtFilters.FAMILY_NAME)) {
 
-                final SpreadnoughtFiltersOPXL spreadnoughtFiltersOPXL =
-                        new SpreadnoughtFiltersOPXL(opxlSelectIO, app.selectIO, opxlMonitor, app.logDir, stackFamilyPresenter);
+                final OPXLSpreadnoughtFilters spreadnoughtFiltersOPXL =
+                        new OPXLSpreadnoughtFilters(opxlSelectIO, app.selectIO, opxlMonitor, app.logDir, stackFamilyPresenter);
                 app.addStartUpAction(spreadnoughtFiltersOPXL::start);
             }
 

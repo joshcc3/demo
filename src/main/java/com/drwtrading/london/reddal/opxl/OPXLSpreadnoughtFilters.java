@@ -10,14 +10,14 @@ import com.drwtrading.london.reddal.stacks.family.StackFamilyPresenter;
 import java.nio.file.Path;
 import java.util.Collection;
 
-public class SpreadnoughtFiltersOPXL extends AFiltersOPXL {
+public class OPXLSpreadnoughtFilters extends AFiltersOPXL {
 
     public static final String FAMILY_NAME = "Spreadnought";
     private static final String TOPIC_PREFIX = "eeif(spreader_datapublish)";
 
     private final StackFamilyPresenter stackFamilyPresenter;
 
-    public SpreadnoughtFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
+    public OPXLSpreadnoughtFilters(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
             final IResourceMonitor<OPXLComponents> monitor, final Path logPath, final StackFamilyPresenter stackFamilyPresenter) {
 
         super(opxlSelectIO, callbackSelectIO, monitor, OPXLComponents.OPXL_SPREAD_STACK_MANAGER_FILTERS, TOPIC_PREFIX, logPath);

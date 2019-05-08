@@ -8,7 +8,7 @@ public class UltimateParentMapping {
     public final InstrumentID parentID;
     public final double parentToChildRatio;
 
-    public UltimateParentMapping(final String childISIN, final InstrumentID parentID, final double parentToChildRatio) {
+    UltimateParentMapping(final String childISIN, final InstrumentID parentID, final double parentToChildRatio) {
 
         this.childISIN = childISIN;
         this.parentID = parentID;

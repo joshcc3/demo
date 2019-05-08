@@ -8,6 +8,9 @@ let sweepSound;
 let twapSound;
 let tweetSound;
 let onFireSound;
+let inFlamesSound;
+let bigRfqSound;
+let divsSound;
 let unknownSound;
 
 let AutoOpenRFQ = false;
@@ -31,6 +34,7 @@ $(function () {
     onFireSound = new Audio("stockAlerts/on_fire.ogg");
     inFlamesSound = new Audio("stockAlerts/yogaflame.wav");
     bigRfqSound = new Audio("stockAlerts/pulp.wav");
+    divsSound = new Audio("stockAlerts/red_alert_awaiting_orders.wav");
     unknownSound = new Audio("stockAlerts/huh-humm.wav");
 
     setTimeout(function() {
@@ -100,24 +104,26 @@ function playSound(type, msg) {
 	let sound;
 	if (type.startsWith("BIG_")) {
     	sound = bigRfqSound;
-	} else if ("RFQ" == type) {
+	} else if ("RFQ" === type) {
         sound = rfqSound;
-    } else if ("AT_CLOSE" == type) {
+    } else if ("AT_CLOSE" === type) {
         sound = atCloseSound;
-    } else if ("SWEEP" == type) {
+    } else if ("SWEEP" === type) {
         sound = sweepSound;
-    } else if ("TWAP" == type) {
+    } else if ("TWAP" === type) {
         sound = twapSound;
-    } else if ("ETF_RFQ" == type) {
+    } else if ("ETF_RFQ" === type) {
         sound = etfRfqSound;
-    } else if ("TWEET" == type) {
-    	if (msg.includes("ON FIRE")) {
-    		sound = onFireSound;
+    } else if ("TWEET" === type) {
+		if (msg.includes("ON FIRE")) {
+			sound = onFireSound;
 		} else if (msg.includes("IN FLAMES")) {
 			sound = inFlamesSound;
 		} else {
 			sound = tweetSound;
 		}
+	} else if ("DIV" === type) {
+		sound = divsSound;
 	} else {
         sound = unknownSound;
     }

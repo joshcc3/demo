@@ -13,14 +13,14 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 
-public class EtfStackFiltersOPXL extends AFiltersOPXL {
+public class OPXLEtfStackFilters extends AFiltersOPXL {
 
     private static final String TOPIC_PREFIX = "eeif(etf_filters_";
     private static final String TOPIC_SUFFIX = ")";
 
     private final StackFamilyPresenter stackFamilyPresenter;
 
-    public EtfStackFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<OPXLComponents> monitor,
+    public OPXLEtfStackFilters(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<OPXLComponents> monitor,
             final Path logDir, final StackFamilyPresenter stackFamilyPresenter) {
 
         super(opxlSelectIO, callbackSelectIO, monitor, OPXLComponents.OPXL_ETF_STACK_MANAGER_FILTERS, getTopic(callbackSelectIO), logDir);
