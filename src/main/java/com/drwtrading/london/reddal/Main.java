@@ -404,18 +404,6 @@ public class Main {
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> orderWebSockets = new EnumMap<>(MDSource.class);
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderWebSockets = new EnumMap<>(MDSource.class);
 
-        final EnumMap<MDSource, ConfigGroup> shredderOverrides = new EnumMap<>(MDSource.class);
-        final ConfigGroup shredderOverrideConfig = root.getEnabledGroup("shredder", "md");
-        if (null != shredderOverrideConfig) {
-            for (final ConfigGroup mdConfig : shredderOverrideConfig.groups()) {
-                final MDSource mdSource = MDSource.get(mdConfig.getKey());
-                if (null == mdSource) {
-                    throw new ConfigException("MDSource [" + mdConfig.getKey() + "] is not known.");
-                }
-                shredderOverrides.put(mdSource, mdConfig);
-            }
-        }
-
         setupPicardUI(app.selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
                 channels.displaySymbol, webApp);
 
@@ -460,17 +448,6 @@ public class Main {
                         getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName,
                                 channels.rfqStockAlerts);
 
-                final IMDSubscriber shredderBookSubscriber;
-                if (shredderOverrides.containsKey(mdSource)) {
-
-                    final ReddalChannels noOpChannels = new ReddalChannels();
-                    shredderBookSubscriber =
-                            getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, shredderOverrides.get(mdSource), noOpChannels,
-                                    localAppName, Constants::NO_OP);
-                } else {
-                    shredderBookSubscriber = depthBookSubscriber;
-                }
-
                 final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
                 ladderWebSockets.put(mdSource, ladderWebSocket);
 
@@ -501,7 +478,7 @@ public class Main {
 
                 channels.orderEntryFromServer.subscribe(fiberBuilder.getFiber(), orderPresenter::setOrderEntryUpdate);
 
-                final ShredderPresenter shredderPresenter = new ShredderPresenter(shredderBookSubscriber);
+                final ShredderPresenter shredderPresenter = new ShredderPresenter(depthBookSubscriber);
                 fiberBuilder.subscribe(shredderPresenter, shredderWebSocket);
 
                 channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), shredderPresenter::overrideLaserLine);
