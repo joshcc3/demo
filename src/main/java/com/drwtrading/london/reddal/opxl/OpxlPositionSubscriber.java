@@ -10,6 +10,8 @@ import org.jetlang.channels.Publisher;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class OpxlPositionSubscriber extends AOpxlReader<OPXLComponents, OPXLDeskPositions> {
@@ -34,6 +36,7 @@ public class OpxlPositionSubscriber extends AOpxlReader<OPXLComponents, OPXLDesk
     protected OPXLDeskPositions parseTable(final Object[][] opxlTable) {
 
         final Map<String, Long> positions = new HashMap<>(opxlTable.length);
+        final List<Object[]> failedRows = new LinkedList<>();
         for (final Object[] data : opxlTable) {
 
             try {
@@ -56,14 +59,24 @@ public class OpxlPositionSubscriber extends AOpxlReader<OPXLComponents, OPXLDesk
                         positions.put(symbol.toUpperCase(), pos);
                     }
                 }
-            } catch (NumberFormatException exc) {
-                System.out.println(" - Couldn't parse " + exc.getMessage());
-            } catch (Throwable throwable) {
-                monitor.logError(OPXLComponents.OPXL_POSITION_SUBSCRIBER, "Failed to load: " + Arrays.asList(data), throwable);
+            } catch (final Throwable throwable) {
+                failedRows.add(data);
             }
         }
 
-        monitor.setOK(OPXLComponents.OPXL_POSITION_SUBSCRIBER);
+        if (failedRows.isEmpty()) {
+            monitor.setOK(OPXLComponents.OPXL_POSITION_SUBSCRIBER);
+        } else {
+            final StringBuilder sb = new StringBuilder("Failed to load:\n");
+            for (final Object[] data : failedRows) {
+
+                sb.append(Arrays.asList(data));
+                sb.append('\n');
+            }
+            sb.setLength(sb.length() - 1);
+            monitor.logError(OPXLComponents.OPXL_POSITION_SUBSCRIBER, sb.toString());
+        }
+
         return new OPXLDeskPositions(positions);
     }
 

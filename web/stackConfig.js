@@ -18,7 +18,7 @@ $(function () {
 		nibblerEnd = nibblerFilter.length;
 	}
 	const nibbler = nibblerFilter.substr(1, nibblerEnd - 1);
-	symbolFilter = nibblerFilter.substr(nibblerEnd + 1, nibblerFilter.length).split(",").filter(function (el) {
+	symbolFilter = nibblerFilter.substr(nibblerEnd + 1, nibblerFilter.length).replace(/%20/g, " ").split(",").filter(function (el) {
 		return 0 !== el.length;
 	});
 
