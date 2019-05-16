@@ -8,6 +8,7 @@ import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import org.jetlang.channels.Publisher;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -16,7 +17,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 public class PKSPositionClient implements ITransportCacheListener<String, ConstituentExposure>, IPositionCmdListener {
 
-    private final Publisher<PKSExposure> positionPublisher;
+    private final Publisher<PKSExposures> positionPublisher;
 
     private final Map<String, CopyOnWriteArraySet<String>> isinToSymbols;
     private final Map<String, ConstituentExposure> isinExposures;
@@ -24,7 +25,9 @@ public class PKSPositionClient implements ITransportCacheListener<String, Consti
     private final Map<String, UltimateParentMapping> ultimateParents;
     private final Map<String, HashSet<UltimateParentMapping>> ultimateParentChildren;
 
-    public PKSPositionClient(final Publisher<PKSExposure> positionPublisher) {
+    private final Map<String, PKSExposure> receivedExposures;
+
+    public PKSPositionClient(final Publisher<PKSExposures> positionPublisher) {
 
         this.positionPublisher = positionPublisher;
 
@@ -33,6 +36,8 @@ public class PKSPositionClient implements ITransportCacheListener<String, Consti
 
         this.ultimateParents = new HashMap<>();
         this.ultimateParentChildren = new HashMap<>();
+
+        this.receivedExposures = new HashMap<>();
     }
 
     public void setSearchResult(final SearchResult searchResult) {
@@ -119,13 +124,19 @@ public class PKSPositionClient implements ITransportCacheListener<String, Consti
 
         final Set<String> symbols = isinToSymbols.get(isin);
         if (null != symbols) {
-            final PKSExposure pks = new PKSExposure(symbols, exposure, position);
-            positionPublisher.publish(pks);
+            final PKSExposure pksExposure = new PKSExposure(symbols, exposure, position);
+            receivedExposures.put(isin, pksExposure);
         }
     }
 
     @Override
     public void batchComplete() {
 
+        if (!receivedExposures.isEmpty()) {
+            final Collection<PKSExposure> exposures = new HashSet<>(receivedExposures.values());
+            final PKSExposures pksExposures = new PKSExposures(exposures);
+            positionPublisher.publish(pksExposures);
+            receivedExposures.clear();
+        }
     }
 }

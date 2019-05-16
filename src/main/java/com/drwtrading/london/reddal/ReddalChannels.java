@@ -24,7 +24,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.PicardRow;
-import com.drwtrading.london.reddal.pks.PKSExposure;
+import com.drwtrading.london.reddal.pks.PKSExposures;
 import com.drwtrading.london.reddal.premium.Premium;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
@@ -58,7 +58,7 @@ class ReddalChannels {
     final TypedChannel<LadderMetadata> metaData;
     final TypedChannel<OPXLDeskPositions> deskPositions;
     final TypedChannel<Position> position;
-    final TypedChannel<PKSExposure> pksExposure;
+    final TypedChannel<PKSExposures> pksExposures;
     final TypedChannel<NibblerTransportConnected> nibblerTransportConnected;
     final TypedChannel<StatusStat> stats;
     final TypedChannel<IOrderCmd> cmdsForNibblers;
@@ -117,7 +117,7 @@ class ReddalChannels {
         this.metaData = create(LadderMetadata.class);
         this.deskPositions = create(OPXLDeskPositions.class);
         this.position = create(Position.class);
-        this.pksExposure = create(PKSExposure.class);
+        this.pksExposures = TypedChannels.create(PKSExposures.class);
         this.nibblerTransportConnected = create(NibblerTransportConnected.class);
         this.stats = create(StatusStat.class);
         this.cmdsForNibblers = create(IOrderCmd.class);

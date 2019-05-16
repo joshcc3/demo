@@ -785,7 +785,7 @@ public class Main {
             final IResourceMonitor<PositionTransportComponents> pksMonitor =
                     new ExpandedDetailResourceMonitor<>(monitor, "PKS", errorLog, PositionTransportComponents.class, ReddalComponents.PKS);
 
-            final PKSPositionClient pksClient = new PKSPositionClient(channels.pksExposure);
+            final PKSPositionClient pksClient = new PKSPositionClient(channels.pksExposures);
             channels.ultimateParents.subscribe(selectIOFiber, pksClient::setUltimateParent);
             channels.searchResults.subscribe(selectIOFiber, pksClient::setSearchResult);
 
@@ -809,7 +809,7 @@ public class Main {
             final OpxlDividendTweets divTweets = new OpxlDividendTweets(opxlSelectIO, opxlMonitor, logDir, channels.stockAlerts);
             app.addStartUpAction(divTweets::start);
         }
-        
+
         // Logging
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trading-status.json", channels.errorPublisher),
                 channels.nibblerTransportConnected);
@@ -882,7 +882,7 @@ public class Main {
         channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);
         channels.ladderClickTradingIssues.subscribe(fiberBuilder.getFiber(), ladderPresenter::displayTradeIssue);
         channels.deskPositions.subscribe(fiberBuilder.getFiber(), ladderPresenter::setDeskPositions);
-        channels.pksExposure.subscribe(fiberBuilder.getFiber(), ladderPresenter::setPKSExposure);
+        channels.pksExposures.subscribe(fiberBuilder.getFiber(), ladderPresenter::setPKSExposures);
         channels.recenterLadder.subscribe(fiberBuilder.getFiber(), ladderPresenter::recenterLadder);
 
         displaySelectIO.addDelayedAction(1000, ladderPresenter::flushAllLadders);

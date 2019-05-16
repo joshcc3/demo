@@ -43,6 +43,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.pks.PKSExposure;
+import com.drwtrading.london.reddal.pks.PKSExposures;
 import com.drwtrading.london.reddal.premium.IPremiumCalc;
 import com.drwtrading.london.reddal.stacks.IStackPresenterCallback;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
@@ -386,9 +387,12 @@ public class LadderPresenter implements IStackPresenterCallback {
         metaDataBySymbol.get(position.getSymbol()).setMrPhilPosition(oneDP, position);
     }
 
-    public void setPKSExposure(final PKSExposure position) {
-        for (final String symbol : position.symbols) {
-            metaDataBySymbol.get(symbol).onPKSExposure(oneDP, position);
+    public void setPKSExposures(final PKSExposures positions) {
+
+        for (final PKSExposure position: positions.exposures) {
+            for (final String symbol : position.symbols) {
+                metaDataBySymbol.get(symbol).onPKSExposure(oneDP, position);
+            }
         }
     }
 
