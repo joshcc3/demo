@@ -4,7 +4,6 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingStat
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
-import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
@@ -93,7 +92,7 @@ public class QuotingObligationsPresenter {
             obligations.put(symbol, newState);
             return newState;
         } else {
-            result.setState(nowMilliSinceMidnight, quotingState.isRunning(), quotingState.getStrategyInfo());
+            result.setState(nowMilliSinceMidnight, quotingState.getStrategyID(), quotingState.isRunning(), quotingState.getStrategyInfo());
             return result;
         }
     }

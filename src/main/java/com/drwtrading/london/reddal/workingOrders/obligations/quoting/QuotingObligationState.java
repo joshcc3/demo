@@ -9,7 +9,6 @@ public class QuotingObligationState {
     private static final Pattern SPACE_REPLACE = Pattern.compile(" ", Pattern.LITERAL);
 
     private final String symbol;
-    private final int strategyID;
     private final String sourceNibbler;
     private final NibblerClientHandler nibblerClient;
 
@@ -18,6 +17,7 @@ public class QuotingObligationState {
     private long totalOffMillis;
     private long totalOnMillis;
 
+    private int strategyID;
     private boolean isStrategyOn;
     private boolean isQuoting;
     private String stateDescription;
@@ -76,13 +76,15 @@ public class QuotingObligationState {
     }
 
     public void updatePercent(final long nowMilliSinceMidnight) {
-        setState(nowMilliSinceMidnight, isStrategyOn, stateDescription);
+        setState(nowMilliSinceMidnight, strategyID, isStrategyOn, stateDescription);
     }
 
-    public void setState(final long nowMilliSinceMidnight, final boolean isStrategyOn, final String stateDescription) {
+    public void setState(final long nowMilliSinceMidnight, final int strategyID, final boolean isStrategyOn, final String stateDescription) {
 
         final long millisSinceLastCheck = nowMilliSinceMidnight - lastCheckMillisSinceMidnight;
         this.lastCheckMillisSinceMidnight = nowMilliSinceMidnight;
+
+        this.strategyID = strategyID;
 
         if (this.isQuoting) {
             totalOnMillis += millisSinceLastCheck;
