@@ -17,6 +17,7 @@ public class QuotingObligationState {
     private long totalOffMillis;
     private long totalOnMillis;
 
+    private boolean isAvailable;
     private int strategyID;
     private boolean isStrategyOn;
     private boolean isQuoting;
@@ -37,6 +38,7 @@ public class QuotingObligationState {
         this.totalOffMillis = nowMilliSinceMidnight - systemOnMilliSinceMidnight;
         this.totalOnMillis = 0;
 
+        this.isAvailable = true;
         this.isStrategyOn = isStrategyOn;
         this.isQuoting = isQuoting(isStrategyOn, stateDescription);
         this.stateDescription = stateDescription;
@@ -47,7 +49,11 @@ public class QuotingObligationState {
         return symbol;
     }
 
-    public int getStrategyID() {
+    boolean isAvailable() {
+        return isAvailable;
+    }
+
+    int getStrategyID() {
         return strategyID;
     }
 
@@ -55,7 +61,7 @@ public class QuotingObligationState {
         return sourceNibbler;
     }
 
-    public NibblerClientHandler getNibblerClient() {
+    NibblerClientHandler getNibblerClient() {
         return nibblerClient;
     }
 
@@ -63,7 +69,7 @@ public class QuotingObligationState {
         return key;
     }
 
-    public boolean isStrategyOn() {
+    boolean isStrategyOn() {
         return isStrategyOn;
     }
 
@@ -71,15 +77,19 @@ public class QuotingObligationState {
         return isQuoting;
     }
 
-    public String getStateDescription() {
+    String getStateDescription() {
         return stateDescription;
     }
 
-    public void updatePercent(final long nowMilliSinceMidnight) {
+    void setIsAvailable(final boolean isAvailable) {
+        this.isAvailable = isAvailable;
+    }
+
+    void updatePercent(final long nowMilliSinceMidnight) {
         setState(nowMilliSinceMidnight, strategyID, isStrategyOn, stateDescription);
     }
 
-    public void setState(final long nowMilliSinceMidnight, final int strategyID, final boolean isStrategyOn, final String stateDescription) {
+    void setState(final long nowMilliSinceMidnight, final int strategyID, final boolean isStrategyOn, final String stateDescription) {
 
         final long millisSinceLastCheck = nowMilliSinceMidnight - lastCheckMillisSinceMidnight;
         this.lastCheckMillisSinceMidnight = nowMilliSinceMidnight;
@@ -101,7 +111,7 @@ public class QuotingObligationState {
         return isStrategyOn && "OK".equals(stateDescription);
     }
 
-    public long getOnPercent() {
+    long getOnPercent() {
         final long totalTime = totalOnMillis + totalOffMillis;
         if (0 < totalTime) {
             return (100 * totalOnMillis) / totalTime;

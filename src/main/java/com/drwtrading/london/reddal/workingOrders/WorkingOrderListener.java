@@ -152,6 +152,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
         obligationPresenter.setNibblerDisconnected(sourceNibbler);
         bestWorkingOrderMaintainer.setNibblerDisconnected(sourceNibbler);
         futureObligationPresenter.setNibblerDisconnected(sourceNibbler);
+        quotingObligationsPresenter.setNibblerDisconnected(sourceNibbler);
 
         orderRouter.setNibblerDisconnected(sourceNibbler);
     }

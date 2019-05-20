@@ -93,6 +93,7 @@ public class QuotingObligationsPresenter {
             return newState;
         } else {
             result.setState(nowMilliSinceMidnight, quotingState.getStrategyID(), quotingState.isRunning(), quotingState.getStrategyInfo());
+            result.setIsAvailable(true);
             return result;
         }
     }
@@ -183,18 +184,22 @@ public class QuotingObligationsPresenter {
     public void startStrategy(final String symbol) {
 
         final QuotingObligationState quotingState = obligations.get(symbol);
-        final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
-        nibblerClientHandler.startQuoter(quotingState.getStrategyID());
-        nibblerClientHandler.batchComplete();
+        if (quotingState.isAvailable()) {
+            final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
+            nibblerClientHandler.startQuoter(quotingState.getStrategyID());
+            nibblerClientHandler.batchComplete();
+        }
     }
 
     @FromWebSocketView
     public void stopStrategy(final String symbol) {
 
         final QuotingObligationState quotingState = obligations.get(symbol);
-        final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
-        nibblerClientHandler.stopQuoter(quotingState.getStrategyID());
-        nibblerClientHandler.batchComplete();
+        if (quotingState.isAvailable()) {
+            final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
+            nibblerClientHandler.stopQuoter(quotingState.getStrategyID());
+            nibblerClientHandler.batchComplete();
+        }
     }
 
     private long checkObligations() {
@@ -220,5 +225,15 @@ public class QuotingObligationsPresenter {
 
         view.setRow(key, symbol, obligation.getSourceNibbler(), obligation.getOnPercent(), isStrategyOn, isQuoting,
                 obligation.getStateDescription(), isFailingObligation);
+    }
+
+    public void setNibblerDisconnected(final String sourceNibbler) {
+
+        for (final QuotingObligationState obligation : obligations.values()) {
+
+            if (obligation.getSourceNibbler().equals(sourceNibbler)) {
+                obligation.setIsAvailable(false);
+            }
+        }
     }
 }
