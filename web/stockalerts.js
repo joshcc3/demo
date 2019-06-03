@@ -56,7 +56,7 @@ function setAutoOpen(autoOpen) {
 
 function stockAlert(timestamp, type, symbol, msg, isOriginal) {
 
-	const id = (type + symbol + timestamp).replace(/ |\/|\.|:/g, "_");
+	const id = (type + symbol + timestamp + msg).replace(/ |\/|\.|:/g, "_");
 	let row = $('#' + id);
 
 	if (row[0]) {
