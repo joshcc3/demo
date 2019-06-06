@@ -5,7 +5,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import com.drwtrading.london.reddal.workingOrders.opxl.BestWorkingPriceForSymbol;
+import com.drwtrading.london.reddal.workingOrders.bestPrices.BestWorkingPriceForSymbol;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

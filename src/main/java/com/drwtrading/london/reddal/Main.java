@@ -149,13 +149,15 @@ import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.NoWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrderListener;
+import com.drwtrading.london.reddal.workingOrders.bestPrices.BestWorkingOrderMaintainer;
+import com.drwtrading.london.reddal.workingOrders.bestPrices.OPXLBestWorkingOrdersPresenter;
+import com.drwtrading.london.reddal.workingOrders.gtc.GTCWorkingOrderMaintainer;
+import com.drwtrading.london.reddal.workingOrders.gtc.OPXLGTCWorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.futures.FutureObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationOPXL;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationSet;
-import com.drwtrading.london.reddal.workingOrders.opxl.BestWorkingOrderMaintainer;
-import com.drwtrading.london.reddal.workingOrders.opxl.OPXLBestWorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.LadderWorkspace;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
@@ -1192,6 +1194,18 @@ public class Main {
                 bestWorkingOrderMaintainer = NoWorkingOrdersCallback.INSTANCE;
             }
 
+            final IWorkingOrdersCallback gtcWorkingOrdersMaintainer;
+
+            if (null != app.config.getEnabledGroup("gtcWorkingOrders")) {
+
+                final OPXLGTCWorkingOrdersPresenter gtcWorkingOrdersOPXLWriter =
+                        new OPXLGTCWorkingOrdersPresenter(opxlSelectIO, opxlMonitor, app.env);
+                gtcWorkingOrdersMaintainer = new GTCWorkingOrderMaintainer(gtcWorkingOrdersOPXLWriter);
+                opxlSelectIO.addDelayedAction(5000, gtcWorkingOrdersOPXLWriter::flush);
+            } else {
+                gtcWorkingOrdersMaintainer = NoWorkingOrdersCallback.INSTANCE;
+            }
+
             final MultiLayeredResourceMonitor<ReddalComponents> clientMonitorParent =
                     new MultiLayeredResourceMonitor<>(app.monitor, ReddalComponents.class, app.errorLog);
 
@@ -1272,7 +1286,7 @@ public class Main {
                         workingOrderPresenter.addNibbler(nibbler);
                         final WorkingOrderListener workingOrderListener =
                                 new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
-                                        futureObligationPresenter, quotingObligationsPresenter, orderRouter);
+                                        gtcWorkingOrdersMaintainer, futureObligationPresenter, quotingObligationsPresenter, orderRouter);
                         cache.addTradingDataListener(workingOrderListener, true, true);
 
                         blotterClient.setWorkingOrderListener(workingOrderListener);

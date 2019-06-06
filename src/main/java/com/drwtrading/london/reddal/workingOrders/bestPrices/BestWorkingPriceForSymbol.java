@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.workingOrders.opxl;
+package com.drwtrading.london.reddal.workingOrders.bestPrices;
 
 public class BestWorkingPriceForSymbol {
 

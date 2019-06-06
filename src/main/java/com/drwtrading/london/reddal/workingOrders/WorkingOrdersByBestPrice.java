@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.workingOrders;
 
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import com.drwtrading.london.reddal.workingOrders.opxl.BestWorkingPriceForSymbol;
+import com.drwtrading.london.reddal.workingOrders.bestPrices.BestWorkingPriceForSymbol;
 
 import java.util.Comparator;
 import java.util.HashMap;

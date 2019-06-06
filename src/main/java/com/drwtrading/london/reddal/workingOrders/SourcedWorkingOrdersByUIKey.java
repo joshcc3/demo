@@ -22,17 +22,21 @@ public class SourcedWorkingOrdersByUIKey {
         workingOrders.remove(sourcedOrder.uiKey);
     }
 
-    public void clearNibblerOrders(final String sourceNibbler) {
+    public boolean clearNibblerOrders(final String sourceNibbler) {
 
         final Iterator<SourcedWorkingOrder> workingOrderIterator = workingOrders.values().iterator();
 
+        boolean result = false;
         while (workingOrderIterator.hasNext()) {
 
             final SourcedWorkingOrder sourcedOrder = workingOrderIterator.next();
             if (sourceNibbler.equals(sourcedOrder.source)) {
                 workingOrderIterator.remove();
+                result = true;
             }
         }
+
+        return result;
     }
 
     public Collection<SourcedWorkingOrder> getWorkingOrders() {
