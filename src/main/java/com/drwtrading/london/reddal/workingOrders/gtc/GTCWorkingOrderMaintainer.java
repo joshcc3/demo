@@ -66,6 +66,6 @@ public class GTCWorkingOrderMaintainer implements IWorkingOrdersCallback {
 
         final int workingOrderCount = workingOrders.getWorkingOrders().size();
         final GTCWorkingOrderCount gtcCount = new GTCWorkingOrderCount(symbol, workingOrderCount);
-        opxlWriter.setTopOfBigWorkingOrders(gtcCount);
+        opxlWriter.setGTCWorkingOrderCount(gtcCount);
     }
 }
