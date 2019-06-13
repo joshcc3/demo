@@ -65,7 +65,7 @@ public class OpxlPositionSubscriber extends AOpxlReader<OPXLComponents, OPXLDesk
         }
 
         if (failedRows.isEmpty()) {
-            monitor.setOK(OPXLComponents.OPXL_POSITION_SUBSCRIBER);
+            monitor.setOK(OPXLComponents.OPXL_POSITION_SUBSCRIBER_CLEAN_DATA);
         } else {
             final StringBuilder sb = new StringBuilder("Failed to load:\n");
             for (final Object[] data : failedRows) {
@@ -74,7 +74,7 @@ public class OpxlPositionSubscriber extends AOpxlReader<OPXLComponents, OPXLDesk
                 sb.append('\n');
             }
             sb.setLength(sb.length() - 1);
-            monitor.logError(OPXLComponents.OPXL_POSITION_SUBSCRIBER, sb.toString());
+            monitor.logError(OPXLComponents.OPXL_POSITION_SUBSCRIBER_CLEAN_DATA, sb.toString());
         }
 
         return new OPXLDeskPositions(positions);
