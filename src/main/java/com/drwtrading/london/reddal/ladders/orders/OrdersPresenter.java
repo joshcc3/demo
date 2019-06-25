@@ -97,12 +97,7 @@ public class OrdersPresenter {
     @Subscribe
     public void on(final WebSocketDisconnected disconnected) {
         final IOrdersView view = views.unregister(disconnected);
-        for (final Iterator<Map.Entry<OrdersPresenterSymbolPrice, IOrdersView>> it = subscribed.entries().iterator(); it.hasNext(); ) {
-            final Map.Entry<OrdersPresenterSymbolPrice, IOrdersView> next = it.next();
-            if (next.getValue().equals(view)) {
-                it.remove();
-            }
-        }
+        subscribed.entries().removeIf(next -> next.getValue().equals(view));
     }
 
     @Subscribe

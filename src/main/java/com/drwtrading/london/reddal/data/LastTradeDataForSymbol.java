@@ -28,6 +28,14 @@ public class LastTradeDataForSymbol {
         return null != bidLastTrade && bidLastTrade.getPrice() == price;
     }
 
+    public LastTrade lastBid() {
+        return bidLastTrade;
+    }
+
+    public LastTrade lastAsk() {
+        return askLastTrade;
+    }
+
     public boolean isLastSell(final long price) {
         return null != askLastTrade && askLastTrade.getPrice() == price;
     }

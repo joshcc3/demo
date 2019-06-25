@@ -116,4 +116,14 @@ public final class LadderNoView implements ILadderBoard {
     public void cancelAllForSide(final BookSide side) {
 
     }
+
+    @Override
+    public void zoomIn() {
+
+    }
+
+    @Override
+    public void zoomOut() {
+
+    }
 }

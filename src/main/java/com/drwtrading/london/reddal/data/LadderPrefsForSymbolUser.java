@@ -2,33 +2,29 @@ package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
+import com.drwtrading.london.reddal.util.FastUtilCollections;
 import org.jetlang.channels.Publisher;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastMap;
-
 public class LadderPrefsForSymbolUser {
 
-    public static final Set<LadderSettings.LadderPref> globalDefaults = new HashSet<>();
-
+    private static final Set<LadderSettings.LadderPref> globalDefaults = new HashSet<>();
     static {
         globalDefaults.add(new LadderSettings.LadderPref("*", "*", HTML.WORKING_ORDER_TAG, "CHAD"));
     }
 
     public final String symbol;
     public final String user;
-
+    private final Map<String, String> globalPrefs = FastUtilCollections.newFastMap();
+    private final Map<String, String> userPrefs = FastUtilCollections.newFastMap();
+    private final Map<String, String> symbolPrefs = FastUtilCollections.newFastMap();
     private final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher;
 
-    public final Map<String, String> globalPrefs = newFastMap();
-    public final Map<String, String> userPrefs = newFastMap();
-    public final Map<String, String> symbolPrefs = newFastMap();
-
     public LadderPrefsForSymbolUser(final String symbol, final String user,
-                                    final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher) {
+            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher) {
         this.symbol = symbol;
         this.user = user;
         this.storeLadderPrefPublisher = storeLadderPrefPublisher;
@@ -53,11 +49,8 @@ public class LadderPrefsForSymbolUser {
             return symbolPrefs.get(id);
         } else if (userPrefs.containsKey(id)) {
             return userPrefs.get(id);
-        } else if (globalPrefs.containsKey((id))) {
-            return globalPrefs.get(id);
-        } else {
-            return null;
-        }
+        } else
+            return globalPrefs.getOrDefault(id, null);
     }
 
     public String get(final String id, final Object otherwise) {

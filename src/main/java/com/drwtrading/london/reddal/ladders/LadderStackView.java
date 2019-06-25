@@ -892,4 +892,14 @@ public class LadderStackView implements ILadderBoard {
             }
         }
     }
+
+    @Override
+    public void zoomIn() {
+        ladderModel.getBookPanel().zoomIn();
+    }
+
+    @Override
+    public void zoomOut() {
+        ladderModel.getBookPanel().zoomOut();
+    }
 }

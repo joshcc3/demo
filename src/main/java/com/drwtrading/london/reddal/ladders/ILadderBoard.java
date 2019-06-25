@@ -51,4 +51,7 @@ public interface ILadderBoard {
 
     public void cancelAllForSide(final BookSide side);
 
+    public void zoomIn();
+
+    public void zoomOut();
 }

@@ -63,6 +63,10 @@ public class LadderView implements UiEventHandler {
     private static final int PG_DOWN = 34;
     private static final int END_KEY = 35;
     private static final int HOME_KEY = 36;
+    private static final int NUM_PLUS = 107;
+    private static final int NUM_MINUS = 109;
+    private static final int PLUS = 187;
+    private static final int MINUS = 189;
 
     static final Map<InstType, Map<QtyButton, Integer>> INST_TYPE_BUTTON_QTIES;
 
@@ -573,6 +577,16 @@ public class LadderView implements UiEventHandler {
                 activeView.setBestBidCenter();
                 break;
             }
+            case PLUS:
+            case NUM_PLUS: {
+                activeView.zoomIn();
+                break;
+            }
+            case MINUS:
+            case NUM_MINUS: {
+                activeView.zoomOut();
+                break;
+            }
         }
     }
 
@@ -714,65 +728,61 @@ public class LadderView implements UiEventHandler {
         flushDynamicFeatures();
     }
 
-    boolean switchContract(final UserCycleRequest cycleRequest) {
+    void switchContract(final UserCycleRequest cycleRequest) {
         if (null != metaData && null != metaData.spreadContractSet) {
 
             if (cycleRequest.contract != null) {
                 final SpreadContractSet contracts = metaData.spreadContractSet;
                 switch (cycleRequest.contract) {
                     case FRONT:
-                        return goToContract(contracts.frontMonth);
+                        goToContract(contracts.frontMonth);
+                        return;
                     case BACK:
-                        return goToContract(contracts.backMonth);
+                        goToContract(contracts.backMonth);
+                        return;
                     case SPREAD:
-                        return goToContract(contracts.spread);
+                        goToContract(contracts.spread);
+                        return;
                     default:
-                        return false;
                 }
             } else {
-                return nextContract();
+                nextContract();
             }
-        } else {
-            return false;
         }
     }
 
-    private boolean nextContract() {
+    private void nextContract() {
         final SpreadContractSet contracts = metaData.spreadContractSet;
         String nextContract = contracts.next(symbol);
         int count = 3;
         while (!refData.containsKey(nextContract) && 0 < count--) {
             nextContract = contracts.next(nextContract);
         }
-        return goToContract(nextContract);
+        goToContract(nextContract);
     }
 
-    private boolean goToContract(final String targetSymbol) {
+    private void goToContract(final String targetSymbol) {
         if (targetSymbol != null && !symbol.equals(targetSymbol) && refData.containsKey(targetSymbol)) {
             view.goToSymbol(targetSymbol);
-            return true;
-        } else {
-            return false;
         }
     }
 
-    private boolean switchChixSymbol() {
+    private void switchChixSymbol() {
         if (null != metaData && null != metaData.chixSwitchSymbol && refData.containsKey(metaData.chixSwitchSymbol)) {
             view.goToSymbol(metaData.chixSwitchSymbol);
-            return true;
-        } else {
-            return false;
         }
     }
 
-    private boolean openEwokView() {
+    private void openEwokView() {
         if (null != marketData && null != marketData.getBook()) {
             switch (marketData.getBook().getInstType()) {
                 case FUTURE: {
-                    return popupFuture(marketData.getBook().getSymbol());
+                    popupFuture(marketData.getBook().getSymbol());
+                    return;
                 }
                 case FUTURE_SPREAD: {
-                    return popupFuture(marketData.getBook().getSymbol().split("-")[0]);
+                    popupFuture(marketData.getBook().getSymbol().split("-")[0]);
+                    return;
                 }
                 case EQUITY:
                 case ETF:
@@ -781,25 +791,19 @@ public class LadderView implements UiEventHandler {
                     final String symbol = marketData.getBook().getSymbol();
                     final String url = ewokBaseURL + "/smart#" + symbol;
                     view.popUp(url, "Ewok " + symbol, 1200, 800);
-                    return true;
+                    return;
                 }
                 default: {
-                    return false;
                 }
             }
-        } else {
-            return false;
         }
     }
 
-    private boolean popupFuture(final String expiry) {
+    private void popupFuture(final String expiry) {
         final FutureConstant future = FutureConstant.getFutureFromSymbol(expiry);
         if (null != future) {
             final String url = ewokBaseURL + "/smart#" + future.index.name();
             view.popUp(url, "Ewok " + future.index.name(), 1200, 800);
-            return true;
-        } else {
-            return false;
         }
     }
 
