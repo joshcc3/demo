@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.ladders.orders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import drw.eeif.eeifoe.Cancel;
 import com.drwtrading.london.reddal.ladders.CancelOrderCmd;
 import com.drwtrading.london.reddal.ladders.IOrdersView;
@@ -25,12 +26,14 @@ import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import org.jetlang.channels.Publisher;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.NavigableMap;
 
 public class OrdersPresenter {
 
@@ -106,10 +109,13 @@ public class OrdersPresenter {
     }
 
     @FromWebSocketView
-    public void subscribe(final String symbol, final String priceStr, final WebSocketInboundData data) {
+    public void subscribe(final String symbol, final String priceStr, final String bidPriceStr, final String askPriceStr,
+            final WebSocketInboundData data) {
         final IOrdersView view = views.get(data.getOutboundChannel());
         final long price = Long.valueOf(priceStr);
-        final OrdersPresenterSymbolPrice symbolPrice = new OrdersPresenterSymbolPrice(symbol, price);
+        final long bidPrice = Long.valueOf(bidPriceStr);
+        final long askPrice = Long.valueOf(askPriceStr);
+        final OrdersPresenterSymbolPrice symbolPrice = new OrdersPresenterSymbolPrice(symbol, price, bidPrice, askPrice);
         subscribed.put(symbolPrice, view);
         update(symbol, price, price);
     }
@@ -140,23 +146,55 @@ public class OrdersPresenter {
 
             final OrdersPresenterSymbolPrice symbolPrice = entry.getKey();
             final long price = symbolPrice.price;
+            final long bidPrice = symbolPrice.bidPrice;
+            final long askPrice = symbolPrice.askPrice;
+            final boolean newPriceInRange = bidPrice >= newPrice && newPrice <= askPrice;
+            final boolean prevPriceInRange = bidPrice >= prevPrice && prevPrice <= askPrice;
 
-            if (symbol.equals(symbolPrice.symbol) && (newPrice == price || prevPrice == price)) {
-                final Collection<SourcedWorkingOrder> orders = workingOrders.getWorkingOrdersAtPrice(price);
-                final Collection<Map<String, String>> data = getOrders(orders);
+            if (symbol.equals(symbolPrice.symbol) && (newPriceInRange || prevPriceInRange)) {
+                final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> bidOrders = workingOrders.getOrdersInRange(BookSide.BID, price, bidPrice);
+                final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> askOrders = workingOrders.getOrdersInRange(BookSide.ASK, askPrice, price);
+                final Collection<Map<String, String>> data = getOrders(bidOrders, askOrders);
                 entry.getValue().orders(data);
-                entry.getValue().managedOrders(managed.getOrdersForPrice(price));
+                final NavigableMap<Long, HashMap<String, UpdateFromServer>> bidUpdates =
+                        managed.getOrdersInRange(BookSide.BID, price, bidPrice);
+                final NavigableMap<Long, HashMap<String, UpdateFromServer>> askUpdates =
+                        managed.getOrdersInRange(BookSide.ASK, askPrice, price);
+                entry.getValue().managedOrders(collectUpdates(bidUpdates, askUpdates));
             }
         }
     }
 
-    private static Collection<Map<String, String>> getOrders(final Collection<SourcedWorkingOrder> orders) {
+    private static Collection<UpdateFromServer> collectUpdates(final NavigableMap<Long, HashMap<String, UpdateFromServer>> bidUpdates,
+            final NavigableMap<Long, HashMap<String, UpdateFromServer>> askUpdates) {
+        if (bidUpdates.isEmpty() && askUpdates.isEmpty()) {
+            return Collections.emptySet();
+        } else {
+            final Collection<UpdateFromServer> result = new ArrayList<>();
+            bidUpdates.values().forEach(updates -> result.addAll(updates.values()));
+            askUpdates.values().forEach(updates -> result.addAll(updates.values()));
 
-        if (null == orders) {
+            return result;
+        }
+    }
+
+    private static Collection<Map<String, String>> getOrders(final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> bidOrders,
+            final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> askOrders) {
+
+        if (bidOrders.isEmpty() && askOrders.isEmpty()) {
             return Collections.emptySet();
         } else {
             final Collection<Map<String, String>> result = new HashSet<>();
+            addOrders(bidOrders, result);
+            addOrders(askOrders, result);
 
+            return result;
+        }
+    }
+
+    private static void addOrders(final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> ordersByPrice,
+            final Collection<Map<String, String>> result) {
+        for (final LinkedHashSet<SourcedWorkingOrder> orders : ordersByPrice.values()) {
             for (final SourcedWorkingOrder sourcedOrder : orders) {
 
                 final Map<String, String> orderMap = new HashMap<>();
@@ -171,8 +209,6 @@ public class OrdersPresenter {
                 orderMap.put("type", order.getOrderType().name());
                 orderMap.put("tag", order.getTag());
             }
-
-            return result;
         }
     }
 }

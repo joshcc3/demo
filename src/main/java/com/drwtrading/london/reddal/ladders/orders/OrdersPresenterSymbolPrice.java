@@ -6,9 +6,13 @@ class OrdersPresenterSymbolPrice extends Struct {
 
     final String symbol;
     final long price;
+    final long bidPrice;
+    final long askPrice;
 
-    OrdersPresenterSymbolPrice(final String symbol, final long price) {
+    OrdersPresenterSymbolPrice(final String symbol, final long price, final long bidPrice, final long askPrice) {
         this.symbol = symbol;
         this.price = price;
+        this.bidPrice = bidPrice;
+        this.askPrice = askPrice;
     }
 }

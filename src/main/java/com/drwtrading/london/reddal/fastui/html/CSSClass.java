@@ -116,7 +116,8 @@ public enum CSSClass {
     WORKING_ORDER_TYPE_DARK("working_order_type_dark"),
     WORKING_ORDER_TYPE_HIDDEN("working_order_type_hidden"),
 
-    GOING_EX("going_ex");
+    GOING_EX("going_ex"),
+    ZOOMED_OUT("zoomed_out");
 
     public final String cssText;
 

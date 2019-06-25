@@ -685,7 +685,7 @@ public class Main {
                     updateClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10));
                     updateClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
                             new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT));
-                    updateClient.handler(new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(
+                updateClient.handler(new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(
                             Constants::NO_OP, channels.orderEntryFromServer, evt -> {
                         if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
                             final Update msg = (Update) evt.getMsg();

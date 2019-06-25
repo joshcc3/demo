@@ -776,28 +776,31 @@ public class LadderBookView implements ILadderBoard {
 
             final BookPanel bookPanel = ladderModel.getBookPanel();
             final HeaderPanel headerPanel = ladderModel.getHeaderPanel();
+            final int zoomLevel = bookPanel.getZoomLevel();
+            final boolean isZoomed = zoomLevel != 1;
+            final String zoomString = isZoomed ? " x" + zoomLevel : "";
 
             switch (marketData.getBook().getStatus()) {
                 case CONTINUOUS: {
-                    headerPanel.setSymbol(symbol);
+                    headerPanel.setSymbol(symbol + zoomString);
                     ladderModel.setClass(HTML.SYMBOL, CSSClass.AUCTION, false);
                     ladderModel.setClass(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, false);
                     break;
                 }
                 case AUCTION: {
-                    headerPanel.setSymbol(symbol + " - AUC");
+                    headerPanel.setSymbol(symbol + " - AUC" + zoomString);
                     ladderModel.setClass(HTML.SYMBOL, CSSClass.AUCTION, true);
                     ladderModel.setClass(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, false);
                     break;
                 }
                 case CLOSED: {
-                    headerPanel.setSymbol(symbol + " - CLSD");
+                    headerPanel.setSymbol(symbol + " - CLSD" + zoomString);
                     ladderModel.setClass(HTML.SYMBOL, CSSClass.AUCTION, true);
                     ladderModel.setClass(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, false);
                     break;
                 }
                 default: {
-                    headerPanel.setSymbol(symbol + " - ?");
+                    headerPanel.setSymbol(symbol + " - ?" + zoomString);
                     ladderModel.setClass(HTML.SYMBOL, CSSClass.AUCTION, false);
                     ladderModel.setClass(HTML.SYMBOL, CSSClass.NO_BOOK_STATE, true);
                     break;
@@ -820,7 +823,6 @@ public class LadderBookView implements ILadderBoard {
                 auctionQty = 0;
             }
 
-            final int zoomLevel = bookPanel.getZoomLevel();
             final ITickTable tickTable = marketData.getBook().getTickTable();
             final IBookLevel bestBid = marketData.getBook().getBestBid();
             final IBookLevel bestAsk = marketData.getBook().getBestAsk();
@@ -1260,10 +1262,13 @@ public class LadderBookView implements ILadderBoard {
             if (label.startsWith(HTML.ORDER)) {
                 final String priceLevel = data.get("price");
                 final long price = Long.valueOf(priceLevel);
-                final LinkedHashSet<SourcedWorkingOrder> orders = workingOrders.getWorkingOrdersAtPrice(price);
-                if (null != orders && !orders.isEmpty()) {
-                    final String url = "/orders#" + symbol + ',' + priceLevel;
-                    view.popUp(url, "orders", 270, 20 * (1 + orders.size()));
+                final ITickTable tickTable = marketData.getBook().getTickTable();
+                final int zoomLevel = ladderModel.getBookPanel().getZoomLevel();
+                final long bidPrice = tickTable.addTicks(price, zoomLevel - 1);
+                final long askPrice = tickTable.subtractTicks(price, zoomLevel - 1);
+                if (workingOrders.hasOrderBetween(bidPrice, askPrice)) {
+                    final String url = "/orders#" + symbol + ',' + priceLevel + ',' + bidPrice + ',' + askPrice;
+                    view.popUp(url, "orders", 270, 120);
                 }
             }
         }
@@ -1554,6 +1559,8 @@ public class LadderBookView implements ILadderBoard {
     @Override
     public void zoomIn() {
         ladderModel.getBookPanel().zoomIn();
+        final boolean isZoomedOut = ladderModel.getBookPanel().getZoomLevel() != 1;
+        ladderModel.setClass(HTML.LADDER, CSSClass.ZOOMED_OUT, isZoomedOut);
         center();
         refresh(symbol);
     }
@@ -1561,6 +1568,8 @@ public class LadderBookView implements ILadderBoard {
     @Override
     public void zoomOut() {
         ladderModel.getBookPanel().zoomOut();
+        final boolean isZoomedOut = ladderModel.getBookPanel().getZoomLevel() != 1;
+        ladderModel.setClass(HTML.LADDER, CSSClass.ZOOMED_OUT, isZoomedOut);
         center();
         refresh(symbol);
     }

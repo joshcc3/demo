@@ -8,9 +8,12 @@ $(function () {
 		eval(x);
 	};
 	const hash = document.location.hash.substr(1);
-	symbol = hash.split(",")[0];
-	const price = hash.split(",")[1];
-	ws.send(command("subscribe", [symbol, price]));
+	let arguments = hash.split(",");
+	const symbol = arguments[0];
+	const price = arguments[1];
+	const bidPrice = arguments[2];
+	const askPrice = arguments[3];
+	ws.send(command("subscribe", [symbol, price, bidPrice, askPrice]));
 	setInterval(highlightChangedQty, 250);
 });
 

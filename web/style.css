@@ -1180,3 +1180,8 @@ tr.result.highlight {
 div#text.going_ex {
 	background-color: yellow;
 }
+
+.zoomed_out {
+	background-color: cyan;
+	opacity: 0.3;
+}
