@@ -122,3 +122,7 @@ button.bigRedButton {
 #strategies.hideMetObligations div.strategyOn:not(.obligationFail) {
 	display: none;
 }
+
+#strategies.hideOnStrategies div.strategyOn.strategyQuoting {
+	display: none;
+}

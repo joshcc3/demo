@@ -19,6 +19,10 @@ $(function () {
 		strategies.toggleClass("hideMetObligations", !this.checked);
 	});
 
+	$("#showOff").change(function () {
+		strategies.toggleClass("hideOnStrategies", this.checked);
+	});
+
 	$("#everythingOn").click(function () {
 		ws.send(command("everythingOn", []));
 	});
