@@ -14,14 +14,11 @@ import java.util.TreeMap;
 
 public class WorkingOrdersByPrice {
 
-    private final Map<SourcedWorkingOrder, Long> currentPricesByWorkingOrderID;
-    private final Map<Long, LinkedHashSet<SourcedWorkingOrder>> ordersByPrice;
+    private final Map<SourcedWorkingOrder, Long> currentPricesByWorkingOrderID = new HashMap<>();
+    private final Map<Long, LinkedHashSet<SourcedWorkingOrder>> ordersByPrice = new HashMap<>();
     private final Map<BookSide, NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>>> ordersBySide = new EnumMap<>(BookSide.class);
 
     public WorkingOrdersByPrice() {
-
-        this.currentPricesByWorkingOrderID = new HashMap<>();
-        this.ordersByPrice = new HashMap<>();
 
         for (final BookSide side : BookSide.values()) {
             ordersBySide.put(side, new TreeMap<>(Comparator.reverseOrder()));

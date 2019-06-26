@@ -2,8 +2,8 @@ package com.drwtrading.london.reddal.ladders.orders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import drw.eeif.eeifoe.Cancel;
 import com.drwtrading.london.reddal.ladders.CancelOrderCmd;
 import com.drwtrading.london.reddal.ladders.IOrdersView;
 import com.drwtrading.london.reddal.ladders.ISingleOrderCommand;
@@ -24,6 +24,7 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
+import drw.eeif.eeifoe.Cancel;
 import org.jetlang.channels.Publisher;
 
 import java.util.ArrayList;
@@ -148,12 +149,14 @@ public class OrdersPresenter {
             final long price = symbolPrice.price;
             final long bidPrice = symbolPrice.bidPrice;
             final long askPrice = symbolPrice.askPrice;
-            final boolean newPriceInRange = bidPrice >= newPrice && newPrice <= askPrice;
-            final boolean prevPriceInRange = bidPrice >= prevPrice && prevPrice <= askPrice;
+            final boolean newPriceInRange = askPrice <= newPrice && newPrice <= bidPrice;
+            final boolean prevPriceInRange = askPrice <= prevPrice && prevPrice <= bidPrice;
 
             if (symbol.equals(symbolPrice.symbol) && (newPriceInRange || prevPriceInRange)) {
-                final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> bidOrders = workingOrders.getOrdersInRange(BookSide.BID, price, bidPrice);
-                final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> askOrders = workingOrders.getOrdersInRange(BookSide.ASK, askPrice, price);
+                final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> bidOrders =
+                        workingOrders.getOrdersInRange(BookSide.BID, price, bidPrice);
+                final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> askOrders =
+                        workingOrders.getOrdersInRange(BookSide.ASK, askPrice, price);
                 final Collection<Map<String, String>> data = getOrders(bidOrders, askOrders);
                 entry.getValue().orders(data);
                 final NavigableMap<Long, HashMap<String, UpdateFromServer>> bidUpdates =
@@ -208,6 +211,7 @@ public class OrdersPresenter {
                 orderMap.put("remainingQty", Long.toString(order.getOrderQty() - order.getFilledQty()));
                 orderMap.put("type", order.getOrderType().name());
                 orderMap.put("tag", order.getTag());
+                orderMap.put("price", Double.toString((double) order.getPrice() / Constants.NORMALISING_FACTOR));
             }
         }
     }

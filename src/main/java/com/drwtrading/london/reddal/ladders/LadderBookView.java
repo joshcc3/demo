@@ -1266,7 +1266,7 @@ public class LadderBookView implements ILadderBoard {
                 final int zoomLevel = ladderModel.getBookPanel().getZoomLevel();
                 final long bidPrice = tickTable.addTicks(price, zoomLevel - 1);
                 final long askPrice = tickTable.subtractTicks(price, zoomLevel - 1);
-                if (workingOrders.hasOrderBetween(bidPrice, askPrice)) {
+                if (workingOrders.hasOrderBetween(askPrice, bidPrice)) {
                     final String url = "/orders#" + symbol + ',' + priceLevel + ',' + bidPrice + ',' + askPrice;
                     view.popUp(url, "orders", 270, 120);
                 }
@@ -1634,7 +1634,7 @@ public class LadderBookView implements ILadderBoard {
             }
         }
 
-        return entry;
+        return null;
     }
 
     private static Long specialCaseCenterPrice(final IBook<?> book) {

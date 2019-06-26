@@ -1181,7 +1181,6 @@ div#text.going_ex {
 	background-color: yellow;
 }
 
-.zoomed_out {
-	background-color: cyan;
-	opacity: 0.3;
+#ladder.zoomed_out .price.column, #ladder.zoomed_out .offer.column{
+	border-left: 1px solid cyan;
 }

@@ -42,6 +42,7 @@ function orders(os) {
 		const remainingQty = order["remainingQty"];
 		const orderType = order["type"];
 		const tag = order["tag"];
+		const price = order["price"];
 		const row = getRow(key);
 
 		row.addClass("order").addClass("regular");
@@ -52,6 +53,7 @@ function orders(os) {
 		row.find(".qtyBox").data("qty", remainingQty);
 		row.find(".type").text(orderType);
 		row.find(".tag").text(tag);
+		row.find(".price").text(price);
 		row.toggleClass("invisible", false);
 
 		row.find(".go").unbind().bind("click", function () {
@@ -78,6 +80,7 @@ function managedOrders(os) {
 		row.find(".qtyBox").attr("disabled", true);
 		row.find(".type").text("MANAGED");
 		row.find(".tag").text("MANAGED");
+		row.find(".price").text(order.order.price / 1e9);
 		row.attr("id", key);
 		row.toggleClass("invisible", order.dead);
 		row.find(".go").toggleClass("invisible", true);
