@@ -24,6 +24,8 @@ public class Mathematics {
         TO_EUR_RATES.put(CCY.SEK, 0.112606);
         TO_EUR_RATES.put(CCY.USD, 0.7332);
         TO_EUR_RATES.put(CCY.RUB, 0.018);
+        TO_EUR_RATES.put(CCY.ZAR, 0.0616423);
+        TO_EUR_RATES.put(CCY.ZAC, TO_EUR_RATES.get(CCY.ZAR) / 100);
     }
 
     public static double toQuantityFromNotionalInSafetyCurrency(final double notionalInSafetyCurrency, final long price,
