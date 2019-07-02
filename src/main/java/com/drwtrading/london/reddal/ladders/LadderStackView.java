@@ -279,7 +279,7 @@ public class LadderStackView implements ILadderBoard {
                 stackPanel.setBidOffset(stackRow, HTML.EMPTY);
                 ladderModel.setClass(stackRow.htmlData.stackBidOffsetKey, CSSClass.STACK_OFFSET, false);
 
-                stackPanel.setBidOffset(stackRow, HTML.EMPTY);
+                stackPanel.setAskOffset(stackRow, HTML.EMPTY);
                 ladderModel.setClass(stackRow.htmlData.stackAskOffsetKey, CSSClass.STACK_OFFSET, false);
             }
         }
@@ -895,11 +895,11 @@ public class LadderStackView implements ILadderBoard {
 
     @Override
     public void zoomIn() {
-        ladderModel.getBookPanel().zoomIn();
+        //No-op
     }
 
     @Override
     public void zoomOut() {
-        ladderModel.getBookPanel().zoomOut();
+        //No-op
     }
 }

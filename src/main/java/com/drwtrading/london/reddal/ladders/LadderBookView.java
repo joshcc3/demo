@@ -1278,11 +1278,13 @@ public class LadderBookView implements ILadderBoard {
     public void setBestAskCenter() {
 
         final IBook<?> book = marketData.getBook();
+        final ITickTable tickTable = book.getTickTable();
+        final int zoomLevel = ladderModel.getBookPanel().getZoomLevel();
         if (null != marketData.getBook()) {
 
             final IBookLevel bestAsk = book.getBestAsk();
             if (null != bestAsk) {
-                final long newCenterPrice = bestAsk.getPrice();
+                final long newCenterPrice = tickTable.roundAwayToTick(BookSide.ASK, bestAsk.getPrice(), zoomLevel);
                 setCenteredPrice(newCenterPrice);
             }
         }
@@ -1292,11 +1294,13 @@ public class LadderBookView implements ILadderBoard {
     public void setBestBidCenter() {
 
         final IBook<?> book = marketData.getBook();
+        final ITickTable tickTable = book.getTickTable();
+        final int zoomLevel = ladderModel.getBookPanel().getZoomLevel();
         if (null != marketData.getBook()) {
 
             final IBookLevel bestBid = book.getBestBid();
             if (null != bestBid) {
-                final long newCenterPrice = bestBid.getPrice();
+                final long newCenterPrice = tickTable.roundAwayToTick(BookSide.BID, bestBid.getPrice(), zoomLevel);
                 setCenteredPrice(newCenterPrice);
             }
         }
