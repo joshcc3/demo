@@ -91,6 +91,7 @@ public class LadderBookView implements ILadderBoard {
 
     private static final EnumSet<CSSClass> WORKING_ORDER_CSS;
     private static final Set<String> PERSISTENT_PREFS = new HashSet<>();
+    private static final Set<String> NON_DISPLAY_PREFS = new HashSet<>();
 
     static {
 
@@ -110,6 +111,8 @@ public class LadderBookView implements ILadderBoard {
         PERSISTENT_PREFS.add(HTML.ORDER_TYPE_LEFT);
         PERSISTENT_PREFS.add(HTML.ORDER_TYPE_RIGHT);
         PERSISTENT_PREFS.add(HTML.RANDOM_RELOAD_CHECK);
+        PERSISTENT_PREFS.add(HTML.ZOOM_LEVEL);
+        NON_DISPLAY_PREFS.add(HTML.ZOOM_LEVEL);
     }
 
     private final IResourceMonitor<ReddalComponents> monitor;
@@ -217,6 +220,7 @@ public class LadderBookView implements ILadderBoard {
         this.defaultPrefs.put(HTML.ORDER_TYPE_LEFT, "HAWK");
         this.defaultPrefs.put(HTML.ORDER_TYPE_RIGHT, "MANUAL");
         this.defaultPrefs.put(HTML.RANDOM_RELOAD_CHECK, "true");
+        this.defaultPrefs.put(HTML.ZOOM_LEVEL, "1");
 
         this.ladderClickTradingIssuesPublisher = ladderClickTradingIssuesPublisher;
         this.remoteOrderCommandToServerPublisher = remoteOrderCommandToServerPublisher;
@@ -353,6 +357,8 @@ public class LadderBookView implements ILadderBoard {
 
     @Override
     public void switchedTo() {
+        final String zoomLevel = getPref(HTML.ZOOM_LEVEL);
+        ladderModel.getBookPanel().setZoomLevel(Integer.valueOf(zoomLevel));
 
         ladderModel.setClass(HTML.LADDER_DIV, CSSClass.STACK_VIEW, false);
 
@@ -692,7 +698,9 @@ public class LadderBookView implements ILadderBoard {
             leftHandPanel.setClickTradingQty(clickTradingBoxQty, feeString);
 
             for (final String pref : PERSISTENT_PREFS) {
-                leftHandPanel.setClickTradingPreference(pref, getPref(pref));
+                if (!NON_DISPLAY_PREFS.contains(pref)) {
+                    leftHandPanel.setClickTradingPreference(pref, getPref(pref));
+                }
             }
 
             final String leftOrderPricePref = getPref(HTML.ORDER_TYPE_LEFT);
@@ -1562,8 +1570,10 @@ public class LadderBookView implements ILadderBoard {
 
     @Override
     public void zoomIn() {
-        ladderModel.getBookPanel().zoomIn();
-        final boolean isZoomedOut = ladderModel.getBookPanel().getZoomLevel() != 1;
+        final BookPanel bookPanel = ladderModel.getBookPanel();
+        bookPanel.zoomIn();
+        setPersistencePreference(HTML.ZOOM_LEVEL, Integer.toString(bookPanel.getZoomLevel()));
+        final boolean isZoomedOut = bookPanel.getZoomLevel() != 1;
         ladderModel.setClass(HTML.LADDER, CSSClass.ZOOMED_OUT, isZoomedOut);
         center();
         refresh(symbol);
@@ -1571,8 +1581,10 @@ public class LadderBookView implements ILadderBoard {
 
     @Override
     public void zoomOut() {
-        ladderModel.getBookPanel().zoomOut();
-        final boolean isZoomedOut = ladderModel.getBookPanel().getZoomLevel() != 1;
+        final BookPanel bookPanel = ladderModel.getBookPanel();
+        bookPanel.zoomOut();
+        setPersistencePreference(HTML.ZOOM_LEVEL, Integer.toString(bookPanel.getZoomLevel()));
+        final boolean isZoomedOut = bookPanel.getZoomLevel() != 1;
         ladderModel.setClass(HTML.LADDER, CSSClass.ZOOMED_OUT, isZoomedOut);
         center();
         refresh(symbol);

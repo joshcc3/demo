@@ -54,8 +54,9 @@ public class LadderPrefsForSymbolUser {
     }
 
     public String get(final String id, final Object otherwise) {
-        if (get(id) != null) {
-            return get(id);
+        final String preference = get(id);
+        if (preference != null) {
+            return preference;
         }
         return otherwise.toString();
     }
@@ -65,8 +66,8 @@ public class LadderPrefsForSymbolUser {
                 new LadderSettings.StoreLadderPref(new LadderSettings.LadderPref(user, symbol, id, value.toString())));
     }
 
-    public LadderPrefsForSymbolUser withSymbol(String newSymbol) {
-        LadderPrefsForSymbolUser ladderPrefsForSymbolUser = new LadderPrefsForSymbolUser(newSymbol, user, storeLadderPrefPublisher);
+    public LadderPrefsForSymbolUser withSymbol(final String newSymbol) {
+        final LadderPrefsForSymbolUser ladderPrefsForSymbolUser = new LadderPrefsForSymbolUser(newSymbol, user, storeLadderPrefPublisher);
         symbolPrefs.forEach(ladderPrefsForSymbolUser::set);
         ladderPrefsForSymbolUser.symbolPrefs.putAll(symbolPrefs);
         ladderPrefsForSymbolUser.userPrefs.putAll(userPrefs);

@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.fastui.html;
 
-public class HTML {
+public final class HTML {
 
     public static final String LADDER_DIV = "ladderDiv";
 
@@ -96,4 +96,6 @@ public class HTML {
     public static final String PRICING_EFP = "pricing_EFP";
     public static final String PRICING = "pricing_";
     public static final String TEXT = "text";
+
+    public static final String ZOOM_LEVEL = "zoomLevel";
 }

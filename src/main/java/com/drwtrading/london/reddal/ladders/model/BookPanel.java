@@ -16,6 +16,7 @@ public class BookPanel {
 
     private static final int INITIAL_ROW_CAPACITY = 50;
     private static final int REALLY_BIG_NUMBER_THRESHOLD = 100_000;
+    private static final int MIN_ZOOM_LEVEL = 1;
     private static final int MAX_ZOOM_LEVEL = 4096;
 
     private final UiPipeImpl ui;
@@ -31,6 +32,7 @@ public class BookPanel {
     private MIC mic;
 
     private int zoomLevel;
+
     BookPanel(final UiPipeImpl ui) {
 
         this.ui = ui;
@@ -75,9 +77,8 @@ public class BookPanel {
         rowsByPrice.clear();
     }
 
-
     public void zoomIn() {
-        this.zoomLevel = Math.max(zoomLevel / 2, 1);
+        this.zoomLevel = Math.max(zoomLevel / 2, MIN_ZOOM_LEVEL);
     }
 
     public void zoomOut() {
@@ -86,6 +87,10 @@ public class BookPanel {
 
     public int getZoomLevel() {
         return this.zoomLevel;
+    }
+
+    public void setZoomLevel(final int zoomLevel) {
+        this.zoomLevel = Math.min(Math.max(zoomLevel, MIN_ZOOM_LEVEL), MAX_ZOOM_LEVEL);
     }
 
     public void setRowPrice(final int rowID, final long price, final String formattedPrice) {
