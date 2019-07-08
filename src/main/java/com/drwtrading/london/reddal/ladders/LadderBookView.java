@@ -357,10 +357,11 @@ public class LadderBookView implements ILadderBoard {
 
     @Override
     public void switchedTo() {
-        final String zoomLevel = getPref(HTML.ZOOM_LEVEL);
-        ladderModel.getBookPanel().setZoomLevel(Integer.valueOf(zoomLevel));
+        final int zoomLevel = Integer.valueOf(getPref(HTML.ZOOM_LEVEL));
+        ladderModel.getBookPanel().setZoomLevel(zoomLevel);
 
         ladderModel.setClass(HTML.LADDER_DIV, CSSClass.STACK_VIEW, false);
+        ladderModel.setClass(HTML.LADDER, CSSClass.ZOOMED_OUT, zoomLevel != 1);
 
         view.trading(isTrader, TAGS, filterUsableOrderTypes(ladderOptions.orderTypesLeft),
                 filterUsableOrderTypes(ladderOptions.orderTypesRight));
