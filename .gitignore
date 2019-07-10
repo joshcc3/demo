@@ -15,7 +15,8 @@ ffc_*log
 /logs/
 /out/
 /rake/
-/resources
+/resources/
+/scripts/
 /test-output/
 /tmp/
 /tmp-web-test/
