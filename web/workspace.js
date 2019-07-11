@@ -215,7 +215,7 @@ function toggleSets() {
 // -- utilities
 
 function parseHashcode() {
-	var hash = document.location.hash.substr(1);
+	var hash = document.location.hash.substr(1).replace(/%20/g, " ");
 	var symbols, locking, sets;
 	locking = hash.indexOf("!") != -1;
 	sets = hash.indexOf("*") != -1;
