@@ -47,8 +47,8 @@ class ShredderBookView {
     private final WorkingOrdersByID workingOrders;
 
     private final List<ShreddedOrder> shreddedOrders = new ArrayList<>();
-    EnumMap<CSSClass, Long> highlightSizes = new EnumMap<CSSClass, Long>(CSSClass.class);
-    int nextHighlightBump;
+    EnumMap<CSSClass, Long> highlightSizes = new EnumMap<>(CSSClass.class);
+    private int nextHighlightBump;
 
     private long centeredPrice = 0;
     private long topPrice = Long.MIN_VALUE;
@@ -163,7 +163,7 @@ class ShredderBookView {
     }
 
 
-    public void highlightSize(long size) {
+    void highlightSize(long size) {
         CSSClass firstEmpty = null;
         boolean found = false;
         for (int i = CSSClass.HIGHLIGHT_ORDER_0.ordinal(); i <= CSSClass.HIGHLIGHT_ORDER_5.ordinal(); i++) {

@@ -74,6 +74,7 @@ import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.NoMDSubscriptions;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.LadderSettings;
@@ -101,6 +102,9 @@ import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderServerRouter;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.ui.BulkOrderEntry;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.ui.msgs.GTCSupportedSymbol;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.LiquidityFinderViewUI;
@@ -418,6 +422,11 @@ public class Main {
             app.selectIO.addDelayedAction(1000, writer::flush);
         }
 
+        //        if (isFuturesSearchable) {
+        //        setupBulkOrderSubmitter(app.selectIO, selectIOFiber, webLog, webApp, channels.supportedGTCSymbols, channels.cmdsForNibblers,
+        //                channels.ladderClickTradingIssues);
+        //        }
+
         // Auto-puller
         final AutoPullPersistence persistence = new AutoPullPersistence(Paths.get("/site/drw/reddal/data/").resolve("autopull.json"));
         final AutoPullerUI autoPullerUI = new AutoPullerUI(persistence, channels.autoPullerCmds);
@@ -534,7 +543,8 @@ public class Main {
                                 nibblerParentMonitor.createChildResourceMonitor(sourceNibbler);
 
                         final LadderInfoListener ladderInfoListener =
-                                new LadderInfoListener(sourceNibbler, ladderPresenter, orderPresenter, shredderPresenter, autoPuller);
+                                new LadderInfoListener(sourceNibbler, ladderPresenter, orderPresenter, shredderPresenter, autoPuller,
+                                        channels.supportedGTCSymbols);
 
                         final NibblerClientHandler client =
                                 NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
@@ -685,7 +695,7 @@ public class Main {
                     updateClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10));
                     updateClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
                             new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT));
-                updateClient.handler(new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(
+                    updateClient.handler(new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(
                             Constants::NO_OP, channels.orderEntryFromServer, evt -> {
                         if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
                             final Update msg = (Update) evt.getMsg();
@@ -1427,4 +1437,17 @@ public class Main {
         return fxCalc;
     }
 
+    private static void setupBulkOrderSubmitter(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
+            final WebApplication webApp, final Channel<GTCSupportedSymbol> supportedSymbols,
+            final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher,
+            final Channel<LadderClickTradingIssue> ladderClickTradingIssues) {
+
+        final BulkOrderEntry bulkOrderUI = new BulkOrderEntry(webLog, remoteOrderCommandToServerPublisher, ladderClickTradingIssues);
+
+        webApp.alias("/bulkOrderEntry", "/bulkOrderEntry.html");
+        final TypedChannel<WebSocketControlMessage> webSocketChannel = TypedChannels.create(WebSocketControlMessage.class);
+        webApp.createWebSocket("/bulkOrderEntry/ws/", webSocketChannel, fiber);
+        webSocketChannel.subscribe(fiber, bulkOrderUI::webControl);
+        supportedSymbols.subscribe(fiber, bulkOrderUI::setGTCSupportedSymbol);
+    }
 }

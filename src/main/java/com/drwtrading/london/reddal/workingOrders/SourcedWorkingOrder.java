@@ -59,31 +59,34 @@ public class SourcedWorkingOrder {
 
     private static CSSClass getCSSClass(final WorkingOrder order) {
 
-        if (order.getAlgoType() == AlgoType.QUOTE) {
+        final AlgoType algoType = order.getAlgoType();
+        final OrderType orderType = order.getOrderType();
+
+        if (AlgoType.QUOTE == algoType) {
             return CSSClass.WORKING_ORDER_TYPE_QUOTE;
-        } else if (order.getOrderType() == OrderType.HIDDEN_LIMIT) {
+        } else if (OrderType.HIDDEN_LIMIT == orderType) {
             return CSSClass.WORKING_ORDER_TYPE_HIDDEN;
-        } else if (order.getOrderType() == OrderType.GTC) {
+        } else if (OrderType.GTC == orderType) {
             return CSSClass.WORKING_ORDER_TYPE_GTC;
-        } else if (order.getOrderType() == OrderType.DARK_PEGGED) {
+        } else if (OrderType.DARK_PEGGED == orderType) {
             return CSSClass.WORKING_ORDER_TYPE_DARK;
-        } else if (order.getAlgoType() == AlgoType.HAWK) {
+        } else if (AlgoType.HAWK == algoType) {
             return CSSClass.WORKING_ORDER_TYPE_HAWK;
-        } else if (order.getAlgoType() == AlgoType.TAKER) {
+        } else if (AlgoType.TAKER == algoType) {
             return CSSClass.WORKING_ORDER_TYPE_TAKER;
-        } else if (order.getOrderType() == OrderType.MKT_CLOSE) {
+        } else if (OrderType.MKT_CLOSE == orderType) {
             return CSSClass.WORKING_ORDER_TYPE_MKT_CLOSE;
-        } else if (order.getOrderType() == OrderType.MARKET) {
+        } else if (OrderType.MARKET == orderType) {
             return CSSClass.WORKING_ORDER_TYPE_MARKET;
-        } else if (order.getAlgoType() == AlgoType.MANUAL) {
+        } else if (AlgoType.MANUAL == algoType || AlgoType.THOR == algoType) {
             return CSSClass.WORKING_ORDER_TYPE_MANUAL;
-        } else if (order.getAlgoType() == AlgoType.HIDDEN_TICK_TAKER) {
+        } else if (AlgoType.HIDDEN_TICK_TAKER == algoType) {
             return CSSClass.WORKING_ORDER_TYPE_HIDDEN_TICKTAKER;
-        } else if (order.getAlgoType() == AlgoType.PICARD) {
+        } else if (AlgoType.PICARD == algoType) {
             return CSSClass.WORKING_ORDER_TYPE_QUICKDRAW;
         } else {
             throw new IllegalArgumentException(
-                    "Unknown CSSClass for [" + order.getSymbol() + "] for [" + order.getAlgoType() + "], [" + order.getOrderType() + "].");
+                    "Unknown CSSClass for [" + order.getSymbol() + "] for [" + algoType + "], [" + orderType + "].");
         }
     }
 

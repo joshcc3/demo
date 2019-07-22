@@ -22,6 +22,7 @@ import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.ui.msgs.GTCSupportedSymbol;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.pks.PKSExposures;
@@ -45,6 +46,7 @@ import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.mrphil.Position;
 import drw.london.json.Jsonable;
+import org.jetlang.channels.Channel;
 import org.jetlang.channels.Publisher;
 
 class ReddalChannels {
@@ -60,6 +62,7 @@ class ReddalChannels {
     final TypedChannel<Position> position;
     final TypedChannel<PKSExposures> pksExposures;
     final TypedChannel<NibblerTransportConnected> nibblerTransportConnected;
+    final Channel<GTCSupportedSymbol> supportedGTCSymbols;
     final TypedChannel<StatusStat> stats;
     final TypedChannel<IOrderCmd> cmdsForNibblers;
     final TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded;
@@ -119,6 +122,7 @@ class ReddalChannels {
         this.position = create(Position.class);
         this.pksExposures = TypedChannels.create(PKSExposures.class);
         this.nibblerTransportConnected = create(NibblerTransportConnected.class);
+        this.supportedGTCSymbols = create(GTCSupportedSymbol.class);
         this.stats = create(StatusStat.class);
         this.cmdsForNibblers = create(IOrderCmd.class);
         this.ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);

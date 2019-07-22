@@ -1,0 +1,88 @@
+<html>
+<head>
+	<title>Order Staging</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+	<link rel="stylesheet" type="text/css" href="bulkOrderEntry.css">
+	<script src="utils/jquery.js"></script>
+	<script src="js/websocket.js"></script>
+	<script src="js/websocket-ui.js"></script>
+	<script src="js/sound-files.js"></script>
+	<script src="js/sound-player.js"></script>
+	<script src="js/sounds.js"></script>
+	<script src="cell-functions.js"></script>
+	<script src="bulkOrderEntry.js"></script>
+</head>
+<body>
+
+<div id="background"></div>
+
+<div id="mainDiv">
+
+	<div id="header" class="fixedElement">
+
+		<div class="headerButton">
+			<button id="allStart" class="btn">▶▶▶</button>
+		</div>
+
+		<div class="headerButton">
+			<label>
+				Symbol:
+				<input id="symbolInput" type="text"/>
+			</label>
+
+			<label>
+				<select name="side" id="sideSelect" class="sideSelect" required>
+					<option value="BID" class="bid">BID</option>
+					<option value="ASK" class="ask">ASK</option>
+				</select>
+			</label>
+
+			<label>
+				Qty:
+				<input id="qty" class="symbolInput" type="number" step="1"
+				       onkeypress="return event.charCode >= 48 && event.charCode <= 57"/>
+			</label>
+
+			<button id="addOrder">Add Order</button>
+		</div>
+	</div>
+
+
+	<div id="orders">
+		<div id="errorMessages" class="hidden"></div>
+
+	</div>
+
+	<div class="template hidden orderRow">
+
+		<div class="symbol"></div>
+
+		<div>
+			<label>
+				<select name="side" class="sideSelect" required>
+					<option value="BID" class="bid">BID</option>
+					<option value="ASK" class="ask">ASK</option>
+				</select>
+			</label>
+		</div>
+
+		<div>
+			<label>
+				Price:
+				<input class="priceInput" type="number"/>
+			</label>
+		</div>
+
+		<div>
+			<label>
+				Qty:
+				<input class="qtyInput" type="number" step="1" onkeypress="return event.charCode >= 48 && event.charCode <= 57"/>
+			</label>
+		</div>
+
+		<button class="delete">-</button>
+	</div>
+</div>
+
+</body>
+</html>

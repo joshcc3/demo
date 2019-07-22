@@ -11,13 +11,16 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.Spreadnough
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TradableInstrument;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.reddal.autopull.autopuller.onMD.AutoPuller;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.orders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.shredders.ShredderPresenter;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.ui.msgs.GTCSupportedSymbol;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
+import org.jetlang.channels.Channel;
 
 public class LadderInfoListener implements INibblerTradingDataListener, INibblerTransportConnectionListener, INibblerBlotterListener {
 
@@ -27,16 +30,19 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     private final ShredderPresenter shredderPresenter;
     private final AutoPuller autoPuller;
 
+    private final Channel<GTCSupportedSymbol> supportedGTCSymbols;
+
     private final LongMap<SourcedWorkingOrder> sourcedWorkingOrder;
 
     public LadderInfoListener(final String sourceNibbler, final LadderPresenter ladderPresenter, final OrdersPresenter orderPresenter,
-            final ShredderPresenter shredderPresenter, final AutoPuller autoPuller) {
+            final ShredderPresenter shredderPresenter, final AutoPuller autoPuller, final Channel<GTCSupportedSymbol> supportedGTCSymbols) {
 
         this.sourceNibbler = sourceNibbler;
         this.ladderPresenter = ladderPresenter;
         this.orderPresenter = orderPresenter;
         this.shredderPresenter = shredderPresenter;
         this.autoPuller = autoPuller;
+        this.supportedGTCSymbols = supportedGTCSymbols;
 
         this.sourcedWorkingOrder = new LongMap<>();
     }
@@ -48,7 +54,13 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
 
     @Override
     public boolean addTradableInst(final TradableInstrument tradableInstrument) {
+
         ladderPresenter.addTradableInstrument(tradableInstrument);
+
+        if (tradableInstrument.getSupportedOrderTypes().contains(OrderType.GTC)) {
+            final GTCSupportedSymbol supportedSymbol = new GTCSupportedSymbol(tradableInstrument.getSymbol());
+            supportedGTCSymbols.publish(supportedSymbol);
+        }
         return true;
     }
 
