@@ -1,18 +1,19 @@
-var ws;
+let ws;
 
-var isSoundsOn = true;
-var checkCrossed = false;
+let isSoundsOn = true;
+let checkCrossed = false;
 
-var RUSSIA_SSF = /^(SR|SP|GZ|LK|RN|TT|MT|NK|VB|SG|HY|FS|UK|CH|TN|SN|GM|RT|ME|MN)([A-Z])([0-9])$/;
+const RUSSIA_SSF = /^(SR|SP|GZ|LK|RN|TT|MT|NK|VB|SG|HY|FS|UK|CH|TN|SN|GM|RT|ME|MN)([A-Z])([0-9])$/;
 
-var picards = {};
-var queued;
+const picards = {};
+let queued;
 
-var lastSound = new Date().getTime();
+let lastSound = new Date().getTime();
 
-var picardSound;
+let picardSound;
 let sortByValue = "opportunitySize";
 let displayThreshold = 2;
+let hideRfq = false;
 
 $(function () {
 	ws = connect();
@@ -49,7 +50,15 @@ $(function () {
 	$("#filterValue").change(() => {
 		displayThreshold = parseFloat($("#filterValue").val());
 		$(".picard").each((index, row) => {
-			$(row).toggleClass("hidden", $(row).data("opportunitySize") < displayThreshold);
+			let isPicardRow = $(row).hasClass("rfqPicard");
+			$(row).toggleClass("hidden", (isPicardRow && hideRfq) || $(row).data("opportunitySize") < displayThreshold);
+		});
+	});
+
+	$("#showRfq").change(() => {
+		hideRfq = !$("#showRfq").attr('checked');
+		$(".rfqPicard").each((index, row) => {
+			$(row).toggleClass("hidden", hideRfq || $(row).data("opportunitySize") < displayThreshold);
 		});
 	});
 
@@ -63,7 +72,7 @@ function setSound(filename) {
 
 function playSound() {
 
-	var now = new Date().getTime();
+	const now = new Date().getTime();
 	if (isSoundsOn && picardSound && 1000 < now - lastSound) {
 		lastSound = now;
 
@@ -86,8 +95,9 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 
 	if (!RUSSIA_SSF.test(symbol)) {
 
-		var key = toId(symbol);
-		var picard;
+		const key = toId(symbol);
+		let picard;
+		let isRfq = symbol.endsWith(" RFQ");
 
 		if (picards.hasOwnProperty(key)) {
 			picard = picards[key];
@@ -101,7 +111,7 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 				let priceText = picard.find('.price').text();
 				launchLadderAtPrice(symbol, priceText);
 				ws.send('recenter' + "," + symbol + ",\"" + Math.round(parseFloat(priceText) * 1e9) + "\"");
-				if (symbol.endsWith(" RFQ")) {
+				if (isRfq) {
 					let origSymbol = symbol.split(" ")[0];
 					let origSuffix = origSymbol.slice(origSymbol.length - 2, origSymbol.length);
 					let origPrefix = origSymbol.slice(0, origSymbol.length - 2);
@@ -118,17 +128,17 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			picard.remove();
 		} else {
 
-			let priceFloat = parseFloat(opportunitySize.replace(",", ""));
+			let opportunity = parseFloat(opportunitySize.replace(",", ""));
 			picard.attr('id', key);
 			picard.data('bps', parseFloat(bpsThrough));
-			picard.data('opportunitySize', priceFloat);
+			picard.data('opportunitySize', opportunity);
 			picard.find('.symbol').text(displaySymbol(symbol, listing));
 			picard.find('.bpsThrough').text(bpsThrough + ' bps');
 			picard.find('.price').text(price);
 			picard.find('.side').text(side);
 			picard.find('.opportunitySize').text(opportunitySize + " " + ccy);
-			picard.find('.description').text(description);
 
+			picard.find('.description').text(description);
 			picard.toggleClass("live", state === "LIVE");
 			picard.toggleClass("fade", state === "FADE");
 			picard.toggleClass("BID", !inAuction && side === "BID");
@@ -136,12 +146,13 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			picard.toggleClass("BID_AUCTION", inAuction && side === "BID");
 			picard.toggleClass("ASK_AUCTION", inAuction && side === "ASK");
 
+			picard.toggleClass("rfqPicard", isRfq);
 			if (isPlaySound) {
 				picard.toggleClass("toPlaySound", true);
-			}
 
-			let bigEnough = priceFloat > displayThreshold;
-			picard.toggleClass("hidden", !bigEnough);
+			}
+			let bigEnough = opportunity > displayThreshold;
+			picard.toggleClass("hidden", !bigEnough || (hideRfq && isRfq));
 			if (bigEnough) {
 				if (picard.hasClass("toPlaySound")) {
 					picard.removeClass("toPlaySound");
