@@ -87,6 +87,10 @@ td.description {
 	border: none;
 }
 
+#footer label {
+	color: #6e6e6e;
+}
+
 .fade {
 	opacity: 0.5;
 }
