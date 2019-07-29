@@ -46,6 +46,10 @@ function addOrder(symbol, side, qty) {
 	sideSelect.val(side);
 	qtyField.val(qty);
 
+	symbolField.bind('click', function () {
+		launchLadder(symbol);
+	});
+
 	deleteButton.unbind().bind("click", function () {
 		row.remove();
 	});

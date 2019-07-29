@@ -422,10 +422,10 @@ public class Main {
             app.selectIO.addDelayedAction(1000, writer::flush);
         }
 
-        //        if (isFuturesSearchable) {
-        //        setupBulkOrderSubmitter(app.selectIO, selectIOFiber, webLog, webApp, channels.supportedGTCSymbols, channels.cmdsForNibblers,
-        //                channels.ladderClickTradingIssues);
-        //        }
+        if (isFuturesSearchable) {
+            setupBulkOrderSubmitter(app.selectIO, selectIOFiber, webLog, webApp, channels.supportedGTCSymbols, channels.cmdsForNibblers,
+                    channels.ladderClickTradingIssues);
+        }
 
         // Auto-puller
         final AutoPullPersistence persistence = new AutoPullPersistence(Paths.get("/site/drw/reddal/data/").resolve("autopull.json"));

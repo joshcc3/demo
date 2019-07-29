@@ -39,6 +39,7 @@
 				$("#search").focus();
 			}, false);
 		});
+
 		function display(results, toomany) {
 			topResult = undefined;
 			$("#too_many").toggleClass("invisible", !toomany);
@@ -83,13 +84,13 @@
 
 				}
 				return symbolTemplate
-						.split("{{EXCHANGE}}").join(exchange)
-						.split("{{SYMBOL}}").join(symbol);
+					.split("{{EXCHANGE}}").join(exchange)
+					.split("{{SYMBOL}}").join(symbol);
 			}).join(",");
 
 			var link = linkTemplate
-					.split("{{SYMBOLS}}").join(symbolList)
-					.split("{{DATE}}").join(d.toISOString().split("T")[0]);
+				.split("{{SYMBOLS}}").join(symbolList)
+				.split("{{DATE}}").join(d.toISOString().split("T")[0]);
 
 			popUp(link, undefined, 1400, 1000);
 
