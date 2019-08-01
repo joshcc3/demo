@@ -110,7 +110,6 @@ public class LadderBookView implements ILadderBoard {
         PERSISTENT_PREFS.add(HTML.INP_RELOAD);
         PERSISTENT_PREFS.add(HTML.ORDER_TYPE_LEFT);
         PERSISTENT_PREFS.add(HTML.ORDER_TYPE_RIGHT);
-        PERSISTENT_PREFS.add(HTML.RANDOM_RELOAD_CHECK);
         PERSISTENT_PREFS.add(HTML.ZOOM_LEVEL);
         NON_DISPLAY_PREFS.add(HTML.ZOOM_LEVEL);
     }
@@ -219,7 +218,6 @@ public class LadderBookView implements ILadderBoard {
         }
         this.defaultPrefs.put(HTML.ORDER_TYPE_LEFT, "HAWK");
         this.defaultPrefs.put(HTML.ORDER_TYPE_RIGHT, "MANUAL");
-        this.defaultPrefs.put(HTML.RANDOM_RELOAD_CHECK, "true");
         this.defaultPrefs.put(HTML.ZOOM_LEVEL, "1");
 
         this.ladderClickTradingIssuesPublisher = ladderClickTradingIssuesPublisher;
@@ -1373,16 +1371,9 @@ public class LadderBookView implements ILadderBoard {
                 }
             }
 
-            final boolean randomReload = "true".equals(getPref(HTML.RANDOM_RELOAD_CHECK));
-            final int reloadBoxQty = Integer.valueOf(getPref(HTML.INP_RELOAD));
-
-            if (randomReload) {
-                clickTradingBoxQty = Math.max(0, reloadBoxQty - (int) (Math.random() * ladderOptions.randomReloadFraction * reloadBoxQty));
-                recalcFee();
-            } else {
-                clickTradingBoxQty = Math.max(0, reloadBoxQty);
-                recalcFee();
-            }
+            final int reloadBoxQty = Integer.parseInt(getPref(HTML.INP_RELOAD));
+            clickTradingBoxQty = Math.max(0, reloadBoxQty);
+            recalcFee();
         }
     }
 
@@ -1633,8 +1624,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private static <T> Map.Entry<Long, T> iterate(final ITickTable tickTable, final long rowPrice, final int zoomLevel, final BookSide side,
-            Map.Entry<Long, T> entry, final Iterator<Map.Entry<Long, T>> it,
-            final Consumer<T> accumulator) {
+            Map.Entry<Long, T> entry, final Iterator<Map.Entry<Long, T>> it, final Consumer<T> accumulator) {
         while (it.hasNext() || entry != null) {
             if (entry != null) {
                 final int comparison = Long.compare(tickTable.roundAwayToTick(side, entry.getKey(), zoomLevel), rowPrice);

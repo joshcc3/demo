@@ -9,7 +9,7 @@ $(function () {
 	};
 	const hash = document.location.hash.substr(1);
 	let arguments = hash.split(",");
-	const symbol = arguments[0];
+	symbol = arguments[0];
 	const price = arguments[1];
 	const bidPrice = arguments[2];
 	const askPrice = arguments[3];

@@ -63,7 +63,6 @@ public final class HTML {
     public static final String ORDER_TYPE_RIGHT = "order_type_right";
     public static final String BUTTONS = "button";
     public static final String RANDOM_RELOAD = "random_reload";
-    public static final String RANDOM_RELOAD_CHECK = "chk_random_reload";
     /* Divs*/
     public static final String CLICK_TRADING_ISSUES = "click_trading_issues";
     public static final String DESK_POSITION = "desk_position";

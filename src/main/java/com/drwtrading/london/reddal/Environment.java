@@ -64,14 +64,13 @@ public class Environment {
         final Collection<CSSClass> leftClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesLeft");
         final Collection<CSSClass> rightClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesRight");
         final Collection<String> traders = tradingGroup.getParam("traders").getSet(Pattern.compile(","));
-        final double reloadFraction = tradingGroup.getDouble("randomReloadFraction");
         final String basketURL;
         if (tradingGroup.paramExists("basketUrl")) {
             basketURL = tradingGroup.getString("basketUrl");
         } else {
             basketURL = null;
         }
-        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, reloadFraction, basketURL);
+        return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, basketURL);
     }
 
     private static Collection<CSSClass> getClickOrderTypes(final ConfigGroup config, final String groupName) throws ConfigException {
