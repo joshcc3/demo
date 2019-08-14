@@ -13,6 +13,7 @@ public class Mathematics {
 
     static {
         TO_EUR_RATES.put(CCY.EUR, 1.0);
+        TO_EUR_RATES.put(CCY.CAD, 0.6742);
         TO_EUR_RATES.put(CCY.CHF, 0.809946);
         TO_EUR_RATES.put(CCY.CZK, 0.036515);
         TO_EUR_RATES.put(CCY.DKK, 0.134013);
