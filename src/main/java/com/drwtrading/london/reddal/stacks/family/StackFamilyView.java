@@ -838,7 +838,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                 configClient.quoteConfigUpdated(SOURCE_UI, toConfig.configGroupID, quoteConfig.getMaxBookAgeMillis(),
                         quoteConfig.isAuctionQuotingEnabled(), quoteConfig.isOnlyAuctionQuoting(),
                         quoteConfig.getAuctionTheoMaxBPSThrough(), quoteConfig.isAllowEmptyBook(), quoteConfig.getMaxJumpBPS(),
-                        quoteConfig.getBettermentQty(), quoteConfig.getBettermentTicks());
+                        quoteConfig.getBettermentQty(), quoteConfig.isBettermentOppositeSide(), quoteConfig.getBettermentTicks());
 
                 final StackFXConfig fxConfig = fromConfig.fxConfig;
                 configClient.fxConfigUpdated(SOURCE_UI, toConfig.configGroupID, fxConfig.getMaxBookAgeMillis(), fxConfig.getMaxJumpBPS());

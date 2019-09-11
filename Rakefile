@@ -43,7 +43,7 @@ task :run => [:dist] do
 end
 
 file JAR => FileList['src/main/java/**/*.java'] do |task|
-  build_java_jar :src=>task.prerequisites, :dest=>task.name, :fig_config=>'build', :repo_info => 'none'
+  build_java_jar :src=>task.prerequisites, :dest=>task.name, :fig_config=>'test', :repo_info => 'none'
 end
 
 file TEST_JAR => FileList[JAR, 'src/test/java/**/*.java'] do |task|
