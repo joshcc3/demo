@@ -838,7 +838,8 @@ public class StackFamilyView implements IStackRelationshipListener {
                 configClient.quoteConfigUpdated(SOURCE_UI, toConfig.configGroupID, quoteConfig.getMaxBookAgeMillis(),
                         quoteConfig.isAuctionQuotingEnabled(), quoteConfig.isOnlyAuctionQuoting(),
                         quoteConfig.getAuctionTheoMaxBPSThrough(), quoteConfig.isAllowEmptyBook(), quoteConfig.getMaxJumpBPS(),
-                        quoteConfig.getBettermentQty(), quoteConfig.isBettermentOppositeSide(), quoteConfig.getBettermentTicks());
+                        quoteConfig.getBettermentQty(), quoteConfig.getBettermentTicks(), quoteConfig.isBettermentOppositeSide(),
+                        quoteConfig.getOppositeSideBettermentTicks());
 
                 final StackFXConfig fxConfig = fromConfig.fxConfig;
                 configClient.fxConfigUpdated(SOURCE_UI, toConfig.configGroupID, fxConfig.getMaxBookAgeMillis(), fxConfig.getMaxJumpBPS());
@@ -1009,7 +1010,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                         final List<String> childSymbols =
                                 children.keySet().stream().filter(childData::containsKey).collect(Collectors.toList());
 
-                        boolean familyMatchesDefaults = true;
+                        boolean isFamilyMatchesDefaults = true;
 
                         for (final String childSymbol : childSymbols) {
                             final StackUIRelationship childData = children.get(childSymbol);
@@ -1017,11 +1018,11 @@ public class StackFamilyView implements IStackRelationshipListener {
                             final double bidOffset = Math.abs(childData.bidPriceOffsetBPS);
                             final double askOffset = childData.askPriceOffsetBPS;
                             if (bidOffset != offset || askOffset != offset) {
-                                familyMatchesDefaults = false;
+                                isFamilyMatchesDefaults = false;
                             }
                         }
 
-                        if (skipNonDefaults && !familyMatchesDefaults) {
+                        if (skipNonDefaults && !isFamilyMatchesDefaults) {
                             continue;
                         }
 
