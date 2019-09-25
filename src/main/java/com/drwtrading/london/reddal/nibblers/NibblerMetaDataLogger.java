@@ -154,16 +154,6 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         return true;
     }
 
-    @Override
-    public boolean addQuotingState(final QuotingState quotingState) {
-        return true;
-    }
-
-    @Override
-    public boolean updateQuotingState(final QuotingState quotingState) {
-        return true;
-    }
-
     private void writeSpreadnoughtTheoRow(final SpreadnoughtTheo theo) {
 
         final long millis = millisAtMidnight + theo.getNanoSinceMidnightUTC() / DateTimeUtil.NANOS_IN_MILLIS;
@@ -183,6 +173,16 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         } catch (final IOException e) {
             monitor.logError(ReddalComponents.META_DATA_LOG, "Failed to write spreadnought theo row.", e);
         }
+    }
+
+    @Override
+    public boolean addQuotingState(final QuotingState quotingState) {
+        return true;
+    }
+
+    @Override
+    public boolean updateQuotingState(final QuotingState quotingState) {
+        return true;
     }
 
     @Override

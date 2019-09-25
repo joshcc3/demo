@@ -183,9 +183,11 @@ public class StackConfigPresenter {
         if (null != configClient) {
             final long configGroupID = Long.parseLong(configGroupIDStr);
 
+            final int negativeQuoteOppositeSideTicks = -Math.abs(quoteOppositeSideBettermentTicks);
+
             configClient.quoteConfigUpdated(SOURCE, configGroupID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
                     quoteAuctionTheoMaxBPSThrough, isAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks,
-                    quoteIsBettermentOppositeSide, quoteOppositeSideBettermentTicks);
+                    quoteIsBettermentOppositeSide, negativeQuoteOppositeSideTicks);
             configClient.fxConfigUpdated(SOURCE, configGroupID, fxMaxBookAgeMillis, fxMaxJumpBPS);
             configClient.leanConfigUpdated(SOURCE, configGroupID, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty,
                     (byte) leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustment);
