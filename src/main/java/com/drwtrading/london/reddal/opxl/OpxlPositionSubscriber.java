@@ -37,27 +37,18 @@ public class OpxlPositionSubscriber extends AOpxlReader<OPXLComponents, OPXLDesk
 
         final Map<String, Long> positions = new HashMap<>(opxlTable.length);
         final List<Object[]> failedRows = new LinkedList<>();
-        for (final Object[] data : opxlTable) {
 
+        for (int i = 1; i < opxlTable.length; ++i) {
+
+            final Object[] data = opxlTable[i];
             try {
-                if (2 == data.length) {
 
-                    final String symbol = data[0].toString();
-                    final String position = data[1].toString();
+                final String symbol = data[0].toString();
+                final String position = data[1].toString();
 
-                    if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(position)) {
-                        final long pos = Long.parseLong(position);
-                        positions.put(symbol, pos);
-                    }
-                } else if (3 == data.length) {
-
-                    final String symbol = data[1].toString();
-                    final String position = data[2].toString();
-
-                    if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(position)) {
-                        final long pos = Long.parseLong(position);
-                        positions.put(symbol.toUpperCase(), pos);
-                    }
+                if (!Strings.isNullOrEmpty(symbol) && !Strings.isNullOrEmpty(position)) {
+                    final long pos = Long.parseLong(position);
+                    positions.put(symbol, pos);
                 }
             } catch (final Throwable throwable) {
                 failedRows.add(data);
