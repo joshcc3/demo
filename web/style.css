@@ -515,7 +515,7 @@ div {
 
 #text {
 	position: relative;
-	height: 42px;
+	height: 56px;
 	border-right: solid 1px gray;
 	text-wrap: none;
 	width: 201px;
@@ -606,6 +606,32 @@ div {
 	left: 160px;
 	top: 28px;
 }
+
+#text_r4c1 {
+	left: 0;
+	top: 42px;
+}
+
+#text_r4c2 {
+	left: 40px;
+	top: 42px;
+}
+
+#text_r4c3 {
+	left: 80px;
+	top: 42px;
+}
+
+#text_r4c4 {
+	left: 120px;
+	top: 42px;
+}
+
+#text_r4c5 {
+	left: 160px;
+	top: 42px;
+}
+
 
 .text_cell_execution {
 	position: absolute;

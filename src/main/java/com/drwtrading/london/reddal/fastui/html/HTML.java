@@ -19,16 +19,24 @@ public final class HTML {
     public static final String ASK_BEST_OFFSET_BPS = "ask_best_offset_bps";
     public static final String TEXT_PREFIX = "text_";
 
-    public static final String R1C1 = "r1c1";
+    static final String R1C1 = "r1c1";
     public static final String R1C2 = "r1c2";
     public static final String R1C3 = "r1c3";
     public static final String R1C4 = "r1c4";
-    public static final String R2C1 = "r2c1";
-    public static final String R2C3 = "r2c3";
-    public static final String R2C5 = "r2c5";
-    public static final String R3C2 = "r3c2";
-    public static final String R3C3 = "r3c3";
-    public static final String R3C4 = "r3c4";
+
+    static final String R2C1 = "r2c1";
+    static final String R2C3 = "r2c3";
+    static final String R2C5 = "r2c5";
+
+    static final String R3C2 = "r3c2";
+    static final String R3C3 = "r3c3";
+    static final String R3C4 = "r3c4";
+
+    static final String R4C1 = "r3c1";
+    static final String R4C2 = "r3c2";
+    static final String R4C3 = "r3c3";
+    static final String R4C4 = "r3c4";
+    static final String R4C5 = "r3c5";
 
     public static final String STACK_BID_QUOTE = "bid_quote_";
     public static final String STACK_BID_PICARD = "bid_picard_";

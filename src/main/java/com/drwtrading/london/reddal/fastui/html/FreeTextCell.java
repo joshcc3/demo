@@ -16,7 +16,13 @@ public enum FreeTextCell {
 
     R3C2(HTML.R3C2),
     R3C3(HTML.R3C3),
-    R3C4(HTML.R3C4);
+    R3C4(HTML.R3C4),
+
+    R4C1(HTML.R4C1),
+    R4C2(HTML.R4C2),
+    R4C3(HTML.R4C3),
+    R4C4(HTML.R4C4),
+    R4C5(HTML.R4C5);
 
     private final String cellID;
     public final String htmlID;
