@@ -75,7 +75,7 @@ public class HeaderPanel {
 
         if (!description.equals(this.description)) {
             this.description = description;
-            ui.tooltip('#' + HTML.SYMBOL, description);
+            ui.tooltip(HTML.SYMBOL, description);
         }
     }
 
@@ -119,6 +119,10 @@ public class HeaderPanel {
 
     public void setFreeText(final FreeTextCell cell, final String text) {
         ui.txt(cell.htmlID, text);
+    }
+
+    public void setCellDescription(final FreeTextCell cell, final String description) {
+        ui.tooltip(cell.htmlID, description);
     }
 
     public void setTheoValue(final TheoValue theoValue) {

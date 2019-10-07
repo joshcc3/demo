@@ -147,15 +147,15 @@ public class LeftHandPanel {
             this.bpsTooltip = bpsTooltip;
             if (0 < bpsTooltip) {
                 final String bps = twoDP.format(bpsTooltip) + "bps";
-                ui.tooltip('#' + HTML.BUY_OFFSET_UP, bps);
-                ui.tooltip('#' + HTML.SELL_OFFSET_UP, bps);
-                ui.tooltip('#' + HTML.BUY_OFFSET_DOWN, '-' + bps);
-                ui.tooltip('#' + HTML.SELL_OFFSET_DOWN, '-' + bps);
+                ui.tooltip(HTML.BUY_OFFSET_UP, bps);
+                ui.tooltip(HTML.SELL_OFFSET_UP, bps);
+                ui.tooltip(HTML.BUY_OFFSET_DOWN, '-' + bps);
+                ui.tooltip(HTML.SELL_OFFSET_DOWN, '-' + bps);
             } else {
-                ui.tooltip('#' + HTML.BUY_OFFSET_UP, "");
-                ui.tooltip('#' + HTML.SELL_OFFSET_UP, "");
-                ui.tooltip('#' + HTML.BUY_OFFSET_DOWN, "");
-                ui.tooltip('#' + HTML.SELL_OFFSET_DOWN, "");
+                ui.tooltip(HTML.BUY_OFFSET_UP, "");
+                ui.tooltip(HTML.SELL_OFFSET_UP, "");
+                ui.tooltip(HTML.BUY_OFFSET_DOWN, "");
+                ui.tooltip(HTML.SELL_OFFSET_DOWN, "");
             }
         }
     }
@@ -193,7 +193,7 @@ public class LeftHandPanel {
 
     public void setClickTradingQty(final long qty, final String fee) {
         ui.txt(HTML.INP_QTY, qty);
-        ui.tooltip('#' + HTML.INP_QTY, fee);
+        ui.tooltip(HTML.INP_QTY, fee);
     }
 
     public void setClickTradingPreference(final String prefKey, final String prefValue) {

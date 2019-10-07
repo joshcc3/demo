@@ -127,13 +127,6 @@ public class UiPipeImpl {
         }
     }
 
-    private static void appendCmd(final StringBuilder cmdSB, final ICmdAppender cmdAppender) {
-
-        if (cmdAppender.appendCommand(cmdSB, DATA_SEPARATOR)) {
-            cmdSB.append(CMD_SEPARATOR);
-        }
-    }
-
     public void setHandler(final UiEventHandler eventHandler) {
         this.inboundHandler = eventHandler;
     }
@@ -162,6 +155,13 @@ public class UiPipeImpl {
 
     public void send(final String cmd) {
         pipe.publish(new WebSocketOutboundData(cmd));
+    }
+
+    private static void appendCmd(final StringBuilder cmdSB, final ICmdAppender cmdAppender) {
+
+        if (cmdAppender.appendCommand(cmdSB, DATA_SEPARATOR)) {
+            cmdSB.append(CMD_SEPARATOR);
+        }
     }
 
     public static String cmd(final StringBuilder sb, final Object... args) {

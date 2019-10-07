@@ -20,6 +20,7 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
     private static final int CELL_COL = 1;
     private static final int VALUE_COL = 2;
     private static final int COLOUR_COL = 3;
+    private static final int DESCRIPTION_COL = 4;
 
     private static final int MAX_LENGTH_OF_TEXT = 6;
 
@@ -54,6 +55,7 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
                 final String symbol = data[SYMBOL_COL].toString();
                 final String cell = data[CELL_COL].toString();
                 final String value = data[VALUE_COL].toString().trim();
+                final String description = data[DESCRIPTION_COL].toString().trim();
 
                 if (cell.startsWith("laser")) {
 
@@ -75,7 +77,7 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
                             text = value;
                         }
 
-                        final OpxlLadderText ladderText = new OpxlLadderText(symbol, freeTextCell, text);
+                        final OpxlLadderText ladderText = new OpxlLadderText(symbol, freeTextCell, text, description);
                         ladderTexts.add(ladderText);
                     }
                 }

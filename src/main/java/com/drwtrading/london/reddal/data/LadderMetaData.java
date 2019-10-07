@@ -18,6 +18,7 @@ public class LadderMetaData {
     public String displaySymbol;
 
     public final Map<FreeTextCell, String> freeTextCells;
+    public final Map<FreeTextCell, String> freeTextDescription;
 
     public long deskPosition;
     public String formattedDeskPosition;
@@ -49,6 +50,7 @@ public class LadderMetaData {
         this.pksPosition = null;
 
         this.freeTextCells = new EnumMap<>(FreeTextCell.class);
+        this.freeTextDescription = new EnumMap<>(FreeTextCell.class);
     }
 
     public void onLadderText(final LadderText ladderText) {
@@ -61,6 +63,7 @@ public class LadderMetaData {
 
     public void setLadderText(final OpxlLadderText ladderText) {
         this.freeTextCells.put(ladderText.cell, ladderText.text);
+        this.freeTextDescription.put(ladderText.cell, ladderText.description);
     }
 
     public void setDeskPosition(final DecimalFormat formatter, final long position) {

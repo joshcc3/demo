@@ -214,7 +214,7 @@ const Handler = function (ws) {
 		for (let i = 1; i < args.length - 1; i += 2) {
 			const elementID = args[i];
 			const tooltip = args[i + 1];
-			$(elementID).attr("title", tooltip);
+			q(elementID).setAttribute("title", tooltip);
 		}
 	};
 
