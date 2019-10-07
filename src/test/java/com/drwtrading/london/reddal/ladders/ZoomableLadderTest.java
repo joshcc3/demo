@@ -13,7 +13,6 @@ import com.drwtrading.london.eeif.utils.marketData.book.impl.levelThree.Level3Bo
 import com.drwtrading.london.eeif.utils.marketData.book.ticks.ITickTable;
 import com.drwtrading.london.eeif.utils.marketData.book.ticks.SingleBandTickTable;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
-import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.main.L3Out;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
@@ -103,6 +102,7 @@ public class ZoomableLadderTest {
     @SuppressWarnings("unchecked")
     private final Publisher<Jsonable> trace = Mockito.mock(Publisher.class);
 
+    private final IBookLevelThreeMonitor bookViewer = Mockito.mock(IBookLevelThreeMonitor.class);
     private final ILadderUI view = Mockito.mock(ILadderUI.class);
     private final LadderPrefsForSymbolUser ladderPrefsForSymbolUser = Mockito.mock(LadderPrefsForSymbolUser.class);
     private final SymbolStackData stackData = Mockito.mock(SymbolStackData.class);
@@ -118,14 +118,13 @@ public class ZoomableLadderTest {
     private final LadderMetaData metaData = new LadderMetaData("");
     private final LadderOptions ladderOptions =
             new LadderOptions(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), "");
-    private final IBookLevelThreeMonitor bookViewer = new L3Out();
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap = new HashMap<>();
 
     @BeforeMethod
     public void setup() {
 
         Mockito.reset(monitor, ladderClickTradingIssuePublisher, remoteOrderCommandPublisher, eeifCommandToServer, stackParentCmdPublisher,
-                increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, view, ladderPrefsForSymbolUser, stackData, uiPipe);
+                increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, view, ladderPrefsForSymbolUser, stackData, uiPipe, bookViewer);
 
         Mockito.when(stackData.getNavLaserLine()).thenReturn(LAZORS.get(LaserLineType.NAV));
         Mockito.when(stackData.getTheoLaserLine()).thenReturn(LAZORS.get(LaserLineType.GREEN));
