@@ -466,7 +466,9 @@ public class LadderView implements UiEventHandler {
                 headerPanel.setFreeText(cell, text);
 
                 final String cellDescription = metaData.freeTextDescription.get(cell);
-                headerPanel.setCellDescription(cell, cellDescription);
+                if (cellDescription != null) {
+                    headerPanel.setCellDescription(cell, cellDescription);
+                }
             }
 
             headerPanel.setBestBidOffsetBPS(stackData.getBidTopOrderOffsetBPS());
