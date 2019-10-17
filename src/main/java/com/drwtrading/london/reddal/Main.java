@@ -231,6 +231,7 @@ public class Main {
     private static final Pattern PARENT_STACK_SUFFIX = Pattern.compile(";S", Pattern.LITERAL);
 
     private static final String INDY_SERVER_GROUP = "indyServer";
+    private static final String EEIF_OE = "eeifoe";
 
     public static void main(final String[] args) throws Exception {
 
@@ -660,7 +661,7 @@ public class Main {
 
         // EEIF-OE
         {
-            final Collection<String> oeList = environment.getList(Environment.EEIF_OE);
+            final Collection<String> oeList = environment.getList(EEIF_OE);
             for (final String server : oeList) {
 
                 final ConfigGroup eeifOEGroup = root.getGroup("eeifoe");
@@ -669,7 +670,7 @@ public class Main {
                         new OrderEntryClient(instanceName, new SystemClock(), server, fibers.remoteOrders.getFiber(),
                                 channels.orderEntrySymbols, channels.ladderClickTradingIssues);
 
-                final HostAndNic command = environment.getHostAndNic(Environment.EEIF_OE + "Command", server);
+                final HostAndNic command = environment.getHostAndNic(EEIF_OE + "Command", server);
                 if (command != null) {
                     final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
                             OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
@@ -685,7 +686,7 @@ public class Main {
                     System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
                 }
 
-                final HostAndNic update = environment.getHostAndNic(Environment.EEIF_OE + "Update", server);
+                final HostAndNic update = environment.getHostAndNic(EEIF_OE + "Update", server);
                 if (update != null) {
                     final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
                             OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
@@ -753,16 +754,14 @@ public class Main {
         }
 
         // Indy
-        {
-            final ConfigGroup indyConfig = root.getGroup("indy");
-            final IIndyCacheListener indyListener = new IndyClient(channels.instDefs, channels.symbolDescs);
-            final String indyUsername = indyConfig.getString("username");
-            final IResourceMonitor<IndyTransportComponents> indyMonitor =
-                    new ExpandedDetailResourceMonitor<>(monitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
-            final TransportTCPKeepAliveConnection<?, ?> indyConnection =
-                    IndyCacheFactory.createClient(app.selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
-            app.selectIO.execute(indyConnection::restart);
-        }
+        final ConfigGroup indyConfig = root.getGroup("indy");
+        final IIndyCacheListener indyListener = new IndyClient(channels.instDefs, channels.symbolDescs);
+        final String indyUsername = indyConfig.getString("username");
+        final IResourceMonitor<IndyTransportComponents> indyMonitor =
+                new ExpandedDetailResourceMonitor<>(monitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
+        final TransportTCPKeepAliveConnection<?, ?> indyConnection =
+                IndyCacheFactory.createClient(app.selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
+        app.selectIO.execute(indyConnection::restart);
 
         setupYodaSignals(app.selectIO, monitor, errorLog, root, app.appName, channels.stockAlerts, channels.yodaPicardRows);
         setupSignals(app, channels.yodaPicardRows, channels.stockAlerts);

@@ -18,7 +18,6 @@ import java.util.regex.Pattern;
 
 public class Environment {
 
-    public static final String EEIF_OE = "eeifoe";
     public static final String METADATA = "metadata";
 
     private final ConfigGroup config;
