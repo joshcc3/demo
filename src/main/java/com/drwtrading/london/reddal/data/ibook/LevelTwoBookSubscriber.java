@@ -166,6 +166,10 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
     @Override
     public void clearBook(final IBook<IBookLevel> book) {
 
+        final MDForSymbol mdForSymbol = mdForSymbols.get(book.getSymbol());
+        if (null != mdForSymbol) {
+            mdForSymbol.unsubscribed();
+        }
         dirtyBooks.put(book.getLocalID(), book);
     }
 
@@ -212,6 +216,13 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
             }
         }
         dirtyBooks.clear();
+    }
+
+    void closed() {
+
+        for (final MDForSymbol mdForSymbol : mdForSymbols.values()) {
+            mdForSymbol.unsubscribed();
+        }
     }
 
     @Override

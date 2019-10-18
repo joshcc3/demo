@@ -74,6 +74,7 @@ import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.NoMDSubscriptions;
+import com.drwtrading.london.reddal.data.ibook.ReddalMDTransportClient;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
@@ -856,8 +857,8 @@ public class Main {
                         ReddalComponents.MD_TRANSPORT);
 
         final MDTransportClient mdClient =
-                MDTransportClientFactory.createDepthClient(displaySelectIO, mdClientMonitor, mdSource, localAppName, l3BookHandler,
-                        l2BookHandler, MD_SERVER_TIMEOUT, true);
+                new ReddalMDTransportClient(displaySelectIO, mdClientMonitor, mdSource, localAppName, l3BookHandler, l2BookHandler,
+                        MD_SERVER_TIMEOUT, true);
         l3BookHandler.setMDClient(mdSource, mdClient);
         l2BookHandler.setMDClient(mdSource, mdClient);
 

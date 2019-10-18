@@ -160,11 +160,11 @@ public class MDForSymbol {
         return level3Book;
     }
 
-    public void trade(final long price, final long qty) {
+    void trade(final long price, final long qty) {
         tradeTracker.addTrade(price, qty);
     }
 
-    public void bookUpdated() {
+    void bookUpdated() {
 
         for (int i = 0; i < bookUpdateCallbacks.size(); ++i) {
             final IMDCallback callback = bookUpdateCallbacks.get(i);
@@ -172,7 +172,7 @@ public class MDForSymbol {
         }
     }
 
-    public void unsubscribed() {
+    void unsubscribed() {
         tradeTracker.clear();
     }
 }
