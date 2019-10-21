@@ -773,26 +773,29 @@ public class StackFamilyView implements IStackRelationshipListener {
                 final String frontMonthSymbol = expiryCalc.getFutureCode(future, 0);
                 final StackFamilyChildRow frontMonthData = childData.get(frontMonthSymbol);
 
-                final String backMonthSymbol = expiryCalc.getFutureCode(future, 1);
-                final SearchResult backMonthSearchResult = searchResults.get(backMonthSymbol);
-                final StackFamilyChildRow backMonthData = childData.get(backMonthSymbol);
+                for (int i = 1; i < 3; ++i) {
 
-                if (null != frontMonthData && null == backMonthData && null != backMonthSearchResult) {
+                    final String backMonthSymbol = expiryCalc.getFutureCode(future, i);
+                    final SearchResult backMonthSearchResult = searchResults.get(backMonthSymbol);
+                    final StackFamilyChildRow backMonthData = childData.get(backMonthSymbol);
 
-                    final StackClientHandler strategyClient = nibblerClients.get(frontMonthData.getSource());
+                    if (null != frontMonthData && null == backMonthData && null != backMonthSearchResult) {
 
-                    if (null != strategyClient) {
+                        final StackClientHandler strategyClient = nibblerClients.get(frontMonthData.getSource());
 
-                        final String additiveSymbol;
-                        if (frontMonthData.getAdditiveSymbol().equals(frontMonthData.getSymbol())) {
-                            additiveSymbol = backMonthSymbol;
-                        } else {
-                            additiveSymbol = frontMonthData.getAdditiveSymbol();
+                        if (null != strategyClient) {
+
+                            final String additiveSymbol;
+                            if (frontMonthData.getAdditiveSymbol().equals(frontMonthData.getSymbol())) {
+                                additiveSymbol = backMonthSymbol;
+                            } else {
+                                additiveSymbol = frontMonthData.getAdditiveSymbol();
+                            }
+
+                            strategyClient.createStrategy(backMonthSymbol, backMonthSearchResult.instID, InstType.INDEX, backMonthSymbol,
+                                    backMonthSearchResult.instID, additiveSymbol);
+                            strategyClient.batchComplete();
                         }
-
-                        strategyClient.createStrategy(backMonthSymbol, backMonthSearchResult.instID, InstType.INDEX, backMonthSymbol,
-                                backMonthSearchResult.instID, additiveSymbol);
-                        strategyClient.batchComplete();
                     }
                 }
             }
@@ -806,9 +809,12 @@ public class StackFamilyView implements IStackRelationshipListener {
             if (expiryPeriod == future.expiryPeriod) {
 
                 final String fromSymbol = expiryCalc.getFutureCode(future, 0);
-                final String toSymbol = expiryCalc.getFutureCode(future, 1);
 
-                copyChildSetup(fromSymbol, toSymbol, null);
+                for (int i = 1; i < 3; ++i) {
+
+                    final String toSymbol = expiryCalc.getFutureCode(future, i);
+                    copyChildSetup(fromSymbol, toSymbol, null);
+                }
             }
         }
     }
