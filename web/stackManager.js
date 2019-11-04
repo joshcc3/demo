@@ -429,7 +429,6 @@ function setCreateFamilyRow(symbol, isFamilyExists, familyName) {
 	familyNameInput.toggleClass("childAvailable", isFamilyExists);
 
 	const familyNameFeedback = $("#foundFamilyName");
-	console.log(isFamilyExists, familyName, familyNameFeedback);
 	familyNameFeedback.text(familyName);
 }
 
@@ -678,10 +677,21 @@ function addFamily(familyName, isAsylum) {
 
 function tableComparator(a, b) {
 
-	const aSymbol = a.find(".familyDetails .familyName").text();
-	const bSymbol = b.find(".familyDetails .familyName").text();
+	const aIsAsylum = a.hasClass("isAsylum");
+	const bIsAsylum = b.hasClass("isAsylum");
 
-	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
+	if (aIsAsylum === bIsAsylum) {
+
+		const aSymbol = a.find(".familyDetails .familyName").text();
+		const bSymbol = b.find(".familyDetails .familyName").text();
+
+		return aSymbol < bSymbol ? -1 : aSymbol === bSymbol ? 0 : 1;
+
+	} else if (aIsAsylum){
+		return -1;
+	} else {
+		return 1;
+	}
 }
 
 function globalStackEnableStackChange(side, stack) {
