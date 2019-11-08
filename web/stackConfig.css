@@ -1,4 +1,8 @@
 
+.configButton {
+	width: 75px;
+}
+
 #stickyHeader:not(.sticky) {
 	display: none;
 }

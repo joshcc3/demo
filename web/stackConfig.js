@@ -46,6 +46,10 @@ $(function () {
 			input.parent().removeClass("notPersisted");
 		});
 	});
+
+	$("#setRFQConfig").click(function () {
+		setAllRFQConfig();
+	});
 });
 
 function removeAll(nibblerName) {
@@ -78,7 +82,8 @@ function selectedConfigTypeChanged() {
 }
 
 function filterRowByConfigType(row, selectedConfigType) {
-	row.toggleClass("filtered", STICKY_HEADER_ID != row.attr("ID") && NO_FILTER != selectedConfigType && row.attr("configType") != selectedConfigType);
+	row.toggleClass("filtered",
+		STICKY_HEADER_ID != row.attr("ID") && NO_FILTER != selectedConfigType && row.attr("configType") != selectedConfigType);
 }
 
 function setupCopyToAllRows(i, input) {
@@ -145,17 +150,30 @@ function addConfigTypeOption(configTypeCombo, configType) {
 	configTypeCombo.append(option);
 }
 
+function setAllRFQConfig() {
+
+	const massControlRow = $("#massControlALL");
+
+	setRowDetails(massControlRow,
+		86400000, true, true, 3000, true, 50, 0, 0, false, 0,
+		500, 50,
+		500, 50, 1, 3, 1,
+		0, false, 0, 0, 0,
+		1, 10000000, 1, 0, 100, 1, false, false, 1, 5, 100000, 0, 0, 0, 0, 0,
+		1, 10000000, 1, 0, 100, 1, false, false, 1, 5, 100000, 0, 0, 0, 0, 0)
+}
+
 function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
-				quoteAuctionTheoMaxBPSThrough, quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks,
-				quoteIsBettermentOppositeSide, quoteOppositeSideBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS, leanMaxBookAgeMillis,
-				leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustmentRaw, additiveIsEnabled,
-				additiveMaxSignalAgeMillis, additiveMinRequiredBPS, additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
-				bidPlanMaxLevels, bidMinPicardQty, bidMaxOrdersPerLevel, bidIsOnlySubmitBestLevel, bidIsQuoteBettermentOn, bidModTicks,
-				bidQuoteFlickerBuffer, bidQuotePicardMaxBPSThrough, bidPicardMaxPapaWeight, bidPicardMaxPerSec, bidPicardMaxPerMin,
-				bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels,
-				askMinPicardQty, askMaxOrdersPerLevel, askIsOnlySubmitBestLevel, askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer,
-				askQuotePicardMaxBPSThrough, askPicardMaxPapaWeight, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour,
-				askPicardMaxPerDay) {
+	quoteAuctionTheoMaxBPSThrough, quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks,
+	quoteIsBettermentOppositeSide, quoteOppositeSideBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS, leanMaxBookAgeMillis,
+	leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustmentRaw, additiveIsEnabled,
+	additiveMaxSignalAgeMillis, additiveMinRequiredBPS, additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
+	bidPlanMaxLevels, bidMinPicardQty, bidMaxOrdersPerLevel, bidIsOnlySubmitBestLevel, bidIsQuoteBettermentOn, bidModTicks,
+	bidQuoteFlickerBuffer, bidQuotePicardMaxBPSThrough, bidPicardMaxPapaWeight, bidPicardMaxPerSec, bidPicardMaxPerMin,
+	bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels,
+	askMinPicardQty, askMaxOrdersPerLevel, askIsOnlySubmitBestLevel, askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer,
+	askQuotePicardMaxBPSThrough, askPicardMaxPapaWeight, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour,
+	askPicardMaxPerDay) {
 
 	const rowID = nibblerName + configGroupID;
 	let row = $("#" + rowID);
@@ -242,74 +260,98 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 
 		row.find(".configType").text(configType);
 
-		setCellData(row, ".quoteInst.maxBookAgeMillis input", quoteMaxBookAgeMillis);
-
-		setBoolData(row, ".quoteInst.isAuctionQuotingEnabled input", quoteIsAuctionQuotingEnabled);
-		setBoolData(row, ".quoteInst.isOnlyAuction input", quoteIsOnlyAuction);
-		setCellData(row, ".quoteInst.quoteAuctionTheoMaxBPSThrough input", quoteAuctionTheoMaxBPSThrough);
-		setBoolData(row, ".quoteInst.isAllowEmptyBook input", quoteIsAllowEmptyBook);
-		setCellData(row, ".quoteInst.maxJumpBPS input", quoteMaxJumpBPS);
-		setCellData(row, ".quoteInst.maxJumpBPS input", quoteMaxJumpBPS);
-		setCellData(row, ".quoteInst.bettermentQty input", quoteBettermentQty);
-		setCellData(row, ".quoteInst.bettermentTicks input", quoteBettermentTicks);
-		setBoolData(row, ".quoteInst.isBettermentOppositeSide input", quoteIsBettermentOppositeSide);
-		setCellData(row, ".quoteInst.oppositeSideBettermentTicks input", quoteOppositeSideBettermentTicks);
-
-		setCellData(row, ".fx.maxBookAgeMillis input", fxMaxBookAgeMillis);
-		setCellData(row, ".fx.maxJumpBPS input", fxMaxJumpBPS);
-
-		setCellData(row, ".leanInst.maxBookAgeMillis input", leanMaxBookAgeMillis);
-		setCellData(row, ".leanInst.maxJumpBPS input", leanMaxJumpBPS);
-		setCellData(row, ".leanInst.requiredQty input", leanRequiredQty);
-		setCellData(row, ".leanInst.maxPapaWeight input", leanMaxPapaWeight);
-		setDoubleData(row, ".leanInst.leanToQuoteRatio input", leanToQuoteRatio);
-		setDoubleData(row, ".leanInst.leanPriceAdjustment input", leanPriceAdjustmentRaw);
-
-		setBoolData(row, ".additiveInst.isEnabled input", additiveIsEnabled);
-		setCellData(row, ".additiveInst.maxSignalAgeMillis input", additiveMaxSignalAgeMillis);
-		setCellData(row, ".additiveInst.minRequiredBPS input", additiveMinRequiredBPS);
-		setCellData(row, ".additiveInst.maxBPS input", additiveMaxBPS);
-
-		setCellData(row, ".plan.minLevelQty .bid", bidPlanMinLevelQty);
-		setCellData(row, ".plan.maxLevelQty .bid", bidPlanMaxLevelQty);
-		setCellData(row, ".plan.lotSize .bid", bidPlanLotSize);
-		setCellData(row, ".plan.maxLevels .bid", bidPlanMaxLevels);
-		setCellData(row, ".plan.minPicardQty .bid", bidMinPicardQty);
-
-		setCellData(row, ".strategy.maxOrdersPerLevel .bid", bidMaxOrdersPerLevel);
-		setBoolData(row, ".strategy.isOnlySubmitBestLevel .bid", bidIsOnlySubmitBestLevel);
-		setBoolData(row, ".strategy.isQuoteBettermentOn .bid", bidIsQuoteBettermentOn);
-		setCellData(row, ".strategy.quoteModTicks .bid", bidModTicks);
-		setCellData(row, ".strategy.quoteFlickerBuffer .bid", bidQuoteFlickerBuffer);
-		setCellData(row, ".strategy.quotePicardMaxBPSThrough .bid", bidQuotePicardMaxBPSThrough);
-		setCellData(row, ".strategy.picardMaxPapaWeight .bid", bidPicardMaxPapaWeight);
-		setCellData(row, ".strategy.picardMaxPerSec .bid", bidPicardMaxPerSec);
-		setCellData(row, ".strategy.picardMaxPerMin .bid", bidPicardMaxPerMin);
-		setCellData(row, ".strategy.picardMaxPerHour .bid", bidPicardMaxPerHour);
-		setCellData(row, ".strategy.picardMaxPerDay .bid", bidPicardMaxPerDay);
-
-		setCellData(row, ".plan.minLevelQty .ask", askPlanMinLevelQty);
-		setCellData(row, ".plan.maxLevelQty .ask", askPlanMaxLevelQty);
-		setCellData(row, ".plan.lotSize .ask", askPlanLotSize);
-		setCellData(row, ".plan.maxLevels .ask", askPlanMaxLevels);
-		setCellData(row, ".plan.minPicardQty .ask", askMinPicardQty);
-
-		setCellData(row, ".strategy.maxOrdersPerLevel .ask", askMaxOrdersPerLevel);
-		setBoolData(row, ".strategy.isOnlySubmitBestLevel .ask", askIsOnlySubmitBestLevel);
-		setBoolData(row, ".strategy.isQuoteBettermentOn .ask", askIsQuoteBettermentOn);
-		setCellData(row, ".strategy.quoteModTicks .ask", askModTicks);
-		setCellData(row, ".strategy.quoteFlickerBuffer .ask", askQuoteFlickerBuffer);
-		setCellData(row, ".strategy.quotePicardMaxBPSThrough .ask", askQuotePicardMaxBPSThrough);
-		setCellData(row, ".strategy.picardMaxPapaWeight .ask", askPicardMaxPapaWeight);
-		setCellData(row, ".strategy.picardMaxPerSec .ask", askPicardMaxPerSec);
-		setCellData(row, ".strategy.picardMaxPerMin .ask", askPicardMaxPerMin);
-		setCellData(row, ".strategy.picardMaxPerHour .ask", askPicardMaxPerHour);
-		setCellData(row, ".strategy.picardMaxPerDay .ask", askPicardMaxPerDay);
+		setRowDetails(row, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction, quoteAuctionTheoMaxBPSThrough,
+			quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, quoteIsBettermentOppositeSide,
+			quoteOppositeSideBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty,
+			leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustmentRaw, additiveIsEnabled, additiveMaxSignalAgeMillis,
+			additiveMinRequiredBPS, additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize, bidPlanMaxLevels,
+			bidMinPicardQty, bidMaxOrdersPerLevel, bidIsOnlySubmitBestLevel, bidIsQuoteBettermentOn, bidModTicks, bidQuoteFlickerBuffer,
+			bidQuotePicardMaxBPSThrough, bidPicardMaxPapaWeight, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour,
+			bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMinPicardQty,
+			askMaxOrdersPerLevel, askIsOnlySubmitBestLevel, askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer,
+			askQuotePicardMaxBPSThrough, askPicardMaxPapaWeight, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour,
+			askPicardMaxPerDay);
 
 		return row;
 	} else {
 		row.remove();
 	}
+}
+
+function setRowDetails(row, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction, quoteAuctionTheoMaxBPSThrough,
+	quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, quoteIsBettermentOppositeSide,
+	quoteOppositeSideBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty,
+	leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustmentRaw, additiveIsEnabled, additiveMaxSignalAgeMillis, additiveMinRequiredBPS,
+	additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize, bidPlanMaxLevels, bidMinPicardQty, bidMaxOrdersPerLevel,
+	bidIsOnlySubmitBestLevel, bidIsQuoteBettermentOn, bidModTicks, bidQuoteFlickerBuffer, bidQuotePicardMaxBPSThrough,
+	bidPicardMaxPapaWeight, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty,
+	askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMinPicardQty, askMaxOrdersPerLevel, askIsOnlySubmitBestLevel,
+	askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer, askQuotePicardMaxBPSThrough, askPicardMaxPapaWeight, askPicardMaxPerSec,
+	askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay) {
+
+	setCellData(row, ".quoteInst.maxBookAgeMillis input", quoteMaxBookAgeMillis);
+
+	setBoolData(row, ".quoteInst.isAuctionQuotingEnabled input", quoteIsAuctionQuotingEnabled);
+	setBoolData(row, ".quoteInst.isOnlyAuction input", quoteIsOnlyAuction);
+	setCellData(row, ".quoteInst.quoteAuctionTheoMaxBPSThrough input", quoteAuctionTheoMaxBPSThrough);
+	setBoolData(row, ".quoteInst.isAllowEmptyBook input", quoteIsAllowEmptyBook);
+	setCellData(row, ".quoteInst.maxJumpBPS input", quoteMaxJumpBPS);
+	setCellData(row, ".quoteInst.maxJumpBPS input", quoteMaxJumpBPS);
+	setCellData(row, ".quoteInst.bettermentQty input", quoteBettermentQty);
+	setCellData(row, ".quoteInst.bettermentTicks input", quoteBettermentTicks);
+	setBoolData(row, ".quoteInst.isBettermentOppositeSide input", quoteIsBettermentOppositeSide);
+	setCellData(row, ".quoteInst.oppositeSideBettermentTicks input", quoteOppositeSideBettermentTicks);
+
+	setCellData(row, ".fx.maxBookAgeMillis input", fxMaxBookAgeMillis);
+	setCellData(row, ".fx.maxJumpBPS input", fxMaxJumpBPS);
+
+	setCellData(row, ".leanInst.maxBookAgeMillis input", leanMaxBookAgeMillis);
+	setCellData(row, ".leanInst.maxJumpBPS input", leanMaxJumpBPS);
+	setCellData(row, ".leanInst.requiredQty input", leanRequiredQty);
+	setCellData(row, ".leanInst.maxPapaWeight input", leanMaxPapaWeight);
+	setDoubleData(row, ".leanInst.leanToQuoteRatio input", leanToQuoteRatio);
+	setDoubleData(row, ".leanInst.leanPriceAdjustment input", leanPriceAdjustmentRaw);
+
+	setBoolData(row, ".additiveInst.isEnabled input", additiveIsEnabled);
+	setCellData(row, ".additiveInst.maxSignalAgeMillis input", additiveMaxSignalAgeMillis);
+	setCellData(row, ".additiveInst.minRequiredBPS input", additiveMinRequiredBPS);
+	setCellData(row, ".additiveInst.maxBPS input", additiveMaxBPS);
+
+	setCellData(row, ".plan.minLevelQty .bid", bidPlanMinLevelQty);
+	setCellData(row, ".plan.maxLevelQty .bid", bidPlanMaxLevelQty);
+	setCellData(row, ".plan.lotSize .bid", bidPlanLotSize);
+	setCellData(row, ".plan.maxLevels .bid", bidPlanMaxLevels);
+	setCellData(row, ".plan.minPicardQty .bid", bidMinPicardQty);
+
+	setCellData(row, ".strategy.maxOrdersPerLevel .bid", bidMaxOrdersPerLevel);
+	setBoolData(row, ".strategy.isOnlySubmitBestLevel .bid", bidIsOnlySubmitBestLevel);
+	setBoolData(row, ".strategy.isQuoteBettermentOn .bid", bidIsQuoteBettermentOn);
+	setCellData(row, ".strategy.quoteModTicks .bid", bidModTicks);
+	setCellData(row, ".strategy.quoteFlickerBuffer .bid", bidQuoteFlickerBuffer);
+	setCellData(row, ".strategy.quotePicardMaxBPSThrough .bid", bidQuotePicardMaxBPSThrough);
+	setCellData(row, ".strategy.picardMaxPapaWeight .bid", bidPicardMaxPapaWeight);
+	setCellData(row, ".strategy.picardMaxPerSec .bid", bidPicardMaxPerSec);
+	setCellData(row, ".strategy.picardMaxPerMin .bid", bidPicardMaxPerMin);
+	setCellData(row, ".strategy.picardMaxPerHour .bid", bidPicardMaxPerHour);
+	setCellData(row, ".strategy.picardMaxPerDay .bid", bidPicardMaxPerDay);
+
+	setCellData(row, ".plan.minLevelQty .ask", askPlanMinLevelQty);
+	setCellData(row, ".plan.maxLevelQty .ask", askPlanMaxLevelQty);
+	setCellData(row, ".plan.lotSize .ask", askPlanLotSize);
+	setCellData(row, ".plan.maxLevels .ask", askPlanMaxLevels);
+	setCellData(row, ".plan.minPicardQty .ask", askMinPicardQty);
+
+	setCellData(row, ".strategy.maxOrdersPerLevel .ask", askMaxOrdersPerLevel);
+	setBoolData(row, ".strategy.isOnlySubmitBestLevel .ask", askIsOnlySubmitBestLevel);
+	setBoolData(row, ".strategy.isQuoteBettermentOn .ask", askIsQuoteBettermentOn);
+	setCellData(row, ".strategy.quoteModTicks .ask", askModTicks);
+	setCellData(row, ".strategy.quoteFlickerBuffer .ask", askQuoteFlickerBuffer);
+	setCellData(row, ".strategy.quotePicardMaxBPSThrough .ask", askQuotePicardMaxBPSThrough);
+	setCellData(row, ".strategy.picardMaxPapaWeight .ask", askPicardMaxPapaWeight);
+	setCellData(row, ".strategy.picardMaxPerSec .ask", askPicardMaxPerSec);
+	setCellData(row, ".strategy.picardMaxPerMin .ask", askPicardMaxPerMin);
+	setCellData(row, ".strategy.picardMaxPerHour .ask", askPicardMaxPerHour);
+	setCellData(row, ".strategy.picardMaxPerDay .ask", askPicardMaxPerDay);
 }
 
 function setCellData(row, cellID, value) {
