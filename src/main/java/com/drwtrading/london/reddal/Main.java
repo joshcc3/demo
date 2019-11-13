@@ -775,8 +775,7 @@ public class Main {
             if (null != deskPositionConfig) {
 
                 final Set<String> keys = deskPositionConfig.getSet("keys");
-                final OpxlPositionSubscriber opxlReader =
-                        new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
+                final OpxlPositionSubscriber opxlReader = new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
                 app.addStartUpAction(opxlReader::start);
             }
 
