@@ -157,10 +157,22 @@ function setAllRFQConfig() {
 	setRowDetails(massControlRow,
 		86400000, true, true, 3000, true, 50, 0, 0, false, 0,
 		500, 50,
-		500, 50, 1, 3, 1,
+		500, 50, 1, 3, 1.0,
 		0, false, 0, 0, 0,
-		1, 10000000, 1, 0, 100, 1, false, false, 1, 5, 100000, 0, 0, 0, 0, 0,
-		1, 10000000, 1, 0, 100, 1, false, false, 1, 5, 100000, 0, 0, 0, 0, 0)
+		1, 10000000, 1, 100, 1, 1, false, false, 1, 5, 100000, 0, 0, 0, 0, 0,
+		1, 10000000, 1, 100, 1, 1, false, false, 1, 5, 100000, 0, 0, 0, 0, 0);
+
+	forceRowChanged(massControlRow);
+}
+
+function forceRowChanged(row) {
+
+	const changeEvent = new Event('change');
+	const inputEvent = new Event("input");
+	row.find("input").each(function (i, input) {
+		input.dispatchEvent(inputEvent);
+		input.dispatchEvent(changeEvent);
+	});
 }
 
 function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
