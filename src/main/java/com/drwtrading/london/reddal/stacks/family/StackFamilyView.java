@@ -21,11 +21,13 @@ import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.ExpiryMonthCodes;
 import com.drwtrading.london.eeif.utils.staticData.ExpiryPeriod;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
+import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
@@ -645,6 +647,17 @@ public class StackFamilyView implements IStackRelationshipListener {
                 communityManager.createFamily(SOURCE_UI, family, instID, displayableInstType);
             }
         }
+    }
+
+    @FromWebSocketView
+    public void createNamedFamily(final String familyName, final String isin, final String ccyName, final String micName,
+            final WebSocketInboundData data) {
+
+        final CCY ccy = CCY.getCCY(ccyName);
+        final MIC mic = MIC.getMIC(micName);
+        final InstrumentID instID = new InstrumentID(isin, ccy, mic);
+
+        communityManager.createFamily(SOURCE_UI, familyName, instID, displayableInstType);
     }
 
     private static String getFamilyName(final SearchResult searchResult, final boolean isADR) {
