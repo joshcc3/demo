@@ -1,3 +1,0 @@
-APPNAME=reddal
-REMOTE_USER=prodappadmin
-REMOTE_SERVER=lnhq-sudeeif02
