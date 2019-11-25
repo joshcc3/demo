@@ -39,6 +39,10 @@ public class StackFamilyChildRow {
         return uiData.source;
     }
 
+    public String getLeanSymbol() {
+        return uiData.leanSymbol;
+    }
+
     public InstType getLeanInstType() {
         return uiData.leanInstType;
     }

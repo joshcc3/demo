@@ -232,8 +232,21 @@ public class StackFamilyView implements IStackRelationshipListener {
     private void updateChildUIData(final IStackFamilyUI view, final StackFamilyChildRow childRow) {
 
         final String parentSymbol = childrenToFamily.get(childRow.getSymbol());
+
         if (isFamilyDisplayable(parentSymbol)) {
+
             childRow.sendRowState(view);
+
+            switch (childRow.getLeanInstType()) {
+                case DR:
+                case ETF:
+                case EQUITY:
+                case FUTURE:
+                case FUTURE_SPREAD:
+                case FX: {
+                    strategySymbolUI.addStrategySymbol(displayableInstType, childRow.getLeanSymbol());
+                }
+            }
         }
     }
 

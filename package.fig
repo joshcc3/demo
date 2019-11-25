@@ -10,7 +10,6 @@ retrieve WAV_SOUND_FILES->web/sounds
 
 config default
 	include :rake
-	include :scripts
 
 	include drw.london.eeif-utils/392
 	include drw.london.eeif-nibbler-transport/160
@@ -80,10 +79,6 @@ config test
 	include :default
 	include testng/6.8
 	include mockito/1.9.5
-end
-
-config scripts
-	include drw.london.admin-scripts/24
 end
 
 config rake
