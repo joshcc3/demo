@@ -110,7 +110,7 @@ public class HeaderPanel {
     public void setPksPosition(final double position, final String formattedPosition) {
 
         final long roundedPosition = (long) position;
-        if ((int) this.pksPosition != roundedPosition) {
+        if (this.pksPosition != roundedPosition) {
 
             this.pksPosition = roundedPosition;
             ui.txt(HTML.PKS_POSITION, formattedPosition);
