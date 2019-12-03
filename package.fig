@@ -68,7 +68,7 @@ config default
 	include joda.time/1.6
 	include org.apache.commons.math/2.2
 
-	add PATH=/site/drw/java/jdk1.8.0_05/bin
+	add PATH=/site/drw/java/jdk1.8.0_45/bin
 end
 
 config build

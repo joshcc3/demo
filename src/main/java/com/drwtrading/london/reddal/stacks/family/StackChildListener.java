@@ -5,6 +5,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
+import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategyOffsetsUI;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,19 +13,24 @@ import java.util.Map;
 public class StackChildListener {
 
     private final String nibblerName;
+    private final boolean isOffsetWanted;
 
     private final StackFamilyPresenter presenter;
+    private final OpxlStrategyOffsetsUI offsetsOPXL;
 
     private final Map<String, StackUIData> symbolUIData;
 
     private final LongMap<StackUIData> strategyUIData;
     private final LongMap<StackUIData> stackGroupUIData;
 
-    public StackChildListener(final String nibblerName, final StackFamilyPresenter presenter) {
+    public StackChildListener(final String nibblerName, final boolean isManager, final StackFamilyPresenter presenter,
+            final OpxlStrategyOffsetsUI offsetsOPXL) {
 
         this.nibblerName = nibblerName;
+        this.isOffsetWanted = !isManager;
 
         this.presenter = presenter;
+        this.offsetsOPXL = offsetsOPXL;
 
         this.symbolUIData = new HashMap<>();
 
@@ -41,7 +47,8 @@ public class StackChildListener {
         final String symbol = strategy.getSymbol();
         final long strategyID = strategy.getStrategyID();
         final StackUIData uiData =
-                new StackUIData(nibblerName, symbol, strategy.getInstID(), strategy.getLeanSymbol(), strategy.getLeanInstType(), strategy.getAdditiveSymbol());
+                new StackUIData(nibblerName, symbol, strategy.getInstID(), strategy.getLeanSymbol(), strategy.getLeanInstType(),
+                        strategy.getAdditiveSymbol());
         uiData.setSelectedConfig(strategy.getSelectedConfigType());
 
         symbolUIData.put(symbol, uiData);
@@ -69,6 +76,9 @@ public class StackChildListener {
         uiData.stackGroupCreated(stackGroup);
 
         presenter.updateChildUIData(uiData);
+        if (isOffsetWanted) {
+            offsetsOPXL.setStrategyOffsets(uiData);
+        }
     }
 
     public void stackGroupUpdated(final StackGroup stackGroup) {
@@ -77,6 +87,9 @@ public class StackChildListener {
         uiData.stackGroupUpdated(stackGroup, false);
 
         presenter.updateChildUIData(uiData);
+        if (isOffsetWanted) {
+            offsetsOPXL.setStrategyOffsets(uiData);
+        }
     }
 
     public void setConfig(final StackConfigGroup config) {

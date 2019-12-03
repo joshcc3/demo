@@ -62,10 +62,14 @@ public class StackCallbackBatcher implements IStackClientListener {
 
     @Override
     public void connectionLost() {
+
         configBatch.clear();
         strategiesPresenter.serverConnectionLost(nibblerName);
         configPresenter.serverConnectionLost(nibblerName);
         childListener.serverConnectionLost();
+
+        strategyBatch.clear();
+        stackGroupBatch.clear();
     }
 
     @Override
@@ -75,7 +79,8 @@ public class StackCallbackBatcher implements IStackClientListener {
 
         final String symbol = strategy.getSymbol();
         if (null != contractSetGenerator) {
-            contractSetGenerator.setStackRelationship(symbol, strategy.getLeanSymbol(), strategy.getLeanInstID(), strategy.getLeanInstType());
+            contractSetGenerator.setStackRelationship(symbol, strategy.getLeanSymbol(), strategy.getLeanInstID(),
+                    strategy.getLeanInstType());
         }
         childListener.strategyCreated(strategy);
     }

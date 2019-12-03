@@ -2,50 +2,44 @@ package com.drwtrading.london.reddal.stacks.opxl;
 
 import com.drwtrading.london.eeif.opxl.OpxlClient;
 import com.drwtrading.london.eeif.opxl.OpxlData;
+import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
-import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
+import com.drwtrading.london.reddal.stacks.family.StackUIData;
 
 import java.util.Date;
-import java.util.EnumMap;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
-public class OpxlStrategySymbolUI {
+public class OpxlStrategyOffsetsUI {
 
-    private static final String TOPIC = ".eeif.strategy.symbols.";
+    private static final String TOPIC = ".eeif.strategy.offsets.";
     private static final String TOPIC_PREFIX_PARAM = "env";
 
-    private static final Object[] HEADERS = {"Symbol", "StrategyType"};
+    private static final Object[] HEADERS = {"Symbol", "BID Offset", "ASK Offset"};
 
-    private static final long PUBLISH_INTERVAL = 60_000;
+    private static final long PUBLISH_INTERVAL = 1_000;
 
     private final OpxlClient<?> writer;
 
-    private final Map<InstType, Set<String>> symbolsPerTopics;
-
     private final String topic;
+
+    private final Map<String, String[]> symbolsRows;
 
     private boolean isUpdated;
     private Object[][] table;
 
-    public OpxlStrategySymbolUI(final OpxlClient<?> opxlClient, final ConfigGroup config) throws ConfigException {
+    public OpxlStrategyOffsetsUI(final OpxlClient<?> writer, final ConfigGroup config) throws ConfigException {
 
-        this.writer = opxlClient;
+        this.writer = writer;
 
         final String topicPrefix = config.getString(TOPIC_PREFIX_PARAM);
         final String topicSuffix = DateTimeUtil.getDateFormatter(DateTimeUtil.DATE_FILE_FORMAT).format(new Date());
 
         this.topic = topicPrefix + TOPIC + topicSuffix;
-        this.symbolsPerTopics = new EnumMap<>(InstType.class);
 
-        for (final InstType instType : InstType.values()) {
-
-            final HashSet<String> symbols = new HashSet<>();
-            symbolsPerTopics.put(instType, symbols);
-        }
+        this.symbolsRows = new HashMap<>();
 
         this.table = new Object[1][];
         table[0] = HEADERS;
@@ -53,20 +47,25 @@ public class OpxlStrategySymbolUI {
         this.isUpdated = true;
     }
 
-    public void addStrategySymbol(final InstType strategyInstType, final String symbol) {
+    public void setStrategyOffsets(final StackUIData uiData) {
 
-        final Set<String> seenSymbols = symbolsPerTopics.get(strategyInstType);
-        if (seenSymbols.add(symbol)) {
+        final String[] symbolData = MapUtils.getMappedItem(symbolsRows, uiData.symbol, () -> {
 
             final Object[][] newTable = new Object[table.length + 1][];
             System.arraycopy(table, 0, newTable, 0, table.length);
 
-            final Object[] newRow = {symbol, strategyInstType};
-            newTable[table.length] = newRow;
+            final String[] result = new String[HEADERS.length];
+            newTable[table.length] = result;
             this.table = newTable;
 
-            isUpdated = true;
-        }
+            result[0] = uiData.symbol;
+            return result;
+        });
+
+        symbolData[1] = uiData.getBidPriceOffsetBPS();
+        symbolData[2] = uiData.getAskPriceOffsetBPS();
+
+        isUpdated = true;
     }
 
     public long flush() {

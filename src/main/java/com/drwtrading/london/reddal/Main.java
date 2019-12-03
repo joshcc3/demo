@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.nibbler.transport.NibblerTransportComponents;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerCacheFactory;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerTransportCaches;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
+import com.drwtrading.london.eeif.opxl.OpxlClient;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
 import com.drwtrading.london.eeif.position.transport.PositionTransportComponents;
 import com.drwtrading.london.eeif.position.transport.cache.PositionCacheFactory;
@@ -130,6 +131,7 @@ import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.family.StackChildListener;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyListener;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyPresenter;
+import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategyOffsetsUI;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import com.drwtrading.london.reddal.stockAlerts.RfqAlert;
@@ -775,7 +777,8 @@ public class Main {
             if (null != deskPositionConfig) {
 
                 final Set<String> keys = deskPositionConfig.getSet("keys");
-                final OpxlPositionSubscriber opxlReader = new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
+                final OpxlPositionSubscriber opxlReader =
+                        new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
                 app.addStartUpAction(opxlReader::start);
             }
 
@@ -1016,9 +1019,16 @@ public class Main {
                             app.logDir);
             final StackCommunityManager communityManager = server.getCommunityManager();
 
+            final OpxlClient<?> writer = new OpxlClient<>(opxlSelectIO, opxlMonitor, OPXLComponents.OPXL_WRITER_CLIENT);
+            app.addStartUpAction(writer::start);
+
             final ConfigGroup symbolOPXLConfig = stackConfig.getGroup("symbolOPXL");
-            final OpxlStrategySymbolUI strategySymbolUI = new OpxlStrategySymbolUI(opxlSelectIO, symbolOPXLConfig, opxlMonitor);
+            final OpxlStrategySymbolUI strategySymbolUI = new OpxlStrategySymbolUI(writer, symbolOPXLConfig);
             app.selectIO.addDelayedAction(30_000, strategySymbolUI::flush);
+
+            final ConfigGroup symbolOffsetOPXLConfig = stackConfig.getGroup("symbolOffsetsOPXL");
+            final OpxlStrategyOffsetsUI symbolOffsetUI = new OpxlStrategyOffsetsUI(writer, symbolOffsetOPXLConfig);
+            app.selectIO.addDelayedAction(10_000, symbolOffsetUI::flush);
 
             final InstType defaultInstType = InstType.valueOf(stackConfig.getString("defaultFamilyType"));
 
@@ -1071,10 +1081,12 @@ public class Main {
                 final String nibbler = nibblerConfig.getKey();
                 final String connectionName = app.appName + " config";
 
-                final StackChildListener childListener = new StackChildListener(nibbler, stackFamilyPresenter);
-
                 final boolean isStackManager =
                         nibblerConfig.paramExists(IS_STACK_MANAGER_PARAM) && nibblerConfig.getBoolean(IS_STACK_MANAGER_PARAM);
+
+                final StackChildListener childListener =
+                        new StackChildListener(nibbler, isStackManager, stackFamilyPresenter, symbolOffsetUI);
+
                 final StackCallbackBatcher stackUpdateBatcher =
                         new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, childListener, isStackManager,
                                 contractSetGenerator);
@@ -1113,7 +1125,7 @@ public class Main {
 
             }
 
-            if (asylumFamilies.values().contains(OPXLSpreadnoughtFilters.FAMILY_NAME)) {
+            if (asylumFamilies.containsValue(OPXLSpreadnoughtFilters.FAMILY_NAME)) {
 
                 final OPXLSpreadnoughtFilters spreadnoughtFiltersOPXL =
                         new OPXLSpreadnoughtFilters(opxlSelectIO, app.selectIO, opxlMonitor, app.logDir, stackFamilyPresenter);

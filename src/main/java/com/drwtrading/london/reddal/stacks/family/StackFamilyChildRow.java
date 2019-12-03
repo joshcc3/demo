@@ -47,7 +47,9 @@ public class StackFamilyChildRow {
         return uiData.leanInstType;
     }
 
-    public String getAdditiveSymbol() { return uiData.additiveSymbol; }
+    public String getAdditiveSymbol() {
+        return uiData.additiveSymbol;
+    }
 
     public boolean updateSnapshot(final StackUIData uiData) {
 

@@ -15,7 +15,7 @@ import java.text.DecimalFormat;
 import java.util.EnumMap;
 import java.util.Map;
 
-class StackUIData implements IStackGroupUpdateCallback {
+public class StackUIData implements IStackGroupUpdateCallback {
 
     private static final String NO_PRICE_OFFSET = "---";
     private static final StackType[] STACK_TYPES = StackType.values();
@@ -36,7 +36,8 @@ class StackUIData implements IStackGroupUpdateCallback {
     private String bidPriceOffsetBPS;
     private String askPriceOffsetBPS;
 
-    StackUIData(final String source, final String symbol, final InstrumentID instID, final String leanSymbol, final InstType leanInstType, String additiveSymbol) {
+    StackUIData(final String source, final String symbol, final InstrumentID instID, final String leanSymbol, final InstType leanInstType,
+            final String additiveSymbol) {
 
         this.source = source;
         this.symbol = symbol;
@@ -54,7 +55,6 @@ class StackUIData implements IStackGroupUpdateCallback {
         this.bidPriceOffsetBPS = NO_PRICE_OFFSET;
         this.askPriceOffsetBPS = NO_PRICE_OFFSET;
     }
-
 
     public void setSelectedConfig(final StackConfigType selectedConfig) {
         this.selectedConfig = selectedConfig.name();
@@ -141,11 +141,11 @@ class StackUIData implements IStackGroupUpdateCallback {
         // no-op
     }
 
-    String getBidPriceOffsetBPS() {
+    public String getBidPriceOffsetBPS() {
         return bidPriceOffsetBPS;
     }
 
-    String getAskPriceOffsetBPS() {
+    public String getAskPriceOffsetBPS() {
         return askPriceOffsetBPS;
     }
 
