@@ -62,8 +62,8 @@ public class OpxlStrategyOffsetsUI {
             return result;
         });
 
-        symbolData[1] = uiData.getBidPriceOffsetBPS();
-        symbolData[2] = uiData.getAskPriceOffsetBPS();
+        symbolData[1] = uiData.getDefinedBidPriceOffsetBPS();
+        symbolData[2] = uiData.getDefinedAskPriceOffsetBPS();
 
         isUpdated = true;
     }

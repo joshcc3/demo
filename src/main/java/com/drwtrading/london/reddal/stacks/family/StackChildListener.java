@@ -99,7 +99,10 @@ public class StackChildListener {
     public void serverConnectionLost() {
 
         for (final StackUIData uiData : symbolUIData.values()) {
+
             uiData.clear();
+            presenter.updateChildUIData(uiData);
+            offsetsOPXL.setStrategyOffsets(uiData);
         }
     }
 }

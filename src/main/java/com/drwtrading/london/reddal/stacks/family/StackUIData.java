@@ -33,8 +33,11 @@ public class StackUIData implements IStackGroupUpdateCallback {
 
     private String selectedConfig;
 
-    private String bidPriceOffsetBPS;
-    private String askPriceOffsetBPS;
+    private String definedBidPriceOffsetBPS;
+    private String definedAskPriceOffsetBPS;
+
+    private String activeBidPriceOffsetBPS;
+    private String activeAskPriceOffsetBPS;
 
     StackUIData(final String source, final String symbol, final InstrumentID instID, final String leanSymbol, final InstType leanInstType,
             final String additiveSymbol) {
@@ -52,8 +55,11 @@ public class StackUIData implements IStackGroupUpdateCallback {
 
         this.selectedConfig = StackConfigType.DEFAULT.name();
 
-        this.bidPriceOffsetBPS = NO_PRICE_OFFSET;
-        this.askPriceOffsetBPS = NO_PRICE_OFFSET;
+        this.definedBidPriceOffsetBPS = NO_PRICE_OFFSET;
+        this.definedAskPriceOffsetBPS = NO_PRICE_OFFSET;
+
+        this.activeBidPriceOffsetBPS = NO_PRICE_OFFSET;
+        this.activeAskPriceOffsetBPS = NO_PRICE_OFFSET;
     }
 
     public void setSelectedConfig(final StackConfigType selectedConfig) {
@@ -79,7 +85,6 @@ public class StackUIData implements IStackGroupUpdateCallback {
 
     @Override
     public void stackGroupInfoUpdated(final StackGroup stackGroup) {
-
         // no-op
     }
 
@@ -87,25 +92,47 @@ public class StackUIData implements IStackGroupUpdateCallback {
 
         final double baseOffset = stackGroup.getPriceOffsetBPS();
 
-        boolean isContainingEnabledStack = false;
-        double bestOffset = Integer.MIN_VALUE;
+        boolean isStackActive = false;
+        boolean isActiveStackDefined = false;
+        boolean isStackDefined = false;
+
+        double bestDefinedOffset = Integer.MIN_VALUE;
+        double bestActiveStack = Integer.MIN_VALUE;
+
         for (final StackType stackType : STACK_TYPES) {
 
             final Stack stack = stackGroup.getStack(stackType);
-            if (stack.isEnabled()) {
-                final StackLevel bestLevel = stack.getFirstLevel();
-                if (null != bestLevel) {
-                    isContainingEnabledStack = true;
-                    final double levelOffset = baseOffset - stackGroup.getStackAlignmentTickToBPS() * bestLevel.getPullbackTicks();
-                    bestOffset = Math.max(bestOffset, levelOffset);
+            final StackLevel bestLevel = stack.getFirstLevel();
+
+            isStackActive |= stack.isEnabled();
+
+            if (null != bestLevel) {
+
+                isStackDefined = true;
+                final double levelOffset = baseOffset - stackGroup.getStackAlignmentTickToBPS() * bestLevel.getPullbackTicks();
+                bestDefinedOffset = Math.max(bestDefinedOffset, levelOffset);
+
+                if (stack.isEnabled()) {
+                    isActiveStackDefined = true;
+                    bestActiveStack = Math.max(bestActiveStack, levelOffset);
                 }
             }
         }
 
-        if (isContainingEnabledStack) {
-            this.bidPriceOffsetBPS = priceOffsetDF.format(bestOffset);
+        if (isActiveStackDefined) {
+
+            this.activeBidPriceOffsetBPS = priceOffsetDF.format(bestActiveStack);
+            this.definedBidPriceOffsetBPS = activeBidPriceOffsetBPS;
+
         } else {
-            this.bidPriceOffsetBPS = NO_PRICE_OFFSET;
+
+            this.activeBidPriceOffsetBPS = NO_PRICE_OFFSET;
+
+            if (!isStackActive && isStackDefined) {
+                this.definedBidPriceOffsetBPS = priceOffsetDF.format(bestDefinedOffset);
+            } else {
+                this.definedBidPriceOffsetBPS = NO_PRICE_OFFSET;
+            }
         }
     }
 
@@ -113,25 +140,47 @@ public class StackUIData implements IStackGroupUpdateCallback {
 
         final double baseOffset = stackGroup.getPriceOffsetBPS();
 
-        boolean isContainingEnabledStack = false;
-        double bestOffset = Integer.MAX_VALUE;
+        boolean isStackActive = false;
+        boolean isActiveStackDefined = false;
+        boolean isStackDefined = false;
+
+        double bestDefinedOffset = Integer.MAX_VALUE;
+        double bestActiveStack = Integer.MAX_VALUE;
+
         for (final StackType stackType : STACK_TYPES) {
 
             final Stack stack = stackGroup.getStack(stackType);
-            if (stack.isEnabled()) {
-                final StackLevel bestLevel = stack.getFirstLevel();
-                if (null != bestLevel) {
-                    isContainingEnabledStack = true;
-                    final double levelOffset = baseOffset + stackGroup.getStackAlignmentTickToBPS() * bestLevel.getPullbackTicks();
-                    bestOffset = Math.min(bestOffset, levelOffset);
+            final StackLevel bestLevel = stack.getFirstLevel();
+
+            isStackActive |= stack.isEnabled();
+
+            if (null != bestLevel) {
+
+                isStackDefined = true;
+                final double levelOffset = baseOffset + stackGroup.getStackAlignmentTickToBPS() * bestLevel.getPullbackTicks();
+                bestDefinedOffset = Math.min(bestDefinedOffset, levelOffset);
+
+                if (stack.isEnabled()) {
+                    isActiveStackDefined = true;
+                    bestActiveStack = Math.min(bestActiveStack, levelOffset);
                 }
             }
         }
 
-        if (isContainingEnabledStack) {
-            this.askPriceOffsetBPS = priceOffsetDF.format(bestOffset);
+        if (isActiveStackDefined) {
+
+            this.activeAskPriceOffsetBPS = priceOffsetDF.format(bestActiveStack);
+            this.definedAskPriceOffsetBPS = activeAskPriceOffsetBPS;
+
         } else {
-            this.askPriceOffsetBPS = NO_PRICE_OFFSET;
+
+            this.activeAskPriceOffsetBPS = NO_PRICE_OFFSET;
+
+            if (!isStackActive && isStackDefined) {
+                this.definedAskPriceOffsetBPS = priceOffsetDF.format(bestDefinedOffset);
+            } else {
+                this.definedAskPriceOffsetBPS = NO_PRICE_OFFSET;
+            }
         }
     }
 
@@ -141,12 +190,20 @@ public class StackUIData implements IStackGroupUpdateCallback {
         // no-op
     }
 
-    public String getBidPriceOffsetBPS() {
-        return bidPriceOffsetBPS;
+    public String getDefinedBidPriceOffsetBPS() {
+        return definedBidPriceOffsetBPS;
     }
 
-    public String getAskPriceOffsetBPS() {
-        return askPriceOffsetBPS;
+    public String getDefinedAskPriceOffsetBPS() {
+        return definedAskPriceOffsetBPS;
+    }
+
+    public String getActiveBidPriceOffsetBPS() {
+        return activeBidPriceOffsetBPS;
+    }
+
+    public String getActiveAskPriceOffsetBPS() {
+        return activeAskPriceOffsetBPS;
     }
 
     String getSelectedConfigType() {
@@ -179,7 +236,10 @@ public class StackUIData implements IStackGroupUpdateCallback {
 
         this.selectedConfig = StackConfigType.DEFAULT.name();
 
-        this.bidPriceOffsetBPS = NO_PRICE_OFFSET;
-        this.askPriceOffsetBPS = NO_PRICE_OFFSET;
+        this.definedBidPriceOffsetBPS = NO_PRICE_OFFSET;
+        this.definedAskPriceOffsetBPS = NO_PRICE_OFFSET;
+
+        this.activeBidPriceOffsetBPS = NO_PRICE_OFFSET;
+        this.activeAskPriceOffsetBPS = NO_PRICE_OFFSET;
     }
 }

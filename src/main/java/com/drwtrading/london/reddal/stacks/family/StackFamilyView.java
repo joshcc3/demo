@@ -359,7 +359,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     private void updateFamilyUIData(final IStackFamilyUI view, final StackUIData uiData) {
 
         if (isFamilyDisplayable(uiData.symbol)) {
-            view.setParentData(uiData.symbol, uiData.getBidPriceOffsetBPS(), uiData.getAskPriceOffsetBPS(), uiData.getSelectedConfigType(),
+            view.setParentData(uiData.symbol, uiData.getActiveBidPriceOffsetBPS(), uiData.getActiveAskPriceOffsetBPS(), uiData.getSelectedConfigType(),
                     uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
                     uiData.isStackEnabled(BookSide.ASK, StackType.PICARD), uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
         }
