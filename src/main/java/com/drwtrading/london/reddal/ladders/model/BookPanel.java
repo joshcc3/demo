@@ -11,13 +11,33 @@ import com.drwtrading.london.reddal.ladders.PricingMode;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.TreeSet;
 
 public class BookPanel {
 
+    private static final int MAX_ZOOM_INDEX;
+    ;
     private static final int INITIAL_ROW_CAPACITY = 50;
     private static final int REALLY_BIG_NUMBER_THRESHOLD = 100_000;
     private static final int MIN_ZOOM_LEVEL = 1;
-    private static final int MAX_ZOOM_LEVEL = 4096;
+    private static final int MAX_ZOOM_LEVEL = 16384;
+
+    private static final int[] ZOOM_STEPS;
+
+    static {
+        final TreeSet<Integer> zoomSteps = new TreeSet<>();
+
+        for (int zoomLevel = MIN_ZOOM_LEVEL; zoomLevel < MAX_ZOOM_LEVEL; zoomLevel = zoomLevel * 2) {
+            zoomSteps.add(zoomLevel);
+        }
+
+        for (int zoomLevel = MIN_ZOOM_LEVEL; zoomLevel < MAX_ZOOM_LEVEL; zoomLevel = zoomLevel * 10) {
+            zoomSteps.add(zoomLevel);
+        }
+
+        ZOOM_STEPS = zoomSteps.stream().mapToInt(value -> value).toArray();
+        MAX_ZOOM_INDEX = ZOOM_STEPS.length - 1;
+    }
 
     private final UiPipeImpl ui;
 
@@ -31,6 +51,7 @@ public class BookPanel {
     private CCY ccy;
     private MIC mic;
 
+    private int zoomIndex;
     private int zoomLevel;
 
     BookPanel(final UiPipeImpl ui) {
@@ -45,6 +66,7 @@ public class BookPanel {
         this.bigNumberDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE + 'M', 0, 2);
 
         this.zoomLevel = 1;
+        this.zoomIndex = 0;
 
         clear();
     }
@@ -78,11 +100,17 @@ public class BookPanel {
     }
 
     public void zoomIn() {
-        this.zoomLevel = Math.max(zoomLevel / 2, MIN_ZOOM_LEVEL);
+        if (zoomIndex > 0) {
+            zoomIndex--;
+            this.zoomLevel = ZOOM_STEPS[zoomIndex];
+        }
     }
 
     public void zoomOut() {
-        this.zoomLevel = zoomLevel < MAX_ZOOM_LEVEL ? zoomLevel * 2 : zoomLevel;
+        if (zoomIndex < MAX_ZOOM_INDEX) {
+            zoomIndex++;
+            this.zoomLevel = ZOOM_STEPS[zoomIndex];
+        }
     }
 
     public int getZoomLevel() {
@@ -90,7 +118,9 @@ public class BookPanel {
     }
 
     public void setZoomLevel(final int zoomLevel) {
-        this.zoomLevel = Math.min(Math.max(zoomLevel, MIN_ZOOM_LEVEL), MAX_ZOOM_LEVEL);
+        final int closestIndex = getClosestIndex(zoomLevel);
+        this.zoomLevel = ZOOM_STEPS[closestIndex];
+        this.zoomIndex = Math.max(0, Math.min(MAX_ZOOM_INDEX, closestIndex));
     }
 
     public void setRowPrice(final int rowID, final long price, final String formattedPrice) {
@@ -210,5 +240,14 @@ public class BookPanel {
         } else {
             return Long.toString(qty);
         }
+    }
+
+    private static int getClosestIndex(final int zoomLevel) {
+        for (int i = 0; i < MAX_ZOOM_INDEX; i++) {
+            if (ZOOM_STEPS[i] >= zoomLevel) {
+                return i;
+            }
+        }
+        return MAX_ZOOM_INDEX;
     }
 }

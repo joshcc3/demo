@@ -355,7 +355,7 @@ public class LadderBookView implements ILadderBoard {
 
     @Override
     public void switchedTo() {
-        final int zoomLevel = Integer.valueOf(getPref(HTML.ZOOM_LEVEL));
+        final int zoomLevel = Integer.parseInt(getPref(HTML.ZOOM_LEVEL));
         ladderModel.getBookPanel().setZoomLevel(zoomLevel);
 
         ladderModel.setClass(HTML.LADDER_DIV, CSSClass.STACK_VIEW, false);
@@ -1124,7 +1124,7 @@ public class LadderBookView implements ILadderBoard {
                     submitOrderLeftClick(clientSpeedState, label, data);
                 }
             } else if (label.startsWith(HTML.ORDER)) {
-                final long price = Long.valueOf(data.get("price"));
+                final long price = Long.parseLong(data.get("price"));
                 final BookHTMLRow htmlRowKeys = ladderModel.getBookPanel().getRowByPrice(price).htmlData;
                 if (label.equals(htmlRowKeys.bookOrderKey)) {
                     cancelWorkingOrders(price);
