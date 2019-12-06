@@ -19,6 +19,8 @@ $(function () {
 	});
 
 	$("#allStart").unbind().bind("click", sendOrders);
+
+	$("#bettermentSearch").unbind().bind("click", searchForBettermentOrders)
 });
 
 function printError(msg) {
@@ -26,6 +28,14 @@ function printError(msg) {
 	const errorDiv = $("#errorMessages");
 	errorDiv.text(msg);
 	errorDiv.removeClass("hidden");
+}
+
+function addPricedOrder(symbol, side, price, qty) {
+
+	const row = addOrder(symbol, side, qty);
+
+	const priceField = row.find(".priceInput");
+	priceField.val(price);
 }
 
 function addOrder(symbol, side, qty) {
@@ -58,6 +68,8 @@ function addOrder(symbol, side, qty) {
 	orders.append(row);
 
 	setSelectColour(sideSelect);
+
+	return row;
 }
 
 function sendOrders() {
@@ -80,6 +92,12 @@ function sendOrders() {
 	});
 
 	ws.send(command("sendOrders", [orderCmds]));
+}
+
+function searchForBettermentOrders() {
+
+	clearOrders();
+	ws.send(command("createOrderForAllBettermentOrders"));
 }
 
 function clearOrders() {

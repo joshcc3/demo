@@ -18,7 +18,7 @@ import com.drwtrading.london.reddal.autopull.autopuller.onMD.AutoPuller;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;
 import com.drwtrading.london.reddal.ladders.orders.OrdersPresenter;
 import com.drwtrading.london.reddal.ladders.shredders.ShredderPresenter;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.ui.msgs.GTCSupportedSymbol;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCSupportedSymbol;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import org.jetlang.channels.Channel;
 

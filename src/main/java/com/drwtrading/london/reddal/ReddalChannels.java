@@ -22,7 +22,9 @@ import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.ui.msgs.GTCSupportedSymbol;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCBettermentPrices;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCBettermentPricesRequest;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCSupportedSymbol;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.pks.PKSExposures;
@@ -107,6 +109,9 @@ class ReddalChannels {
     final TypedChannel<IAutoPullerCmd> autoPullerCmds;
     final TypedChannel<IAutoPullerUpdate> autoPullerUpdates;
 
+    final TypedChannel<GTCBettermentPricesRequest> gtcBettermentRequests;
+    final TypedChannel<GTCBettermentPrices> gtcBettermentResponses;
+
     final TypedChannel<EeifConfiguration> eeifConfiguration;
 
     final TypedChannel<QuoteObligationsEnableCmd> quotingObligationsCmds;
@@ -165,6 +170,9 @@ class ReddalChannels {
 
         this.autoPullerCmds = create(IAutoPullerCmd.class);
         this.autoPullerUpdates = create(IAutoPullerUpdate.class);
+
+        this.gtcBettermentRequests = create(GTCBettermentPricesRequest.class);
+        this.gtcBettermentResponses = create(GTCBettermentPrices.class);
 
         this.eeifConfiguration = create(EeifConfiguration.class);
 

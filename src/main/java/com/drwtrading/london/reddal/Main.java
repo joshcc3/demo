@@ -60,7 +60,6 @@ import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.indy.transport.data.Source;
 import com.drwtrading.london.indy.transport.io.IndyServer;
 import com.drwtrading.london.jetlang.DefaultJetlangFactory;
-import com.drwtrading.london.jetlang.transport.LowTrafficMulticastTransport;
 import com.drwtrading.london.logging.JsonChannelLogger;
 import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.reddal.autopull.autopuller.onMD.AutoPuller;
@@ -104,9 +103,13 @@ import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderServerRouter;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.BulkOrderEntryPresenter;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.BulkOrderMarketAnalyser;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCBettermentPrices;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCBettermentPricesRequest;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCSupportedSymbol;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.opxl.OPXLBulkOrderPriceLimits;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.ui.BulkOrderEntry;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.ui.msgs.GTCSupportedSymbol;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.LiquidityFinderViewUI;
@@ -169,8 +172,6 @@ import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.LadderWorkspace;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.london.reddal.workspace.WorkspaceRequestHandler;
-import com.drwtrading.monitoring.stats.MsgCodec;
-import com.drwtrading.monitoring.stats.Transport;
 import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
@@ -213,7 +214,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 public class Main {
@@ -404,10 +404,13 @@ public class Main {
         final SpreadContractSetGenerator contractSetGenerator = new SpreadContractSetGenerator(channels.contractSets, channels.leanDefs);
         channels.searchResults.subscribe(selectIOFiber, contractSetGenerator::setSearchResult);
 
-        setupStackManager(app, fibers, channels, webApp, webLog, selectIOFiber, opxlSelectIO, opxlMonitor, contractSetGenerator,
+        final OpxlClient<OPXLComponents> opxlClient = new OpxlClient<>(opxlSelectIO, opxlMonitor, OPXLComponents.OPXL_WRITER_CLIENT);
+        app.addStartUpAction(opxlClient::start);
+
+        setupStackManager(app, fibers, channels, webApp, webLog, selectIOFiber, opxlSelectIO, opxlMonitor, opxlClient, contractSetGenerator,
                 isEquitiesSearchable);
         final Map<MDSource, LinkedList<ConfigGroup>> nibblers =
-                setupBackgroundNibblerTransport(app, opxlSelectIO, opxlMonitor, fibers, webApp, webLog, selectIOFiber, channels,
+                setupBackgroundNibblerTransport(app, opxlSelectIO, opxlMonitor, opxlClient, fibers, webApp, webLog, selectIOFiber, channels,
                         EXCEPTION_HANDLER);
 
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderWebSockets = new EnumMap<>(MDSource.class);
@@ -424,11 +427,6 @@ public class Main {
             final PremiumOPXLWriter writer = new PremiumOPXLWriter(opxlSelectIO, premiumConfig, opxlMonitor);
             channels.spreadnoughtPremiums.subscribe(selectIOFiber, writer::onPremium);
             app.selectIO.addDelayedAction(1000, writer::flush);
-        }
-
-        if (isFuturesSearchable) {
-            setupBulkOrderSubmitter(app.selectIO, selectIOFiber, webLog, webApp, channels.supportedGTCSymbols, channels.cmdsForNibblers,
-                    channels.ladderClickTradingIssues);
         }
 
         // Auto-puller
@@ -532,6 +530,10 @@ public class Main {
                             new AutoPuller(mdSource, depthBookSubscriber, channels.cmdsForNibblers, channels.ladderClickTradingIssues,
                                     channels.autoPullerUpdates);
                     channels.autoPullerCmds.subscribe(fiberBuilder.getFiber(), cmd -> cmd.executeOn(autoPuller));
+
+                    final BulkOrderMarketAnalyser bulkOrderMarketAnalyser =
+                            new BulkOrderMarketAnalyser(mdSource, depthBookSubscriber, channels.gtcBettermentResponses);
+                    channels.gtcBettermentRequests.subscribe(fiberBuilder.getFiber(), bulkOrderMarketAnalyser::checkForBettermentPrices);
 
                     if (null != root.getEnabledGroup("divImpliedTheo")) {
                         final ImpliedMDInfoGenerator impliedMDGenerator =
@@ -929,28 +931,6 @@ public class Main {
 
     }
 
-    private static Transport createEnableAbleTransport(final LowTrafficMulticastTransport lowTrafficMulticastTransport,
-            final AtomicBoolean multicastEnabled) {
-        return new Transport() {
-            @Override
-            public <T> void publish(final MsgCodec<T> codec, final T msg) {
-                if (multicastEnabled.get()) {
-                    lowTrafficMulticastTransport.publish(codec, msg);
-                }
-            }
-
-            @Override
-            public void start() {
-                lowTrafficMulticastTransport.start();
-            }
-
-            @Override
-            public void stop() {
-                lowTrafficMulticastTransport.stop();
-            }
-        };
-    }
-
     static void setupSignals(final Application<ReddalComponents> app, final Publisher<PicardRow> atClosePublisher,
             final Publisher<StockAlert> stockAlerts) throws ConfigException {
         final ConfigGroup signalConfig = app.config.getEnabledGroup("signals");
@@ -1004,8 +984,8 @@ public class Main {
 
     private static void setupStackManager(final Application<ReddalComponents> app, final ReddalFibers fibers, final ReddalChannels channels,
             final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber, final SelectIO opxlSelectIO,
-            final IResourceMonitor<OPXLComponents> opxlMonitor, final SpreadContractSetGenerator contractSetGenerator,
-            final boolean isForETF) throws Exception {
+            final IResourceMonitor<OPXLComponents> opxlMonitor, final OpxlClient<?> opxlClient,
+            final SpreadContractSetGenerator contractSetGenerator, final boolean isForETF) throws Exception {
 
         final ConfigGroup stackConfig = app.config.getEnabledGroup("stacks");
         if (null != stackConfig) {
@@ -1019,15 +999,12 @@ public class Main {
                             app.logDir);
             final StackCommunityManager communityManager = server.getCommunityManager();
 
-            final OpxlClient<?> writer = new OpxlClient<>(opxlSelectIO, opxlMonitor, OPXLComponents.OPXL_WRITER_CLIENT);
-            app.addStartUpAction(writer::start);
-
             final ConfigGroup symbolOPXLConfig = stackConfig.getGroup("symbolOPXL");
-            final OpxlStrategySymbolUI strategySymbolUI = new OpxlStrategySymbolUI(writer, symbolOPXLConfig);
+            final OpxlStrategySymbolUI strategySymbolUI = new OpxlStrategySymbolUI(opxlClient, symbolOPXLConfig);
             app.selectIO.addDelayedAction(30_000, strategySymbolUI::flush);
 
             final ConfigGroup symbolOffsetOPXLConfig = stackConfig.getGroup("symbolOffsetsOPXL");
-            final OpxlStrategyOffsetsUI symbolOffsetUI = new OpxlStrategyOffsetsUI(writer, symbolOffsetOPXLConfig);
+            final OpxlStrategyOffsetsUI symbolOffsetUI = new OpxlStrategyOffsetsUI(opxlClient, symbolOffsetOPXLConfig);
             app.selectIO.addDelayedAction(10_000, symbolOffsetUI::flush);
 
             final InstType defaultInstType = InstType.valueOf(stackConfig.getString("defaultFamilyType"));
@@ -1147,9 +1124,10 @@ public class Main {
     }
 
     private static Map<MDSource, LinkedList<ConfigGroup>> setupBackgroundNibblerTransport(final Application<ReddalComponents> app,
-            final SelectIO opxlSelectIO, final IResourceMonitor<OPXLComponents> opxlMonitor, final ReddalFibers fibers,
-            final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber, final ReddalChannels channels,
-            final Thread.UncaughtExceptionHandler uncaughtExceptionHandler) throws ConfigException, IOException {
+            final SelectIO opxlSelectIO, final IResourceMonitor<OPXLComponents> opxlMonitor, final OpxlClient<OPXLComponents> opxlClient,
+            final ReddalFibers fibers, final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
+            final ReddalChannels channels, final Thread.UncaughtExceptionHandler uncaughtExceptionHandler)
+            throws ConfigException, IOException {
 
         final Map<MDSource, LinkedList<ConfigGroup>> result = new EnumMap<>(MDSource.class);
 
@@ -1221,8 +1199,13 @@ public class Main {
 
                 final OPXLGTCWorkingOrdersPresenter gtcWorkingOrdersOPXLWriter =
                         new OPXLGTCWorkingOrdersPresenter(opxlSelectIO, opxlMonitor, app.env);
-                gtcWorkingOrdersMaintainer = new GTCWorkingOrderMaintainer(gtcWorkingOrdersOPXLWriter);
+                final GTCWorkingOrderMaintainer workingOrdersMaintainer = new GTCWorkingOrderMaintainer(gtcWorkingOrdersOPXLWriter);
+                gtcWorkingOrdersMaintainer = workingOrdersMaintainer;
                 opxlSelectIO.addDelayedAction(5000, gtcWorkingOrdersOPXLWriter::flush);
+
+                setupBulkOrderSubmitter(app.selectIO, selectIOFiber, opxlMonitor, opxlClient, app.logDir, webLog, webApp,
+                        channels.supportedGTCSymbols, channels.cmdsForNibblers, channels.ladderClickTradingIssues,
+                        channels.gtcBettermentRequests, channels.gtcBettermentResponses, workingOrdersMaintainer);
             } else {
                 gtcWorkingOrdersMaintainer = NoWorkingOrdersCallback.INSTANCE;
             }
@@ -1448,17 +1431,25 @@ public class Main {
         return fxCalc;
     }
 
-    private static void setupBulkOrderSubmitter(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
-            final WebApplication webApp, final Channel<GTCSupportedSymbol> supportedSymbols,
-            final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher,
-            final Channel<LadderClickTradingIssue> ladderClickTradingIssues) {
+    private static void setupBulkOrderSubmitter(final SelectIO selectIO, final SelectIOFiber fiber,
+            final IResourceMonitor<OPXLComponents> monitor, final OpxlClient<OPXLComponents> opxlClient, final Path logDir,
+            final UILogger webLog, final WebApplication webApp, final Channel<GTCSupportedSymbol> supportedSymbols,
+            final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final Channel<LadderClickTradingIssue> ladderClickTradingIssues,
+            final TypedChannel<GTCBettermentPricesRequest> gtcBettermentRequests,
+            final TypedChannel<GTCBettermentPrices> gtcBettermentResponses, final GTCWorkingOrderMaintainer gtcOrders) {
 
-        final BulkOrderEntry bulkOrderUI = new BulkOrderEntry(webLog, remoteOrderCommandToServerPublisher, ladderClickTradingIssues);
+        final BulkOrderEntryPresenter bulkOrderUI =
+                new BulkOrderEntryPresenter(selectIO, webLog, remoteOrderCommandToServerPublisher, ladderClickTradingIssues,
+                        gtcBettermentRequests, gtcOrders);
+
+        gtcBettermentResponses.subscribe(fiber, bulkOrderUI::bulkOrderResponse);
 
         webApp.alias("/bulkOrderEntry", "/bulkOrderEntry.html");
         final TypedChannel<WebSocketControlMessage> webSocketChannel = TypedChannels.create(WebSocketControlMessage.class);
         webApp.createWebSocket("/bulkOrderEntry/ws/", webSocketChannel, fiber);
         webSocketChannel.subscribe(fiber, bulkOrderUI::webControl);
         supportedSymbols.subscribe(fiber, bulkOrderUI::setGTCSupportedSymbol);
+
+        new OPXLBulkOrderPriceLimits(selectIO, monitor, logDir, opxlClient, bulkOrderUI);
     }
 }

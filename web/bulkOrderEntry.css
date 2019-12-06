@@ -36,6 +36,11 @@ body {
 	display: inline-block;
 }
 
+#bettermentSearch {
+	background-color: #F70768;
+	color: white;
+}
+
 #allStart {
 	background-color: lightgreen;
 	font-size: 13px;
@@ -62,7 +67,7 @@ body {
 
 .orderRow .symbol {
 	text-align: center;
-	width: 75px;
+	width: 125px;
 }
 
 .bid, .sideSelect[value="BID"] {

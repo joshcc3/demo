@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal.orderManagement.remoteOrder.ui.msgs;
+package com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs;
 
 public class GTCSupportedSymbol {
 
