@@ -42,7 +42,7 @@ public class BulkOrderEntryPresenter {
     private static final String PAGE_ID = BulkOrderEntryPresenter.class.getSimpleName();
 
     private static final long BETTERMENT_RESPONSE_MAX_DELAY_MILLIS = 2_000;
-    private static final String BETTERMENT_QTY = "50";
+    private static final String BETTERMENT_QTY = "100";
 
     private final IClock clock;
     private final UILogger webLog;
