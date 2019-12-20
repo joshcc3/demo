@@ -926,6 +926,7 @@ public class Main {
 
     private static void createWebPageWithWebSocket(final String alias, final String name, final FiberBuilder fiber,
             final WebApplication webapp, final TypedChannel<WebSocketControlMessage> websocketChannel) {
+
         webapp.alias('/' + alias, '/' + name + ".html");
         webapp.createWebSocket('/' + name + "/ws/", websocketChannel, fiber.getFiber());
 
