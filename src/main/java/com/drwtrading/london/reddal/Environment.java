@@ -26,10 +26,6 @@ public class Environment {
         this.config = config;
     }
 
-    public HostAndNic getMrPhilHostAndNic() throws SocketException, ConfigException {
-        return getHostAndNic("mr-phil");
-    }
-
     public Path getSettingsFile() throws IOException, ConfigException {
 
         final Path settingsFile = config.getGroup("settings").getPath("file");
@@ -39,14 +35,6 @@ public class Environment {
             Files.createFile(settingsFile);
         }
         return settingsFile;
-    }
-
-    public String getStatsName() throws ConfigException {
-        return config.getGroup("stats").getString("name");
-    }
-
-    public int getWebPort() throws ConfigException {
-        return config.getGroup("web").getInt("port");
     }
 
     public Collection<String> getList(final String prefix) throws ConfigException {
@@ -90,30 +78,21 @@ public class Environment {
 
     public HostAndNic getHostAndNic(final String prefix, final String server) throws SocketException, ConfigException {
 
-        if (!config.groupExists(prefix) || !config.getGroup(prefix).groupExists(server)) {
+        if (config.groupExists(prefix) && config.getGroup(prefix).groupExists(server)) {
+
+            final ConfigGroup serverConfig = config.getGroup(prefix).getGroup(server);
+
+            final String address = serverConfig.getString("address");
+            final String nic;
+            if (serverConfig.paramExists("nic")) {
+                nic = serverConfig.getString("nic");
+            } else {
+                nic = "0.0.0.0";
+            }
+            return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])),
+                    NetworkInterfaces.find(nic));
+        } else {
             return null;
         }
-
-        final ConfigGroup serverConfig = config.getGroup(prefix).getGroup(server);
-        return getHostAndNic(serverConfig);
-    }
-
-    private HostAndNic getHostAndNic(final String prefix) throws SocketException, ConfigException {
-
-        final ConfigGroup serverConfig = config.getGroup(prefix);
-        return getHostAndNic(serverConfig);
-    }
-
-    public static HostAndNic getHostAndNic(final ConfigGroup serverConfig) throws ConfigException, SocketException {
-
-        final String address = serverConfig.getString("address");
-        final String nic;
-        if (serverConfig.paramExists("nic")) {
-            nic = serverConfig.getString("nic");
-        } else {
-            nic = "0.0.0.0";
-        }
-        return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])),
-                NetworkInterfaces.find(nic));
     }
 }

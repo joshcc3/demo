@@ -29,6 +29,7 @@ import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.config.ConfigParam;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
+import com.drwtrading.london.eeif.utils.io.channels.IOConfigParser;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.MDTransportComponents;
@@ -184,7 +185,6 @@ import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
-import com.sun.jndi.toolkit.url.Uri;
 import drw.eeif.eeifoe.OrderEntryCommandMsg;
 import drw.eeif.eeifoe.OrderEntryReplyMsg;
 import drw.eeif.eeifoe.OrderUpdateEvent;
@@ -199,6 +199,8 @@ import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -290,6 +292,7 @@ public class Main {
             message.printStackTrace();
         });
 
+        final int webPort = root.getGroup("web").getInt("port");
         final UILogger webLog = new UILogger(uiSelectIO, logDir);
 
         final boolean isEquitiesSearchable =
@@ -298,8 +301,8 @@ public class Main {
 
         final Map<String, TypedChannel<WebSocketControlMessage>> webSocketsForLogging = new HashMap<>();
 
-        final WebApplication webApp = new WebApplication(environment.getWebPort(), channels.errorPublisher);
-        System.out.println("http://localhost:" + environment.getWebPort());
+        final WebApplication webApp = new WebApplication(webPort, channels.errorPublisher);
+        System.out.println("http://localhost:" + webPort);
         webApp.enableSingleSignOn();
 
         app.addStartUpAction(() -> fibers.ui.execute(() -> {
@@ -634,7 +637,7 @@ public class Main {
 
         // Non SSO-protected web App to allow AJAX requests
         {
-            final WebApplication nonSSOWebapp = new WebApplication(environment.getWebPort() + 1, channels.errorPublisher);
+            final WebApplication nonSSOWebapp = new WebApplication(webPort + 1, channels.errorPublisher);
 
             app.addStartUpAction(() -> fibers.ui.execute(() -> {
                 try {
@@ -655,8 +658,9 @@ public class Main {
             fibers.ui.subscribe(ladderWorkspace, workspaceSocket);
             channels.contractSets.subscribe(fibers.ui.getFiber(), ladderWorkspace::setContractSet);
             channels.userWorkspaceRequests.subscribe(fibers.ui.getFiber(), ladderWorkspace::openLadder);
-            nonSSOWebapp.addHandler("/open",
-                    new WorkspaceRequestHandler(ladderWorkspace, new Uri(nonSSOWebapp.getBaseUri()).getHost(), environment.getWebPort()));
+            final WorkspaceRequestHandler httpHandler =
+                    new WorkspaceRequestHandler(ladderWorkspace, new URI(nonSSOWebapp.getBaseUri()).getHost(), webPort);
+            nonSSOWebapp.addHandler("/open", httpHandler);
         }
 
         // Settings
@@ -726,22 +730,25 @@ public class Main {
 
         // Meta data
         for (final String server : environment.getList(Environment.METADATA)) {
+
+            final String statsName = root.getGroup("stats").getString("name");
             final HostAndNic hostAndNic = environment.getHostAndNic(Environment.METADATA, server);
             final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client =
                     OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
                             Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
             client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
             client.logFile(logDir.resolve("ladderText." + server + ".log").toFile(), fibers.logging.getFiber(), true);
-            client.handler(new PhotocolsStatsPublisher<>(channels.stats, environment.getStatsName(), 10));
+            client.handler(new PhotocolsStatsPublisher<>(channels.stats, statsName, 10));
             client.handler(new JetlangChannelHandler<>(channels.metaData));
             app.addStartUpAction(client::start);
         }
 
         // Mr. Phil position
         {
-            final HostAndNic hostAndNic = environment.getMrPhilHostAndNic();
+            final ConfigGroup mrPhilConfig = root.getGroup("mr-phil");
+            final InetSocketAddress indyAddress = IOConfigParser.getTargetAddress(mrPhilConfig);
             final OnHeapBufferPhotocolsNioClient<Position, Subscription> client =
-                    OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, hostAndNic.nic, Position.class, Subscription.class,
+                    OnHeapBufferPhotocolsNioClient.client(indyAddress, "0.0.0.0", Position.class, Subscription.class,
                             fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
             final PositionSubscriptionPhotocolsHandler positionHandler = new PositionSubscriptionPhotocolsHandler(channels.position);
             channels.searchResults.subscribe(fibers.mrPhil.getFiber(), positionHandler::setSearchResult);
@@ -751,12 +758,10 @@ public class Main {
         }
 
         // Display symbols
-        {
-            final DisplaySymbolMapper displaySymbolMapper = new DisplaySymbolMapper(channels.displaySymbol);
-            channels.instDefs.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setInstDef);
-            channels.searchResults.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setSearchResult);
-            channels.ultimateParents.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setUltimateParent);
-        }
+        final DisplaySymbolMapper displaySymbolMapper = new DisplaySymbolMapper(channels.displaySymbol);
+        channels.instDefs.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setInstDef);
+        channels.searchResults.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setSearchResult);
+        channels.ultimateParents.subscribe(fibers.indy.getFiber(), displaySymbolMapper::setUltimateParent);
 
         // Indy
         final ConfigGroup indyConfig = root.getGroup("indy");
@@ -1353,9 +1358,9 @@ public class Main {
                 channels.eeifConfiguration.subscribe(selectIOFiber, futureObligationPresenter::setEeifConfig);
                 app.addStartUpAction(() -> futureObligationPresenter.start(app.selectIO));
 
-                final HostAndNic indyAddress = Environment.getHostAndNic(indyConfigGroup);
+                final InetSocketAddress indyAddress = IOConfigParser.getTargetAddress(indyConfigGroup);
                 final OnHeapBufferPhotocolsNioClient<EeifConfiguration, Void> client =
-                        OnHeapBufferPhotocolsNioClient.client(indyAddress.host, indyAddress.nic, EeifConfiguration.class, Void.class,
+                        OnHeapBufferPhotocolsNioClient.client(indyAddress, "0.0.0.0", EeifConfiguration.class, Void.class,
                                 fibers.indy.getFiber(), uncaughtExceptionHandler);
 
                 client.reconnectMillis(1000);

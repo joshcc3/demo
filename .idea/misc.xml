@@ -6,7 +6,6 @@
     <option name="name" value="default" />
   </component>
   <component name="EntryPointsManager">
-    <entry_points version="2.0" />
     <list size="2">
       <item index="0" class="java.lang.String" itemvalue="com.drwtrading.jetlang.autosubscribe.Subscribe" />
       <item index="1" class="java.lang.String" itemvalue="com.drwtrading.london.websocket.FromWebSocketView" />
@@ -16,7 +15,7 @@
   <component name="JavaScriptSettings">
     <option name="languageLevel" value="ES6" />
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="false" assert-keyword="true" jdk-15="true" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>

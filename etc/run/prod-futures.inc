@@ -5,10 +5,4 @@ GC_LOG="$LOG_DIR/gc-$SERVICE-$TODAY.$TIME.log"
 ZING_PROFILE=/site/drw/$APPNAME/$SERVICE-zing.profile
 JAVA_OPTS="-server -Xmx8g -XX:+PrintGC -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC -Xloggc:$GC_LOG -XX:ProfileLogOut=$ZING_PROFILE -XX:ProfileLogIn=$ZING_PROFILE -XX:-DisplayVMOutput -XX:+LogVMOutput -XX:+TraceDeoptimization -XX:+PrintCompilation -XX:+PrintCompileDateStamps -XX:LogFile=$ZING_LOG"
 JAVA_COMMAND="com.drwtrading.london.reddal.Main prod-futures"
-JAVA=/opt/zing/zing-jdk8/bin/java
-
-#MONITOR_GC=Y
-#JAVA_OPTS="-server -verbosegc -Xmx4g -Xms4g -XX:+UseG1GC -XX:InitiatingHeapOccupancyPercent=30 -XX:+PrintGCDetails"
-#JAVA_COMMAND="com.drwtrading.london.reddal.Main prod-futures"
-#JAVA=/site/drw/java/jdk1.8.0_92/bin/java
-
+JAVA=/site/drw/java/zing-jdk11.0.0-19.12.100.0-1/bin/java

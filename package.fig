@@ -1,25 +1,21 @@
 retrieve CLASSPATH->lib
 retrieve SOURCEPATH->lib/src
-retrieve LIBPATH->lib
 retrieve SCRIPTS->bin
 retrieve RAKE->rake
 retrieve JS->web/js/
-retrieve GIT_INFO->git/
 retrieve JS_SOUND_FILES->web/js
 retrieve WAV_SOUND_FILES->web/sounds
 
 config default
-	include :rake
+	include drw.london.eeif-utils/414
+	include drw.london.eeif-nibbler-transport/172
+	include drw.london.eeif-opxl-client/183
+	include drw.london.eeif-position-transport/189
+	include drw.london.eeif-stack-transport/223
+	include drw.london.eeif-yoda-transport/188
+	include drw.london.eeif-indy-transport/364
+	include drw.london.eeif-fees/155
 
-	include drw.london.eeif-utils/404
-	include drw.london.eeif-nibbler-transport/168
-	include drw.london.eeif-opxl-client/175
-	include drw.london.eeif-position-transport/187
-	include drw.london.eeif-stack-transport/222
-	include drw.london.eeif-yoda-transport/187
-	include drw.london.eeif-indy-transport/355
-
-	include drw.eeif.fees/152
 	include drw.opxl/1.5.1
 
 	# Libraries and containers
@@ -49,30 +45,22 @@ config default
 	include drw.london.javascript-common/33
 	include drw.london.sounds/20
 
-	# Monitoring
-	include drw.monitoring/1.0.0.54
-
 	# Photons
 	include log4j/1.2.16 # For protocols
-	include drw.london.eeif-photocols-client/299
-	include drw.london.eeif-phockets/93
+	include drw.london.eeif-photocols-client/306
+	include drw.london.eeif-phockets/98
 	include com.drwtrading.photons.mrphil/1.0.0.4
 	include com.drwtrading.london.photons.reddal/2
 	include drw.eeif.eeifoe/2
 	include com.drwtrading.photons.eeif.configuration/11
 	include drw.eeif.photons.signals/1
-	include eeif.execution/0
 	include com.drwtrading.photons.ladder/38
 
 	# Research
 	include joda.time/1.6
 	include org.apache.commons.math/2.2
 
-	add PATH=/site/drw/java/jdk1.8.0_45/bin
-end
-
-config build
-	include :default
+	add PATH=/site/drw/java/jdk-11.0.2/bin
 end
 
 config test
@@ -82,8 +70,5 @@ config test
 end
 
 config rake
-	include drw.london.rake/112
+	include :default
 end
-
-
-
