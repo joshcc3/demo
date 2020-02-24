@@ -25,7 +25,7 @@ import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineValue;
-import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
+import com.drwtrading.london.reddal.data.NibblerLastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
@@ -68,6 +68,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import drw.eeif.fees.FeesCalc;
+import drw.eeif.trades.transport.outbound.ITrade;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Converter;
 import org.jetlang.channels.Publisher;
@@ -108,7 +109,10 @@ public class LadderPresenter implements IStackPresenterCallback {
             new MapMaker().makeComputingMap(symbol -> EnumSet.noneOf(AlgoType.class));
     private final Map<String, WorkingOrdersByPrice> ordersBySymbol = new MapMaker().makeComputingMap(symbol -> new WorkingOrdersByPrice());
     private final Map<String, OrderUpdatesForSymbol> eeifOrdersBySymbol = new MapMaker().makeComputingMap(OrderUpdatesForSymbol::new);
-    private final Map<String, LastTradeDataForSymbol> lastTradeBySymbol = new MapMaker().makeComputingMap(LastTradeDataForSymbol::new);
+    private final Map<String, NibblerLastTradeDataForSymbol> lastTradeBySymbolForNibbler =
+            new MapMaker().makeComputingMap(NibblerLastTradeDataForSymbol::new);
+    private final Map<String, JasperLastTradeDataForSymbol> lastTradeBySymbolForJasper =
+            new MapMaker().makeComputingMap(JasperLastTradeDataForSymbol::new);
     private final Map<String, LadderMetaData> metaDataBySymbol = new MapMaker().makeComputingMap(LadderMetaData::new);
 
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
@@ -219,9 +223,14 @@ public class LadderPresenter implements IStackPresenterCallback {
         workingOrders.removeWorkingOrder(workingOrder);
     }
 
-    public void setLastTrade(final LastTrade lastTrade) {
+    public void setLastTradeForNibbler(final LastTrade lastTrade) {
 
-        final LastTradeDataForSymbol data = lastTradeBySymbol.get(lastTrade.getSymbol());
+        final NibblerLastTradeDataForSymbol data = lastTradeBySymbolForNibbler.get(lastTrade.getSymbol());
+        data.setLastTrade(lastTrade);
+    }
+
+    public void setLastTradeForJasper(final ITrade lastTrade) {
+        final JasperLastTradeDataForSymbol data = lastTradeBySymbolForJasper.get(lastTrade.getSymbol());
         data.setLastTrade(lastTrade);
     }
 
@@ -272,13 +281,15 @@ public class LadderPresenter implements IStackPresenterCallback {
                 final Set<AlgoType> supportedAlgoTypes = supportedAlgoTypesBySymbol.get(symbol);
                 final WorkingOrdersByPrice workingOrders = ordersBySymbol.get(symbol);
                 final LadderMetaData ladderMetaData = metaDataBySymbol.get(symbol);
-                final LastTradeDataForSymbol lastTradeData = lastTradeBySymbol.get(symbol);
+                final NibblerLastTradeDataForSymbol lastTradeDataForNibbler = lastTradeBySymbolForNibbler.get(symbol);
+                final JasperLastTradeDataForSymbol lastTradeDataForJasper = lastTradeBySymbolForJasper.get(symbol);
                 final SymbolStackData stackData = stackBySymbol.get(symbol);
                 final OrderUpdatesForSymbol orderUpdates = eeifOrdersBySymbol.get(symbol);
 
                 final String userName = msg.getClient().getUserName();
                 view.subscribeToSymbol(symbol, levels, supportedOrderTypes, supportedAlgoTypes, mdForSymbol, workingOrders, ladderMetaData,
-                        lastTradeData, stackData, getLadderPrefsForSymbolUser(symbol, userName), orderUpdates);
+                        lastTradeDataForNibbler, lastTradeDataForJasper, stackData, getLadderPrefsForSymbolUser(symbol, userName),
+                        orderUpdates);
 
                 if (3 < args.length) {
                     if ("S".equals(args[3])) {
@@ -389,7 +400,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     public void setPKSExposures(final PKSExposures positions) {
 
-        for (final PKSExposure position: positions.exposures) {
+        for (final PKSExposure position : positions.exposures) {
             for (final String symbol : position.symbols) {
                 metaDataBySymbol.get(symbol).onPKSExposure(oneDP, position);
             }

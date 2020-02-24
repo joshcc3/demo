@@ -18,8 +18,10 @@ public enum CSSClass {
     BID_ACTIVE("bid_active"),
     ASK_ACTIVE("offer_active"),
 
-    LAST_BID("last_buy"),
-    LAST_ASK("last_sell"),
+    NIBBLER_LAST_BID("last_buy"),
+    NIBBLER_LAST_ASK("last_sell"),
+    JASPER_LAST_BID("jasper_last_buy"),
+    JASPER_LAST_ASK("jasper_last_sell"),
 
     IMPLIED_BID("impliedBid"),
     IMPLIED_ASK("impliedOffer"),

@@ -23,6 +23,8 @@ import com.drwtrading.london.eeif.stack.transport.cache.StackCacheFactory;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.Application;
+import com.drwtrading.london.eeif.utils.application.Desk;
+import com.drwtrading.london.eeif.utils.application.TradingEntity;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
@@ -44,6 +46,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceIgnorer;
+import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
@@ -193,6 +196,11 @@ import drw.eeif.eeifoe.Update;
 import drw.eeif.phockets.Phockets;
 import drw.eeif.phockets.tcp.PhocketClient;
 import drw.eeif.photons.signals.Signals;
+import drw.eeif.trades.transport.outbound.ITrade;
+import drw.eeif.trades.transport.outbound.io.TradesClientFactory;
+import drw.eeif.trades.transport.outbound.io.TradesClientHandler;
+import drw.eeif.trades.transport.outbound.io.TradesTransportComponents;
+import drw.eeif.trades.transport.outbound.messages.TradesTransportBaseMsg;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.MemoryChannel;
@@ -314,14 +322,13 @@ public class Main {
             }
         }));
 
-        { // Index presenter
-            final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("/", "index", fibers.ui, webApp, websocket);
-            webSocketsForLogging.put("index", websocket);
-            final IndexUIPresenter indexPresenter = new IndexUIPresenter(webLog, isEquitiesSearchable, isFuturesSearchable);
-            fibers.ui.subscribe(indexPresenter, channels.displaySymbol, websocket);
-            channels.searchResults.subscribe(fibers.ui.getFiber(), indexPresenter::addSearchResult);
-        }
+        // Index presenter
+        final TypedChannel<WebSocketControlMessage> websocket = TypedChannels.create(WebSocketControlMessage.class);
+        createWebPageWithWebSocket("/", "index", fibers.ui, webApp, websocket);
+        webSocketsForLogging.put("index", websocket);
+        final IndexUIPresenter indexPresenter = new IndexUIPresenter(webLog, isEquitiesSearchable, isFuturesSearchable);
+        fibers.ui.subscribe(indexPresenter, channels.displaySymbol, websocket);
+        channels.searchResults.subscribe(fibers.ui.getFiber(), indexPresenter::addSearchResult);
 
         final FXCalc<?> stockAlertsFXCalc = createOPXLFXCalc(app, opxlSelectIO, uiSelectIO, opxlMonitor);
         { // Stock alert screen
@@ -441,6 +448,9 @@ public class Main {
         final TypedChannel<WebSocketControlMessage> autoPullerWebSocket = TypedChannels.create(WebSocketControlMessage.class);
         createWebPageWithWebSocket("autopuller", "autopuller", fibers.ui, webApp, autoPullerWebSocket);
         fibers.ui.subscribe(autoPullerUI, autoPullerWebSocket);
+
+        final TypedChannel<ITrade> jasperTradesChan = TypedChannels.create(ITrade.class);
+        initJasperTradesPublisher(app, errorLog, parentMonitor, jasperTradesChan);
 
         // MD Sources
         final ConfigGroup mdConfig = root.getGroup("md");
@@ -563,6 +573,7 @@ public class Main {
                         client.getCaches().addTradingDataListener(ladderInfoListener, true, true);
                         client.getCaches().blotterCache.addListener(ladderInfoListener);
                     }
+                    jasperTradesChan.subscribe(displaySelectIOFiber, ladderPresenter::setLastTradeForJasper);
                 }
             }
         }
@@ -636,32 +647,30 @@ public class Main {
         channels.searchResults.subscribe(fibers.ladderRouter.getFiber(), shredderMessageRouter::setSearchResult);
 
         // Non SSO-protected web App to allow AJAX requests
-        {
-            final WebApplication nonSSOWebapp = new WebApplication(webPort + 1, channels.errorPublisher);
+        final WebApplication nonSSOWebapp = new WebApplication(webPort + 1, channels.errorPublisher);
 
-            app.addStartUpAction(() -> fibers.ui.execute(() -> {
-                try {
-                    nonSSOWebapp.serveStaticContent("web");
-                    nonSSOWebapp.start();
-                } catch (final Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }));
+        app.addStartUpAction(() -> fibers.ui.execute(() -> {
+            try {
+                nonSSOWebapp.serveStaticContent("web");
+                nonSSOWebapp.start();
+            } catch (final Exception e) {
+                throw new RuntimeException(e);
+            }
+        }));
 
-            nonSSOWebapp.webServer();
+        nonSSOWebapp.webServer();
 
-            // Workspace
-            final TypedChannel<WebSocketControlMessage> workspaceSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("workspace", "workspace", fibers.ui, nonSSOWebapp, workspaceSocket);
+        // Workspace
+        final TypedChannel<WebSocketControlMessage> workspaceSocket = TypedChannels.create(WebSocketControlMessage.class);
+        createWebPageWithWebSocket("workspace", "workspace", fibers.ui, nonSSOWebapp, workspaceSocket);
 
-            final LadderWorkspace ladderWorkspace = new LadderWorkspace(webLog, channels.replaceCommand);
-            fibers.ui.subscribe(ladderWorkspace, workspaceSocket);
-            channels.contractSets.subscribe(fibers.ui.getFiber(), ladderWorkspace::setContractSet);
-            channels.userWorkspaceRequests.subscribe(fibers.ui.getFiber(), ladderWorkspace::openLadder);
-            final WorkspaceRequestHandler httpHandler =
-                    new WorkspaceRequestHandler(ladderWorkspace, new URI(nonSSOWebapp.getBaseUri()).getHost(), webPort);
-            nonSSOWebapp.addHandler("/open", httpHandler);
-        }
+        final LadderWorkspace ladderWorkspace = new LadderWorkspace(webLog, channels.replaceCommand);
+        fibers.ui.subscribe(ladderWorkspace, workspaceSocket);
+        channels.contractSets.subscribe(fibers.ui.getFiber(), ladderWorkspace::setContractSet);
+        channels.userWorkspaceRequests.subscribe(fibers.ui.getFiber(), ladderWorkspace::openLadder);
+        final WorkspaceRequestHandler httpHandler =
+                new WorkspaceRequestHandler(ladderWorkspace, new URI(nonSSOWebapp.getBaseUri()).getHost(), webPort);
+        nonSSOWebapp.addHandler("/open", httpHandler);
 
         // Settings
         final LadderSettings ladderSettings = new LadderSettings(environment.getSettingsFile(), channels.ladderPrefsLoaded);
@@ -669,62 +678,60 @@ public class Main {
         app.addStartUpAction(() -> fibers.settings.execute(ladderSettings::load));
 
         // EEIF-OE
-        {
-            final Collection<String> oeList = environment.getList(EEIF_OE);
-            for (final String server : oeList) {
+        final Collection<String> oeList = environment.getList(EEIF_OE);
+        for (final String server : oeList) {
 
-                final ConfigGroup eeifOEGroup = root.getGroup("eeifoe");
-                final String instanceName = eeifOEGroup.getString("instance");
-                final OrderEntryClient client =
-                        new OrderEntryClient(instanceName, new SystemClock(), server, fibers.remoteOrders.getFiber(),
-                                channels.orderEntrySymbols, channels.ladderClickTradingIssues);
+            final ConfigGroup eeifOEGroup = root.getGroup("eeifoe");
+            final String instanceName = eeifOEGroup.getString("instance");
+            final OrderEntryClient client =
+                    new OrderEntryClient(instanceName, new SystemClock(), server, fibers.remoteOrders.getFiber(),
+                            channels.orderEntrySymbols, channels.ladderClickTradingIssues);
 
-                final HostAndNic command = environment.getHostAndNic(EEIF_OE + "Command", server);
-                if (command != null) {
-                    final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
-                            OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
-                                    OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
-                    cmdClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
-                    cmdClient.logFile(logDir.resolve("order-entry." + server + ".log").toFile(), fibers.logging.getFiber(), true);
-                    cmdClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10));
-                    cmdClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
-                            new ConnectionCloser(channels.stats, server + " OE Commands"), SERVER_TIMEOUT));
-                    cmdClient.handler(client);
-                    fibers.remoteOrders.subscribe(client, channels.orderEntryCommandToServer);
-                    fibers.remoteOrders.execute(cmdClient::start);
-                    System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
-                }
+            final HostAndNic command = environment.getHostAndNic(EEIF_OE + "Command", server);
+            if (command != null) {
+                final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
+                        OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
+                                OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
+                cmdClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
+                cmdClient.logFile(logDir.resolve("order-entry." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+                cmdClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10));
+                cmdClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
+                        new ConnectionCloser(channels.stats, server + " OE Commands"), SERVER_TIMEOUT));
+                cmdClient.handler(client);
+                fibers.remoteOrders.subscribe(client, channels.orderEntryCommandToServer);
+                fibers.remoteOrders.execute(cmdClient::start);
+                System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
+            }
 
-                final HostAndNic update = environment.getHostAndNic(EEIF_OE + "Update", server);
-                if (update != null) {
-                    final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
-                            OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
-                                    fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
-                    updateClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
-                    updateClient.logFile(logDir.resolve("order-update." + server + ".log").toFile(), fibers.logging.getFiber(), true);
-                    updateClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10));
-                    updateClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
-                            new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT));
-                    updateClient.handler(new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(
-                            Constants::NO_OP, channels.orderEntryFromServer, evt -> {
-                        if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
-                            final Update msg = (Update) evt.getMsg();
-                            channels.orderEntryFromServer.publish(new UpdateFromServer(evt.getFromInstance(), msg));
-                        }
-                    }) {
-                        @Override
-                        protected Void connected(final PhotocolsConnection<Void> connection) {
-                            return null;
-                        }
+            final HostAndNic update = environment.getHostAndNic(EEIF_OE + "Update", server);
+            if (update != null) {
+                final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
+                        OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
+                                fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
+                updateClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
+                updateClient.logFile(logDir.resolve("order-update." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+                updateClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10));
+                updateClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
+                        new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT));
+                updateClient.handler(new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(
+                        Constants::NO_OP, channels.orderEntryFromServer, evt -> {
+                    if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
+                        final Update msg = (Update) evt.getMsg();
+                        channels.orderEntryFromServer.publish(new UpdateFromServer(evt.getFromInstance(), msg));
+                    }
+                }) {
+                    @Override
+                    protected Void connected(final PhotocolsConnection<Void> connection) {
+                        return null;
+                    }
 
-                        @Override
-                        protected OrderEntryFromServer disconnected(final PhotocolsConnection<Void> connection) {
-                            return new ServerDisconnected(server);
-                        }
-                    });
-                    fibers.remoteOrders.execute(updateClient::start);
-                    System.out.println("EEIF-OE: " + server + "\tUpdate: " + update.host);
-                }
+                    @Override
+                    protected OrderEntryFromServer disconnected(final PhotocolsConnection<Void> connection) {
+                        return new ServerDisconnected(server);
+                    }
+                });
+                fibers.remoteOrders.execute(updateClient::start);
+                System.out.println("EEIF-OE: " + server + "\tUpdate: " + update.host);
             }
         }
 
@@ -810,12 +817,12 @@ public class Main {
             channels.ultimateParents.subscribe(selectIOFiber, pksClient::setUltimateParent);
             channels.searchResults.subscribe(selectIOFiber, pksClient::setSearchResult);
 
-            final PositionClientHandler cache =
+            final PositionClientHandler positionCache =
                     PositionCacheFactory.createClientCache(app.selectIO, pksMonitor, "PKS", app.appName, pksClient);
-            cache.addConstituentListener(pksClient);
+            positionCache.addConstituentListener(pksClient);
 
             final TransportTCPKeepAliveConnection<?, ?> client =
-                    PositionCacheFactory.createClient(app.selectIO, pksConfig, pksMonitor, cache);
+                    PositionCacheFactory.createClient(app.selectIO, pksConfig, pksMonitor, positionCache);
             client.restart();
         }
 
@@ -854,6 +861,28 @@ public class Main {
         app.run();
     }
 
+    private static void initJasperTradesPublisher(final Application<ReddalComponents> app, final IErrorLogger errorLog,
+            final MultiLayeredResourceMonitor<ReddalComponents> parentMonitor, final TypedChannel<ITrade> jasperTradesChan)
+            throws IOException, ConfigException {
+        final JasperTradesListener jasperTradesPublisher = new JasperTradesListener(jasperTradesChan);
+        final String mrChillThreadName = "MrChill-JasperTrades";
+        final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(mrChillThreadName);
+        final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+                new ExpandedDetailResourceMonitor<>(displayMonitor, mrChillThreadName, errorLog, SelectIOComponents.class,
+                        ReddalComponents.UI_SELECT_IO);
+        final SelectIO mrChillSelectIO = new SelectIO(selectIOMonitor);
+
+        final ResourceMonitor<TradesTransportComponents> tradesMonitor = new ExpandedDetailResourceMonitor<>(app.monitor, "Chill Trades", errorLog,
+                TradesTransportComponents.class, ReddalComponents.MR_CHILL_TRADES);
+        final TradesClientHandler cache = TradesClientFactory.createClientCache(EnumSet.allOf(Desk.class), EnumSet.allOf(TradingEntity.class), true,
+                mrChillSelectIO, tradesMonitor);
+        final TransportTCPKeepAliveConnection<TradesTransportComponents, TradesTransportBaseMsg> tradesClient =
+                TradesClientFactory.createClient(mrChillSelectIO, app.config.getGroup("mrchill"), tradesMonitor, cache);
+        mrChillSelectIO.execute(tradesClient::restart);
+        cache.addTradesListener(jasperTradesPublisher);
+        app.addStartUpAction(() -> mrChillSelectIO.start(mrChillThreadName));
+    }
+
     private static DepthBookSubscriber getMDSubscription(final Application<?> app, final IResourceMonitor<ReddalComponents> displayMonitor,
             final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
             final String localAppName, final Publisher<RfqAlert> rfqAlerts) throws ConfigException {
@@ -875,7 +904,6 @@ public class Main {
                 MDTransportClientFactory.createConnection(displaySelectIO, mdConfig, mdClientMonitor, mdClient);
 
         app.addStartUpAction(() -> displaySelectIO.execute(connection::restart));
-
         return new DepthBookSubscriber(l3BookHandler, l2BookHandler);
     }
 

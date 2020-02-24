@@ -20,7 +20,7 @@ import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineValue;
-import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
+import com.drwtrading.london.reddal.data.NibblerLastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradeTracker;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
@@ -57,6 +57,7 @@ import drw.eeif.eeifoe.Metadata;
 import drw.eeif.eeifoe.OrderSide;
 import drw.eeif.eeifoe.Submit;
 import drw.eeif.fees.FeesCalc;
+import drw.eeif.trades.transport.outbound.ITrade;
 import drw.london.json.Jsonable;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetlang.channels.Publisher;
@@ -141,7 +142,8 @@ public class LadderBookView implements ILadderBoard {
 
     private final MDForSymbol marketData;
     private final WorkingOrdersByPrice workingOrders;
-    private final LastTradeDataForSymbol dataForSymbol;
+    private final NibblerLastTradeDataForSymbol nibblerDataForSymbol;
+    private final JasperLastTradeDataForSymbol jasperDataForSymbol;
     private final OrderUpdatesForSymbol orderUpdatesForSymbol;
 
     private final EnumSwitcher<PricingMode> pricingModes;
@@ -181,7 +183,8 @@ public class LadderBookView implements ILadderBoard {
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
             final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final Publisher<OrderEntryCommandToServer> eeifCommandToServer,
             final TradingStatusForAll tradingStatusForAll, final Set<OrderType> supportedOrderTypes, final Set<AlgoType> supportedAlgoTypes,
-            final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders, final LastTradeDataForSymbol extraDataForSymbol,
+            final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders,
+            final NibblerLastTradeDataForSymbol extraDataForSymbolNibbler, final JasperLastTradeDataForSymbol extraDataForSymbolJasper,
             final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final SymbolStackData stackData,
             final LadderMetaData metaData, final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
@@ -229,7 +232,8 @@ public class LadderBookView implements ILadderBoard {
         this.supportedAlgoTypes = supportedAlgoTypes;
         this.marketData = marketData;
         this.workingOrders = workingOrders;
-        this.dataForSymbol = extraDataForSymbol;
+        this.nibblerDataForSymbol = extraDataForSymbolNibbler;
+        this.jasperDataForSymbol = extraDataForSymbolJasper;
         this.orderUpdatesForSymbol = orderUpdatesForSymbol;
 
         this.levels = levels;
@@ -627,7 +631,7 @@ public class LadderBookView implements ILadderBoard {
 
     private void drawMetaData() {
 
-        if (!pendingRefDataAndSettle && null != dataForSymbol && null != marketData) {
+        if (!pendingRefDataAndSettle && null != marketData) {
 
             drawLaserLines();
 
@@ -650,20 +654,27 @@ public class LadderBookView implements ILadderBoard {
             final ITickTable tickTable = marketData.getBook().getTickTable();
             final int zoomLevel = bookPanel.getZoomLevel();
 
-            final LastTrade lastBid = dataForSymbol.lastBid();
-            final LastTrade lastAsk = dataForSymbol.lastAsk();
-            final long lastBidPrice =
-                    lastBid != null ? tickTable.roundAwayToTick(BookSide.BID, lastBid.getPrice(), zoomLevel) : Long.MIN_VALUE;
-            final long lastAskPrice =
-                    lastAsk != null ? tickTable.roundAwayToTick(BookSide.ASK, lastAsk.getPrice(), zoomLevel) : Long.MAX_VALUE;
+            final LastTrade lastBid = nibblerDataForSymbol.lastBid();
+            final LastTrade lastAsk = nibblerDataForSymbol.lastAsk();
+            final long nibblerLastBidPrice = lastBid != null ? tickTable.roundAwayToTick(BookSide.BID, lastBid.getPrice(), zoomLevel) : Long.MIN_VALUE;
+            final long nibblerLastAskPrice = lastAsk != null ? tickTable.roundAwayToTick(BookSide.ASK, lastAsk.getPrice(), zoomLevel) : Long.MAX_VALUE;
+
+            final ITrade jasperLastBid = jasperDataForSymbol.lastBid();
+            final ITrade jasperLastAsk = jasperDataForSymbol.lastAsk();
+            final long jasperLastBidPrice = jasperLastBid != null ? tickTable.roundAwayToTick(BookSide.BID, jasperLastBid.getPrice(), zoomLevel) :
+                    Long.MIN_VALUE;
+            final long jasperLastAskPrice = jasperLastAsk != null ? tickTable.roundAwayToTick(BookSide.ASK, jasperLastAsk.getPrice(), zoomLevel) :
+                    Long.MAX_VALUE;
 
             for (int i = 0; i < levels; ++i) {
                 final BookPanelRow priceRow = bookPanel.getRow(i);
                 final String priceKey = priceRow.htmlData.bookPriceKey;
                 final long rowPrice = priceRow.getPrice();
 
-                ladderModel.setClass(priceKey, CSSClass.LAST_BID, lastBidPrice == rowPrice);
-                ladderModel.setClass(priceKey, CSSClass.LAST_ASK, lastAskPrice == rowPrice);
+                ladderModel.setClass(priceKey, CSSClass.NIBBLER_LAST_BID, nibblerLastBidPrice == rowPrice);
+                ladderModel.setClass(priceKey, CSSClass.NIBBLER_LAST_ASK, nibblerLastAskPrice == rowPrice);
+                ladderModel.setClass(priceKey, CSSClass.JASPER_LAST_BID, jasperLastBidPrice == rowPrice);
+                ladderModel.setClass(priceKey, CSSClass.JASPER_LAST_ASK, jasperLastAskPrice == rowPrice);
             }
         }
     }

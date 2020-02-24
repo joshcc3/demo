@@ -15,7 +15,7 @@ import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
+import com.drwtrading.london.reddal.data.NibblerLastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
@@ -147,7 +147,9 @@ public class LadderView implements UiEventHandler {
     private MDForSymbol marketData;
     private long lastCenteredTime = 0;
     private LadderMetaData metaData;
-    private LastTradeDataForSymbol extraDataForSymbol;
+    private NibblerLastTradeDataForSymbol extraDataForSymbolForNibbler;
+    private JasperLastTradeDataForSymbol extraDataForSymbolForJasper;
+
     private SymbolStackData stackData;
 
     private ClientSpeedState clientSpeedState = ClientSpeedState.FINE;
@@ -216,7 +218,8 @@ public class LadderView implements UiEventHandler {
 
     void subscribeToSymbol(final String symbol, final int levels, final Set<OrderType> supportedOrderTypes,
             final Set<AlgoType> supportedAlgoTypes, final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders,
-            final LadderMetaData metaData, final LastTradeDataForSymbol extraDataForSymbol, final SymbolStackData stackData,
+            final LadderMetaData metaData, final NibblerLastTradeDataForSymbol extraNibblerDataForSymbol,
+            final JasperLastTradeDataForSymbol extraDataForSymbolForJasper, final SymbolStackData stackData,
             final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
         this.symbol = symbol;
@@ -224,7 +227,8 @@ public class LadderView implements UiEventHandler {
         this.ladderModel.extendToLevels(levels);
         this.marketData = marketData;
         this.metaData = metaData;
-        this.extraDataForSymbol = extraDataForSymbol;
+        this.extraDataForSymbolForNibbler = extraNibblerDataForSymbol;
+        this.extraDataForSymbolForJasper = extraDataForSymbolForJasper;
         this.stackData = stackData;
 
         final boolean wasBookView = null == bookView || activeView == bookView;
@@ -234,7 +238,7 @@ public class LadderView implements UiEventHandler {
                 new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc,
                         feeDF, ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher,
                         eeifCommandToServer, tradingStatusForAll, supportedOrderTypes, supportedAlgoTypes, marketData, workingOrders,
-                        extraDataForSymbol, orderUpdatesForSymbol, levels, stackData, metaData, increaseParentOffsetPublisher,
+                        extraDataForSymbolForNibbler, this.extraDataForSymbolForJasper, orderUpdatesForSymbol, levels, stackData, metaData, increaseParentOffsetPublisher,
                         increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
@@ -361,7 +365,6 @@ public class LadderView implements UiEventHandler {
 
     private String getSymbolDescription() {
 
-
         final FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);
         if (null != futureFromSymbol) {
             return futureFromSymbol.contractDesc + '[' + futureFromSymbol.index + ']';
@@ -430,7 +433,7 @@ public class LadderView implements UiEventHandler {
 
         ladderModel.setClass(HTML.SYMBOL, CSSClass.REVERSE_SPREAD, null != marketData && marketData.isReverseSpread());
 
-        if (null != metaData && null != extraDataForSymbol) {
+        if (null != metaData) {
 
             final HeaderPanel headerPanel = ladderModel.getHeaderPanel();
 

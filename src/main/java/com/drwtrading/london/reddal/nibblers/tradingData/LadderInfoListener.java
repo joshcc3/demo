@@ -139,7 +139,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
 
     @Override
     public boolean addLastTrade(final LastTrade lastTrade) {
-        ladderPresenter.setLastTrade(lastTrade);
+        ladderPresenter.setLastTradeForNibbler(lastTrade);
         return true;
     }
 

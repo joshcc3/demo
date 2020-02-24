@@ -22,7 +22,7 @@ import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineType;
 import com.drwtrading.london.reddal.data.LaserLineValue;
-import com.drwtrading.london.reddal.data.LastTradeDataForSymbol;
+import com.drwtrading.london.reddal.data.NibblerLastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
@@ -114,7 +114,8 @@ public class ZoomableLadderTest {
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Set<OrderType> supportedOrderTypes = EnumSet.noneOf(OrderType.class);
     private final Set<AlgoType> supportedAlgoTypes = EnumSet.noneOf(AlgoType.class);
-    private final LastTradeDataForSymbol lastTradeDataForSymbol = new LastTradeDataForSymbol("");
+    private final NibblerLastTradeDataForSymbol nibblerLastTradeDataForSymbol = new NibblerLastTradeDataForSymbol("");
+    private final JasperLastTradeDataForSymbol jasperLastTradeDataForSymbol = new JasperLastTradeDataForSymbol("");
     private final LadderMetaData metaData = new LadderMetaData("");
     private final LadderOptions ladderOptions =
             new LadderOptions(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), "");
@@ -124,7 +125,8 @@ public class ZoomableLadderTest {
     public void setup() {
 
         Mockito.reset(monitor, ladderClickTradingIssuePublisher, remoteOrderCommandPublisher, eeifCommandToServer, stackParentCmdPublisher,
-                increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, view, ladderPrefsForSymbolUser, stackData, uiPipe, bookViewer);
+                increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, view, ladderPrefsForSymbolUser, stackData, uiPipe,
+                bookViewer);
 
         Mockito.when(stackData.getNavLaserLine()).thenReturn(LAZORS.get(LaserLineType.NAV));
         Mockito.when(stackData.getTheoLaserLine()).thenReturn(LAZORS.get(LaserLineType.GREEN));
@@ -366,9 +368,9 @@ public class ZoomableLadderTest {
 
         return new LadderBookView(monitor, DEFAULT_USER, true, symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc, feeDF,
                 ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandPublisher, eeifCommandToServer,
-                tradingStatusForAll, supportedOrderTypes, supportedAlgoTypes, mdForSymbol, workingOrders, lastTradeDataForSymbol,
-                orderUpdatesForSymbol, LEVELS, stackData, metaData, stackParentCmdPublisher, increaseChildOffsetCmdPublisher,
-                disableSiblingsCmdPublisher, trace, orderEntryMap, DEFAULT_CENTER_PRICE);
+                tradingStatusForAll, supportedOrderTypes, supportedAlgoTypes, mdForSymbol, workingOrders, nibblerLastTradeDataForSymbol,
+                jasperLastTradeDataForSymbol, orderUpdatesForSymbol, LEVELS, stackData, metaData, stackParentCmdPublisher,
+                increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, DEFAULT_CENTER_PRICE);
     }
 
     private static SourcedWorkingOrder getWorkingOrder(final int qty, final int orderId, final long price, final BookSide side) {

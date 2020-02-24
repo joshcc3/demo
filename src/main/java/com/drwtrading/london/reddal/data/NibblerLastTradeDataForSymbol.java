@@ -2,15 +2,20 @@ package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import drw.eeif.trades.transport.outbound.ITrade;
 
-public class LastTradeDataForSymbol {
+import javax.imageio.ImageTranscoder;
+
+public class NibblerLastTradeDataForSymbol {
 
     public final String symbol;
 
     private LastTrade bidLastTrade;
     private LastTrade askLastTrade;
+    private LastTrade jasperBidLastTrade;
+    private LastTrade jasperAskLastTrade;
 
-    public LastTradeDataForSymbol(final String symbol) {
+    public NibblerLastTradeDataForSymbol(final String symbol) {
 
         this.symbol = symbol;
     }
@@ -24,10 +29,6 @@ public class LastTradeDataForSymbol {
         }
     }
 
-    public boolean isLastBuy(final long price) {
-        return null != bidLastTrade && bidLastTrade.getPrice() == price;
-    }
-
     public LastTrade lastBid() {
         return bidLastTrade;
     }
@@ -36,7 +37,4 @@ public class LastTradeDataForSymbol {
         return askLastTrade;
     }
 
-    public boolean isLastSell(final long price) {
-        return null != askLastTrade && askLastTrade.getPrice() == price;
-    }
 }

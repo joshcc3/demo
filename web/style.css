@@ -653,8 +653,21 @@ div {
 	background-color: #b76c58 !important;
 }
 
+.jasper_last_buy {
+	background-color: #008b8b !important;
+}
+
+.jasper_last_sell {
+	background-color: #643c57 !important;
+}
+
 .last_buy.last_sell {
 	background-color: #9982AC !important;
+
+}
+
+.jasper_last_buy,.jasper_last_sell {
+	/*background-color: #9154BE !important;*/
 }
 
 .traded_up {
