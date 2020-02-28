@@ -870,14 +870,16 @@ public class Main {
         final IResourceMonitor<SelectIOComponents> selectIOMonitor =
                 new ExpandedDetailResourceMonitor<>(displayMonitor, mrChillThreadName, errorLog, SelectIOComponents.class,
                         ReddalComponents.UI_SELECT_IO);
+        final ConfigGroup mrChillConfig = app.config.getGroup("mrchill");
         final SelectIO mrChillSelectIO = new SelectIO(selectIOMonitor);
 
         final ResourceMonitor<TradesTransportComponents> tradesMonitor = new ExpandedDetailResourceMonitor<>(app.monitor, "Chill Trades", errorLog,
                 TradesTransportComponents.class, ReddalComponents.MR_CHILL_TRADES);
         final TradesClientHandler cache = TradesClientFactory.createClientCache(EnumSet.allOf(Desk.class), EnumSet.allOf(TradingEntity.class), true,
                 mrChillSelectIO, tradesMonitor);
-        final TransportTCPKeepAliveConnection<TradesTransportComponents, TradesTransportBaseMsg> tradesClient =
-                TradesClientFactory.createClient(mrChillSelectIO, app.config.getGroup("mrchill"), tradesMonitor, cache);
+        final TransportTCPKeepAliveConnection<TradesTransportComponents, TradesTransportBaseMsg> tradesClient = TradesClientFactory.createClient(
+                mrChillSelectIO, mrChillConfig, tradesMonitor, cache);
+
         mrChillSelectIO.execute(tradesClient::restart);
         cache.addTradesListener(jasperTradesPublisher);
         app.addStartUpAction(() -> mrChillSelectIO.start(mrChillThreadName));
