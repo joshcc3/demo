@@ -666,8 +666,20 @@ div {
 
 }
 
-.jasper_last_buy,.jasper_last_sell {
+.jasper_last_buy.last_sell {
 	/*background-color: #9154BE !important;*/
+	background: linear-gradient(135deg, #008b8b 50%, #b76c58 50%);
+}
+
+.last_buy.jasper_last_sell {
+	/*background-color: #9154BE !important;*/
+	background: linear-gradient(135deg, #7b97ff 50%, #643c57 50%);
+}
+
+
+.jasper_last_sell.jasper_last_buy {
+	/*background-color: #9154BE !important;*/
+	background: linear-gradient(135deg, #008b8b 50%, #643c57 50%);
 }
 
 .traded_up {
