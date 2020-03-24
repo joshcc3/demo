@@ -43,7 +43,8 @@ import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevel
 import com.drwtrading.london.eeif.utils.monitoring.ConcurrentMultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceIgnorer;
 import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
@@ -256,7 +257,7 @@ public class Main {
         final ConfigGroup root = app.config;
         final Path logDir = app.logDir;
         final IErrorLogger errorLog = app.errorLog;
-        final IResourceMonitor<ReddalComponents> monitor = app.monitor;
+        final IFuseBox<ReddalComponents> monitor = app.monitor;
 
         final Environment environment = new Environment(root);
 
@@ -265,16 +266,16 @@ public class Main {
         final ReddalChannels channels = new ReddalChannels();
         final DefaultJetlangFactory jetlangFactory = new DefaultJetlangFactory(channels.error);
 
-        final IResourceMonitor<SelectIOComponents> uiSelectIOMonitor =
+        final IFuseBox<SelectIOComponents> uiSelectIOMonitor =
                 new ExpandedDetailResourceMonitor<>(app.monitor, "UI Select IO", app.errorLog, SelectIOComponents.class,
                         ReddalComponents.UI_SELECT_IO);
         final SelectIO uiSelectIO = new SelectIO(app.clock, uiSelectIOMonitor, Constants::NO_OP, Constants::NO_OP);
         final ReddalFibers fibers = new ReddalFibers(channels, jetlangFactory, uiSelectIO, app.errorLog);
 
-        final IResourceMonitor<OPXLComponents> opxlMonitor =
+        final IFuseBox<OPXLComponents> opxlMonitor =
                 new ExpandedDetailResourceMonitor<>(app.monitor, "OPXL Select IO", app.errorLog, OPXLComponents.class,
                         ReddalComponents.OPXL_READERS);
-        final IResourceMonitor<SelectIOComponents> opxlSelectIOMonitor =
+        final IFuseBox<SelectIOComponents> opxlSelectIOMonitor =
                 new ExpandedDetailResourceMonitor<>(opxlMonitor, "OPXL Select IO", app.errorLog, SelectIOComponents.class,
                         OPXLComponents.SELECT_IO);
 
@@ -357,8 +358,8 @@ public class Main {
 
         final String stackManagerThreadName = "Ladder-StackManager";
 
-        final IResourceMonitor<ReddalComponents> stackManagerMonitor = parentMonitor.createChildResourceMonitor(stackManagerThreadName);
-        final IResourceMonitor<SelectIOComponents> stackManagerSelectIOMonitor =
+        final IFuseBox<ReddalComponents> stackManagerMonitor = parentMonitor.createChildResourceMonitor(stackManagerThreadName);
+        final IFuseBox<SelectIOComponents> stackManagerSelectIOMonitor =
                 new ExpandedDetailResourceMonitor<>(stackManagerMonitor, stackManagerThreadName, errorLog, SelectIOComponents.class,
                         ReddalComponents.UI_SELECT_IO);
         final SelectIO stackManagerSelectIO = new SelectIO(stackManagerSelectIOMonitor);
@@ -464,8 +465,8 @@ public class Main {
 
                 final String threadName = "Ladder-" + mdSource.name();
 
-                final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(threadName);
-                final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+                final IFuseBox<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(threadName);
+                final IFuseBox<SelectIOComponents> selectIOMonitor =
                         new ExpandedDetailResourceMonitor<>(displayMonitor, threadName, errorLog, SelectIOComponents.class,
                                 ReddalComponents.UI_SELECT_IO);
 
@@ -522,7 +523,7 @@ public class Main {
 
                     for (final ConfigGroup stackClientConfig : mdSourceStackConfigs) {
 
-                        final IResourceMonitor<ReddalComponents> stackMonitor =
+                        final IFuseBox<ReddalComponents> stackMonitor =
                                 stackParentMonitor.createChildResourceMonitor(threadName + '-' + stackClientConfig.getKey());
 
                         final StackGroupCallbackBatcher stackUpdateBatcher = new StackGroupCallbackBatcher(presenterSharer);
@@ -534,7 +535,7 @@ public class Main {
                 final List<ConfigGroup> nibblerConfigs = nibblers.get(mdSource);
                 if (null != nibblerConfigs) {
 
-                    final IResourceMonitor<NibblerTransportComponents> nibblerMonitor =
+                    final IFuseBox<NibblerTransportComponents> nibblerMonitor =
                             new ExpandedDetailResourceMonitor<>(displayMonitor, threadName + "-Nibblers", errorLog,
                                     NibblerTransportComponents.class, ReddalComponents.TRADING_DATA);
                     final MultiLayeredResourceMonitor<NibblerTransportComponents> nibblerParentMonitor =
@@ -559,7 +560,7 @@ public class Main {
 
                         final String sourceNibbler = nibblerConfig.getKey();
 
-                        final IResourceMonitor<NibblerTransportComponents> childMonitor =
+                        final IFuseBox<NibblerTransportComponents> childMonitor =
                                 nibblerParentMonitor.createChildResourceMonitor(sourceNibbler);
 
                         final LadderInfoListener ladderInfoListener =
@@ -583,8 +584,8 @@ public class Main {
         final ConfigGroup fxConfig = root.getEnabledGroup("fx");
         if (null != fxConfig) {
             final String name = "FX UI";
-            final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
-            final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+            final IFuseBox<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
+            final IFuseBox<SelectIOComponents> selectIOMonitor =
                     new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class,
                             ReddalComponents.FX_SELECT_IO);
 
@@ -775,7 +776,7 @@ public class Main {
         final ConfigGroup indyConfig = root.getGroup("indy");
         final IIndyCacheListener indyListener = new IndyClient(channels.instDefs, channels.symbolDescs);
         final String indyUsername = indyConfig.getString("username");
-        final IResourceMonitor<IndyTransportComponents> indyMonitor =
+        final IFuseBox<IndyTransportComponents> indyMonitor =
                 new ExpandedDetailResourceMonitor<>(monitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
         final TransportTCPKeepAliveConnection<?, ?> indyConnection =
                 IndyCacheFactory.createClient(app.selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
@@ -811,7 +812,7 @@ public class Main {
         final ConfigGroup pksConfig = root.getEnabledGroup("pks");
         if (null != pksConfig) {
 
-            final IResourceMonitor<PositionTransportComponents> pksMonitor =
+            final IFuseBox<PositionTransportComponents> pksMonitor =
                     new ExpandedDetailResourceMonitor<>(monitor, "PKS", errorLog, PositionTransportComponents.class, ReddalComponents.PKS);
 
             final PKSPositionClient pksClient = new PKSPositionClient(channels.pksExposures);
@@ -867,8 +868,8 @@ public class Main {
             throws IOException, ConfigException {
         final JasperTradesListener jasperTradesPublisher = new JasperTradesListener(jasperTradesChan);
         final String mrChillThreadName = "MrChill-JasperTrades";
-        final IResourceMonitor<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(mrChillThreadName);
-        final IResourceMonitor<SelectIOComponents> selectIOMonitor =
+        final IFuseBox<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(mrChillThreadName);
+        final IFuseBox<SelectIOComponents> selectIOMonitor =
                 new ExpandedDetailResourceMonitor<>(displayMonitor, mrChillThreadName, errorLog, SelectIOComponents.class,
                         ReddalComponents.UI_SELECT_IO);
         final ConfigGroup mrChillConfig = app.config.getGroup("mrchill");
@@ -888,7 +889,7 @@ public class Main {
         app.addStartUpAction(() -> mrChillSelectIO.start(mrChillThreadName));
     }
 
-    private static DepthBookSubscriber getMDSubscription(final Application<?> app, final IResourceMonitor<ReddalComponents> displayMonitor,
+    private static DepthBookSubscriber getMDSubscription(final Application<?> app, final IFuseBox<ReddalComponents> displayMonitor,
             final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
             final String localAppName, final Publisher<RfqAlert> rfqAlerts) throws ConfigException {
 
@@ -897,7 +898,7 @@ public class Main {
         final LevelTwoBookSubscriber l2BookHandler =
                 new LevelTwoBookSubscriber(displayMonitor, channels.searchResults, channels.symbolRefPrices, rfqAlerts);
 
-        final IResourceMonitor<MDTransportComponents> mdClientMonitor =
+        final IFuseBox<MDTransportComponents> mdClientMonitor =
                 new ExpandedDetailResourceMonitor<>(displayMonitor, mdSource.name() + "-Thread", app.errorLog, MDTransportComponents.class,
                         ReddalComponents.MD_TRANSPORT);
 
@@ -914,7 +915,7 @@ public class Main {
         return new DepthBookSubscriber(l3BookHandler, l2BookHandler);
     }
 
-    private static LadderPresenter getLadderPresenter(final IResourceMonitor<ReddalComponents> displayMonitor,
+    private static LadderPresenter getLadderPresenter(final IFuseBox<ReddalComponents> displayMonitor,
             final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment, final FXCalc<?> fxCalc,
             final IMDSubscriber depthBookSubscriber, final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket,
             final FiberBuilder fiberBuilder, final IPicardSpotter picardSpotter, final IPremiumCalc premiumCalc) throws ConfigException {
@@ -947,7 +948,7 @@ public class Main {
         return ladderPresenter;
     }
 
-    private static void createStackClient(final IErrorLogger errorLog, final IResourceMonitor<ReddalComponents> displayMonitor,
+    private static void createStackClient(final IErrorLogger errorLog, final IFuseBox<ReddalComponents> displayMonitor,
             final SelectIO displaySelectIO, final String name, final ConfigGroup stackConfig,
             final StackGroupCallbackBatcher stackUpdateBatcher, final String localAppName) throws ConfigException {
 
@@ -956,7 +957,7 @@ public class Main {
                         ReddalComponents.STACK_GROUP_CLIENT);
 
         final String connectionName = name + "-stack-" + stackConfig.getKey();
-        final IResourceMonitor<StackTransportComponents> stackMonitor = stackParentMonitor.createChildResourceMonitor(connectionName);
+        final IFuseBox<StackTransportComponents> stackMonitor = stackParentMonitor.createChildResourceMonitor(connectionName);
 
         final StackClientHandler client =
                 StackCacheFactory.createClientCache(displaySelectIO, stackConfig, stackMonitor, connectionName, localAppName,
@@ -983,13 +984,13 @@ public class Main {
         app.addStartUpAction(client::restart);
     }
 
-    private static void setupYodaSignals(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor,
+    private static void setupYodaSignals(final SelectIO selectIO, final IFuseBox<ReddalComponents> monitor,
             final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts,
             final Publisher<PicardRow> atClosePublisher) throws ConfigException {
 
         final ConfigGroup yodaConfig = config.getEnabledGroup("yoda");
         if (null != yodaConfig) {
-            final IResourceMonitor<YodaTransportComponents> yodaMonitor =
+            final IFuseBox<YodaTransportComponents> yodaMonitor =
                     new ExpandedDetailResourceMonitor<>(monitor, "Yoda", errorLog, YodaTransportComponents.class, ReddalComponents.YODA);
 
             final MultiLayeredResourceMonitor<YodaTransportComponents> yodaParentMonitor =
@@ -1000,7 +1001,7 @@ public class Main {
             for (final ConfigGroup yodaInstanceConfig : yodaConfig.groups()) {
 
                 final String instanceName = yodaInstanceConfig.getKey();
-                final IResourceMonitor<YodaTransportComponents> yodaChildMonitor =
+                final IFuseBox<YodaTransportComponents> yodaChildMonitor =
                         yodaParentMonitor.createChildResourceMonitor(instanceName);
 
                 final YodaAtCloseClient atCloseClient = new YodaAtCloseClient(selectIO, atClosePublisher);
@@ -1025,13 +1026,13 @@ public class Main {
 
     private static void setupStackManager(final Application<ReddalComponents> app, final ReddalFibers fibers, final ReddalChannels channels,
             final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber, final SelectIO opxlSelectIO,
-            final IResourceMonitor<OPXLComponents> opxlMonitor, final OpxlClient<?> opxlClient,
+            final IFuseBox<OPXLComponents> opxlMonitor, final OpxlClient<?> opxlClient,
             final SpreadContractSetGenerator contractSetGenerator, final boolean isForETF) throws Exception {
 
         final ConfigGroup stackConfig = app.config.getEnabledGroup("stacks");
         if (null != stackConfig) {
 
-            final IResourceMonitor<StackManagerComponents> stackManagerMonitor =
+            final IFuseBox<StackManagerComponents> stackManagerMonitor =
                     new ExpandedDetailResourceMonitor<>(app.monitor, "Stack Manager", app.errorLog, StackManagerComponents.class,
                             ReddalComponents.STACK_MANAGER);
 
@@ -1087,7 +1088,7 @@ public class Main {
                 server.addRelationshipListener(stackFamilyPresenter);
             });
 
-            final IResourceMonitor<StackPersistenceComponents> logMonitor =
+            final IFuseBox<StackPersistenceComponents> logMonitor =
                     new ExpandedDetailResourceMonitor<>(stackManagerMonitor, "Stacks log", app.errorLog, StackPersistenceComponents.class,
                             StackManagerComponents.LOGGER);
 
@@ -1114,7 +1115,7 @@ public class Main {
 
                 final StackNibblerClient nibblerClient = new StackNibblerClient(nibbler, communityManager, stackUpdateBatcher);
 
-                final IResourceMonitor<StackTransportComponents> nibblerMonitor =
+                final IFuseBox<StackTransportComponents> nibblerMonitor =
                         clientMonitorParent.createChildResourceMonitor(connectionName);
                 final StackClientHandler client =
                         StackCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "Stacks-" + nibbler,
@@ -1174,7 +1175,7 @@ public class Main {
     }
 
     private static Map<MDSource, LinkedList<ConfigGroup>> setupBackgroundNibblerTransport(final Application<ReddalComponents> app,
-            final SelectIO opxlSelectIO, final IResourceMonitor<OPXLComponents> opxlMonitor, final OpxlClient<OPXLComponents> opxlClient,
+            final SelectIO opxlSelectIO, final IFuseBox<OPXLComponents> opxlMonitor, final OpxlClient<OPXLComponents> opxlClient,
             final ReddalFibers fibers, final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
             final ReddalChannels channels, final Thread.UncaughtExceptionHandler uncaughtExceptionHandler)
             throws ConfigException, IOException {
@@ -1277,7 +1278,7 @@ public class Main {
                 final String nibbler = nibblerConfig.getKey();
                 final String connectionName = app.appName + " config";
 
-                final IResourceMonitor<ReddalComponents> childMonitor = clientMonitorParent.createChildResourceMonitor(connectionName);
+                final IFuseBox<ReddalComponents> childMonitor = clientMonitorParent.createChildResourceMonitor(connectionName);
 
                 if (nibblerConfig.paramExists(MD_SOURCES_PARAM)) {
                     final Set<MDSource> mdSources = nibblerConfig.getEnumSet(MD_SOURCES_PARAM, MDSource.class);
@@ -1297,7 +1298,7 @@ public class Main {
                     connectedNibblerChannel = Constants::NO_OP;
                 }
 
-                final IResourceMonitor<NibblerTransportComponents> nibblerMonitor =
+                final IFuseBox<NibblerTransportComponents> nibblerMonitor =
                         new ExpandedDetailResourceMonitor<>(childMonitor, "Nibbler Transport", app.errorLog,
                                 NibblerTransportComponents.class, ReddalComponents.BLOTTER_CONNECTION);
 
@@ -1471,9 +1472,9 @@ public class Main {
     }
 
     private static FXCalc<?> createOPXLFXCalc(final Application<ReddalComponents> app, final SelectIO opxlSelectIO,
-            final SelectIO callbackSelectIO, final IResourceMonitor<OPXLComponents> opxlMonitor) {
+            final SelectIO callbackSelectIO, final IFuseBox<OPXLComponents> opxlMonitor) {
 
-        final IResourceMonitor<PicardFXCalcComponents> fxMonitor = new ResourceIgnorer<>();
+        final IFuseBox<PicardFXCalcComponents> fxMonitor = new ResourceIgnorer<>();
         final FXCalc<PicardFXCalcComponents> fxCalc = new FXCalc<>(fxMonitor, PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
         final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(opxlSelectIO, callbackSelectIO, opxlMonitor, fxCalc, app.logDir);
         app.addStartUpAction(opxlFXCalcUpdater::start);
@@ -1482,7 +1483,7 @@ public class Main {
     }
 
     private static void setupBulkOrderSubmitter(final SelectIO selectIO, final SelectIOFiber fiber,
-            final IResourceMonitor<OPXLComponents> monitor, final OpxlClient<OPXLComponents> opxlClient, final Path logDir,
+            final IFuseBox<OPXLComponents> monitor, final OpxlClient<OPXLComponents> opxlClient, final Path logDir,
             final UILogger webLog, final WebApplication webApp, final Channel<GTCSupportedSymbol> supportedSymbols,
             final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final Channel<LadderClickTradingIssue> ladderClickTradingIssues,
             final TypedChannel<GTCBettermentPricesRequest> gtcBettermentRequests,

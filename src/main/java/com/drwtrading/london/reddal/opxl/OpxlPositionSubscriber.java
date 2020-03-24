@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.opxl;
 
 import com.drwtrading.london.eeif.opxl.reader.AOpxlReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.reddal.OPXLComponents;
 import com.google.common.base.Strings;
 import org.jetlang.channels.Publisher;
@@ -16,10 +16,10 @@ import java.util.Map;
 
 public class OpxlPositionSubscriber extends AOpxlReader<OPXLComponents, OPXLDeskPositions> {
 
-    private final IResourceMonitor<OPXLComponents> monitor;
+    private final IFuseBox<OPXLComponents> monitor;
     private final Publisher<OPXLDeskPositions> positionPublisher;
 
-    public OpxlPositionSubscriber(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor, final Collection<String> topics,
+    public OpxlPositionSubscriber(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor, final Collection<String> topics,
             final Publisher<OPXLDeskPositions> positionPublisher) {
 
         super(selectIO, selectIO, monitor, OPXLComponents.OPXL_POSITION_SUBSCRIBER, topics, "OPXLPositionSubscriber");

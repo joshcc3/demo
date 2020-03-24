@@ -5,7 +5,7 @@ import com.drwtrading.london.eeif.opxl.OpxlData;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.OPXLComponents;
 
@@ -33,7 +33,7 @@ public class PremiumOPXLWriter {
 
     private Object[][] writeTable;
 
-    public PremiumOPXLWriter(final SelectIO selectIO, final ConfigGroup config, final IResourceMonitor<OPXLComponents> monitor)
+    public PremiumOPXLWriter(final SelectIO selectIO, final ConfigGroup config, final IFuseBox<OPXLComponents> monitor)
             throws ConfigException {
 
         this.writer = new OpxlClient<>(selectIO, config, monitor, OPXLComponents.OPXL_SPREAD_PREMIUM_WRITER);

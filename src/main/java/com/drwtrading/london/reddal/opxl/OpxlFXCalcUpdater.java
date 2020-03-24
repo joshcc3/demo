@@ -4,7 +4,7 @@ import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.OPXLComponents;
@@ -28,7 +28,7 @@ public class OpxlFXCalcUpdater extends AOpxlLoggingReader<OPXLComponents, Map<CC
     private final FXCalc<PicardFXCalcComponents> fxCalc;
     private boolean awaitingData = true;
 
-    public OpxlFXCalcUpdater(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<OPXLComponents> monitor,
+    public OpxlFXCalcUpdater(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IFuseBox<OPXLComponents> monitor,
             final FXCalc<PicardFXCalcComponents> fxCalc, final Path path) {
 
         super(opxlSelectIO, callbackSelectIO, monitor, OPXLComponents.OPXL_FX_CALC, getTopic(), path);

@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.opxl;
 
 import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.OPXLComponents;
@@ -22,7 +22,7 @@ public class OpxlExDateSubscriber extends AOpxlLoggingReader<OPXLComponents, ISI
 
     private final Publisher<ISINsGoingEx> publisher;
 
-    public OpxlExDateSubscriber(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor, final Path logDir,
+    public OpxlExDateSubscriber(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor, final Path logDir,
             final Publisher<ISINsGoingEx> publisher) {
 
         super(selectIO, selectIO, monitor, OPXLComponents.OPXL_ISINS_GOING_EX, getTopic(selectIO), logDir);

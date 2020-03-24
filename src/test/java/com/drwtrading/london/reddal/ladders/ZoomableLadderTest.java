@@ -13,7 +13,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.impl.levelThree.Level3Bo
 import com.drwtrading.london.eeif.utils.marketData.book.ticks.ITickTable;
 import com.drwtrading.london.eeif.utils.marketData.book.ticks.SingleBandTickTable;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
@@ -86,7 +86,7 @@ public class ZoomableLadderTest {
     }
 
     @SuppressWarnings("unchecked")
-    private final IResourceMonitor<ReddalComponents> monitor = Mockito.mock(IResourceMonitor.class);
+    private final IFuseBox<ReddalComponents> monitor = Mockito.mock(IFuseBox.class);
     @SuppressWarnings("unchecked")
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher = Mockito.mock(Publisher.class);
     @SuppressWarnings("unchecked")

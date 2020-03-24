@@ -5,7 +5,7 @@ import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.OPXLComponents;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.BulkOrderEntryPresenter;
@@ -28,7 +28,7 @@ public class OPXLBulkOrderPriceLimits extends AOpxlLoggingReader<OPXLComponents,
 
     private final BulkOrderEntryPresenter presenter;
 
-    public OPXLBulkOrderPriceLimits(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor, final Path logDir,
+    public OPXLBulkOrderPriceLimits(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor, final Path logDir,
             final OpxlClient<OPXLComponents> opxlClient, final BulkOrderEntryPresenter presenter) {
 
         super(opxlClient, selectIO, monitor, OPXLComponents.OPXL_BULK_ORDER_BETTERMENT_PRICE_LIMITS, getTopic(), logDir);

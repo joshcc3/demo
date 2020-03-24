@@ -4,7 +4,7 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -26,7 +26,7 @@ import java.util.Set;
 
 public class ShredderMessageRouter {
 
-    private final IResourceMonitor<ReddalComponents> monitor;
+    private final IFuseBox<ReddalComponents> monitor;
 
     private final UILogger webLog;
 
@@ -37,7 +37,7 @@ public class ShredderMessageRouter {
     private final Map<Publisher<WebSocketOutboundData>, Publisher<WebSocketControlMessage>> redirects;
     private final Map<Publisher<WebSocketOutboundData>, LinkedList<WebSocketControlMessage>> queue;
 
-    public ShredderMessageRouter(final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
+    public ShredderMessageRouter(final IFuseBox<ReddalComponents> monitor, final UILogger webLog,
             final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderPresenters) {
         this.monitor = monitor;
 

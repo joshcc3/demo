@@ -4,7 +4,7 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
@@ -29,7 +29,7 @@ import java.util.Set;
 
 public class LadderMessageRouter {
 
-    private final IResourceMonitor<ReddalComponents> monitor;
+    private final IFuseBox<ReddalComponents> monitor;
 
     private final UILogger webLog;
 
@@ -43,7 +43,7 @@ public class LadderMessageRouter {
     private final Map<Publisher<WebSocketOutboundData>, Publisher<WebSocketControlMessage>> redirects;
     private final Map<Publisher<WebSocketOutboundData>, LinkedList<WebSocketControlMessage>> queue;
 
-    public LadderMessageRouter(final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
+    public LadderMessageRouter(final IFuseBox<ReddalComponents> monitor, final UILogger webLog,
             final TypedChannel<SymbolSelection> symbolSelections, final TypedChannel<WebSocketControlMessage> stackManagerLadderPresenter,
             final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderPresenters) {
 

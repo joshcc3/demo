@@ -15,7 +15,7 @@ import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
@@ -87,7 +87,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     private static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 5;
     private static final long HEARTBEAT_INTERVAL_MS = 1000;
 
-    private final IResourceMonitor<ReddalComponents> monitor;
+    private final IFuseBox<ReddalComponents> monitor;
     private final IMDSubscriber bookSubscriber;
     private final String ewokBaseURL;
 
@@ -138,7 +138,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     private Set<String> isinsGoingEx;
 
-    public LadderPresenter(final IResourceMonitor<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
+    public LadderPresenter(final IFuseBox<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
             final Publisher<IOrderCmd> remoteOrderCommandByServer, final LadderOptions ladderOptions, final IPicardSpotter picardSpotter,
             final IPremiumCalc premiumCalc, final FXCalc<?> fxCalc,
             final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,

@@ -3,7 +3,7 @@ package com.drwtrading.london.reddal.opxl;
 import com.drwtrading.london.eeif.opxl.reader.AOpxlReader;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.reddal.OPXLComponents;
 import com.drwtrading.london.reddal.data.LaserLineType;
 import com.drwtrading.london.reddal.data.LaserLineValue;
@@ -27,7 +27,7 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
     private final Publisher<LaserLineValue> laserLinePublisher;
     private final Publisher<OpxlLadderText> ladderTextPublisher;
 
-    public OpxlLadderTextSubscriber(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor,
+    public OpxlLadderTextSubscriber(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor,
             final Collection<String> topics, final Publisher<LaserLineValue> laserLinePublisher,
             final Publisher<OpxlLadderText> ladderTextPublisher) {
 

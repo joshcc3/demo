@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.opxl;
 
 import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.OPXLComponents;
@@ -39,7 +39,7 @@ public class OpxlDividendTweets extends AOpxlLoggingReader<OPXLComponents, Colle
 
     private final Set<StockAlert> sentStockAlerts;
 
-    public OpxlDividendTweets(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor, final Path logPath,
+    public OpxlDividendTweets(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor, final Path logPath,
             final Publisher<StockAlert> stockAlertPublisher) {
 
         super(selectIO, selectIO, monitor, OPXLComponents.OPXL_DIVIDEND_TWEET_READER, getTopic(), logPath);

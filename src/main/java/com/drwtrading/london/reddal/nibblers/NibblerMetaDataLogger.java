@@ -12,7 +12,7 @@ import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableRow;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableWriter;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.ReddalComponents;
@@ -27,7 +27,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
 
     private static final String LOG_FILE_PREFIX = "metaData-";
 
-    private final IResourceMonitor<ReddalComponents> monitor;
+    private final IFuseBox<ReddalComponents> monitor;
 
     private final long millisAtMidnight;
     private final SimpleDateFormat timeFormat;
@@ -43,7 +43,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
     private final FileTableRow<NibblerMetaTables, NibblerWorkingOrderColumns> workingOrderRow;
     private final FileTableRow<NibblerMetaTables, NibblerLastTradeColumns> lastTradeRow;
 
-    public NibblerMetaDataLogger(final IClock clock, final IResourceMonitor<ReddalComponents> monitor, final Path logDir,
+    public NibblerMetaDataLogger(final IClock clock, final IFuseBox<ReddalComponents> monitor, final Path logDir,
             final String nibblerName) throws IOException {
 
         this.monitor = monitor;

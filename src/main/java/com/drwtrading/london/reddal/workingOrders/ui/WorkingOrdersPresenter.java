@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.workingOrders.ui;
 
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.ReddalComponents;
@@ -35,7 +35,7 @@ public class WorkingOrdersPresenter {
     private static final long HEART_BEAT_TIMEOUT_NANOS = 5 * DateTimeUtil.NANOS_IN_SECS;
 
     private final IClock clock;
-    private final IResourceMonitor<ReddalComponents> monitor;
+    private final IFuseBox<ReddalComponents> monitor;
 
     private final UILogger webLog;
 
@@ -53,7 +53,7 @@ public class WorkingOrdersPresenter {
     private int numViewers;
     private long lastViewerHeartbeatNanoSinceMidnight;
 
-    public WorkingOrdersPresenter(final SelectIO selectIO, final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
+    public WorkingOrdersPresenter(final SelectIO selectIO, final IFuseBox<ReddalComponents> monitor, final UILogger webLog,
             final Publisher<IOrderCmd> commands, final Publisher<LadderClickTradingIssue> cmdRejectPublisher,
             final Publisher<OrderEntryCommandToServer> managedOrderCommands) {
 

@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.opxl;
 
 import com.drwtrading.london.eeif.utils.io.SelectIO;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.OPXLComponents;
 import com.drwtrading.london.reddal.stacks.family.StackChildFilter;
@@ -18,7 +18,7 @@ public class OPXLSpreadnoughtFilters extends AFiltersOPXL {
     private final StackFamilyPresenter stackFamilyPresenter;
 
     public OPXLSpreadnoughtFilters(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO,
-            final IResourceMonitor<OPXLComponents> monitor, final Path logPath, final StackFamilyPresenter stackFamilyPresenter) {
+            final IFuseBox<OPXLComponents> monitor, final Path logPath, final StackFamilyPresenter stackFamilyPresenter) {
 
         super(opxlSelectIO, callbackSelectIO, monitor, OPXLComponents.OPXL_SPREAD_STACK_MANAGER_FILTERS, TOPIC_PREFIX, logPath);
         this.stackFamilyPresenter = stackFamilyPresenter;

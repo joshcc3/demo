@@ -7,7 +7,7 @@ import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableRow;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableWriter;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.ReddalComponents;
@@ -29,7 +29,7 @@ import java.util.Set;
 public class NibblerTransportOrderEntry {
 
     private final IClock clock;
-    private final IResourceMonitor<ReddalComponents> monitor;
+    private final IFuseBox<ReddalComponents> monitor;
 
     private final NibblerClientHandler nibblerClient;
 
@@ -45,7 +45,7 @@ public class NibblerTransportOrderEntry {
 
     private int prevClOrdID;
 
-    public NibblerTransportOrderEntry(final IClock clock, final IResourceMonitor<ReddalComponents> monitor,
+    public NibblerTransportOrderEntry(final IClock clock, final IFuseBox<ReddalComponents> monitor,
             final NibblerClientHandler nibblerClient, final Path logDir) throws IOException {
 
         this.clock = clock;

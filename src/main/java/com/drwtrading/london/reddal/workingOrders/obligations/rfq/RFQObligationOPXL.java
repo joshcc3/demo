@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.workingOrders.obligations.rfq;
 
 import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.reddal.OPXLComponents;
 
 import java.nio.file.Path;
@@ -22,7 +22,7 @@ public class RFQObligationOPXL extends AOpxlLoggingReader<OPXLComponents, RFQObl
 
     private final Consumer<RFQObligationSet> updates;
 
-    public RFQObligationOPXL(final SelectIO opxlSelectIO, final IResourceMonitor<OPXLComponents> monitor, final OPXLComponents component,
+    public RFQObligationOPXL(final SelectIO opxlSelectIO, final IFuseBox<OPXLComponents> monitor, final OPXLComponents component,
             final Path path, final Consumer<RFQObligationSet> updates) {
 
         super(opxlSelectIO, opxlSelectIO, monitor, component, TOPIC, path);

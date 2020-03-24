@@ -1,8 +1,8 @@
 package com.drwtrading.london.reddal;
 
-import com.drwtrading.london.eeif.utils.monitoring.IMonitoredComponent;
+import com.drwtrading.london.eeif.utils.monitoring.IFuse;
 
-public enum ReddalComponents implements IMonitoredComponent {
+public enum ReddalComponents implements IFuse {
 
     SELECT_IO,
     MONITOR,

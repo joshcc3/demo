@@ -6,14 +6,14 @@ import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.MDTranspo
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.units.MDTransportLevel2UnitHandler;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.units.MDTransportLevel3UnitHandler;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 
 public class ReddalMDTransportClient extends MDTransportClient {
 
     private final LevelThreeBookSubscriber l3UnitHandler;
     private final LevelTwoBookSubscriber l2UnitHandler;
 
-    public ReddalMDTransportClient(final SelectIO selectIO, final IResourceMonitor<MDTransportComponents> monitor, final MDSource mdSource,
+    public ReddalMDTransportClient(final SelectIO selectIO, final IFuseBox<MDTransportComponents> monitor, final MDSource mdSource,
             final String appName, final LevelThreeBookSubscriber l3UnitHandler, final LevelTwoBookSubscriber l2UnitHandler,
             final int msgMaxTimeDiffMillis, final boolean isTradeSnapshotWanted) {
 

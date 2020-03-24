@@ -13,7 +13,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.marketData.book.ticks.ITickTable;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ReddalComponents;
@@ -115,7 +115,7 @@ public class LadderBookView implements ILadderBoard {
         NON_DISPLAY_PREFS.add(HTML.ZOOM_LEVEL);
     }
 
-    private final IResourceMonitor<ReddalComponents> monitor;
+    private final IFuseBox<ReddalComponents> monitor;
 
     private final String username;
     private final boolean isTrader;
@@ -177,7 +177,7 @@ public class LadderBookView implements ILadderBoard {
     private Long modifyFromPrice;
     private long modifyFromPriceSelectedTime;
 
-    LadderBookView(final IResourceMonitor<ReddalComponents> monitor, final String username, final boolean isTrader, final String symbol,
+    LadderBookView(final IFuseBox<ReddalComponents> monitor, final String username, final boolean isTrader, final String symbol,
             final LadderViewModel ladderModel, final ILadderUI view, final LadderOptions ladderOptions, final FXCalc<?> fxCalc,
             final FeesCalc feesCalc, final DecimalFormat feeDF, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,

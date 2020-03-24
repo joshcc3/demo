@@ -5,7 +5,7 @@ import com.drwtrading.london.eeif.opxl.OpxlData;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.Environment;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.OPXLComponents;
 
@@ -27,7 +27,7 @@ public class OPXLBestWorkingOrdersPresenter {
 
     private Object[][] table;
 
-    public OPXLBestWorkingOrdersPresenter(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor, final Environment env) {
+    public OPXLBestWorkingOrdersPresenter(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor, final Environment env) {
 
         this.selectIO = selectIO;
 

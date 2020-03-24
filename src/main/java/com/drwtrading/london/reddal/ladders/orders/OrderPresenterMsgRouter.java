@@ -4,7 +4,7 @@ import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 public class OrderPresenterMsgRouter {
 
     private static final Pattern QUOTE_REMOVER = Pattern.compile("\"", Pattern.LITERAL);
-    private final IResourceMonitor<ReddalComponents> monitor;
+    private final IFuseBox<ReddalComponents> monitor;
 
     private final UILogger webLog;
 
@@ -40,7 +40,7 @@ public class OrderPresenterMsgRouter {
     private final Map<Publisher<WebSocketOutboundData>, Publisher<WebSocketControlMessage>> redirects;
     private final Map<Publisher<WebSocketOutboundData>, LinkedList<WebSocketControlMessage>> queue;
 
-    public OrderPresenterMsgRouter(final IResourceMonitor<ReddalComponents> monitor, final UILogger webLog,
+    public OrderPresenterMsgRouter(final IFuseBox<ReddalComponents> monitor, final UILogger webLog,
             final Map<MDSource, TypedChannel<WebSocketControlMessage>> presenters) {
 
         this.monitor = monitor;

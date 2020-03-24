@@ -3,7 +3,7 @@ package com.drwtrading.london.reddal.opxl;
 import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.reddal.OPXLComponents;
 import com.drwtrading.london.reddal.stacks.family.StackChildFilter;
 
@@ -16,7 +16,7 @@ abstract class AFiltersOPXL extends AOpxlLoggingReader<OPXLComponents, Collectio
 
     private static final String SYMBOL_COL = "Symbol";
 
-    AFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IResourceMonitor<OPXLComponents> monitor,
+    AFiltersOPXL(final SelectIO opxlSelectIO, final SelectIO callbackSelectIO, final IFuseBox<OPXLComponents> monitor,
             final OPXLComponents component, final String topic, final Path logDir) {
 
         super(opxlSelectIO, callbackSelectIO, monitor, component, topic, logDir);

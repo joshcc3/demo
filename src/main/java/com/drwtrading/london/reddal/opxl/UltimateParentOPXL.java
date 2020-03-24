@@ -3,7 +3,7 @@ package com.drwtrading.london.reddal.opxl;
 import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.reddal.OPXLComponents;
 import org.jetlang.channels.Publisher;
 
@@ -23,7 +23,7 @@ public class UltimateParentOPXL extends AOpxlLoggingReader<OPXLComponents, Colle
 
     private final Publisher<UltimateParentMapping> ultimateParentPublisher;
 
-    public UltimateParentOPXL(final SelectIO selectIO, final IResourceMonitor<OPXLComponents> monitor, final Path logPath,
+    public UltimateParentOPXL(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor, final Path logPath,
             final Publisher<UltimateParentMapping> ultimateParentPublisher) {
 
         super(selectIO, selectIO, monitor, OPXLComponents.OPXL_ULTIMATE_PARENT, TOPIC, logPath);

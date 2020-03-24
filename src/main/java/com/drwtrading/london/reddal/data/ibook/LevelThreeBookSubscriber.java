@@ -11,7 +11,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
-import com.drwtrading.london.eeif.utils.monitoring.IResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ReddalComponents;
@@ -27,7 +27,7 @@ import java.util.Map;
 
 public class LevelThreeBookSubscriber implements IBookLevelThreeMonitor {
 
-    private final IResourceMonitor<ReddalComponents> monitor;
+    private final IFuseBox<ReddalComponents> monitor;
 
     private final Channel<SearchResult> searchResults;
     private final Channel<SymbolReferencePrice> symbolRefPrices;
@@ -40,7 +40,7 @@ public class LevelThreeBookSubscriber implements IBookLevelThreeMonitor {
     private final LongMap<IBook<?>> dirtyBooks;
     private final LongMap<MDForSymbol> mdCallbacks;
 
-    public LevelThreeBookSubscriber(final IResourceMonitor<ReddalComponents> monitor, final Channel<SearchResult> searchResults,
+    public LevelThreeBookSubscriber(final IFuseBox<ReddalComponents> monitor, final Channel<SearchResult> searchResults,
             final Channel<SymbolReferencePrice> symbolRefPrices, final Publisher<RfqAlert> stockAlertChannel) {
 
         this.monitor = monitor;
