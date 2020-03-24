@@ -3,6 +3,9 @@ package com.drwtrading.london.reddal.stacks.autoManager;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackStrategyConfig;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
+import com.drwtrading.london.eeif.utils.collections.LongMap;
+import com.drwtrading.london.eeif.utils.collections.LongMapNode;
+import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.ticks.ITickTable;
 import com.drwtrading.london.reddal.symbols.SymbolReferencePrice;
@@ -15,7 +18,7 @@ public class StackETFAutoManager implements IStackInstTypeAutoManager {
     private static final String SOURCE = "ETF_AUTO_MAN";
 
     private final Map<String, StackClientHandler> stackClients;
-    private final Map<String, Map<String, StackConfigGroup>> stacksConfig;
+    private final Map<String, Map<String, LongMap<StackConfigGroup>>> stacksConfig;
 
     private final Map<String, SymbolReferencePrice> refPrices;
 
@@ -37,8 +40,9 @@ public class StackETFAutoManager implements IStackInstTypeAutoManager {
     @Override
     public void configUpdated(final String nibbler, final StackConfigGroup configGroup) {
 
-        final Map<String, StackConfigGroup> nibblerConfigs = stacksConfig.get(nibbler);
-        nibblerConfigs.put(configGroup.getSymbol(), configGroup);
+        final Map<String, LongMap<StackConfigGroup>> nibblerConfigs = stacksConfig.get(nibbler);
+        final LongMap<StackConfigGroup> typedConfigs = MapUtils.getMappedItem(nibblerConfigs, configGroup.getSymbol(), LongMap::new);
+        typedConfigs.put(configGroup.getConfigID(), configGroup);
     }
 
     @Override
@@ -56,31 +60,34 @@ public class StackETFAutoManager implements IStackInstTypeAutoManager {
     @Override
     public void setModLevels(final int bpsEquivalent) {
 
-        for (final Map.Entry<String, Map<String, StackConfigGroup>> nibblerConfig : stacksConfig.entrySet()) {
+        for (final Map.Entry<String, Map<String, LongMap<StackConfigGroup>>> nibblerConfig : stacksConfig.entrySet()) {
 
             final String nibbler = nibblerConfig.getKey();
             final StackClientHandler clientHandler = stackClients.get(nibbler);
 
-            final Map<String, StackConfigGroup> configGroups = nibblerConfig.getValue();
-            for (final StackConfigGroup configGroup : configGroups.values()) {
+            final Map<String, LongMap<StackConfigGroup>> configGroups = nibblerConfig.getValue();
+            for (final LongMap<StackConfigGroup> typedConfigs : configGroups.values()) {
 
-                final SymbolReferencePrice refPrice = refPrices.get(configGroup.getSymbol());
-                if (null != refPrice) {
+                for (final LongMapNode<StackConfigGroup> configGroupNode : typedConfigs) {
 
-                    final long nextPrice = refPrice.yestClosePrice + (bpsEquivalent * refPrice.yestClosePrice) / 1_00_00;
+                    final StackConfigGroup configGroup = configGroupNode.getValue();
+                    final SymbolReferencePrice refPrice = refPrices.get(configGroup.getSymbol());
+                    if (null != refPrice) {
 
-                    final ITickTable tickTable = refPrice.inst.getTickTable();
-                    final int basicModLevels = (int) tickTable.getTicksBetween(refPrice.yestClosePrice, nextPrice);
-                    final int modLevels = Math.max(1, basicModLevels);
+                        final long nextPrice = refPrice.yestClosePrice + (bpsEquivalent * refPrice.yestClosePrice) / 1_00_00;
 
-                    final StackStrategyConfig bidConfig = configGroup.bidStrategyConfig;
-                    setModLevels(clientHandler, BookSide.BID, configGroup.configGroupID, bidConfig, modLevels);
+                        final ITickTable tickTable = refPrice.inst.getTickTable();
+                        final int basicModLevels = (int) tickTable.getTicksBetween(refPrice.yestClosePrice, nextPrice);
+                        final int modLevels = Math.max(1, basicModLevels);
 
-                    final StackStrategyConfig askConfig = configGroup.askStrategyConfig;
-                    setModLevels(clientHandler, BookSide.ASK, configGroup.configGroupID, askConfig, modLevels);
+                        final StackStrategyConfig bidConfig = configGroup.bidStrategyConfig;
+                        setModLevels(clientHandler, BookSide.BID, configGroup.configGroupID, bidConfig, modLevels);
+
+                        final StackStrategyConfig askConfig = configGroup.askStrategyConfig;
+                        setModLevels(clientHandler, BookSide.ASK, configGroup.configGroupID, askConfig, modLevels);
+                    }
                 }
             }
-
             clientHandler.batchComplete();
         }
     }

@@ -88,7 +88,7 @@ public class StackConfigPresenter {
     }
 
     @FromWebSocketView
-    public void addUI(final String symbolsString, final WebSocketInboundData data) {
+    public void subscribe(final String symbolsString, final WebSocketInboundData data) {
 
         final IStackConfigUI newView = views.get(data.getOutboundChannel());
         newView.setConfigTypes(STACK_CONFIG_TYPES);
