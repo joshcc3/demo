@@ -16,6 +16,7 @@ import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.stockAlerts.RfqAlert;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.symbols.SymbolReferencePrice;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.Publisher;
 
@@ -28,6 +29,7 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
     private final IResourceMonitor<ReddalComponents> monitor;
 
     private final Channel<SearchResult> searchResults;
+    private final Channel<SymbolReferencePrice> symbolRefPrices;
     private final Publisher<RfqAlert> stockAlertChannel;
 
     private final Map<MDSource, IMDSubscriber> mdClients;
@@ -38,10 +40,11 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
     private final LongMap<MDForSymbol> mdCallbacks;
 
     public LevelTwoBookSubscriber(final IResourceMonitor<ReddalComponents> monitor, final Channel<SearchResult> searchResults,
-            final Publisher<RfqAlert> stockAlertChannel) {
+            final Channel<SymbolReferencePrice> symbolRefPrices, final Publisher<RfqAlert> stockAlertChannel) {
 
         this.monitor = monitor;
         this.searchResults = searchResults;
+        this.symbolRefPrices = symbolRefPrices;
         this.stockAlertChannel = stockAlertChannel;
 
         this.mdClients = new EnumMap<>(MDSource.class);
@@ -79,6 +82,13 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
 
         if (refPrice.isValid()) {
             switch (refPrice.getReferencePoint()) {
+                case YESTERDAY_CLOSE: {
+                    if (refPrice.isValid()) {
+                        final SymbolReferencePrice symbolRefPrice = new SymbolReferencePrice(book, refPrice.getPrice());
+                        symbolRefPrices.publish(symbolRefPrice);
+                    }
+                    break;
+                }
                 case RFQ: {
                     final long milliSinceMidnight = refPrice.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS;
                     final boolean isETF = book.getInstType() == InstType.ETF;

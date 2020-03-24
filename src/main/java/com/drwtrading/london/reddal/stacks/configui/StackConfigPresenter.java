@@ -19,13 +19,14 @@ import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
-import com.drwtrading.websockets.WebSocketOutboundData;
-import org.jetlang.channels.Publisher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class StackConfigPresenter {
 
@@ -59,6 +60,7 @@ public class StackConfigPresenter {
     }
 
     public void setConfigClient(final String nibblerName, final StackClientHandler cache) {
+
         this.configClients.put(nibblerName, cache);
         this.nibblerConfigs.put(nibblerName, new LongMap<>());
     }
@@ -78,26 +80,20 @@ public class StackConfigPresenter {
 
         } else if (webMsg instanceof WebSocketInboundData) {
 
-            inboundData((WebSocketInboundData) webMsg);
-        }
-    }
+            final WebSocketInboundData msg = (WebSocketInboundData) webMsg;
 
-    private void inboundData(final WebSocketInboundData msg) {
-
-        uiLogger.write("StackConfig", msg);
-
-        final String data = msg.getData();
-        if ("subscribe".equals(data)) {
-            addUI(msg.getOutboundChannel());
-        } else {
+            uiLogger.write("StackConfig", msg);
             views.invoke(msg);
         }
     }
 
-    public void addUI(final Publisher<WebSocketOutboundData> channel) {
+    @FromWebSocketView
+    public void addUI(final String symbolsString, final WebSocketInboundData data) {
 
-        final IStackConfigUI newView = views.get(channel);
+        final IStackConfigUI newView = views.get(data.getOutboundChannel());
         newView.setConfigTypes(STACK_CONFIG_TYPES);
+
+        final Set<String> symbols = new HashSet<>(Arrays.asList(symbolsString.split(";")));
 
         for (final Map.Entry<String, LongMap<StackConfigGroup>> stackConfigs : nibblerConfigs.entrySet()) {
 
@@ -105,7 +101,9 @@ public class StackConfigPresenter {
             for (final LongMapNode<StackConfigGroup> configNode : stackConfigs.getValue()) {
 
                 final StackConfigGroup config = configNode.getValue();
-                sendLine(newView, nibblerName, config);
+                if (symbols.contains(config.getSymbol())) {
+                    sendLine(newView, nibblerName, config);
+                }
             }
         }
     }
@@ -154,6 +152,7 @@ public class StackConfigPresenter {
     }
 
     public void serverConnectionLost(final String nibblerName) {
+
         nibblerConfigs.get(nibblerName).clear();
         views.all().removeAll(nibblerName);
     }

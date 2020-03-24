@@ -24,7 +24,7 @@ $(function () {
 
 	setupTable();
 
-	ws.send("subscribe");
+	ws.send(command("subscribe", symbolFilter));
 	const configTypeCombo = $("#configTypes");
 	addConfigTypeOption(configTypeCombo, NO_FILTER);
 	configTypeCombo.on("change", function () {
@@ -176,16 +176,16 @@ function forceRowChanged(row) {
 }
 
 function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
-	quoteAuctionTheoMaxBPSThrough, quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks,
-	quoteIsBettermentOppositeSide, quoteOppositeSideBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS, leanMaxBookAgeMillis,
-	leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustmentRaw, additiveIsEnabled,
-	additiveMaxSignalAgeMillis, additiveMinRequiredBPS, additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
-	bidPlanMaxLevels, bidMinPicardQty, bidMaxOrdersPerLevel, bidIsOnlySubmitBestLevel, bidIsQuoteBettermentOn, bidModTicks,
-	bidQuoteFlickerBuffer, bidQuotePicardMaxBPSThrough, bidPicardMaxPapaWeight, bidPicardMaxPerSec, bidPicardMaxPerMin,
-	bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels,
-	askMinPicardQty, askMaxOrdersPerLevel, askIsOnlySubmitBestLevel, askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer,
-	askQuotePicardMaxBPSThrough, askPicardMaxPapaWeight, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour,
-	askPicardMaxPerDay) {
+				quoteAuctionTheoMaxBPSThrough, quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks,
+				quoteIsBettermentOppositeSide, quoteOppositeSideBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS, leanMaxBookAgeMillis,
+				leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustmentRaw, additiveIsEnabled,
+				additiveMaxSignalAgeMillis, additiveMinRequiredBPS, additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize,
+				bidPlanMaxLevels, bidMinPicardQty, bidMaxOrdersPerLevel, bidIsOnlySubmitBestLevel, bidIsQuoteBettermentOn, bidModTicks,
+				bidQuoteFlickerBuffer, bidQuotePicardMaxBPSThrough, bidPicardMaxPapaWeight, bidPicardMaxPerSec, bidPicardMaxPerMin,
+				bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty, askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels,
+				askMinPicardQty, askMaxOrdersPerLevel, askIsOnlySubmitBestLevel, askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer,
+				askQuotePicardMaxBPSThrough, askPicardMaxPapaWeight, askPicardMaxPerSec, askPicardMaxPerMin, askPicardMaxPerHour,
+				askPicardMaxPerDay) {
 
 	const rowID = nibblerName + configGroupID;
 	let row = $("#" + rowID);
@@ -291,15 +291,15 @@ function setRow(nibblerName, configGroupID, symbol, configType, quoteMaxBookAgeM
 }
 
 function setRowDetails(row, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction, quoteAuctionTheoMaxBPSThrough,
-	quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, quoteIsBettermentOppositeSide,
-	quoteOppositeSideBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty,
-	leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustmentRaw, additiveIsEnabled, additiveMaxSignalAgeMillis, additiveMinRequiredBPS,
-	additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize, bidPlanMaxLevels, bidMinPicardQty, bidMaxOrdersPerLevel,
-	bidIsOnlySubmitBestLevel, bidIsQuoteBettermentOn, bidModTicks, bidQuoteFlickerBuffer, bidQuotePicardMaxBPSThrough,
-	bidPicardMaxPapaWeight, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty,
-	askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMinPicardQty, askMaxOrdersPerLevel, askIsOnlySubmitBestLevel,
-	askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer, askQuotePicardMaxBPSThrough, askPicardMaxPapaWeight, askPicardMaxPerSec,
-	askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay) {
+					   quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks, quoteIsBettermentOppositeSide,
+					   quoteOppositeSideBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS, leanMaxBookAgeMillis, leanMaxJumpBPS, leanRequiredQty,
+					   leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustmentRaw, additiveIsEnabled, additiveMaxSignalAgeMillis, additiveMinRequiredBPS,
+					   additiveMaxBPS, bidPlanMinLevelQty, bidPlanMaxLevelQty, bidPlanLotSize, bidPlanMaxLevels, bidMinPicardQty, bidMaxOrdersPerLevel,
+					   bidIsOnlySubmitBestLevel, bidIsQuoteBettermentOn, bidModTicks, bidQuoteFlickerBuffer, bidQuotePicardMaxBPSThrough,
+					   bidPicardMaxPapaWeight, bidPicardMaxPerSec, bidPicardMaxPerMin, bidPicardMaxPerHour, bidPicardMaxPerDay, askPlanMinLevelQty,
+					   askPlanMaxLevelQty, askPlanLotSize, askPlanMaxLevels, askMinPicardQty, askMaxOrdersPerLevel, askIsOnlySubmitBestLevel,
+					   askIsQuoteBettermentOn, askModTicks, askQuoteFlickerBuffer, askQuotePicardMaxBPSThrough, askPicardMaxPapaWeight, askPicardMaxPerSec,
+					   askPicardMaxPerMin, askPicardMaxPerHour, askPicardMaxPerDay) {
 
 	setCellData(row, ".quoteInst.maxBookAgeMillis input", quoteMaxBookAgeMillis);
 

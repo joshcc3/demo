@@ -134,6 +134,7 @@ import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackManagerGroupCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackPresenterMultiplexor;
+import com.drwtrading.london.reddal.stacks.autoManager.StackAutoManagerPresenter;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.family.StackChildListener;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyListener;
@@ -683,9 +684,8 @@ public class Main {
 
             final ConfigGroup eeifOEGroup = root.getGroup("eeifoe");
             final String instanceName = eeifOEGroup.getString("instance");
-            final OrderEntryClient client =
-                    new OrderEntryClient(instanceName, new SystemClock(), server, fibers.remoteOrders.getFiber(),
-                            channels.orderEntrySymbols, channels.ladderClickTradingIssues);
+            final OrderEntryClient client = new OrderEntryClient(instanceName, new SystemClock(), server, fibers.remoteOrders.getFiber(),
+                    channels.orderEntrySymbols, channels.ladderClickTradingIssues);
 
             final HostAndNic command = environment.getHostAndNic(EEIF_OE + "Command", server);
             if (command != null) {
@@ -713,23 +713,24 @@ public class Main {
                 updateClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10));
                 updateClient.handler(new InboundTimeoutWatchdog<>(fibers.remoteOrders.getFiber(),
                         new ConnectionCloser(channels.stats, server + " OE Updates"), SERVER_TIMEOUT));
-                updateClient.handler(new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(
-                        Constants::NO_OP, channels.orderEntryFromServer, evt -> {
-                    if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
-                        final Update msg = (Update) evt.getMsg();
-                        channels.orderEntryFromServer.publish(new UpdateFromServer(evt.getFromInstance(), msg));
-                    }
-                }) {
-                    @Override
-                    protected Void connected(final PhotocolsConnection<Void> connection) {
-                        return null;
-                    }
+                updateClient.handler(
+                        new ConnectionAwareJetlangChannelHandler<Void, OrderEntryFromServer, OrderUpdateEventMsg, Void>(Constants::NO_OP,
+                                channels.orderEntryFromServer, evt -> {
+                            if (evt.getMsg().typeEnum() == OrderUpdateEvent.Type.UPDATE) {
+                                final Update msg = (Update) evt.getMsg();
+                                channels.orderEntryFromServer.publish(new UpdateFromServer(evt.getFromInstance(), msg));
+                            }
+                        }) {
+                            @Override
+                            protected Void connected(final PhotocolsConnection<Void> connection) {
+                                return null;
+                            }
 
-                    @Override
-                    protected OrderEntryFromServer disconnected(final PhotocolsConnection<Void> connection) {
-                        return new ServerDisconnected(server);
-                    }
-                });
+                            @Override
+                            protected OrderEntryFromServer disconnected(final PhotocolsConnection<Void> connection) {
+                                return new ServerDisconnected(server);
+                            }
+                        });
                 fibers.remoteOrders.execute(updateClient::start);
                 System.out.println("EEIF-OE: " + server + "\tUpdate: " + update.host);
             }
@@ -873,12 +874,14 @@ public class Main {
         final ConfigGroup mrChillConfig = app.config.getGroup("mrchill");
         final SelectIO mrChillSelectIO = new SelectIO(selectIOMonitor);
 
-        final ResourceMonitor<TradesTransportComponents> tradesMonitor = new ExpandedDetailResourceMonitor<>(app.monitor, "Chill Trades", errorLog,
-                TradesTransportComponents.class, ReddalComponents.MR_CHILL_TRADES);
-        final TradesClientHandler cache = TradesClientFactory.createClientCache(EnumSet.allOf(Desk.class), EnumSet.allOf(TradingEntity.class), true,
-                mrChillSelectIO, tradesMonitor);
-        final TransportTCPKeepAliveConnection<TradesTransportComponents, TradesTransportBaseMsg> tradesClient = TradesClientFactory.createClient(
-                mrChillSelectIO, mrChillConfig, tradesMonitor, cache);
+        final ResourceMonitor<TradesTransportComponents> tradesMonitor =
+                new ExpandedDetailResourceMonitor<>(app.monitor, "Chill Trades", errorLog, TradesTransportComponents.class,
+                        ReddalComponents.MR_CHILL_TRADES);
+        final TradesClientHandler cache =
+                TradesClientFactory.createClientCache(EnumSet.allOf(Desk.class), EnumSet.allOf(TradingEntity.class), true, mrChillSelectIO,
+                        tradesMonitor);
+        final TransportTCPKeepAliveConnection<TradesTransportComponents, TradesTransportBaseMsg> tradesClient =
+                TradesClientFactory.createClient(mrChillSelectIO, mrChillConfig, tradesMonitor, cache);
 
         mrChillSelectIO.execute(tradesClient::restart);
         cache.addTradesListener(jasperTradesPublisher);
@@ -889,8 +892,10 @@ public class Main {
             final SelectIO displaySelectIO, final MDSource mdSource, final ConfigGroup mdConfig, final ReddalChannels channels,
             final String localAppName, final Publisher<RfqAlert> rfqAlerts) throws ConfigException {
 
-        final LevelThreeBookSubscriber l3BookHandler = new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, rfqAlerts);
-        final LevelTwoBookSubscriber l2BookHandler = new LevelTwoBookSubscriber(displayMonitor, channels.searchResults, rfqAlerts);
+        final LevelThreeBookSubscriber l3BookHandler =
+                new LevelThreeBookSubscriber(displayMonitor, channels.searchResults, channels.symbolRefPrices, rfqAlerts);
+        final LevelTwoBookSubscriber l2BookHandler =
+                new LevelTwoBookSubscriber(displayMonitor, channels.searchResults, channels.symbolRefPrices, rfqAlerts);
 
         final IResourceMonitor<MDTransportComponents> mdClientMonitor =
                 new ExpandedDetailResourceMonitor<>(displayMonitor, mdSource.name() + "-Thread", app.errorLog, MDTransportComponents.class,
@@ -1048,6 +1053,7 @@ public class Main {
             final ConfigGroup asylumFamilyConfigs = stackConfig.getGroup("visibleAsylumNames");
             final Map<InstType, String> asylumFamilies = new EnumMap<>(InstType.class);
             for (final ConfigParam asylumParam : asylumFamilyConfigs.params()) {
+
                 final InstType instType = InstType.valueOf(asylumParam.getKey());
                 asylumFamilies.put(instType, asylumParam.getString());
             }
@@ -1057,6 +1063,8 @@ public class Main {
                             strategySymbolUI, channels.quotingObligationsCmds);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(webLog);
+
+            final StackAutoManagerPresenter stackAutoManagerPresenter = new StackAutoManagerPresenter(webLog);
 
             stackFamilyPresenter.setCommunityManager(communityManager);
             channels.increaseParentOffsetCmds.subscribe(selectIOFiber, msg -> {
@@ -1101,8 +1109,8 @@ public class Main {
                         new StackChildListener(nibbler, isStackManager, stackFamilyPresenter, symbolOffsetUI);
 
                 final StackCallbackBatcher stackUpdateBatcher =
-                        new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, childListener, isStackManager,
-                                contractSetGenerator);
+                        new StackCallbackBatcher(nibbler, strategiesPresenter, stackConfigPresenter, stackAutoManagerPresenter,
+                                childListener, isStackManager, contractSetGenerator);
 
                 final StackNibblerClient nibblerClient = new StackNibblerClient(nibbler, communityManager, stackUpdateBatcher);
 
@@ -1122,12 +1130,14 @@ public class Main {
                 }
                 strategiesPresenter.setStrategyClient(nibbler, client);
                 stackConfigPresenter.setConfigClient(nibbler, client);
+                stackAutoManagerPresenter.setConfigClient(nibbler, client);
             }
 
             channels.searchResults.subscribe(selectIOFiber, searchResult -> {
                 stackFamilyPresenter.setSearchResult(searchResult);
                 strategiesPresenter.addInstID(searchResult.symbol, searchResult.instID);
             });
+            channels.symbolRefPrices.subscribe(selectIOFiber, stackAutoManagerPresenter::addRefPrice);
             channels.symbolSelections.subscribe(selectIOFiber, stackFamilyPresenter::symbolSelected);
 
             if (isForETF) {
@@ -1156,6 +1166,10 @@ public class Main {
             final TypedChannel<WebSocketControlMessage> strategiesWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("stackStrategy", "stackStrategy", fibers.ladderRouter, webApp, strategiesWebSocket);
             strategiesWebSocket.subscribe(selectIOFiber, strategiesPresenter::webControl);
+
+            final TypedChannel<WebSocketControlMessage> autoManagerWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("stackAutoManager", "stackAutoManager", fibers.ladderRouter, webApp, autoManagerWebSocket);
+            autoManagerWebSocket.subscribe(selectIOFiber, stackAutoManagerPresenter::webControl);
         }
     }
 

@@ -236,6 +236,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     @Subscribe
     public void onConnected(final WebSocketConnected connected) {
+
         final UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         final ILadderUI view = new WebSocketOutputDispatcher<>(ILadderUI.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final LadderView ladderView =
@@ -244,6 +245,7 @@ public class LadderPresenter implements IStackPresenterCallback {
                         ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
                         orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
                         disableSiblingsCmdPublisher, refData, symbolDesc);
+
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }

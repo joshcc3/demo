@@ -38,6 +38,7 @@ import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.symbols.SymbolDescription;
+import com.drwtrading.london.reddal.symbols.SymbolReferencePrice;
 import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuoteObligationsEnableCmd;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
@@ -73,6 +74,7 @@ class ReddalChannels {
     final TypedChannel<SymbolDescription> symbolDescs;
     final TypedChannel<DisplaySymbol> displaySymbol;
     final TypedChannel<SearchResult> searchResults;
+    final TypedChannel<SymbolReferencePrice> symbolRefPrices;
     final TypedChannel<StockAlert> stockAlerts;
     final TypedChannel<RfqAlert> rfqStockAlerts;
     final TypedChannel<HeartbeatRoundtrip> heartbeatRoundTrips;
@@ -136,6 +138,7 @@ class ReddalChannels {
         this.symbolDescs = create(SymbolDescription.class);
         this.displaySymbol = create(DisplaySymbol.class);
         this.searchResults = create(SearchResult.class);
+        this.symbolRefPrices = create(SymbolReferencePrice.class);
         this.stockAlerts = create(StockAlert.class);
         this.heartbeatRoundTrips = create(HeartbeatRoundtrip.class);
         this.recenterLaddersForUser = create(RecenterLaddersForUser.class);

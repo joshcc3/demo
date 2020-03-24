@@ -4,11 +4,7 @@
 ffc_*log
 /.fig/
 /git/
-/.idea/copyright
-/.idea/dictionaries/dfukdev.xml
-/.idea/inspectionProfiles/
-/.idea/workspace.xml
-*.ipr
+/.idea/
 *.iws
 /lib/
 /log/

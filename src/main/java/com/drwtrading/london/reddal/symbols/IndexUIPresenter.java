@@ -82,6 +82,7 @@ public class IndexUIPresenter {
     }
 
     private void setSearchResult(final SearchResult searchResult) {
+
         searchResultBySymbol.put(searchResult.symbol, searchResult);
         for (final String keyword : searchResult.keywords) {
             suffixTree.put(keyword, searchResult.symbol);
@@ -94,8 +95,11 @@ public class IndexUIPresenter {
         symbolToDisplay.put(displaySymbol.marketDataSymbol, displaySymbol);
 
         if (searchResultBySymbol.containsKey(displaySymbol.marketDataSymbol)) {
+
             final SearchResult searchResult = searchResultBySymbol.get(displaySymbol.marketDataSymbol);
+
             if (!searchResult.symbol.equals(displaySymbol.displaySymbol)) {
+
                 searchResult.keywords.add(displaySymbol.displaySymbol);
                 final SearchResult newResult =
                         new SearchResult(searchResult.symbol, searchResult.instID, searchResult.instType, searchResult.description,

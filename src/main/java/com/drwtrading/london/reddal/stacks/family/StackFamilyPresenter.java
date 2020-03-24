@@ -66,6 +66,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     public void setStrategyClient(final String nibblerName, final StackClientHandler cache) {
+
         familyView.setStrategyClient(nibblerName, cache);
         for (final StackFamilyView asylum : asylums.values()) {
             asylum.setStrategyClient(nibblerName, cache);
@@ -153,6 +154,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     public void symbolSelected(final SymbolSelection symbolSelection) {
+
         familyView.symbolSelected(symbolSelection);
         for (final StackFamilyView asylum : asylums.values()) {
             asylum.symbolSelected(symbolSelection);

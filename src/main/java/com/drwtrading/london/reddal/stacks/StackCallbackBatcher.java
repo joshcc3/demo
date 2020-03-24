@@ -6,6 +6,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
+import com.drwtrading.london.reddal.stacks.autoManager.StackAutoManagerPresenter;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.family.StackChildListener;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
@@ -20,6 +21,7 @@ public class StackCallbackBatcher implements IStackClientListener {
 
     private final StackStrategiesPresenter strategiesPresenter;
     private final StackConfigPresenter configPresenter;
+    private final StackAutoManagerPresenter autoManagerPresenter;
     private final StackChildListener childListener;
 
     private final Set<StackStrategy> strategyBatch;
@@ -29,13 +31,14 @@ public class StackCallbackBatcher implements IStackClientListener {
     private final SpreadContractSetGenerator contractSetGenerator;
 
     public StackCallbackBatcher(final String nibblerName, final StackStrategiesPresenter strategiesPresenter,
-            final StackConfigPresenter configPresenter, final StackChildListener childListener, final boolean isStackManager,
-            final SpreadContractSetGenerator contractSetGenerator) {
+            final StackConfigPresenter configPresenter, final StackAutoManagerPresenter autoManagerPresenter,
+            final StackChildListener childListener, final boolean isStackManager, final SpreadContractSetGenerator contractSetGenerator) {
 
         this.nibblerName = nibblerName;
 
         this.strategiesPresenter = strategiesPresenter;
         this.configPresenter = configPresenter;
+        this.autoManagerPresenter = autoManagerPresenter;
         this.childListener = childListener;
 
         if (isStackManager) {
@@ -66,6 +69,7 @@ public class StackCallbackBatcher implements IStackClientListener {
         configBatch.clear();
         strategiesPresenter.serverConnectionLost(nibblerName);
         configPresenter.serverConnectionLost(nibblerName);
+        autoManagerPresenter.serverConnectionLost(nibblerName);
         childListener.serverConnectionLost();
 
         strategyBatch.clear();
@@ -93,6 +97,7 @@ public class StackCallbackBatcher implements IStackClientListener {
     @Override
     public void configGroupCreated(final StackConfigGroup configGroup) {
         configPresenter.configUpdated(nibblerName, configGroup);
+        autoManagerPresenter.configUpdated(nibblerName, configGroup);
         childListener.setConfig(configGroup);
     }
 
@@ -148,6 +153,7 @@ public class StackCallbackBatcher implements IStackClientListener {
         for (final StackConfigGroup config : configBatch) {
             try {
                 configPresenter.configUpdated(nibblerName, config);
+                autoManagerPresenter.configUpdated(nibblerName, config);
             } catch (final Exception e) {
                 System.out.println("Failed Config stack batch update.");
                 e.printStackTrace();
