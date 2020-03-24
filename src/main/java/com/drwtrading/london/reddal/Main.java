@@ -40,14 +40,12 @@ import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTran
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.ILevelTwoClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.LevelTwoTransportComponents;
 import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.cache.LevelTwoCacheFactory;
-import com.drwtrading.london.eeif.utils.monitoring.ConcurrentMultiLayeredResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.ConcurrentMultiLayeredFuseBox;
 import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
-import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
-import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredResourceMonitor;
-import com.drwtrading.london.eeif.utils.monitoring.ResourceIgnorer;
-import com.drwtrading.london.eeif.utils.monitoring.ResourceMonitor;
+import com.drwtrading.london.eeif.utils.monitoring.IgnoredFuseBox;
+import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
@@ -353,8 +351,8 @@ public class Main {
 
         final String ewokBaseURL = root.getString(EWOK_BASE_URL_PARAM);
 
-        final MultiLayeredResourceMonitor<ReddalComponents> parentMonitor =
-                new ConcurrentMultiLayeredResourceMonitor<>(monitor, ReddalComponents.class, errorLog);
+        final MultiLayeredFuseBox<ReddalComponents> parentMonitor =
+                new ConcurrentMultiLayeredFuseBox<>(monitor, ReddalComponents.class, errorLog);
 
         final String stackManagerThreadName = "Ladder-StackManager";
 
@@ -516,8 +514,8 @@ public class Main {
                 final List<ConfigGroup> mdSourceStackConfigs = stackConfigs.get(mdSource);
                 if (null != mdSourceStackConfigs) {
 
-                    final MultiLayeredResourceMonitor<ReddalComponents> stackParentMonitor =
-                            new MultiLayeredResourceMonitor<>(displayMonitor, ReddalComponents.class, errorLog);
+                    final MultiLayeredFuseBox<ReddalComponents> stackParentMonitor =
+                            new MultiLayeredFuseBox<>(displayMonitor, ReddalComponents.class, errorLog);
 
                     final IStackPresenterCallback presenterSharer = new StackPresenterMultiplexor(ladderPresenter, shredderPresenter);
 
@@ -538,8 +536,8 @@ public class Main {
                     final IFuseBox<NibblerTransportComponents> nibblerMonitor =
                             new ExpandedDetailResourceMonitor<>(displayMonitor, threadName + "-Nibblers", errorLog,
                                     NibblerTransportComponents.class, ReddalComponents.TRADING_DATA);
-                    final MultiLayeredResourceMonitor<NibblerTransportComponents> nibblerParentMonitor =
-                            new MultiLayeredResourceMonitor<>(nibblerMonitor, NibblerTransportComponents.class, errorLog);
+                    final MultiLayeredFuseBox<NibblerTransportComponents> nibblerParentMonitor =
+                            new MultiLayeredFuseBox<>(nibblerMonitor, NibblerTransportComponents.class, errorLog);
 
                     final AutoPuller autoPuller =
                             new AutoPuller(mdSource, depthBookSubscriber, channels.cmdsForNibblers, channels.ladderClickTradingIssues,
@@ -864,7 +862,7 @@ public class Main {
     }
 
     private static void initJasperTradesPublisher(final Application<ReddalComponents> app, final IErrorLogger errorLog,
-            final MultiLayeredResourceMonitor<ReddalComponents> parentMonitor, final TypedChannel<ITrade> jasperTradesChan)
+            final MultiLayeredFuseBox<ReddalComponents> parentMonitor, final TypedChannel<ITrade> jasperTradesChan)
             throws IOException, ConfigException {
         final JasperTradesListener jasperTradesPublisher = new JasperTradesListener(jasperTradesChan);
         final String mrChillThreadName = "MrChill-JasperTrades";
@@ -875,7 +873,7 @@ public class Main {
         final ConfigGroup mrChillConfig = app.config.getGroup("mrchill");
         final SelectIO mrChillSelectIO = new SelectIO(selectIOMonitor);
 
-        final ResourceMonitor<TradesTransportComponents> tradesMonitor =
+        final IFuseBox<TradesTransportComponents> tradesMonitor =
                 new ExpandedDetailResourceMonitor<>(app.monitor, "Chill Trades", errorLog, TradesTransportComponents.class,
                         ReddalComponents.MR_CHILL_TRADES);
         final TradesClientHandler cache =
@@ -915,10 +913,10 @@ public class Main {
         return new DepthBookSubscriber(l3BookHandler, l2BookHandler);
     }
 
-    private static LadderPresenter getLadderPresenter(final IFuseBox<ReddalComponents> displayMonitor,
-            final SelectIO displaySelectIO, final ReddalChannels channels, final Environment environment, final FXCalc<?> fxCalc,
-            final IMDSubscriber depthBookSubscriber, final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket,
-            final FiberBuilder fiberBuilder, final IPicardSpotter picardSpotter, final IPremiumCalc premiumCalc) throws ConfigException {
+    private static LadderPresenter getLadderPresenter(final IFuseBox<ReddalComponents> displayMonitor, final SelectIO displaySelectIO,
+            final ReddalChannels channels, final Environment environment, final FXCalc<?> fxCalc, final IMDSubscriber depthBookSubscriber,
+            final String ewokBaseURL, final TypedChannel<WebSocketControlMessage> webSocket, final FiberBuilder fiberBuilder,
+            final IPicardSpotter picardSpotter, final IPremiumCalc premiumCalc) throws ConfigException {
 
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.cmdsForNibblers, environment.ladderOptions(),
@@ -952,8 +950,8 @@ public class Main {
             final SelectIO displaySelectIO, final String name, final ConfigGroup stackConfig,
             final StackGroupCallbackBatcher stackUpdateBatcher, final String localAppName) throws ConfigException {
 
-        final MultiLayeredResourceMonitor<StackTransportComponents> stackParentMonitor =
-                MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(displayMonitor, "Stacks", errorLog, StackTransportComponents.class,
+        final MultiLayeredFuseBox<StackTransportComponents> stackParentMonitor =
+                MultiLayeredFuseBox.getExpandedMultiLayerMonitor(displayMonitor, "Stacks", errorLog, StackTransportComponents.class,
                         ReddalComponents.STACK_GROUP_CLIENT);
 
         final String connectionName = name + "-stack-" + stackConfig.getKey();
@@ -984,8 +982,8 @@ public class Main {
         app.addStartUpAction(client::restart);
     }
 
-    private static void setupYodaSignals(final SelectIO selectIO, final IFuseBox<ReddalComponents> monitor,
-            final IErrorLogger errorLog, final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts,
+    private static void setupYodaSignals(final SelectIO selectIO, final IFuseBox<ReddalComponents> monitor, final IErrorLogger errorLog,
+            final ConfigGroup config, final String appName, final Publisher<StockAlert> stockAlerts,
             final Publisher<PicardRow> atClosePublisher) throws ConfigException {
 
         final ConfigGroup yodaConfig = config.getEnabledGroup("yoda");
@@ -993,16 +991,15 @@ public class Main {
             final IFuseBox<YodaTransportComponents> yodaMonitor =
                     new ExpandedDetailResourceMonitor<>(monitor, "Yoda", errorLog, YodaTransportComponents.class, ReddalComponents.YODA);
 
-            final MultiLayeredResourceMonitor<YodaTransportComponents> yodaParentMonitor =
-                    new MultiLayeredResourceMonitor<>(yodaMonitor, YodaTransportComponents.class, errorLog);
+            final MultiLayeredFuseBox<YodaTransportComponents> yodaParentMonitor =
+                    new MultiLayeredFuseBox<>(yodaMonitor, YodaTransportComponents.class, errorLog);
 
             final long millisAtMidnight = selectIO.getMillisAtMidnightUTC();
 
             for (final ConfigGroup yodaInstanceConfig : yodaConfig.groups()) {
 
                 final String instanceName = yodaInstanceConfig.getKey();
-                final IFuseBox<YodaTransportComponents> yodaChildMonitor =
-                        yodaParentMonitor.createChildResourceMonitor(instanceName);
+                final IFuseBox<YodaTransportComponents> yodaChildMonitor = yodaParentMonitor.createChildResourceMonitor(instanceName);
 
                 final YodaAtCloseClient atCloseClient = new YodaAtCloseClient(selectIO, atClosePublisher);
                 final YodaRestingOrderClient restingClient = new YodaRestingOrderClient(millisAtMidnight, stockAlerts);
@@ -1092,8 +1089,8 @@ public class Main {
                     new ExpandedDetailResourceMonitor<>(stackManagerMonitor, "Stacks log", app.errorLog, StackPersistenceComponents.class,
                             StackManagerComponents.LOGGER);
 
-            final MultiLayeredResourceMonitor<StackTransportComponents> clientMonitorParent =
-                    MultiLayeredResourceMonitor.getExpandedMultiLayerMonitor(stackManagerMonitor, "Stacks", app.errorLog,
+            final MultiLayeredFuseBox<StackTransportComponents> clientMonitorParent =
+                    MultiLayeredFuseBox.getExpandedMultiLayerMonitor(stackManagerMonitor, "Stacks", app.errorLog,
                             StackTransportComponents.class, StackManagerComponents.NIBBLER_CACHE);
 
             final ConfigGroup nibblerConfigs = stackConfig.getGroup("nibblers");
@@ -1115,8 +1112,7 @@ public class Main {
 
                 final StackNibblerClient nibblerClient = new StackNibblerClient(nibbler, communityManager, stackUpdateBatcher);
 
-                final IFuseBox<StackTransportComponents> nibblerMonitor =
-                        clientMonitorParent.createChildResourceMonitor(connectionName);
+                final IFuseBox<StackTransportComponents> nibblerMonitor = clientMonitorParent.createChildResourceMonitor(connectionName);
                 final StackClientHandler client =
                         StackCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "Stacks-" + nibbler,
                                 app.env.name() + connectionName, nibblerClient);
@@ -1261,8 +1257,8 @@ public class Main {
                 gtcWorkingOrdersMaintainer = NoWorkingOrdersCallback.INSTANCE;
             }
 
-            final MultiLayeredResourceMonitor<ReddalComponents> clientMonitorParent =
-                    new MultiLayeredResourceMonitor<>(app.monitor, ReddalComponents.class, app.errorLog);
+            final MultiLayeredFuseBox<ReddalComponents> clientMonitorParent =
+                    new MultiLayeredFuseBox<>(app.monitor, ReddalComponents.class, app.errorLog);
 
             final String[] remoteOrderPriorities = app.config.getString("nibblerPriorities").split(",");
             for (int i = 0; i < remoteOrderPriorities.length; ++i) {
@@ -1474,7 +1470,7 @@ public class Main {
     private static FXCalc<?> createOPXLFXCalc(final Application<ReddalComponents> app, final SelectIO opxlSelectIO,
             final SelectIO callbackSelectIO, final IFuseBox<OPXLComponents> opxlMonitor) {
 
-        final IFuseBox<PicardFXCalcComponents> fxMonitor = new ResourceIgnorer<>();
+        final IFuseBox<PicardFXCalcComponents> fxMonitor = new IgnoredFuseBox<>();
         final FXCalc<PicardFXCalcComponents> fxCalc = new FXCalc<>(fxMonitor, PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
         final OpxlFXCalcUpdater opxlFXCalcUpdater = new OpxlFXCalcUpdater(opxlSelectIO, callbackSelectIO, opxlMonitor, fxCalc, app.logDir);
         app.addStartUpAction(opxlFXCalcUpdater::start);
@@ -1482,10 +1478,10 @@ public class Main {
         return fxCalc;
     }
 
-    private static void setupBulkOrderSubmitter(final SelectIO selectIO, final SelectIOFiber fiber,
-            final IFuseBox<OPXLComponents> monitor, final OpxlClient<OPXLComponents> opxlClient, final Path logDir,
-            final UILogger webLog, final WebApplication webApp, final Channel<GTCSupportedSymbol> supportedSymbols,
-            final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final Channel<LadderClickTradingIssue> ladderClickTradingIssues,
+    private static void setupBulkOrderSubmitter(final SelectIO selectIO, final SelectIOFiber fiber, final IFuseBox<OPXLComponents> monitor,
+            final OpxlClient<OPXLComponents> opxlClient, final Path logDir, final UILogger webLog, final WebApplication webApp,
+            final Channel<GTCSupportedSymbol> supportedSymbols, final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher,
+            final Channel<LadderClickTradingIssue> ladderClickTradingIssues,
             final TypedChannel<GTCBettermentPricesRequest> gtcBettermentRequests,
             final TypedChannel<GTCBettermentPrices> gtcBettermentResponses, final GTCWorkingOrderMaintainer gtcOrders) {
 
