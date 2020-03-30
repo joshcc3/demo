@@ -108,7 +108,7 @@ public class ZoomableLadderTest {
     private final SymbolStackData stackData = Mockito.mock(SymbolStackData.class);
     private final UiPipeImpl uiPipe = Mockito.mock(UiPipeImpl.class);
 
-    private final FXCalc<ReddalComponents> fxCalc = new FXCalc<>(monitor, ReddalComponents.FX_ERROR, MDSource.INTERNAL);
+    private final FXCalc<ReddalComponents> fxCalc = new FXCalc<>(monitor, ReddalComponents.FX_TIMEOUT, MDSource.INTERNAL);
     private final FeesCalc feesCalc = new FeesCalc(System.out::println, fxCalc);
     private final DecimalFormat feeDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 5);
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();

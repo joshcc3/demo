@@ -34,12 +34,10 @@ import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
 import com.drwtrading.london.eeif.utils.io.channels.IOConfigParser;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
+import com.drwtrading.london.eeif.utils.marketData.fx.md.FXMDUtils;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.MDTransportComponents;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClient;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.io.MDTransportClientFactory;
-import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.ILevelTwoClient;
-import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.LevelTwoTransportComponents;
-import com.drwtrading.london.eeif.utils.marketData.transport.udpShaped.fiveLevels.cache.LevelTwoCacheFactory;
 import com.drwtrading.london.eeif.utils.monitoring.ConcurrentMultiLayeredFuseBox;
 import com.drwtrading.london.eeif.utils.monitoring.ExpandedDetailResourceMonitor;
 import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
@@ -154,7 +152,6 @@ import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
-import com.drwtrading.london.reddal.util.FXMDClient;
 import com.drwtrading.london.reddal.util.FileLogger;
 import com.drwtrading.london.reddal.util.NibblerNotificationHandler;
 import com.drwtrading.london.reddal.util.PhotocolsStatsPublisher;
@@ -581,6 +578,7 @@ public class Main {
         // FX view
         final ConfigGroup fxConfig = root.getEnabledGroup("fx");
         if (null != fxConfig) {
+
             final String name = "FX UI";
             final IFuseBox<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
             final IFuseBox<SelectIOComponents> selectIOMonitor =
@@ -588,25 +586,16 @@ public class Main {
                             ReddalComponents.FX_SELECT_IO);
 
             final SelectIO fxSelectIO = new SelectIO(selectIOMonitor);
-            final SelectIOFiber fxFiber = new SelectIOFiber(fxSelectIO, errorLog, "FX SelectIO");
 
-            final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(fxFiber, name);
             final FXCalc<ReddalComponents> fxCalc =
-                    new FXCalc<>(fxSelectIO, monitor, ReddalComponents.FX_OK, ReddalComponents.FX_ERROR, fxConfig, Constants::NO_OP);
-            final ConfigGroup fxMDConfig = fxConfig.getGroup("md");
-            final ILevelTwoClient fxClient = LevelTwoCacheFactory.createClient(fxSelectIO,
-                    new ExpandedDetailResourceMonitor<>(displayMonitor, "FX", errorLog, LevelTwoTransportComponents.class,
-                            ReddalComponents.FX_OK), fxMDConfig);
-            final FXMDClient fxMdClient = new FXMDClient(fxCalc);
-            fxClient.registerListener(fxMdClient);
+                    new FXCalc<>(fxSelectIO, monitor, ReddalComponents.FX_CALC, ReddalComponents.FX_TIMEOUT, fxConfig, Constants::NO_OP);
 
-            fxFiber.execute(() -> {
-                try {
-                    fxClient.start();
-                } catch (final Throwable e) {
-                    throw new RuntimeException(e);
-                }
-            });
+            final ConfigGroup fxMDConfig = fxConfig.getGroup("md");
+            FXMDUtils.connectToMD(fxSelectIO, displayMonitor, ReddalComponents.FX_HANDLER, ReddalComponents.FX_MC, errorLog, fxMDConfig,
+                    app.appName, fxCalc);
+
+            final SelectIOFiber fxFiber = new SelectIOFiber(fxSelectIO, errorLog, "FX SelectIO");
+            final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(fxFiber, name);
 
             final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("fx", "fx", fiberBuilder, webApp, ws);

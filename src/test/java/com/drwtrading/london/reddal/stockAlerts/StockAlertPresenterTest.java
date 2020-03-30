@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 
 public class StockAlertPresenterTest {
 
-    private final FXCalc<ReddalComponents> fxCalc = new FXCalc<>(new ResourceIgnorer<>(), ReddalComponents.FX_ERROR, MDSource.INTERNAL);
+    private final FXCalc<ReddalComponents> fxCalc = new FXCalc<>(new ResourceIgnorer<>(), ReddalComponents.FX_TIMEOUT, MDSource.INTERNAL);
 
     private final IClock clock = new ManualClock(1);
     private final UILogger logger = Mockito.mock(UILogger.class);

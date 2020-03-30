@@ -42,9 +42,12 @@ public enum ReddalComponents implements IFuse {
 
     OPXL_READERS,
 
-    FX_OK,
-    FX_ERROR,
+    FX_CALC,
+    FX_TIMEOUT,
+    FX_HANDLER,
+    FX_MC,
     FX_SELECT_IO,
+
     INDY_SERVER,
 
     MR_CHILL_TRADES;
