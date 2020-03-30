@@ -54,7 +54,7 @@ function checkWarning() {
 	}
 }
 
-function setRow(rowID, symbol, sourceNibbler, percentageOn, isStrategyOn, isStrategyQuoting, stateDescription, isObligationFail) {
+function setRow(rowID, symbol, sourceNibbler, percentageOn, isEnabled, isStrategyOn, isStrategyQuoting, stateDescription, isObligationFail) {
 
 	let row = $("#" + rowID);
 	if (row.size() < 1) {
@@ -78,6 +78,9 @@ function setRow(rowID, symbol, sourceNibbler, percentageOn, isStrategyOn, isStra
 		row.find(".smallButton.strategyOff").click(function () {
 			ws.send(command("stopStrategy", [symbol]));
 		});
+		row.find(".enabled").change(function () {
+			ws.send(command("setEnabledState", [symbol]))
+		});
 
 		addSortedDiv(table.find(".row"), row, function (a, b) {
 			const aID = a.attr("id");
@@ -92,6 +95,7 @@ function setRow(rowID, symbol, sourceNibbler, percentageOn, isStrategyOn, isStra
 	row.toggleClass("obligationFail", isObligationFail);
 	row.toggleClass("strategyOn", isStrategyOn);
 	row.toggleClass("strategyQuoting", isStrategyQuoting);
+	row.find(".enabled").attr('checked', isEnabled);
 	row.find(".percentageOn").text(percentageOn);
 	row.find(".description").text(stateDescription);
 

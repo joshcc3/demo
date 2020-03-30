@@ -150,10 +150,12 @@ public class QuotingObligationsPresenter {
         final List<NibblerClientHandler> nibblers = new ArrayList<>();
 
         for (final QuotingObligationState quotingState : obligations.values()) {
+            if (quotingState.isEnabled()) {
+                final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
+                nibblers.add(nibblerClientHandler);
+                nibblerClientHandler.startQuoter(quotingState.getStrategyID());
+            }
 
-            final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
-            nibblers.add(nibblerClientHandler);
-            nibblerClientHandler.startQuoter(quotingState.getStrategyID());
         }
 
         for (final NibblerClientHandler nibbler : nibblers) {
@@ -184,11 +186,27 @@ public class QuotingObligationsPresenter {
     public void startStrategy(final String symbol) {
 
         final QuotingObligationState quotingState = obligations.get(symbol);
-        if (quotingState.isAvailable()) {
+
+        if (quotingState.isAvailable() && quotingState.isEnabled()) {
             final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
             nibblerClientHandler.startQuoter(quotingState.getStrategyID());
             nibblerClientHandler.batchComplete();
         }
+    }
+
+    @FromWebSocketView
+    public void setEnabledState(final String symbol) {
+        final QuotingObligationState quotingState = obligations.get(symbol);
+
+        quotingState.setEnabled(!quotingState.isEnabled());
+
+        if (!quotingState.isEnabled()) {
+            if (quotingState.isStrategyOn()) {
+                stopStrategy(symbol);
+            }
+        }
+
+        setObligation(views.all(), quotingState);
     }
 
     @FromWebSocketView
@@ -223,7 +241,7 @@ public class QuotingObligationsPresenter {
         final boolean isQuoting = obligation.isQuoting();
         final boolean isFailingObligation = obligation.getOnPercent() < MIN_PERCENT;
 
-        view.setRow(key, symbol, obligation.getSourceNibbler(), obligation.getOnPercent(), isStrategyOn, isQuoting,
+        view.setRow(key, symbol, obligation.getSourceNibbler(), obligation.getOnPercent(), obligation.isEnabled(), isStrategyOn, isQuoting,
                 obligation.getStateDescription(), isFailingObligation);
     }
 

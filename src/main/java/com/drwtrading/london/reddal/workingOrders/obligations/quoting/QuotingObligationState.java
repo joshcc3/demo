@@ -19,6 +19,7 @@ public class QuotingObligationState {
 
     private boolean isAvailable;
     private int strategyID;
+    private boolean isEnabled;
     private boolean isStrategyOn;
     private boolean isQuoting;
     private String stateDescription;
@@ -39,6 +40,7 @@ public class QuotingObligationState {
         this.totalOnMillis = 0;
 
         this.isAvailable = true;
+        this.isEnabled = true;
         this.isStrategyOn = isStrategyOn;
         this.isQuoting = isQuoting(isStrategyOn, stateDescription);
         this.stateDescription = stateDescription;
@@ -87,6 +89,14 @@ public class QuotingObligationState {
 
     void updatePercent(final long nowMilliSinceMidnight) {
         setState(nowMilliSinceMidnight, strategyID, isStrategyOn, stateDescription);
+    }
+
+    boolean isEnabled() {
+        return isEnabled;
+    }
+
+    void setEnabled(final boolean enabled) {
+        this.isEnabled = enabled;
     }
 
     void setState(final long nowMilliSinceMidnight, final int strategyID, final boolean isStrategyOn, final String stateDescription) {
