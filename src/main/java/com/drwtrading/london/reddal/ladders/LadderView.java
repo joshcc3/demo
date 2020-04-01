@@ -238,8 +238,9 @@ public class LadderView implements UiEventHandler {
                 new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc,
                         feeDF, ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher,
                         eeifCommandToServer, tradingStatusForAll, supportedOrderTypes, supportedAlgoTypes, marketData, workingOrders,
-                        extraDataForSymbolForNibbler, this.extraDataForSymbolForJasper, orderUpdatesForSymbol, levels, stackData, metaData, increaseParentOffsetPublisher,
-                        increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
+                        extraDataForSymbolForNibbler, this.extraDataForSymbolForJasper, orderUpdatesForSymbol, levels, stackData, metaData,
+                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap,
+                        bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
         final Map<QtyButton, Integer> buttonQties;
@@ -366,18 +367,21 @@ public class LadderView implements UiEventHandler {
     private String getSymbolDescription() {
 
         final FutureConstant futureFromSymbol = FutureConstant.getFutureFromSymbol(symbol);
-        if (null != futureFromSymbol) {
-            return futureFromSymbol.contractDesc + '[' + futureFromSymbol.index + ']';
-        }
 
-        final SearchResult searchResult = refData.get(symbol);
-        final String symbolDescription;
-        if (null != searchResult) {
-            symbolDescription = symbolDesc.getOrDefault(searchResult.instID, symbol);
+        if (null != futureFromSymbol) {
+
+            return futureFromSymbol.contractDesc + " [" + futureFromSymbol.wholePointValue + "x " + futureFromSymbol.index + ']';
         } else {
-            symbolDescription = symbol;
+
+            final SearchResult searchResult = refData.get(symbol);
+            final String symbolDescription;
+            if (null != searchResult) {
+                symbolDescription = symbolDesc.getOrDefault(searchResult.instID, symbol);
+            } else {
+                symbolDescription = symbol;
+            }
+            return symbolDescription;
         }
-        return symbolDescription;
     }
 
     void timedRefresh() {
