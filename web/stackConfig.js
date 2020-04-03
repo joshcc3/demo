@@ -17,14 +17,16 @@ $(function () {
 	if (nibblerEnd < 0) {
 		nibblerEnd = nibblerFilter.length;
 	}
-	const nibbler = nibblerFilter.substr(1, nibblerEnd - 1);
+
 	symbolFilter = nibblerFilter.substr(nibblerEnd + 1, nibblerFilter.length).replace(/%20/g, " ").split(",").filter(function (el) {
 		return 0 !== el.length;
 	});
 
 	setupTable();
 
-	ws.send(command("subscribe", symbolFilter));
+	const symbolRequest = symbolFilter.join(";");
+	ws.send(command("subscribe", [symbolRequest]));
+
 	const configTypeCombo = $("#configTypes");
 	addConfigTypeOption(configTypeCombo, NO_FILTER);
 	configTypeCombo.on("change", function () {
