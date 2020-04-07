@@ -562,10 +562,10 @@ public class Main {
                                 new LadderInfoListener(sourceNibbler, ladderPresenter, orderPresenter, shredderPresenter, autoPuller,
                                         channels.supportedGTCSymbols);
 
-                        final NibblerClientHandler client =
-                                NibblerCacheFactory.createClientCache(displaySelectIO, nibblerConfig, childMonitor,
-                                        threadName + "-transport-" + sourceNibbler, localAppName + mdSource.name(), true, true,
-                                        ladderInfoListener, NibblerNotificationHandler.INSTANCE);
+                        final NibblerClientHandler client = NibblerCacheFactory
+                                .createClientCache(displaySelectIO, nibblerConfig, childMonitor, threadName + "-transport-" + sourceNibbler,
+                                        localAppName + mdSource.name(), true, true, ladderInfoListener,
+                                        NibblerNotificationHandler.INSTANCE);
 
                         client.getCaches().addTradingDataListener(ladderInfoListener, true, true);
                         client.getCaches().blotterCache.addListener(ladderInfoListener);
@@ -580,19 +580,15 @@ public class Main {
         if (null != fxConfig) {
 
             final String name = "FX UI";
-            final IFuseBox<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(name);
-            final IFuseBox<SelectIOComponents> selectIOMonitor =
-                    new ExpandedDetailResourceMonitor<>(displayMonitor, name, errorLog, SelectIOComponents.class,
-                            ReddalComponents.FX_SELECT_IO);
+            final IFuseBox<FXFuse> fxFuseBox = new ExpandedDetailResourceMonitor<>(monitor, "FX", errorLog, FXFuse.class, ReddalComponents.FX);
+            final IFuseBox<SelectIOComponents> selectIOFuseBox = new ExpandedDetailResourceMonitor<>(fxFuseBox, name, errorLog, SelectIOComponents.class, FXFuse.FX_SELECT_IO);
 
-            final SelectIO fxSelectIO = new SelectIO(selectIOMonitor);
+            final SelectIO fxSelectIO = new SelectIO(selectIOFuseBox);
 
-            final FXCalc<ReddalComponents> fxCalc =
-                    new FXCalc<>(fxSelectIO, monitor, ReddalComponents.FX_CALC, ReddalComponents.FX_TIMEOUT, fxConfig, Constants::NO_OP);
+            final FXCalc<FXFuse> fxCalc = new FXCalc<>(fxSelectIO, fxFuseBox, FXFuse.FX_CALC, FXFuse.FX_TIMEOUT, fxConfig, Constants::NO_OP);
 
             final ConfigGroup fxMDConfig = fxConfig.getGroup("md");
-            FXMDUtils.connectToMD(fxSelectIO, displayMonitor, ReddalComponents.FX_HANDLER, ReddalComponents.FX_MC, errorLog, fxMDConfig,
-                    app.appName, fxCalc);
+            FXMDUtils.connectToMD(fxSelectIO, fxFuseBox, FXFuse.FX_HANDLER, FXFuse.FX_MC, errorLog, fxMDConfig, app.appName, fxCalc);
 
             final SelectIOFiber fxFiber = new SelectIOFiber(fxSelectIO, errorLog, "FX SelectIO");
             final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(fxFiber, name);
@@ -677,9 +673,9 @@ public class Main {
 
             final HostAndNic command = environment.getHostAndNic(EEIF_OE + "Command", server);
             if (command != null) {
-                final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
-                        OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
-                                OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
+                final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient = OnHeapBufferPhotocolsNioClient
+                        .client(command.host, command.nic, OrderEntryReplyMsg.class, OrderEntryCommandMsg.class,
+                                fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
                 cmdClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
                 cmdClient.logFile(logDir.resolve("order-entry." + server + ".log").toFile(), fibers.logging.getFiber(), true);
                 cmdClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Commands", 10));
@@ -693,9 +689,9 @@ public class Main {
 
             final HostAndNic update = environment.getHostAndNic(EEIF_OE + "Update", server);
             if (update != null) {
-                final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
-                        OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
-                                fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
+                final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient = OnHeapBufferPhotocolsNioClient
+                        .client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class, fibers.remoteOrders.getFiber(),
+                                EXCEPTION_HANDLER);
                 updateClient.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
                 updateClient.logFile(logDir.resolve("order-update." + server + ".log").toFile(), fibers.logging.getFiber(), true);
                 updateClient.handler(new PhotocolsStatsPublisher<>(channels.stats, server + " OE Updates", 10));
@@ -729,9 +725,9 @@ public class Main {
 
             final String statsName = root.getGroup("stats").getString("name");
             final HostAndNic hostAndNic = environment.getHostAndNic(Environment.METADATA, server);
-            final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client =
-                    OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
-                            Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
+            final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client = OnHeapBufferPhotocolsNioClient
+                    .client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class, Void.class,
+                            fibers.metaData.getFiber(), EXCEPTION_HANDLER);
             client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
             client.logFile(logDir.resolve("ladderText." + server + ".log").toFile(), fibers.logging.getFiber(), true);
             client.handler(new PhotocolsStatsPublisher<>(channels.stats, statsName, 10));
@@ -743,13 +739,12 @@ public class Main {
         {
             final ConfigGroup mrPhilConfig = root.getGroup("mr-phil");
             final InetSocketAddress indyAddress = IOConfigParser.getTargetAddress(mrPhilConfig);
-            final OnHeapBufferPhotocolsNioClient<Position, Subscription> client =
-                    OnHeapBufferPhotocolsNioClient.client(indyAddress, "0.0.0.0", Position.class, Subscription.class,
-                            fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
+            final OnHeapBufferPhotocolsNioClient<Position, Subscription> client = OnHeapBufferPhotocolsNioClient
+                    .client(indyAddress, "0.0.0.0", Position.class, Subscription.class, fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
             final PositionSubscriptionPhotocolsHandler positionHandler = new PositionSubscriptionPhotocolsHandler(channels.position);
             channels.searchResults.subscribe(fibers.mrPhil.getFiber(), positionHandler::setSearchResult);
-            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("mr-phil.log").toFile(), fibers.logging.getFiber(),
-                    true).handler(positionHandler);
+            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS)
+                  .logFile(logDir.resolve("mr-phil.log").toFile(), fibers.logging.getFiber(), true).handler(positionHandler);
             app.addStartUpAction(client::start);
         }
 
@@ -830,8 +825,9 @@ public class Main {
         // Logging
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trading-status.json", channels.errorPublisher),
                 channels.nibblerTransportConnected);
-        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "preferences.json", channels.errorPublisher),
-                channels.ladderPrefsLoaded, channels.storeLadderPref);
+        fibers.logging
+                .subscribe(new JsonChannelLogger(logDir.toFile(), "preferences.json", channels.errorPublisher), channels.ladderPrefsLoaded,
+                        channels.storeLadderPref);
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "status.json", channels.errorPublisher), channels.stats);
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "heartbeats.json", channels.errorPublisher),
                 channels.heartbeatRoundTrips);
@@ -865,9 +861,8 @@ public class Main {
         final IFuseBox<TradesTransportComponents> tradesMonitor =
                 new ExpandedDetailResourceMonitor<>(app.monitor, "Chill Trades", errorLog, TradesTransportComponents.class,
                         ReddalComponents.MR_CHILL_TRADES);
-        final TradesClientHandler cache =
-                TradesClientFactory.createClientCache(EnumSet.allOf(Desk.class), EnumSet.allOf(TradingEntity.class), true, mrChillSelectIO,
-                        tradesMonitor);
+        final TradesClientHandler cache = TradesClientFactory
+                .createClientCache(EnumSet.allOf(Desk.class), EnumSet.allOf(TradingEntity.class), true, mrChillSelectIO, tradesMonitor);
         final TransportTCPKeepAliveConnection<TradesTransportComponents, TradesTransportBaseMsg> tradesClient =
                 TradesClientFactory.createClient(mrChillSelectIO, mrChillConfig, tradesMonitor, cache);
 
@@ -939,16 +934,15 @@ public class Main {
             final SelectIO displaySelectIO, final String name, final ConfigGroup stackConfig,
             final StackGroupCallbackBatcher stackUpdateBatcher, final String localAppName) throws ConfigException {
 
-        final MultiLayeredFuseBox<StackTransportComponents> stackParentMonitor =
-                MultiLayeredFuseBox.getExpandedMultiLayerMonitor(displayMonitor, "Stacks", errorLog, StackTransportComponents.class,
+        final MultiLayeredFuseBox<StackTransportComponents> stackParentMonitor = MultiLayeredFuseBox
+                .getExpandedMultiLayerMonitor(displayMonitor, "Stacks", errorLog, StackTransportComponents.class,
                         ReddalComponents.STACK_GROUP_CLIENT);
 
         final String connectionName = name + "-stack-" + stackConfig.getKey();
         final IFuseBox<StackTransportComponents> stackMonitor = stackParentMonitor.createChildResourceMonitor(connectionName);
 
-        final StackClientHandler client =
-                StackCacheFactory.createClientCache(displaySelectIO, stackConfig, stackMonitor, connectionName, localAppName,
-                        stackUpdateBatcher);
+        final StackClientHandler client = StackCacheFactory
+                .createClientCache(displaySelectIO, stackConfig, stackMonitor, connectionName, localAppName, stackUpdateBatcher);
         stackUpdateBatcher.setStackClient(client);
     }
 
@@ -996,8 +990,8 @@ public class Main {
                 final YodaTweetClient tweetClient = new YodaTweetClient(millisAtMidnight, stockAlerts);
                 final YodaTWAPClient twapClient = new YodaTWAPClient(millisAtMidnight, stockAlerts);
 
-                final YodaClientHandler yodaHandler =
-                        YodaClientCacheFactory.createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName, atCloseClient,
+                final YodaClientHandler yodaHandler = YodaClientCacheFactory
+                        .createClientCache(selectIO, yodaChildMonitor, "yoda " + instanceName, appName, atCloseClient,
                                 new YodaNullClient<>(), restingClient, sweepClient, twapClient, tweetClient, new YodaNullClient<>(),
                                 EnumSet.of(YodaSignalType.AT_CLOSE, YodaSignalType.RESTING_ORDER, YodaSignalType.SWEEP, YodaSignalType.TWAP,
                                         YodaSignalType.TWEET));
@@ -1078,9 +1072,9 @@ public class Main {
                     new ExpandedDetailResourceMonitor<>(stackManagerMonitor, "Stacks log", app.errorLog, StackPersistenceComponents.class,
                             StackManagerComponents.LOGGER);
 
-            final MultiLayeredFuseBox<StackTransportComponents> clientMonitorParent =
-                    MultiLayeredFuseBox.getExpandedMultiLayerMonitor(stackManagerMonitor, "Stacks", app.errorLog,
-                            StackTransportComponents.class, StackManagerComponents.NIBBLER_CACHE);
+            final MultiLayeredFuseBox<StackTransportComponents> clientMonitorParent = MultiLayeredFuseBox
+                    .getExpandedMultiLayerMonitor(stackManagerMonitor, "Stacks", app.errorLog, StackTransportComponents.class,
+                            StackManagerComponents.NIBBLER_CACHE);
 
             final ConfigGroup nibblerConfigs = stackConfig.getGroup("nibblers");
 
@@ -1102,8 +1096,8 @@ public class Main {
                 final StackNibblerClient nibblerClient = new StackNibblerClient(nibbler, communityManager, stackUpdateBatcher);
 
                 final IFuseBox<StackTransportComponents> nibblerMonitor = clientMonitorParent.createChildResourceMonitor(connectionName);
-                final StackClientHandler client =
-                        StackCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "Stacks-" + nibbler,
+                final StackClientHandler client = StackCacheFactory
+                        .createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "Stacks-" + nibbler,
                                 app.env.name() + connectionName, nibblerClient);
 
                 final Path logPath = app.logDir.resolve("stackLog-" + nibbler + ".csv");
@@ -1171,9 +1165,8 @@ public class Main {
         if (null != nibblerConfigs) {
 
             final MsgBlotterPresenter msgBlotter = new MsgBlotterPresenter(app.selectIO, webLog);
-            channels.ladderClickTradingIssues.subscribe(selectIOFiber,
-                    msg -> msgBlotter.addLine("OrderRouter", app.clock.getReferenceNanoSinceMidnightUTC(), msg.symbol + ": " + msg.issue,
-                            false));
+            channels.ladderClickTradingIssues.subscribe(selectIOFiber, msg -> msgBlotter
+                    .addLine("OrderRouter", app.clock.getReferenceNanoSinceMidnightUTC(), msg.symbol + ": " + msg.issue, false));
             final SafetiesBlotterPresenter safetiesBlotter = new SafetiesBlotterPresenter(webLog);
 
             final WorkingOrdersPresenter workingOrderPresenter =
@@ -1297,10 +1290,9 @@ public class Main {
                 final BlotterClient blotterClient =
                         new BlotterClient(nibbler, msgBlotter, safetiesBlotter, connectedNibblerChannel, nibbler);
 
-                final NibblerClientHandler client =
-                        NibblerCacheFactory.createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler,
-                                connectionName, isTransportForTrading, isTransportForTrading, blotterClient,
-                                NibblerNotificationHandler.INSTANCE);
+                final NibblerClientHandler client = NibblerCacheFactory
+                        .createClientCache(app.selectIO, nibblerConfig, nibblerMonitor, "nibblers-" + nibbler, connectionName,
+                                isTransportForTrading, isTransportForTrading, blotterClient, NibblerNotificationHandler.INSTANCE);
 
                 final NibblerTransportCaches cache = client.getCaches();
                 cache.addListener(blotterClient);
@@ -1389,9 +1381,9 @@ public class Main {
                 app.addStartUpAction(() -> futureObligationPresenter.start(app.selectIO));
 
                 final InetSocketAddress indyAddress = IOConfigParser.getTargetAddress(indyConfigGroup);
-                final OnHeapBufferPhotocolsNioClient<EeifConfiguration, Void> client =
-                        OnHeapBufferPhotocolsNioClient.client(indyAddress, "0.0.0.0", EeifConfiguration.class, Void.class,
-                                fibers.indy.getFiber(), uncaughtExceptionHandler);
+                final OnHeapBufferPhotocolsNioClient<EeifConfiguration, Void> client = OnHeapBufferPhotocolsNioClient
+                        .client(indyAddress, "0.0.0.0", EeifConfiguration.class, Void.class, fibers.indy.getFiber(),
+                                uncaughtExceptionHandler);
 
                 client.reconnectMillis(1000);
                 client.logFile(app.logDir.resolve("eeif-config.photocols.log").toFile(), fibers.logging.getFiber());

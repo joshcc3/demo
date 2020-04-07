@@ -17,6 +17,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
+import com.drwtrading.london.reddal.FXFuse;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
@@ -88,6 +89,8 @@ public class ZoomableLadderTest {
     @SuppressWarnings("unchecked")
     private final IFuseBox<ReddalComponents> monitor = Mockito.mock(IFuseBox.class);
     @SuppressWarnings("unchecked")
+    private final IFuseBox<FXFuse> fxFuseBox = Mockito.mock(IFuseBox.class);
+    @SuppressWarnings("unchecked")
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher = Mockito.mock(Publisher.class);
     @SuppressWarnings("unchecked")
     private final Publisher<IOrderCmd> remoteOrderCommandPublisher = Mockito.mock(Publisher.class);
@@ -108,7 +111,7 @@ public class ZoomableLadderTest {
     private final SymbolStackData stackData = Mockito.mock(SymbolStackData.class);
     private final UiPipeImpl uiPipe = Mockito.mock(UiPipeImpl.class);
 
-    private final FXCalc<ReddalComponents> fxCalc = new FXCalc<>(monitor, ReddalComponents.FX_TIMEOUT, MDSource.INTERNAL);
+    private final FXCalc<FXFuse> fxCalc = new FXCalc<>(fxFuseBox, FXFuse.FX_TIMEOUT, MDSource.INTERNAL);
     private final FeesCalc feesCalc = new FeesCalc(System.out::println, fxCalc);
     private final DecimalFormat feeDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 5);
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
