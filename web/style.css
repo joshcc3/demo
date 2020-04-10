@@ -1224,10 +1224,20 @@ tr.result.highlight {
 	z-index: 10;
 }
 
+div#after_hours_weight.isOnlineDef {
+	background-color: orange;
+	color: black;
+}
+
+div#after_hours_weight.isPoisoned {
+	background-color: darkblue;
+	color: white;
+}
+
 div#text.going_ex {
 	background-color: yellow;
 }
 
-#ladder.zoomed_out .price.column, #ladder.zoomed_out .offer.column{
+#ladder.zoomed_out .price.column, #ladder.zoomed_out .offer.column {
 	border-left: 1px solid cyan;
 }

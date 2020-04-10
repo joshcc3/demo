@@ -146,8 +146,10 @@ public class HeaderPanel {
             }
 
             if (this.ahPercent != ahPercent) {
+
                 this.ahPercent = ahPercent;
                 setAHCell(HTML.AFTER_HOURS_WEIGHT, ahPercent);
+                ui.cls(HTML.AFTER_HOURS_WEIGHT, CSSClass.IS_POISONED, theoValue.isPoisoned());
             }
 
             if (this.rawAHPercent != rawAHPercent) {

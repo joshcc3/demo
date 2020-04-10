@@ -119,6 +119,9 @@ public enum CSSClass {
     WORKING_ORDER_TYPE_HIDDEN("working_order_type_hidden"),
 
     GOING_EX("going_ex"),
+    IS_POISONED("isPoisoned"),
+    IS_ON_LINE_DEF("isOnlineDef"),
+
     ZOOMED_OUT("zoomed_out");
 
     public final String cssText;
