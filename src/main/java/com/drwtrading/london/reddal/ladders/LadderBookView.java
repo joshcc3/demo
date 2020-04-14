@@ -825,6 +825,7 @@ public class LadderBookView implements ILadderBoard {
                 }
             }
             headerPanel.setTitle(symbol);
+            headerPanel.setIndyData(metaData.getIndyDefSource());
 
             final boolean isAuctionValid;
             final long auctionPrice;

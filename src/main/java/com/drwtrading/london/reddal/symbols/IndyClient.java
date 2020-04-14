@@ -9,9 +9,9 @@ import org.jetlang.channels.Publisher;
 public class IndyClient implements IIndyCacheListener {
 
     private final Publisher<InstrumentDef> instDefs;
-    private final Publisher<SymbolDescription> symbolDescriptions;
+    private final Publisher<SymbolIndyData> symbolDescriptions;
 
-    public IndyClient(final Publisher<InstrumentDef> instDefs, final Publisher<SymbolDescription> symbolDescriptions) {
+    public IndyClient(final Publisher<InstrumentDef> instDefs, final Publisher<SymbolIndyData> symbolDescriptions) {
         this.instDefs = instDefs;
         this.symbolDescriptions = symbolDescriptions;
     }
@@ -30,7 +30,8 @@ public class IndyClient implements IIndyCacheListener {
     @Override
     public boolean setETFDef(final ETFDef etfDef) {
         for (final InstrumentDef instDef : etfDef.instDefs) {
-            symbolDescriptions.publish(new SymbolDescription(instDef.instID, instDef.bbgCode, etfDef.indexDef.name));
+            final SymbolIndyData data = new SymbolIndyData(instDef.instID, instDef.bbgCode, etfDef.indexDef.name, etfDef.indexDef.source);
+            symbolDescriptions.publish(data);
         }
         return true;
     }

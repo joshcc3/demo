@@ -37,7 +37,7 @@ import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
-import com.drwtrading.london.reddal.symbols.SymbolDescription;
+import com.drwtrading.london.reddal.symbols.SymbolIndyData;
 import com.drwtrading.london.reddal.symbols.SymbolReferencePrice;
 import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuoteObligationsEnableCmd;
@@ -71,7 +71,7 @@ class ReddalChannels {
     final TypedChannel<LadderSettings.LadderPrefLoaded> ladderPrefsLoaded;
     final TypedChannel<LadderSettings.StoreLadderPref> storeLadderPref;
     final TypedChannel<InstrumentDef> instDefs;
-    final TypedChannel<SymbolDescription> symbolDescs;
+    final TypedChannel<SymbolIndyData> symbolDescs;
     final TypedChannel<DisplaySymbol> displaySymbol;
     final TypedChannel<SearchResult> searchResults;
     final TypedChannel<SymbolReferencePrice> symbolRefPrices;
@@ -135,7 +135,7 @@ class ReddalChannels {
         this.ladderPrefsLoaded = create(LadderSettings.LadderPrefLoaded.class);
         this.storeLadderPref = create(LadderSettings.StoreLadderPref.class);
         this.instDefs = create(InstrumentDef.class);
-        this.symbolDescs = create(SymbolDescription.class);
+        this.symbolDescs = create(SymbolIndyData.class);
         this.displaySymbol = create(DisplaySymbol.class);
         this.searchResults = create(SearchResult.class);
         this.symbolRefPrices = create(SymbolReferencePrice.class);

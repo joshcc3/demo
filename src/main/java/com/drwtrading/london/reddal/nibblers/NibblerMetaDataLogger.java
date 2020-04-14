@@ -43,8 +43,8 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
     private final FileTableRow<NibblerMetaTables, NibblerWorkingOrderColumns> workingOrderRow;
     private final FileTableRow<NibblerMetaTables, NibblerLastTradeColumns> lastTradeRow;
 
-    public NibblerMetaDataLogger(final IClock clock, final IFuseBox<ReddalComponents> monitor, final Path logDir,
-            final String nibblerName) throws IOException {
+    public NibblerMetaDataLogger(final IClock clock, final IFuseBox<ReddalComponents> monitor, final Path logDir, final String nibblerName)
+            throws IOException {
 
         this.monitor = monitor;
 
@@ -124,6 +124,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         theoRow.set(NibblerTheoValueColumns.SYMBOL, theoValue.getSymbol());
 
         theoRow.set(NibblerTheoValueColumns.IS_VALID, theoValue.isValid());
+        theoRow.set(NibblerTheoValueColumns.IS_POISONED, theoValue.isPoisoned());
         theoRow.set(NibblerTheoValueColumns.THEO_TYPE, theoValue.getTheoType());
 
         theoRow.set(NibblerTheoValueColumns.ORIGINAL_VALUE,

@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.ladders.model;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.indy.transport.data.Source;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
@@ -13,6 +14,16 @@ import java.text.DecimalFormat;
 public class HeaderPanel {
 
     private static final String RAW_AH_CELL_ID = HTML.TEXT_PREFIX + "r2c5";
+    private static final String[] AH_LABELS;
+
+    static {
+
+        AH_LABELS = new String[102];
+
+        for (int i = 0; i < AH_LABELS.length; ++i) {
+            AH_LABELS[i] = Integer.toString(i);
+        }
+    }
 
     private final UiPipeImpl ui;
 
@@ -149,8 +160,9 @@ public class HeaderPanel {
 
                 this.ahPercent = ahPercent;
                 setAHCell(HTML.AFTER_HOURS_WEIGHT, ahPercent);
-                ui.cls(HTML.AFTER_HOURS_WEIGHT, CSSClass.IS_POISONED, theoValue.isPoisoned());
             }
+
+            ui.cls(HTML.AFTER_HOURS_WEIGHT, CSSClass.IS_POISONED, theoValue.isPoisoned());
 
             if (this.rawAHPercent != rawAHPercent) {
                 this.rawAHPercent = rawAHPercent;
@@ -163,10 +175,17 @@ public class HeaderPanel {
 
         if (ahPercent < 0) {
             ui.txt(cellID, "XXX");
-        } else if (0 == ahPercent) {
-            ui.txt(cellID, "0");
+        } else if (0 < ahPercent && ahPercent < AH_LABELS.length) {
+            ui.txt(cellID, AH_LABELS[ahPercent]);
         } else {
             ui.txt(cellID, Integer.toString(ahPercent));
+        }
+    }
+
+    public void setIndyData(final Source indyDefSource) {
+
+        if (null != description) {
+            ui.cls(HTML.AFTER_HOURS_WEIGHT, CSSClass.IS_ON_LINE_DEF, Source.ONLINE_VIEW == indyDefSource);
         }
     }
 

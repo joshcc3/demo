@@ -6,6 +6,7 @@ public enum NibblerTheoValueColumns {
     SYMBOL,
 
     IS_VALID,
+    IS_POISONED,
     THEO_TYPE,
 
     ORIGINAL_VALUE,

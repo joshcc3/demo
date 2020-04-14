@@ -52,7 +52,7 @@ import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
-import com.drwtrading.london.reddal.symbols.SymbolDescription;
+import com.drwtrading.london.reddal.symbols.SymbolIndyData;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
@@ -230,6 +230,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     }
 
     public void setLastTradeForJasper(final ITrade lastTrade) {
+
         final JasperLastTradeDataForSymbol data = lastTradeBySymbolForJasper.get(lastTrade.getSymbol());
         data.setLastTrade(lastTrade);
     }
@@ -539,8 +540,12 @@ public class LadderPresenter implements IStackPresenterCallback {
     }
 
     @Subscribe
-    public void on(final SymbolDescription description) {
-        symbolDesc.put(description.instrumentID, description.description);
+    public void on(final SymbolIndyData indyData) {
+
+        symbolDesc.put(indyData.instrumentID, indyData.description);
+
+        final LadderMetaData ladderMetaData = metaDataBySymbol.get(indyData.symbol);
+        ladderMetaData.setIndyDefSource(indyData.source);
     }
 
     public long flushAllLadders() {
