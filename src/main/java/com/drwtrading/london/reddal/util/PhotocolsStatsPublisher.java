@@ -14,10 +14,11 @@ public class PhotocolsStatsPublisher<I, O> implements PhotocolsHandler<I, O> {
     private final DoOnceEveryXMillis doOnceEveryXMillis;
 
     public PhotocolsStatsPublisher(final Publisher<StatusStat> statsPublisher, final String statsName, final int secondsValid) {
+
         this.statsPublisher = statsPublisher;
         this.statsName = statsName;
         this.secondsValid = secondsValid;
-        doOnceEveryXMillis = new DoOnceEveryXMillis(Clock.SYSTEM, secondsValid * 1000 / 3);
+        this.doOnceEveryXMillis = new DoOnceEveryXMillis(Clock.SYSTEM, secondsValid * 1000 / 3);
     }
 
     @Override

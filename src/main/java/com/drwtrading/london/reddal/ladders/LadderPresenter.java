@@ -31,6 +31,9 @@ import com.drwtrading.london.reddal.data.TradingStatusForAll;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
+import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPref;
+import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPrefLoaded;
+import com.drwtrading.london.reddal.ladders.settings.LadderSettingsStoreLadderPref;
 import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
 import com.drwtrading.london.reddal.opxl.OpxlLadderText;
@@ -122,7 +125,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Map<InstrumentID, String> symbolDesc = new HashMap<>();
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
-    private final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher;
+    private final Publisher<LadderSettingsStoreLadderPref> storeLadderPrefPublisher;
     private final Publisher<HeartbeatRoundtrip> roundTripPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
@@ -141,7 +144,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     public LadderPresenter(final IFuseBox<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
             final Publisher<IOrderCmd> remoteOrderCommandByServer, final LadderOptions ladderOptions, final IPicardSpotter picardSpotter,
             final IPremiumCalc premiumCalc, final FXCalc<?> fxCalc,
-            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher,
+            final Publisher<LadderSettingsStoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
             final Fiber fiber, final Publisher<Jsonable> trace, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
@@ -462,8 +465,8 @@ public class LadderPresenter implements IStackPresenterCallback {
     }
 
     @Subscribe
-    public void on(final LadderSettings.LadderPrefLoaded ladderPrefLoaded) {
-        final LadderSettings.LadderPref pref = ladderPrefLoaded.pref;
+    public void on(final LadderSettingsPrefLoaded ladderPrefLoaded) {
+        final LadderSettingsPref pref = ladderPrefLoaded.pref;
         getLadderPrefsForSymbolUser(pref.symbol, pref.user).on(ladderPrefLoaded);
     }
 

@@ -9,14 +9,13 @@ import com.drwtrading.photons.mrphil.Subscription;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 import org.jetlang.channels.Publisher;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.drwtrading.london.reddal.util.FastUtilCollections.newFastSet;
-
 public class PositionSubscriptionPhotocolsHandler implements PhotocolsHandler<Position, Subscription> {
 
-    private final Set<String> allSymbols = newFastSet();
+    private final Set<String> allSymbols = new HashSet<>();
     private PhotocolsConnection<Subscription> connection = null;
     private final Publisher<Position> positionPublisher;
 

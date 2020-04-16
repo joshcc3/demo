@@ -15,6 +15,7 @@ public class EnumSwitcher<E extends Enum<E>> {
 
     @SafeVarargs
     public EnumSwitcher(final Class<E> clazz, final E... validChoices) {
+
         this.universe = clazz.getEnumConstants();
         Preconditions.checkArgument(universe.length > 0,
                 "Need at least one element enum switcher " + clazz.getName() + ", got " + Arrays.asList(universe));

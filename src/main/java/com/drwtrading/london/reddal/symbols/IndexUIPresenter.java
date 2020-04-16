@@ -3,7 +3,6 @@ package com.drwtrading.london.reddal.symbols;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
-import com.drwtrading.london.reddal.util.FastUtilCollections;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
@@ -17,8 +16,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -48,8 +49,8 @@ public class IndexUIPresenter {
 
         this.suffixTree = new SuffixTree<>();
         this.views = WebSocketViews.create(IndexUIView.class, this);
-        this.symbolToDisplay = FastUtilCollections.newFastMap();
-        this.searchResultBySymbol = FastUtilCollections.newFastMap();
+        this.symbolToDisplay = new HashMap<>();
+        this.searchResultBySymbol = new HashMap<>();
     }
 
     public void addSearchResult(final SearchResult searchResult) {
@@ -175,7 +176,7 @@ public class IndexUIPresenter {
 
         final List<SearchResult> defs =
                 symbols.stream().filter(s -> s.split(" ")[0].toUpperCase().startsWith(searchTerms.trim().toUpperCase())).map(
-                        searchResultBySymbol::get).filter(d -> d != null).filter(
+                        searchResultBySymbol::get).filter(Objects::nonNull).filter(
                         d -> d.mdSource != MDSource.BATS_EUROPE && d.mdSource != MDSource.CHIX).collect(Collectors.toList());
 
         if (!defs.isEmpty()) {

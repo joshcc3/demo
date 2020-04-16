@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.fastui;
 
-import com.drwtrading.london.reddal.util.FastUtilCollections;
-
+import java.util.ArrayList;
 import java.util.List;
 
 class ListBatcher implements ICmdAppender {
@@ -13,7 +12,7 @@ class ListBatcher implements ICmdAppender {
     ListBatcher(final String command) {
 
         this.command = command;
-        this.pendingValues = FastUtilCollections.newFastList();
+        this.pendingValues = new ArrayList<>();
     }
 
     void put(final String value) {

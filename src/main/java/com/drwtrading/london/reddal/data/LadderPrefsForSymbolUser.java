@@ -1,40 +1,45 @@
 package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.reddal.fastui.html.HTML;
-import com.drwtrading.london.reddal.ladders.LadderSettings;
-import com.drwtrading.london.reddal.util.FastUtilCollections;
+import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPref;
+import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPrefLoaded;
+import com.drwtrading.london.reddal.ladders.settings.LadderSettingsStoreLadderPref;
 import org.jetlang.channels.Publisher;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 public class LadderPrefsForSymbolUser {
 
-    private static final Set<LadderSettings.LadderPref> globalDefaults = new HashSet<>();
+    private static final Set<LadderSettingsPref> globalDefaults = new HashSet<>();
+
     static {
-        globalDefaults.add(new LadderSettings.LadderPref("*", "*", HTML.WORKING_ORDER_TAG, "CHAD"));
+        final LadderSettingsPref globalDefault = new LadderSettingsPref("*", "*", HTML.WORKING_ORDER_TAG, "CHAD");
+        globalDefaults.add(globalDefault);
     }
 
     public final String symbol;
     public final String user;
-    private final Map<String, String> globalPrefs = FastUtilCollections.newFastMap();
-    private final Map<String, String> userPrefs = FastUtilCollections.newFastMap();
-    private final Map<String, String> symbolPrefs = FastUtilCollections.newFastMap();
-    private final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher;
+    private final Map<String, String> globalPrefs = new HashMap<>();
+    private final Map<String, String> userPrefs = new HashMap<>();
+    private final Map<String, String> symbolPrefs = new HashMap<>();
+    private final Publisher<LadderSettingsStoreLadderPref> storeLadderPrefPublisher;
 
     public LadderPrefsForSymbolUser(final String symbol, final String user,
-            final Publisher<LadderSettings.StoreLadderPref> storeLadderPrefPublisher) {
+            final Publisher<LadderSettingsStoreLadderPref> storeLadderPrefPublisher) {
+
         this.symbol = symbol;
         this.user = user;
         this.storeLadderPrefPublisher = storeLadderPrefPublisher;
-        for (final LadderSettings.LadderPref globalDefault : globalDefaults) {
-            on(new LadderSettings.LadderPrefLoaded(globalDefault));
+        for (final LadderSettingsPref globalDefault : globalDefaults) {
+            on(new LadderSettingsPrefLoaded(globalDefault));
         }
     }
 
-    public void on(final LadderSettings.LadderPrefLoaded ladderPrefLoaded) {
-        final LadderSettings.LadderPref pref = ladderPrefLoaded.pref;
+    public void on(final LadderSettingsPrefLoaded ladderPrefLoaded) {
+        final LadderSettingsPref pref = ladderPrefLoaded.pref;
         if ("*".equals(pref.user) && "*".equals(pref.symbol)) {
             globalPrefs.put(pref.id, pref.value);
         } else if ("*".equals(pref.user) && pref.symbol.equals(symbol)) {
@@ -49,8 +54,9 @@ public class LadderPrefsForSymbolUser {
             return symbolPrefs.get(id);
         } else if (userPrefs.containsKey(id)) {
             return userPrefs.get(id);
-        } else
+        } else {
             return globalPrefs.getOrDefault(id, null);
+        }
     }
 
     public String get(final String id, final Object otherwise) {
@@ -62,8 +68,7 @@ public class LadderPrefsForSymbolUser {
     }
 
     public void set(final String id, final Object value) {
-        storeLadderPrefPublisher.publish(
-                new LadderSettings.StoreLadderPref(new LadderSettings.LadderPref(user, symbol, id, value.toString())));
+        storeLadderPrefPublisher.publish(new LadderSettingsStoreLadderPref(new LadderSettingsPref(user, symbol, id, value.toString())));
     }
 
     public LadderPrefsForSymbolUser withSymbol(final String newSymbol) {

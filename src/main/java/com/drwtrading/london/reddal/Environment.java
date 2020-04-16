@@ -6,11 +6,8 @@ import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.ladders.LadderOptions;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -24,17 +21,6 @@ public class Environment {
 
     Environment(final ConfigGroup config) {
         this.config = config;
-    }
-
-    public Path getSettingsFile() throws IOException, ConfigException {
-
-        final Path settingsFile = config.getGroup("settings").getPath("file");
-
-        Files.createDirectories(settingsFile.getParent());
-        if (Files.notExists(settingsFile)) {
-            Files.createFile(settingsFile);
-        }
-        return settingsFile;
     }
 
     public Collection<String> getList(final String prefix) throws ConfigException {
