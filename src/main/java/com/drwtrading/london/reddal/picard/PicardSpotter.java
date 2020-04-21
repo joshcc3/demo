@@ -259,6 +259,7 @@ public class PicardSpotter implements IPicardSpotter {
 
     private static double opportunitySizeForLevel(final long theoreticalValue, final long levelPrice, final long levelQty, final double wpv,
             final double fx) {
+
         return (Math.abs(theoreticalValue - levelPrice) * levelQty / (double) Constants.NORMALISING_FACTOR) * wpv * fx;
     }
 
