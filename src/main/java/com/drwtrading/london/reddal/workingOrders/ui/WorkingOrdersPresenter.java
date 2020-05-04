@@ -240,9 +240,10 @@ public class WorkingOrdersPresenter {
     }
 
     private void cancelAllNonGTC(final String user, final String reason, final boolean isAutomated) {
-        for (final NibblerView nibblerView : nibblers.values()) {
-            nibblerView.cancelAllNonGTC(user, reason, isAutomated);
 
+        for (final NibblerView nibblerView : nibblers.values()) {
+
+            nibblerView.cancelAllNonGTC(user, reason, isAutomated);
         }
     }
 
