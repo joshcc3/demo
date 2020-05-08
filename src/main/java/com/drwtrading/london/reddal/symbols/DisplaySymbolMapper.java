@@ -1,12 +1,14 @@
 package com.drwtrading.london.reddal.symbols;
 
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
+import com.drwtrading.london.eeif.utils.staticData.ExpiryMonthCodes;
+import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import org.jetlang.channels.Publisher;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,6 +17,7 @@ import java.util.Set;
 public class DisplaySymbolMapper {
 
     private final Publisher<DisplaySymbol> displaySymbolPublisher;
+
 
     private final Map<String, HashSet<String>> mdSymbolsByIsin;
     private final Map<String, String> bbgByIsin;
@@ -38,24 +41,49 @@ public class DisplaySymbolMapper {
 
     public void setSearchResult(final SearchResult searchResult) {
 
+        final String symbol = searchResult.symbol;
+
         switch (searchResult.instType) {
             case EQUITY:
             case DR:
             case ETF: {
                 final Set<String> symbols = MapUtils.getMappedSet(mdSymbolsByIsin, searchResult.instID.isin);
-                symbols.add(searchResult.symbol);
+                symbols.add(symbol);
                 makeDisplaySymbol(searchResult.instID.isin);
                 break;
             }
             case FUTURE: {
 
-                final String market = searchResult.symbol.substring(0, searchResult.symbol.length() - 2);
+                final String market = symbol.substring(0, symbol.length() - 2);
+                final ExpiryMonthCodes expiryMonth = ExpiryMonthCodes.getCode(symbol.charAt(symbol.length() - 2));
 
-                final SimpleDateFormat sdf = new SimpleDateFormat("MMM yy");
-                final Date expiryTime = new Date(searchResult.expiry);
-                final String expiry = sdf.format(expiryTime);
+                final Calendar cal = DateTimeUtil.getCalendar();
 
-                final DisplaySymbol displaySymbol = new DisplaySymbol(searchResult.symbol, market + ' ' + expiry);
+                final int currentYear = cal.get(Calendar.YEAR);
+                final int digitYear = currentYear % 10;
+                final int contractYear = Integer.parseInt(symbol.substring(symbol.length() - 1));
+                final int yearsAhead;
+                if (contractYear == digitYear) {
+                    final int currentMonth = cal.get(Calendar.MONTH);
+                    if (expiryMonth.calMonth < currentMonth) {
+                        yearsAhead = 10;
+                    } else {
+                        yearsAhead = 0;
+                    }
+                } else if (contractYear < digitYear) {
+                    yearsAhead = 10 + contractYear - digitYear;
+                } else {
+                    yearsAhead = contractYear - digitYear;
+                }
+
+                cal.set(Calendar.YEAR, currentYear + yearsAhead);
+                cal.set(Calendar.MONTH, expiryMonth.calMonth);
+                cal.set(Calendar.DAY_OF_MONTH, 1);
+
+                final SimpleDateFormat sdf = DateTimeUtil.getDateFormatter("MMM yy");
+                final String expiry = sdf.format(cal.getTimeInMillis());
+
+                final DisplaySymbol displaySymbol = new DisplaySymbol(symbol, market + ' ' + expiry);
                 publishIfNew(displaySymbol);
             }
         }

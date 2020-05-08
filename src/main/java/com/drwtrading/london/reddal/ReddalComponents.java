@@ -28,7 +28,6 @@ public enum ReddalComponents implements IFuse {
     ORDER_PRESENTER,
 
     STACK_GROUP_CLIENT,
-    STACK_OPXL_OUTPUT,
     STACK_MANAGER,
 
     PKS,
@@ -43,8 +42,6 @@ public enum ReddalComponents implements IFuse {
     OPXL_READERS,
 
     FX,
-
-    INDY_SERVER,
 
     MR_CHILL_TRADES;
 

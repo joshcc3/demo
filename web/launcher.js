@@ -22,7 +22,7 @@ function getLadderHosts(symbol) {
 
 	if (isDev) {
 		return {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
-	} else if (symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9](;.*)?$/)) {
+	} else if (symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9](;.*)?$/) || symbol.match(/ FWD$/)) {
 		return {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
 	} else {
 		return {ladderHost: "prod-equities-ladder.eeif.drw:9044", workspaceHost: "prod-equities-ladder.eeif.drw:9045"};
@@ -38,7 +38,7 @@ function launchLadder(symbol, skipBasket) {
 	const hosts = getLadderHosts(symbol);
 	$.ajax({
 		success: function (d, s, x) {
-			if (d != "success") {
+			if ("success" !== d) {
 				openLink(hosts.ladderHost, symbol);
 			}
 		},
@@ -50,8 +50,8 @@ function launchLadder(symbol, skipBasket) {
 		crossDomain: true
 	});
 	if (!skipBasket) {
-        launchBasket(symbol, true);
-    }
+		launchBasket(symbol, true);
+	}
 }
 
 function launchBasket(symbol, noPopUp) {
