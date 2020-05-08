@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 public class IndexUIPresenter {
 
-    private static final EnumSet<InstType> FUTURE_INST_TYPES = EnumSet.of(InstType.FUTURE, InstType.FUTURE_SPREAD);
+    private static final EnumSet<InstType> FUTURE_INST_TYPES = EnumSet.of(InstType.FUTURE, InstType.FUTURE_SPREAD, InstType.FX_FORWARD);
 
     private static final int MIN_TERM_LENGTH = 2;
     private static final int MAX_RESULTS = 100;
