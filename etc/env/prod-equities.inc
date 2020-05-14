@@ -1,3 +1,3 @@
 APPNAME=reddal
 REMOTE_USER=prodappadmin
-REMOTE_SERVER=ln1x-supeeif01
+REMOTE_SERVER=prod-equities-ladder.eeif.drw
