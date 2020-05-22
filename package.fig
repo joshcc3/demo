@@ -7,61 +7,61 @@ retrieve JS_SOUND_FILES->web/js
 retrieve WAV_SOUND_FILES->web/sounds
 
 config default
-				include drw.london.eeif-utils/475
-				include drw.london.eeif-nibbler-transport/198
-				include drw.london.eeif-opxl-client/239
-				include drw.london.eeif-position-transport/207
-				include drw.london.eeif-stack-transport/246
-				include drw.london.eeif-yoda-transport/213
-				include drw.london.eeif-indy-transport/415
-				include drw.london.eeif-fees/187
-				include drw.london.eeif-trades-transport/53
+	include drw.london.eeif-utils/475
+	include drw.london.eeif-nibbler-transport/198
+	include drw.london.eeif-opxl-client/239
+	include drw.london.eeif-position-transport/207
+	include drw.london.eeif-stack-transport/246
+	include drw.london.eeif-yoda-transport/213
+	include drw.london.eeif-indy-transport/415
+	include drw.london.eeif-fees/187
+	include drw.london.eeif-trades-transport/53
 
-				include drw.opxl/1.5.1
+	include drw.opxl/1.5.1
 
-				# Libraries and containers
-				include google.guava/r06
-				include fastutil/6.6.1
-				include photon-runtime-java/1.0.0.212
-				include com.drwtrading.photocols/0.9.8
-				include org.hdrhistogram/2.1.4
+	# Libraries and containers
+	include google.guava/r06
+	include fastutil/6.6.1
+	include photon-runtime-java/1.0.0.212
+	include com.drwtrading.photocols/0.9.8
+	include org.hdrhistogram/2.1.4
 
-				# JSON
-				include drw.london.json/1.0.0.4
-				include json/1
+	# JSON
+	include drw.london.json/1.0.0.4
+	include json/1
 
-				# Jetlang
-				include jetlang/0.2.11
-				include jetlang-with-src/0.2.0
-				include drw.jetlang-core/1.0.0.145
-				include drw.london.jetlang-with-stats/23
+	# Jetlang
+	include jetlang/0.2.11
+	include jetlang-with-src/0.2.0
+	include drw.jetlang-core/1.0.0.145
+	include drw.london.jetlang-with-stats/23
 
-				# Web
-				include jquery/1.4.2
-				include org.jboss.netty-netty/3.2.7.Final
-				include drw.sso.client-java/1.0.0.32
-				include drw.london.server-common/50
-				include drw.simple-webbit-server/33:with-deps
-				include org.webbitserver-webbit-rest/0.3.0
-				include drw.london.javascript-common/33
-				include drw.london.sounds/20
+	# Web
+	include jquery/1.4.2
+	include org.jboss.netty-netty/3.2.7.Final
+	include drw.sso.client-java/1.0.0.32
+	include drw.london.server-common/50
+	include drw.simple-webbit-server/33:with-deps
+	include org.webbitserver-webbit-rest/0.3.0
+	include drw.london.javascript-common/33
+	include drw.london.sounds/20
 
-				# Photons
-				include log4j/1.2.16 # For protocols
-				include drw.london.eeif-photocols-client/352
-				include drw.london.eeif-phockets/126
-				include com.drwtrading.photons.mrphil/1.0.0.4
-				include com.drwtrading.london.photons.reddal/2
-				include drw.eeif.eeifoe/2
-				include com.drwtrading.photons.eeif.configuration/11
-				include drw.eeif.photons.signals/1
-				include com.drwtrading.photons.ladder/38
+	# Photons
+	include log4j/1.2.16 # For protocols
+	include drw.london.eeif-photocols-client/352
+	include drw.london.eeif-phockets/126
+	include com.drwtrading.photons.mrphil/1.0.0.4
+	include com.drwtrading.london.photons.reddal/2
+	include drw.eeif.eeifoe/2
+	include com.drwtrading.photons.eeif.configuration/11
+	include drw.eeif.photons.signals/1
+	include com.drwtrading.photons.ladder/38
 
-				# Research
-				include joda.time/1.6
-				include org.apache.commons.math/2.2
+	# Research
+	include joda.time/1.6
+	include org.apache.commons.math/2.2
 
-				add PATH=/site/drw/java/jdk-11.0.2/bin
+	add PATH=/site/drw/java/jdk-11.0.2/bin
 end
 
 config test
