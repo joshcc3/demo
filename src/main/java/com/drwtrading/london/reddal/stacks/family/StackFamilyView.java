@@ -74,6 +74,8 @@ public class StackFamilyView implements IStackRelationshipListener {
     private static final String EXPIRY_FRONT_MONTH_FILTER = "Front months";
     private static final String EXPIRY_BACK_MONTH_FILTER = "Back months";
 
+    private static final String RFQ_SUFFIX = " RFQ";
+
     private static final double GLOBAL_OFFSET_INCREMENT_BPS = 1d;
 
     private final SelectIO managementSelectIO;
@@ -206,10 +208,15 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     void setSearchResult(final SearchResult searchResult) {
 
-        searchResults.put(searchResult.symbol, searchResult);
-        MapUtils.getMappedLinkedSet(fungibleInsts, searchResult.instID.isin).add(searchResult.symbol);
+        if (!searchResult.symbol.endsWith(RFQ_SUFFIX)) {
 
-        updateSymbolFilters(searchResult.symbol);
+            searchResults.put(searchResult.symbol, searchResult);
+
+            final Set<String> children = MapUtils.getMappedLinkedSet(fungibleInsts, searchResult.instID.isin);
+            children.add(searchResult.symbol);
+
+            updateSymbolFilters(searchResult.symbol);
+        }
     }
 
     void addChildUIData(final StackUIData uiData) {
@@ -359,9 +366,10 @@ public class StackFamilyView implements IStackRelationshipListener {
     private void updateFamilyUIData(final IStackFamilyUI view, final StackUIData uiData) {
 
         if (isFamilyDisplayable(uiData.symbol)) {
-            view.setParentData(uiData.symbol, uiData.getActiveBidPriceOffsetBPS(), uiData.getActiveAskPriceOffsetBPS(), uiData.getSelectedConfigType(),
-                    uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
-                    uiData.isStackEnabled(BookSide.ASK, StackType.PICARD), uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
+            view.setParentData(uiData.symbol, uiData.getActiveBidPriceOffsetBPS(), uiData.getActiveAskPriceOffsetBPS(),
+                    uiData.getSelectedConfigType(), uiData.isStackEnabled(BookSide.BID, StackType.PICARD),
+                    uiData.isStackEnabled(BookSide.BID, StackType.QUOTER), uiData.isStackEnabled(BookSide.ASK, StackType.PICARD),
+                    uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
         }
     }
 
@@ -615,6 +623,7 @@ public class StackFamilyView implements IStackRelationshipListener {
             } else {
                 final Set<String> children = fungibleInsts.get(searchResult.instID.isin);
                 for (final String childSymbol : children) {
+
                     final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(childSymbol);
                     final String tradableNibbler = tradableSymbols.get(childSymbol);
 
