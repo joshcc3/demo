@@ -13,6 +13,8 @@ let bigRfqSound;
 let divsSound;
 let unknownSound;
 
+let reverseLabels = {};
+
 let AutoOpenRFQ = false;
 
 $(function () {
@@ -46,6 +48,14 @@ $(function () {
     $(".autoButton").unbind().bind("click", function() {
 	setAutoOpen(!AutoOpenRFQ);
     });
+
+    if (labels) {
+    	Object.entries(labels).forEach(([key, value]) => {
+    		if (!key.endsWith("IX") || !key.endsWith("EB")) {
+				reverseLabels[value] = key;
+			}
+		});
+	}
 });
 
 function setAutoOpen(autoOpen) {
@@ -92,9 +102,10 @@ function stockAlert(timestamp, type, symbol, msg, isOriginal) {
     if(type.includes("ETF_RFQ")) {
 		const o = symbol.split(" ")[0];
 		const origSymbol = o.slice(0, -2) + " " + o.slice(-2);
+		const launchSymbol = reverseLabels[origSymbol] ? reverseLabels[origSymbol] : origSymbol;
 		if (AutoOpenRFQ) {
             launchLadder(symbol, true);
-            launchLadder(origSymbol, true);
+            launchLadder(launchSymbol, true);
         }
     }
 }
