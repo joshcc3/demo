@@ -18,6 +18,8 @@ import java.util.Map;
 
 public class BulkOrderMarketAnalyser {
 
+    private static final int REQUIRED_LOTS_TO_BETTER = 27;
+
     private final MDSource mdSource;
     private final IMDSubscriber mdSubscriber;
 
@@ -86,12 +88,17 @@ public class BulkOrderMarketAnalyser {
 
                     if (currentPrice < bidPrice) {
 
-                        final long bettermentPrice = book.getTickTable().getTicksIn(BookSide.BID, bidPrice, 1);
+                        if (bestBid.getQty() < REQUIRED_LOTS_TO_BETTER) {
+                            bidPrices.put(symbol, bidPrice);
+                        } else {
 
-                        if (bettermentPrice < bestAsk.getPrice()) {
+                            final long bettermentPrice = book.getTickTable().getTicksIn(BookSide.BID, bidPrice, 1);
 
-                            bidPrices.put(symbol, bettermentPrice);
+                            if (bettermentPrice < bestAsk.getPrice()) {
+                                bidPrices.put(symbol, bettermentPrice);
+                            }
                         }
+
                     }
                 }
             }
@@ -120,11 +127,15 @@ public class BulkOrderMarketAnalyser {
 
                     if (askPrice < currentPrice) {
 
-                        final long bettermentPrice = book.getTickTable().getTicksIn(BookSide.ASK, askPrice, 1);
+                        if (bestAsk.getQty() < REQUIRED_LOTS_TO_BETTER) {
+                            askPrices.put(symbol, askPrice);
+                        } else {
 
-                        if (bestBid.getPrice() < bettermentPrice) {
+                            final long bettermentPrice = book.getTickTable().getTicksIn(BookSide.ASK, askPrice, 1);
 
-                            askPrices.put(symbol, bettermentPrice);
+                            if (bestBid.getPrice() < bettermentPrice) {
+                                askPrices.put(symbol, bettermentPrice);
+                            }
                         }
                     }
                 }
