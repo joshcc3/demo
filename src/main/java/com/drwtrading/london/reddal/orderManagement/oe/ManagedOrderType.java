@@ -18,7 +18,7 @@ public enum ManagedOrderType {
 
     HAM {
         @Override
-        public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
+        public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
                     new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(false));
@@ -31,7 +31,7 @@ public enum ManagedOrderType {
     },
     HAM3 {
         @Override
-        public OrderParameters getOrder(final long price, int qty, OrderSide orderSide) {
+        public OrderParameters getOrder(final long price, int qty, final OrderSide orderSide) {
             if (getQty(qty) == 0) {
                 return HAM.getOrder(price, qty, orderSide);
             }
@@ -43,7 +43,7 @@ public enum ManagedOrderType {
         }
 
         @Override
-        public int getQty(int qty) {
+        public int getQty(final int qty) {
             return divisible(qty, Constants.THREE);
         }
 
@@ -57,7 +57,7 @@ public enum ManagedOrderType {
 
     HAMON {
         @Override
-        public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
+        public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
                     new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(false));
@@ -71,7 +71,7 @@ public enum ManagedOrderType {
 
     YAMON {
         @Override
-        public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
+        public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
                     new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
@@ -85,7 +85,7 @@ public enum ManagedOrderType {
 
     YODA {
         @Override
-        public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
+        public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
             return new OrderParameters(new PegToBook(BookPegLevel.MID, 50), Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
                     new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
         }
@@ -97,7 +97,7 @@ public enum ManagedOrderType {
     },
     HAMON3 {
         @Override
-        public OrderParameters getOrder(final long price, int qty, OrderSide orderSide) {
+        public OrderParameters getOrder(final long price, int qty, final OrderSide orderSide) {
             if (getQty(qty) == 0) {
                 return HAMON.getOrder(price, qty, orderSide);
             }
@@ -123,7 +123,7 @@ public enum ManagedOrderType {
 
     TRON {
         @Override
-        public OrderParameters getOrder(final long price, final int qty, OrderSide orderSide) {
+        public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
             return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
                     Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.TAKE_BETTER_BY_ONE,
                     new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(false));
@@ -136,7 +136,7 @@ public enum ManagedOrderType {
     },
     TRON3 {
         @Override
-        public OrderParameters getOrder(final long price, int qty, OrderSide orderSide) {
+        public OrderParameters getOrder(final long price, int qty, final OrderSide orderSide) {
             if (getQty(qty) == 0) {
                 return TRON.getOrder(price, qty, orderSide);
             }
@@ -153,7 +153,7 @@ public enum ManagedOrderType {
         }
 
         @Override
-        public int getQty(int qty) {
+        public int getQty(final int qty) {
             return divisible(qty, Constants.THREE);
         }
     },
@@ -161,10 +161,10 @@ public enum ManagedOrderType {
     // Raw taker at price
     SNAGGIT {
         @Override
-        public OrderParameters getOrder(final long price, int qty, OrderSide orderSide) {
+        public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
             return new OrderParameters(new PegToPrice(price),
                     new BookParameters(false, true, false, false, false, false, 0),
-                    new TakingParameters(true, 0, 200, 25, false, 0),
+                    new TakingParameters(true, 0, 1_00_00, 25, false, 0),
                     Constants.NO_QUOTING,
                     new PredictionParameters(false));
         }
@@ -173,15 +173,10 @@ public enum ManagedOrderType {
         public boolean requiresLean() {
             return false;
         }
-
-        @Override
-        public int getQty(int qty) {
-            return qty;
-        }
     };
 
 
-    public static int divisible(int qty, int i) {
+    public static int divisible(final int qty, final int i) {
         return qty - (qty % i);
     }
 
