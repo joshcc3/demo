@@ -698,6 +698,8 @@ public class LadderView implements UiEventHandler {
         } else if (label.equals(HTML.AFTER_HOURS_WEIGHT)) {
             if ("left".equals(button)) {
                 openEwokView();
+            } else if ("right".equals(button)) {
+                openIndyScreen();
             }
         } else if ("middle".equals(button) &&
                 (label.startsWith(HTML.PRICE) || label.startsWith(HTML.STACK_BID_OFFSET) || label.startsWith(HTML.STACK_ASK_OFFSET) ||
@@ -786,6 +788,7 @@ public class LadderView implements UiEventHandler {
     }
 
     private void openEwokView() {
+
         if (null != marketData && null != marketData.getBook()) {
             switch (marketData.getBook().getInstType()) {
                 case FUTURE: {
@@ -816,6 +819,18 @@ public class LadderView implements UiEventHandler {
         if (null != future) {
             final String url = ewokBaseURL + "/smart#" + future.index.name();
             view.popUp(url, "Ewok " + future.index.name(), 1200, 800);
+        }
+    }
+
+    private void openIndyScreen() {
+
+        if (null != metaData && null != metaData.getIndyDefName() && null != marketData && null != marketData.getBook()) {
+
+            final boolean isETF = InstType.ETF == marketData.getBook().getInstType();
+            final String etfSwitch = isETF ? "etf." : "";
+
+            final String url = "http://prod-indy.eeif.drw:11100/composition#" + etfSwitch + metaData.getIndyDefName();
+            view.popUp(url, "Indy " + symbol, 1200, 800);
         }
     }
 

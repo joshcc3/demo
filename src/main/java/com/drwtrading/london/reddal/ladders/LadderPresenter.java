@@ -548,7 +548,7 @@ public class LadderPresenter implements IStackPresenterCallback {
         symbolDesc.put(indyData.instrumentID, indyData.description);
 
         final LadderMetaData ladderMetaData = metaDataBySymbol.get(indyData.symbol);
-        ladderMetaData.setIndyDefSource(indyData.source);
+        ladderMetaData.setIndyDefSource(indyData.source, indyData.description);
     }
 
     public long flushAllLadders() {

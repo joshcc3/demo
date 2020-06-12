@@ -38,6 +38,7 @@ public class LadderMetaData {
     public SpreadContractSet spreadContractSet;
 
     public Source indyDefSource;
+    private String indyDefName;
 
     public LadderMetaData(final String symbol) {
 
@@ -56,6 +57,7 @@ public class LadderMetaData {
         this.freeTextDescription = new EnumMap<>(FreeTextCell.class);
 
         this.indyDefSource = null;
+        this.indyDefName = null;
     }
 
     public void onLadderText(final LadderText ladderText) {
@@ -130,11 +132,17 @@ public class LadderMetaData {
         }
     }
 
-    public void setIndyDefSource(final Source indyDefSource) {
+    public void setIndyDefSource(final Source indyDefSource, final String indyDefName) {
+
         this.indyDefSource = indyDefSource;
+        this.indyDefName = indyDefName;
     }
 
     public Source getIndyDefSource() {
         return indyDefSource;
+    }
+
+    public String getIndyDefName() {
+        return indyDefName;
     }
 }
