@@ -1241,3 +1241,8 @@ div#text.going_ex {
 #ladder.zoomed_out .price.column, #ladder.zoomed_out .offer.column {
 	border-left: 1px solid cyan;
 }
+
+div.price.column.highlighted {
+	background-color: pink;
+	color: black;
+}

@@ -190,7 +190,6 @@ const Handler = function (ws) {
 					send(event, elementId, packData(elementId, {"button": button, "isCtrlPressed": isCtrl}));
 					e.stopPropagation();
 				})
-				.unbind("contextmenu")
 				.bind("contextmenu", function (e) {
 					e.preventDefault();
 					return false;

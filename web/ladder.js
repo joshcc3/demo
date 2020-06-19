@@ -4,6 +4,8 @@ var handler;
 
 var TAB = 9;
 
+let highlightedPrices = new Set();
+
 $(function () {
 	ws = connect();
 	ws.logToConsole = false;
@@ -30,14 +32,36 @@ function draw(levels) {
 
 	for (var i = 0; i < levels; i++) {
 		var bookRow = $("#row_template").clone().removeClass("template");
+		let priceCell = bookRow.find('.price');
+		let volumeCell = bookRow.find('.volume');
+
 		bookRow.attr('id', 'row_' + i);
+		priceCell.attr('id', 'price_' + i).text(' ');
+		volumeCell.attr('id', 'volume_' + i).text(' ');
+
 		bookRow.find('.order').attr('id', 'order_' + i).text(' ');
 		bookRow.find('.bid').attr('id', 'bid_' + i).text(' ');
-		bookRow.find('.price').attr('id', 'price_' + i).text(' ');
 		bookRow.find('.offer').attr('id', 'offer_' + i).text(' ');
 		bookRow.find('.trade').attr('id', 'trade_' + i).text(' ');
-		bookRow.find('.volume').attr('id', 'volume_' + i).text(' ');
 		bookRow.find('.text').attr('id', 'text_' + i).text(' ');
+
+		priceCell.bind("DOMSubtreeModified", e => {
+			priceCell.toggleClass("highlighted", highlightedPrices.has(parseFloat(priceCell.text())));
+		});
+
+		volumeCell.bind("contextmenu", e => {
+			let price = parseFloat(priceCell.text());
+			console.log("HI");
+			if (highlightedPrices.has(price)) {
+				highlightedPrices.delete(price);
+				priceCell.toggleClass("highlighted", false);
+			} else {
+				highlightedPrices.add(price);
+				priceCell.toggleClass("highlighted", true);
+			}
+			return false;
+		});
+
 		rows.append(bookRow);
 	}
 
