@@ -32,6 +32,7 @@ public final class ChildOffsetCalculator {
         EXCHANGE_OFFSETS.put("SS", 2.05d);
         EXCHANGE_OFFSETS.put("UF", 1.25d);
         EXCHANGE_OFFSETS.put("UW", 1.25d);
+        EXCHANGE_OFFSETS.put("OTC", 0d);
     }
 
     static double getSymbolOffset(final String symbol) {
