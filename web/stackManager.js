@@ -310,6 +310,10 @@ function updateOffsets(familySymbol, bpsWider, skipNonDefaults) {
 	ws.send(command("updateOffsets", [familySymbol, bpsWider, skipNonDefaults]));
 }
 
+function killFamily(symbol) {
+	ws.send(command("killFamily", [symbol]))
+}
+
 function popUp(url, name, width, height) {
 
 	window.open(url, name, 'width=' + width + ',height=' + height);

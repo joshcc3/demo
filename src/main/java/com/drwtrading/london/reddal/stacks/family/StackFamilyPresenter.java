@@ -149,6 +149,12 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     @Override
+    public boolean killFamily(final String source, final String familyName) {
+        // NO-OP
+        return true;
+    }
+
+    @Override
     public boolean batchComplete() {
         return true;
     }

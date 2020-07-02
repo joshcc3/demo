@@ -418,6 +418,12 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @Override
+    public boolean killFamily(final String source, final String familyName) {
+        //NO-OP
+        return true;
+    }
+
+    @Override
     public boolean batchComplete() {
         return true;
     }
@@ -669,6 +675,11 @@ public class StackFamilyView implements IStackRelationshipListener {
                 communityManager.createFamily(SOURCE_UI, family, instID, displayableInstType);
             }
         }
+    }
+
+    @FromWebSocketView
+    public void killFamily(final String familyName) {
+        communityManager.killFamily(SOURCE_UI, familyName);
     }
 
     @FromWebSocketView
