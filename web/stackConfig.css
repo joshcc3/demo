@@ -46,18 +46,6 @@
 	border-bottom: solid darkgrey 1px;
 }
 
-.row div.sided {
-	display: block;
-}
-
-.header.row div.sided {
-	display: flex;
-}
-
-.row div.sided input.bid {
-	border-bottom: solid darkgrey 1px;
-}
-
 .header .quoteInst {
 	background-color: #FF6464;
 	color: white;
@@ -91,10 +79,6 @@ input::-webkit-outer-spin-button:hover,
 input::-webkit-inner-spin-button:hover {
 	-webkit-appearance: none;
 	margin: 0;
-}
-
-.sided input {
-	height: 17px;
 }
 
 .header .button button {

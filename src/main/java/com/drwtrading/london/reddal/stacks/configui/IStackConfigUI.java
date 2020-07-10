@@ -1,30 +1,18 @@
 package com.drwtrading.london.reddal.stacks.configui;
 
-import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
-
-import java.util.Collection;
-
 public interface IStackConfigUI {
 
     public void removeAll(final String nibblerName);
 
-    public void setConfigTypes(final Collection<String> configTypes);
-
-    public void setRow(final String nibblerName, final long configGroupID, final String symbol, final StackConfigType configType,
-            final int quoteMaxBookAgeMillis, final boolean quoteIsAuctionQuotingEnabled, final boolean quoteIsOnlyAuction,
-            final int quoteAuctionTheoMaxBPSThrough, final boolean quoteIsAllowEmptyBook, final int quoteMaxJumpBPS,
-            final int quoteBettermentQty, final int quoteBettermentTicks, final boolean quoteIsBettermentOppositeSide,
-            final int oppositeSideBettermentTicks, final int fxMaxBookAgeMillis, final int fxMaxJumpBPS, final int leanMaxBookAgeMillis,
-            final int leanMaxJumpBPS, final int leanRequiredQty, final int leanMaxPapaWeight, final String leanToQuoteRatio,
-            final double leanPriceAdjustmentRaw, final boolean additiveIsEnabled, final long additiveMaxSignalAgeMillis,
-            final int additiveMinRequiredBPS, final int additiveMaxBPS, final int bidPlanMinLevelQty, final int bidPlanMaxLevelQty,
-            final int bidPlanLotSize, final int bidPlanMaxLevels, final int bidMinPicardQty, final int bidMaxOrdersPerLevel,
-            final boolean bidIsOnlySubmitBestLevel, final boolean bidIsQuoteBettermentOn, final int bidModTicks,
-            final byte bidQuoteFlickerBufferPercent, final int bidQuotePicardMaxBPSThrough, final byte bidMaxPapaWeight,
-            final int bidPicardMaxPerSec, final int bidPicardMaxPerMin, final int bidPicardMaxPerHour, final int bidPicardMaxPerDay,
-            final int askPlanMinLevelQty, final int askPlanMaxLevelQty, final int askPlanLotSize, final int askPlanMaxLevels,
-            final int askMinPicardQty, final int askMaxOrdersPerLevel, final boolean askIsOnlySubmitBestLevel,
-            final boolean askIsQuoteBettermentOn, final int askModTicks, final byte askQuoteFlickerBufferPercent,
-            final int askQuotePicardMaxBPSThrough, final byte askMaxPapaWeight, final int askPicardMaxPerSec, final int askPicardMaxPerMin,
-            final int askPicardMaxPerHour, final int askPicardMaxPerDay);
+    public void setRow(final String nibblerName, final long configGroupID, final String symbol, final int quoteMaxBookAgeMillis,
+            final boolean quoteIsAuctionQuotingEnabled, final boolean quoteIsOnlyAuction, final int quoteAuctionTheoMaxBPSThrough,
+            final boolean quoteIsAllowEmptyBook, final int quoteMaxJumpBPS, final int quoteBettermentQty, final int quoteBettermentTicks,
+            final boolean quoteIsBettermentOppositeSide, final int oppositeSideBettermentTicks, final int fxMaxBookAgeMillis,
+            final int fxMaxJumpBPS, final int leanMaxBookAgeMillis, final int leanMaxJumpBPS, final int leanRequiredQty,
+            final int leanMaxPapaWeight, final String leanToQuoteRatio, final double leanPriceAdjustmentRaw,
+            final boolean additiveIsEnabled, final long additiveMaxSignalAgeMillis, final int additiveMinRequiredBPS,
+            final int additiveMaxBPS, final int planMinLevelQty, final int planMaxLevelQty, final int planLotSize, final int planMaxLevels,
+            final int minPicardQty, final int maxOrdersPerLevel, final boolean isOnlySubmitBestLevel, final boolean isQuoteBettermentOn,
+            final int modTicks, final byte quoteFlickerBufferPercent, final int quotePicardMaxBPSThrough, final byte maxPapaWeight,
+            final int picardMaxPerSec, final int picardMaxPerMin, final int picardMaxPerHour, final int picardMaxPerDay);
 }

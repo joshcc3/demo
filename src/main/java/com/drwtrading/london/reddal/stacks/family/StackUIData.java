@@ -4,7 +4,6 @@ import com.drwtrading.london.eeif.stack.transport.cache.stack.IStackGroupUpdateC
 import com.drwtrading.london.eeif.stack.transport.data.stacks.Stack;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
-import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
@@ -31,8 +30,6 @@ public class StackUIData implements IStackGroupUpdateCallback {
 
     private final Map<BookSide, StackGroup> stackGroups;
 
-    private String selectedConfig;
-
     private String definedBidPriceOffsetBPS;
     private String definedAskPriceOffsetBPS;
 
@@ -53,17 +50,11 @@ public class StackUIData implements IStackGroupUpdateCallback {
 
         this.stackGroups = new EnumMap<>(BookSide.class);
 
-        this.selectedConfig = StackConfigType.DEFAULT.name();
-
         this.definedBidPriceOffsetBPS = NO_PRICE_OFFSET;
         this.definedAskPriceOffsetBPS = NO_PRICE_OFFSET;
 
         this.activeBidPriceOffsetBPS = NO_PRICE_OFFSET;
         this.activeAskPriceOffsetBPS = NO_PRICE_OFFSET;
-    }
-
-    public void setSelectedConfig(final StackConfigType selectedConfig) {
-        this.selectedConfig = selectedConfig.name();
     }
 
     @Override
@@ -206,10 +197,6 @@ public class StackUIData implements IStackGroupUpdateCallback {
         return activeAskPriceOffsetBPS;
     }
 
-    String getSelectedConfigType() {
-        return selectedConfig;
-    }
-
     boolean isStackEnabled(final BookSide side, final StackType stackType) {
 
         final StackGroup group = stackGroups.get(side);
@@ -233,8 +220,6 @@ public class StackUIData implements IStackGroupUpdateCallback {
     void clear() {
 
         this.stackGroups.clear();
-
-        this.selectedConfig = StackConfigType.DEFAULT.name();
 
         this.definedBidPriceOffsetBPS = NO_PRICE_OFFSET;
         this.definedAskPriceOffsetBPS = NO_PRICE_OFFSET;

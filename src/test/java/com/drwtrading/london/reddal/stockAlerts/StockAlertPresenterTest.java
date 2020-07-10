@@ -3,12 +3,11 @@ package com.drwtrading.london.reddal.stockAlerts;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
-import com.drwtrading.london.eeif.utils.monitoring.ResourceIgnorer;
+import com.drwtrading.london.eeif.utils.monitoring.IgnoredFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.ManualClock;
 import com.drwtrading.london.reddal.FXFuse;
-import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.util.UILogger;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -16,7 +15,7 @@ import org.testng.annotations.Test;
 
 public class StockAlertPresenterTest {
 
-    private final FXCalc<FXFuse> fxCalc = new FXCalc<>(new ResourceIgnorer<>(), FXFuse.FX_TIMEOUT, MDSource.INTERNAL);
+    private final FXCalc<FXFuse> fxCalc = new FXCalc<>(new IgnoredFuseBox<>(), FXFuse.FX_TIMEOUT, MDSource.INTERNAL);
 
     private final IClock clock = new ManualClock(1);
     private final UILogger logger = Mockito.mock(UILogger.class);

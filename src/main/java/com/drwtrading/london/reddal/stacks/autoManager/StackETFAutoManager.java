@@ -6,7 +6,6 @@ import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
-import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.ticks.ITickTable;
 import com.drwtrading.london.reddal.symbols.SymbolReferencePrice;
 
@@ -80,11 +79,8 @@ public class StackETFAutoManager implements IStackInstTypeAutoManager {
                         final int basicModLevels = (int) tickTable.getTicksBetween(refPrice.yestClosePrice, nextPrice);
                         final int modLevels = Math.max(1, basicModLevels);
 
-                        final StackStrategyConfig bidConfig = configGroup.bidStrategyConfig;
-                        setModLevels(clientHandler, BookSide.BID, configGroup.configGroupID, bidConfig, modLevels);
-
-                        final StackStrategyConfig askConfig = configGroup.askStrategyConfig;
-                        setModLevels(clientHandler, BookSide.ASK, configGroup.configGroupID, askConfig, modLevels);
+                        final StackStrategyConfig stratConfig = configGroup.strategyConfig;
+                        setModLevels(clientHandler, configGroup.configGroupID, stratConfig, modLevels);
                     }
                 }
             }
@@ -92,10 +88,10 @@ public class StackETFAutoManager implements IStackInstTypeAutoManager {
         }
     }
 
-    private static void setModLevels(final StackClientHandler clientHandler, final BookSide side, final long configGroupID,
-            final StackStrategyConfig config, final int modLevels) {
+    private static void setModLevels(final StackClientHandler clientHandler, final long configGroupID, final StackStrategyConfig config,
+            final int modLevels) {
 
-        clientHandler.strategyConfigUpdated(SOURCE, configGroupID, side, config.getMaxOrdersPerLevel(), config.isOnlySubmitBestLevel(),
+        clientHandler.strategyConfigUpdated(SOURCE, configGroupID, config.getMaxOrdersPerLevel(), config.isOnlySubmitBestLevel(),
                 config.isQuoteBettermentOn(), modLevels, config.getQuoteFlickerBufferPercent(), config.getQuotePicardMaxBPSThrough(),
                 config.getPicardMaxPapaWeight(), config.getPicardMaxPerSec(), config.getPicardMaxPerMin(), config.getPicardMaxPerHour(),
                 config.getPicardMaxPerDay());

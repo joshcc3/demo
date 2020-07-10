@@ -10,7 +10,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.marketData.book.impl.levelTwo.LevelTwoBook;
 import com.drwtrading.london.eeif.utils.marketData.book.ticks.SingleBandTickTable;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
-import com.drwtrading.london.eeif.utils.monitoring.ResourceIgnorer;
+import com.drwtrading.london.eeif.utils.monitoring.IgnoredFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
@@ -46,7 +46,7 @@ public class PicardTest {
     public void setUp() {
         Mockito.reset(bookSubscriber, picardPublisher, laserDistancesPublisher);
 
-        fxCalc = new FXCalc<>(new ResourceIgnorer<>(), PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
+        fxCalc = new FXCalc<>(new IgnoredFuseBox<>(), PicardFXCalcComponents.FX_ERROR, MDSource.HOTSPOT_FX);
         fxCalc.setRate(CCY.EUR, CCY.USD, 1, true, 1.5, 1.5);
     }
 

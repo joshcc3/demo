@@ -131,7 +131,6 @@ public class StackCallbackBatcher implements IStackClientListener {
         for (final StackStrategy strategy : strategyBatch) {
             try {
                 strategiesPresenter.strategyUpdated(nibblerName, strategy);
-                childListener.strategyUpdated(strategy);
             } catch (final Exception e) {
                 System.out.println("Failed Strategy stack batch update.");
                 e.printStackTrace();

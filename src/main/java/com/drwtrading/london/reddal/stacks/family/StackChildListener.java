@@ -49,20 +49,11 @@ public class StackChildListener {
         final StackUIData uiData =
                 new StackUIData(nibblerName, symbol, strategy.getInstID(), strategy.getLeanSymbol(), strategy.getLeanInstType(),
                         strategy.getAdditiveSymbol());
-        uiData.setSelectedConfig(strategy.getSelectedConfigType());
 
         symbolUIData.put(symbol, uiData);
         strategyUIData.put(strategyID, uiData);
 
         presenter.addChildUIData(uiData);
-    }
-
-    public void strategyUpdated(final StackStrategy strategy) {
-
-        final StackUIData uiData = strategyUIData.get(strategy.getStrategyID());
-        uiData.setSelectedConfig(strategy.getSelectedConfigType());
-
-        presenter.updateChildUIData(uiData);
     }
 
     public void stackGroupCreated(final StackGroup stackGroup) {

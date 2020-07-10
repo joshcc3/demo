@@ -8,8 +8,6 @@ public class StackFamilyChildRow {
 
     private final StackUIData uiData;
 
-    private String selectedConfigType;
-
     private String bidInfo;
     private boolean isBidStrategyOn;
     private boolean isBidPicardEnabled;
@@ -24,7 +22,6 @@ public class StackFamilyChildRow {
 
         this.uiData = uiData;
 
-        this.selectedConfigType = "";
         this.bidInfo = "";
         this.askInfo = "";
 
@@ -53,8 +50,6 @@ public class StackFamilyChildRow {
 
     public boolean updateSnapshot(final StackUIData uiData) {
 
-        final String selectedConfigType = uiData.getSelectedConfigType();
-
         final String bidInfo = uiData.getRunningInfo(BookSide.BID);
         final boolean isBidStrategyOn = uiData.isStrategyOn(BookSide.BID);
         final boolean isBidPicardEnabled = uiData.isStackEnabled(BookSide.BID, StackType.PICARD);
@@ -68,11 +63,9 @@ public class StackFamilyChildRow {
         final boolean hasChanged = this.isBidStrategyOn != isBidStrategyOn || this.isBidPicardEnabled != isBidPicardEnabled ||
                 this.isBidQuoterEnabled != isBidQuoterEnabled || this.isAskStrategyOn != isAskStrategyOn ||
                 this.isAskPicardEnabled != isAskPicardEnabled || this.isAskQuoterEnabled != isAskQuoterEnabled ||
-                !this.selectedConfigType.equals(selectedConfigType) || !this.bidInfo.equals(bidInfo) || !this.askInfo.equals(askInfo);
+                !this.bidInfo.equals(bidInfo) || !this.askInfo.equals(askInfo);
 
         if (hasChanged) {
-
-            this.selectedConfigType = selectedConfigType;
 
             this.bidInfo = bidInfo;
             this.isBidStrategyOn = isBidStrategyOn;
@@ -88,7 +81,7 @@ public class StackFamilyChildRow {
     }
 
     public void sendRowState(final IStackFamilyUI view) {
-        view.setChildData(uiData.symbol, uiData.leanSymbol, uiData.source, selectedConfigType, isBidStrategyOn, bidInfo, isBidPicardEnabled,
-                isBidQuoterEnabled, isAskStrategyOn, askInfo, isAskPicardEnabled, isAskQuoterEnabled);
+        view.setChildData(uiData.symbol, uiData.leanSymbol, uiData.source, isBidStrategyOn, bidInfo, isBidPicardEnabled, isBidQuoterEnabled,
+                isAskStrategyOn, askInfo, isAskPicardEnabled, isAskQuoterEnabled);
     }
 }

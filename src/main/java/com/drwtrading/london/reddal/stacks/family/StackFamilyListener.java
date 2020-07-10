@@ -7,7 +7,6 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.Stack;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroupFactory;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
-import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
@@ -63,15 +62,6 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     public boolean pendingRequirementsUpdated(final String source, final long strategyID, final boolean isQuoteInstDefEventAvailable,
             final boolean isQuoteBookAvailable, final boolean isLeanBookAvailable, final boolean isFXAvailable,
             final boolean isAdditiveAvailable) {
-        return true;
-    }
-
-    @Override
-    public boolean setSelectedConfig(final String source, final long strategyID, final StackConfigType selectedConfigType) {
-
-        final StackUIData uiData = uiDataByStrategyID.get(strategyID);
-        uiData.setSelectedConfig(selectedConfigType);
-        presenter.updateFamilyUIData(uiData);
         return true;
     }
 

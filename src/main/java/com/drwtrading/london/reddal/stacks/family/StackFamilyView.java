@@ -12,7 +12,6 @@ import com.drwtrading.london.eeif.stack.transport.data.config.StackPlanConfig;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackQuoteConfig;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackStrategyConfig;
 import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
-import com.drwtrading.london.eeif.stack.transport.data.types.StackConfigType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
@@ -46,7 +45,6 @@ import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -106,7 +104,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     private final Map<String, LinkedHashSet<String>> fungibleInsts;
 
     private final Map<String, StackClientHandler> nibblerClients;
-    private final Map<String, EnumMap<StackConfigType, StackConfigGroup>> stackConfigs;
+    private final Map<String, StackConfigGroup> stackConfigs;
 
     private final Map<String, String> filterGroups;
     private final Map<String, StackChildFilter> filters;
@@ -367,17 +365,14 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         if (isFamilyDisplayable(uiData.symbol)) {
             view.setParentData(uiData.symbol, uiData.getActiveBidPriceOffsetBPS(), uiData.getActiveAskPriceOffsetBPS(),
-                    uiData.getSelectedConfigType(), uiData.isStackEnabled(BookSide.BID, StackType.PICARD),
-                    uiData.isStackEnabled(BookSide.BID, StackType.QUOTER), uiData.isStackEnabled(BookSide.ASK, StackType.PICARD),
-                    uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
+                    uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
+                    uiData.isStackEnabled(BookSide.ASK, StackType.PICARD), uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
         }
     }
 
     void setConfig(final StackConfigGroup stackConfig) {
 
-        final Map<StackConfigType, StackConfigGroup> stackTypeConfigs =
-                MapUtils.getMappedEnumMap(stackConfigs, stackConfig.getSymbol(), StackConfigType.class);
-        stackTypeConfigs.put(stackConfig.configType, stackConfig);
+        this.stackConfigs.put(stackConfig.getSymbol(), stackConfig);
     }
 
     @Override
@@ -872,65 +867,45 @@ public class StackFamilyView implements IStackRelationshipListener {
         communityManager.stopChild(family, toSymbol, BookSide.BID);
         communityManager.stopChild(family, toSymbol, BookSide.ASK);
 
-        final Map<StackConfigType, StackConfigGroup> fromConfigs = stackConfigs.get(fromSymbol);
-        final Map<StackConfigType, StackConfigGroup> toConfigs = stackConfigs.get(toSymbol);
+        final StackConfigGroup fromConfig = stackConfigs.get(fromSymbol);
+        final StackConfigGroup toConfig = stackConfigs.get(toSymbol);
         final StackFamilyChildRow toChildUIData = childData.get(fromSymbol);
 
-        if (null != fromConfigs && null != toConfigs) {
+        if (null != fromConfig && null != toConfig) {
 
             communityManager.copyChildStacks(SOURCE_UI, fromSymbol, toSymbol);
             final StackClientHandler configClient = nibblerClients.get(toChildUIData.getSource());
 
-            for (final StackConfigType configType : StackConfigType.values()) {
+            final StackQuoteConfig quoteConfig = fromConfig.quoteConfig;
+            configClient.quoteConfigUpdated(SOURCE_UI, toConfig.configGroupID, quoteConfig.getMaxBookAgeMillis(),
+                    quoteConfig.isAuctionQuotingEnabled(), quoteConfig.isOnlyAuctionQuoting(), quoteConfig.getAuctionTheoMaxBPSThrough(),
+                    quoteConfig.isAllowEmptyBook(), quoteConfig.getMaxJumpBPS(), quoteConfig.getBettermentQty(),
+                    quoteConfig.getBettermentTicks(), quoteConfig.isBettermentOppositeSide(), quoteConfig.getOppositeSideBettermentTicks());
 
-                final StackConfigGroup fromConfig = fromConfigs.get(configType);
-                final StackConfigGroup toConfig = toConfigs.get(configType);
+            final StackFXConfig fxConfig = fromConfig.fxConfig;
+            configClient.fxConfigUpdated(SOURCE_UI, toConfig.configGroupID, fxConfig.getMaxBookAgeMillis(), fxConfig.getMaxJumpBPS());
 
-                final StackQuoteConfig quoteConfig = fromConfig.quoteConfig;
-                configClient.quoteConfigUpdated(SOURCE_UI, toConfig.configGroupID, quoteConfig.getMaxBookAgeMillis(),
-                        quoteConfig.isAuctionQuotingEnabled(), quoteConfig.isOnlyAuctionQuoting(),
-                        quoteConfig.getAuctionTheoMaxBPSThrough(), quoteConfig.isAllowEmptyBook(), quoteConfig.getMaxJumpBPS(),
-                        quoteConfig.getBettermentQty(), quoteConfig.getBettermentTicks(), quoteConfig.isBettermentOppositeSide(),
-                        quoteConfig.getOppositeSideBettermentTicks());
+            final StackLeanConfig leanConfig = fromConfig.leanConfig;
+            configClient.leanConfigUpdated(SOURCE_UI, toConfig.configGroupID, leanConfig.getMaxBookAgeMillis(), leanConfig.getMaxJumpBPS(),
+                    leanConfig.getRequiredQty(), leanConfig.getMaxPapaWeight(), leanConfig.getLeanToQuoteRatio(),
+                    leanConfig.getPriceAdjustment());
 
-                final StackFXConfig fxConfig = fromConfig.fxConfig;
-                configClient.fxConfigUpdated(SOURCE_UI, toConfig.configGroupID, fxConfig.getMaxBookAgeMillis(), fxConfig.getMaxJumpBPS());
+            final StackAdditiveConfig additiveConfig = fromConfig.additiveConfig;
+            configClient.additiveConfigUpdated(SOURCE_UI, toConfig.configGroupID, additiveConfig.getMaxSignalAgeMillis(),
+                    additiveConfig.isEnabled(), additiveConfig.getMinRequiredBPS(), additiveConfig.getMaxBPS());
 
-                final StackLeanConfig leanConfig = fromConfig.leanConfig;
-                configClient.leanConfigUpdated(SOURCE_UI, toConfig.configGroupID, leanConfig.getMaxBookAgeMillis(),
-                        leanConfig.getMaxJumpBPS(), leanConfig.getRequiredQty(), leanConfig.getMaxPapaWeight(),
-                        leanConfig.getLeanToQuoteRatio(), leanConfig.getPriceAdjustment());
+            final StackPlanConfig planConfig = fromConfig.planConfig;
+            configClient.planConfigUpdated(SOURCE_UI, toConfig.configGroupID, planConfig.getMinLevelQty(), planConfig.getMaxLevelQty(),
+                    planConfig.getLotSize(), planConfig.getMaxLevels(), planConfig.getMinPicardQty());
 
-                final StackAdditiveConfig additiveConfig = fromConfig.additiveConfig;
-                configClient.additiveConfigUpdated(SOURCE_UI, toConfig.configGroupID, additiveConfig.getMaxSignalAgeMillis(),
-                        additiveConfig.isEnabled(), additiveConfig.getMinRequiredBPS(), additiveConfig.getMaxBPS());
+            final StackStrategyConfig stratConfig = fromConfig.strategyConfig;
+            configClient.strategyConfigUpdated(SOURCE_UI, toConfig.configGroupID, stratConfig.getMaxOrdersPerLevel(),
+                    stratConfig.isOnlySubmitBestLevel(), stratConfig.isQuoteBettermentOn(), stratConfig.getModTicks(),
+                    stratConfig.getQuoteFlickerBufferPercent(), stratConfig.getQuotePicardMaxBPSThrough(),
+                    stratConfig.getPicardMaxPapaWeight(), stratConfig.getPicardMaxPerSec(), stratConfig.getPicardMaxPerMin(),
+                    stratConfig.getPicardMaxPerHour(), stratConfig.getPicardMaxPerDay());
 
-                final StackPlanConfig bidPlanConfig = fromConfig.bidPlanConfig;
-                configClient.planConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.BID, bidPlanConfig.getMinLevelQty(),
-                        bidPlanConfig.getMaxLevelQty(), bidPlanConfig.getLotSize(), bidPlanConfig.getMaxLevels(),
-                        bidPlanConfig.getMinPicardQty());
-
-                final StackStrategyConfig bidStratConfig = fromConfig.bidStrategyConfig;
-                configClient.strategyConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.BID, bidStratConfig.getMaxOrdersPerLevel(),
-                        bidStratConfig.isOnlySubmitBestLevel(), bidStratConfig.isQuoteBettermentOn(), bidStratConfig.getModTicks(),
-                        bidStratConfig.getQuoteFlickerBufferPercent(), bidStratConfig.getQuotePicardMaxBPSThrough(),
-                        bidStratConfig.getPicardMaxPapaWeight(), bidStratConfig.getPicardMaxPerSec(), bidStratConfig.getPicardMaxPerMin(),
-                        bidStratConfig.getPicardMaxPerHour(), bidStratConfig.getPicardMaxPerDay());
-
-                final StackPlanConfig askPlanConfig = fromConfig.askPlanConfig;
-                configClient.planConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.ASK, askPlanConfig.getMinLevelQty(),
-                        askPlanConfig.getMaxLevelQty(), askPlanConfig.getLotSize(), askPlanConfig.getMaxLevels(),
-                        askPlanConfig.getMinPicardQty());
-
-                final StackStrategyConfig askStratConfig = fromConfig.askStrategyConfig;
-                configClient.strategyConfigUpdated(SOURCE_UI, toConfig.configGroupID, BookSide.ASK, askStratConfig.getMaxOrdersPerLevel(),
-                        askStratConfig.isOnlySubmitBestLevel(), askStratConfig.isQuoteBettermentOn(), askStratConfig.getModTicks(),
-                        askStratConfig.getQuoteFlickerBufferPercent(), askStratConfig.getQuotePicardMaxBPSThrough(),
-                        askStratConfig.getPicardMaxPapaWeight(), askStratConfig.getPicardMaxPerSec(), askStratConfig.getPicardMaxPerMin(),
-                        askStratConfig.getPicardMaxPerHour(), askStratConfig.getPicardMaxPerDay());
-
-                configClient.batchComplete();
-            }
+            configClient.batchComplete();
         }
     }
 
@@ -1268,19 +1243,6 @@ public class StackFamilyView implements IStackRelationshipListener {
     }
 
     @FromWebSocketView
-    public void setFilteredSelectedConfig(final String filters, final String configType, final WebSocketInboundData data) {
-
-        final StackConfigType stackConfigType = StackConfigType.valueOf(configType);
-
-        final Collection<String> affectedChildren = getFilteredSymbols(filters);
-        for (final String childSymbol : affectedChildren) {
-
-            final String family = childrenToFamily.get(childSymbol);
-            communityManager.setChildSelectedConfig(SOURCE_UI, family, childSymbol, stackConfigType);
-        }
-    }
-
-    @FromWebSocketView
     public void lookupConfigSymbols(final String filters, final WebSocketInboundData data) {
 
         final Collection<String> affectedChildren = getFilteredSymbols(filters);
@@ -1296,21 +1258,6 @@ public class StackFamilyView implements IStackRelationshipListener {
             final IStackFamilyUI ui = views.get(data.getOutboundChannel());
             ui.openConfig(sb.toString());
         }
-    }
-
-    @FromWebSocketView
-    public void selectConfig(final String familyName, final String configType) {
-
-        final StackConfigType stackConfigType = StackConfigType.valueOf(configType);
-        communityManager.setParentSelectedConfig(SOURCE_UI, familyName, stackConfigType);
-    }
-
-    @FromWebSocketView
-    public void setChildSelectedConfig(final String familyName, final String childSymbol, final String configType,
-            final WebSocketInboundData data) {
-
-        final StackConfigType stackConfigType = StackConfigType.valueOf(configType);
-        communityManager.setChildSelectedConfig(SOURCE_UI, familyName, childSymbol, stackConfigType);
     }
 
     @FromWebSocketView

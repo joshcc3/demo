@@ -122,18 +122,6 @@ $(function () {
 		ws.send(command("stopFiltered", [filterSelection.text(), "ASK"]));
 	});
 
-	const defaultConfigButton = filteringRow.find(".configControls .default");
-	defaultConfigButton.unbind().bind("click", function () {
-		ws.send(command("setFilteredSelectedConfig", [filterSelection.text(), "DEFAULT"]));
-	});
-	const wideConfigButton = filteringRow.find(".configControls .wide");
-	wideConfigButton.unbind().bind("click", function () {
-		ws.send(command("setFilteredSelectedConfig", [filterSelection.text(), "WIDE"]));
-	});
-	const obligationConfigButton = filteringRow.find(".configControls .obligation");
-	obligationConfigButton.unbind().bind("click", function () {
-		ws.send(command("setFilteredSelectedConfig", [filterSelection.text(), "OBLIGATION"]));
-	});
 	const configFilterButton = filteringRow.find(".configControls .configWindow");
 	configFilterButton.unbind().bind("click", function () {
 		ws.send(command("lookupConfigSymbols", [filterSelection.text()]));
@@ -614,21 +602,6 @@ function addFamily(familyName, isAsylum) {
 		const askOffsetDownButton = family.find(".ask .priceOffsetDown");
 		askOffsetDownButton.mousedown(priceOffsetChange("increaseOffset", familyName, "ASK", -1));
 
-		const selectDefaultConfigDiv = family.find(".configControls .default");
-		selectDefaultConfigDiv.unbind().bind("click", function () {
-			ws.send(command("selectConfig", [familyName, "DEFAULT"]));
-		});
-
-		const selectWideConfigDiv = family.find(".configControls .wide");
-		selectWideConfigDiv.unbind().bind("click", function () {
-			ws.send(command("selectConfig", [familyName, "WIDE"]));
-		});
-
-		const selectObligationConfigDiv = family.find(".configControls .obligation");
-		selectObligationConfigDiv.unbind().bind("click", function () {
-			ws.send(command("selectConfig", [familyName, "OBLIGATION"]));
-		});
-
 		const openConfigWindowDiv = family.find(".configControls .configWindow");
 		openConfigWindowDiv.unbind().bind("click", function () {
 			let configs = familyName;
@@ -691,7 +664,7 @@ function tableComparator(a, b) {
 
 		return aSymbol < bSymbol ? -1 : aSymbol === bSymbol ? 0 : 1;
 
-	} else if (aIsAsylum){
+	} else if (aIsAsylum) {
 		return -1;
 	} else {
 		return 1;
@@ -826,16 +799,12 @@ function globalWidthControls(instruction) {
 	}
 }
 
-function setParentData(familyName, bidPriceOffset, askPriceOffset, selectedConfigType, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
-					   askQuoterEnabled) {
+function setParentData(familyName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled, askQuoterEnabled) {
 
 	const family = addFamily(familyName);
 
 	family.find(".familyDetails .bid.priceOffset").text(bidPriceOffset);
 	family.find(".familyDetails .ask.priceOffset").text(askPriceOffset);
-
-	family.find(".familyDetails .configControls button").removeClass("enabled");
-	family.find(".familyDetails .configControls ." + selectedConfigType.toLowerCase()).addClass("enabled");
 
 	family.find(".familyDetails .bid .picardEnabled").toggleClass("enabled", bidPicardEnabled);
 	family.find(".familyDetails .bid .quoterEnabled").toggleClass("enabled", bidQuoterEnabled);
@@ -935,21 +904,6 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 
 	const childControls = row.find(".childControls");
 
-	const defaultConfigButton = childControls.find(".default");
-	defaultConfigButton.unbind().bind("click", function () {
-		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "DEFAULT"]));
-	});
-
-	const wideConfigButton = childControls.find(".wide");
-	wideConfigButton.unbind().bind("click", function () {
-		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "WIDE"]));
-	});
-
-	const obligationConfigButton = childControls.find(".obligation");
-	obligationConfigButton.unbind().bind("click", function () {
-		ws.send(command("setChildSelectedConfig", [familyName, childSymbol, "OBLIGATION"]));
-	});
-
 	const openConfigWindowDiv = childControls.find(".configWindow");
 	openConfigWindowDiv.unbind().bind("click", function () {
 		popUp("/stackConfig#;" + childSymbol, "Configs", 2200, 400);
@@ -990,8 +944,8 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 	setChildCount(familyName);
 }
 
-function setChildData(childSymbol, leanSymbol, nibblerName, selectedConfigType, isBidStrategyOn, bidInfo, bidPicardEnabled,
-					  bidQuoterEnabled, isAskStrategyOn, askInfo, askPicardEnabled, askQuoterEnabled) {
+function setChildData(childSymbol, leanSymbol, nibblerName, isBidStrategyOn, bidInfo, bidPicardEnabled, bidQuoterEnabled, isAskStrategyOn,
+					  askInfo, askPicardEnabled, askQuoterEnabled) {
 
 	const rowID = cleanID(childSymbol);
 	const row = $("#" + rowID);
@@ -1007,8 +961,7 @@ function setChildData(childSymbol, leanSymbol, nibblerName, selectedConfigType, 
 		});
 
 		const childControls = row.find(".childControls");
-		childControls.find(".configControls button").removeClass("enabled");
-		childControls.find(".configControls ." + selectedConfigType.toLowerCase()).addClass("enabled");
+
 		childControls.find(".nibblerName").text(nibblerName);
 
 		const bidControls = childControls.find(".bid");

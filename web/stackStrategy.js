@@ -155,7 +155,7 @@ function removeAll(nibblerName) {
 
 function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanInstType, leanSymbol, leanISIN, leanCCY, leanMIC,
 				isQuoteInstDefEventAvailable, isQuoteBookAvailable, isLeanBookAvailable, isFXAvailable, isAdditiveAvailable,
-				selectedConfigType, additiveSymbol) {
+				additiveSymbol) {
 
 	const rowID = nibblerName + strategyID;
 	let row = $("#" + rowID);
@@ -203,7 +203,6 @@ function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quote
 	setBoolData(row, ".isFXAvailable", isFXAvailable);
 	setBoolData(row, ".isAdditiveAvailable", isAdditiveAvailable);
 
-	setCellData(row, ".selectedConfigType", selectedConfigType);
 	setCellData(row, ".additiveSymbol", additiveSymbol);
 
 	setOrderCount(nibblerName);

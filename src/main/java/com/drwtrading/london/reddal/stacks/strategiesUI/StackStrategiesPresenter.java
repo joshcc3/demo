@@ -115,8 +115,7 @@ public class StackStrategiesPresenter {
         viewer.setRow(nibbler, strategy.getStrategyID(), strategy.getSymbol(), quoteInstID.isin, quoteInstID.ccy.name(),
                 quoteInstID.mic.name(), strategy.getLeanInstType().name(), strategy.getLeanSymbol(), leanInstID.isin, leanInstID.ccy.name(),
                 leanInstID.mic.name(), strategy.isQuoteInstDefEventAvailable(), strategy.isQuoteBookAvailable(),
-                strategy.isLeanBookAvailable(), strategy.isFXAvailable(), strategy.isAdditiveAvailable(),
-                strategy.getSelectedConfigType().name(), strategy.getAdditiveSymbol());
+                strategy.isLeanBookAvailable(), strategy.isFXAvailable(), strategy.isAdditiveAvailable(), strategy.getAdditiveSymbol());
     }
 
     public void serverConnectionLost(final String nibblerName) {
