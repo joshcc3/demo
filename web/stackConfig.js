@@ -266,7 +266,7 @@ function setRowDetails(row, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled,
 
 	setCellData(row, ".strategy.maxOrdersPerLevel input", maxOrdersPerLevel);
 	setBoolData(row, ".strategy.isOnlySubmitBestLevel input", isOnlySubmitBestLevel);
-	setBoolData(row, ".strategy.isQuoteBettermentOn", isQuoteBettermentOn);
+	setBoolData(row, ".strategy.isQuoteBettermentOn input", isQuoteBettermentOn);
 	setCellData(row, ".strategy.quoteModTicks input", modTicks);
 	setCellData(row, ".strategy.quoteFlickerBuffer input", quoteFlickerBuffer);
 	setCellData(row, ".strategy.quotePicardMaxBPSThrough input", quotePicardMaxBPSThrough);
