@@ -68,16 +68,16 @@ public class NibblerTransportOrderEntry {
         this.prevClOrdID = -1;
     }
 
-    public void submitOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final String username, final String symbol,
+    public void submitOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final String symbol,
             final BookSide side, final OrderType orderType, final AlgoType algoType, final String tag, final long price, final int qty) {
 
-        nibblerClient.submitOrder(++prevClOrdID, 0, username, symbol, side, orderType, algoType, tag, price, qty);
+        nibblerClient.submitOrder(++prevClOrdID, 0, user, symbol, side, orderType, algoType, tag, price, qty);
         if (!nibblerClient.batchComplete()) {
             rejectChannel.publish(new LadderClickTradingIssue(symbol, "Submit failed. Nibbler disconnected."));
         }
 
         submitRow.set(NibblerRemoteSubmitColumns.CLORDID, prevClOrdID);
-        submitRow.set(NibblerRemoteSubmitColumns.USERNAME, username);
+        submitRow.set(NibblerRemoteSubmitColumns.USERNAME, user);
         submitRow.set(NibblerRemoteSubmitColumns.SYMBOL, symbol);
         submitRow.set(NibblerRemoteSubmitColumns.SIDE, side);
         submitRow.set(NibblerRemoteSubmitColumns.ORDER_TYPE, orderType);
@@ -88,16 +88,16 @@ public class NibblerTransportOrderEntry {
         writeRow(submitRow, NibblerRemoteSubmitColumns.timestamp);
     }
 
-    public void modifyOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final String username, final int chainID,
-            final String symbol, final BookSide side, final OrderType orderType, final AlgoType algoType, final String tag,
-            final long fromPrice, final int fromQty, final long toPrice, final int toQty) {
+    public void modifyOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final int chainID, final String symbol,
+            final BookSide side, final OrderType orderType, final AlgoType algoType, final String tag, final long fromPrice,
+            final int fromQty, final long toPrice, final int toQty) {
 
-        nibblerClient.modifyOrder(username, chainID, symbol, side, orderType, algoType, tag, fromPrice, fromQty, toPrice, toQty);
+        nibblerClient.modifyOrder(user, chainID, symbol, side, orderType, algoType, tag, fromPrice, fromQty, toPrice, toQty);
         if (!nibblerClient.batchComplete()) {
             rejectChannel.publish(new LadderClickTradingIssue(symbol, "Modify failed. Nibbler disconnected."));
         }
 
-        modifyRow.set(NibblerRemoteModifyColumns.USERNAME, username);
+        modifyRow.set(NibblerRemoteModifyColumns.USERNAME, user);
         modifyRow.set(NibblerRemoteModifyColumns.CHAIN_ID, chainID);
         modifyRow.set(NibblerRemoteModifyColumns.SYMBOL, symbol);
         modifyRow.set(NibblerRemoteModifyColumns.SIDE, side);
@@ -113,15 +113,15 @@ public class NibblerTransportOrderEntry {
         writeRow(modifyRow, NibblerRemoteModifyColumns.timestamp);
     }
 
-    public void cancelOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final String username, final boolean isAuto,
+    public void cancelOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final boolean isAuto,
             final int chainID, final String symbol) {
 
-        nibblerClient.cancelOrder(username, isAuto, chainID, symbol);
+        nibblerClient.cancelOrder(user, isAuto, chainID, symbol);
         if (!nibblerClient.batchComplete()) {
             rejectChannel.publish(new LadderClickTradingIssue(symbol, "Cancel failed. Nibbler disconnected."));
         }
 
-        cancelRow.set(NibblerRemoteCancelColumns.USERNAME, username);
+        cancelRow.set(NibblerRemoteCancelColumns.USERNAME, user);
         cancelRow.set(NibblerRemoteCancelColumns.CHAIN_ID, chainID);
         cancelRow.set(NibblerRemoteCancelColumns.SYMBOL, symbol);
         writeRow(cancelRow, NibblerRemoteCancelColumns.timestamp);

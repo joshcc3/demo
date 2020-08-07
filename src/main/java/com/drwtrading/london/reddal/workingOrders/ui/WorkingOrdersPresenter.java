@@ -235,11 +235,12 @@ public class WorkingOrdersPresenter {
 
     @FromWebSocketView
     public void cancelAllNonGTC(final WebSocketInboundData data) {
-        final String user = data.getClient().getUserName();
+
+        final User user = User.get(data.getClient().getUserName());
         cancelAllNonGTC(user, "Working orders - Cancel non-gtc.", false);
     }
 
-    private void cancelAllNonGTC(final String user, final String reason, final boolean isAutomated) {
+    private void cancelAllNonGTC(final User user, final String reason, final boolean isAutomated) {
 
         for (final NibblerView nibblerView : nibblers.values()) {
 
@@ -249,13 +250,15 @@ public class WorkingOrdersPresenter {
 
     @FromWebSocketView
     public void cancelExchangeNonGTC(final WebSocketInboundData data, final String nibbler) {
-        final String user = data.getClient().getUserName();
+
+        final User user = User.get(data.getClient().getUserName());
         nibblers.get(nibbler).cancelAllNonGTC(user, "Working orders - Cancel exchange non-gtc.", false);
     }
 
     @FromWebSocketView
     public void cancelAll(final WebSocketInboundData data) {
-        final String user = data.getClient().getUserName();
+
+        final User user = User.get(data.getClient().getUserName());
         for (final NibblerView nibblerView : nibblers.values()) {
             nibblerView.cancelAll(user, "Working orders - Cancel ALL exchange.", false);
         }
@@ -263,13 +266,15 @@ public class WorkingOrdersPresenter {
 
     @FromWebSocketView
     public void cancelExchange(final WebSocketInboundData data, final String nibbler) {
-        final String user = data.getClient().getUserName();
+
+        final User user = User.get(data.getClient().getUserName());
         nibblers.get(nibbler).cancelAll(user, "Working orders - Cancel ALL.", false);
     }
 
     @FromWebSocketView
     public void cancelOrder(final String server, final String key, final WebSocketInboundData data) {
-        final String user = data.getClient().getUserName();
+
+        final User user = User.get(data.getClient().getUserName());
         final NibblerView nibblerView = nibblers.get(server);
         nibblerView.cancelOrder(user, key);
     }
@@ -290,7 +295,7 @@ public class WorkingOrdersPresenter {
                 HEART_BEAT_TIMEOUT_NANOS < (clock.getReferenceNanoSinceMidnightUTC() - lastViewerHeartbeatNanoSinceMidnight);
         if (userHeartbeatLate) {
             monitor.logError(ReddalComponents.SAFETY_WORKING_ORDER_VIEWER, "No users viewing working order screen.");
-            cancelAllNonGTC("AUTOMATED", "Working orders - no users viewing working orders screen.", true);
+            cancelAllNonGTC(User.UNKNOWN, "Working orders - no users viewing working orders screen.", true);
         } else {
             monitor.setOK(ReddalComponents.SAFETY_WORKING_ORDER_VIEWER);
         }

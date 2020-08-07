@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.autopull.autopuller.msgs.cmds;
 
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.reddal.autopull.autopuller.rules.PullRule;
 
 public interface IAutoPullerCmdHandler {
@@ -10,9 +11,9 @@ public interface IAutoPullerCmdHandler {
 
     public void deleteRule(final long ruleID);
 
-    public void safeStartAll(final String username);
+    public void safeStartAll(final User user);
 
-    public void safeStartRule(final long ruleID, final String username);
+    public void safeStartRule(final long ruleID, final User user);
 
     public void stopAll();
 

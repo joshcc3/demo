@@ -5,6 +5,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrde
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
@@ -117,7 +118,7 @@ public class LadderBookView implements ILadderBoard {
 
     private final IFuseBox<ReddalComponents> monitor;
 
-    private final String username;
+    private final User user;
     private final boolean isTrader;
     private final String symbol;
 
@@ -177,7 +178,7 @@ public class LadderBookView implements ILadderBoard {
     private Long modifyFromPrice;
     private long modifyFromPriceSelectedTime;
 
-    LadderBookView(final IFuseBox<ReddalComponents> monitor, final String username, final boolean isTrader, final String symbol,
+    LadderBookView(final IFuseBox<ReddalComponents> monitor, final User user, final boolean isTrader, final String symbol,
             final LadderViewModel ladderModel, final ILadderUI view, final LadderOptions ladderOptions, final FXCalc<?> fxCalc,
             final FeesCalc feesCalc, final DecimalFormat feeDF, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
@@ -193,7 +194,7 @@ public class LadderBookView implements ILadderBoard {
 
         this.monitor = monitor;
 
-        this.username = username;
+        this.user = user;
         this.isTrader = isTrader;
         this.symbol = symbol;
 
@@ -212,9 +213,7 @@ public class LadderBookView implements ILadderBoard {
 
         this.defaultPrefs = new HashMap<>();
         this.defaultPrefs.put(HTML.WORKING_ORDER_TAG, "CHAD");
-        if (username.startsWith("dcook")) {
-            this.defaultPrefs.put(HTML.INP_RELOAD, "0");
-        } else if (symbol.startsWith("FDAX")) {
+        if (symbol.startsWith("FDAX")) {
             this.defaultPrefs.put(HTML.INP_RELOAD, "5");
         } else {
             this.defaultPrefs.put(HTML.INP_RELOAD, "50");
@@ -656,15 +655,17 @@ public class LadderBookView implements ILadderBoard {
 
             final LastTrade lastBid = nibblerDataForSymbol.lastBid();
             final LastTrade lastAsk = nibblerDataForSymbol.lastAsk();
-            final long nibblerLastBidPrice = lastBid != null ? tickTable.roundAwayToTick(BookSide.BID, lastBid.getPrice(), zoomLevel) : Long.MIN_VALUE;
-            final long nibblerLastAskPrice = lastAsk != null ? tickTable.roundAwayToTick(BookSide.ASK, lastAsk.getPrice(), zoomLevel) : Long.MAX_VALUE;
+            final long nibblerLastBidPrice =
+                    lastBid != null ? tickTable.roundAwayToTick(BookSide.BID, lastBid.getPrice(), zoomLevel) : Long.MIN_VALUE;
+            final long nibblerLastAskPrice =
+                    lastAsk != null ? tickTable.roundAwayToTick(BookSide.ASK, lastAsk.getPrice(), zoomLevel) : Long.MAX_VALUE;
 
             final ITrade jasperLastBid = jasperDataForSymbol.lastBid();
             final ITrade jasperLastAsk = jasperDataForSymbol.lastAsk();
-            final long jasperLastBidPrice = jasperLastBid != null ? tickTable.roundAwayToTick(BookSide.BID, jasperLastBid.getPrice(), zoomLevel) :
-                    Long.MIN_VALUE;
-            final long jasperLastAskPrice = jasperLastAsk != null ? tickTable.roundAwayToTick(BookSide.ASK, jasperLastAsk.getPrice(), zoomLevel) :
-                    Long.MAX_VALUE;
+            final long jasperLastBidPrice =
+                    jasperLastBid != null ? tickTable.roundAwayToTick(BookSide.BID, jasperLastBid.getPrice(), zoomLevel) : Long.MIN_VALUE;
+            final long jasperLastAskPrice =
+                    jasperLastAsk != null ? tickTable.roundAwayToTick(BookSide.ASK, jasperLastAsk.getPrice(), zoomLevel) : Long.MAX_VALUE;
 
             for (int i = 0; i < levels; ++i) {
                 final BookPanelRow priceRow = bookPanel.getRow(i);
@@ -1173,9 +1174,9 @@ public class LadderBookView implements ILadderBoard {
                     stackData.improveAskStackPriceOffset(-stackData.getPriceOffsetTickSize());
                 }
             } else if (label.equals(HTML.START_BUY)) {
-                stackData.startBidStrategy();
+                stackData.startBidStrategy(user);
             } else if (label.equals(HTML.START_SELL)) {
-                stackData.startAskStrategy();
+                stackData.startAskStrategy(user);
             } else if (label.equals(HTML.STOP_BUY)) {
                 if (null != metaData.spreadContractSet.parentSymbol) {
                     final StacksSetSiblingsEnableCmd cmd =
@@ -1231,19 +1232,23 @@ public class LadderBookView implements ILadderBoard {
             } else if (label.equals(HTML.PRICING_RAW)) {
                 view.popUp("/shredder#" + symbol, "shredder " + symbol, 500, 500);
             } else if (label.equals(HTML.BUY_OFFSET_UP)) {
+
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     increaseChildOffsetCmdPublisher.publish(
                             new StackIncreaseChildOffsetCmd(LADDER_SOURCE, symbol, BookSide.BID, stackData.getPriceOffsetTickSize()));
                 } else {
                     stackData.adjustBidStackLevels(-1);
                 }
+
             } else if (label.equals(HTML.BUY_OFFSET_DOWN)) {
+
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     increaseChildOffsetCmdPublisher.publish(
                             new StackIncreaseChildOffsetCmd(LADDER_SOURCE, symbol, BookSide.BID, -stackData.getPriceOffsetTickSize()));
                 } else {
                     stackData.adjustBidStackLevels(1);
                 }
+
             } else if (label.equals(HTML.SELL_OFFSET_UP)) {
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     increaseChildOffsetCmdPublisher.publish(
@@ -1252,21 +1257,26 @@ public class LadderBookView implements ILadderBoard {
                     stackData.adjustAskStackLevels(1);
                 }
             } else if (label.equals(HTML.SELL_OFFSET_DOWN)) {
+
                 if (null != metaData.spreadContractSet && null != metaData.spreadContractSet.parentSymbol) {
                     increaseChildOffsetCmdPublisher.publish(
                             new StackIncreaseChildOffsetCmd(LADDER_SOURCE, symbol, BookSide.ASK, -stackData.getPriceOffsetTickSize()));
                 } else {
                     stackData.adjustAskStackLevels(-1);
                 }
+
             } else if (label.equals(HTML.START_BUY)) {
+
                 if (null != metaData.spreadContractSet.parentSymbol) {
                     final StacksSetSiblingsEnableCmd cmd =
                             new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, true);
                     disableSiblingsCmdPublisher.publish(cmd);
                 }
-                stackData.startBidStrategy();
+                stackData.startBidStrategy(user);
+
             } else if (label.equals(HTML.START_SELL)) {
-                stackData.startAskStrategy();
+
+                stackData.startAskStrategy(user);
                 if (null != metaData.spreadContractSet.parentSymbol) {
                     final StacksSetSiblingsEnableCmd cmd =
                             new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, true);
@@ -1393,7 +1403,7 @@ public class LadderBookView implements ILadderBoard {
 
         int tradingBoxQty = this.clickTradingBoxQty;
         trace.publish(
-                new CommandTrace("submitManaged", username, symbol, orderType, true, price, side.name(), tag, tradingBoxQty, orderSeqNo++));
+                new CommandTrace("submitManaged", user, symbol, orderType, true, price, side.name(), tag, tradingBoxQty, orderSeqNo++));
         final OrderEntryClient.SymbolOrderChannel symbolOrderChannel = orderEntryMap.get(symbol);
         if (null != symbolOrderChannel) {
             final ManagedOrderType managedOrderType = ManagedOrderType.valueOf(orderType);
@@ -1407,7 +1417,7 @@ public class LadderBookView implements ILadderBoard {
             }
             final OrderSide orderSide = BookSide.BID == side ? OrderSide.BUY : OrderSide.SELL;
             final drw.eeif.eeifoe.RemoteOrder remoteOrder =
-                    new drw.eeif.eeifoe.RemoteOrder(symbol, orderSide, price, tradingBoxQty, username,
+                    new drw.eeif.eeifoe.RemoteOrder(symbol, orderSide, price, tradingBoxQty, user.username,
                             managedOrderType.getOrder(price, tradingBoxQty, orderSide),
                             new ObjectArrayList<>(Arrays.asList(LADDER_SOURCE_METADATA, new Metadata("TAG", tag))));
             final Submit submit = new Submit(remoteOrder);
@@ -1423,11 +1433,11 @@ public class LadderBookView implements ILadderBoard {
         final int sequenceNumber = orderSeqNo++;
 
         trace.publish(
-                new CommandTrace("submit", username, symbol, orderType, true, price, side.name(), tag, clickTradingBoxQty, sequenceNumber));
+                new CommandTrace("submit", user, symbol, orderType, true, price, side.name(), tag, clickTradingBoxQty, sequenceNumber));
 
         if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
             final String message =
-                    "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", client " + username + " is " +
+                    "Cannot submit order " + side + ' ' + clickTradingBoxQty + " for " + symbol + ", client " + user + " is " +
                             clientSpeedState;
             monitor.logError(ReddalComponents.LADDER_PRESENTER, message);
             ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
@@ -1435,9 +1445,8 @@ public class LadderBookView implements ILadderBoard {
 
             final RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
 
-            final IOrderCmd submit =
-                    new SubmitOrderCmd(symbol, ladderClickTradingIssuesPublisher, username, side, remoteOrderType.orderType,
-                            remoteOrderType.algoType, tag, price, clickTradingBoxQty);
+            final IOrderCmd submit = new SubmitOrderCmd(symbol, ladderClickTradingIssuesPublisher, user, side, remoteOrderType.orderType,
+                    remoteOrderType.algoType, tag, price, clickTradingBoxQty);
             remoteOrderCommandToServerPublisher.publish(submit);
         }
     }
@@ -1492,14 +1501,14 @@ public class LadderBookView implements ILadderBoard {
         final String sourceNibbler = sourcedOrder.source;
         final WorkingOrder order = sourcedOrder.order;
 
-        trace.publish(new CommandTrace("modify", username, symbol, order.getOrderType().toString(), true, price, order.getSide().toString(),
+        trace.publish(new CommandTrace("modify", user, symbol, order.getOrderType().toString(), true, price, order.getSide().toString(),
                 order.getTag(), clickTradingBoxQty, order.getChainID()));
 
         if (isTrader) {
 
             if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
 
-                monitor.logError(ReddalComponents.LADDER_PRESENTER, "Cannot modify order , client " + username + " is " + clientSpeedState);
+                monitor.logError(ReddalComponents.LADDER_PRESENTER, "Cannot modify order , client " + user + " is " + clientSpeedState);
 
             } else if (!tradingStatusForAll.isNibblerConnected(sourceNibbler)) {
 
@@ -1507,7 +1516,7 @@ public class LadderBookView implements ILadderBoard {
 
             } else {
 
-                final IOrderCmd cmd = sourcedOrder.buildModify(ladderClickTradingIssuesPublisher, username, price, (int) totalQuantity);
+                final IOrderCmd cmd = sourcedOrder.buildModify(ladderClickTradingIssuesPublisher, user, price, (int) totalQuantity);
                 remoteOrderCommandToServerPublisher.publish(cmd);
             }
         }
@@ -1545,7 +1554,7 @@ public class LadderBookView implements ILadderBoard {
     private void cancelManagedOrder(final UpdateFromServer updateFromServer) {
 
         final drw.eeif.eeifoe.RemoteOrder order = updateFromServer.update.getOrder();
-        trace.publish(new CommandTrace("cancelManaged", username, symbol, "MANAGED", false, updateFromServer.update.getIndicativePrice(),
+        trace.publish(new CommandTrace("cancelManaged", user, symbol, "MANAGED", false, updateFromServer.update.getIndicativePrice(),
                 order.getSide().name(), "?", clickTradingBoxQty, updateFromServer.update.getSystemOrderId()));
         if (isTrader) {
             eeifCommandToServer.publish(new OrderEntryCommandToServer(updateFromServer.server,
@@ -1598,11 +1607,11 @@ public class LadderBookView implements ILadderBoard {
 
         final WorkingOrder order = sourcedOrder.order;
 
-        trace.publish(new CommandTrace("cancel", username, symbol, order.getOrderType().toString(), false, order.getPrice(),
+        trace.publish(new CommandTrace("cancel", user, symbol, order.getOrderType().toString(), false, order.getPrice(),
                 order.getSide().toString(), order.getTag(), clickTradingBoxQty, order.getChainID()));
 
         if (isTrader) {
-            final IOrderCmd cancel = sourcedOrder.buildCancel(ladderClickTradingIssuesPublisher, username, false);
+            final IOrderCmd cancel = sourcedOrder.buildCancel(ladderClickTradingIssuesPublisher, user, false);
             remoteOrderCommandToServerPublisher.publish(cancel);
         }
     }

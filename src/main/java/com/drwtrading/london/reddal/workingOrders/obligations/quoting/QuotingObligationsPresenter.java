@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.workingOrders.obligations.quoting;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -137,15 +138,16 @@ public class QuotingObligationsPresenter {
     @FromWebSocketView
     public void everythingOn(final WebSocketInboundData inboundData) {
 
-        everythingOn();
+        final User user = User.get(inboundData.getClient().getUserName());
+        everythingOn(user);
     }
 
-    public void enableQuotes(final QuoteObligationsEnableCmd quoteObligationsEnableCmd) {
+    public void enableQuotes(final QuoteObligationsEnableCmd cmd) {
 
-        uiSelectIO.addDelayedAction(2_000, this::everythingOn);
+        uiSelectIO.addDelayedAction(2_000, () -> everythingOn(cmd.user));
     }
 
-    private long everythingOn() {
+    private long everythingOn(final User user) {
 
         final List<NibblerClientHandler> nibblers = new ArrayList<>();
 
@@ -153,7 +155,7 @@ public class QuotingObligationsPresenter {
             if (quotingState.isEnabled()) {
                 final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
                 nibblers.add(nibblerClientHandler);
-                nibblerClientHandler.startQuoter(quotingState.getStrategyID());
+                nibblerClientHandler.startQuoter(quotingState.getStrategyID(), user);
             }
 
         }
@@ -183,13 +185,19 @@ public class QuotingObligationsPresenter {
     }
 
     @FromWebSocketView
-    public void startStrategy(final String symbol) {
+    public void startStrategy(final String symbol, final WebSocketInboundData inboundData) {
+
+        final User user = User.get(inboundData.getClient().getUserName());
+        startStrategy(symbol, user);
+    }
+
+    void startStrategy(final String symbol, final User user) {
 
         final QuotingObligationState quotingState = obligations.get(symbol);
 
         if (quotingState.isAvailable() && quotingState.isEnabled()) {
             final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
-            nibblerClientHandler.startQuoter(quotingState.getStrategyID());
+            nibblerClientHandler.startQuoter(quotingState.getStrategyID(), user);
             nibblerClientHandler.batchComplete();
         }
     }

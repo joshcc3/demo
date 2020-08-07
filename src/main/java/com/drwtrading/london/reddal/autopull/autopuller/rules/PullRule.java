@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.autopull.autopuller.rules;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
@@ -42,7 +43,7 @@ public class PullRule extends Struct {
         this.mktCondition = mktCondition;
     }
 
-    public List<IOrderCmd> getPullCmds(final Publisher<LadderClickTradingIssue> rejectChannel, final String username,
+    public List<IOrderCmd> getPullCmds(final Publisher<LadderClickTradingIssue> rejectChannel, final User user,
             final Set<SourcedWorkingOrder> workingOrders, final IBook<?> book) {
 
         if (!workingOrders.isEmpty() && isBookValid(book) && mktCondition.conditionMet(book)) {
@@ -53,7 +54,7 @@ public class PullRule extends Struct {
 
                 if (isOrderSelectable(sourcedOrder.order, book) && orderSelection.isSelectionMet(sourcedOrder.order)) {
 
-                    final IOrderCmd cmd = sourcedOrder.buildCancel(rejectChannel, username, true);
+                    final IOrderCmd cmd = sourcedOrder.buildCancel(rejectChannel, user, true);
                     result.add(cmd);
                 }
             }

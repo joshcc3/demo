@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.autopull.autopuller;
 
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.reddal.autopull.autopuller.rules.PullRule;
 
@@ -10,10 +11,10 @@ public class AutoPullerRuleState {
     public final PullRule rule;
     public final MDSource owningMDSource;
     public final boolean isEnabled;
-    public final String associatedUser;
+    public final User associatedUser;
     public final int matchedOrders;
 
-    public AutoPullerRuleState(final PullRule rule, final MDSource owningMDSource, final boolean isEnabled, final String associatedUser,
+    public AutoPullerRuleState(final PullRule rule, final MDSource owningMDSource, final boolean isEnabled, final User associatedUser,
             final int matchedOrders) {
 
         this.rule = rule;

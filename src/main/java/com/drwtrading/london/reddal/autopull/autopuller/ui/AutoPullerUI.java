@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.autopull.autopuller.ui;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -160,18 +161,18 @@ public class AutoPullerUI implements IAutoPullerUpdateHandler {
     public void startRule(final String id, final WebSocketInboundData data) {
 
         final long ruleID = Long.parseLong(id);
-        final String username = data.getClient().getUserName();
+        final User user = User.get(data.getClient().getUserName());
 
-        final AutoPullerSafeStartRule startRule = new AutoPullerSafeStartRule(ruleID, username);
+        final AutoPullerSafeStartRule startRule = new AutoPullerSafeStartRule(ruleID, user);
         cmdPublisher.publish(startRule);
     }
 
     @FromWebSocketView
     public void startAllRules(final WebSocketInboundData data) {
 
-        final String username = data.getClient().getUserName();
+        final User user = User.get(data.getClient().getUserName());
 
-        final AutoPullerSafeStartAll startAll = new AutoPullerSafeStartAll(username);
+        final AutoPullerSafeStartAll startAll = new AutoPullerSafeStartAll(user);
         cmdPublisher.publish(startAll);
     }
 
@@ -228,12 +229,12 @@ public class AutoPullerUI implements IAutoPullerUpdateHandler {
 
         final PullRule rule = enabledPullRule.rule;
         final int pullCount = enabledPullRule.matchedOrders;
-        final String associatedUser = null == enabledPullRule.associatedUser ? "" : enabledPullRule.associatedUser;
+        final User associatedUser = null == enabledPullRule.associatedUser ? User.UNKNOWN : enabledPullRule.associatedUser;
 
         view.displayRule(Long.toString(rule.ruleID), rule.orderSymbol, rule.mdSymbol, rule.orderSelection.side.toString(),
                 formatPx(rule.orderSelection.fromPrice), formatPx(rule.orderSelection.toPrice), formatPx(rule.mktCondition.price),
                 rule.mktCondition.side.toString(), rule.mktCondition.qtyCondition.toString(),
-                Integer.toString(rule.mktCondition.qtyThreshold), enabledPullRule.isEnabled, associatedUser, pullCount);
+                Integer.toString(rule.mktCondition.qtyThreshold), enabledPullRule.isEnabled, associatedUser.name(), pullCount);
     }
 
     private String formatPx(final long price) {

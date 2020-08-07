@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.autopull.autopuller.onMD;
 
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.reddal.autopull.autopuller.rules.PullRule;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
@@ -16,14 +17,14 @@ class AutoPullerPullRule {
     public final PullRule pullRule;
     public final MDForSymbol md;
 
-    private String enabledByUser;
+    private User enabledByUser;
 
     AutoPullerPullRule(final PullRule pullRule, final MDForSymbol md) {
         this.pullRule = pullRule;
         this.md = md;
     }
 
-    void enable(final String user) {
+    void enable(final User user) {
         this.enabledByUser = user;
     }
 
@@ -31,7 +32,7 @@ class AutoPullerPullRule {
         this.enabledByUser = null;
     }
 
-    String getAssociatedUser() {
+    User getAssociatedUser() {
         return enabledByUser;
     }
 

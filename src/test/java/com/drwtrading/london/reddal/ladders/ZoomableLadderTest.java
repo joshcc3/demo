@@ -4,6 +4,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrde
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
@@ -69,7 +70,7 @@ import java.util.Set;
 
 public class ZoomableLadderTest {
 
-    private static final String DEFAULT_USER = "Trader McTradeface";
+    private static final User USER = User.CMILLER;
     private static final String SYMBOL = "VOD LN";
     private static final InstrumentID INST_ID = new InstrumentID("GB1234567890", CCY.GBX, MIC.XLON);
     private static final ITickTable TICK_TABLE = new SingleBandTickTable(Constants.NORMALISING_FACTOR);
@@ -369,7 +370,7 @@ public class ZoomableLadderTest {
             final WorkingOrdersByPrice workingOrders, final OrderUpdatesForSymbol orderUpdatesForSymbol,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap) {
 
-        return new LadderBookView(monitor, DEFAULT_USER, true, symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc, feeDF,
+        return new LadderBookView(monitor, USER, true, symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc, feeDF,
                 ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandPublisher, eeifCommandToServer,
                 tradingStatusForAll, supportedOrderTypes, supportedAlgoTypes, mdForSymbol, workingOrders, nibblerLastTradeDataForSymbol,
                 jasperLastTradeDataForSymbol, orderUpdatesForSymbol, LEVELS, stackData, metaData, stackParentCmdPublisher,
@@ -389,7 +390,7 @@ public class ZoomableLadderTest {
         final PredictionParameters predictionParameters = new PredictionParameters(true);
         final OrderParameters orderParameters =
                 new OrderParameters(priceParameters, bookParameters, takingParameters, quotingParameters, predictionParameters);
-        final RemoteOrder remoteOrder = new RemoteOrder(SYMBOL, side, price, qty, DEFAULT_USER, orderParameters, new ObjectArrayList<>());
+        final RemoteOrder remoteOrder = new RemoteOrder(SYMBOL, side, price, qty, USER.username, orderParameters, new ObjectArrayList<>());
         final Update update = new Update(orderId, 0, qty, price, false, "", remoteOrder);
         return new UpdateFromServer("", update);
     }

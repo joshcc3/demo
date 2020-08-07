@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.ladders;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
@@ -233,14 +234,13 @@ public class LadderView implements UiEventHandler {
 
         final boolean wasBookView = null == bookView || activeView == bookView;
 
+        final User user = User.get(client.getUserName());
         final long bookCenteredPrice = null == bookView ? 0 : bookView.getCenteredPrice();
-        this.bookView =
-                new LadderBookView(monitor, client.getUserName(), isTrader(), symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc,
-                        feeDF, ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher,
-                        eeifCommandToServer, tradingStatusForAll, supportedOrderTypes, supportedAlgoTypes, marketData, workingOrders,
-                        extraDataForSymbolForNibbler, this.extraDataForSymbolForJasper, orderUpdatesForSymbol, levels, stackData, metaData,
-                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap,
-                        bookCenteredPrice);
+        this.bookView = new LadderBookView(monitor, user, isTrader(), symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc, feeDF,
+                ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher, eeifCommandToServer,
+                tradingStatusForAll, supportedOrderTypes, supportedAlgoTypes, marketData, workingOrders, extraDataForSymbolForNibbler,
+                this.extraDataForSymbolForJasper, orderUpdatesForSymbol, levels, stackData, metaData, increaseParentOffsetPublisher,
+                increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
         final Map<QtyButton, Integer> buttonQties;
@@ -250,10 +250,9 @@ public class LadderView implements UiEventHandler {
             buttonQties = INST_TYPE_BUTTON_QTIES.get(book.getInstType());
         }
 
-        this.stackView =
-                new LadderStackView(client.getUserName(), isTrader(), symbol, buttonQties, levels, ladderModel, stackData, metaData,
-                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, view,
-                        ladderPrefsForSymbolUser, marketData);
+        this.stackView = new LadderStackView(user, isTrader(), symbol, buttonQties, levels, ladderModel, stackData, metaData,
+                increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, view, ladderPrefsForSymbolUser,
+                marketData);
 
         if (wasBookView) {
             setBookView();

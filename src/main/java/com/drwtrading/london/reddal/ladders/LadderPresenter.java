@@ -273,6 +273,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     @Subscribe
     public void onMessage(final WebSocketInboundData msg) {
+
         final String data = msg.getData();
         final String[] args = data.split("\0");
         final String cmd = args[0];

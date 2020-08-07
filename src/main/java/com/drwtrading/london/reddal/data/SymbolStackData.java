@@ -8,6 +8,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -550,10 +551,10 @@ public class SymbolStackData {
         }
     }
 
-    public void startBidStrategy() {
+    public void startBidStrategy(final User user) {
 
         if (null != bidStackGroup) {
-            stackClient.startStrategy(bidStackGroup.getSymbol(), BookSide.BID);
+            stackClient.startStrategy(bidStackGroup.getSymbol(), BookSide.BID, user);
             for (final StackType stackType : StackType.values()) {
                 stackClient.setStackEnabled(SOURCE, bidStackGroup.getStackID(), stackType, true);
             }
@@ -561,10 +562,10 @@ public class SymbolStackData {
         }
     }
 
-    public void startAskStrategy() {
+    public void startAskStrategy(final User user) {
 
         if (null != askStackGroup) {
-            stackClient.startStrategy(askStackGroup.getSymbol(), BookSide.ASK);
+            stackClient.startStrategy(askStackGroup.getSymbol(), BookSide.ASK, user);
             for (final StackType stackType : StackType.values()) {
                 stackClient.setStackEnabled(SOURCE, askStackGroup.getStackID(), stackType, true);
             }

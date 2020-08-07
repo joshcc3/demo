@@ -14,6 +14,7 @@ import com.drwtrading.london.eeif.stack.transport.data.config.StackStrategyConfi
 import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
@@ -1339,6 +1340,8 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void startAll(final WebSocketInboundData data) {
 
+        final User user = User.get(data.getClient().getUserName());
+
         final Set<String> familyNames = new HashSet<>();
         for (final StackUIData familyUIData : parentData.values()) {
             if (isFamilyDisplayable(familyUIData)) {
@@ -1347,11 +1350,11 @@ public class StackFamilyView implements IStackRelationshipListener {
             }
         }
 
-        communityManager.startFamilies(familyNames, BookSide.BID);
-        communityManager.startFamilies(familyNames, BookSide.ASK);
+        communityManager.startFamilies(familyNames, BookSide.BID, user);
+        communityManager.startFamilies(familyNames, BookSide.ASK, user);
 
         if (!isSecondaryView) {
-            quotingObligationsCmds.publish(new QuoteObligationsEnableCmd());
+            quotingObligationsCmds.publish(new QuoteObligationsEnableCmd(user));
         }
     }
 
@@ -1373,12 +1376,13 @@ public class StackFamilyView implements IStackRelationshipListener {
     public void startFiltered(final String filters, final String bookSide, final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
+        final User user = User.get(data.getClient().getUserName());
 
         final Collection<String> affectedChildren = getFilteredSymbols(filters);
         for (final String childSymbol : affectedChildren) {
 
             final String family = childrenToFamily.get(childSymbol);
-            communityManager.startChild(family, childSymbol, side);
+            communityManager.startChild(family, childSymbol, side, user);
         }
     }
 
@@ -1399,14 +1403,18 @@ public class StackFamilyView implements IStackRelationshipListener {
     public void startFamily(final String family, final String bookSide, final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
-        communityManager.startFamilies(Collections.singleton(family), side);
+        final User user = User.get(data.getClient().getUserName());
+
+        communityManager.startFamilies(Collections.singleton(family), side, user);
     }
 
     @FromWebSocketView
     public void startChild(final String family, final String childSymbol, final String bookSide, final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
-        communityManager.startChild(family, childSymbol, side);
+        final User user = User.get(data.getClient().getUserName());
+
+        communityManager.startChild(family, childSymbol, side, user);
     }
 
     @FromWebSocketView

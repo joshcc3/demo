@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.orderManagement.remoteOrder;
 import com.drwtrading.jetlang.PublisherStub;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.SubmitOrderCmd;
 import org.mockito.Mockito;
@@ -12,10 +13,7 @@ import org.testng.annotations.Test;
 
 import java.util.EnumSet;
 
-import static org.testng.Assert.*;
-
 public class RemoteOrderServerRouterTest {
-
 
     public static final String NIB1 = "N1";
     public static final String NIB2 = "N2";
@@ -26,9 +24,7 @@ public class RemoteOrderServerRouterTest {
 
     @BeforeMethod
     public void setUp() {
-        router = new RemoteOrderServerRouter(
-                new String[]{NIB1, NIB2}
-        );
+        router = new RemoteOrderServerRouter(new String[]{NIB1, NIB2});
         mock1 = Mockito.mock(NibblerTransportOrderEntry.class);
         mock2 = Mockito.mock(NibblerTransportOrderEntry.class);
         router.addNibbler(NIB1, mock1);
@@ -36,13 +32,19 @@ public class RemoteOrderServerRouterTest {
         symbol1 = "S1";
     }
 
+    @AfterMethod
+    public void tearDown() {
+        Mockito.verifyNoMoreInteractions(mock1);
+        Mockito.verifyNoMoreInteractions(mock2);
+    }
+
     @Test
-    public void testRoutesAnOrder() {
+    public void routesAnOrderTest() {
         // GIVEN: One instrument, one nibbler
         router.setInstrumentTradable(symbol1, EnumSet.of(OrderType.LIMIT), NIB1);
 
         // WHEN: Submit
-        SubmitOrderCmd submit = submit(OrderType.LIMIT, symbol1);
+        final SubmitOrderCmd submit = submit(OrderType.LIMIT, symbol1);
         router.submitOrder(submit);
 
         // THEN: Route to nibbler
@@ -50,7 +52,7 @@ public class RemoteOrderServerRouterTest {
     }
 
     @Test
-    public void testMaintainPriority() {
+    public void maintainPriorityTest() {
         // GIVEN: Nib2 claims instrument first
         router.setInstrumentTradable(symbol1, EnumSet.of(OrderType.LIMIT), NIB2);
 
@@ -73,7 +75,7 @@ public class RemoteOrderServerRouterTest {
     }
 
     @Test
-    public void testGTC() {
+    public void getTest() {
         // GIVEN: Two nibblers accept different order types for one symbol
         router.setInstrumentTradable(symbol1, EnumSet.of(OrderType.LIMIT), NIB1);
         router.setInstrumentTradable(symbol1, EnumSet.of(OrderType.LIMIT, OrderType.GTC), NIB2);
@@ -96,16 +98,7 @@ public class RemoteOrderServerRouterTest {
         Mockito.verifyNoMoreInteractions(mock1);
     }
 
-    @AfterMethod
-    public void tearDown() {
-        Mockito.verifyNoMoreInteractions(mock1);
-        Mockito.verifyNoMoreInteractions(mock2);
-    }
-
-    private SubmitOrderCmd submit(OrderType limit, String symbol) {
-        return new SubmitOrderCmd(
-                symbol, new PublisherStub<>(), "", BookSide.BID, limit, AlgoType.MANUAL,
-                "", 1, 1
-        );
+    private static SubmitOrderCmd submit(final OrderType limit, final String symbol) {
+        return new SubmitOrderCmd(symbol, new PublisherStub<>(), User.CMILLER, BookSide.BID, limit, AlgoType.MANUAL, "", 1, 1);
     }
 }

@@ -2,8 +2,10 @@ package com.drwtrading.london.reddal.workingOrders.obligations.quoting;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.reddal.util.UILogger;
+import com.drwtrading.websockets.WebSocketClient;
 import com.drwtrading.websockets.WebSocketInboundData;
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
@@ -11,6 +13,7 @@ import org.testng.annotations.Test;
 
 public class QuotingObligationsPresenterTest {
 
+    public static final User USER = User.CMILLER;
     public static final String NIBBLER = "TEST_NIBBLER";
     public static final String SYMBOL = "VOD LN";
 
@@ -18,14 +21,18 @@ public class QuotingObligationsPresenterTest {
     private final UILogger webLog = Mockito.mock(UILogger.class);
     private final NibblerClientHandler nibblerHandler = Mockito.mock(NibblerClientHandler.class);
     private final WebSocketInboundData inboundData = Mockito.mock(WebSocketInboundData.class);
+    private final WebSocketClient webClient = Mockito.mock(WebSocketClient.class);
 
     @BeforeMethod
     public void reset() {
-        Mockito.reset(selectIO, webLog, nibblerHandler, inboundData);
+        Mockito.reset(selectIO, webLog, nibblerHandler, inboundData, webClient);
+        Mockito.doReturn(webClient).when(inboundData).getClient();
+        Mockito.doReturn(USER.username).when(webClient).getUserName();
     }
 
     @Test
     public void doNotStartQuotingDisabledTest() {
+
         final QuotingObligationsPresenter presenter = new QuotingObligationsPresenter(selectIO, webLog);
 
         final QuotingState quotingState = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
@@ -33,15 +40,15 @@ public class QuotingObligationsPresenterTest {
         presenter.setQuotingState(NIBBLER, quotingState);
 
         presenter.setEnabledState(SYMBOL);
-        presenter.startStrategy(SYMBOL);
+        presenter.startStrategy(SYMBOL, USER);
         presenter.everythingOn(inboundData);
 
-        Mockito.verify(nibblerHandler, Mockito.never()).startQuoter(1);
+        Mockito.verify(nibblerHandler, Mockito.never()).startQuoter(1, USER);
 
         presenter.setEnabledState(SYMBOL);
-        presenter.startStrategy(SYMBOL);
+        presenter.startStrategy(SYMBOL, USER);
 
-        Mockito.verify(nibblerHandler).startQuoter(1);
+        Mockito.verify(nibblerHandler).startQuoter(1, USER);
     }
 
     @Test

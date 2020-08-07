@@ -4,6 +4,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
@@ -69,7 +70,7 @@ public class LadderStackView implements ILadderBoard {
 
     private static final int MODIFY_TIMEOUT_MILLI = 5000;
 
-    private final String username;
+    private final User user;
     private final boolean isTrader;
 
     private final String symbol;
@@ -102,14 +103,14 @@ public class LadderStackView implements ILadderBoard {
     private int modifyFromPrice;
     private long modifyFromPriceSelectedTime;
 
-    LadderStackView(final String username, final boolean isTrader, final String symbol, final Map<QtyButton, Integer> buttonQties,
+    LadderStackView(final User user, final boolean isTrader, final String symbol, final Map<QtyButton, Integer> buttonQties,
             final int levels, final LadderViewModel ladderModel, final SymbolStackData stackData, final LadderMetaData metaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
             final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final ILadderUI view,
             final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final MDForSymbol marketData) {
 
-        this.username = username;
+        this.user = user;
         this.isTrader = isTrader;
 
         this.symbol = symbol;
@@ -574,9 +575,9 @@ public class LadderStackView implements ILadderBoard {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.START_BUY)) {
-                stackData.startBidStrategy();
+                stackData.startBidStrategy(user);
             } else if (label.equals(HTML.START_SELL)) {
-                stackData.startAskStrategy();
+                stackData.startAskStrategy(user);
             } else if (label.equals(HTML.STOP_BUY)) {
                 stackData.stopBidStrategy();
                 final StacksSetSiblingsEnableCmd cmd =
@@ -690,12 +691,12 @@ public class LadderStackView implements ILadderBoard {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.START_BUY)) {
-                stackData.startBidStrategy();
+                stackData.startBidStrategy(user);
                 final StacksSetSiblingsEnableCmd cmd =
                         new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, true);
                 disableSiblingsCmdPublisher.publish(cmd);
             } else if (label.equals(HTML.START_SELL)) {
-                stackData.startAskStrategy();
+                stackData.startAskStrategy(user);
                 final StacksSetSiblingsEnableCmd cmd =
                         new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, true);
                 disableSiblingsCmdPublisher.publish(cmd);

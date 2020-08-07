@@ -171,7 +171,7 @@ class NibblerView {
                 order.getOrderQty(), order.getAlgoType().name() + '-' + order.getOrderType().name(), order.getTag(), sourcedOrder.source);
     }
 
-    public void cancelAllNonGTC(final String user, final String reason, final boolean isAutomated) {
+    public void cancelAllNonGTC(final User user, final String reason, final boolean isAutomated) {
 
         for (final SourcedWorkingOrder sourcedOrder : workingOrders.values()) {
             if (OrderType.GTC != sourcedOrder.order.getOrderType()) {
@@ -182,7 +182,7 @@ class NibblerView {
         stopAllStrategies(reason);
     }
 
-    public void cancelAll(final String user, final String reason, final boolean isAutomated) {
+    public void cancelAll(final User user, final String reason, final boolean isAutomated) {
 
         workingOrders.values().forEach(order -> cancel(user, order, isAutomated));
         managedOrders.values().forEach(this::cancel);
@@ -200,9 +200,9 @@ class NibblerView {
         stopAllStrategies("Shutdown OMS - " + reason);
     }
 
-    private void cancel(final String username, final SourcedWorkingOrder order, final boolean isAutomated) {
+    private void cancel(final User user, final SourcedWorkingOrder order, final boolean isAutomated) {
 
-        final IOrderCmd cmd = order.buildCancel(cmdRejectPublisher, username, isAutomated);
+        final IOrderCmd cmd = order.buildCancel(cmdRejectPublisher, user, isAutomated);
         commands.publish(cmd);
     }
 
@@ -211,7 +211,8 @@ class NibblerView {
                 new OrderEntryCommandToServer(order.server, new Cancel(order.update.getSystemOrderId(), order.update.getOrder())));
     }
 
-    public void cancelOrder(final String user, final String key) {
+    public void cancelOrder(final User user, final String key) {
+
         final UpdateFromServer updateFromServer = managedOrders.get(key);
         if (null != updateFromServer) {
             cancel(updateFromServer);

@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.autopull.autopuller.onMD;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
@@ -213,23 +214,23 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
     }
 
     @Override
-    public void safeStartAll(final String username) {
+    public void safeStartAll(final User user) {
 
         for (final LongMapNode<AutoPullerPullRule> pullRule : rulesByID) {
-            safeStart(pullRule.getValue(), username);
+            safeStart(pullRule.getValue(), user);
         }
     }
 
     @Override
-    public void safeStartRule(final long ruleID, final String username) {
+    public void safeStartRule(final long ruleID, final User user) {
 
         final AutoPullerPullRule pullRule = rulesByID.get(ruleID);
         if (null != pullRule) {
-            safeStart(pullRule, username);
+            safeStart(pullRule, user);
         }
     }
 
-    private void safeStart(final AutoPullerPullRule rule, final String username) {
+    private void safeStart(final AutoPullerPullRule rule, final User user) {
 
         if (null != rule.md) {
 
@@ -238,7 +239,7 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
             final Collection<IOrderCmd> cmds = rule.getOrdersToPull(cancelRejectMsgs, orders);
 
             if (cmds.isEmpty()) {
-                rule.enable(username);
+                rule.enable(user);
                 runRule(orders, rule);
             } else {
                 sendRuleStateUpdate(rule, cmds.size());

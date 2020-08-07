@@ -4,6 +4,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrde
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.Constants;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.time.IClock;
@@ -198,7 +199,7 @@ public class BulkOrderEntryPresenter {
 
             final JSONObject orderDetails = jsonOrders.getJSONObject(i);
 
-            final String user = data.getClient().getUserName();
+            final User user = User.get(data.getClient().getUserName());
             final String symbol = orderDetails.getString("symbol");
             final BookSide side = BookSide.valueOf(orderDetails.getString("side"));
             final long price = (long) (orderDetails.getDouble("price") * Constants.NORMALISING_FACTOR);

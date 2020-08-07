@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds;
 
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderServerRouter;
@@ -10,18 +11,18 @@ public class CancelOrderCmd implements IOrderCmd {
     private final String toServer;
     private final Publisher<LadderClickTradingIssue> rejectChannel;
 
-    private final String username;
+    private final User user;
     private final boolean isAuto;
     private final int chainID;
     private final String symbol;
 
-    public CancelOrderCmd(final String toServer, final Publisher<LadderClickTradingIssue> rejectChannel, final String username,
+    public CancelOrderCmd(final String toServer, final Publisher<LadderClickTradingIssue> rejectChannel, final User user,
             final boolean isAuto, final int chainID, final String symbol) {
 
         this.toServer = toServer;
         this.rejectChannel = rejectChannel;
 
-        this.username = username;
+        this.user = user;
         this.isAuto = isAuto;
 
         this.chainID = chainID;
@@ -35,7 +36,7 @@ public class CancelOrderCmd implements IOrderCmd {
 
     @Override
     public void execute(final NibblerTransportOrderEntry client) {
-        client.cancelOrder(rejectChannel, username, isAuto, chainID, symbol);
+        client.cancelOrder(rejectChannel, user, isAuto, chainID, symbol);
     }
 
     @Override

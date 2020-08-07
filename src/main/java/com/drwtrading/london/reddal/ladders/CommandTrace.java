@@ -1,11 +1,12 @@
 package com.drwtrading.london.reddal.ladders;
 
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.util.Struct;
 
 public class CommandTrace extends Struct {
 
     public final String command;
-    public final String user;
+    public final User user;
     public final String symbol;
     public final String orderType;
     public final boolean autoHedge;
@@ -15,8 +16,9 @@ public class CommandTrace extends Struct {
     public final int quantity;
     public final int chainId;
 
-    public CommandTrace(final String command, final String user, final String symbol, final String orderType, final boolean autoHedge,
+    public CommandTrace(final String command, final User user, final String symbol, final String orderType, final boolean autoHedge,
             final long price, final String side, final String tag, final int quantity, final int chainId) {
+
         this.command = command;
         this.user = user;
         this.symbol = symbol;

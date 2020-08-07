@@ -1,18 +1,20 @@
 package com.drwtrading.london.reddal.autopull.autopuller.msgs.cmds;
 
+import com.drwtrading.london.eeif.utils.application.User;
+
 public class AutoPullerSafeStartRule implements IAutoPullerCmd {
 
     private final long ruleID;
-    private final String username;
+    private final User user;
 
-    public AutoPullerSafeStartRule(final long ruleID, final String username) {
+    public AutoPullerSafeStartRule(final long ruleID, final User user) {
 
         this.ruleID = ruleID;
-        this.username = username;
+        this.user = user;
     }
 
     @Override
     public void executeOn(final IAutoPullerCmdHandler handler) {
-        handler.safeStartRule(ruleID, username);
+        handler.safeStartRule(ruleID, user);
     }
 }

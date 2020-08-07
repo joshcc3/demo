@@ -1,15 +1,18 @@
 package com.drwtrading.london.reddal.autopull.autopuller.msgs.cmds;
 
+import com.drwtrading.london.eeif.utils.application.User;
+
 public class AutoPullerSafeStartAll implements IAutoPullerCmd {
 
-    private final String username;
+    private final User user;
 
-    public AutoPullerSafeStartAll(final String username) {
-        this.username = username;
+    public AutoPullerSafeStartAll(final User user) {
+        this.user = user;
     }
 
     @Override
     public void executeOn(final IAutoPullerCmdHandler handler) {
-        handler.safeStartAll(username);
+
+        handler.safeStartAll(user);
     }
 }

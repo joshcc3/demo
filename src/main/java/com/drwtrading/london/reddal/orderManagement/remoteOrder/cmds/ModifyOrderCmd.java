@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
@@ -13,7 +14,7 @@ public class ModifyOrderCmd implements IOrderCmd {
     private final String toServer;
     private final Publisher<LadderClickTradingIssue> rejectChannel;
 
-    private final String username;
+    private final User user;
     private final int chainID;
     private final String symbol;
     private final BookSide side;
@@ -27,14 +28,14 @@ public class ModifyOrderCmd implements IOrderCmd {
     private final long toPrice;
     private final int toQty;
 
-    public ModifyOrderCmd(final String toServer, final Publisher<LadderClickTradingIssue> rejectChannel, final String username,
+    public ModifyOrderCmd(final String toServer, final Publisher<LadderClickTradingIssue> rejectChannel, final User user,
             final int chainID, final String symbol, final BookSide side, final OrderType orderType, final AlgoType algoType,
             final String tag, final long fromPrice, final int fromQty, final long toPrice, final int toQty) {
 
         this.toServer = toServer;
         this.rejectChannel = rejectChannel;
 
-        this.username = username;
+        this.user = user;
         this.chainID = chainID;
         this.symbol = symbol;
         this.side = side;
@@ -57,7 +58,7 @@ public class ModifyOrderCmd implements IOrderCmd {
     @Override
     public void execute(final NibblerTransportOrderEntry client) {
 
-        client.modifyOrder(rejectChannel, username, chainID, symbol, side, orderType, algoType, tag, fromPrice, fromQty, toPrice, toQty);
+        client.modifyOrder(rejectChannel, user, chainID, symbol, side, orderType, algoType, tag, fromPrice, fromQty, toPrice, toQty);
     }
 
     @Override

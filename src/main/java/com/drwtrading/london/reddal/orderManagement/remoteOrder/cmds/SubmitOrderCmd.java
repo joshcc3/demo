@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
@@ -13,7 +14,7 @@ public class SubmitOrderCmd implements IOrderCmd {
     private final String symbol;
     private final Publisher<LadderClickTradingIssue> rejectChannel;
 
-    private final String username;
+    private final User user;
     private final BookSide side;
     private final OrderType orderType;
     private final AlgoType algoType;
@@ -21,13 +22,13 @@ public class SubmitOrderCmd implements IOrderCmd {
     private final long price;
     private final int qty;
 
-    public SubmitOrderCmd(final String symbol, final Publisher<LadderClickTradingIssue> rejectChannel, final String username,
-            final BookSide side, final OrderType orderType, final AlgoType algoType, final String tag, final long price, final int qty) {
+    public SubmitOrderCmd(final String symbol, final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final BookSide side,
+            final OrderType orderType, final AlgoType algoType, final String tag, final long price, final int qty) {
 
         this.symbol = symbol;
         this.rejectChannel = rejectChannel;
 
-        this.username = username;
+        this.user = user;
         this.side = side;
         this.orderType = orderType;
         this.algoType = algoType;
@@ -52,7 +53,7 @@ public class SubmitOrderCmd implements IOrderCmd {
     @Override
     public void execute(final NibblerTransportOrderEntry client) {
 
-        client.submitOrder(rejectChannel, username, symbol, side, orderType, algoType, tag, price, qty);
+        client.submitOrder(rejectChannel, user, symbol, side, orderType, algoType, tag, price, qty);
     }
 
     @Override

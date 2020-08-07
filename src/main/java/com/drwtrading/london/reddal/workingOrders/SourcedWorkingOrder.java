@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.workingOrders;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.CancelOrderCmd;
@@ -27,16 +28,16 @@ public class SourcedWorkingOrder {
         this.cssClass = getCSSClass(order);
     }
 
-    public IOrderCmd buildModify(final Publisher<LadderClickTradingIssue> rejectChannel, final String username, final long toPrice,
+    public IOrderCmd buildModify(final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final long toPrice,
             final int toQty) {
 
-        return new ModifyOrderCmd(source, rejectChannel, username, order.getChainID(), order.getSymbol(), order.getSide(),
-                order.getOrderType(), order.getAlgoType(), order.getTag(), order.getPrice(), (int) order.getOrderQty(), toPrice, toQty);
+        return new ModifyOrderCmd(source, rejectChannel, user, order.getChainID(), order.getSymbol(), order.getSide(), order.getOrderType(),
+                order.getAlgoType(), order.getTag(), order.getPrice(), (int) order.getOrderQty(), toPrice, toQty);
     }
 
-    public IOrderCmd buildCancel(final Publisher<LadderClickTradingIssue> rejectChannel, final String username, final boolean isAuto) {
+    public IOrderCmd buildCancel(final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final boolean isAuto) {
 
-        return new CancelOrderCmd(source, rejectChannel, username, isAuto, order.getChainID(), order.getSymbol());
+        return new CancelOrderCmd(source, rejectChannel, user, isAuto, order.getChainID(), order.getSymbol());
     }
 
     @Override
