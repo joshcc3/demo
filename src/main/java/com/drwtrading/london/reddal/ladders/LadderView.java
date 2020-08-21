@@ -488,8 +488,10 @@ public class LadderView implements UiEventHandler {
             ladderModel.setClass(HTML.TEXT, CSSClass.GOING_EX, exState == GoingExState.YES);
         }
 
-        final double uppyDownyValue = stackData.getPriceOffsetTickSize();
-        leftHandPanel.setBPSTooltip(uppyDownyValue);
+        if (null != stackData) {
+            final double uppyDownyValue = stackData.getPriceOffsetTickSize();
+            leftHandPanel.setBPSTooltip(uppyDownyValue);
+        }
     }
 
     private void recenterIfTimeoutElapsed() {
