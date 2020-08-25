@@ -16,12 +16,15 @@ import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
+import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
+import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
+import com.drwtrading.london.reddal.data.InstrumentMetaData;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineValue;
@@ -87,6 +90,8 @@ import java.util.concurrent.TimeUnit;
 
 public class LadderPresenter implements IStackPresenterCallback {
 
+    private static final InstrumentMetaData EMPTY_META_DATA = new InstrumentMetaData(new InstrumentID("000000000000", CCY.ZAR, MIC.XOFF));
+
     private static final long BATCH_FLUSH_INTERVAL_MS = 1000 / 5;
     private static final long HEARTBEAT_INTERVAL_MS = 1000;
 
@@ -117,12 +122,12 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Map<String, JasperLastTradeDataForSymbol> lastTradeBySymbolForJasper =
             new MapMaker().makeComputingMap(JasperLastTradeDataForSymbol::new);
     private final Map<String, LadderMetaData> metaDataBySymbol = new MapMaker().makeComputingMap(LadderMetaData::new);
+    private final Map<InstrumentID, InstrumentMetaData> instrumentMetaData = new MapMaker().makeComputingMap(InstrumentMetaData::new);
 
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     private final Map<String, SymbolStackData> stackBySymbol;
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap;
     private final Map<String, SearchResult> refData;
-    private final Map<InstrumentID, String> symbolDesc = new HashMap<>();
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
     private final Publisher<LadderSettingsStoreLadderPref> storeLadderPrefPublisher;
@@ -248,7 +253,7 @@ public class LadderPresenter implements IStackPresenterCallback {
                         feesCalc, feeDF, tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, trace,
                         ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
                         orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
-                        disableSiblingsCmdPublisher, refData, symbolDesc);
+                        disableSiblingsCmdPublisher, refData);
 
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
@@ -293,10 +298,12 @@ public class LadderPresenter implements IStackPresenterCallback {
                 final SymbolStackData stackData = stackBySymbol.get(symbol);
                 final OrderUpdatesForSymbol orderUpdates = eeifOrdersBySymbol.get(symbol);
 
+                final InstrumentMetaData instMetaData = getInstMetaDataForSymbol(mdForSymbol);
+
                 final String userName = msg.getClient().getUserName();
-                view.subscribeToSymbol(symbol, levels, supportedOrderTypes, supportedAlgoTypes, mdForSymbol, workingOrders, ladderMetaData,
-                        lastTradeDataForNibbler, lastTradeDataForJasper, stackData, getLadderPrefsForSymbolUser(symbol, userName),
-                        orderUpdates);
+                view.subscribeToSymbol(symbol, levels, supportedOrderTypes, mdForSymbol, workingOrders, ladderMetaData,
+                        instMetaData, lastTradeDataForNibbler, lastTradeDataForJasper, stackData,
+                        getLadderPrefsForSymbolUser(symbol, userName), orderUpdates);
 
                 if (3 < args.length) {
                     if ("S".equals(args[3])) {
@@ -319,6 +326,20 @@ public class LadderPresenter implements IStackPresenterCallback {
         if (!"heartbeat".equals(cmd)) {
             trace.publish(
                     new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
+        }
+    }
+
+    private InstrumentMetaData getInstMetaDataForSymbol(final MDForSymbol mdForSymbol) {
+
+        if (mdForSymbol.getBook() != null) {
+            return instrumentMetaData.get(mdForSymbol.getBook().getInstID());
+        } else {
+            final SearchResult searchResult = refData.get(mdForSymbol.symbol);
+            if (searchResult != null) {
+                return instrumentMetaData.get(searchResult.instID);
+            } else {
+                return EMPTY_META_DATA;
+            }
         }
     }
 
@@ -545,11 +566,8 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     @Subscribe
     public void on(final SymbolIndyData indyData) {
-
-        symbolDesc.put(indyData.instrumentID, indyData.description);
-
-        final LadderMetaData ladderMetaData = metaDataBySymbol.get(indyData.symbol);
-        ladderMetaData.setIndyDefSource(indyData.source, indyData.description);
+        final InstrumentMetaData instrumentMetaData = this.instrumentMetaData.get(indyData.instrumentID);
+        instrumentMetaData.setSymbolIndyData(indyData);
     }
 
     public long flushAllLadders() {

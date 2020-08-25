@@ -18,6 +18,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.data.InstrumentMetaData;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineValue;
@@ -139,7 +140,6 @@ public class LadderBookView implements ILadderBoard {
     private final TradingStatusForAll tradingStatusForAll;
 
     private final Set<OrderType> supportedOrderTypes;
-    private final Set<AlgoType> supportedAlgoTypes;
 
     private final MDForSymbol marketData;
     private final WorkingOrdersByPrice workingOrders;
@@ -153,6 +153,7 @@ public class LadderBookView implements ILadderBoard {
     private final int levels;
     private final SymbolStackData stackData;
     private final LadderMetaData metaData;
+    private final InstrumentMetaData instMetaData;
     private final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
     private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
@@ -183,11 +184,12 @@ public class LadderBookView implements ILadderBoard {
             final FeesCalc feesCalc, final DecimalFormat feeDF, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
             final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final Publisher<OrderEntryCommandToServer> eeifCommandToServer,
-            final TradingStatusForAll tradingStatusForAll, final Set<OrderType> supportedOrderTypes, final Set<AlgoType> supportedAlgoTypes,
+            final TradingStatusForAll tradingStatusForAll, final Set<OrderType> supportedOrderTypes,
             final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders,
             final NibblerLastTradeDataForSymbol extraDataForSymbolNibbler, final JasperLastTradeDataForSymbol extraDataForSymbolJasper,
             final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final SymbolStackData stackData,
-            final LadderMetaData metaData, final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
+            final LadderMetaData metaData, final InstrumentMetaData instMetaData,
+            final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
             final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Publisher<Jsonable> trace,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap, final long centeredPrice) {
@@ -205,6 +207,7 @@ public class LadderBookView implements ILadderBoard {
         this.fxCalc = fxCalc;
         this.feesCalc = feesCalc;
         this.feeDF = feeDF;
+        this.instMetaData = instMetaData;
 
         this.clickTradingBoxQty = 0;
         recalcFee();
@@ -228,7 +231,6 @@ public class LadderBookView implements ILadderBoard {
         this.tradingStatusForAll = tradingStatusForAll;
 
         this.supportedOrderTypes = supportedOrderTypes;
-        this.supportedAlgoTypes = supportedAlgoTypes;
         this.marketData = marketData;
         this.workingOrders = workingOrders;
         this.nibblerDataForSymbol = extraDataForSymbolNibbler;
@@ -826,7 +828,7 @@ public class LadderBookView implements ILadderBoard {
                 }
             }
             headerPanel.setTitle(symbol);
-            headerPanel.setIndyData(metaData.getIndyDefSource());
+            headerPanel.setIndyData(instMetaData.getIndyDefSource());
 
             final boolean isAuctionValid;
             final long auctionPrice;

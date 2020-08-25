@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.data;
 
-import com.drwtrading.london.indy.transport.data.Source;
 import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
 import com.drwtrading.london.reddal.opxl.OpxlLadderText;
 import com.drwtrading.london.reddal.pks.PKSExposure;
@@ -37,9 +36,6 @@ public class LadderMetaData {
     public String chixSwitchSymbol;
     public SpreadContractSet spreadContractSet;
 
-    public Source indyDefSource;
-    private String indyDefName;
-
     public LadderMetaData(final String symbol) {
 
         this.symbol = symbol;
@@ -55,9 +51,6 @@ public class LadderMetaData {
 
         this.freeTextCells = new EnumMap<>(FreeTextCell.class);
         this.freeTextDescription = new EnumMap<>(FreeTextCell.class);
-
-        this.indyDefSource = null;
-        this.indyDefName = null;
     }
 
     public void onLadderText(final LadderText ladderText) {
@@ -130,19 +123,5 @@ public class LadderMetaData {
         } else {
             return formatter.format(qty / 1000000.0) + 'M';
         }
-    }
-
-    public void setIndyDefSource(final Source indyDefSource, final String indyDefName) {
-
-        this.indyDefSource = indyDefSource;
-        this.indyDefName = indyDefName;
-    }
-
-    public Source getIndyDefSource() {
-        return indyDefSource;
-    }
-
-    public String getIndyDefName() {
-        return indyDefName;
     }
 }

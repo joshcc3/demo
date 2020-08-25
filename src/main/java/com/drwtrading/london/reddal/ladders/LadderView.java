@@ -1,10 +1,8 @@
 package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
-import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.application.User;
-import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
@@ -14,6 +12,7 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
+import com.drwtrading.london.reddal.data.InstrumentMetaData;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.NibblerLastTradeDataForSymbol;
@@ -139,7 +138,6 @@ public class LadderView implements UiEventHandler {
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
     private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
     private final Map<String, SearchResult> refData;
-    private final Map<InstrumentID, String> symbolDesc;
 
     private final LadderViewModel ladderModel;
 
@@ -148,6 +146,7 @@ public class LadderView implements UiEventHandler {
     private MDForSymbol marketData;
     private long lastCenteredTime = 0;
     private LadderMetaData metaData;
+    private InstrumentMetaData instMetaData;
     private NibblerLastTradeDataForSymbol extraDataForSymbolForNibbler;
     private JasperLastTradeDataForSymbol extraDataForSymbolForJasper;
 
@@ -176,8 +175,7 @@ public class LadderView implements UiEventHandler {
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
             final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Map<String, SearchResult> refData,
-            final Map<InstrumentID, String> symbolDesc) {
+            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Map<String, SearchResult> refData) {
 
         this.monitor = monitor;
 
@@ -203,7 +201,6 @@ public class LadderView implements UiEventHandler {
         this.userCycleContractPublisher = userCycleContractPublisher;
         this.userWorkspaceRequests = userWorkspaceRequests;
         this.refData = refData;
-        this.symbolDesc = symbolDesc;
 
         this.ladderModel = new LadderViewModel(ui);
         ui.setHandler(this);
@@ -218,16 +215,18 @@ public class LadderView implements UiEventHandler {
     }
 
     void subscribeToSymbol(final String symbol, final int levels, final Set<OrderType> supportedOrderTypes,
-            final Set<AlgoType> supportedAlgoTypes, final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders,
-            final LadderMetaData metaData, final NibblerLastTradeDataForSymbol extraNibblerDataForSymbol,
-            final JasperLastTradeDataForSymbol extraDataForSymbolForJasper, final SymbolStackData stackData,
-            final LadderPrefsForSymbolUser ladderPrefsForSymbolUser, final OrderUpdatesForSymbol orderUpdatesForSymbol) {
+            final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders,
+            final LadderMetaData metaData, final InstrumentMetaData instMetaData,
+            final NibblerLastTradeDataForSymbol extraNibblerDataForSymbol, final JasperLastTradeDataForSymbol extraDataForSymbolForJasper,
+            final SymbolStackData stackData, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+            final OrderUpdatesForSymbol orderUpdatesForSymbol) {
 
         this.symbol = symbol;
         this.levels = levels;
         this.ladderModel.extendToLevels(levels);
         this.marketData = marketData;
         this.metaData = metaData;
+        this.instMetaData = instMetaData;
         this.extraDataForSymbolForNibbler = extraNibblerDataForSymbol;
         this.extraDataForSymbolForJasper = extraDataForSymbolForJasper;
         this.stackData = stackData;
@@ -238,8 +237,9 @@ public class LadderView implements UiEventHandler {
         final long bookCenteredPrice = null == bookView ? 0 : bookView.getCenteredPrice();
         this.bookView = new LadderBookView(monitor, user, isTrader(), symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc, feeDF,
                 ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher, eeifCommandToServer,
-                tradingStatusForAll, supportedOrderTypes, supportedAlgoTypes, marketData, workingOrders, extraDataForSymbolForNibbler,
-                this.extraDataForSymbolForJasper, orderUpdatesForSymbol, levels, stackData, metaData, increaseParentOffsetPublisher,
+                tradingStatusForAll, supportedOrderTypes, marketData, workingOrders, extraDataForSymbolForNibbler,
+                this.extraDataForSymbolForJasper, orderUpdatesForSymbol, levels, stackData, metaData, instMetaData,
+                increaseParentOffsetPublisher,
                 increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
@@ -372,13 +372,13 @@ public class LadderView implements UiEventHandler {
             return futureFromSymbol.contractDesc + " [" + futureFromSymbol.wholePointValue + "x " + futureFromSymbol.index + ']';
         } else {
 
-            final SearchResult searchResult = refData.get(symbol);
             final String symbolDescription;
-            if (null != searchResult) {
-                symbolDescription = symbolDesc.getOrDefault(searchResult.instID, symbol);
+            if (null != instMetaData && instMetaData.getDescription() != null) {
+                symbolDescription = instMetaData.getDescription();
             } else {
                 symbolDescription = symbol;
             }
+
             return symbolDescription;
         }
     }
@@ -825,12 +825,12 @@ public class LadderView implements UiEventHandler {
 
     private void openIndyScreen() {
 
-        if (null != metaData && null != metaData.getIndyDefName() && null != marketData && null != marketData.getBook()) {
+        if (null != instMetaData && null != instMetaData.getIndyDefName() && null != marketData && null != marketData.getBook()) {
 
             final boolean isETF = InstType.ETF == marketData.getBook().getInstType();
             final String etfSwitch = isETF ? "etf." : "";
 
-            final String url = "http://prod-indy.eeif.drw:11100/composition#" + etfSwitch + metaData.getIndyDefName();
+            final String url = "http://prod-indy.eeif.drw:11100/composition#" + etfSwitch + instMetaData.getIndyDefName();
             view.popUp(url, "Indy " + symbol, 1200, 800);
         }
     }

@@ -20,6 +20,7 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.reddal.FXFuse;
 import com.drwtrading.london.reddal.ReddalComponents;
+import com.drwtrading.london.reddal.data.InstrumentMetaData;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
 import com.drwtrading.london.reddal.data.LaserLineType;
@@ -121,6 +122,7 @@ public class ZoomableLadderTest {
     private final NibblerLastTradeDataForSymbol nibblerLastTradeDataForSymbol = new NibblerLastTradeDataForSymbol("");
     private final JasperLastTradeDataForSymbol jasperLastTradeDataForSymbol = new JasperLastTradeDataForSymbol("");
     private final LadderMetaData metaData = new LadderMetaData("");
+    private final InstrumentMetaData instMetaData = new InstrumentMetaData(INST_ID);
     private final LadderOptions ladderOptions =
             new LadderOptions(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), "");
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap = new HashMap<>();
@@ -372,8 +374,8 @@ public class ZoomableLadderTest {
 
         return new LadderBookView(monitor, USER, true, symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc, feeDF,
                 ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandPublisher, eeifCommandToServer,
-                tradingStatusForAll, supportedOrderTypes, supportedAlgoTypes, mdForSymbol, workingOrders, nibblerLastTradeDataForSymbol,
-                jasperLastTradeDataForSymbol, orderUpdatesForSymbol, LEVELS, stackData, metaData, stackParentCmdPublisher,
+                tradingStatusForAll, supportedOrderTypes, mdForSymbol, workingOrders, nibblerLastTradeDataForSymbol,
+                jasperLastTradeDataForSymbol, orderUpdatesForSymbol, LEVELS, stackData, metaData, instMetaData, stackParentCmdPublisher,
                 increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, DEFAULT_CENTER_PRICE);
     }
 
