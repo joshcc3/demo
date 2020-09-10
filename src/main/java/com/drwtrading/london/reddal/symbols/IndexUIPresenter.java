@@ -9,14 +9,13 @@ import com.drwtrading.london.websocket.WebSocketViews;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
-import com.google.common.collect.Sets;
-import it.unimi.dsi.fastutil.objects.ObjectArraySet;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -132,20 +131,28 @@ public class IndexUIPresenter {
 
         final IndexUIView view = views.get(data.getOutboundChannel());
 
-        Set<String> matching = new ObjectArraySet<>();
-        if (searchTerms.length() > MIN_TERM_LENGTH) {
+        final Set<String> matching = new HashSet<>();
+
+        if (MIN_TERM_LENGTH < searchTerms.length()) {
             matching.addAll(suffixTree.search(searchTerms));
         }
 
-        for (final String term : searchTerms.split("\\W")) {
-            if (term.length() < MIN_TERM_LENGTH) {
-                continue;
-            }
-            final Set<String> result = suffixTree.search(term);
-            if (matching.isEmpty()) {
-                matching = Sets.union(matching, result);
-            } else {
-                matching = Sets.intersection(matching, result);
+        boolean isFirstSearch = true;
+        final String[] searchParts = searchTerms.split("\\W");
+
+        for (final String term : searchParts) {
+
+            if (MIN_TERM_LENGTH < term.length()) {
+
+                final Set<String> result = suffixTree.search(term);
+
+                if (isFirstSearch) {
+                    matching.addAll(result);
+                } else {
+                    matching.retainAll(result);
+                }
+
+                isFirstSearch = false;
             }
         }
 

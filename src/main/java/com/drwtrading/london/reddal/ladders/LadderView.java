@@ -836,7 +836,8 @@ public class LadderView implements UiEventHandler {
     }
 
     private boolean isTrader() {
-        return ladderOptions.traders.contains(client.getUserName());
+        final User user = User.getUser(client.getUserName());
+        return ladderOptions.traders.contains(user);
     }
 
     void onSingleOrderCommand(final ISingleOrderCommand singleOrderCommand) {

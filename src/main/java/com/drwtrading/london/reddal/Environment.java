@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal;
 
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.network.NetworkInterfaces;
@@ -10,8 +11,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
-import java.util.regex.Pattern;
 
 public class Environment {
 
@@ -25,7 +24,7 @@ public class Environment {
 
     public Collection<String> getList(final String prefix) throws ConfigException {
         if (config.paramExists(prefix)) {
-            return config.getParam(prefix).getSet(Pattern.compile(","));
+            return config.getSet(prefix);
         } else {
             return Collections.emptyList();
         }
@@ -34,9 +33,12 @@ public class Environment {
     public LadderOptions ladderOptions() throws ConfigException {
 
         final ConfigGroup tradingGroup = config.getGroup("trading");
-        final Collection<CSSClass> leftClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesLeft");
-        final Collection<CSSClass> rightClickOrderTypes = getClickOrderTypes(tradingGroup, "orderTypesRight");
-        final Collection<String> traders = tradingGroup.getParam("traders").getSet(Pattern.compile(","));
+
+        final Collection<CSSClass> leftClickOrderTypes = tradingGroup.getEnumSet("orderTypesLeft", CSSClass.class);
+        final Collection<CSSClass> rightClickOrderTypes = tradingGroup.getEnumSet("orderTypesRight", CSSClass.class);
+
+        final Collection<User> traders = tradingGroup.getEnumSet("traders", User.class);
+
         final String basketURL;
         if (tradingGroup.paramExists("basketUrl")) {
             basketURL = tradingGroup.getString("basketUrl");
@@ -44,22 +46,6 @@ public class Environment {
             basketURL = null;
         }
         return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, basketURL);
-    }
-
-    private static Collection<CSSClass> getClickOrderTypes(final ConfigGroup config, final String groupName) throws ConfigException {
-
-        final EnumSet<CSSClass> result = EnumSet.noneOf(CSSClass.class);
-
-        final Collection<String> clickOrderTypes = config.getParam(groupName).getSet(Pattern.compile(","));
-        for (final String orderType : clickOrderTypes) {
-            try {
-                final CSSClass cssClass = CSSClass.valueOf(orderType);
-                result.add(cssClass);
-            } catch (final Exception ignore) {
-                throw new IllegalArgumentException("No CSS Class has been assigned for given order type [" + orderType + "].");
-            }
-        }
-        return result;
     }
 
     public HostAndNic getHostAndNic(final String prefix, final String server) throws SocketException, ConfigException {
