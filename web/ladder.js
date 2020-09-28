@@ -51,7 +51,7 @@ function draw(levels) {
 
 		volumeCell.bind("contextmenu", e => {
 			let price = parseFloat(priceCell.text());
-			console.log("HI");
+
 			if (highlightedPrices.has(price)) {
 				highlightedPrices.delete(price);
 				priceCell.toggleClass("highlighted", false);

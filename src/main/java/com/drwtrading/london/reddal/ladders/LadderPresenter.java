@@ -561,7 +561,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     public void setISINsGoingEx(final ISINsGoingEx isinsGoingEx) {
         this.isinsGoingEx = isinsGoingEx.isins;
-        viewBySocket.values().forEach(l -> l.setIsinsGoingEx(isinsGoingEx.isins));
+        viewBySocket.values().forEach(ladderView -> ladderView.setIsinsGoingEx(isinsGoingEx.isins));
     }
 
     @Subscribe
