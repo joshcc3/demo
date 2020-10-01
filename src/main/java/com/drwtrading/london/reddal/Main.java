@@ -749,7 +749,7 @@ public class Main {
         final IFuseBox<IndyTransportComponents> indyMonitor =
                 new ExpandedDetailResourceMonitor<>(monitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
         final TransportTCPKeepAliveConnection<?, ?> indyConnection =
-                IndyCacheFactory.createClient(app.selectIO, indyConfig, indyMonitor, indyUsername, false, indyListener);
+                IndyCacheFactory.createClient(app.selectIO, indyConfig, indyMonitor, indyUsername, true, indyListener);
         app.selectIO.execute(indyConnection::restart);
 
         setupYodaSignals(app.selectIO, monitor, errorLog, root, app.appName, channels.stockAlerts, channels.yodaPicardRows);
