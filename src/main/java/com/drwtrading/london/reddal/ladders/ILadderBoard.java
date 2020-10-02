@@ -39,6 +39,8 @@ public interface ILadderBoard {
 
     public void setBestBidCenter();
 
+    public void setLaserLineCenter();
+
     public void scrollUp();
 
     public void scrollDown();

@@ -1,8 +1,8 @@
-var handler;
+let handler;
 
 // Handler for incoming data
 
-var TAB = 9;
+const TAB = 9;
 
 let highlightedPrices = new Set();
 
@@ -18,8 +18,8 @@ $(function () {
 	setInterval(resizeIfNecessary, 200);
 
 	$(document).keydown(function (e) {
-		var keyCode1 = (e.keyCode ? e.keyCode : e.which);
-		if (keyCode1 == TAB) {
+		const keyCode1 = (e.keyCode ? e.keyCode : e.which);
+		if (TAB === keyCode1) {
 			e.preventDefault();
 		}
 	});
@@ -27,11 +27,11 @@ $(function () {
 
 function draw(levels) {
 
-	var rows = $("#rows");
+	const rows = $("#rows");
 	rows.find(".row").remove();
 
-	for (var i = 0; i < levels; i++) {
-		var bookRow = $("#row_template").clone().removeClass("template");
+	for (let i = 0; i < levels; i++) {
+		const bookRow = $("#row_template").clone().removeClass("template");
 		let priceCell = bookRow.find('.price');
 		let volumeCell = bookRow.find('.volume');
 
@@ -52,6 +52,7 @@ function draw(levels) {
 		volumeCell.bind("contextmenu", e => {
 			let price = parseFloat(priceCell.text());
 
+			return false;
 			if (highlightedPrices.has(price)) {
 				highlightedPrices.delete(price);
 				priceCell.toggleClass("highlighted", false);
@@ -59,14 +60,13 @@ function draw(levels) {
 				highlightedPrices.add(price);
 				priceCell.toggleClass("highlighted", true);
 			}
-			return false;
 		});
 
 		rows.append(bookRow);
 	}
 
-	for (var j = 0; j < levels; j++) {
-		var stackRow = $("#stack_row_template").clone().removeClass("template");
+	for (let j = 0; j < levels; j++) {
+		const stackRow = $("#stack_row_template").clone().removeClass("template");
 		stackRow.attr("id", "stack_row_" + j);
 		stackRow.find(".bid.quote").attr("id", "bid_quote_" + j).text(" ");
 		stackRow.find(".bid.picard").attr("id", "bid_picard_" + j).text(" ");
@@ -96,7 +96,7 @@ function trading(clickTrading, workingOrderTags, orderTypesLeft, orderTypesRight
 	$("#working_order_tags").each(function (i, el) {
 		$(el).find("option").remove();
 		workingOrderTags.forEach(function (tag) {
-			var option = $("<option value=\"" + tag + "\">" + tag + "</option>");
+			const option = $("<option value=\"" + tag + "\">" + tag + "</option>");
 			option.addClass(tag);
 			$(el).append(option);
 		});
@@ -105,7 +105,7 @@ function trading(clickTrading, workingOrderTags, orderTypesLeft, orderTypesRight
 	$("#order_type_left").each(function (i, el) {
 		$(el).find("option").remove();
 		orderTypesLeft.forEach(function (orderType) {
-			var option = $("<option value=\"" + orderType + "\">" + orderType + "</option>");
+			const option = $("<option value=\"" + orderType + "\">" + orderType + "</option>");
 			option.addClass(orderType);
 			$(el).append(option);
 		});
@@ -114,7 +114,7 @@ function trading(clickTrading, workingOrderTags, orderTypesLeft, orderTypesRight
 	$("#order_type_right").each(function (i, el) {
 		$(el).find("option").remove();
 		orderTypesRight.forEach(function (orderType) {
-			var option = $("<option value=\"" + orderType + "\">" + orderType + "</option>");
+			const option = $("<option value=\"" + orderType + "\">" + orderType + "</option>");
 			option.addClass(orderType);
 			$(el).append(option);
 		});
@@ -141,19 +141,19 @@ function calcLevels() {
 	return parseInt(($(window).height() - 72) / 15);
 }
 
-var NumLevels = 0;
+let NumLevels = 0;
 
 function subscribe() {
 
-	var symbolEnd = document.location.hash.indexOf(';', 0);
+	let symbolEnd = document.location.hash.indexOf(';', 0);
 	if (symbolEnd < 0) {
 		symbolEnd = document.location.hash.length;
 	}
-	var symbol = document.location.hash.substr(1, symbolEnd - 1).replace("%20", " ");
+	const symbol = document.location.hash.substr(1, symbolEnd - 1).replace("%20", " ");
 	NumLevels = calcLevels();
 	draw(NumLevels);
 	if (0 < symbolEnd) {
-		var ladderSwitch = document.location.hash.substr(symbolEnd + 1);
+		const ladderSwitch = document.location.hash.substr(symbolEnd + 1);
 		handler.send("ladder-subscribe", symbol, NumLevels, ladderSwitch);
 	} else {
 		handler.send("ladder-subscribe", symbol, NumLevels);

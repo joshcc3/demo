@@ -63,6 +63,7 @@ public class LadderView implements UiEventHandler {
     private static final int PG_DOWN = 34;
     private static final int END_KEY = 35;
     private static final int HOME_KEY = 36;
+    private static final int INSERT_KEY = 45;
     private static final int NUM_PLUS = 107;
     private static final int NUM_MINUS = 109;
     private static final int PLUS = 187;
@@ -588,6 +589,10 @@ public class LadderView implements UiEventHandler {
             }
             case END_KEY: {
                 activeView.setBestBidCenter();
+                break;
+            }
+            case INSERT_KEY: {
+                activeView.setLaserLineCenter();
                 break;
             }
             case PLUS:

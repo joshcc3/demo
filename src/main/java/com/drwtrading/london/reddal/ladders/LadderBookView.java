@@ -184,11 +184,10 @@ public class LadderBookView implements ILadderBoard {
             final FeesCalc feesCalc, final DecimalFormat feeDF, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
             final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final Publisher<OrderEntryCommandToServer> eeifCommandToServer,
-            final TradingStatusForAll tradingStatusForAll, final Set<OrderType> supportedOrderTypes,
-            final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders,
-            final NibblerLastTradeDataForSymbol extraDataForSymbolNibbler, final JasperLastTradeDataForSymbol extraDataForSymbolJasper,
-            final OrderUpdatesForSymbol orderUpdatesForSymbol, final int levels, final SymbolStackData stackData,
-            final LadderMetaData metaData, final InstrumentMetaData instMetaData,
+            final TradingStatusForAll tradingStatusForAll, final Set<OrderType> supportedOrderTypes, final MDForSymbol marketData,
+            final WorkingOrdersByPrice workingOrders, final NibblerLastTradeDataForSymbol extraDataForSymbolNibbler,
+            final JasperLastTradeDataForSymbol extraDataForSymbolJasper, final OrderUpdatesForSymbol orderUpdatesForSymbol,
+            final int levels, final SymbolStackData stackData, final LadderMetaData metaData, final InstrumentMetaData instMetaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
             final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Publisher<Jsonable> trace,
@@ -283,7 +282,7 @@ public class LadderBookView implements ILadderBoard {
             final int zoomLevel = bookPanel.getZoomLevel();
             this.centeredPrice = this.marketData.getBook().getTickTable().roundAwayToTick(BookSide.BID, newCenterPrice, zoomLevel);
 
-            final int centerLevel = levels / 2;
+            final long centerLevel = levels / 2;
             final ITickTable tickTable = marketData.getBook().getTickTable();
             topPrice = tickTable.addTicks(this.centeredPrice, centerLevel * zoomLevel);
 
@@ -1334,6 +1333,18 @@ public class LadderBookView implements ILadderBoard {
                 final long newCenterPrice = tickTable.roundAwayToTick(BookSide.BID, bestBid.getPrice(), zoomLevel);
                 setCenteredPrice(newCenterPrice);
             }
+        }
+    }
+
+    @Override
+    public void setLaserLineCenter() {
+
+        if (stackData.getTheoLaserLine().isValid() && null != marketData.getBook() && marketData.getBook().isValid()) {
+            final long theo = stackData.getTheoLaserLine().getValue();
+            final int zoomLevel = ladderModel.getBookPanel().getZoomLevel();
+            final long center = marketData.getBook().getTickTable().roundAwayToTick(BookSide.BID, theo, zoomLevel);
+
+            setCenteredPrice(center);
         }
     }
 

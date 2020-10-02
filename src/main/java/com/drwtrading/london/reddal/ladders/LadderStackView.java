@@ -465,6 +465,12 @@ public class LadderStackView implements ILadderBoard {
     }
 
     @Override
+    public void setLaserLineCenter() {
+
+        // no-op
+    }
+
+    @Override
     public void setBestAskCenter() {
 
         if (stackData.hasBestAsk()) {

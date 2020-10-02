@@ -27,7 +27,7 @@ $(function () {
 
 	$(document).keydown(function (e) {
 		const keyCode1 = (e.keyCode ? e.keyCode : e.which);
-		if (keyCode1 == TAB) {
+		if (TAB === keyCode1) {
 			e.preventDefault();
 		}
 	});

@@ -88,6 +88,11 @@ public final class LadderNoView implements ILadderBoard {
     }
 
     @Override
+    public void setLaserLineCenter() {
+
+    }
+
+    @Override
     public void scrollUp() {
 
     }
