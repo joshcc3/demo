@@ -215,9 +215,8 @@ public class LadderView implements UiEventHandler {
         }
     }
 
-    void subscribeToSymbol(final String symbol, final int levels, final Set<OrderType> supportedOrderTypes,
-            final MDForSymbol marketData, final WorkingOrdersByPrice workingOrders,
-            final LadderMetaData metaData, final InstrumentMetaData instMetaData,
+    void subscribeToSymbol(final String symbol, final int levels, final Set<OrderType> supportedOrderTypes, final MDForSymbol marketData,
+            final WorkingOrdersByPrice workingOrders, final LadderMetaData metaData, final InstrumentMetaData instMetaData,
             final NibblerLastTradeDataForSymbol extraNibblerDataForSymbol, final JasperLastTradeDataForSymbol extraDataForSymbolForJasper,
             final SymbolStackData stackData, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final OrderUpdatesForSymbol orderUpdatesForSymbol) {
@@ -240,8 +239,8 @@ public class LadderView implements UiEventHandler {
                 ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandToServerPublisher, eeifCommandToServer,
                 tradingStatusForAll, supportedOrderTypes, marketData, workingOrders, extraDataForSymbolForNibbler,
                 this.extraDataForSymbolForJasper, orderUpdatesForSymbol, levels, stackData, metaData, instMetaData,
-                increaseParentOffsetPublisher,
-                increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, bookCenteredPrice);
+                increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap,
+                bookCenteredPrice);
 
         final IBook<?> book = marketData.getBook();
         final Map<QtyButton, Integer> buttonQties;
@@ -809,15 +808,34 @@ public class LadderView implements UiEventHandler {
                 case ETF:
                 case DR:
                 case INDEX: {
-                    final String symbol = marketData.getBook().getSymbol();
-                    final String url = ewokBaseURL + "/smart#" + symbol;
-                    view.popUp(url, "Ewok " + symbol, 1200, 800);
+                    popupEwok();
                     return;
                 }
                 default: {
                 }
             }
         }
+    }
+
+    private void popupEwok() {
+        final String symbol = marketData.getBook().getSymbol();
+
+        final String url;
+
+        if (symbol.endsWith(" RFQ")) {
+            if (symbol.length() > 6) { //suffix +" RFQ" e.g. "LN RFQ"
+                final int length = symbol.length() - 4;
+                final String originalSymbol = symbol.substring(0, length - 2) + ' ' + symbol.substring(length - 2, length);
+
+                url = ewokBaseURL + "/smart#" + originalSymbol;
+            } else {
+                url = ewokBaseURL + "/smart#" + symbol;
+            }
+        } else {
+            url = ewokBaseURL + "/smart#" + symbol;
+        }
+
+        view.popUp(url, "Ewok " + symbol, 1200, 800);
     }
 
     private void popupFuture(final String expiry) {
