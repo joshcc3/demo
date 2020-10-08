@@ -9,7 +9,7 @@ retrieve WAV_SOUND_FILES->web/sounds
 config default
 	include drw.london.eeif-utils/522
 	include drw.london.eeif-nibbler-transport/229
-	include drw.london.eeif-opxl-client/282
+	include drw.london.eeif-opxl-client/283
 	include drw.london.eeif-position-transport/233
 	include drw.london.eeif-stack-transport/281
 	include drw.london.eeif-yoda-transport/245
