@@ -243,7 +243,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
                     unit = null;
                 }
             }
-            if (null != unit) {
+            if (null != unit && communityViews.containsKey(unit)) {
                 final StackFamilyView familyView = communityViews.get(unit);
                 userViews.put(outChannel, familyView);
                 familyView.addUI(username, outChannel);
