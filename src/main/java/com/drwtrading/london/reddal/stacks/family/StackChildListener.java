@@ -20,7 +20,6 @@ public class StackChildListener {
 
     private final Map<String, StackUIData> symbolUIData;
 
-    private final LongMap<StackUIData> strategyUIData;
     private final LongMap<StackUIData> stackGroupUIData;
 
     public StackChildListener(final String nibblerName, final boolean isManager, final StackFamilyPresenter presenter,
@@ -34,7 +33,6 @@ public class StackChildListener {
 
         this.symbolUIData = new HashMap<>();
 
-        this.strategyUIData = new LongMap<>();
         this.stackGroupUIData = new LongMap<>();
     }
 
@@ -45,13 +43,11 @@ public class StackChildListener {
     public void strategyCreated(final StackStrategy strategy) {
 
         final String symbol = strategy.getSymbol();
-        final long strategyID = strategy.getStrategyID();
         final StackUIData uiData =
                 new StackUIData(nibblerName, symbol, strategy.getInstID(), strategy.getLeanSymbol(), strategy.getLeanInstType(),
                         strategy.getAdditiveSymbol());
 
         symbolUIData.put(symbol, uiData);
-        strategyUIData.put(strategyID, uiData);
 
         presenter.addChildUIData(uiData);
     }

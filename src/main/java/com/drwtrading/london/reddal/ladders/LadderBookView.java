@@ -156,7 +156,7 @@ public class LadderBookView implements ILadderBoard {
     private final InstrumentMetaData instMetaData;
     private final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
-    private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
+    private final Publisher<StacksSetSiblingsEnableCmd> stackSiblingsCmdPublisher;
 
     private final Publisher<Jsonable> trace;
     private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap;
@@ -190,7 +190,7 @@ public class LadderBookView implements ILadderBoard {
             final int levels, final SymbolStackData stackData, final LadderMetaData metaData, final InstrumentMetaData instMetaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher, final Publisher<Jsonable> trace,
+            final Publisher<StacksSetSiblingsEnableCmd> stackSiblingsCmdPublisher, final Publisher<Jsonable> trace,
             final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap, final long centeredPrice) {
 
         this.monitor = monitor;
@@ -241,7 +241,7 @@ public class LadderBookView implements ILadderBoard {
         this.metaData = metaData;
         this.stackParentCmdPublisher = stackParentCmdPublisher;
         this.increaseChildOffsetCmdPublisher = increaseChildOffsetCmdPublisher;
-        this.disableSiblingsCmdPublisher = disableSiblingsCmdPublisher;
+        this.stackSiblingsCmdPublisher = stackSiblingsCmdPublisher;
 
         this.pricingModes = new EnumSwitcher<>(PricingMode.class, PricingMode.values());
         this.buttonQty = new EnumMap<>(QtyButton.class);
@@ -1182,14 +1182,14 @@ public class LadderBookView implements ILadderBoard {
                 if (null != metaData.spreadContractSet.parentSymbol) {
                     final StacksSetSiblingsEnableCmd cmd =
                             new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, false);
-                    disableSiblingsCmdPublisher.publish(cmd);
+                    stackSiblingsCmdPublisher.publish(cmd);
                 }
                 stackData.stopBidStrategy();
             } else if (label.equals(HTML.STOP_SELL)) {
                 if (null != metaData.spreadContractSet.parentSymbol) {
                     final StacksSetSiblingsEnableCmd cmd =
                             new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, false);
-                    disableSiblingsCmdPublisher.publish(cmd);
+                    stackSiblingsCmdPublisher.publish(cmd);
                 }
                 stackData.stopAskStrategy();
             } else if (label.equals(HTML.PRICING_BPS)) {
@@ -1271,7 +1271,7 @@ public class LadderBookView implements ILadderBoard {
                 if (null != metaData.spreadContractSet.parentSymbol) {
                     final StacksSetSiblingsEnableCmd cmd =
                             new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, true);
-                    disableSiblingsCmdPublisher.publish(cmd);
+                    stackSiblingsCmdPublisher.publish(cmd);
                 }
                 stackData.startBidStrategy(user);
 
@@ -1281,7 +1281,7 @@ public class LadderBookView implements ILadderBoard {
                 if (null != metaData.spreadContractSet.parentSymbol) {
                     final StacksSetSiblingsEnableCmd cmd =
                             new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, true);
-                    disableSiblingsCmdPublisher.publish(cmd);
+                    stackSiblingsCmdPublisher.publish(cmd);
                 }
             } else if (label.equals(HTML.STOP_BUY)) {
                 stackData.stopBidStrategy();

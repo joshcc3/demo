@@ -146,14 +146,6 @@ public class StackConfigPresenter {
             final int modTicks, final int quoteFlickerBufferPercent, final int picardMaxBPSThrough, final int picardMaxPapaWeight,
             final int picardMaxPerSec, final int picardMaxPerMin, final int picardMaxPerHour, final int picardMaxPerDay) {
 
-//        [nibblerName, configGroupID, quoteMaxBookAgeMillis, quoteIsAuctionQuotingEnabled, quoteIsOnlyAuction,
-//		quoteAuctionTheoMaxBPSThrough, quoteIsAllowEmptyBook, quoteMaxJumpBPS, quoteBettermentQty, quoteBettermentTicks,
-//		quoteIsBettermentOppositeSide, quoteOppositeSideBettermentTicks, fxMaxBookAgeMillis, fxMaxJumpBPS, leanMaxBookAgeMillis,
-//		leanMaxJumpBPS, leanRequiredQty, leanMaxPapaWeight, leanToQuoteRatio, leanPriceAdjustment, additiveIsEnabled,
-//		additiveMaxSignalAgeMillis, additiveMinRequiredBPS, additiveMaxBPS, planMinLevelQty, planMaxLevelQty, planLotSize, planMaxLevels,
-//		minPicardQty, maxOrdersPerLevel, isOnlySubmitBestLevel, isQuoteBettermentOn, modTicks, quoteFlickerBuffer, quotePicardMaxBPSThrough,
-//		picardMaxPapaWeight, picardMaxPerSec, picardMaxPerMin, picardMaxPerHour, picardMaxPerDay]
-//
         final double leanToQuoteRatio = Double.parseDouble(leanToQuoteRatioStr);
         final long leanPriceAdjustment = (long) (Double.parseDouble(leanPriceAdjustmentRawStr) * Constants.NORMALISING_FACTOR);
 

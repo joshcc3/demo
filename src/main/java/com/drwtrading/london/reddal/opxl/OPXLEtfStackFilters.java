@@ -1,8 +1,8 @@
 package com.drwtrading.london.reddal.opxl;
 
+import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
-import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.OPXLComponents;
@@ -30,7 +30,7 @@ public class OPXLEtfStackFilters extends AFiltersOPXL {
     @Override
     protected void handleUpdate(final Collection<StackChildFilter> prevValue, final Collection<StackChildFilter> values) {
 
-        stackFamilyPresenter.setFamiliesFilters(InstType.ETF, values);
+        stackFamilyPresenter.setFamiliesFilters(StackCommunity.DM, values);
     }
 
     private static String getTopic(final IClock clock) {

@@ -13,12 +13,16 @@ $(function () {
 
 	const adminBlock = $("#adminBlock");
 	const hash = document.location.hash.substr(1);
-	if (hash) {
+	let subscriptionString;
+	if (hash.startsWith("Asylum")) {
 		adminBlock.toggleClass("isAsylumView", true);
-		ws.send("subscribe" + hash);
+		subscriptionString = "subscribe" + hash.replace("Asylum", "Family");
+	} else if (hash) {
+		subscriptionString = "subscribe" + hash;
 	} else {
-		ws.send("subscribeFamily");
+		subscriptionString = "subscribeFamily,DEFAULT";
 	}
+	ws.send(subscriptionString);
 
 	document.addEventListener('contextmenu', function (event) {
 		event.preventDefault();
@@ -945,7 +949,7 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 }
 
 function setChildData(childSymbol, leanSymbol, nibblerName, isBidStrategyOn, bidInfo, bidPicardEnabled, bidQuoterEnabled, isAskStrategyOn,
-					  askInfo, askPicardEnabled, askQuoterEnabled) {
+	askInfo, askPicardEnabled, askQuoterEnabled) {
 
 	const rowID = cleanID(childSymbol);
 	const row = $("#" + rowID);

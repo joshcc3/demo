@@ -1,9 +1,9 @@
 package com.drwtrading.london.reddal.stacks.family;
 
 import com.drwtrading.london.eeif.stack.manager.persistence.StackPersistenceReader;
+import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
-import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackAdditiveConfig;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackFXConfig;
@@ -14,6 +14,7 @@ import com.drwtrading.london.eeif.stack.transport.data.config.StackStrategyConfi
 import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -49,20 +50,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-public class StackFamilyView implements IStackRelationshipListener {
+public class StackFamilyView {
 
     private static final Collection<String> ALLOWED_INST_TYPES = StackStrategiesPresenter.ALLOWED_INST_TYPES;
     private static final StackType[] STACK_TYPES = StackType.values();
-
-    private static final String YODA_FAMILY_NAME = "Yoda";
 
     private static final String SOURCE_UI = "FAMILY_ADMIN_UI";
 
@@ -80,9 +76,9 @@ public class StackFamilyView implements IStackRelationshipListener {
     private final SelectIO managementSelectIO;
     private final SelectIO backgroundSelectIO;
 
+    private final StackCommunity community;
     private final SpreadContractSetGenerator contractSetGenerator;
-    private final boolean isSecondaryView;
-    private final InstType displayableInstType;
+    private final boolean isPrimaryView;
 
     private final OpxlStrategySymbolUI strategySymbolUI;
 
@@ -96,10 +92,8 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private final Map<String, String> tradableSymbols;
 
-    private final Map<String, NavigableMap<String, StackUIRelationship>> families;
-    private final Map<String, StackUIData> parentData;
-    private final Map<String, String> childrenToFamily;
-    private final Map<String, StackFamilyChildRow> childData;
+    private final Map<String, FamilyUIData> familyUIData;
+    private final Map<String, ChildUIData> childrenUIData;
 
     private final Map<String, SearchResult> searchResults;
     private final Map<String, LinkedHashSet<String>> fungibleInsts;
@@ -116,16 +110,16 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private double globalPriceOffsetBPS;
 
-    StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO,
-            final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView, final InstType displayableInstType,
+    StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final StackCommunity community,
+            final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
             final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
+        this.community = community;
 
         this.contractSetGenerator = contractSetGenerator;
-        this.isSecondaryView = isSecondaryView;
-        this.displayableInstType = displayableInstType;
+        this.isPrimaryView = !isSecondaryView;
 
         this.strategySymbolUI = strategySymbolUI;
 
@@ -138,10 +132,8 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         this.tradableSymbols = new HashMap<>();
 
-        this.families = new HashMap<>();
-        this.parentData = new HashMap<>();
-        this.childrenToFamily = new HashMap<>();
-        this.childData = new HashMap<>();
+        this.familyUIData = new HashMap<>();
+        this.childrenUIData = new HashMap<>();
 
         this.searchResults = new HashMap<>();
         this.fungibleInsts = new HashMap<>();
@@ -161,22 +153,22 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private boolean isFamilyDisplayable(final String familyName) {
 
-        final StackUIData parentUIData = parentData.get(familyName);
+        final FamilyUIData parentUIData = familyUIData.get(familyName);
         return null != parentUIData && isFamilyDisplayable(parentUIData);
     }
 
-    private boolean isFamilyDisplayable(final StackUIData parentUIData) {
-        return displayableInstType == parentUIData.leanInstType;
+    private boolean isFamilyDisplayable(final FamilyUIData parentUIData) {
+        return community == parentUIData.getStackCommunity();
     }
 
     private boolean isFamilyAsylum(final String familyName) {
 
-        final StackUIData parentUIData = parentData.get(familyName);
+        final FamilyUIData parentUIData = familyUIData.get(familyName);
         return null != parentUIData && isFamilyAsylum(parentUIData);
     }
 
-    private static boolean isFamilyAsylum(final StackUIData parentUIData) {
-        return StackCommunityManager.ASYLUM_ISIN.equals(parentUIData.instID.isin);
+    private static boolean isFamilyAsylum(final FamilyUIData parentUIData) {
+        return StackCommunityManager.ASYLUM_ISIN.equals(parentUIData.uiData.instID.isin);
     }
 
     void setCommunityManager(final StackCommunityManager communityManager) {
@@ -187,17 +179,15 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.nibblerClients.put(nibblerName, cache);
     }
 
-    void setFilter(final InstType forInstType, final Collection<StackChildFilter> newFilters) {
+    void setFilter(final Collection<StackChildFilter> newFilters) {
 
-        if (forInstType == this.displayableInstType) {
-            for (final StackChildFilter newFilter : newFilters) {
+        for (final StackChildFilter newFilter : newFilters) {
 
-                filters.put(newFilter.filterName, newFilter);
-                filterGroups.put(newFilter.filterName, newFilter.groupName);
-            }
-
-            views.all().setFilters(filterGroups);
+            filters.put(newFilter.filterName, newFilter);
+            filterGroups.put(newFilter.filterName, newFilter.groupName);
         }
+
+        views.all().setFilters(filterGroups);
     }
 
     void addTradableSymbol(final String nibblerName, final StackTradableSymbol tradableSymbol) {
@@ -221,25 +211,36 @@ public class StackFamilyView implements IStackRelationshipListener {
     void addChildUIData(final StackUIData uiData) {
 
         final StackFamilyChildRow childRow = new StackFamilyChildRow(uiData);
-        childData.put(uiData.symbol, childRow);
+        updateChildrenUIDataWith(uiData.symbol, childRow);
         updateChildUIData(views.all(), childRow);
 
         updateSymbolFilters(uiData.symbol);
     }
 
+    // TODO: Dangerous
+    void updateChildrenUIDataWith(final String symbol, final StackFamilyChildRow childRow) {
+
+        final ChildUIData childUIData = childrenUIData.get(symbol);
+        if (null != childUIData) {
+            childUIData.setChildRow(childRow);
+        } else {
+            childrenUIData.put(symbol, new ChildUIData(symbol, childRow));
+        }
+    }
+
     void updateChildUIData(final StackUIData uiData) {
 
-        final StackFamilyChildRow childRow = childData.get(uiData.symbol);
-        if (childRow.updateSnapshot(uiData)) {
+        final StackFamilyChildRow childRow = childrenUIData.get(uiData.symbol).getChildRow();
+        if (null != childRow && childRow.updateSnapshot(uiData)) {
             updateChildUIData(views.all(), childRow);
         }
     }
 
     private void updateChildUIData(final IStackFamilyUI view, final StackFamilyChildRow childRow) {
 
-        final String parentSymbol = childrenToFamily.get(childRow.getSymbol());
+        final ChildUIData uiData = childrenUIData.get(childRow.getSymbol());
 
-        if (isFamilyDisplayable(parentSymbol)) {
+        if (null != uiData && isFamilyDisplayable(uiData.getFamily())) {
 
             childRow.sendRowState(view);
 
@@ -250,7 +251,8 @@ public class StackFamilyView implements IStackRelationshipListener {
                 case FUTURE:
                 case FUTURE_SPREAD:
                 case FX: {
-                    strategySymbolUI.addStrategySymbol(displayableInstType, childRow.getLeanSymbol());
+                    // TODO: THIS instType NEEDS CHANGING
+                    strategySymbolUI.addStrategySymbol(community.instType, childRow.getLeanSymbol());
                 }
             }
         }
@@ -259,13 +261,13 @@ public class StackFamilyView implements IStackRelationshipListener {
     private void updateSymbolFilters(final String symbol) {
 
         final SearchResult searchResult = searchResults.get(symbol);
-        if (null != searchResult && childData.containsKey(symbol)) {
+        if (null != searchResult && childrenUIData.containsKey(symbol)) {
 
             final String filterName = searchResult.mdSource.name();
             final StackChildFilter filter = getFilter(filterName.trim(), MD_SOURCE_FILTER_GROUP);
             filter.addSymbol(symbol);
 
-            if (InstType.FUTURE == displayableInstType && InstType.FUTURE == searchResult.instType) {
+            if (InstType.FUTURE == community.instType && InstType.FUTURE == searchResult.instType) {
 
                 final FutureConstant future = FutureConstant.getFutureFromSymbol(symbol);
 
@@ -329,13 +331,13 @@ public class StackFamilyView implements IStackRelationshipListener {
         }
 
         final Set<String> result = new HashSet<>();
-        for (final Map.Entry<String, String> childToParent : childrenToFamily.entrySet()) {
-            if (isFamilyDisplayable(childToParent.getValue())) {
+        for (final Map.Entry<String, ChildUIData> childToParent : childrenUIData.entrySet()) {
+            if (isFamilyDisplayable(childToParent.getValue().getFamily())) {
                 result.add(childToParent.getKey());
             }
         }
-        result.removeAll(families.keySet());
-        result.retainAll(childData.keySet());
+        result.removeAll(familyUIData.keySet());
+        result.retainAll(childrenUIData.keySet());
 
         for (final Set<String> filterGroup : unionSets.values()) {
             result.retainAll(filterGroup);
@@ -344,25 +346,28 @@ public class StackFamilyView implements IStackRelationshipListener {
         return result;
     }
 
-    void addFamilyUIData(final StackUIData uiData) {
+    void addFamilyUIData(final FamilyUIData familyData) {
 
-        final String familyName = uiData.symbol;
+        final String familyName = familyData.uiData.symbol;
 
-        parentData.put(familyName, uiData);
-        families.put(familyName, new TreeMap<>());
+        familyUIData.put(familyName, familyData);
 
-        if (isFamilyDisplayable(uiData)) {
-            final boolean isAsylum = isFamilyAsylum(uiData);
+        if (isFamilyDisplayable(familyData)) {
+
+            final boolean isAsylum = isFamilyAsylum(familyData);
             views.all().addFamily(familyName, isAsylum);
-            updateFamilyUIData(views.all(), uiData);
+            updateFamilyUIData(views.all(), familyData);
         }
     }
 
-    void updateFamilyUIData(final StackUIData uiData) {
+    void updateFamilyUIData(final FamilyUIData uiData) {
+
         updateFamilyUIData(views.all(), uiData);
     }
 
-    private void updateFamilyUIData(final IStackFamilyUI view, final StackUIData uiData) {
+    private void updateFamilyUIData(final IStackFamilyUI view, final FamilyUIData familyData) {
+
+        final StackUIData uiData = familyData.uiData;
 
         if (isFamilyDisplayable(uiData.symbol)) {
             view.setParentData(uiData.symbol, uiData.getActiveBidPriceOffsetBPS(), uiData.getActiveAskPriceOffsetBPS(),
@@ -376,32 +381,30 @@ public class StackFamilyView implements IStackRelationshipListener {
         this.stackConfigs.put(stackConfig.getSymbol(), stackConfig);
     }
 
-    @Override
-    public boolean updateRelationship(final String source, final long relationshipID, final String childSymbol, final String parentSymbol,
-            final double bidPriceOffset, final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier,
-            final int familyToChildRatio) {
+    public boolean updateRelationship(final String childSymbol, final String parentSymbol, final double bidPriceOffset,
+            final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio) {
 
-        for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> familyRelations : families.entrySet()) {
+        for (final Map.Entry<String, FamilyUIData> familyRelations : familyUIData.entrySet()) {
 
-            final Map<String, ?> children = familyRelations.getValue();
-            if (null != children.remove(childSymbol) && !isFamilyDisplayable(parentSymbol)) {
+            final FamilyUIData familyUIData = familyRelations.getValue();
+            if (familyUIData.removeChild(childSymbol) && !isFamilyDisplayable(parentSymbol)) {
                 final String oldFamily = familyRelations.getKey();
                 views.all().removeChild(oldFamily, childSymbol);
             }
         }
 
-        final Map<String, StackUIRelationship> familyChildren = MapUtils.getNavigableMap(families, parentSymbol);
-
         final StackUIRelationship newRelationship =
                 new StackUIRelationship(childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
                         familyToChildRatio);
-        familyChildren.put(childSymbol, newRelationship);
 
-        childrenToFamily.put(childSymbol, parentSymbol);
+        final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
+        familyUIData.addChild(childSymbol, newRelationship);
+
+        setChildUIDataField(childSymbol, parentSymbol);
 
         if (isFamilyDisplayable(parentSymbol)) {
 
-            strategySymbolUI.addStrategySymbol(displayableInstType, childSymbol);
+            strategySymbolUI.addStrategySymbol(community.instType, childSymbol);
 
             views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
                     familyToChildRatio);
@@ -413,15 +416,14 @@ public class StackFamilyView implements IStackRelationshipListener {
         return true;
     }
 
-    @Override
-    public boolean killFamily(final String source, final String familyName) {
-        //NO-OP
-        return true;
-    }
+    private void setChildUIDataField(final String childSymbol, final String parentSymbol) {
 
-    @Override
-    public boolean batchComplete() {
-        return true;
+        final ChildUIData childUIData = childrenUIData.get(childSymbol);
+        if (null != childUIData) {
+            childUIData.setFamily(parentSymbol);
+        } else {
+            childrenUIData.put(childSymbol, new ChildUIData(childSymbol, parentSymbol));
+        }
     }
 
     public void symbolSelected(final SymbolSelection symbolSelection) {
@@ -442,16 +444,16 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         newView.setFilters(filterGroups);
 
-        for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> family : families.entrySet()) {
+        for (final Map.Entry<String, FamilyUIData> family : familyUIData.entrySet()) {
 
             final String familyName = family.getKey();
             if (isFamilyDisplayable(familyName)) {
 
-                final StackUIData parentUIData = parentData.get(familyName);
+                final FamilyUIData parentUIData = familyUIData.get(familyName);
                 final boolean isAsylum = isFamilyAsylum(parentUIData);
                 newView.addFamily(familyName, isAsylum);
 
-                for (final StackUIRelationship child : family.getValue().values()) {
+                for (final StackUIRelationship child : family.getValue().getAllRelationships()) {
 
                     newView.setChild(familyName, child.childSymbol, child.bidPriceOffsetBPS, child.bidQtyMultiplier,
                             child.askPriceOffsetBPS, child.askQtyMultiplier, child.familyToChildRatio);
@@ -459,12 +461,14 @@ public class StackFamilyView implements IStackRelationshipListener {
             }
         }
 
-        for (final StackUIData uiData : parentData.values()) {
-            updateFamilyUIData(newView, uiData);
+        for (final FamilyUIData familyUIData : familyUIData.values()) {
+            updateFamilyUIData(newView, familyUIData);
         }
 
-        for (final StackFamilyChildRow uiData : childData.values()) {
-            updateChildUIData(newView, uiData);
+        for (final ChildUIData uiData : childrenUIData.values()) {
+            if (null != uiData.getChildRow()) {
+                updateChildUIData(newView, uiData.getChildRow());
+            }
         }
 
         presentGlobalOffset(newView);
@@ -483,16 +487,16 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     @FromWebSocketView
     public void refreshAllParents(final WebSocketInboundData data) {
-        communityManager.reestablishParentalRule();
+        communityManager.reestablishParentalRule(community);
     }
 
     @FromWebSocketView
     public void cleanAllParents(final WebSocketInboundData data) {
 
-        if (InstType.FUTURE == displayableInstType) {
+        if (InstType.FUTURE == community.instType) {
             cleanFuturesAroundFrontMonth();
         } else {
-            communityManager.cleanParentStacks(SOURCE_UI);
+            communityManager.cleanParentStacks(SOURCE_UI, community);
         }
     }
 
@@ -501,10 +505,10 @@ public class StackFamilyView implements IStackRelationshipListener {
         for (final FutureConstant future : FutureConstant.values()) {
 
             final String frontMonthSymbol = expiryCalc.getFutureCode(future, 0);
-            final String familyName = childrenToFamily.get(frontMonthSymbol);
+            final ChildUIData childUIData = childrenUIData.get(frontMonthSymbol);
 
-            if (null != familyName) {
-
+            if (null != childUIData && null != childUIData.getFamily()) {
+                final String familyName = childUIData.getFamily();
                 communityManager.cleanParentStackAroundChild(SOURCE_UI, familyName, frontMonthSymbol);
             }
         }
@@ -528,7 +532,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     private void updateCommunityManagerGlobalOffset() {
 
         final double sideOffsetBPS = globalPriceOffsetBPS / 2;
-        communityManager.setGlobalOffsets(-sideOffsetBPS, sideOffsetBPS);
+        communityManager.setCommunityOffsets(community, -sideOffsetBPS, sideOffsetBPS);
 
         presentGlobalOffset(views.all());
     }
@@ -543,17 +547,17 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
-        communityManager.setGlobalStackEnabled(side, stackType, isEnabled);
+        communityManager.setStackEnabled(community, side, stackType, isEnabled);
 
         presentGlobalStackEnabling(views.all());
     }
 
     private void presentGlobalStackEnabling(final IStackFamilyUI view) {
 
-        final boolean isBidPicardEnabled = communityManager.getGlobalStackState(BookSide.BID, StackType.PICARD);
-        final boolean isBidQuoteEnabled = communityManager.getGlobalStackState(BookSide.BID, StackType.QUOTER);
-        final boolean isAskQuoteEnabled = communityManager.getGlobalStackState(BookSide.ASK, StackType.QUOTER);
-        final boolean isAskPicardEnabled = communityManager.getGlobalStackState(BookSide.ASK, StackType.PICARD);
+        final boolean isBidPicardEnabled = communityManager.getStackState(community, BookSide.BID, StackType.PICARD);
+        final boolean isBidQuoteEnabled = communityManager.getStackState(community, BookSide.BID, StackType.QUOTER);
+        final boolean isAskQuoteEnabled = communityManager.getStackState(community, BookSide.ASK, StackType.QUOTER);
+        final boolean isAskPicardEnabled = communityManager.getStackState(community, BookSide.ASK, StackType.PICARD);
 
         view.setGlobalStackEnabled(isBidPicardEnabled, isBidQuoteEnabled, isAskQuoteEnabled, isAskPicardEnabled);
     }
@@ -601,7 +605,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
             final IStackFamilyUI ui = views.get(data.getOutboundChannel());
             final String family = getFamilyName(searchResult, isADRName);
-            final boolean isFamilyExists = families.containsKey(family);
+            final boolean isFamilyExists = familyUIData.containsKey(family);
             ui.setCreateFamilyRow(symbol, isFamilyExists, family);
 
             if (InstType.FUTURE == searchResult.instType) {
@@ -615,7 +619,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
                         if (null != expirySearchResult) {
 
-                            final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(expirySymbol);
+                            final boolean isChildAlreadyCreated = this.childrenUIData.containsKey(expirySymbol);
                             final String tradableNibbler = tradableSymbols.get(expirySymbol);
                             ui.addCreateChildRow(expirySymbol, isChildAlreadyCreated, nibblerClients.keySet(), tradableNibbler,
                                     ALLOWED_INST_TYPES, InstType.INDEX.name(), expirySymbol);
@@ -626,10 +630,10 @@ public class StackFamilyView implements IStackRelationshipListener {
                 final Set<String> children = fungibleInsts.get(searchResult.instID.isin);
                 for (final String childSymbol : children) {
 
-                    final boolean isChildAlreadyCreated = this.childrenToFamily.containsKey(childSymbol);
+                    final boolean isChildAlreadyCreated = this.childrenUIData.containsKey(childSymbol);
                     final String tradableNibbler = tradableSymbols.get(childSymbol);
 
-                    if (!isSecondaryView) {
+                    if (isPrimaryView) {
                         ui.addCreateChildRow(childSymbol, isChildAlreadyCreated, nibblerClients.keySet(), tradableNibbler,
                                 ALLOWED_INST_TYPES, InstType.INDEX.name(), childSymbol);
                     } else if (!symbol.equals(childSymbol) || isADRName) {
@@ -646,7 +650,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         final IStackFamilyUI ui = views.get(data.getOutboundChannel());
 
-        if (families.containsKey(family)) {
+        if (familyUIData.containsKey(family)) {
 
             ui.setFieldData(resultFieldID, "Family found.");
         } else {
@@ -660,7 +664,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         if (isAsylum) {
 
-            communityManager.createAsylum(SOURCE_UI, symbol, displayableInstType);
+            communityManager.createAsylum(SOURCE_UI, symbol, community.instType, community);
         } else {
             final SearchResult searchResult = searchResults.get(symbol);
             if (null != searchResult) {
@@ -668,7 +672,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                 final String family = getFamilyName(searchResult, isADRName);
                 final InstrumentID instID = searchResult.instID;
 
-                communityManager.createFamily(SOURCE_UI, family, instID, displayableInstType);
+                communityManager.createFamily(SOURCE_UI, family, instID, community.instType, community);
             }
         }
     }
@@ -686,7 +690,7 @@ public class StackFamilyView implements IStackRelationshipListener {
         final MIC mic = MIC.getMIC(micName);
         final InstrumentID instID = new InstrumentID(isin, ccy, mic);
 
-        communityManager.createFamily(SOURCE_UI, familyName, instID, displayableInstType);
+        communityManager.createFamily(SOURCE_UI, familyName, instID, community.instType, community);
     }
 
     private static String getFamilyName(final SearchResult searchResult, final boolean isADR) {
@@ -715,7 +719,7 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         final IStackFamilyUI ui = views.get(data.getOutboundChannel());
 
-        if (childrenToFamily.containsKey(child)) {
+        if (childrenUIData.containsKey(child)) {
 
             ui.setFieldData(resultFieldID, "Child available.");
         } else {
@@ -746,8 +750,9 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void createMissingChildren(final WebSocketInboundData data) {
 
-        for (final StackUIData stackUIData : parentData.values()) {
+        for (final FamilyUIData familyUIData : familyUIData.values()) {
 
+            final StackUIData stackUIData = familyUIData.uiData;
             final Collection<String> childSymbols = fungibleInsts.get(stackUIData.instID.isin);
             if (null != childSymbols) {
                 for (final String childSymbol : childSymbols) {
@@ -769,17 +774,17 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void correctAdoptionsForChildren(final WebSocketInboundData data) {
 
-        for (final Map.Entry<String, String> childFamily : childrenToFamily.entrySet()) {
+        for (final Map.Entry<String, ChildUIData> childFamily : childrenUIData.entrySet()) {
 
             final String childSymbol = childFamily.getKey();
-            final String familyName = childFamily.getValue();
+            final String familyName = childFamily.getValue().getFamily();
 
             final SearchResult searchResult = searchResults.get(childSymbol);
             if (null != searchResult) {
 
                 final String properFamilyName = getExistingFamily(searchResult.instID.isin);
 
-                if (null != properFamilyName && !familyName.equals(properFamilyName)) {
+                if (null != properFamilyName && !properFamilyName.equals(familyName)) {
                     communityManager.setRelationship(SOURCE_UI, properFamilyName, childSymbol);
                 }
             }
@@ -813,13 +818,13 @@ public class StackFamilyView implements IStackRelationshipListener {
             if (expiryPeriod == future.expiryPeriod) {
 
                 final String frontMonthSymbol = expiryCalc.getFutureCode(future, 0);
-                final StackFamilyChildRow frontMonthData = childData.get(frontMonthSymbol);
+                final StackFamilyChildRow frontMonthData = childrenUIData.get(frontMonthSymbol).getChildRow();
 
                 for (int i = 1; i < 3; ++i) {
 
                     final String backMonthSymbol = expiryCalc.getFutureCode(future, i);
                     final SearchResult backMonthSearchResult = searchResults.get(backMonthSymbol);
-                    final StackFamilyChildRow backMonthData = childData.get(backMonthSymbol);
+                    final StackFamilyChildRow backMonthData = childrenUIData.get(backMonthSymbol).getChildRow();
 
                     if (null != frontMonthData && null == backMonthData && null != backMonthSearchResult) {
 
@@ -864,15 +869,15 @@ public class StackFamilyView implements IStackRelationshipListener {
     @FromWebSocketView
     public void copyChildSetup(final String fromSymbol, final String toSymbol, final WebSocketInboundData data) {
 
-        final String family = childrenToFamily.get(toSymbol);
+        final String family = childrenUIData.get(toSymbol).getFamily();
         communityManager.stopChild(family, toSymbol, BookSide.BID);
         communityManager.stopChild(family, toSymbol, BookSide.ASK);
 
         final StackConfigGroup fromConfig = stackConfigs.get(fromSymbol);
         final StackConfigGroup toConfig = stackConfigs.get(toSymbol);
-        final StackFamilyChildRow toChildUIData = childData.get(fromSymbol);
+        final StackFamilyChildRow toChildUIData = childrenUIData.get(fromSymbol).getChildRow();
 
-        if (null != fromConfig && null != toConfig) {
+        if (null != fromConfig && null != toConfig && null != toChildUIData) {
 
             communityManager.copyChildStacks(SOURCE_UI, fromSymbol, toSymbol);
             final StackClientHandler configClient = nibblerClients.get(toChildUIData.getSource());
@@ -914,18 +919,18 @@ public class StackFamilyView implements IStackRelationshipListener {
     public void adoptChild(final String family, final String child, final boolean isADRName, final WebSocketInboundData data) {
 
         final String familyName;
-        if (families.containsKey(family)) {
+        if (familyUIData.containsKey(family)) {
             familyName = family;
         } else {
 
             final SearchResult searchResult = searchResults.get(family);
             familyName = getFamilyName(searchResult, isADRName);
-            if (!families.containsKey(familyName)) {
+            if (!familyUIData.containsKey(familyName)) {
                 throw new IllegalArgumentException("Parent [" + family + "] is not known. Should it be created first?");
             }
         }
 
-        if (!childrenToFamily.containsKey(child)) {
+        if (!childrenUIData.containsKey(child)) {
 
             throw new IllegalArgumentException("Child [" + child + "] is not known. Has it been created in nibbler?");
         } else {
@@ -961,18 +966,19 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         try {
 
-            for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> family : families.entrySet()) {
+            for (final Map.Entry<String, FamilyUIData> family : familyUIData.entrySet()) {
 
-                final String familyName = family.getKey();
-                final StackUIData parentUIData = parentData.get(familyName);
+                final FamilyUIData familyData = family.getValue();
 
-                if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
+                if (null != familyData && InstType.ETF == familyData.uiData.leanInstType) {
 
-                    final Map<String, StackUIRelationship> children = family.getValue();
-                    final Set<String> childSymbols = new HashSet<>(children.keySet());
-                    for (final String childSymbol : childSymbols) {
+                    final Set<StackUIRelationship> childSymbols = new HashSet<>(familyData.getAllRelationships());
 
-                        if (childData.containsKey(childSymbol)) {
+                    for (final StackUIRelationship child : childSymbols) {
+
+                        final String childSymbol = child.childSymbol;
+
+                        if (childrenUIData.containsKey(childSymbol)) {
                             final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
                             communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset, offset);
                         }
@@ -996,17 +1002,21 @@ public class StackFamilyView implements IStackRelationshipListener {
             }
 
             final String familyName = getFamilyName(searchResult, isADRName);
-            final NavigableMap<String, StackUIRelationship> family = families.get(familyName);
+            final FamilyUIData family = familyUIData.get(familyName);
 
             if (null == family) {
                 System.out.println("Couldn't find [" + familyName + "] for symbol [" + familySymbol + "].");
             } else {
 
-                final StackUIData parentUIData = parentData.get(familyName);
+                final StackUIData parentUIData = family.uiData;
                 if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
-                    final Set<String> childSymbols = new HashSet<>(family.keySet());
-                    for (final String childSymbol : childSymbols) {
-                        if (childData.containsKey(childSymbol)) {
+
+                    final Set<StackUIRelationship> children = new HashSet<>(family.getAllRelationships());
+                    for (final StackUIRelationship child : children) {
+
+                        final String childSymbol = child.childSymbol;
+                        if (childrenUIData.containsKey(childSymbol)) {
+
                             final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
                             communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset, offset);
                         }
@@ -1024,45 +1034,46 @@ public class StackFamilyView implements IStackRelationshipListener {
     public void updateOffsets(final String familySymbol, final Integer bpsWider, final Boolean skipNonDefaults,
             final WebSocketInboundData data) {
 
-        for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> family : families.entrySet()) {
+        for (final Map.Entry<String, FamilyUIData> family : familyUIData.entrySet()) {
             try {
                 final String familyName = family.getKey();
 
                 if (familySymbol.equals(familyName) || "*".equals(familySymbol)) {
 
-                    final StackUIData parentUIData = parentData.get(familyName);
+                    final FamilyUIData familyData = family.getValue();
+
+                    final StackUIData parentUIData = familyData.uiData;
 
                     if (null != parentUIData && InstType.ETF == parentUIData.leanInstType) {
 
-                        final Map<String, StackUIRelationship> children = family.getValue();
-                        final List<String> childSymbols =
-                                children.keySet().stream().filter(childData::containsKey).collect(Collectors.toList());
+                        final Collection<StackUIRelationship> children = new HashSet<>(familyData.getAllRelationships());
 
-                        boolean isFamilyMatchesDefaults = true;
+                        boolean isFamilyUpdated = false;
 
-                        for (final String childSymbol : childSymbols) {
-                            final StackUIRelationship childData = children.get(childSymbol);
-                            final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
+                        for (final StackUIRelationship childData : children) {
+
+                            final double offset = ChildOffsetCalculator.getSymbolOffset(childData.childSymbol);
                             final double bidOffset = Math.abs(childData.bidPriceOffsetBPS);
                             final double askOffset = childData.askPriceOffsetBPS;
-                            if (bidOffset != offset || askOffset != offset) {
-                                isFamilyMatchesDefaults = false;
+                            if (Constants.EPSILON < Math.abs(bidOffset - offset) || Constants.EPSILON < (askOffset - offset)) {
+                                isFamilyUpdated = true;
                             }
                         }
 
-                        if (skipNonDefaults && !isFamilyMatchesDefaults) {
+                        if (skipNonDefaults && isFamilyUpdated) {
                             continue;
                         }
 
-                        for (final String childSymbol : childSymbols) {
-                            final double offset = ChildOffsetCalculator.getSymbolOffset(childSymbol);
+                        for (final StackUIRelationship childData : children) {
+
+                            final double offset = ChildOffsetCalculator.getSymbolOffset(childData.childSymbol);
                             if (offset == 0.0) {
                                 continue;
                             }
-                            communityManager.setChildPriceOffsets(SOURCE_UI, childSymbol, -offset - bpsWider, offset + bpsWider);
-                            final SearchResult searchResult = searchResults.get(childSymbol);
+                            communityManager.setChildPriceOffsets(SOURCE_UI, childData.childSymbol, -offset - bpsWider, offset + bpsWider);
+                            final SearchResult searchResult = searchResults.get(childData.childSymbol);
                             if (null != searchResult && searchResult.mdSource == MDSource.RFQ) {
-                                communityManager.setChildQtyMultipliers(SOURCE_UI, childSymbol, 10, 10);
+                                communityManager.setChildQtyMultipliers(SOURCE_UI, childData.childSymbol, 10, 10);
                             }
                         }
 
@@ -1112,12 +1123,13 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         final long nineYearsAhead = cal.getTimeInMillis();
 
-        for (final Map.Entry<String, NavigableMap<String, StackUIRelationship>> familyChildren : families.entrySet()) {
+        for (final Map.Entry<String, FamilyUIData> familyChildren : familyUIData.entrySet()) {
 
             if (!StackOrphanage.ORPHANAGE.equals(familyChildren.getKey())) {
 
-                final Set<String> children = new HashSet<>(familyChildren.getValue().keySet());
-                for (final String childSymbol : children) {
+                for (final StackUIRelationship child : familyChildren.getValue().getAllRelationships()) {
+
+                    final String childSymbol = child.childSymbol;
 
                     final FutureConstant future = FutureConstant.getFutureFromSymbol(childSymbol);
                     if (null != future && FutureConstant.FEXD != future) {
@@ -1136,14 +1148,14 @@ public class StackFamilyView implements IStackRelationshipListener {
 
     private void killStrategy(final String childSymbol) {
 
-        if (childrenToFamily.containsKey(childSymbol)) {
+        if (childrenUIData.containsKey(childSymbol)) {
             communityManager.orphanChild(SOURCE_UI, childSymbol);
         }
 
-        final StackFamilyChildRow childRow = childData.get(childSymbol);
-        if (null != childRow) {
+        final ChildUIData childRow = childrenUIData.get(childSymbol);
+        if (null != childRow && null != childRow.getChildRow()) {
 
-            final StackClientHandler stackClient = nibblerClients.get(childRow.getSource());
+            final StackClientHandler stackClient = nibblerClients.get(childRow.getChildRow().getSource());
             if (null != stackClient) {
                 stackClient.killStrategy(childSymbol);
                 stackClient.batchComplete();
@@ -1163,7 +1175,7 @@ public class StackFamilyView implements IStackRelationshipListener {
                 final String rfqSymbol = searchResult.symbol;
                 final InstrumentID rfqInstId = searchResult.instID;
 
-                if (null != strategyClient && !childrenToFamily.containsKey(rfqSymbol)) {
+                if (null != strategyClient && !childrenUIData.containsKey(rfqSymbol)) {
 
                     strategyClient.createStrategy(rfqSymbol, rfqInstId, InstType.INDEX, rfqSymbol, rfqInstId, "");
                     strategyClient.batchComplete();
@@ -1178,16 +1190,17 @@ public class StackFamilyView implements IStackRelationshipListener {
             if (MDSource.RFQ == searchResult.mdSource) {
                 final String familyName = getExistingFamily(searchResult.instID.isin);
                 final String rfqSymbol = searchResult.symbol;
-                if (null != familyName && childrenToFamily.containsKey(rfqSymbol)) {
+                if (null != familyName && childrenUIData.containsKey(rfqSymbol)) {
                     communityManager.setRelationship(SOURCE_UI, familyName, rfqSymbol);
-                    final NavigableMap<String, StackUIRelationship> map = families.get(familyName);
-                    if (null != map) {
-                        final StackUIRelationship stackUIRelationship = map.get(rfqSymbol);
-                        if (null != stackUIRelationship) {
-                            if (Math.abs(stackUIRelationship.bidQtyMultiplier) < 0.1 &&
-                                    Math.abs(stackUIRelationship.askQtyMultiplier) < 0.1) {
-                                communityManager.setChildQtyMultipliers(SOURCE_UI, rfqSymbol, 10, 10);
-                            }
+                    final FamilyUIData familyData = familyUIData.get(familyName);
+                    if (null != familyData) {
+
+                        final StackUIRelationship stackUIRelationship = familyData.getChildRelationship(rfqSymbol);
+
+                        if (null != stackUIRelationship && Math.abs(stackUIRelationship.bidQtyMultiplier) < 0.1 &&
+                                Math.abs(stackUIRelationship.askQtyMultiplier) < 0.1) {
+
+                            communityManager.setChildQtyMultipliers(SOURCE_UI, rfqSymbol, 10, 10);
                         }
                     }
                 }
@@ -1204,30 +1217,17 @@ public class StackFamilyView implements IStackRelationshipListener {
             if (isin.equals(searchResult.instID.isin)) {
 
                 final String family = getFamilyName(searchResult, false);
-                if (families.containsKey(family)) {
+                if (familyUIData.containsKey(family)) {
                     return family;
                 } else {
                     final String adrFamily = getFamilyName(searchResult, true);
-                    if (families.containsKey(adrFamily)) {
+                    if (familyUIData.containsKey(adrFamily)) {
                         return adrFamily;
                     }
                 }
             }
         }
         return null;
-    }
-
-    @FromWebSocketView
-    public void adoptAllYoda() {
-
-        for (final StackFamilyChildRow child : childData.values()) {
-
-            if (InstType.SYNTHETIC == child.getLeanInstType() && !families.containsKey(child.getSymbol()) &&
-                    !YODA_FAMILY_NAME.equals(childrenToFamily.get(child.getSymbol()))) {
-
-                communityManager.setRelationship(SOURCE_UI, YODA_FAMILY_NAME, child.getSymbol());
-            }
-        }
     }
 
     @FromWebSocketView
@@ -1289,8 +1289,8 @@ public class StackFamilyView implements IStackRelationshipListener {
             for (final BookSide side : BookSide.values()) {
                 for (final StackType stackType : StackType.values()) {
 
-                    final String familyName = childrenToFamily.get(childSymbol);
-                    setChildStackEnabled(familyName, childSymbol, side, stackType, isEnabled);
+                    final ChildUIData childUIData = childrenUIData.get(childSymbol);
+                    setChildStackEnabled(childUIData.getFamily(), childSymbol, side, stackType, isEnabled);
                 }
             }
         }
@@ -1306,8 +1306,8 @@ public class StackFamilyView implements IStackRelationshipListener {
         final Collection<String> affectedChildren = getFilteredSymbols(filters);
         for (final String childSymbol : affectedChildren) {
 
-            final String familyName = childrenToFamily.get(childSymbol);
-            setChildStackEnabled(familyName, childSymbol, side, stackType, isEnabled);
+            final ChildUIData childUIData = childrenUIData.get(childSymbol);
+            setChildStackEnabled(childUIData.getFamily(), childSymbol, side, stackType, isEnabled);
         }
     }
 
@@ -1323,7 +1323,7 @@ public class StackFamilyView implements IStackRelationshipListener {
     private void setChildStackEnabled(final String familyName, final String childSymbol, final BookSide side, final StackType stackType,
             final boolean isEnabled) {
 
-        if (childData.containsKey(childSymbol)) {
+        if (childrenUIData.containsKey(childSymbol)) {
             try {
                 communityManager.setChildStackEnabled(SOURCE_UI, familyName, childSymbol, side, stackType, isEnabled);
             } catch (final NullPointerException ignored) {
@@ -1342,34 +1342,24 @@ public class StackFamilyView implements IStackRelationshipListener {
 
         final User user = User.get(data.getClient().getUserName());
 
-        final Set<String> familyNames = new HashSet<>();
-        for (final StackUIData familyUIData : parentData.values()) {
+        for (final FamilyUIData familyUIData : familyUIData.values()) {
             if (isFamilyDisplayable(familyUIData)) {
-                familyNames.add(familyUIData.symbol);
-                communityManager.reestablishParentalRule(familyUIData.symbol);
+                communityManager.reestablishParentalRule(familyUIData.uiData.symbol);
             }
         }
 
-        communityManager.startFamilies(familyNames, BookSide.BID, user);
-        communityManager.startFamilies(familyNames, BookSide.ASK, user);
+        communityManager.startFamilies(community, BookSide.BID, user);
+        communityManager.startFamilies(community, BookSide.ASK, user);
 
-        if (!isSecondaryView) {
+        if (isPrimaryView) {
             quotingObligationsCmds.publish(new QuoteObligationsEnableCmd(user));
         }
     }
 
     @FromWebSocketView
     public void stopAll(final WebSocketInboundData data) {
-
-        final Set<String> familyNames = new HashSet<>();
-        for (final StackUIData familyUIData : parentData.values()) {
-            if (isFamilyDisplayable(familyUIData)) {
-                familyNames.add(familyUIData.symbol);
-            }
-        }
-
-        communityManager.stopFamilies(familyNames, BookSide.BID);
-        communityManager.stopFamilies(familyNames, BookSide.ASK);
+        communityManager.stopFamilies(BookSide.BID, community);
+        communityManager.stopFamilies(BookSide.ASK, community);
     }
 
     @FromWebSocketView
@@ -1381,8 +1371,8 @@ public class StackFamilyView implements IStackRelationshipListener {
         final Collection<String> affectedChildren = getFilteredSymbols(filters);
         for (final String childSymbol : affectedChildren) {
 
-            final String family = childrenToFamily.get(childSymbol);
-            communityManager.startChild(family, childSymbol, side, user);
+            final ChildUIData childUIData = childrenUIData.get(childSymbol);
+            communityManager.startChild(childUIData.getFamily(), childSymbol, side, user);
         }
     }
 
@@ -1394,8 +1384,8 @@ public class StackFamilyView implements IStackRelationshipListener {
         final Collection<String> affectedChildren = getFilteredSymbols(filters);
         for (final String childSymbol : affectedChildren) {
 
-            final String family = childrenToFamily.get(childSymbol);
-            communityManager.stopChild(family, childSymbol, side);
+            final ChildUIData childUIData = childrenUIData.get(childSymbol);
+            communityManager.stopChild(childUIData.getFamily(), childSymbol, side);
         }
     }
 
@@ -1431,15 +1421,21 @@ public class StackFamilyView implements IStackRelationshipListener {
         communityManager.stopChild(family, childSymbol, side);
     }
 
+    // TODO: MOVE THIS TO Community manager
     public void setChildStackEnabled(final String source, final String familyName, final BookSide side, final boolean isEnabled) {
 
-        final Map<String, ?> children = families.get(familyName);
+        if (StackCommunity.EXILES != community && StackCommunity.ORPHANAGE != community) {
+            final FamilyUIData children = familyUIData.get(familyName);
 
-        if (null != children) {
-            for (final String child : children.keySet()) {
-                if (childData.containsKey(child)) {
-                    for (final StackType stackType : STACK_TYPES) {
-                        communityManager.setChildStackEnabled(source, familyName, child, side, stackType, isEnabled);
+            if (null != children) {
+                for (final StackUIRelationship child : children.getAllRelationships()) {
+
+                    final String childSymbol = child.childSymbol;
+
+                    if (childrenUIData.containsKey(childSymbol)) {
+                        for (final StackType stackType : STACK_TYPES) {
+                            communityManager.setChildStackEnabled(source, familyName, childSymbol, side, stackType, isEnabled);
+                        }
                     }
                 }
             }

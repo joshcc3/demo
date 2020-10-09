@@ -1,14 +1,19 @@
 package com.drwtrading.london.reddal.stacks.family;
 
+import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
+import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
 import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
 import com.drwtrading.london.eeif.stack.transport.data.symbology.StackTradableSymbol;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
+import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -22,115 +27,133 @@ import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class StackFamilyPresenter implements IStackRelationshipListener {
 
     private final UILogger uiLogger;
 
-    private final StackFamilyView familyView;
-    private final Map<String, StackFamilyView> asylums;
+    private final EnumMap<StackCommunity, StackFamilyView> communityViews;
 
     private final Map<Publisher<WebSocketOutboundData>, StackFamilyView> userViews;
+    private final StackCommunity primaryCommunity;
+
+    private final Map<String, FamilyUIData> familiesData;
 
     public StackFamilyPresenter(final SelectIO presenterSelectIO, final SelectIO backgroundSelectIO, final UILogger uiLogger,
-            final SpreadContractSetGenerator contractSetGenerator, final InstType defaultInstType, final Map<InstType, String> families,
-            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
+            final SpreadContractSetGenerator contractSetGenerator, final StackCommunity primaryCommunity,
+            final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
+            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
 
         this.uiLogger = uiLogger;
+        this.primaryCommunity = primaryCommunity;
 
-        this.familyView =
-                new StackFamilyView(presenterSelectIO, backgroundSelectIO, contractSetGenerator, false, defaultInstType, strategySymbolUI,
+        this.communityViews = new EnumMap<>(StackCommunity.class);
+
+        final StackFamilyView familyView =
+                new StackFamilyView(presenterSelectIO, backgroundSelectIO, primaryCommunity, contractSetGenerator, false, strategySymbolUI,
                         quotingObligationsCmds);
 
-        families.remove(defaultInstType);
+        communityViews.put(primaryCommunity, familyView);
 
-        this.asylums = new HashMap<>();
-        for (final Map.Entry<InstType, String> instType : families.entrySet()) {
+        otherCommunities.remove(primaryCommunity);
+        otherCommunities.add(StackCommunity.EXILES);
+        otherCommunities.add(StackCommunity.ORPHANAGE);
+
+        for (final StackCommunity stackCommunity : otherCommunities) {
+
             final StackFamilyView asylumView =
-                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, contractSetGenerator, true, instType.getKey(),
-                            strategySymbolUI, Constants::NO_OP);
-            asylums.put(instType.getValue(), asylumView);
+                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, stackCommunity, contractSetGenerator, true, strategySymbolUI,
+                            Constants::NO_OP);
+            communityViews.put(stackCommunity, asylumView);
         }
 
         this.userViews = new HashMap<>();
+        this.familiesData = new LinkedHashMap<>();
+
+        final String orphanageSymbol = StackOrphanage.ORPHANAGE;
+        final String orphanISIN = Constants.createISINForSymbol(orphanageSymbol);
+        final InstrumentID instID = new InstrumentID(orphanISIN, CCY.USD, MIC.EEIF);
+        final StackUIData orphanageStackData =
+                new StackUIData("ui", orphanageSymbol, instID, orphanageSymbol, InstType.UNKNOWN, orphanageSymbol);
+        addFamilyUIData(orphanageStackData);
     }
 
     public void setCommunityManager(final StackCommunityManager communityManager) {
 
-        familyView.setCommunityManager(communityManager);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.setCommunityManager(communityManager);
+        for (final StackFamilyView familyView : communityViews.values()) {
+            familyView.setCommunityManager(communityManager);
         }
     }
 
     public void setStrategyClient(final String nibblerName, final StackClientHandler cache) {
 
-        familyView.setStrategyClient(nibblerName, cache);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.setStrategyClient(nibblerName, cache);
+        for (final StackFamilyView familyView : communityViews.values()) {
+            familyView.setStrategyClient(nibblerName, cache);
         }
     }
 
-    public void setFamiliesFilters(final InstType forInstType, final Collection<StackChildFilter> filters) {
+    public void setFamiliesFilters(final StackCommunity community, final Collection<StackChildFilter> filters) {
 
-        familyView.setFilter(forInstType, filters);
-    }
-
-    public void setAsylumFilters(final InstType forInstType, final String asylumName, final Collection<StackChildFilter> filters) {
-
-        final StackFamilyView view = asylums.get(asylumName);
-        view.setFilter(forInstType, filters);
+        final StackFamilyView view = communityViews.get(community);
+        view.setFilter(filters);
     }
 
     void addTradableSymbol(final String nibblerName, final StackTradableSymbol tradableSymbol) {
 
-        familyView.addTradableSymbol(nibblerName, tradableSymbol);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.addTradableSymbol(nibblerName, tradableSymbol);
+        for (final StackFamilyView familyView : communityViews.values()) {
+            familyView.addTradableSymbol(nibblerName, tradableSymbol);
         }
     }
 
     public void setSearchResult(final SearchResult searchResult) {
-        familyView.setSearchResult(searchResult);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.setSearchResult(searchResult);
+
+        for (final StackFamilyView view : communityViews.values()) {
+            view.setSearchResult(searchResult);
         }
     }
 
     void addChildUIData(final StackUIData uiData) {
-        familyView.addChildUIData(uiData);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.addChildUIData(uiData);
+
+        for (final StackFamilyView view : communityViews.values()) {
+            view.addChildUIData(uiData);
         }
     }
 
     void updateChildUIData(final StackUIData uiData) {
-        familyView.updateChildUIData(uiData);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.updateChildUIData(uiData);
+
+        for (final StackFamilyView view : communityViews.values()) {
+            view.updateChildUIData(uiData);
         }
     }
 
     void addFamilyUIData(final StackUIData uiData) {
-        familyView.addFamilyUIData(uiData);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.addFamilyUIData(uiData);
+
+        final FamilyUIData familyUIData = new FamilyUIData(uiData);
+        familiesData.put(uiData.symbol, familyUIData);
+
+        for (final StackFamilyView view : communityViews.values()) {
+            view.addFamilyUIData(familyUIData);
         }
     }
 
     void updateFamilyUIData(final StackUIData uiData) {
-        familyView.updateFamilyUIData(uiData);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.updateFamilyUIData(uiData);
+
+        final FamilyUIData familyData = familiesData.get(uiData.symbol);
+
+        for (final StackFamilyView view : communityViews.values()) {
+            view.updateFamilyUIData(familyData);
         }
     }
 
     void setConfig(final StackConfigGroup stackConfig) {
-        familyView.setConfig(stackConfig);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.setConfig(stackConfig);
+
+        for (final StackFamilyView view : communityViews.values()) {
+            view.setConfig(stackConfig);
         }
     }
 
@@ -139,12 +162,24 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final double bidPriceOffset, final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier,
             final int familyToChildRatio) {
 
-        familyView.updateRelationship(source, relationshipID, childSymbol, parentSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset,
-                askQtyMultiplier, familyToChildRatio);
-        for (final StackFamilyView asylum : asylums.values()) {
-            asylum.updateRelationship(source, relationshipID, childSymbol, parentSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset,
-                    askQtyMultiplier, familyToChildRatio);
+        for (final StackFamilyView view : communityViews.values()) {
+
+            view.updateRelationship(childSymbol, parentSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
+                    familyToChildRatio);
         }
+        return true;
+    }
+
+    @Override
+    public boolean setCommunity(final String source, final String familyName, final StackCommunity community) {
+
+        final FamilyUIData familyData = familiesData.get(familyName);
+        familyData.setCommunity(community);
+
+        for (final StackFamilyView view : communityViews.values()) {
+            view.updateFamilyUIData(familyData);
+        }
+
         return true;
     }
 
@@ -161,13 +196,14 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     public void symbolSelected(final SymbolSelection symbolSelection) {
 
-        familyView.symbolSelected(symbolSelection);
-        for (final StackFamilyView asylum : asylums.values()) {
+        for (final StackFamilyView asylum : communityViews.values()) {
             asylum.symbolSelected(symbolSelection);
         }
     }
 
     public void setChildStackEnabled(final String source, final String familyName, final BookSide side, final boolean isEnabled) {
+
+        final StackFamilyView familyView = communityViews.get(primaryCommunity);
         familyView.setChildStackEnabled(source, familyName, side, isEnabled);
     }
 
@@ -196,22 +232,28 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         final String[] cmdParts = data.split(",");
 
-        if ("subscribeFamily".equals(data)) {
-
-            userViews.put(outChannel, familyView);
-            familyView.addUI(username, outChannel);
-
-        } else if ("subscribeAsylum".equals(cmdParts[0])) {
-
-            final StackFamilyView asylumView = cmdParts.length < 2 ? null : asylums.get(cmdParts[1]);
-            if (null != asylumView) {
-                userViews.put(outChannel, asylumView);
-                asylumView.addUI(username, outChannel);
+        if ("subscribeFamily".equals(cmdParts[0])) {
+            StackCommunity unit;
+            if ("DEFAULT".equals(cmdParts[1])) {
+                unit = primaryCommunity;
+            } else {
+                try {
+                    unit = StackCommunity.get(cmdParts[1]);
+                } catch (final IllegalArgumentException e) {
+                    unit = null;
+                }
+            }
+            if (null != unit) {
+                final StackFamilyView familyView = communityViews.get(unit);
+                userViews.put(outChannel, familyView);
+                familyView.addUI(username, outChannel);
             }
         } else {
 
             final StackFamilyView view = userViews.get(outChannel);
-            view.handleWebMsg(msg);
+            if (null != view) {
+                view.handleWebMsg(msg);
+            }
         }
     }
 }
