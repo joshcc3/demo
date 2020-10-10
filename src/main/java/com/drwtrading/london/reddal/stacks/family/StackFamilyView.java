@@ -1424,7 +1424,7 @@ public class StackFamilyView {
     // TODO: MOVE THIS TO Community manager
     public void setChildStackEnabled(final String source, final String familyName, final BookSide side, final boolean isEnabled) {
 
-        if (StackCommunity.EXILES != community && StackCommunity.ORPHANAGE != community) {
+        if (StackCommunity.DM == community || StackCommunity.FUTURE == community) {
             final FamilyUIData children = familyUIData.get(familyName);
 
             if (null != children) {
