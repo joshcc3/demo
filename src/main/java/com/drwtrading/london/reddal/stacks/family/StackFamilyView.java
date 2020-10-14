@@ -47,6 +47,7 @@ import java.text.DecimalFormat;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -217,7 +218,6 @@ public class StackFamilyView {
         updateSymbolFilters(uiData.symbol);
     }
 
-    // TODO: Dangerous
     void updateChildrenUIDataWith(final String symbol, final StackFamilyChildRow childRow) {
 
         final ChildUIData childUIData = childrenUIData.get(symbol);
@@ -1351,9 +1351,14 @@ public class StackFamilyView {
         communityManager.startFamilies(community, BookSide.BID, user);
         communityManager.startFamilies(community, BookSide.ASK, user);
 
-        if (isPrimaryView) {
+        // TODO jcoutinho - remove this once quoting obligations has been split out properly
+        if (isPrimaryView && quotingObligationsEnabled()) {
             quotingObligationsCmds.publish(new QuoteObligationsEnableCmd(user));
         }
+    }
+
+    private boolean quotingObligationsEnabled() {
+        return EnumSet.of(StackCommunity.DM, StackCommunity.FUTURE).contains(community);
     }
 
     @FromWebSocketView

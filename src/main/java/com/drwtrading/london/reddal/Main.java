@@ -1014,7 +1014,7 @@ public class Main {
             final OpxlStrategyOffsetsUI symbolOffsetUI = new OpxlStrategyOffsetsUI(opxlClient, symbolOffsetOPXLConfig);
             app.selectIO.addDelayedAction(10_000, symbolOffsetUI::flush);
 
-            final StackCommunity primaryCommunity = StackCommunity.valueOf(stackConfig.getString("primaryCommunity"));
+            final Set<StackCommunity> primaryCommunity = stackConfig.getEnumSet("primaryCommunities", StackCommunity.class);
             final Set<StackCommunity> secondaryViews = stackConfig.getEnumSet("otherCommunities", StackCommunity.class);
 
             final StackFamilyPresenter stackFamilyPresenter =

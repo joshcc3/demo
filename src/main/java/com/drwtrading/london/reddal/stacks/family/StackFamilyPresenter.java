@@ -40,27 +40,29 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final EnumMap<StackCommunity, StackFamilyView> communityViews;
 
     private final Map<Publisher<WebSocketOutboundData>, StackFamilyView> userViews;
-    private final StackCommunity primaryCommunity;
+    private final Set<StackCommunity> primaryCommunities;
 
     private final Map<String, FamilyUIData> familiesData;
 
     public StackFamilyPresenter(final SelectIO presenterSelectIO, final SelectIO backgroundSelectIO, final UILogger uiLogger,
-            final SpreadContractSetGenerator contractSetGenerator, final StackCommunity primaryCommunity,
+            final SpreadContractSetGenerator contractSetGenerator, final Set<StackCommunity> primaryCommunities,
             final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
             final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
 
         this.uiLogger = uiLogger;
-        this.primaryCommunity = primaryCommunity;
+        this.primaryCommunities = primaryCommunities;
 
         this.communityViews = new EnumMap<>(StackCommunity.class);
 
-        final StackFamilyView familyView =
-                new StackFamilyView(presenterSelectIO, backgroundSelectIO, primaryCommunity, contractSetGenerator, false, strategySymbolUI,
-                        quotingObligationsCmds);
 
-        communityViews.put(primaryCommunity, familyView);
+        for (StackCommunity primaryCommunity : primaryCommunities) {
+            final StackFamilyView familyView =
+                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, primaryCommunity, contractSetGenerator, false, strategySymbolUI,
+                            quotingObligationsCmds);
+            communityViews.put(primaryCommunity, familyView);
+            otherCommunities.remove(primaryCommunity);
+        }
 
-        otherCommunities.remove(primaryCommunity);
         otherCommunities.add(StackCommunity.EXILES);
         otherCommunities.add(StackCommunity.ORPHANAGE);
 
@@ -203,8 +205,10 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     public void setChildStackEnabled(final String source, final String familyName, final BookSide side, final boolean isEnabled) {
 
-        final StackFamilyView familyView = communityViews.get(primaryCommunity);
-        familyView.setChildStackEnabled(source, familyName, side, isEnabled);
+        for (StackCommunity primaryCommunity : primaryCommunities) {
+            final StackFamilyView familyView = communityViews.get(primaryCommunity);
+            familyView.setChildStackEnabled(source, familyName, side, isEnabled);
+        }
     }
 
     public void webControl(final WebSocketControlMessage webMsg) {
@@ -235,7 +239,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         if ("subscribeFamily".equals(cmdParts[0])) {
             StackCommunity unit;
             if ("DEFAULT".equals(cmdParts[1])) {
-                unit = primaryCommunity;
+                unit = getDefaultCommunity(primaryCommunities);
             } else {
                 try {
                     unit = StackCommunity.get(cmdParts[1]);
@@ -254,6 +258,14 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             if (null != view) {
                 view.handleWebMsg(msg);
             }
+        }
+    }
+
+    private StackCommunity getDefaultCommunity(Set<StackCommunity> primaryCommunities) {
+        if(primaryCommunities.contains(StackCommunity.FUTURE)) {
+            return StackCommunity.FUTURE;
+        } else {
+            return StackCommunity.DM;
         }
     }
 }
