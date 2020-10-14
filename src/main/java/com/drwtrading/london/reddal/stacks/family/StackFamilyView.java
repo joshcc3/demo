@@ -387,7 +387,7 @@ public class StackFamilyView {
         for (final Map.Entry<String, FamilyUIData> familyRelations : familyUIData.entrySet()) {
 
             final FamilyUIData familyUIData = familyRelations.getValue();
-            if (familyUIData.removeChild(childSymbol) && !isFamilyDisplayable(parentSymbol)) {
+            if (familyUIData.removeChild(childSymbol) && isFamilyDisplayable(parentSymbol)) {
                 final String oldFamily = familyRelations.getKey();
                 views.all().removeChild(oldFamily, childSymbol);
             }

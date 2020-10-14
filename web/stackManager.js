@@ -825,7 +825,12 @@ function removeChild(familyName, childSymbol) {
 	const family = row.parent().parent();
 	row.remove();
 	setActiveChildCounts(family);
-	setChildCount(familyName);
+
+	const familyID = "family_" + cleanID(familyName);
+	let familyElem = findChild(familyID);
+	if(familyElem.length >= 1) {
+		setChildCount(familyName);
+	}
 }
 
 function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier, familyToChildRatio) {
