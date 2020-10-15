@@ -30,7 +30,7 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
     private final SimpleDateFormat sdf;
     private final DecimalFormat thouDF;
 
-    public SignalsHandler(Publisher<PicardRow> rowPublisher, Publisher<StockAlert> stockAlerts, IClock clock) {
+    public SignalsHandler(final Publisher<PicardRow> rowPublisher, final Publisher<StockAlert> stockAlerts, final IClock clock) {
         this.rowPublisher = rowPublisher;
         this.stockAlerts = stockAlerts;
         this.milliAtMidnightUTC = clock.getMillisAtMidnightUTC();
@@ -42,39 +42,39 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
     }
 
     @Override
-    public void connected(PhocketConnection<Void> connection) {
+    public void connected(final PhocketConnection<Void> connection) {
         System.out.println("Signals connected" + connection.remote());
     }
 
     @Override
-    public void closed(PhocketConnection<Void> connection) {
+    public void closed(final PhocketConnection<Void> connection) {
         System.out.println("Signals disconnected: " + connection.remote());
     }
 
     @Override
-    public void incoming(PhocketConnection<Void> connection, Signals value) {
+    public void incoming(final PhocketConnection<Void> connection, final Signals value) {
 
         value.accept(new Signals.Visitor<Void>() {
             @Override
-            public Void visitAlertSignal(AlertSignal msg) {
+            public Void visitAlertSignal(final AlertSignal msg) {
                 msg.getAlert().accept(SignalsHandler.this);
                 return null;
             }
 
             @Override
-            public Void visitReactionSignal(ReactionSignal msg) {
+            public Void visitReactionSignal(final ReactionSignal msg) {
                 return null;
             }
 
             @Override
-            public Void visitTheoSignal(TheoSignal msg) {
+            public Void visitTheoSignal(final TheoSignal msg) {
                 return null;
             }
         });
     }
 
     @Override
-    public Void visitRestingOrderAlert(RestingOrderAlert signal) {
+    public Void visitRestingOrderAlert(final RestingOrderAlert signal) {
         if (0 < signal.getPrice()) {
             final String timestamp = sdf.format(milliAtMidnightUTC + signal.getMillisSinceMidnight());
             final String start = sdf.format(signal.getTimePlacedMillisSinceMidnight());
@@ -88,7 +88,7 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
     }
 
     @Override
-    public Void visitSweepAlert(SweepAlert signal) {
+    public Void visitSweepAlert(final SweepAlert signal) {
         if (0 < signal.getNumLvls()) {
             final String timestamp = sdf.format(milliAtMidnightUTC + signal.getMillisSinceMidnight());
             final String action;
@@ -105,7 +105,7 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
     }
 
     @Override
-    public Void visitTwapAlert(TwapAlert signal) {
+    public Void visitTwapAlert(final TwapAlert signal) {
 
         if (0 < signal.volumeBucketMax) {
             final String timestamp = sdf.format(milliAtMidnightUTC + signal.getMillisSinceMidnight());
@@ -127,7 +127,7 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
     }
 
     @Override
-    public Void visitTweetAlert(TweetAlert signal) {
+    public Void visitTweetAlert(final TweetAlert signal) {
         if (!signal.getMsg().isEmpty()) {
             final String timestamp = sdf.format(milliAtMidnightUTC + signal.getMillisSinceMidnight());
             final String action = signal.getSide().name()+ ": ";
@@ -139,7 +139,7 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
     }
 
     @Override
-    public Void visitAtCloseAlert(AtCloseAlert signal) {
+    public Void visitAtCloseAlert(final AtCloseAlert signal) {
         final String symbol = signal.getSymbol();
         final PicardRow oldRow = rowBySymbol.get(symbol);
         final boolean isNewRow = null == oldRow;
@@ -164,7 +164,7 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
         return null;
     }
 
-    private BookSide getSide(SymbolSideKey signal) {
+    private BookSide getSide(final SymbolSideKey signal) {
         final BookSide bookSide;
         switch (signal.getSide()) {
             case BID:

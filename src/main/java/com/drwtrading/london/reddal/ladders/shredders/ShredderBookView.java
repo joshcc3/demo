@@ -163,12 +163,12 @@ class ShredderBookView {
     }
 
 
-    void highlightSize(long size) {
+    void highlightSize(final long size) {
         CSSClass firstEmpty = null;
         boolean found = false;
         for (int i = CSSClass.HIGHLIGHT_ORDER_0.ordinal(); i <= CSSClass.HIGHLIGHT_ORDER_5.ordinal(); i++) {
-            CSSClass byOrdinal = CSSClass.getByOrdinal(i);
-            Long prev = highlightSizes.get(byOrdinal);
+            final CSSClass byOrdinal = CSSClass.getByOrdinal(i);
+            final Long prev = highlightSizes.get(byOrdinal);
             if (null == prev && null == firstEmpty) {
                 firstEmpty = byOrdinal;
             } else if (null != prev && prev == size) {
@@ -211,7 +211,7 @@ class ShredderBookView {
             ui.cls(orderCellKey, shreddedOrder.getOppositeCSSCClass(), false);
             ui.cls(orderCellKey, shreddedOrder.getCorrespondingCSSClass(), true);
             for (int i = CSSClass.HIGHLIGHT_ORDER_0.ordinal(); i <= CSSClass.HIGHLIGHT_ORDER_5.ordinal(); i++) {
-                Long size = highlightSizes.get(CSSClass.getByOrdinal(i));
+                final Long size = highlightSizes.get(CSSClass.getByOrdinal(i));
                 ui.cls(orderCellKey, CSSClass.getByOrdinal(i), null != size && size == shreddedOrder.quantity);
             }
             ui.cls(orderCellKey, CSSClass.MAYBE_OUR_OURDER, shreddedOrder.isOurs);

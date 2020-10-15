@@ -52,7 +52,7 @@ public class ShredderView implements UiEventHandler {
         this.symbol = symbol;
         this.levels = levels;
 
-        ShredderBookView oldView = this.shredderBookView;
+        final ShredderBookView oldView = this.shredderBookView;
         this.shredderBookView = new ShredderBookView(uiPipe, view, marketData, symbol, levels, workingOrders, stackData);
         if (null != oldView) {
             shredderBookView.highlightSizes.putAll(oldView.highlightSizes);
@@ -136,7 +136,7 @@ public class ShredderView implements UiEventHandler {
         uiPipe.flush();
     }
 
-    public void highlightSize(long size) {
+    public void highlightSize(final long size) {
         shredderBookView.highlightSize(size);
     }
 }

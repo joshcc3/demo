@@ -149,7 +149,7 @@ public enum CSSClass {
         return CSS_CLASS_BY_NAME.get(name);
     }
 
-    public static CSSClass getByOrdinal(int ordinal) {
+    public static CSSClass getByOrdinal(final int ordinal) {
         return CLASSES[ordinal];
     }
 }

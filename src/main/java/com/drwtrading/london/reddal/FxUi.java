@@ -18,44 +18,44 @@ public class FxUi {
     private final FXCalc<?> fxCalc;
     private final WebSocketViews<FxView> views = new WebSocketViews<>(FxView.class, this);
 
-    public FxUi(FXCalc<?> fxCalc) {
+    public FxUi(final FXCalc<?> fxCalc) {
         this.fxCalc = fxCalc;
     }
 
     @Subscribe
-    public void on(WebSocketConnected connected) {
-        FxView register = views.register(connected);
+    public void on(final WebSocketConnected connected) {
+        final FxView register = views.register(connected);
         register.create(CCY_LIST);
     }
 
     @Subscribe
-    public void on(WebSocketInboundData data) {
+    public void on(final WebSocketInboundData data) {
         views.invoke(data);
     }
 
     @Subscribe
-    public void on(WebSocketDisconnected disconnected) {
+    public void on(final WebSocketDisconnected disconnected) {
         views.unregister(disconnected);
     }
 
     @FromWebSocketView
-    public void convert(String input, boolean flip, WebSocketInboundData data) {
-        FxView fxView = views.get(data.getOutboundChannel());
-        double value;
+    public void convert(final String input, final boolean flip, final WebSocketInboundData data) {
+        final FxView fxView = views.get(data.getOutboundChannel());
+        final double value;
         try {
             value = Double.valueOf(input);
-        } catch (Throwable t) {
+        } catch (final Throwable t) {
             fxView.error("[" + input + "] isn't a number");
             return;
         }
-        Map<String, Double> result = new HashMap<>();
-        for (CCY from : CCY_LIST) {
-            for (CCY to : CCY_LIST) {
+        final Map<String, Double> result = new HashMap<>();
+        for (final CCY from : CCY_LIST) {
+            for (final CCY to : CCY_LIST) {
                 double rate = fxCalc.getLastValidMid(from, to);
                 if (Double.isNaN(rate)) {
                     rate = fxCalc.getLastValidMid(from, CCY.EUR) * fxCalc.getLastValidMid(CCY.EUR, to);
                 }
-                double converted =  flip ? rate * value : value / rate ;
+                final double converted =  flip ? rate * value : value / rate ;
                 result.put(from.name() + "_" + to.name(), converted);
             }
         }

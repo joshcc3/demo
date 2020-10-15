@@ -16,7 +16,6 @@ import java.util.TreeSet;
 public class BookPanel {
 
     private static final int MAX_ZOOM_INDEX;
-    ;
     private static final int INITIAL_ROW_CAPACITY = 50;
     private static final int REALLY_BIG_NUMBER_THRESHOLD = 100_000;
     private static final int MIN_ZOOM_LEVEL = 1;

@@ -11,7 +11,7 @@ public class FamilyCreationRequest {
     public final String familyName;
     public final Set<String> children;
 
-    public FamilyCreationRequest(InstrumentID isin, String familyName, Set<String> children) {
+    public FamilyCreationRequest(final InstrumentID isin, final String familyName, final Set<String> children) {
         this.instID = isin;
 
         this.familyName = familyName;

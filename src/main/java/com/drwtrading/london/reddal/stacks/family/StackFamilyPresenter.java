@@ -48,7 +48,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     public StackFamilyPresenter(final SelectIO presenterSelectIO, final SelectIO backgroundSelectIO, final UILogger uiLogger,
                                 final SpreadContractSetGenerator contractSetGenerator, final Set<StackCommunity> primaryCommunities,
                                 final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
-                                final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds, Path familiesToCreatePath) {
+                                final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds, final Path familiesToCreatePath) {
 
         this.uiLogger = uiLogger;
         this.primaryCommunities = primaryCommunities;
@@ -56,7 +56,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         this.communityViews = new EnumMap<>(StackCommunity.class);
 
 
-        for (StackCommunity primaryCommunity : primaryCommunities) {
+        for (final StackCommunity primaryCommunity : primaryCommunities) {
             final StackFamilyView familyView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, primaryCommunity, contractSetGenerator, false, strategySymbolUI,
                             quotingObligationsCmds, familiesToCreatePath.resolve("familyCreation" + primaryCommunity.name() + ".csv"));
@@ -206,7 +206,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     public void setChildStackEnabled(final String source, final String familyName, final BookSide side, final boolean isEnabled) {
 
-        for (StackCommunity primaryCommunity : primaryCommunities) {
+        for (final StackCommunity primaryCommunity : primaryCommunities) {
             final StackFamilyView familyView = communityViews.get(primaryCommunity);
             familyView.setChildStackEnabled(source, familyName, side, isEnabled);
         }
@@ -262,7 +262,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         }
     }
 
-    private StackCommunity getDefaultCommunity(Set<StackCommunity> primaryCommunities) {
+    private StackCommunity getDefaultCommunity(final Set<StackCommunity> primaryCommunities) {
         if(primaryCommunities.contains(StackCommunity.FUTURE)) {
             return StackCommunity.FUTURE;
         } else {

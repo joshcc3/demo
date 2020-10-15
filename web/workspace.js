@@ -46,7 +46,7 @@ $(function () {
 
 			doLayout();
 			doLadders();
-			return;
+
 		}
 
 	}, 250);
