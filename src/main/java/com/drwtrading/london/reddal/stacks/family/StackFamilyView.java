@@ -520,7 +520,7 @@ public class StackFamilyView {
                         final InstrumentID instID = InstrumentID.getFromIsinCcyMic(parsedDefinition[1]);
                         ui.displayInfoMsg("Creating " + familyName);
                         communityManager.createFamily(source, familyName, instID, community.instType, community);
-                        if(!familyUIData.containsKey(familyName)) {
+                        if (!familyUIData.containsKey(familyName)) {
                             ui.displayErrorMsg("Failed to create family (not in familyUIData) " + familyName);
                         } else {
                             for (int childIx = 2; childIx < parsedDefinition.length; childIx++) {
@@ -573,8 +573,8 @@ public class StackFamilyView {
 
     private boolean checkChild(InstrumentID instID, String child, IStackFamilyUI ui) {
         final boolean childAlreadyCreated = this.childrenUIData.containsKey(child);
-        final boolean childNotInFamily = childAlreadyCreated && null == this.childrenUIData.get(child).getFamily();
-        final boolean nibblerIsAssociatedWith =  isOTCChild(instID.isin, child) || tradableSymbols.containsKey(child);
+        final boolean childNotInFamily = childAlreadyCreated && StackOrphanage.ORPHANAGE.equals(this.childrenUIData.get(child).getFamily());
+        final boolean nibblerIsAssociatedWith = isOTCChild(instID.isin, child) || tradableSymbols.containsKey(child);
         LinkedHashSet<String> fungibleInstruments = fungibleInsts.get(instID.isin);
         final boolean isFungibleWithParent = null != fungibleInstruments && fungibleInstruments.contains(child);
         final boolean isFungibleWith = isOTCChild(instID.isin, child) || isFungibleWithParent;
@@ -582,7 +582,7 @@ public class StackFamilyView {
         final boolean allChecksPass = childAlreadyCreated && childNotInFamily && nibblerIsAssociatedWith && isFungibleWith;
 
         if (!allChecksPass) {
-            ui.displayErrorMsg("[" + child + "] " + "[" + childAlreadyCreated + "] " + "[" + childNotInFamily + "] " + "[" + nibblerIsAssociatedWith + "] " + "[" + isFungibleWith + "]");
+            ui.displayErrorMsg("[" + child + "] " + "[" + childAlreadyCreated + "] " + "[" + childNotInFamily +"] " + "[" + nibblerIsAssociatedWith + "] " + "[" + isFungibleWith + "]");
         }
 
         return allChecksPass;
