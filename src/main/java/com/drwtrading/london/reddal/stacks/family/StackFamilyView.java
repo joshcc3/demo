@@ -43,17 +43,11 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.DecimalFormat;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class StackFamilyView {
@@ -110,10 +104,11 @@ public class StackFamilyView {
     private StackCommunityManager communityManager;
 
     private double globalPriceOffsetBPS;
+    private final Path familiesToCreateFile;
 
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final StackCommunity community,
-            final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
-            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
+                    final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
+                    final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds, Path familiesToCreateFile) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
@@ -125,6 +120,7 @@ public class StackFamilyView {
         this.strategySymbolUI = strategySymbolUI;
 
         this.quotingObligationsCmds = quotingObligationsCmds;
+        this.familiesToCreateFile = familiesToCreateFile;
 
         this.userViews = new HashMap<>();
 
@@ -382,7 +378,7 @@ public class StackFamilyView {
     }
 
     public boolean updateRelationship(final String childSymbol, final String parentSymbol, final double bidPriceOffset,
-            final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio) {
+                                      final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio) {
 
         for (final Map.Entry<String, FamilyUIData> familyRelations : familyUIData.entrySet()) {
 
@@ -483,6 +479,142 @@ public class StackFamilyView {
 
         final IStackFamilyUI oldView = views.unregister(disconnected);
         userViews.get(username).remove(oldView);
+    }
+
+    @FromWebSocketView
+    public void createFamiliesFromFile(final WebSocketInboundData data) {
+        IStackFamilyUI ui = views.get(data.getOutboundChannel());
+        try {
+            List<String> familyDefinitions = Files.readAllLines(familiesToCreateFile);
+
+            String[][] definitions = new String[familyDefinitions.size()][];
+
+
+            if (checkViewEligibility(ui)) {
+
+                boolean allOk = true;
+
+                int ix = 0;
+                while (ix < familyDefinitions.size() && allOk) {
+                    final String familyDefinition = familyDefinitions.get(ix);
+                    final String[] parsedDefinition = familyDefinition.split(",");
+                    final String familyName = parsedDefinition[0];
+                    allOk = checkRecord(parsedDefinition, ui) && checkFamilyName(familyName, parsedDefinition[1], ui);
+                    if (allOk) {
+                        final InstrumentID instID = InstrumentID.getFromIsinCcyMic(parsedDefinition[1]);
+                        for (int i = 2; i < parsedDefinition.length; i++) {
+                            final String child = parsedDefinition[i];
+                            allOk = allOk && checkChild(instID, child, ui);
+                        }
+                        allOk = allOk && checkAllChildren(instID.isin, parsedDefinition, ui);
+
+                        definitions[ix++] = parsedDefinition;
+                    }
+                }
+                if (allOk) {
+                    final String source = SOURCE_UI + "_FILE";
+                    ui.displayInfoMsg("All input families passed checks - going to create " + familyDefinitions.size() + " families");
+
+                    for (String[] parsedDefinition : definitions) {
+                        final String familyName = parsedDefinition[0];
+                        final InstrumentID instID = InstrumentID.getFromIsinCcyMic(parsedDefinition[1]);
+                        ui.displayInfoMsg("Creating " + familyName);
+                        communityManager.createFamily(source, familyName, instID, community.instType, community);
+                        if(!familyUIData.containsKey(familyName)) {
+                            ui.displayErrorMsg("Failed to create family (not in familyUIData) " + familyName);
+                        } else {
+                            for (int childIx = 2; childIx < parsedDefinition.length; childIx++) {
+                                final String child = parsedDefinition[childIx];
+                                // these must happen sequentially
+                                ui.displayInfoMsg("Adding child relationship " + familyName + " -> " + child);
+                                communityManager.setRelationship(source, familyName, child);
+                            }
+                        }
+                    }
+                } else {
+                    ui.displayErrorMsg("Invalid definitions in family input file - no actions performed");
+                }
+            }
+        } catch (IOException e) {
+            ui.displayErrorMsg(e.getMessage());
+        }
+    }
+
+    private boolean checkRecord(String[] parsedDefinition, IStackFamilyUI ui) {
+        if (parsedDefinition.length < 3) {
+            ui.displayErrorMsg("Invalid record [" + Arrays.toString(parsedDefinition) + "]");
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    private boolean checkAllChildren(final String isin, String[] parsedDefinition, final IStackFamilyUI ui) {
+        LinkedHashSet<String> fungibleInsts = this.fungibleInsts.get(isin);
+        final boolean sameSize = parsedDefinition.length - 3 <= fungibleInsts.size();
+        boolean allContained = true;
+        boolean seenOTCChild = false;
+        for (int i = 2; i < parsedDefinition.length; i++) {
+            final boolean isOTCChild = isOTCChild(isin, parsedDefinition[i]);
+            allContained = allContained && (fungibleInsts.contains(parsedDefinition[i]) || !seenOTCChild && isOTCChild);
+            seenOTCChild = seenOTCChild || isOTCChild;
+        }
+        final boolean allChecksPassed = sameSize && allContained && (seenOTCChild || isin.startsWith("US"));
+        if (!allChecksPassed) {
+            ui.displayErrorMsg(Arrays.toString(parsedDefinition) + ", " + sameSize + ", " + allChecksPassed);
+        }
+
+        return allChecksPassed;
+    }
+
+    private boolean isOTCChild(final String isin, final String child) {
+        return child.endsWith("OTC") && isin.equals(child.substring(0, child.indexOf(' ')));
+    }
+
+    private boolean checkChild(InstrumentID instID, String child, IStackFamilyUI ui) {
+        final boolean childAlreadyCreated = this.childrenUIData.containsKey(child);
+        final boolean childNotInFamily = childAlreadyCreated && null == this.childrenUIData.get(child).getFamily();
+        final boolean nibblerIsAssociatedWith =  isOTCChild(instID.isin, child) || tradableSymbols.containsKey(child);
+        LinkedHashSet<String> fungibleInstruments = fungibleInsts.get(instID.isin);
+        final boolean isFungibleWithParent = null != fungibleInstruments && fungibleInstruments.contains(child);
+        final boolean isFungibleWith = isOTCChild(instID.isin, child) || isFungibleWithParent;
+
+        final boolean allChecksPass = childAlreadyCreated && childNotInFamily && nibblerIsAssociatedWith && isFungibleWith;
+
+        if (!allChecksPass) {
+            ui.displayErrorMsg("[" + child + "] " + "[" + childAlreadyCreated + "] " + "[" + childNotInFamily + "] " + "[" + nibblerIsAssociatedWith + "] " + "[" + isFungibleWith + "]");
+        }
+
+        return allChecksPass;
+    }
+
+    private boolean checkFamilyName(String familyName, String instIDStr, IStackFamilyUI ui) {
+
+        try {
+            InstrumentID instID = InstrumentID.getFromIsinCcyMic(instIDStr);
+            final boolean validFamilyName = null != familyName && !familyName.isEmpty() && !familyUIData.containsKey(familyName);
+            final boolean validISIN = !StackCommunityManager.ASYLUM_ISIN.equals(instID.isin) && MIC.EEIF != instID.mic;
+            final boolean isFungibleInstruments = fungibleInsts.containsKey(instID.isin);
+
+            final boolean allChecksPass = validFamilyName && validISIN && isFungibleInstruments;
+            if (!allChecksPass) {
+                ui.displayErrorMsg("[" + familyName + "], " + "[" + instIDStr + "] " + validFamilyName + " " + validISIN + " " + isFungibleInstruments);
+            }
+            return allChecksPass;
+        } catch (IllegalArgumentException e) {
+            ui.displayErrorMsg("FamilyName/instID invalid " + e.getMessage());
+            return false;
+        }
+
+    }
+
+    private boolean checkViewEligibility(IStackFamilyUI ui) {
+        if (!EnumSet.of(StackCommunity.DM, StackCommunity.FI).contains(community) || InstType.ETF != community.instType) {
+            ui.displayErrorMsg("Attempted to create family for invalid stackManager Community " + community);
+            return false;
+        } else {
+            return true;
+        }
     }
 
     @FromWebSocketView
@@ -663,13 +795,13 @@ public class StackFamilyView {
     public void createFamily(final String symbol, final boolean isAsylum, final boolean isADRName, final WebSocketInboundData data) {
 
         if (isAsylum) {
-
             communityManager.createAsylum(SOURCE_UI, symbol, community.instType, community);
         } else {
             final SearchResult searchResult = searchResults.get(symbol);
             if (null != searchResult) {
 
                 final String family = getFamilyName(searchResult, isADRName);
+                assert !familyUIData.containsKey(family);
                 final InstrumentID instID = searchResult.instID;
 
                 communityManager.createFamily(SOURCE_UI, family, instID, community.instType, community);
@@ -684,7 +816,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void createNamedFamily(final String familyName, final String isin, final String ccyName, final String micName,
-            final WebSocketInboundData data) {
+                                  final WebSocketInboundData data) {
 
         final CCY ccy = CCY.getCCY(ccyName);
         final MIC mic = MIC.getMIC(micName);
@@ -730,7 +862,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void createChildStack(final String nibblerName, final String quoteSymbol, final String leanInstrumentType,
-            final String leanSymbol, final String additiveSymbol, final WebSocketInboundData data) {
+                                 final String leanSymbol, final String additiveSymbol, final WebSocketInboundData data) {
 
         final StackClientHandler strategyClient = nibblerClients.get(nibblerName);
         if (null != strategyClient) {
@@ -941,8 +1073,8 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void setRelationship(final String childSymbol, final String bidPriceOffsetStr, final String bidQtyMultiplierText,
-            final String askPriceOffsetStr, final String askQtyMultiplierText, final String familyToChildRatioText,
-            final WebSocketInboundData data) {
+                                final String askPriceOffsetStr, final String askQtyMultiplierText, final String familyToChildRatioText,
+                                final WebSocketInboundData data) {
 
         try {
             final double bidPriceOffset = Double.parseDouble(bidPriceOffsetStr);
@@ -1032,7 +1164,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void updateOffsets(final String familySymbol, final Integer bpsWider, final Boolean skipNonDefaults,
-            final WebSocketInboundData data) {
+                              final WebSocketInboundData data) {
 
         for (final Map.Entry<String, FamilyUIData> family : familyUIData.entrySet()) {
             try {
@@ -1263,7 +1395,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void setStackEnabled(final String familyName, final String bookSide, final String stack, final boolean isEnabled,
-            final WebSocketInboundData data) {
+                                final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
@@ -1298,7 +1430,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void setFilteredStackEnabled(final String filters, final String bookSide, final String stack, final boolean isEnabled,
-            final WebSocketInboundData data) {
+                                        final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
@@ -1313,7 +1445,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void setChildStackEnabled(final String familyName, final String childSymbol, final String bookSide, final String stack,
-            final boolean isEnabled, final WebSocketInboundData data) {
+                                     final boolean isEnabled, final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
@@ -1321,7 +1453,7 @@ public class StackFamilyView {
     }
 
     private void setChildStackEnabled(final String familyName, final String childSymbol, final BookSide side, final StackType stackType,
-            final boolean isEnabled) {
+                                      final boolean isEnabled) {
 
         if (childrenUIData.containsKey(childSymbol)) {
             try {

@@ -306,6 +306,10 @@ function killFamily(symbol) {
 	ws.send(command("killFamily", [symbol]))
 }
 
+function createAllFamiliesFromFile() {
+	ws.send(command("createFamiliesFromFile", []));
+}
+
 function popUp(url, name, width, height) {
 
 	window.open(url, name, 'width=' + width + ',height=' + height);
@@ -1069,6 +1073,10 @@ function setActiveChildCounts(family) {
 	askCounts.find(".on").text(onAsks);
 	askCounts.find(".off").text(offAsks);
 	askCounts.toggleClass("somethingOff", 0 < offAsks);
+}
+
+function displayInfoMsg(text) {
+	console.log(text);
 }
 
 function displayErrorMsg(text) {

@@ -1019,7 +1019,7 @@ public class Main {
 
             final StackFamilyPresenter stackFamilyPresenter =
                     new StackFamilyPresenter(app.selectIO, opxlSelectIO, webLog, contractSetGenerator, primaryCommunity, secondaryViews,
-                            strategySymbolUI, channels.quotingObligationsCmds);
+                            strategySymbolUI, channels.quotingObligationsCmds, app.logDir);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(webLog);
 

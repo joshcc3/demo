@@ -26,6 +26,7 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -45,9 +46,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Map<String, FamilyUIData> familiesData;
 
     public StackFamilyPresenter(final SelectIO presenterSelectIO, final SelectIO backgroundSelectIO, final UILogger uiLogger,
-            final SpreadContractSetGenerator contractSetGenerator, final Set<StackCommunity> primaryCommunities,
-            final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
-            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
+                                final SpreadContractSetGenerator contractSetGenerator, final Set<StackCommunity> primaryCommunities,
+                                final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
+                                final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds, Path familiesToCreatePath) {
 
         this.uiLogger = uiLogger;
         this.primaryCommunities = primaryCommunities;
@@ -58,7 +59,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         for (StackCommunity primaryCommunity : primaryCommunities) {
             final StackFamilyView familyView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, primaryCommunity, contractSetGenerator, false, strategySymbolUI,
-                            quotingObligationsCmds);
+                            quotingObligationsCmds, familiesToCreatePath.resolve("familyCreation" + primaryCommunity.name() + ".csv"));
             communityViews.put(primaryCommunity, familyView);
             otherCommunities.remove(primaryCommunity);
         }
@@ -70,7 +71,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
             final StackFamilyView asylumView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, stackCommunity, contractSetGenerator, true, strategySymbolUI,
-                            Constants::NO_OP);
+                            Constants::NO_OP, familiesToCreatePath.resolve("familyCreation" + stackCommunity.name() + ".csv"));
             communityViews.put(stackCommunity, asylumView);
         }
 
