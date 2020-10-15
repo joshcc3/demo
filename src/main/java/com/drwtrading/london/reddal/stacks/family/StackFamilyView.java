@@ -487,7 +487,7 @@ public class StackFamilyView {
         try {
             List<String> familyDefinitions = Files.readAllLines(familiesToCreateFile);
 
-            String[][] definitions = new String[familyDefinitions.size()][];
+            FamilyCreationRequest[] definitions = new FamilyCreationRequest[familyDefinitions.size()];
 
 
             if (checkViewEligibility(ui)) {
@@ -502,29 +502,33 @@ public class StackFamilyView {
                     allOk = checkRecord(parsedDefinition, ui) && checkFamilyName(familyName, parsedDefinition[1], ui);
                     if (allOk) {
                         final InstrumentID instID = InstrumentID.getFromIsinCcyMic(parsedDefinition[1]);
-                        for (int i = 2; i < parsedDefinition.length; i++) {
-                            final String child = parsedDefinition[i];
+
+                        Set<String> allChildren = new HashSet<>(fungibleInsts.get(instID.isin));
+                        for (String child : allChildren) {
                             allOk = allOk && checkChild(instID, child, ui);
                         }
-                        allOk = allOk && checkAllChildren(instID.isin, parsedDefinition, ui);
-
-                        definitions[ix++] = parsedDefinition;
+                        final String otcChild = instID.isin + " OTC";
+                        if (checkChildIsAvailable(instID.isin, otcChild, ui)) {
+                            allChildren.add(otcChild);
+                        } else if (!instID.isin.startsWith("US")) {
+                            ui.displayErrorMsg("No otc for non-us " + instID.isin);
+                            allOk = false;
+                        }
+                        definitions[ix++] = new FamilyCreationRequest(instID, familyName, allChildren);
                     }
                 }
                 if (allOk) {
                     final String source = SOURCE_UI + "_FILE";
                     ui.displayInfoMsg("All input families passed checks - going to create " + familyDefinitions.size() + " families");
 
-                    for (String[] parsedDefinition : definitions) {
-                        final String familyName = parsedDefinition[0];
-                        final InstrumentID instID = InstrumentID.getFromIsinCcyMic(parsedDefinition[1]);
+                    for (FamilyCreationRequest parsedDefinition : definitions) {
+                        final String familyName = parsedDefinition.familyName;
                         ui.displayInfoMsg("Creating " + familyName);
-                        communityManager.createFamily(source, familyName, instID, community.instType, community);
+                        communityManager.createFamily(source, familyName, parsedDefinition.instID, community.instType, community);
                         if (!familyUIData.containsKey(familyName)) {
                             ui.displayErrorMsg("Failed to create family (not in familyUIData) " + familyName);
                         } else {
-                            for (int childIx = 2; childIx < parsedDefinition.length; childIx++) {
-                                final String child = parsedDefinition[childIx];
+                            for (String child : parsedDefinition.children) {
                                 // these must happen sequentially
                                 ui.displayInfoMsg("Adding child relationship " + familyName + " -> " + child);
                                 communityManager.setRelationship(source, familyName, child);
@@ -540,8 +544,9 @@ public class StackFamilyView {
         }
     }
 
+
     private boolean checkRecord(String[] parsedDefinition, IStackFamilyUI ui) {
-        if (parsedDefinition.length < 3) {
+        if (parsedDefinition.length < 2) {
             ui.displayErrorMsg("Invalid record [" + Arrays.toString(parsedDefinition) + "]");
             return false;
         } else {
@@ -549,40 +554,33 @@ public class StackFamilyView {
         }
     }
 
-    private boolean checkAllChildren(final String isin, String[] parsedDefinition, final IStackFamilyUI ui) {
-        LinkedHashSet<String> fungibleInsts = this.fungibleInsts.get(isin);
-        final boolean sameSize = parsedDefinition.length - 3 <= fungibleInsts.size();
-        boolean allContained = true;
-        boolean seenOTCChild = false;
-        for (int i = 2; i < parsedDefinition.length; i++) {
-            final boolean isOTCChild = isOTCChild(isin, parsedDefinition[i]);
-            allContained = allContained && (fungibleInsts.contains(parsedDefinition[i]) || !seenOTCChild && isOTCChild);
-            seenOTCChild = seenOTCChild || isOTCChild;
-        }
-        final boolean allChecksPassed = sameSize && allContained && (seenOTCChild || isin.startsWith("US"));
-        if (!allChecksPassed) {
-            ui.displayErrorMsg(Arrays.toString(parsedDefinition) + ", " + sameSize + ", " + allChecksPassed);
-        }
-
-        return allChecksPassed;
-    }
-
     private boolean isOTCChild(final String isin, final String child) {
         return child.endsWith("OTC") && isin.equals(child.substring(0, child.indexOf(' ')));
     }
 
-    private boolean checkChild(InstrumentID instID, String child, IStackFamilyUI ui) {
+    private boolean checkChildIsAvailable(final String isin, final String child, IStackFamilyUI ui) {
         final boolean childAlreadyCreated = this.childrenUIData.containsKey(child);
         final boolean childNotInFamily = childAlreadyCreated && StackOrphanage.ORPHANAGE.equals(this.childrenUIData.get(child).getFamily());
+
+        final boolean available = childAlreadyCreated && childNotInFamily;
+        if(!available) {
+            ui.displayErrorMsg("[" + child + "] " + "[" + childAlreadyCreated + "] " + "[" + childNotInFamily + "] ");
+        }
+
+        return available;
+    }
+
+    private boolean checkChild(InstrumentID instID, String child, IStackFamilyUI ui) {
+        final boolean childAvailable = checkChildIsAvailable(instID.isin, child, ui);
         final boolean nibblerIsAssociatedWith = isOTCChild(instID.isin, child) || tradableSymbols.containsKey(child);
         LinkedHashSet<String> fungibleInstruments = fungibleInsts.get(instID.isin);
         final boolean isFungibleWithParent = null != fungibleInstruments && fungibleInstruments.contains(child);
         final boolean isFungibleWith = isOTCChild(instID.isin, child) || isFungibleWithParent;
 
-        final boolean allChecksPass = childAlreadyCreated && childNotInFamily && nibblerIsAssociatedWith && isFungibleWith;
+        final boolean allChecksPass = childAvailable && nibblerIsAssociatedWith && isFungibleWith;
 
         if (!allChecksPass) {
-            ui.displayErrorMsg("[" + child + "] " + "[" + childAlreadyCreated + "] " + "[" + childNotInFamily +"] " + "[" + nibblerIsAssociatedWith + "] " + "[" + isFungibleWith + "]");
+            ui.displayErrorMsg("[" + child + "] " + "[" + nibblerIsAssociatedWith + "] " + "[" + isFungibleWith + "]");
         }
 
         return allChecksPass;
