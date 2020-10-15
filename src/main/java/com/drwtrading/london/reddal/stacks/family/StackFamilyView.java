@@ -101,6 +101,7 @@ public class StackFamilyView {
 
     private final Map<String, FamilyUIData> familyUIData;
     private final Map<String, ChildUIData> childrenUIData;
+    private final Publisher<InstrumentID> communityInstrumentIDs;
 
     private final Map<String, SearchResult> searchResults;
     private final Map<String, LinkedHashSet<String>> fungibleInsts;
@@ -119,8 +120,9 @@ public class StackFamilyView {
     private final Path familiesToCreateFile;
 
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final StackCommunity community,
-                    final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
-                    final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds, final Path familiesToCreateFile) {
+            final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
+            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
+            final Publisher<InstrumentID> communityInstrumentIDs, final Path familiesToCreateFile) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
@@ -132,6 +134,7 @@ public class StackFamilyView {
         this.strategySymbolUI = strategySymbolUI;
 
         this.quotingObligationsCmds = quotingObligationsCmds;
+        this.communityInstrumentIDs = communityInstrumentIDs;
         this.familiesToCreateFile = familiesToCreateFile;
 
         this.userViews = new HashMap<>();
@@ -158,6 +161,7 @@ public class StackFamilyView {
         this.globalPriceOffsetBPS = 0d;
 
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
+
     }
 
     private boolean isFamilyDisplayable(final String familyName) {
@@ -390,7 +394,7 @@ public class StackFamilyView {
     }
 
     public boolean updateRelationship(final String childSymbol, final String parentSymbol, final double bidPriceOffset,
-                                      final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio) {
+            final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio) {
 
         for (final Map.Entry<String, FamilyUIData> familyRelations : familyUIData.entrySet()) {
 
@@ -411,6 +415,10 @@ public class StackFamilyView {
         setChildUIDataField(childSymbol, parentSymbol);
 
         if (isFamilyDisplayable(parentSymbol)) {
+            final SearchResult searchResult = searchResults.get(childSymbol);
+            if (null != searchResult) {
+                communityInstrumentIDs.publish(searchResult.instID);
+            }
 
             strategySymbolUI.addStrategySymbol(community.instType, childSymbol);
 
@@ -501,7 +509,6 @@ public class StackFamilyView {
 
             final List<FamilyCreationRequest> definitions = new ArrayList<>(familyDefinitions.size());
 
-
             final Set<String> resultingFamilyNames = new HashSet<>(familyUIData.keySet());
             if (checkViewEligibility(ui)) {
 
@@ -583,7 +590,6 @@ public class StackFamilyView {
 
         return result;
     }
-
 
     private boolean checkRecord(final String[] parsedDefinition, final IStackFamilyUI ui) {
         if (parsedDefinition.length < 2) {
@@ -859,7 +865,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void createNamedFamily(final String familyName, final String isin, final String ccyName, final String micName,
-                                  final WebSocketInboundData data) {
+            final WebSocketInboundData data) {
 
         final CCY ccy = CCY.getCCY(ccyName);
         final MIC mic = MIC.getMIC(micName);
@@ -905,7 +911,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void createChildStack(final String nibblerName, final String quoteSymbol, final String leanInstrumentType,
-                                 final String leanSymbol, final String additiveSymbol, final WebSocketInboundData data) {
+            final String leanSymbol, final String additiveSymbol, final WebSocketInboundData data) {
 
         final StackClientHandler strategyClient = nibblerClients.get(nibblerName);
         if (null != strategyClient) {
@@ -1116,8 +1122,8 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void setRelationship(final String childSymbol, final String bidPriceOffsetStr, final String bidQtyMultiplierText,
-                                final String askPriceOffsetStr, final String askQtyMultiplierText, final String familyToChildRatioText,
-                                final WebSocketInboundData data) {
+            final String askPriceOffsetStr, final String askQtyMultiplierText, final String familyToChildRatioText,
+            final WebSocketInboundData data) {
 
         try {
             final double bidPriceOffset = Double.parseDouble(bidPriceOffsetStr);
@@ -1207,7 +1213,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void updateOffsets(final String familySymbol, final Integer bpsWider, final Boolean skipNonDefaults,
-                              final WebSocketInboundData data) {
+            final WebSocketInboundData data) {
 
         for (final Map.Entry<String, FamilyUIData> family : familyUIData.entrySet()) {
             try {
@@ -1438,7 +1444,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void setStackEnabled(final String familyName, final String bookSide, final String stack, final boolean isEnabled,
-                                final WebSocketInboundData data) {
+            final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
@@ -1473,7 +1479,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void setFilteredStackEnabled(final String filters, final String bookSide, final String stack, final boolean isEnabled,
-                                        final WebSocketInboundData data) {
+            final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
@@ -1488,7 +1494,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void setChildStackEnabled(final String familyName, final String childSymbol, final String bookSide, final String stack,
-                                     final boolean isEnabled, final WebSocketInboundData data) {
+            final boolean isEnabled, final WebSocketInboundData data) {
 
         final BookSide side = BookSide.valueOf(bookSide);
         final StackType stackType = StackType.valueOf(stack);
@@ -1496,7 +1502,7 @@ public class StackFamilyView {
     }
 
     private void setChildStackEnabled(final String familyName, final String childSymbol, final BookSide side, final StackType stackType,
-                                      final boolean isEnabled) {
+            final boolean isEnabled) {
 
         if (childrenUIData.containsKey(childSymbol)) {
             try {

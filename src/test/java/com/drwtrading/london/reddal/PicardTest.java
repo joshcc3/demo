@@ -21,7 +21,7 @@ import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
-import com.drwtrading.london.reddal.picard.PicardRow;
+import com.drwtrading.london.reddal.picard.PicardRowWithInstID;
 import com.drwtrading.london.reddal.picard.PicardSpotter;
 import org.jetlang.channels.Publisher;
 import org.mockito.ArgumentCaptor;
@@ -36,7 +36,7 @@ public class PicardTest {
 
     private final IMDSubscriber bookSubscriber = Mockito.mock(IMDSubscriber.class);
     @SuppressWarnings("unchecked")
-    private final Publisher<PicardRow> picardPublisher = Mockito.mock(Publisher.class);
+    private final Publisher<PicardRowWithInstID> picardPublisher = Mockito.mock(Publisher.class);
     @SuppressWarnings("unchecked")
     private final Publisher<LiquidityFinderData> laserDistancesPublisher = Mockito.mock(Publisher.class);
 
@@ -62,10 +62,10 @@ public class PicardTest {
         picardSpotter.setLaserLine(laserLine);
         picardSpotter.checkAnyCrossed();
 
-        final ArgumentCaptor<PicardRow> picardRowCapture = ArgumentCaptor.forClass(PicardRow.class);
+        final ArgumentCaptor<PicardRowWithInstID> picardRowCapture = ArgumentCaptor.forClass(PicardRowWithInstID.class);
         Mockito.verify(picardPublisher).publish(picardRowCapture.capture());
 
-        final PicardRow picardRow = picardRowCapture.getValue();
+        final PicardRowWithInstID picardRow = picardRowCapture.getValue();
         Assert.assertEquals(picardRow.ccy, CCY.EUR, "Did not convert to EUR even though FX was present.");
         Assert.assertEquals(picardRow.opportunitySize, (2 + 5) * fxCalc.getMid(CCY.USD, CCY.EUR),
                 "Did not calculate opportunity size correctly");
@@ -99,10 +99,10 @@ public class PicardTest {
         picardSpotter.setLaserLine(laserLine);
         picardSpotter.checkAnyCrossed();
 
-        final ArgumentCaptor<PicardRow> picardRowCapture = ArgumentCaptor.forClass(PicardRow.class);
+        final ArgumentCaptor<PicardRowWithInstID> picardRowCapture = ArgumentCaptor.forClass(PicardRowWithInstID.class);
         Mockito.verify(picardPublisher).publish(picardRowCapture.capture());
 
-        final PicardRow picardRow = picardRowCapture.getValue();
+        final PicardRowWithInstID picardRow = picardRowCapture.getValue();
         Assert.assertEquals(picardRow.ccy, CCY.EUR, "Did not convert to EUR even though FX was present.");
         Assert.assertEquals(picardRow.opportunitySize, 2 * fxCalc.getMid(CCY.USD, CCY.EUR), "Did not calculate opportunity size correctly");
     }

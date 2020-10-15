@@ -2,7 +2,6 @@ package com.drwtrading.london.reddal.picard;
 
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
-import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
@@ -60,7 +59,6 @@ public class YodaAtCloseClient implements ITransportCacheListener<YodaSymbolSide
             rowPublisher.publish(row);
 
         } else if (!isNewRow) {
-
             final PicardRow row = new PicardRow(oldRow, PicardRowState.DEAD);
             rowBySymbol.remove(symbol);
             rowPublisher.publish(row);

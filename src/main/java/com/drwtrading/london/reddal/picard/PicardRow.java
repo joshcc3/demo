@@ -6,7 +6,6 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.util.Struct;
 
 public class PicardRow extends Struct {
-
     public final long milliSinceMidnight;
     public final String symbol;
     public final InstType instType;
@@ -50,4 +49,5 @@ public class PicardRow extends Struct {
         this.inAuction = inAuction;
         this.isNewRow = isNewRow;
     }
+
 }

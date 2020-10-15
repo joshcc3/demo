@@ -32,6 +32,7 @@ import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
 import com.drwtrading.london.eeif.utils.io.channels.IOConfigParser;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.marketData.fx.md.FXMDUtils;
@@ -107,15 +108,17 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.m
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCSupportedSymbol;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.opxl.OPXLBulkOrderPriceLimits;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
+import com.drwtrading.london.reddal.picard.DelegatingPicardUI;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.LiquidityFinderViewUI;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
-import com.drwtrading.london.reddal.picard.PicardRow;
+import com.drwtrading.london.reddal.picard.PicardRowWithInstID;
 import com.drwtrading.london.reddal.picard.PicardSounds;
 import com.drwtrading.london.reddal.picard.PicardSpotter;
 import com.drwtrading.london.reddal.picard.PicardUI;
 import com.drwtrading.london.reddal.picard.YodaAtCloseClient;
+import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.pks.PKSPositionClient;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.premium.IPremiumCalc;
@@ -409,7 +412,7 @@ public class Main {
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderWebSockets = new EnumMap<>(MDSource.class);
 
         setupPicardUI(app.selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
-                channels.displaySymbol, webApp);
+                channels.displaySymbol, webApp, channels.communityInstrumentIDs);
 
         setupLaserDistancesUI(app.selectIO, selectIOFiber, webLog, channels.laserDistances, channels.displaySymbol, webApp);
 
@@ -1019,7 +1022,7 @@ public class Main {
 
             final StackFamilyPresenter stackFamilyPresenter =
                     new StackFamilyPresenter(app.selectIO, opxlSelectIO, webLog, contractSetGenerator, primaryCommunity, secondaryViews,
-                            strategySymbolUI, channels.quotingObligationsCmds, app.logDir);
+                            strategySymbolUI, channels.quotingObligationsCmds, app.logDir, channels.communityInstrumentIDs);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(webLog);
 
@@ -1381,36 +1384,60 @@ public class Main {
     }
 
     private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
-            final Channel<PicardRow> picardRows, final Channel<PicardRow> yodaRows, final Channel<RecenterLadder> recenterLadderChannel,
-            final TypedChannel<DisplaySymbol> displaySymbol, final WebApplication webApp) {
+            final Channel<PicardRowWithInstID> picardRows, final Channel<PicardRow> yodaRows,
+            final Channel<RecenterLadder> recenterLadderChannel, final TypedChannel<DisplaySymbol> displaySymbol,
+            final WebApplication webApp, final Map<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs) {
 
-        setupPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, displaySymbol,
+        final PicardUI futureUI = setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol,
                 EnumSet.of(InstType.FUTURE, InstType.FUTURE_SPREAD), PicardSounds.FUTURES, webApp, "picard");
+        picardRows.subscribe(fiber, futureUI::addPicardRow);
 
-        setupPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.DR, InstType.EQUITY),
-                PicardSounds.SPREADER, webApp, "picardspread");
+        final PicardUI spreadUI =
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.DR, InstType.EQUITY),
+                        PicardSounds.SPREADER, webApp, "picardspread");
+        picardRows.subscribe(fiber, spreadUI::addPicardRow);
 
-        setupPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF,
-                webApp, "picardetf");
+        setupEtfSplitPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, communityInstrumentIDs, displaySymbol, webApp);
 
-        setupPicardUI(selectIO, fiber, webLog, yodaRows, recenterLadderChannel, displaySymbol, EnumSet.allOf(InstType.class),
-                PicardSounds.STOCKS, webApp, "picardstocks");
+        final PicardUI stonksUI =
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.allOf(InstType.class),
+                        PicardSounds.STOCKS, webApp, "picardstocks");
+        yodaRows.subscribe(fiber, stonksUI::addPicardRow);
     }
 
-    private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
-            final Channel<PicardRow> picardRows, final Channel<RecenterLadder> recenterLadderChannel,
-            final TypedChannel<DisplaySymbol> displaySymbol, final Set<InstType> filterList, final PicardSounds sound,
-            final WebApplication webApp, final String alias) {
+    private static void setupEtfSplitPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
+            final Channel<PicardRowWithInstID> picardRows, final Channel<RecenterLadder> recenterLadderChannel,
+            final Map<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs, final TypedChannel<DisplaySymbol> displaySymbol,
+            final WebApplication webApp) {
+
+        final PicardUI picardDM =
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF_DM,
+                        webApp, "picardetf");
+        final PicardUI picardFI =
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF_FI,
+                        webApp, "picardetf-fi");
+
+        final DelegatingPicardUI ui = new DelegatingPicardUI(picardFI, picardDM);
+        picardRows.subscribe(fiber, ui::addPicardRow);
+        final TypedChannel<InstrumentID> dmInstrumentIDs = communityInstrumentIDs.get(StackCommunity.DM);
+        final TypedChannel<InstrumentID> fiInstrumentIDs = communityInstrumentIDs.get(StackCommunity.FI);
+        dmInstrumentIDs.subscribe(fiber, ui::addDMInstrumentID);
+        fiInstrumentIDs.subscribe(fiber, ui::addFIInstrumentID);
+    }
+
+    private static PicardUI setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
+            final Channel<RecenterLadder> recenterLadderChannel, final TypedChannel<DisplaySymbol> displaySymbol,
+            final Set<InstType> filterList, final PicardSounds sound, final WebApplication webApp, final String alias) {
 
         final PicardUI picardUI = new PicardUI(webLog, filterList, sound, recenterLadderChannel);
         selectIO.addDelayedAction(1000, picardUI::flush);
-        picardRows.subscribe(fiber, picardUI::addPicardRow);
         displaySymbol.subscribe(fiber, picardUI::setDisplaySymbol);
 
         webApp.alias('/' + alias, "/picard.html");
         final TypedChannel<WebSocketControlMessage> webSocketChannel = TypedChannels.create(WebSocketControlMessage.class);
         webApp.createWebSocket('/' + alias + "/ws/", webSocketChannel, fiber);
         webSocketChannel.subscribe(fiber, picardUI::webControl);
+        return picardUI;
     }
 
     private static void setupLaserDistancesUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,

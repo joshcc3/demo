@@ -32,7 +32,7 @@ public class PicardSpotter implements IPicardSpotter {
 
     private final IClock clock;
     private final IMDSubscriber bookSubscriber;
-    private final Publisher<PicardRow> rowPublisher;
+    private final Publisher<PicardRowWithInstID> rowPublisher;
     private final Publisher<LiquidityFinderData> laserDistancesPublisher;
 
     private final DecimalFormat df;
@@ -40,7 +40,7 @@ public class PicardSpotter implements IPicardSpotter {
     private final Map<String, PicardData> picardDatas;
     private final FXCalc<?> fxCalc;
 
-    public PicardSpotter(final IClock clock, final IMDSubscriber bookSubscriber, final Publisher<PicardRow> rowPublisher,
+    public PicardSpotter(final IClock clock, final IMDSubscriber bookSubscriber, final Publisher<PicardRowWithInstID> rowPublisher,
             final Publisher<LiquidityFinderData> laserDistancesPublisher, final FXCalc<?> fxCalc) {
 
         this.clock = clock;
@@ -169,13 +169,13 @@ public class PicardSpotter implements IPicardSpotter {
 
                 if (DEAD_TIMEOUT_MS < timeSinceLastUpdate) {
 
-                    final PicardRow row = new PicardRow(picardData.previousRow, PicardRowState.DEAD);
+                    final PicardRowWithInstID row = new PicardRowWithInstID(picardData.previousRow, PicardRowState.DEAD);
                     picardData.previousRow = null;
                     rowPublisher.publish(row);
 
                 } else if (FADE_TIMEOUT_MS < timeSinceLastUpdate && PicardRowState.FADE != picardData.previousRow.state) {
 
-                    picardData.previousRow = new PicardRow(picardData.previousRow, PicardRowState.FADE);
+                    picardData.previousRow = new PicardRowWithInstID(picardData.previousRow, PicardRowState.FADE);
                     rowPublisher.publish(picardData.previousRow);
                 }
             }
@@ -226,7 +226,7 @@ public class PicardSpotter implements IPicardSpotter {
         }
     }
 
-    private PicardRow createPicardRow(final IBook<?> book, final IBookLevel bestLevel, final BookSide side, final LaserLineValue laserLine,
+    private PicardRowWithInstID createPicardRow(final IBook<?> book, final IBookLevel bestLevel, final BookSide side, final LaserLineValue laserLine,
             final boolean isNewRow, final String description, final long nowMilliSinceUTC, final boolean isInAuction, final long bestPrice,
             final String bestPricePrint, final double bpsThrough) {
 
@@ -253,7 +253,7 @@ public class PicardSpotter implements IPicardSpotter {
             opportunitySize = calculateOpportunitySize(laserLine.getValue(), bestLevel, side, fx);
         }
 
-        return new PicardRow(nowMilliSinceUTC, book.getSymbol(), book.getInstType(), opportunityCcy, side.getOppositeSide(), bestPrice,
+        return new PicardRowWithInstID(nowMilliSinceUTC, book.getSymbol(), book.getInstID(), book.getInstType(), opportunityCcy, side.getOppositeSide(), bestPrice,
                 bestPricePrint, bpsThrough, opportunitySize, PicardRowState.LIVE, description, isInAuction, isNewRow);
     }
 

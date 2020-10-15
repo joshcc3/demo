@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.stacks.family;
 
+import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
@@ -46,20 +47,21 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Map<String, FamilyUIData> familiesData;
 
     public StackFamilyPresenter(final SelectIO presenterSelectIO, final SelectIO backgroundSelectIO, final UILogger uiLogger,
-                                final SpreadContractSetGenerator contractSetGenerator, final Set<StackCommunity> primaryCommunities,
-                                final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
-                                final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds, final Path familiesToCreatePath) {
+            final SpreadContractSetGenerator contractSetGenerator, final Set<StackCommunity> primaryCommunities,
+            final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
+            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds, final Path familiesToCreatePath,
+            final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstIDMap) {
 
         this.uiLogger = uiLogger;
         this.primaryCommunities = primaryCommunities;
 
         this.communityViews = new EnumMap<>(StackCommunity.class);
 
-
         for (final StackCommunity primaryCommunity : primaryCommunities) {
             final StackFamilyView familyView =
-                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, primaryCommunity, contractSetGenerator, false, strategySymbolUI,
-                            quotingObligationsCmds, familiesToCreatePath.resolve("familyCreation" + primaryCommunity.name() + ".csv"));
+                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, primaryCommunity, contractSetGenerator, false,
+                            strategySymbolUI, quotingObligationsCmds, communityInstIDMap.get(primaryCommunity),
+                            familiesToCreatePath.resolve("familyCreation" + primaryCommunity.name() + ".csv"));
             communityViews.put(primaryCommunity, familyView);
             otherCommunities.remove(primaryCommunity);
         }
@@ -71,7 +73,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
             final StackFamilyView asylumView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, stackCommunity, contractSetGenerator, true, strategySymbolUI,
-                            Constants::NO_OP, familiesToCreatePath.resolve("familyCreation" + stackCommunity.name() + ".csv"));
+                            Constants::NO_OP, communityInstIDMap.get(stackCommunity),
+                            familiesToCreatePath.resolve("familyCreation" + stackCommunity.name() + ".csv"));
             communityViews.put(stackCommunity, asylumView);
         }
 
@@ -263,7 +266,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     }
 
     private StackCommunity getDefaultCommunity(final Set<StackCommunity> primaryCommunities) {
-        if(primaryCommunities.contains(StackCommunity.FUTURE)) {
+        if (primaryCommunities.contains(StackCommunity.FUTURE)) {
             return StackCommunity.FUTURE;
         } else {
             return StackCommunity.DM;

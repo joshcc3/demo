@@ -2,6 +2,8 @@ package com.drwtrading.london.reddal;
 
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
+import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.reddal.autopull.autopuller.msgs.cmds.IAutoPullerCmd;
 import com.drwtrading.london.reddal.autopull.autopuller.msgs.updates.IAutoPullerUpdate;
@@ -27,6 +29,7 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.m
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCSupportedSymbol;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
+import com.drwtrading.london.reddal.picard.PicardRowWithInstID;
 import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.pks.PKSExposures;
 import com.drwtrading.london.reddal.premium.Premium;
@@ -51,6 +54,8 @@ import com.drwtrading.photons.mrphil.Position;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.Publisher;
+
+import java.util.EnumMap;
 
 class ReddalChannels {
 
@@ -102,7 +107,8 @@ class ReddalChannels {
     final TypedChannel<StackIncreaseChildOffsetCmd> increaseChildOffsetBPSCmds;
     final TypedChannel<StacksSetSiblingsEnableCmd> setSiblingsEnabledCmds;
 
-    final TypedChannel<PicardRow> picardRows;
+    final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs;
+    final TypedChannel<PicardRowWithInstID> picardRows;
     final TypedChannel<LiquidityFinderData> laserDistances;
     final TypedChannel<PicardRow> yodaPicardRows;
     final TypedChannel<Premium> spreadnoughtPremiums;
@@ -163,7 +169,12 @@ class ReddalChannels {
         this.increaseChildOffsetBPSCmds = create(StackIncreaseChildOffsetCmd.class);
         this.setSiblingsEnabledCmds = create(StacksSetSiblingsEnableCmd.class);
 
-        this.picardRows = create(PicardRow.class);
+        this.communityInstrumentIDs = new EnumMap<>(StackCommunity.class);
+        for (final StackCommunity stackCommunity : StackCommunity.values()) {
+            this.communityInstrumentIDs.put(stackCommunity, create(InstrumentID.class));
+        }
+
+        this.picardRows = create(PicardRowWithInstID.class);
         this.laserDistances = create(LiquidityFinderData.class);
         this.yodaPicardRows = create(PicardRow.class);
         this.rfqStockAlerts = create(RfqAlert.class);

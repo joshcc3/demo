@@ -15,7 +15,7 @@ class PicardData {
     LaserLineValue bidLaserLine;
     LaserLineValue askLaserLine;
 
-    PicardRow previousRow;
+    PicardRowWithInstID previousRow;
 
     LiquidityFinderData bidLaserDistance;
     LiquidityFinderData askLaserDistance;
