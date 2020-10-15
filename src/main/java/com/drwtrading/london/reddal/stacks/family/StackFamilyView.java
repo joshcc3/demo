@@ -487,9 +487,10 @@ public class StackFamilyView {
         try {
             List<String> familyDefinitions = Files.readAllLines(familiesToCreateFile);
 
-            FamilyCreationRequest[] definitions = new FamilyCreationRequest[familyDefinitions.size()];
+            List<FamilyCreationRequest> definitions = new ArrayList<>(familyDefinitions.size());
 
 
+            Set<String> resultingFamilyNames = new HashSet<>(familyUIData.keySet());
             if (checkViewEligibility(ui)) {
 
                 boolean allOk = true;
@@ -499,23 +500,33 @@ public class StackFamilyView {
                     final String familyDefinition = familyDefinitions.get(ix);
                     final String[] parsedDefinition = familyDefinition.split(",");
                     final String familyName = parsedDefinition[0];
-                    allOk = checkRecord(parsedDefinition, ui) && checkFamilyName(familyName, parsedDefinition[1], ui);
-                    if (allOk) {
-                        final InstrumentID instID = InstrumentID.getFromIsinCcyMic(parsedDefinition[1]);
+                    allOk = checkRecord(parsedDefinition, ui);
+                    if(allOk && !resultingFamilyNames.contains(familyName)) {
+                        final String parentListing = parsedDefinition[1];
+                        allOk = checkFamilyName(familyName, parentListing, ui);
+                        if (allOk) {
+                            final InstrumentID instID = searchResults.get(parentListing).instID;
 
-                        Set<String> allChildren = new HashSet<>(fungibleInsts.get(instID.isin));
-                        for (String child : allChildren) {
-                            allOk = allOk && checkChild(instID, child, ui);
+                            Set<String> allChildren = filterToAvailableChildren(fungibleInsts.get(instID.isin));
+                            if (allChildren.isEmpty()) {
+                                ui.displayErrorMsg("No children available for " + instID.isin + " from " + fungibleInsts.get(instID.isin));
+                                allOk = false;
+                            }
+                            for (String child : allChildren) {
+                                allOk = allOk && checkChild(instID, child, ui);
+                            }
+                            final String otcChild = instID.isin + " OTC";
+                            if (checkChildIsAvailable(instID.isin, otcChild, ui)) {
+                                allChildren.add(otcChild);
+                            } else if (!instID.isin.startsWith("US")) {
+                                ui.displayErrorMsg("No otc for non-us " + instID.isin);
+                                allOk = false;
+                            }
+                            definitions.add(new FamilyCreationRequest(instID, familyName, allChildren));
+                            resultingFamilyNames.add(familyName);
                         }
-                        final String otcChild = instID.isin + " OTC";
-                        if (checkChildIsAvailable(instID.isin, otcChild, ui)) {
-                            allChildren.add(otcChild);
-                        } else if (!instID.isin.startsWith("US")) {
-                            ui.displayErrorMsg("No otc for non-us " + instID.isin);
-                            allOk = false;
-                        }
-                        definitions[ix++] = new FamilyCreationRequest(instID, familyName, allChildren);
                     }
+                    ix++;
                 }
                 if (allOk) {
                     final String source = SOURCE_UI + "_FILE";
@@ -544,6 +555,18 @@ public class StackFamilyView {
         }
     }
 
+    private Set<String> filterToAvailableChildren(LinkedHashSet<String> children) {
+        Set<String> result = new HashSet<>();
+
+        for (String child : children) {
+            if(childIsAnOrphan(child, childrenUIData.containsKey(child))) {
+                result.add(child);
+            }
+        }
+
+        return result;
+    }
+
 
     private boolean checkRecord(String[] parsedDefinition, IStackFamilyUI ui) {
         if (parsedDefinition.length < 2) {
@@ -560,7 +583,7 @@ public class StackFamilyView {
 
     private boolean checkChildIsAvailable(final String isin, final String child, IStackFamilyUI ui) {
         final boolean childAlreadyCreated = this.childrenUIData.containsKey(child);
-        final boolean childNotInFamily = childAlreadyCreated && StackOrphanage.ORPHANAGE.equals(this.childrenUIData.get(child).getFamily());
+        final boolean childNotInFamily = childIsAnOrphan(child, childAlreadyCreated);
 
         final boolean available = childAlreadyCreated && childNotInFamily;
         if(!available) {
@@ -568,6 +591,10 @@ public class StackFamilyView {
         }
 
         return available;
+    }
+
+    private boolean childIsAnOrphan(String child, boolean childAlreadyCreated) {
+        return childAlreadyCreated && StackOrphanage.ORPHANAGE.equals(this.childrenUIData.get(child).getFamily());
     }
 
     private boolean checkChild(InstrumentID instID, String child, IStackFamilyUI ui) {
@@ -586,21 +613,21 @@ public class StackFamilyView {
         return allChecksPass;
     }
 
-    private boolean checkFamilyName(String familyName, String instIDStr, IStackFamilyUI ui) {
+    private boolean checkFamilyName(String familyName, String parentListing, IStackFamilyUI ui) {
 
-        try {
-            InstrumentID instID = InstrumentID.getFromIsinCcyMic(instIDStr);
+        if(searchResults.containsKey(parentListing)) {
+            InstrumentID instID = searchResults.get(parentListing).instID;
             final boolean validFamilyName = null != familyName && !familyName.isEmpty() && !familyUIData.containsKey(familyName);
             final boolean validISIN = !StackCommunityManager.ASYLUM_ISIN.equals(instID.isin) && MIC.EEIF != instID.mic;
             final boolean isFungibleInstruments = fungibleInsts.containsKey(instID.isin);
 
             final boolean allChecksPass = validFamilyName && validISIN && isFungibleInstruments;
             if (!allChecksPass) {
-                ui.displayErrorMsg("[" + familyName + "], " + "[" + instIDStr + "] " + validFamilyName + " " + validISIN + " " + isFungibleInstruments);
+                ui.displayErrorMsg("[" + familyName + "], " + "[" + instID + "] " + validFamilyName + " " + validISIN + " " + isFungibleInstruments);
             }
             return allChecksPass;
-        } catch (IllegalArgumentException e) {
-            ui.displayErrorMsg("FamilyName/instID invalid " + e.getMessage());
+        } else {
+            ui.displayErrorMsg("Invalid parent listinging [" + parentListing + "] [" + familyName + "]");
             return false;
         }
 
