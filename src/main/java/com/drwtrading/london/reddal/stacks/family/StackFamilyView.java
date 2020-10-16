@@ -511,7 +511,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void lazySubscribe(final String symbol, final WebSocketInboundData data) {
-        if (3 >= symbol.length()) {
+        if (3 <= symbol.length()) {
             final List<FamilyUIData> familyUIs = new LinkedList<>();
             if (!symbol.startsWith("family_")) {
                 final ChildUIData childUIData = childrenUIData.get(symbol);

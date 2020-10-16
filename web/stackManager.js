@@ -538,7 +538,7 @@ function findChild(symbol) {
 
 	const rowID = cleanID(symbol);
 	const element = $("#" + rowID);
-	if (isLazy && 1 > element.length) {
+	if (isLazy && 1 > element.length && 3 <= symbol.length) {
 		ws.send("lazySubscribe," + symbol);
 	}
 
