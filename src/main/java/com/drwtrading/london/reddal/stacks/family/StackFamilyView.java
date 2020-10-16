@@ -513,7 +513,20 @@ public class StackFamilyView {
     public void lazySubscribe(final String symbol, final WebSocketInboundData data) {
         if (3 <= symbol.length()) {
             final List<FamilyUIData> familyUIs = new LinkedList<>();
-            if (!symbol.startsWith("family_")) {
+            if ("disabled".equals(symbol)) {
+                for (final Map.Entry<String, FamilyUIData> entries : familyUIData.entrySet()) {
+                    final FamilyUIData familyUIData = entries.getValue();
+                    boolean allSidePQEnabled = true;
+                    for (final BookSide value : BookSide.values()) {
+                        for (final StackType stackType : StackType.values()) {
+                            allSidePQEnabled = allSidePQEnabled && familyUIData.uiData.isStackEnabled(value, stackType);
+                        }
+                    }
+                    if (!allSidePQEnabled) {
+                        familyUIs.add(familyUIData);
+                    }
+                }
+            } else if (!symbol.startsWith("family_")) {
                 final ChildUIData childUIData = childrenUIData.get(symbol);
                 if (null != childUIData && null != childUIData.getFamily() && !StackOrphanage.ORPHANAGE.equals(childUIData.getFamily())) {
                     familyUIs.add(familyUIData.get(childUIData.getFamily()));
