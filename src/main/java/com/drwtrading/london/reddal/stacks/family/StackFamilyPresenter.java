@@ -254,7 +254,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             if (null != unit && communityViews.containsKey(unit)) {
                 final StackFamilyView familyView = communityViews.get(unit);
                 userViews.put(outChannel, familyView);
-                familyView.addUI(username, outChannel);
+                final boolean isLazy = 3 <= cmdParts.length && "Lazy".equals(cmdParts[2]);
+                familyView.addUI(username, isLazy, outChannel);
             }
         } else {
 

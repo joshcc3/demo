@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.stacks.family;
 
 import com.drwtrading.london.eeif.stack.manager.persistence.StackPersistenceReader;
+import com.drwtrading.london.eeif.stack.manager.relations.IStackFamily;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
@@ -56,6 +57,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -453,42 +455,48 @@ public class StackFamilyView {
         }
     }
 
-    void addUI(final String username, final Publisher<WebSocketOutboundData> channel) {
+    void addUI(final String username, final boolean isLazy, final Publisher<WebSocketOutboundData> channel) {
 
         final IStackFamilyUI newView = views.get(channel);
         MapUtils.getMappedSet(userViews, username).add(newView);
 
         newView.setFilters(filterGroups);
 
-        for (final Map.Entry<String, FamilyUIData> family : familyUIData.entrySet()) {
+        if (!isLazy) {
+            for (final Map.Entry<String, FamilyUIData> family : familyUIData.entrySet()) {
 
-            final String familyName = family.getKey();
-            if (isFamilyDisplayable(familyName)) {
-
-                final FamilyUIData parentUIData = familyUIData.get(familyName);
-                final boolean isAsylum = isFamilyAsylum(parentUIData);
-                newView.addFamily(familyName, isAsylum);
-
-                for (final StackUIRelationship child : family.getValue().getAllRelationships()) {
-
-                    newView.setChild(familyName, child.childSymbol, child.bidPriceOffsetBPS, child.bidQtyMultiplier,
-                            child.askPriceOffsetBPS, child.askQtyMultiplier, child.familyToChildRatio);
-                }
+                initFamilyUIData(newView, family.getValue());
             }
-        }
 
-        for (final FamilyUIData familyUIData : familyUIData.values()) {
-            updateFamilyUIData(newView, familyUIData);
-        }
+            for (final FamilyUIData familyUIData : familyUIData.values()) {
+                updateFamilyUIData(newView, familyUIData);
+            }
 
-        for (final ChildUIData uiData : childrenUIData.values()) {
-            if (null != uiData.getChildRow()) {
-                updateChildUIData(newView, uiData.getChildRow());
+            for (final ChildUIData uiData : childrenUIData.values()) {
+                if (null != uiData.getChildRow()) {
+                    updateChildUIData(newView, uiData.getChildRow());
+                }
             }
         }
 
         presentGlobalOffset(newView);
         presentGlobalStackEnabling(newView);
+    }
+
+    private void initFamilyUIData(final IStackFamilyUI newView, final FamilyUIData family) {
+        final String familyName = family.uiData.symbol;
+        if (isFamilyDisplayable(familyName)) {
+
+            final FamilyUIData parentUIData = familyUIData.get(familyName);
+            final boolean isAsylum = isFamilyAsylum(parentUIData);
+            newView.addFamily(familyName, isAsylum);
+
+            for (final StackUIRelationship child : family.getAllRelationships()) {
+
+                newView.setChild(familyName, child.childSymbol, child.bidPriceOffsetBPS, child.bidQtyMultiplier, child.askPriceOffsetBPS,
+                        child.askQtyMultiplier, child.familyToChildRatio);
+            }
+        }
     }
 
     void handleWebMsg(final WebSocketInboundData msg) {
@@ -499,6 +507,36 @@ public class StackFamilyView {
 
         final IStackFamilyUI oldView = views.unregister(disconnected);
         userViews.get(username).remove(oldView);
+    }
+
+    @FromWebSocketView
+    public void lazySubscribe(final String symbol, final WebSocketInboundData data) {
+        if (3 >= symbol.length()) {
+            final List<FamilyUIData> familyUIs = new LinkedList<>();
+            if (!symbol.startsWith("family_")) {
+                final ChildUIData childUIData = childrenUIData.get(symbol);
+                if (null != childUIData && null != childUIData.getFamily() && !StackOrphanage.ORPHANAGE.equals(childUIData.getFamily())) {
+                    familyUIs.add(familyUIData.get(childUIData.getFamily()));
+                } else {
+                    for (final Map.Entry<String, FamilyUIData> entry : familyUIData.entrySet()) {
+                        if (entry.getKey().startsWith(symbol)) {
+                            familyUIs.add(entry.getValue());
+                        }
+                    }
+                }
+            }
+            for (final FamilyUIData familyUI : familyUIs) {
+                final IStackFamilyUI newView = views.get(data.getOutboundChannel());
+                initFamilyUIData(newView, familyUI);
+                updateFamilyUIData(newView, familyUI);
+                for (final StackUIRelationship relationship : familyUI.getAllRelationships()) {
+                    final ChildUIData childUIData = childrenUIData.get(relationship.childSymbol);
+                    if (null != childUIData && null != childUIData.getChildRow()) {
+                        updateChildUIData(newView, childUIData.getChildRow());
+                    }
+                }
+            }
+        }
     }
 
     @FromWebSocketView

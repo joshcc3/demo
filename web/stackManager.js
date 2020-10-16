@@ -3,16 +3,23 @@ let ws;
 let saveSound;
 let loadSound;
 
+let isLazy = false;
+const searchedForSymbols = new Set()
+
 $(function () {
 
 	ws = connect();
-	ws.logToConsole = false;
+	ws.logToConsole = true;
 	ws.onmessage = function (m) {
 		eval(m);
 	};
 
 	const adminBlock = $("#adminBlock");
 	const hash = document.location.hash.substr(1);
+
+	isLazy = hash.endsWith(",Lazy");
+	const suffix = isLazy ? ",Lazy" : "";
+
 	let subscriptionString;
 	if (hash.startsWith("Asylum")) {
 		adminBlock.toggleClass("isAsylumView", true);
@@ -20,8 +27,9 @@ $(function () {
 	} else if (hash) {
 		subscriptionString = "subscribe" + hash;
 	} else {
-		subscriptionString = "subscribeFamily,DEFAULT";
+		subscriptionString = "subscribeFamily,DEFAULT" + suffix;
 	}
+
 	ws.send(subscriptionString);
 
 	document.addEventListener('contextmenu', function (event) {
@@ -150,11 +158,14 @@ $(function () {
 	childSymbolSearchInput.unbind("input").bind("input", function () {
 		const symbol = childSymbolSearchInput.val();
 		const child = findChild(symbol);
-		childSymbolSearchInput.toggleClass("childAvailable", 1 == child.length);
+		childSymbolSearchInput.toggleClass("childAvailable", 1 === child.length);
+		const isSearching = isLazy && 1 !== child.length && !searchedForSymbols.has(symbol);
+		childSymbolSearchInput.toggleClass("childSearching", isSearching);
+		searchedForSymbols.add(symbol)
 	});
 
 	childSymbolSearchInput.bind("keypress", function (e) {
-		if (e.keyCode == 13) {
+		if (e.keyCode === 13) {
 			const symbol = childSymbolSearchInput.val();
 			showChild(symbol);
 		}
@@ -395,7 +406,7 @@ function filterComparator(a, b) {
 	const aSymbol = a.find(".orderingName").text();
 	const bSymbol = b.find(".orderingName").text();
 
-	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
+	return aSymbol < bSymbol ? -1 : aSymbol === bSymbol ? 0 : 1;
 }
 
 function clearFieldData(fieldID) {
@@ -514,7 +525,7 @@ function childCreationComparator(a, b) {
 	const aSymbol = a.find(".childQuoteSymbol").val();
 	const bSymbol = b.find(".childQuoteSymbol").val();
 
-	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
+	return aSymbol < bSymbol ? -1 : aSymbol === bSymbol ? 0 : 1;
 }
 
 function removeAll(nibblerName) {
@@ -526,7 +537,12 @@ function removeAll(nibblerName) {
 function findChild(symbol) {
 
 	const rowID = cleanID(symbol);
-	return $("#" + rowID);
+	const element = $("#" + rowID);
+	if (isLazy && 1 > element.length) {
+		ws.send("lazySubscribe," + symbol);
+	}
+
+	return element;
 }
 
 function cleanID(symbol) {
@@ -535,7 +551,7 @@ function cleanID(symbol) {
 
 function showChild(symbol) {
 	const child = findChild(symbol);
-	if (1 == child.length) {
+	if (1 === child.length) {
 		minimiseAll();
 		child.parent().toggleClass("hidden", false);
 
@@ -620,7 +636,7 @@ function addFamily(familyName, isAsylum) {
 		});
 
 		openConfigWindowDiv.mousedown(function (e) {
-			if (e.button == 2) {
+			if (e.button === 2) {
 				const children = family.find(".children .row:not(.header)");
 				if (children.length) {
 					let configs = "";
@@ -832,7 +848,7 @@ function removeChild(familyName, childSymbol) {
 
 	const familyID = "family_" + cleanID(familyName);
 	let familyElem = findChild(familyID);
-	if(familyElem.length >= 1) {
+	if (familyElem.length >= 1) {
 		setChildCount(familyName);
 	}
 }
@@ -856,7 +872,7 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 
 		addSortedDiv(exchangeTable.find(".row"), row, rowComparator);
 
-	} else if (row.parent().get(0) != exchangeTable.get(0)) {
+	} else if (row.parent().get(0) !== exchangeTable.get(0)) {
 
 		const oldFamily = row.parent().parent().find(".familyName").text();
 		row.remove();
@@ -1001,7 +1017,7 @@ function rowComparator(a, b) {
 	const aSymbol = a.find(".symbol").text();
 	const bSymbol = b.find(".symbol").text();
 
-	return aSymbol < bSymbol ? -1 : aSymbol == bSymbol ? 0 : 1;
+	return aSymbol < bSymbol ? -1 : aSymbol === bSymbol ? 0 : 1;
 }
 
 function addNumberBox(row, selector) {
@@ -1015,7 +1031,7 @@ function addNumberBox(row, selector) {
 		div.append(input);
 	}
 	input.off("input").on("input", function () {
-		input.toggleClass("notPersisted", input.val() != input.attr("data"));
+		input.toggleClass("notPersisted", input.val() !== input.attr("data"));
 	});
 
 	return input;
