@@ -538,14 +538,16 @@ public class StackFamilyView {
                     }
                 }
             }
+
             for (final FamilyUIData familyUI : familyUIs) {
-                final IStackFamilyUI newView = views.get(data.getOutboundChannel());
-                initFamilyUIData(newView, familyUI);
-                updateFamilyUIData(newView, familyUI);
+                final IStackFamilyUI view = views.get(data.getOutboundChannel());
+                view.lazySymbolSubscribe(familyUI.uiData.symbol);
+                initFamilyUIData(view, familyUI);
+                updateFamilyUIData(view, familyUI);
                 for (final StackUIRelationship relationship : familyUI.getAllRelationships()) {
                     final ChildUIData childUIData = childrenUIData.get(relationship.childSymbol);
                     if (null != childUIData && null != childUIData.getChildRow()) {
-                        updateChildUIData(newView, childUIData.getChildRow());
+                        updateChildUIData(view, childUIData.getChildRow());
                     }
                 }
             }

@@ -5,6 +5,7 @@ let loadSound;
 
 let isLazy = false;
 const searchedForSymbols = new Set()
+const subscribedToSymbols = new Set()
 
 $(function () {
 
@@ -571,7 +572,7 @@ function addFamily(familyName, isAsylum) {
 
 	const familyID = "family_" + cleanID(familyName);
 	let family = findChild(familyID);
-	if (family.length < 1) {
+	if (family.length < 1 && (!isLazy || subscribedToSymbols.has(familyName))) {
 
 		family = $("#templateFamily").clone();
 		family.attr("id", familyID);
@@ -821,6 +822,10 @@ function globalWidthControls(instruction) {
 			}
 		}
 	}
+}
+
+function lazySymbolSubscribe(familyName) {
+	subscribedToSymbols.add(familyName)
 }
 
 function setParentData(familyName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled, askQuoterEnabled) {

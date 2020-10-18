@@ -50,4 +50,6 @@ public interface IStackFamilyUI {
     public void offsetsLoaded();
 
     void displayInfoMsg(String text);
+
+    void lazySymbolSubscribe(String symbol);
 }
