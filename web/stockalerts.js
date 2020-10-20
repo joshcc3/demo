@@ -24,6 +24,16 @@ $(function () {
 		eval(x)
 	};
 
+	const hash = document.location.hash.substr(1);
+	let communityStr;
+	if(0 === hash.length) {
+		communityStr = "DM";
+	} else {
+		communityStr = hash;
+	}
+
+	ws.send("subscribeToCommunity," + communityStr)
+
 	table = $("#stockAlerts");
 	headerRow = $("#header");
 

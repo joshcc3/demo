@@ -108,6 +108,7 @@ class ReddalChannels {
     final TypedChannel<StacksSetSiblingsEnableCmd> setSiblingsEnabledCmds;
 
     final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs;
+    final EnumMap<StackCommunity, TypedChannel<String>> communitySymbols;
     final TypedChannel<PicardRowWithInstID> picardRows;
     final TypedChannel<LiquidityFinderData> laserDistances;
     final TypedChannel<PicardRow> yodaPicardRows;
@@ -170,8 +171,10 @@ class ReddalChannels {
         this.setSiblingsEnabledCmds = create(StacksSetSiblingsEnableCmd.class);
 
         this.communityInstrumentIDs = new EnumMap<>(StackCommunity.class);
+        this.communitySymbols = new EnumMap<>(StackCommunity.class);
         for (final StackCommunity stackCommunity : StackCommunity.values()) {
             this.communityInstrumentIDs.put(stackCommunity, create(InstrumentID.class));
+            this.communitySymbols.put(stackCommunity, create(String.class));
         }
 
         this.picardRows = create(PicardRowWithInstID.class);

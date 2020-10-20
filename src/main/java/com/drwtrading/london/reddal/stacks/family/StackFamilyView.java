@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.stacks.family;
 
+import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.persistence.StackPersistenceReader;
-import com.drwtrading.london.eeif.stack.manager.relations.IStackFamily;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
@@ -35,6 +35,7 @@ import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import com.drwtrading.london.reddal.symbols.SearchResult;
+import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuoteObligationsEnableCmd;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -103,7 +104,9 @@ public class StackFamilyView {
 
     private final Map<String, FamilyUIData> familyUIData;
     private final Map<String, ChildUIData> childrenUIData;
+
     private final Publisher<InstrumentID> communityInstrumentIDs;
+    private final Publisher<String> communitySymbols;
 
     private final Map<String, SearchResult> searchResults;
     private final Map<String, LinkedHashSet<String>> fungibleInsts;
@@ -124,7 +127,7 @@ public class StackFamilyView {
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final StackCommunity community,
             final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
             final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
-            final Publisher<InstrumentID> communityInstrumentIDs, final Path familiesToCreateFile) {
+            final Publisher<InstrumentID> communityInstrumentIDs, final TypedChannel<String> communitySymbols, final Path familiesToCreateFile) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
@@ -137,6 +140,7 @@ public class StackFamilyView {
 
         this.quotingObligationsCmds = quotingObligationsCmds;
         this.communityInstrumentIDs = communityInstrumentIDs;
+        this.communitySymbols = communitySymbols;
         this.familiesToCreateFile = familiesToCreateFile;
 
         this.userViews = new HashMap<>();
@@ -420,6 +424,16 @@ public class StackFamilyView {
             final SearchResult searchResult = searchResults.get(childSymbol);
             if (null != searchResult) {
                 communityInstrumentIDs.publish(searchResult.instID);
+                communitySymbols.publish(searchResult.symbol);
+                // TODO - possibly get rid of this hack.
+                final int spaceIx = searchResult.symbol.indexOf(' ');
+                if(spaceIx > 0) {
+                    final StringBuilder sb = new StringBuilder();
+                    sb.append(searchResult.symbol, 0, spaceIx);
+                    sb.append(searchResult.symbol, spaceIx + 1, searchResult.symbol.length());
+                    sb.append(RFQ_SUFFIX);
+                    communitySymbols.publish(sb.toString());
+                }
             }
 
             strategySymbolUI.addStrategySymbol(community.instType, childSymbol);
@@ -903,7 +917,6 @@ public class StackFamilyView {
             if (null != searchResult) {
 
                 final String family = getFamilyName(searchResult, isADRName);
-                assert !familyUIData.containsKey(family);
                 final InstrumentID instID = searchResult.instID;
 
                 communityManager.createFamily(SOURCE_UI, family, instID, community.instType, community);

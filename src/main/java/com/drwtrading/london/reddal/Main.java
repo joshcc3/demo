@@ -330,11 +330,18 @@ public class Main {
             createWebPageWithWebSocket("stockalerts", "stockalerts", fibers.ui, webApp, ws);
 
             final StockAlertPresenter presenter = new StockAlertPresenter(new SystemClock(), stockAlertsFXCalc, webLog);
+            for (final Map.Entry<StackCommunity, TypedChannel<String>> entry : channels.communitySymbols.entrySet()) {
+                entry.getValue().subscribe(fibers.ui.getFiber(), symbol -> {
+                    final StackCommunity community = entry.getKey();
+                    presenter.setCommunityForSymbol(symbol, community);
+                });
+            }
             fibers.ui.subscribe(presenter, ws);
             channels.stockAlerts.subscribe(fibers.ui.getFiber(), presenter::addAlert);
             channels.rfqStockAlerts.subscribe(fibers.ui.getFiber(), presenter::addRfq);
         }
 
+        // TODO - this doesn't work as far as I can tell (ws paths are shared with above and they all seem to come in above anyway rite>) - must confirm but should remove.
         { // ETF RFQ screen
             final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("rfqs", "stockalerts", fibers.ui, webApp, ws);
@@ -1022,7 +1029,7 @@ public class Main {
 
             final StackFamilyPresenter stackFamilyPresenter =
                     new StackFamilyPresenter(app.selectIO, opxlSelectIO, webLog, contractSetGenerator, primaryCommunity, secondaryViews,
-                            strategySymbolUI, channels.quotingObligationsCmds, app.logDir, channels.communityInstrumentIDs);
+                            strategySymbolUI, channels.quotingObligationsCmds, app.logDir, channels.communityInstrumentIDs, channels.communitySymbols);
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(webLog);
 

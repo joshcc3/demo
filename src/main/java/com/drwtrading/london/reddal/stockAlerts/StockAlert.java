@@ -4,6 +4,7 @@ public class StockAlert {
 
     public final long milliSinceMidnight;
 
+
     public final String timestamp;
     public final String type;
     public final String symbol;

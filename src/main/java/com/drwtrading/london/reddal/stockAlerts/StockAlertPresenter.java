@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.stockAlerts;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
@@ -15,9 +16,12 @@ import com.drwtrading.websockets.WebSocketInboundData;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class StockAlertPresenter {
@@ -41,9 +45,10 @@ public class StockAlertPresenter {
 
     private final DecimalFormat qtyDF;
     private final SimpleDateFormat sdf;
-    private final WebSocketViews<IStockAlertsView> views;
-    private final LinkedHashSet<StockAlert> alerts;
+    private final EnumMap<StackCommunity, WebSocketViews<IStockAlertsView>> communityViews;
+    private final EnumMap<StackCommunity, LinkedHashSet<StockAlert>> communityAlerts;
     private final long millisAtMidnightUTC = DateTimeUtil.getMillisAtMidnight();
+    private final Map<String, StackCommunity> symbolCommunity;
 
     public StockAlertPresenter(final IClock clock, final FXCalc<?> fxCalc, final UILogger webLog) {
 
@@ -55,38 +60,77 @@ public class StockAlertPresenter {
         this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
         this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
 
-        this.views = WebSocketViews.create(IStockAlertsView.class, this);
-        this.alerts = new LinkedHashSet<>();
+        this.communityViews = new EnumMap<>(StackCommunity.class);
+        final WebSocketViews<IStockAlertsView> dmView = WebSocketViews.create(IStockAlertsView.class, this);
+        final WebSocketViews<IStockAlertsView> fiView = WebSocketViews.create(IStockAlertsView.class, this);
+        this.communityAlerts = new EnumMap<>(StackCommunity.class);
+        final LinkedHashSet<StockAlert> dmAlerts = new LinkedHashSet<>();
+        final LinkedHashSet<StockAlert> fiAlerts = new LinkedHashSet<>();
+
+        for (final StackCommunity community : StackCommunity.values()) {
+            if (community == StackCommunity.FI) {
+                this.communityViews.put(community, fiView);
+                this.communityAlerts.put(community, dmAlerts);
+            } else {
+                this.communityViews.put(community, dmView);
+                this.communityAlerts.put(community, fiAlerts);
+            }
+        }
+
+        symbolCommunity = new HashMap<>();
     }
 
     @Subscribe
     public void onConnected(final WebSocketConnected connected) {
 
-        final IStockAlertsView view = views.register(connected);
-        for (final StockAlert update : alerts) {
-            view.stockAlert(update.timestamp, update.type, update.symbol, update.msg, false);
-        }
+    }
+
+    public void setCommunityForSymbol(final String symbol, final StackCommunity community) {
+        symbolCommunity.put(symbol, community);
     }
 
     @Subscribe
     public void onDisconnected(final WebSocketDisconnected disconnected) {
-        views.unregister(disconnected);
+        for (final WebSocketViews<IStockAlertsView> view : communityViews.values()) {
+            view.unregister(disconnected);
+        }
     }
 
     @Subscribe
     public void onMessage(final WebSocketInboundData msg) {
         webLog.write("stockAlerts", msg);
+        final String data = msg.getData();
+
+        final String[] cmdParts = data.split(",");
+        if("subscribeToCommunity".equals(cmdParts[0])) {
+            subscribeToCommunity(cmdParts[1], msg);
+        }
+    }
+
+    public void subscribeToCommunity(final String communityStr, final WebSocketInboundData data) {
+        final StackCommunity community = StackCommunity.get(communityStr.toUpperCase());
+        if (null != community) {
+            final IStockAlertsView newView = communityViews.get(community).get(data.getOutboundChannel());
+            final LinkedHashSet<StockAlert> stockAlerts = communityAlerts.get(community);
+            for (final StockAlert update : stockAlerts) {
+                newView.stockAlert(update.timestamp, update.type, update.symbol, update.msg, false);
+            }
+        }
     }
 
     public void addAlert(final StockAlert stockAlert) {
-        if (alerts.add(stockAlert)) {
+        final StackCommunity community = symbolCommunity.getOrDefault(stockAlert.symbol, StackCommunity.DM);
+        final LinkedHashSet<StockAlert> stockAlerts = communityAlerts.get(community);
+        if (stockAlerts.add(stockAlert)) {
 
             final boolean isRecent = Math.abs(stockAlert.milliSinceMidnight - clock.getMillisSinceMidnightUTC()) < MAX_RFQ_ALERT_MILLIS;
 
-            views.all().stockAlert(stockAlert.timestamp, stockAlert.type, stockAlert.symbol, stockAlert.msg, isRecent);
+            final WebSocketViews<IStockAlertsView> stockAlertView = communityViews.get(community);
 
-            if (MAX_HISTORY < alerts.size()) {
-                final Iterator<?> it = alerts.iterator();
+            stockAlertView.all().stockAlert(stockAlert.timestamp, stockAlert.type, stockAlert.symbol, stockAlert.msg, isRecent);
+
+            if (MAX_HISTORY < stockAlerts.size()) {
+                final Iterator<?> it = stockAlerts.iterator();
                 it.next();
                 it.remove();
             }

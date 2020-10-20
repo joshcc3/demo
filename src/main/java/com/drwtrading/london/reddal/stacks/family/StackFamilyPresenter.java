@@ -50,7 +50,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final SpreadContractSetGenerator contractSetGenerator, final Set<StackCommunity> primaryCommunities,
             final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
             final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds, final Path familiesToCreatePath,
-            final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstIDMap) {
+            final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstIDMap,
+            final EnumMap<StackCommunity, TypedChannel<String>> communitySymbols) {
 
         this.uiLogger = uiLogger;
         this.primaryCommunities = primaryCommunities;
@@ -60,7 +61,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         for (final StackCommunity primaryCommunity : primaryCommunities) {
             final StackFamilyView familyView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, primaryCommunity, contractSetGenerator, false,
-                            strategySymbolUI, quotingObligationsCmds, communityInstIDMap.get(primaryCommunity),
+                            strategySymbolUI, quotingObligationsCmds, communityInstIDMap.get(primaryCommunity), communitySymbols.get(primaryCommunity),
                             familiesToCreatePath.resolve("familyCreation" + primaryCommunity.name() + ".csv"));
             communityViews.put(primaryCommunity, familyView);
             otherCommunities.remove(primaryCommunity);
@@ -73,7 +74,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
             final StackFamilyView asylumView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, stackCommunity, contractSetGenerator, true, strategySymbolUI,
-                            Constants::NO_OP, communityInstIDMap.get(stackCommunity),
+                            Constants::NO_OP, communityInstIDMap.get(stackCommunity), communitySymbols.get(stackCommunity),
                             familiesToCreatePath.resolve("familyCreation" + stackCommunity.name() + ".csv"));
             communityViews.put(stackCommunity, asylumView);
         }
