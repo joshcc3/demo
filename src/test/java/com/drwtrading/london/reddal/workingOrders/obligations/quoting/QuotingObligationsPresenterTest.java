@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.workingOrders.obligations.quoting;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
+import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -33,7 +34,7 @@ public class QuotingObligationsPresenterTest {
     @Test
     public void doNotStartQuotingDisabledTest() {
 
-        final QuotingObligationsPresenter presenter = new QuotingObligationsPresenter(selectIO, webLog);
+        final QuotingObligationsPresenter presenter = new QuotingObligationsPresenter(StackCommunity.DM, selectIO, webLog);
 
         final QuotingState quotingState = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
@@ -53,7 +54,7 @@ public class QuotingObligationsPresenterTest {
 
     @Test
     public void disableQuotingTest() {
-        final QuotingObligationsPresenter presenter = new QuotingObligationsPresenter(selectIO, webLog);
+        final QuotingObligationsPresenter presenter = new QuotingObligationsPresenter(StackCommunity.DM, selectIO, webLog);
 
         final QuotingState quotingState = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);

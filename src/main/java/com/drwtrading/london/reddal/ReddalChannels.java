@@ -4,6 +4,7 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
+import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.reddal.autopull.autopuller.msgs.cmds.IAutoPullerCmd;
 import com.drwtrading.london.reddal.autopull.autopuller.msgs.updates.IAutoPullerUpdate;
@@ -74,6 +75,7 @@ class ReddalChannels {
     final TypedChannel<LadderSettingsPrefLoaded> ladderPrefsLoaded;
     final TypedChannel<LadderSettingsStoreLadderPref> storeLadderPref;
     final TypedChannel<InstrumentDef> instDefs;
+    final TypedChannel<ETFDef> etfDefs;
     final TypedChannel<SymbolIndyData> symbolDescs;
     final TypedChannel<DisplaySymbol> displaySymbol;
     final TypedChannel<SearchResult> searchResults;
@@ -139,6 +141,7 @@ class ReddalChannels {
         this.ladderPrefsLoaded = create(LadderSettingsPrefLoaded.class);
         this.storeLadderPref = create(LadderSettingsStoreLadderPref.class);
         this.instDefs = create(InstrumentDef.class);
+        this.etfDefs = create(ETFDef.class);
         this.symbolDescs = create(SymbolIndyData.class);
         this.displaySymbol = create(DisplaySymbol.class);
         this.searchResults = create(SearchResult.class);

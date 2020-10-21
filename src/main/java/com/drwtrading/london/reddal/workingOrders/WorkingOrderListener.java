@@ -9,7 +9,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TradableIns
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderServerRouter;
-import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
+import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsRouter;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 
 public class WorkingOrderListener implements INibblerTradingDataListener {
@@ -21,7 +21,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
     private final IWorkingOrdersCallback bestWorkingOrderMaintainer;
     private final IWorkingOrdersCallback gtcWorkingOrderMaintainer;
     private final IWorkingOrdersCallback futureObligationPresenter;
-    private final QuotingObligationsPresenter quotingObligationsPresenter;
+    private final QuotingObligationsRouter quotingObligationsRouter;
     private final RemoteOrderServerRouter orderRouter;
 
     private final LongMap<SourcedWorkingOrder> sourcedWorkingOrder;
@@ -29,7 +29,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
     public WorkingOrderListener(final String sourceNibbler, final WorkingOrdersPresenter workingOrdersPresenter,
             final IWorkingOrdersCallback obligationPresenter, final IWorkingOrdersCallback bestWorkingOrderMaintainer,
             final IWorkingOrdersCallback gtcWorkingOrderMaintainer, final IWorkingOrdersCallback futureObligationPresenter,
-            final QuotingObligationsPresenter quotingObligationsPresenter, final RemoteOrderServerRouter orderRouter) {
+            final QuotingObligationsRouter quotingObligationsRouter, final RemoteOrderServerRouter orderRouter) {
 
         this.sourceNibbler = sourceNibbler;
 
@@ -38,7 +38,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
         this.bestWorkingOrderMaintainer = bestWorkingOrderMaintainer;
         this.gtcWorkingOrderMaintainer = gtcWorkingOrderMaintainer;
         this.futureObligationPresenter = futureObligationPresenter;
-        this.quotingObligationsPresenter = quotingObligationsPresenter;
+        this.quotingObligationsRouter = quotingObligationsRouter;
         this.orderRouter = orderRouter;
 
         this.sourcedWorkingOrder = new LongMap<>();
@@ -72,13 +72,13 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
 
     @Override
     public boolean addQuotingState(final QuotingState quotingState) {
-        quotingObligationsPresenter.setQuotingState(sourceNibbler, quotingState);
+        quotingObligationsRouter.setQuotingState(sourceNibbler, quotingState);
         return true;
     }
 
     @Override
     public boolean updateQuotingState(final QuotingState quotingState) {
-        quotingObligationsPresenter.setQuotingState(sourceNibbler, quotingState);
+        quotingObligationsRouter.setQuotingState(sourceNibbler, quotingState);
         return true;
     }
 
@@ -158,7 +158,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
         bestWorkingOrderMaintainer.setNibblerDisconnected(sourceNibbler);
         gtcWorkingOrderMaintainer.setNibblerDisconnected(sourceNibbler);
         futureObligationPresenter.setNibblerDisconnected(sourceNibbler);
-        quotingObligationsPresenter.setNibblerDisconnected(sourceNibbler);
+        quotingObligationsRouter.setNibblerDisconnected(sourceNibbler);
 
         orderRouter.setNibblerDisconnected(sourceNibbler);
     }

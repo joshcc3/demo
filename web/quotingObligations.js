@@ -10,6 +10,16 @@ $(function () {
 		eval(m);
 	};
 
+	const hash = document.location.hash.substr(1);
+	let communityStr;
+	if(0 === hash.length) {
+		communityStr = "DM";
+	} else {
+		communityStr = hash;
+	}
+
+	ws.send("subscribeToCommunity," + communityStr)
+
 	$(window).trigger("startup-done");
 
 	meowSound = new Audio("sounds/meow.wav");

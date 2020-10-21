@@ -55,7 +55,6 @@ import com.drwtrading.london.eeif.yoda.transport.cache.YodaClientCacheFactory;
 import com.drwtrading.london.eeif.yoda.transport.cache.YodaNullClient;
 import com.drwtrading.london.eeif.yoda.transport.io.YodaClientHandler;
 import com.drwtrading.london.indy.transport.IndyTransportComponents;
-import com.drwtrading.london.indy.transport.cache.IIndyCacheListener;
 import com.drwtrading.london.indy.transport.cache.IndyCacheFactory;
 import com.drwtrading.london.jetlang.DefaultJetlangFactory;
 import com.drwtrading.london.logging.JsonChannelLogger;
@@ -113,12 +112,12 @@ import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.LiquidityFinderViewUI;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
+import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.picard.PicardRowWithInstID;
 import com.drwtrading.london.reddal.picard.PicardSounds;
 import com.drwtrading.london.reddal.picard.PicardSpotter;
 import com.drwtrading.london.reddal.picard.PicardUI;
 import com.drwtrading.london.reddal.picard.YodaAtCloseClient;
-import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.pks.PKSPositionClient;
 import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
 import com.drwtrading.london.reddal.premium.IPremiumCalc;
@@ -164,7 +163,7 @@ import com.drwtrading.london.reddal.workingOrders.bestPrices.OPXLBestWorkingOrde
 import com.drwtrading.london.reddal.workingOrders.gtc.GTCWorkingOrderMaintainer;
 import com.drwtrading.london.reddal.workingOrders.gtc.OPXLGTCWorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.futures.FutureObligationPresenter;
-import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
+import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsRouter;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationOPXL;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationSet;
@@ -754,7 +753,9 @@ public class Main {
 
         // Indy
         final ConfigGroup indyConfig = root.getGroup("indy");
-        final IIndyCacheListener indyListener = new IndyClient(channels.instDefs, channels.symbolDescs);
+        final IndyClient indyListener = new IndyClient(channels.communityInstrumentIDs, channels.communitySymbols, channels.instDefs, channels.etfDefs, channels.symbolDescs);
+        channels.searchResults.subscribe(selectIOFiber, indyListener::setSearchResult);
+
         final String indyUsername = indyConfig.getString("username");
         final IFuseBox<IndyTransportComponents> indyMonitor =
                 new ExpandedDetailResourceMonitor<>(monitor, "Indy", errorLog, IndyTransportComponents.class, ReddalComponents.INDY);
@@ -1029,7 +1030,9 @@ public class Main {
 
             final StackFamilyPresenter stackFamilyPresenter =
                     new StackFamilyPresenter(app.selectIO, opxlSelectIO, webLog, contractSetGenerator, primaryCommunity, secondaryViews,
-                            strategySymbolUI, channels.quotingObligationsCmds, app.logDir, channels.communityInstrumentIDs, channels.communitySymbols);
+                            strategySymbolUI, channels.quotingObligationsCmds, app.logDir);
+            channels.etfDefs.subscribe(selectIOFiber, stackFamilyPresenter::autoFamily);
+
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
             final StackStrategiesPresenter strategiesPresenter = new StackStrategiesPresenter(webLog);
 
@@ -1195,8 +1198,13 @@ public class Main {
                 rfqObligationPresenter = presenter;
             }
 
-            final QuotingObligationsPresenter quotingObligationsPresenter = new QuotingObligationsPresenter(app.selectIO, webLog);
-            channels.quotingObligationsCmds.subscribe(selectIOFiber, quotingObligationsPresenter::enableQuotes);
+            final QuotingObligationsRouter quotingObligationsRouter = new QuotingObligationsRouter(app.selectIO, webLog);
+            for (final Map.Entry<StackCommunity, TypedChannel<String>> entry : channels.communitySymbols.entrySet()) {
+                final StackCommunity community = entry.getKey();
+                final TypedChannel<String> channel = entry.getValue();
+                channel.subscribe(selectIOFiber, symbol -> quotingObligationsRouter.setSymbol(community, symbol));
+            }
+            channels.quotingObligationsCmds.subscribe(selectIOFiber, quotingObligationsRouter::enableQuotes);
             final FutureObligationPresenter futureObligationPresenter = new FutureObligationPresenter();
 
             final IWorkingOrdersCallback bestWorkingOrderMaintainer;
@@ -1298,7 +1306,7 @@ public class Main {
                         throw new IllegalStateException("Trading nibbler [" + nibbler + "] configured without priority.");
                     } else {
 
-                        quotingObligationsPresenter.setNibblerHandler(nibbler, client);
+                        quotingObligationsRouter.setNibblerHandler(nibbler, client);
 
                         orderRouter.addNibbler(nibbler, orderEntry);
 
@@ -1308,7 +1316,7 @@ public class Main {
                         workingOrderPresenter.addNibbler(nibbler);
                         final WorkingOrderListener workingOrderListener =
                                 new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
-                                        gtcWorkingOrdersMaintainer, futureObligationPresenter, quotingObligationsPresenter, orderRouter);
+                                        gtcWorkingOrdersMaintainer, futureObligationPresenter, quotingObligationsRouter, orderRouter);
                         cache.addTradingDataListener(workingOrderListener, true, true);
 
                         blotterClient.setWorkingOrderListener(workingOrderListener);
@@ -1337,7 +1345,7 @@ public class Main {
 
             final TypedChannel<WebSocketControlMessage> quotingObligationsWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("quotingObligations", "quotingObligations", fibers.ui, webApp, quotingObligationsWebSocket);
-            quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsPresenter::webControl);
+            quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsRouter::webControl);
 
             final boolean isMarketNumbersWanted = app.config.paramExists("marketNumbers") && app.config.getBoolean("marketNumbers");
             final ConfigGroup indyConfigGroup = app.config.getEnabledGroup("indyConfig");
@@ -1347,7 +1355,6 @@ public class Main {
                 if (null == indyConfigGroup) {
                     throw new IllegalStateException("Market numbers wanted without Indy config.");
                 } else {
-
                     final MarketNumberPresenter marketNumberPresenter =
                             new MarketNumberPresenter(app.selectIO, webLog, channels.cmdsForNibblers);
 

@@ -10,7 +10,7 @@ const subscribedToSymbols = new Set()
 $(function () {
 
 	ws = connect();
-	ws.logToConsole = true;
+	ws.logToConsole = false;
 	ws.onmessage = function (m) {
 		eval(m);
 	};

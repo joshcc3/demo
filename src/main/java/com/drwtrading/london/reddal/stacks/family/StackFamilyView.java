@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.stacks.family;
 
-import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.persistence.StackPersistenceReader;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
@@ -31,6 +30,8 @@ import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
+import com.drwtrading.london.indy.transport.data.ETFDef;
+import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
@@ -89,6 +90,8 @@ public class StackFamilyView {
     private final SpreadContractSetGenerator contractSetGenerator;
     private final boolean isPrimaryView;
 
+    private final Map<String, ETFDef> bufferedETFDefs;
+
     private final OpxlStrategySymbolUI strategySymbolUI;
 
     private final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds;
@@ -103,9 +106,6 @@ public class StackFamilyView {
 
     private final Map<String, FamilyUIData> familyUIData;
     private final Map<String, ChildUIData> childrenUIData;
-
-    private final Publisher<InstrumentID> communityInstrumentIDs;
-    private final Publisher<String> communitySymbols;
 
     private final Map<String, SearchResult> searchResults;
     private final Map<String, LinkedHashSet<String>> fungibleInsts;
@@ -123,10 +123,13 @@ public class StackFamilyView {
     private double globalPriceOffsetBPS;
     private final Path familiesToCreateFile;
 
+    private static final List<String> TAIL_PREFERENCE =
+            List.of("UF", "UP", "GY", "FH", "DC", "SS", "SE", "ID", "PL", "BB", "NA", "FP", "LI", "LN", "IM");
+
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final StackCommunity community,
             final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
             final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
-            final Publisher<InstrumentID> communityInstrumentIDs, final TypedChannel<String> communitySymbols, final Path familiesToCreateFile) {
+            final Path familiesToCreateFile) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
@@ -138,8 +141,6 @@ public class StackFamilyView {
         this.strategySymbolUI = strategySymbolUI;
 
         this.quotingObligationsCmds = quotingObligationsCmds;
-        this.communityInstrumentIDs = communityInstrumentIDs;
-        this.communitySymbols = communitySymbols;
         this.familiesToCreateFile = familiesToCreateFile;
 
         this.userViews = new HashMap<>();
@@ -167,6 +168,9 @@ public class StackFamilyView {
 
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
 
+        this.bufferedETFDefs = new HashMap<>();
+
+        managementSelectIO.addDelayedAction(60_000L, this::tryBufferedETFAdditions);
     }
 
     private boolean isFamilyDisplayable(final String familyName) {
@@ -183,6 +187,10 @@ public class StackFamilyView {
 
         final FamilyUIData parentUIData = familyUIData.get(familyName);
         return null != parentUIData && isFamilyAsylum(parentUIData);
+    }
+
+    public void bufferETFDef(final ETFDef etfDef) {
+        bufferedETFDefs.put(etfDef.indexDef.name, etfDef);
     }
 
     private static boolean isFamilyAsylum(final FamilyUIData parentUIData) {
@@ -224,10 +232,6 @@ public class StackFamilyView {
 
             updateSymbolFilters(searchResult.symbol);
 
-            final ChildUIData childUIData = childrenUIData.get(searchResult.symbol);
-            if(null != childUIData && null != childUIData.getFamily() && isFamilyDisplayable(childUIData.getFamily())) {
-                publishSearchResultCommunity(searchResult);
-            }
         }
     }
 
@@ -267,15 +271,13 @@ public class StackFamilyView {
             childRow.sendRowState(view);
 
             switch (childRow.getLeanInstType()) {
-                case DR:
-                case ETF:
-                case EQUITY:
                 case FUTURE:
                 case FUTURE_SPREAD:
-                case FX: {
-                    // TODO: THIS instType NEEDS CHANGING
+                case FX:
+                case ETF:
+                case DR:
+                case EQUITY:
                     strategySymbolUI.addStrategySymbol(community.instType, childRow.getLeanSymbol());
-                }
             }
         }
     }
@@ -425,10 +427,6 @@ public class StackFamilyView {
         setChildUIDataField(childSymbol, parentSymbol);
 
         if (isFamilyDisplayable(parentSymbol)) {
-            final SearchResult searchResult = searchResults.get(childSymbol);
-            if (null != searchResult) {
-                publishSearchResultCommunity(searchResult);
-            }
 
             strategySymbolUI.addStrategySymbol(community.instType, childSymbol);
 
@@ -440,20 +438,6 @@ public class StackFamilyView {
             }
         }
         return true;
-    }
-
-    private void publishSearchResultCommunity(final SearchResult searchResult) {
-        communityInstrumentIDs.publish(searchResult.instID);
-        communitySymbols.publish(searchResult.symbol);
-        // TODO - possibly get rid of this hack.
-        final int spaceIx = searchResult.symbol.indexOf(' ');
-        if(spaceIx > 0) {
-            final StringBuilder sb = new StringBuilder();
-            sb.append(searchResult.symbol, 0, spaceIx);
-            sb.append(searchResult.symbol, spaceIx + 1, searchResult.symbol.length());
-            sb.append(RFQ_SUFFIX);
-            communitySymbols.publish(sb.toString());
-        }
     }
 
     private void setChildUIDataField(final String childSymbol, final String parentSymbol) {
@@ -576,6 +560,75 @@ public class StackFamilyView {
         }
     }
 
+    void autoFamily(final ETFDef etfDef) {
+        bufferedETFDefs.remove(etfDef.indexDef.name);
+        final Set<String> resultingFamilyNames = new HashSet<>();
+        final List<String> errors = new LinkedList<>();
+        final List<FamilyCreationRequest> requests = new LinkedList<>();
+        final String primaryListing = getPrimaryListing(etfDef);
+        final String familyName = constructFamilyName(primaryListing);
+        final List<String> familyDefinitions = List.of(familyName);
+
+        if(!familyUIData.containsKey(familyName)) {
+            // TODO jcoutinho cleanup
+            final boolean successful = checkFamilyAddition(errors, requests, resultingFamilyNames, primaryListing, familyName);
+            final IStackFamilyUI allViews = views.all();
+            for (final String error : errors) {
+                allViews.displayInfoMsg(error);
+            }
+            if (successful) {
+                final String source = SOURCE_UI + "_AUTO";
+                createFamilies(allViews, source, familyDefinitions, requests);
+            } else {
+                bufferedETFDefs.put(etfDef.indexDef.name, etfDef);
+            }
+        }
+    }
+
+    private String getPrimaryListing(final ETFDef etfDef) {
+        int score = Integer.MIN_VALUE;
+        String primaryListing = "";
+        final StringBuilder tail = new StringBuilder(2);
+
+        for (final InstrumentDef instDef : etfDef.instDefs) {
+            tail.setLength(0);
+            final String code = instDef.bbgCode;
+            tail.append(code, code.length() - 2, code.length());
+            final int newScore = TAIL_PREFERENCE.indexOf(tail.toString());
+            if(score < newScore) {
+                score = newScore;
+                primaryListing = instDef.bbgCode;
+            }
+        }
+        return primaryListing;
+    }
+
+    private String constructFamilyName(final String primaryListing) {
+
+
+        final String root = primaryListing.substring(0, primaryListing.indexOf(' '));
+//        String newFamilyName = root;
+//        int suffixIx = 1;
+//        while (familyUIData.containsKey(newFamilyName)) {
+//            newFamilyName = root + '_' + suffixIx;
+//            suffixIx++;
+//        }
+
+        return root;
+
+    }
+
+    private long tryBufferedETFAdditions() {
+
+        final List<ETFDef> etfDefs = new ArrayList<>(bufferedETFDefs.values());
+
+        for (final ETFDef etfDef : etfDefs) {
+            autoFamily(etfDef);
+        }
+
+        return 30_000L;
+    }
+
     @FromWebSocketView
     public void createFamiliesFromFile(final WebSocketInboundData data) {
         final IStackFamilyUI ui = views.get(data.getOutboundChannel());
@@ -584,72 +637,86 @@ public class StackFamilyView {
 
             final List<FamilyCreationRequest> definitions = new ArrayList<>(familyDefinitions.size());
 
-            final Set<String> resultingFamilyNames = new HashSet<>(familyUIData.keySet());
             if (checkViewEligibility(ui)) {
 
-                final boolean allOk = checkAndParseInputFile(ui, familyDefinitions, definitions, resultingFamilyNames);
+                final boolean allOk = checkAndParseInputFile(ui, familyDefinitions, definitions);
+                final String source = SOURCE_UI + "_FILE";
                 if (allOk) {
-                    final String source = SOURCE_UI + "_FILE";
-                    ui.displayInfoMsg("All input families passed checks - going to create " + familyDefinitions.size() + " families");
-
-                    for (final FamilyCreationRequest parsedDefinition : definitions) {
-                        final String familyName = parsedDefinition.familyName;
-                        ui.displayInfoMsg("Creating " + familyName);
-                        communityManager.createFamily(source, familyName, parsedDefinition.instID, community.instType, community);
-                        if (!familyUIData.containsKey(familyName)) {
-                            ui.displayErrorMsg("Failed to create family (not in familyUIData) " + familyName);
-                        } else {
-                            for (final String child : parsedDefinition.children) {
-                                // these must happen sequentially
-                                ui.displayInfoMsg("Adding child relationship " + familyName + " -> " + child);
-                                communityManager.setRelationship(source, familyName, child);
-                            }
-                        }
-                    }
+                    createFamilies(ui, source, familyDefinitions, definitions);
                 } else {
-                    ui.displayErrorMsg("Invalid definitions in family input file - no actions performed");
+                    ui.displayInfoMsg("Invalid definitions in family input file - no actions performed");
                 }
             }
+
         } catch (final IOException e) {
-            ui.displayErrorMsg(e.getMessage());
+            ui.displayInfoMsg(e.getMessage());
+        }
+    }
+
+    private void createFamilies(final IStackFamilyUI ui, final String source, final List<String> familyDefinitions,
+            final List<FamilyCreationRequest> definitions) {
+        ui.displayInfoMsg("All input families passed checks - going to create " + familyDefinitions.size() + " families");
+
+        for (final FamilyCreationRequest parsedDefinition : definitions) {
+            final String familyName = parsedDefinition.familyName;
+            ui.displayInfoMsg("Creating " + familyName);
+            communityManager.createFamily(source, familyName, parsedDefinition.instID, community.instType, community);
+            if (!familyUIData.containsKey(familyName)) {
+                ui.displayInfoMsg("Failed to create family (not in familyUIData) " + familyName);
+            } else {
+                for (final String child : parsedDefinition.children) {
+                    // these must happen sequentially
+                    ui.displayInfoMsg("Adding child relationship " + familyName + " -> " + child);
+                    communityManager.setRelationship(source, familyName, child);
+                }
+            }
         }
     }
 
     private boolean checkAndParseInputFile(final IStackFamilyUI ui, final List<String> familyDefinitions,
-            final List<FamilyCreationRequest> definitions, final Set<String> resultingFamilyNames) {
+            final List<FamilyCreationRequest> definitions) {
         boolean allOk = true;
         int ix = 0;
+        final Set<String> resultingFamilyNames = new HashSet<>(familyUIData.keySet());
+        final List<String> errors = new LinkedList<>();
         while (ix < familyDefinitions.size() && allOk) {
             final String familyDefinition = familyDefinitions.get(ix);
             final String[] parsedDefinition = familyDefinition.split(",");
             final String familyName = parsedDefinition[0];
-            allOk = checkRecord(parsedDefinition, ui);
-            if (allOk && !resultingFamilyNames.contains(familyName)) {
-                final String parentListing = parsedDefinition[1];
-                allOk = checkFamilyName(familyName, parentListing, ui);
-                if (allOk) {
-                    final InstrumentID instID = searchResults.get(parentListing).instID;
 
-                    final Set<String> allChildren = filterToAvailableChildren(fungibleInsts.get(instID.isin));
-                    if (allChildren.isEmpty()) {
-                        ui.displayErrorMsg("No children available for " + instID.isin + " from " + fungibleInsts.get(instID.isin));
-                        allOk = false;
-                    }
-                    for (final String child : allChildren) {
-                        allOk = allOk && checkChild(instID, child, ui);
-                    }
-                    final String otcChild = instID.isin + " OTC";
-                    if (checkChildIsAvailable(otcChild, ui)) {
-                        allChildren.add(otcChild);
-                    } else if (!instID.isin.startsWith("US")) {
-                        ui.displayErrorMsg("No otc for non-us " + instID.isin);
-                        allOk = false;
-                    }
-                    definitions.add(new FamilyCreationRequest(instID, familyName, allChildren));
-                    resultingFamilyNames.add(familyName);
-                }
+            if (!resultingFamilyNames.contains(familyName) && checkRecord(parsedDefinition, errors)) {
+                allOk = checkFamilyAddition(errors, definitions, resultingFamilyNames, parsedDefinition[1], familyName);
             }
             ix++;
+        }
+
+        errors.forEach(ui::displayInfoMsg);
+        return allOk;
+    }
+
+    private boolean checkFamilyAddition(final List<String> errors, final List<FamilyCreationRequest> definitions,
+            final Set<String> resultingFamilyNames, final String parentListing, final String familyName) {
+        boolean allOk = checkFamilyName(familyName, parentListing, errors);
+        if (allOk) {
+            final InstrumentID instID = searchResults.get(parentListing).instID;
+
+            final Set<String> allChildren = filterToAvailableChildren(fungibleInsts.get(instID.isin));
+            if (allChildren.isEmpty()) {
+                errors.add("No children available for " + instID.isin + " from " + fungibleInsts.get(instID.isin));
+                allOk = false;
+            }
+            for (final String child : allChildren) {
+                allOk = allOk && checkChild(instID, child, errors);
+            }
+            final String otcChild = instID.isin + " OTC";
+            if (checkChildIsAvailable(otcChild, errors)) {
+                allChildren.add(otcChild);
+            } else if (!instID.isin.startsWith("US")) {
+                errors.add("No otc for non-us " + instID.isin);
+                allOk = false;
+            }
+            definitions.add(new FamilyCreationRequest(instID, familyName, allChildren));
+            resultingFamilyNames.add(familyName);
         }
         return allOk;
     }
@@ -666,26 +733,26 @@ public class StackFamilyView {
         return result;
     }
 
-    private boolean checkRecord(final String[] parsedDefinition, final IStackFamilyUI ui) {
+    private boolean checkRecord(final String[] parsedDefinition, final List<String> ui) {
         if (parsedDefinition.length < 2) {
-            ui.displayErrorMsg("Invalid record [" + Arrays.toString(parsedDefinition) + ']');
+            ui.add("Invalid record [" + Arrays.toString(parsedDefinition) + ']');
             return false;
         } else {
             return true;
         }
     }
 
-    private boolean isOTCChild(final String isin, final String child) {
+    private static boolean isOTCChild(final String isin, final String child) {
         return child.endsWith("OTC") && isin.equals(child.substring(0, child.indexOf(' ')));
     }
 
-    private boolean checkChildIsAvailable(final String child, final IStackFamilyUI ui) {
+    private boolean checkChildIsAvailable(final String child, final List<String> ui) {
         final boolean childAlreadyCreated = this.childrenUIData.containsKey(child);
         final boolean childNotInFamily = childIsAnOrphan(child, childAlreadyCreated);
 
         final boolean available = childAlreadyCreated && childNotInFamily;
         if (!available) {
-            ui.displayErrorMsg('[' + child + "] " + '[' + childAlreadyCreated + "] " + '[' + childNotInFamily + "] ");
+            ui.add('[' + child + "] " + '[' + childAlreadyCreated + "] " + '[' + childNotInFamily + "] ");
         }
 
         return available;
@@ -695,7 +762,7 @@ public class StackFamilyView {
         return childAlreadyCreated && StackOrphanage.ORPHANAGE.equals(this.childrenUIData.get(child).getFamily());
     }
 
-    private boolean checkChild(final InstrumentID instID, final String child, final IStackFamilyUI ui) {
+    private boolean checkChild(final InstrumentID instID, final String child, final List<String> ui) {
         final boolean childAvailable = checkChildIsAvailable(child, ui);
         final boolean nibblerIsAssociatedWith = isOTCChild(instID.isin, child) || tradableSymbols.containsKey(child);
         final LinkedHashSet<String> fungibleInstruments = fungibleInsts.get(instID.isin);
@@ -705,13 +772,13 @@ public class StackFamilyView {
         final boolean allChecksPass = childAvailable && nibblerIsAssociatedWith && isFungibleWith;
 
         if (!allChecksPass) {
-            ui.displayErrorMsg('[' + child + "] " + '[' + nibblerIsAssociatedWith + "] " + '[' + isFungibleWith + ']');
+            ui.add('[' + child + "] " + '[' + nibblerIsAssociatedWith + "] " + '[' + isFungibleWith + ']');
         }
 
         return allChecksPass;
     }
 
-    private boolean checkFamilyName(final String familyName, final String parentListing, final IStackFamilyUI ui) {
+    private boolean checkFamilyName(final String familyName, final String parentListing, final List<String> ui) {
 
         if (searchResults.containsKey(parentListing)) {
             final InstrumentID instID = searchResults.get(parentListing).instID;
@@ -721,12 +788,11 @@ public class StackFamilyView {
 
             final boolean allChecksPass = validFamilyName && validISIN && isFungibleInstruments;
             if (!allChecksPass) {
-                ui.displayErrorMsg(
-                        '[' + familyName + "], " + '[' + instID + "] " + validFamilyName + ' ' + validISIN + ' ' + isFungibleInstruments);
+                ui.add('[' + familyName + "], " + '[' + instID + "] " + validFamilyName + ' ' + validISIN + ' ' + isFungibleInstruments);
             }
             return allChecksPass;
         } else {
-            ui.displayErrorMsg("Invalid parent listinging [" + parentListing + "] [" + familyName + ']');
+            ui.add("Invalid parent listinging [" + parentListing + "] [" + familyName + ']');
             return false;
         }
 
@@ -734,7 +800,7 @@ public class StackFamilyView {
 
     private boolean checkViewEligibility(final IStackFamilyUI ui) {
         if (!EnumSet.of(StackCommunity.DM, StackCommunity.FI).contains(community) || InstType.ETF != community.instType) {
-            ui.displayErrorMsg("Attempted to create family for invalid stackManager Community " + community);
+            ui.displayInfoMsg("Attempted to create family for invalid stackManager Community " + community);
             return false;
         } else {
             return true;
@@ -1608,7 +1674,7 @@ public class StackFamilyView {
 
         // TODO jcoutinho - remove this once quoting obligations has been split out properly
         if (isPrimaryView && quotingObligationsEnabled()) {
-            quotingObligationsCmds.publish(new QuoteObligationsEnableCmd(user));
+            quotingObligationsCmds.publish(new QuoteObligationsEnableCmd(user, community));
         }
     }
 

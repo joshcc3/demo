@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.workingOrders.obligations.quoting;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
+import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
@@ -37,7 +38,9 @@ public class QuotingObligationsPresenter {
     private final long maxMilliSinceMidnight;
     private final long sysStartMillisSinceMidnight;
 
-    public QuotingObligationsPresenter(final SelectIO uiSelectIO, final UILogger webLog) {
+    private final String pageName;
+
+    public QuotingObligationsPresenter(final StackCommunity community, final SelectIO uiSelectIO, final UILogger webLog) {
 
         this.uiSelectIO = uiSelectIO;
         this.webLog = webLog;
@@ -59,10 +62,11 @@ public class QuotingObligationsPresenter {
         this.sysStartMillisSinceMidnight = getNowMilliSinceMidnightNow();
 
         uiSelectIO.addDelayedAction(CHECK_OBLIGATION_PERIOD_MILLIS, this::checkObligations);
+
+        pageName = "workingOrders#" + community;
     }
 
     public void setNibblerHandler(final String nibblerName, final NibblerClientHandler nibblerHandler) {
-
         nibblers.put(nibblerName, nibblerHandler);
     }
 
@@ -99,39 +103,23 @@ public class QuotingObligationsPresenter {
         }
     }
 
-    public void webControl(final WebSocketControlMessage webMsg) {
+    void onConnected(final WebSocketInboundData connected) {
 
-        if (webMsg instanceof WebSocketConnected) {
-
-            onConnected((WebSocketConnected) webMsg);
-
-        } else if (webMsg instanceof WebSocketDisconnected) {
-
-            onDisconnected((WebSocketDisconnected) webMsg);
-
-        } else if (webMsg instanceof WebSocketInboundData) {
-
-            onMessage((WebSocketInboundData) webMsg);
-        }
-    }
-
-    private void onConnected(final WebSocketConnected connected) {
-
-        final IQuotingObligationView view = views.register(connected);
+        final IQuotingObligationView view = views.get(connected.getOutboundChannel());
 
         for (final QuotingObligationState state : obligations.values()) {
             setObligation(view, state);
         }
     }
 
-    private void onDisconnected(final WebSocketDisconnected disconnected) {
+    void onDisconnected(final WebSocketDisconnected disconnected) {
 
         views.unregister(disconnected);
     }
 
     public void onMessage(final WebSocketInboundData msg) {
 
-        webLog.write("workingOrders", msg);
+        webLog.write(pageName, msg);
         views.invoke(msg);
     }
 
