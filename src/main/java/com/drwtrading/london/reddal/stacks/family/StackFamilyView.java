@@ -35,7 +35,6 @@ import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import com.drwtrading.london.reddal.symbols.SearchResult;
-import com.drwtrading.london.reddal.util.BogusErrorFilteringPublisher;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuoteObligationsEnableCmd;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -224,6 +223,11 @@ public class StackFamilyView {
             children.add(searchResult.symbol);
 
             updateSymbolFilters(searchResult.symbol);
+
+            final ChildUIData childUIData = childrenUIData.get(searchResult.symbol);
+            if(null != childUIData && null != childUIData.getFamily() && isFamilyDisplayable(childUIData.getFamily())) {
+                publishSearchResultCommunity(searchResult);
+            }
         }
     }
 
@@ -423,17 +427,7 @@ public class StackFamilyView {
         if (isFamilyDisplayable(parentSymbol)) {
             final SearchResult searchResult = searchResults.get(childSymbol);
             if (null != searchResult) {
-                communityInstrumentIDs.publish(searchResult.instID);
-                communitySymbols.publish(searchResult.symbol);
-                // TODO - possibly get rid of this hack.
-                final int spaceIx = searchResult.symbol.indexOf(' ');
-                if(spaceIx > 0) {
-                    final StringBuilder sb = new StringBuilder();
-                    sb.append(searchResult.symbol, 0, spaceIx);
-                    sb.append(searchResult.symbol, spaceIx + 1, searchResult.symbol.length());
-                    sb.append(RFQ_SUFFIX);
-                    communitySymbols.publish(sb.toString());
-                }
+                publishSearchResultCommunity(searchResult);
             }
 
             strategySymbolUI.addStrategySymbol(community.instType, childSymbol);
@@ -446,6 +440,20 @@ public class StackFamilyView {
             }
         }
         return true;
+    }
+
+    private void publishSearchResultCommunity(final SearchResult searchResult) {
+        communityInstrumentIDs.publish(searchResult.instID);
+        communitySymbols.publish(searchResult.symbol);
+        // TODO - possibly get rid of this hack.
+        final int spaceIx = searchResult.symbol.indexOf(' ');
+        if(spaceIx > 0) {
+            final StringBuilder sb = new StringBuilder();
+            sb.append(searchResult.symbol, 0, spaceIx);
+            sb.append(searchResult.symbol, spaceIx + 1, searchResult.symbol.length());
+            sb.append(RFQ_SUFFIX);
+            communitySymbols.publish(sb.toString());
+        }
     }
 
     private void setChildUIDataField(final String childSymbol, final String parentSymbol) {
