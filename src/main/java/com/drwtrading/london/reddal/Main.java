@@ -290,7 +290,7 @@ public class Main {
         });
 
         channels.error.subscribe(fibers.logging.getFiber(), message -> {
-            System.out.println(new Date());
+            System.out.print(new Date() + ": ");
             message.printStackTrace();
         });
 

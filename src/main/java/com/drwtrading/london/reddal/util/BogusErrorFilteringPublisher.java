@@ -14,7 +14,8 @@ public class BogusErrorFilteringPublisher implements Publisher<Throwable> {
     @Override
     public void publish(final Throwable msg) {
 
-        if (!msg.toString().contains("Connection reset by peer") && !msg.toString().contains("Connection timed out")) {
+        if (!msg.toString().contains("Connection reset by peer") && !msg.toString().contains("Connection timed out") &&
+                !msg.toString().contains("Message delayed")) {
 
             publisher.publish(msg);
         }

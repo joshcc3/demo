@@ -38,8 +38,8 @@ import com.drwtrading.london.reddal.ladders.model.LadderViewModel;
 import com.drwtrading.london.reddal.ladders.model.LeftHandPanel;
 import com.drwtrading.london.reddal.ladders.model.QtyButton;
 import com.drwtrading.london.reddal.orderManagement.oe.ManagedOrderType;
-import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntrySymbolChannel;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.RemoteOrderType;
@@ -159,7 +159,7 @@ public class LadderBookView implements ILadderBoard {
     private final Publisher<StacksSetSiblingsEnableCmd> stackSiblingsCmdPublisher;
 
     private final Publisher<Jsonable> trace;
-    private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap;
+    private final Map<String, OrderEntrySymbolChannel> orderEntryMap;
     private final Set<String> managedOrderTypes;
     private final Set<String> oldOrderTypes;
 
@@ -191,7 +191,7 @@ public class LadderBookView implements ILadderBoard {
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
             final Publisher<StacksSetSiblingsEnableCmd> stackSiblingsCmdPublisher, final Publisher<Jsonable> trace,
-            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap, final long centeredPrice) {
+            final Map<String, OrderEntrySymbolChannel> orderEntryMap, final long centeredPrice) {
 
         this.monitor = monitor;
 
@@ -1377,7 +1377,7 @@ public class LadderBookView implements ILadderBoard {
     private void submitOrderClick(final ClientSpeedState clientSpeedState, final String label, final Map<String, String> data,
             final String orderType) {
 
-        final long price = Long.valueOf(data.get("price"));
+        final long price = Long.parseLong(data.get("price"));
         final BookPanelRow bookRow = ladderModel.getBookPanel().getRowByPrice(price);
 
         final BookSide side;
@@ -1417,7 +1417,7 @@ public class LadderBookView implements ILadderBoard {
         int tradingBoxQty = this.clickTradingBoxQty;
         trace.publish(
                 new CommandTrace("submitManaged", user, symbol, orderType, true, price, side.name(), tag, tradingBoxQty, orderSeqNo++));
-        final OrderEntryClient.SymbolOrderChannel symbolOrderChannel = orderEntryMap.get(symbol);
+        final OrderEntrySymbolChannel symbolOrderChannel = orderEntryMap.get(symbol);
         if (null != symbolOrderChannel) {
             final ManagedOrderType managedOrderType = ManagedOrderType.valueOf(orderType);
             if (!symbolOrderChannel.supportedTypes.contains(managedOrderType)) {

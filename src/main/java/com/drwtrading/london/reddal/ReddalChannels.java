@@ -21,9 +21,9 @@ import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
 import com.drwtrading.london.reddal.opxl.OpxlLadderText;
 import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
-import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryFromServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntrySymbolChannel;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCBettermentPrices;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCBettermentPricesRequest;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCSupportedSymbol;
@@ -58,8 +58,6 @@ import org.jetlang.channels.Publisher;
 import java.util.EnumMap;
 
 class ReddalChannels {
-
-    private static final TypedChannel<Throwable> ERROR_CHANNEL = TypedChannels.create(Throwable.class);
 
     final TypedChannel<Throwable> error;
     final Publisher<Throwable> errorPublisher;
@@ -96,7 +94,7 @@ class ReddalChannels {
     final TypedChannel<UserCycleRequest> userCycleContractPublisher;
     final TypedChannel<OrderEntryFromServer> orderEntryFromServer;
     final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
-    final TypedChannel<OrderEntryClient.SymbolOrderChannel> orderEntrySymbols;
+    final TypedChannel<OrderEntrySymbolChannel> orderEntrySymbols;
     final TypedChannel<ISINsGoingEx> isinsGoingEx;
 
     final TypedChannel<SymbolSelection> symbolSelections;
@@ -126,7 +124,7 @@ class ReddalChannels {
 
     ReddalChannels() {
 
-        this.error = ERROR_CHANNEL;
+        this.error = TypedChannels.create(Throwable.class);
         this.errorPublisher = new BogusErrorFilteringPublisher(error);
         this.opxlLaserLineData = create(LaserLineValue.class);
         this.ladderText = create(OpxlLadderText.class);
@@ -158,7 +156,7 @@ class ReddalChannels {
         this.userCycleContractPublisher = create(UserCycleRequest.class);
         this.replaceCommand = create(ReplaceCommand.class);
         this.orderEntryFromServer = create(OrderEntryFromServer.class);
-        this.orderEntrySymbols = create(OrderEntryClient.SymbolOrderChannel.class);
+        this.orderEntrySymbols = create(OrderEntrySymbolChannel.class);
         this.orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
         this.isinsGoingEx = create(ISINsGoingEx.class);
 

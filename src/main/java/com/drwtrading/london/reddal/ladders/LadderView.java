@@ -28,8 +28,8 @@ import com.drwtrading.london.reddal.ladders.model.HeaderPanel;
 import com.drwtrading.london.reddal.ladders.model.LadderViewModel;
 import com.drwtrading.london.reddal.ladders.model.LeftHandPanel;
 import com.drwtrading.london.reddal.ladders.model.QtyButton;
-import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntrySymbolChannel;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.pks.PKSExposure;
@@ -129,7 +129,7 @@ public class LadderView implements UiEventHandler {
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<Jsonable> trace;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
-    private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap;
+    private final Map<String, OrderEntrySymbolChannel> orderEntryMap;
     private final Publisher<OrderEntryCommandToServer> eeifCommandToServer;
     private final TradingStatusForAll tradingStatusForAll;
     private final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher;
@@ -172,7 +172,7 @@ public class LadderView implements UiEventHandler {
             final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
             final Publisher<Jsonable> trace, final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
-            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap,
+            final Map<String, OrderEntrySymbolChannel> orderEntryMap,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
             final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,

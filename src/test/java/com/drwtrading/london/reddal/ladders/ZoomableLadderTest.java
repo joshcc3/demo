@@ -33,8 +33,8 @@ import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.ladders.model.LadderViewModel;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
-import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntrySymbolChannel;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
@@ -125,7 +125,7 @@ public class ZoomableLadderTest {
     private final InstrumentMetaData instMetaData = new InstrumentMetaData(INST_ID);
     private final LadderOptions ladderOptions =
             new LadderOptions(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), "");
-    private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap = new HashMap<>();
+    private final Map<String, OrderEntrySymbolChannel> orderEntryMap = new HashMap<>();
 
     @BeforeMethod
     public void setup() {
@@ -370,7 +370,7 @@ public class ZoomableLadderTest {
 
     private LadderBookView getBookView(final String symbol, final LadderViewModel ladderModel, final MDForSymbol mdForSymbol,
             final WorkingOrdersByPrice workingOrders, final OrderUpdatesForSymbol orderUpdatesForSymbol,
-            final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap) {
+            final Map<String, OrderEntrySymbolChannel> orderEntryMap) {
 
         return new LadderBookView(monitor, USER, true, symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc, feeDF,
                 ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandPublisher, eeifCommandToServer,

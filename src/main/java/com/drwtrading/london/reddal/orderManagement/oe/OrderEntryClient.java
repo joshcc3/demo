@@ -2,6 +2,10 @@ package com.drwtrading.london.reddal.orderManagement.oe;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
 import com.drwtrading.london.eeif.utils.time.IClock;
+import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
+import com.drwtrading.photocols.PhotocolsConnection;
+import com.drwtrading.photocols.PhotocolsHandler;
+import com.google.common.base.Preconditions;
 import drw.eeif.eeifoe.Ack;
 import drw.eeif.eeifoe.AvailableSymbol;
 import drw.eeif.eeifoe.Cancel;
@@ -15,21 +19,15 @@ import drw.eeif.eeifoe.OrderEntryReplyMsg;
 import drw.eeif.eeifoe.Reject;
 import drw.eeif.eeifoe.ServerHeartbeat;
 import drw.eeif.eeifoe.Submit;
-import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
-import com.drwtrading.london.util.Struct;
-import com.drwtrading.photocols.PhotocolsConnection;
-import com.drwtrading.photocols.PhotocolsHandler;
-import com.google.common.base.Preconditions;
 import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
 
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, OrderEntryCommandMsg>, OrderEntryReply.Visitor<Void> {
 
@@ -37,7 +35,7 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     private final IClock clock;
     private final String serverInstance;
     private final Fiber fiber;
-    private final Publisher<SymbolOrderChannel> publisher;
+    private final Publisher<OrderEntrySymbolChannel> publisher;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssues;
 
     private PhotocolsConnection<OrderEntryCommandMsg> connection;
@@ -47,7 +45,7 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     private final Map<Integer, String> seqNoToSymbol = new HashMap<>();
 
     public OrderEntryClient(final String thisInstance, final IClock clock, final String serverInstance, final Fiber fiber,
-            final Publisher<SymbolOrderChannel> publisher, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+            final Publisher<OrderEntrySymbolChannel> publisher, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
         this.thisInstance = thisInstance;
         this.clock = clock;
         this.serverInstance = serverInstance;
@@ -98,14 +96,16 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
 
     @Override
     public void onMessage(final PhotocolsConnection<OrderEntryCommandMsg> connection, final OrderEntryReplyMsg message) {
+
         final int expectedSeqNo = incomingSeqNo + 1;
+
         incomingSeqNo = message.getSessionSeqNo();
-        final long delayMs = clock.nowMilliUTC() - message.getMillisUtc();
+
         Preconditions.checkArgument(serverInstance.equals(message.getFromInstance()), "Wrong instance: expecting %s, received %s, ",
                 serverInstance, message.getFromInstance());
         Preconditions.checkArgument(expectedSeqNo == message.getSessionSeqNo(), "Seq no doesn't match: expected %s, received %s",
                 expectedSeqNo, message.getSessionSeqNo());
-        Preconditions.checkArgument(delayMs < 1000L, "Message delayed %d ms", delayMs);
+
         message.getMsg().accept(this);
     }
 
@@ -115,10 +115,18 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
 
     @Override
     public Void visitAvailableSymbol(final AvailableSymbol availableSymbol) {
+
         final MemoryChannel<OrderEntryCommand> channel = new MemoryChannel<>();
-        final Set<ManagedOrderType> orderTypes = Arrays.asList(ManagedOrderType.values()).stream().filter(
-                managedOrderType -> availableSymbol.isLeanAllowed() || !managedOrderType.requiresLean()).collect(Collectors.toSet());
-        publisher.publish(new SymbolOrderChannel(availableSymbol.getSymbol(), channel, orderTypes));
+        final Set<ManagedOrderType> orderTypes = new HashSet<>();
+
+        for (final ManagedOrderType managedOrderType : ManagedOrderType.values()) {
+
+            if (availableSymbol.isLeanAllowed() || !managedOrderType.requiresLean()) {
+                orderTypes.add(managedOrderType);
+            }
+        }
+
+        publisher.publish(new OrderEntrySymbolChannel(availableSymbol.getSymbol(), channel, orderTypes));
         channel.subscribe(fiber, this::send);
         return null;
     }
@@ -151,20 +159,6 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
     @Override
     public Void visitServerHeartbeat(final ServerHeartbeat msg) {
         return null;
-    }
-
-    public static class SymbolOrderChannel extends Struct {
-
-        public final String symbol;
-        public final Publisher<OrderEntryCommand> publisher;
-        public final Set<ManagedOrderType> supportedTypes;
-
-        public SymbolOrderChannel(final String symbol, final Publisher<OrderEntryCommand> publisher,
-                final Set<ManagedOrderType> supportedTypes) {
-            this.symbol = symbol;
-            this.publisher = publisher;
-            this.supportedTypes = supportedTypes;
-        }
     }
 
 }

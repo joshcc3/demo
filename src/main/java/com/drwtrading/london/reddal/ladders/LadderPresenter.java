@@ -41,8 +41,8 @@ import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
 import com.drwtrading.london.reddal.opxl.OpxlLadderText;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
-import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
+import com.drwtrading.london.reddal.orderManagement.oe.OrderEntrySymbolChannel;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
 import com.drwtrading.london.reddal.orderManagement.oe.ServerDisconnected;
 import com.drwtrading.london.reddal.orderManagement.oe.UpdateFromServer;
@@ -126,7 +126,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
     private final Map<String, SymbolStackData> stackBySymbol;
-    private final Map<String, OrderEntryClient.SymbolOrderChannel> orderEntryMap;
+    private final Map<String, OrderEntrySymbolChannel> orderEntryMap;
     private final Map<String, SearchResult> refData;
 
     private final TradingStatusForAll tradingStatusForAll = new TradingStatusForAll();
@@ -322,10 +322,6 @@ public class LadderPresenter implements IStackPresenterCallback {
                 view.onRawInboundData(data);
                 view.fastInputFlush();
             }
-        }
-        if (!"heartbeat".equals(cmd)) {
-            trace.publish(
-                    new InboundDataTrace(msg.getClient().getHost(), msg.getClient().getUserName(), args, UiPipeImpl.getDataArg(args)));
         }
     }
 
@@ -534,7 +530,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     }
 
     @Subscribe
-    public void on(final OrderEntryClient.SymbolOrderChannel symbolOrderChannel) {
+    public void on(final OrderEntrySymbolChannel symbolOrderChannel) {
         orderEntryMap.put(symbolOrderChannel.symbol, symbolOrderChannel);
     }
 
