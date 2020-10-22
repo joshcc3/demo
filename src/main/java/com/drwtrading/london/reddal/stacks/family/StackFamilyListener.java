@@ -59,6 +59,12 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     }
 
     @Override
+    public boolean metadataSet(final String source, final String parentSymbol, final String uiName) {
+        presenter.setMetadata(source, parentSymbol, uiName);
+        return true;
+    }
+
+    @Override
     public boolean pendingRequirementsUpdated(final String source, final long strategyID, final boolean isQuoteInstDefEventAvailable,
             final boolean isQuoteBookAvailable, final boolean isLeanBookAvailable, final boolean isFXAvailable,
             final boolean isAdditiveAvailable) {

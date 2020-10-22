@@ -70,7 +70,7 @@ public class StackFamilyView {
     private static final Collection<String> ALLOWED_INST_TYPES = StackStrategiesPresenter.ALLOWED_INST_TYPES;
     private static final StackType[] STACK_TYPES = StackType.values();
 
-    private static final String SOURCE_UI = "FAMILY_ADMIN_UI";
+    static final String SOURCE_UI = "FAMILY_ADMIN_UI";
 
     private static final String MD_SOURCE_FILTER_GROUP = "Trading Venue";
     private static final Pattern FILTER_SPLITTER = Pattern.compile("\\|");
@@ -106,6 +106,7 @@ public class StackFamilyView {
 
     private final Map<String, FamilyUIData> familyUIData;
     private final Map<String, ChildUIData> childrenUIData;
+    private final Set<String> communityUINames;
 
     private final Map<String, SearchResult> searchResults;
     private final Map<String, LinkedHashSet<String>> fungibleInsts;
@@ -152,6 +153,7 @@ public class StackFamilyView {
 
         this.familyUIData = new HashMap<>();
         this.childrenUIData = new HashMap<>();
+        this.communityUINames = new HashSet<>();
 
         this.searchResults = new HashMap<>();
         this.fungibleInsts = new HashMap<>();
@@ -191,6 +193,16 @@ public class StackFamilyView {
 
     public void bufferETFDef(final ETFDef etfDef) {
         bufferedETFDefs.put(etfDef.indexDef.name, etfDef);
+    }
+
+    public void setMetadata(final String parentSymbol, final String uiName) {
+        final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
+        if (null != familyUIData) {
+            familyUIData.setUIName(uiName);
+            final boolean isAdded = communityUINames.add(uiName);
+            assert isAdded;
+            views.all().setFamilyName(parentSymbol, uiName);
+        }
     }
 
     private static boolean isFamilyAsylum(final FamilyUIData parentUIData) {
@@ -379,7 +391,7 @@ public class StackFamilyView {
         if (isFamilyDisplayable(familyData)) {
 
             final boolean isAsylum = isFamilyAsylum(familyData);
-            views.all().addFamily(familyName, isAsylum);
+            views.all().addFamily(familyName, isAsylum, familyData.getUIName());
             updateFamilyUIData(views.all(), familyData);
         }
     }
@@ -394,7 +406,7 @@ public class StackFamilyView {
         final StackUIData uiData = familyData.uiData;
 
         if (isFamilyDisplayable(uiData.symbol)) {
-            view.setParentData(uiData.symbol, uiData.getActiveBidPriceOffsetBPS(), uiData.getActiveAskPriceOffsetBPS(),
+            view.setParentData(uiData.symbol, familyData.getUIName(), uiData.getActiveBidPriceOffsetBPS(), uiData.getActiveAskPriceOffsetBPS(),
                     uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
                     uiData.isStackEnabled(BookSide.ASK, StackType.PICARD), uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
         }
@@ -495,7 +507,7 @@ public class StackFamilyView {
 
             final FamilyUIData parentUIData = familyUIData.get(familyName);
             final boolean isAsylum = isFamilyAsylum(parentUIData);
-            newView.addFamily(familyName, isAsylum);
+            newView.addFamily(familyName, isAsylum, family.getUIName());
 
             for (final StackUIRelationship child : family.getAllRelationships()) {
 
@@ -537,9 +549,9 @@ public class StackFamilyView {
                 if (null != childUIData && null != childUIData.getFamily() && !StackOrphanage.ORPHANAGE.equals(childUIData.getFamily())) {
                     familyUIs.add(familyUIData.get(childUIData.getFamily()));
                 } else {
-                    for (final Map.Entry<String, FamilyUIData> entry : familyUIData.entrySet()) {
-                        if (entry.getKey().startsWith(symbol)) {
-                            familyUIs.add(entry.getValue());
+                    for (final FamilyUIData entry : familyUIData.values()) {
+                        if (entry.getUIName().startsWith(symbol)) {
+                            familyUIs.add(entry);
                         }
                     }
                 }
@@ -569,7 +581,7 @@ public class StackFamilyView {
         final String familyName = constructFamilyName(primaryListing);
         final List<String> familyDefinitions = List.of(familyName);
 
-        if(!familyUIData.containsKey(familyName)) {
+        if (!familyUIData.containsKey(familyName)) {
             // TODO jcoutinho cleanup
             final boolean successful = checkFamilyAddition(errors, requests, resultingFamilyNames, primaryListing, familyName);
             final IStackFamilyUI allViews = views.all();
@@ -595,7 +607,7 @@ public class StackFamilyView {
             final String code = instDef.bbgCode;
             tail.append(code, code.length() - 2, code.length());
             final int newScore = TAIL_PREFERENCE.indexOf(tail.toString());
-            if(score < newScore) {
+            if (score < newScore) {
                 score = newScore;
                 primaryListing = instDef.bbgCode;
             }
@@ -605,14 +617,13 @@ public class StackFamilyView {
 
     private String constructFamilyName(final String primaryListing) {
 
-
         final String root = primaryListing.substring(0, primaryListing.indexOf(' '));
-//        String newFamilyName = root;
-//        int suffixIx = 1;
-//        while (familyUIData.containsKey(newFamilyName)) {
-//            newFamilyName = root + '_' + suffixIx;
-//            suffixIx++;
-//        }
+        //        String newFamilyName = root;
+        //        int suffixIx = 1;
+        //        while (familyUIData.containsKey(newFamilyName)) {
+        //            newFamilyName = root + '_' + suffixIx;
+        //            suffixIx++;
+        //        }
 
         return root;
 
@@ -985,7 +996,7 @@ public class StackFamilyView {
     public void createFamily(final String symbol, final boolean isAsylum, final boolean isADRName, final WebSocketInboundData data) {
 
         if (isAsylum) {
-            communityManager.createAsylum(SOURCE_UI, symbol, community.instType, community);
+            communityManager.createAsylum(SOURCE_UI, symbol, community.instType, community, symbol);
         } else {
             final SearchResult searchResult = searchResults.get(symbol);
             if (null != searchResult) {
@@ -1555,6 +1566,19 @@ public class StackFamilyView {
     public void refreshParent(final String parentSymbol, final WebSocketInboundData data) {
 
         communityManager.reestablishParentalRule(parentSymbol);
+    }
+
+    @FromWebSocketView
+    public void renameFamily(final String parentSymbol, final String newUIName, final WebSocketInboundData data) {
+        final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
+        if (null != familyUIData && !communityUINames.contains(newUIName)) {
+            final boolean isRemovedElement = communityUINames.remove(familyUIData.getUIName());
+            assert isRemovedElement;
+            communityUINames.add(newUIName);
+            communityManager.setFamilyMetadata(SOURCE_UI, parentSymbol, newUIName);
+        } else {
+            views.get(data.getOutboundChannel()).displayErrorMsg(newUIName + " already taken");
+        }
     }
 
     @FromWebSocketView

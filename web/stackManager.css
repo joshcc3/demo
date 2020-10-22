@@ -345,6 +345,15 @@ input::-webkit-inner-spin-button:hover {
 
 .familyDetails .familyName {
 	text-align: left;
+	width: 0px;
+	font-size: 20px;
+	padding-left: 10px;
+	margin: 0;
+	cursor: pointer;
+	visibility: hidden;
+}
+.familyDetails .uiName {
+	text-align: left;
 	width: 120px;
 	font-size: 20px;
 	padding-left: 10px;

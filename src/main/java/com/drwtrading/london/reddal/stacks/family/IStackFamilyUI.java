@@ -25,7 +25,7 @@ public interface IStackFamilyUI {
     public void  addCreateChildRow(final String symbol, final boolean isChildAlreadyCreated, final Collection<String> nibblers,
             final String tradableNibbler, final Collection<String> instTypes, final String leanType, final String leanSymbol);
 
-    public void addFamily(final String familyName, final boolean isAsylum);
+    public void addFamily(final String familyName, final boolean isAsylum, final String uiName);
 
     public void removeChild(final String familyName, final String childSymbol);
 
@@ -36,7 +36,7 @@ public interface IStackFamilyUI {
 
     public void displayErrorMsg(final String text);
 
-    public void setParentData(final String familyName, final String bidPriceOffset, final String askPriceOffset,
+    public void setParentData(final String familyName, final String uiName, final String bidPriceOffset, final String askPriceOffset,
             final boolean bidPicardEnabled, final boolean bidQuoterEnabled, final boolean askPicardEnabled, final boolean askQuoterEnabled);
 
     public void setChildData(final String symbol, final String leanSymbol, final String nibblerName, final boolean isBidStrategyOn,
@@ -52,4 +52,7 @@ public interface IStackFamilyUI {
     void displayInfoMsg(String text);
 
     void lazySymbolSubscribe(String symbol);
+
+    void setFamilyName(String parentSymbol, String uiName);
+
 }

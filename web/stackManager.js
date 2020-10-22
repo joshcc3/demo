@@ -10,7 +10,7 @@ const subscribedToSymbols = new Set()
 $(function () {
 
 	ws = connect();
-	ws.logToConsole = false;
+	ws.logToConsole = true;
 	ws.onmessage = function (m) {
 		eval(m);
 	};
@@ -568,8 +568,9 @@ function minimiseAll() {
 	$(".family .children").toggleClass("hidden", true);
 }
 
-function addFamily(familyName, isAsylum) {
+function addFamily(familyName, isAsylum, _uiName) {
 
+	const uiName = _uiName ? _uiName : familyName;
 	const familyID = "family_" + cleanID(familyName);
 	let family = findChild(familyID);
 	if (family.length < 1 && (!isLazy || subscribedToSymbols.has(familyName))) {
@@ -611,8 +612,49 @@ function addFamily(familyName, isAsylum) {
 
 		const familyNameDiv = family.find(".familyName");
 		familyNameDiv.text(familyName);
-		familyNameDiv.unbind().bind("click", function () {
-			familyBlock.toggleClass("hidden", !familyBlock.hasClass("hidden"));
+
+		let editable = false
+
+		let lastUIName = familyName;
+
+		const uiNameDiv = family.find(".uiName");
+		uiNameDiv.text(uiName);
+		uiNameDiv.unbind().bind("click", function () {
+			if(!editable) {
+				familyBlock.toggleClass("hidden", !familyBlock.hasClass("hidden"));
+			}
+		});
+
+		uiNameDiv.bind('keypress', function (e) {
+			if(editable) {
+				if(e.keyCode === 13) {
+					const currentUIName = uiNameDiv.text();
+					const regexMatch =  /^[a-z0-9_][a-z0-9 _-]+$/i;
+					const lengthCheck = 3 <= currentUIName.length && 10 >= currentUIName.length;
+					const charCheck = currentUIName.match(regexMatch) !== null
+					if(!lengthCheck) {
+						displayErrorMsg("Family name must be between 3 and 10 characters long")
+					} else if(!charCheck) {
+						displayErrorMsg("Family name can only have the following characters [a-z0-9 _-]")
+					} else {
+						ws.send(`renameFamily,${familyName},${currentUIName}`)
+						uiNameDiv.text(lastUIName);
+						uiNameDiv.attr('contenteditable', 'false');
+						editable = false;
+					}
+					return false;
+				}
+			}
+		})
+
+		const uiNameEdit = family.find(".uiNameEdit");
+		uiNameEdit.unbind().bind("click", function() {
+			lastUIName = uiNameDiv.text()
+			uiNameDiv.attr('contenteditable', 'true');
+			editable = true;
+		});
+		uiNameDiv.bind("onblur", function() {
+			console.log(uiNameDiv.text());
 		});
 
 		const bidOffsetUpButton = family.find(".bid .priceOffsetUp");
@@ -828,9 +870,9 @@ function lazySymbolSubscribe(familyName) {
 	subscribedToSymbols.add(familyName)
 }
 
-function setParentData(familyName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled, askQuoterEnabled) {
+function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled, askQuoterEnabled) {
 
-	const family = addFamily(familyName);
+	const family = addFamily(familyName, false, uiName);
 
 	family.find(".familyDetails .bid.priceOffset").text(bidPriceOffset);
 	family.find(".familyDetails .ask.priceOffset").text(askPriceOffset);
@@ -863,7 +905,7 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 	const rowID = cleanID(childSymbol);
 	let row = $("#" + rowID);
 
-	const exchangeTable = addFamily(familyName).find(".children");
+	const exchangeTable =  addFamily(familyName).find(".children");
 	let quoteSymbolCell;
 	if (row.length < 1) {
 
@@ -1129,6 +1171,14 @@ function openConfig(symbolList) {
 
 function offsetsSaved() {
 	playSound(saveSound);
+}
+
+function setFamilyName(parentSymbol, uiName) {
+	const familyID = "family_" + cleanID(parentSymbol);
+	let family = findChild(familyID);
+	if (family.length >= 1) {
+		family.find('.uiName').text(uiName);
+	}
 }
 
 function offsetsLoaded() {

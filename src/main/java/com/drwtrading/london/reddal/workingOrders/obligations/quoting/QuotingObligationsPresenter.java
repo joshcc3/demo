@@ -9,8 +9,6 @@ import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
-import com.drwtrading.websockets.WebSocketConnected;
-import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 

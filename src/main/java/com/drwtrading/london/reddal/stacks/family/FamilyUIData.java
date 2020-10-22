@@ -13,12 +13,13 @@ class FamilyUIData {
     private final NavigableMap<String, StackUIRelationship> relationships;
 
     private StackCommunity stackCommunity;
+    private String uiName;
 
     FamilyUIData(final StackUIData uiData) {
 
         this.uiData = uiData;
         this.relationships = new TreeMap<>();
-
+        this.uiName = uiData.symbol;
         this.stackCommunity = null;
     }
 
@@ -44,5 +45,13 @@ class FamilyUIData {
 
     Collection<StackUIRelationship> getAllRelationships() {
         return relationships.values();
+    }
+
+    void setUIName(final String uiName) {
+        this.uiName  = uiName;
+    }
+
+    String getUIName() {
+        return uiName;
     }
 }

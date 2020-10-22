@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.stacks.family;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
+import com.drwtrading.london.eeif.stack.manager.relations.StackFamily;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
 import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
@@ -214,9 +215,17 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         }
     }
 
+    boolean setMetadata(final String source, final String parentSymbol, final String uiName) {
+        assert source.equals(StackFamilyView.SOURCE_UI);
+        for (final StackFamilyView familyView : communityViews.values()) {
+            familyView.setMetadata(parentSymbol, uiName);
+        }
+        return true;
+    }
+
     public void autoFamily(final ETFDef etfDef) {
         final StackCommunity community = StackCommunity.getForIndexType(etfDef.indexDef.indexType);
-        if(communityViews.containsKey(community)) {
+        if (communityViews.containsKey(community)) {
             communityViews.get(community).bufferETFDef(etfDef);
         }
     }
@@ -279,4 +288,5 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             return StackCommunity.DM;
         }
     }
+
 }
