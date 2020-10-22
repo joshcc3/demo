@@ -45,8 +45,8 @@ public class IndyClient implements IIndyCacheListener {
     private final Publisher<SymbolIndyData> symbolDescriptions;
 
     public IndyClient(final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs,
-            final EnumMap<StackCommunity, TypedChannel<String>> symbolCommunityChannels, final TypedChannel<InstrumentDef> instDefs, final TypedChannel<ETFDef> etfDefs,
-            final Publisher<SymbolIndyData> symbolDescriptions) {
+            final EnumMap<StackCommunity, TypedChannel<String>> symbolCommunityChannels, final TypedChannel<InstrumentDef> instDefs,
+            final TypedChannel<ETFDef> etfDefs, final Publisher<SymbolIndyData> symbolDescriptions) {
         this.symbolCommunityInstrumentIDs = symbolCommunityInstrumentIDs;
         this.symbolCommunityChannels = symbolCommunityChannels;
         this.instDefs = instDefs;
@@ -91,16 +91,16 @@ public class IndyClient implements IIndyCacheListener {
             final SymbolIndyData data = new SymbolIndyData(instDef.instID, instDef.bbgCode, etfDef.indexDef.name, etfDef.indexDef.source);
             symbolDescriptions.publish(data);
             instIDCommunities.put(instDef.instID, StackCommunity.getForIndexType(etfDef.indexDef.indexType));
-            publishSearchResultCommunity(searchResultCommunities.remove(instDef.instID));
+            publishSearchResultCommunity(searchResultCommunities.get(instDef.instID));
         }
         etfDefs.publish(etfDef);
         return true;
     }
 
     private void publishSearchResultCommunity(final List<SearchResult> searchResults) {
-        if(null != searchResults) {
-            for(final SearchResult searchResult : searchResults) {
-                final StackCommunity community = instIDCommunities.remove(searchResult.instID);
+        if (null != searchResults) {
+            for (final SearchResult searchResult : searchResults) {
+                final StackCommunity community = instIDCommunities.get(searchResult.instID);
                 if (null != community) {
                     symbolCommunityInstrumentIDs.get(community).publish(searchResult.instID);
                     symbolCommunityChannels.get(community).publish(searchResult.symbol);

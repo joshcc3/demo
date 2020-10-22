@@ -70,10 +70,10 @@ public class StockAlertPresenter {
         for (final StackCommunity community : StackCommunity.values()) {
             if (community == StackCommunity.FI) {
                 this.communityViews.put(community, fiView);
-                this.communityAlerts.put(community, dmAlerts);
+                this.communityAlerts.put(community, fiAlerts);
             } else {
                 this.communityViews.put(community, dmView);
-                this.communityAlerts.put(community, fiAlerts);
+                this.communityAlerts.put(community, dmAlerts);
             }
         }
 
