@@ -16,6 +16,8 @@ import org.jetlang.channels.Publisher;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class IndyClient implements IIndyCacheListener {
@@ -23,7 +25,7 @@ public class IndyClient implements IIndyCacheListener {
     private static final Map<IndexConstant, EnumSet<FutureConstant>> FUTURES_FOR_INDEX = new EnumMap<>(IndexConstant.class);
     private final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs;
     private final EnumMap<StackCommunity, TypedChannel<String>> symbolCommunityChannels;
-    private final Map<InstrumentID, SearchResult> searchResultCommunities;
+    private final Map<InstrumentID, List<SearchResult>> searchResultCommunities;
     private final Map<InstrumentID, StackCommunity> instIDCommunities;
 
     static {
@@ -95,19 +97,22 @@ public class IndyClient implements IIndyCacheListener {
         return true;
     }
 
-    private void publishSearchResultCommunity(final SearchResult searchResult) {
-        if(null != searchResult) {
-            final StackCommunity community = instIDCommunities.remove(searchResult.instID);
-            if (null != community) {
-                symbolCommunityInstrumentIDs.get(community).publish(searchResult.instID);
-                symbolCommunityChannels.get(community).publish(searchResult.symbol);
-            } else {
-                searchResultCommunities.put(searchResult.instID, searchResult);
+    private void publishSearchResultCommunity(final List<SearchResult> searchResults) {
+        if(null != searchResults) {
+            for(final SearchResult searchResult : searchResults) {
+                final StackCommunity community = instIDCommunities.remove(searchResult.instID);
+                if (null != community) {
+                    symbolCommunityInstrumentIDs.get(community).publish(searchResult.instID);
+                    symbolCommunityChannels.get(community).publish(searchResult.symbol);
+                } else {
+                    searchResultCommunities.putIfAbsent(searchResult.instID, new LinkedList<>());
+                    searchResultCommunities.get(searchResult.instID).add(searchResult);
+                }
             }
         }
     }
 
     public void setSearchResult(final SearchResult searchResult) {
-        publishSearchResultCommunity(searchResult);
+        publishSearchResultCommunity(List.of(searchResult));
     }
 }
