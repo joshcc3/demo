@@ -216,7 +216,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
     public void autoFamily(final ETFDef etfDef) {
         final StackCommunity community = StackCommunity.getForIndexType(etfDef.indexDef.indexType);
-        communityViews.get(community).bufferETFDef(etfDef);
+        if(communityViews.containsKey(community)) {
+            communityViews.get(community).bufferETFDef(etfDef);
+        }
     }
 
     public void webControl(final WebSocketControlMessage webMsg) {

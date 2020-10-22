@@ -31,6 +31,7 @@ public class QuotingObligationsRouter {
         dmView = new QuotingObligationsPresenter(StackCommunity.DM, uiSelectIO, webLog);
         final QuotingObligationsPresenter fiView = new QuotingObligationsPresenter(StackCommunity.FI, uiSelectIO, webLog);
 
+        // TODO - restrict to only 'primary' views
         communityPresenters = new EnumMap<>(StackCommunity.class);
         for (final StackCommunity community : StackCommunity.values()) {
             if (StackCommunity.FI == community) {
