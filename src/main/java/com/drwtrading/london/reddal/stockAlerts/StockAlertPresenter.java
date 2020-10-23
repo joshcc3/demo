@@ -121,8 +121,8 @@ public class StockAlertPresenter {
     public void addAlert(final StockAlert stockAlert) {
         final StackCommunity community = symbolCommunity.getOrDefault(stockAlert.symbol, StackCommunity.DM);
         final LinkedHashSet<StockAlert> stockAlerts = communityAlerts.get(community);
-        if (stockAlerts.add(stockAlert)) {
-
+        if (!stockAlerts.contains(stockAlert)) {
+            stockAlerts.add(stockAlert);
             final boolean isRecent = Math.abs(stockAlert.milliSinceMidnight - clock.getMillisSinceMidnightUTC()) < MAX_RFQ_ALERT_MILLIS;
 
             final WebSocketViews<IStockAlertsView> stockAlertView = communityViews.get(community);

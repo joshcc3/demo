@@ -1,5 +1,6 @@
 let meowSound;
-const LastMeowTime = new Date().getTime();
+new Date().getTime();
+let communityName;
 
 $(function () {
 
@@ -11,14 +12,13 @@ $(function () {
 	};
 
 	const hash = document.location.hash.substr(1);
-	let communityStr;
-	if(0 === hash.length) {
-		communityStr = "DM";
+	if (0 === hash.length) {
+		communityName = "DEFAULT";
 	} else {
-		communityStr = hash;
+		communityName = hash;
 	}
 
-	ws.send("subscribeToCommunity," + communityStr)
+	ws.send("subscribeToCommunity," + communityName)
 
 	$(window).trigger("startup-done");
 
@@ -34,10 +34,10 @@ $(function () {
 	});
 
 	$("#everythingOn").click(function () {
-		ws.send(command("everythingOn", []));
+		ws.send(command("everythingOn", [communityName]));
 	});
 	$("#everythingOff").click(function () {
-		ws.send(command("everythingOff", []));
+		ws.send(command("everythingOff", [communityName]));
 	});
 });
 
@@ -64,7 +64,8 @@ function checkWarning() {
 	}
 }
 
-function setRow(rowID, symbol, sourceNibbler, percentageOn, isEnabled, isStrategyOn, isStrategyQuoting, stateDescription, isObligationFail) {
+function setRow(rowID, symbol, sourceNibbler, percentageOn, isEnabled, isStrategyOn, isStrategyQuoting, stateDescription,
+	isObligationFail) {
 
 	let row = $("#" + rowID);
 	if (row.size() < 1) {
@@ -83,19 +84,19 @@ function setRow(rowID, symbol, sourceNibbler, percentageOn, isEnabled, isStrateg
 			launchLadder(symbol);
 		});
 		row.find(".smallButton.strategyOn").click(function () {
-			ws.send(command("startStrategy", [symbol]));
+			ws.send(command("startStrategy", [communityName, symbol]));
 		});
 		row.find(".smallButton.strategyOff").click(function () {
-			ws.send(command("stopStrategy", [symbol]));
+			ws.send(command("stopStrategy", [communityName, symbol]));
 		});
 		row.find(".enabled").change(function () {
-			ws.send(command("setEnabledState", [symbol]))
+			ws.send(command("setEnabledState", [communityName, symbol]))
 		});
 
 		addSortedDiv(table.find(".row"), row, function (a, b) {
 			const aID = a.attr("id");
 			const bID = b.attr("id");
-			return aID < bID ? -1 : aID == bID ? 0 : 1;
+			return aID < bID ? -1 : aID === bID ? 0 : 1;
 		});
 	}
 

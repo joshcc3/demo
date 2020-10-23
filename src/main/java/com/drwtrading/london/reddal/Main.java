@@ -163,7 +163,7 @@ import com.drwtrading.london.reddal.workingOrders.bestPrices.OPXLBestWorkingOrde
 import com.drwtrading.london.reddal.workingOrders.gtc.GTCWorkingOrderMaintainer;
 import com.drwtrading.london.reddal.workingOrders.gtc.OPXLGTCWorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.futures.FutureObligationPresenter;
-import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsRouter;
+import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationOPXL;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationSet;
@@ -300,6 +300,9 @@ public class Main {
                 !root.paramExists(IS_EQUITIES_SEARCHABLE_PARAM) || root.getBoolean(IS_EQUITIES_SEARCHABLE_PARAM);
         final boolean isFuturesSearchable = !root.paramExists(IS_FUTURES_SEARCHABLE_PARAM) || root.getBoolean(IS_FUTURES_SEARCHABLE_PARAM);
 
+        final Set<StackCommunity> primaryCommunities =
+                app.config.getEnabledGroup("stacks").getEnumSet("primaryCommunities", StackCommunity.class);
+
         final Map<String, TypedChannel<WebSocketControlMessage>> webSocketsForLogging = new HashMap<>();
 
         final WebApplication webApp = new WebApplication(webPort, channels.errorPublisher);
@@ -373,6 +376,7 @@ public class Main {
 
         // Load stacks
         final Map<MDSource, LinkedList<ConfigGroup>> stackConfigs = new EnumMap<>(MDSource.class);
+
         final ConfigGroup stackConfig = root.getEnabledGroup("stacks", "nibblers");
         if (null != stackConfig) {
 
@@ -408,10 +412,10 @@ public class Main {
         app.addStartUpAction(opxlClient::start);
 
         setupStackManager(app, fibers, channels, webApp, webLog, selectIOFiber, opxlSelectIO, opxlMonitor, opxlClient, contractSetGenerator,
-                isEquitiesSearchable);
+                isEquitiesSearchable, primaryCommunities);
         final Map<MDSource, LinkedList<ConfigGroup>> nibblers =
                 setupBackgroundNibblerTransport(app, opxlSelectIO, opxlMonitor, opxlClient, fibers, webApp, webLog, selectIOFiber, channels,
-                        EXCEPTION_HANDLER);
+                        EXCEPTION_HANDLER, primaryCommunities);
 
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> ladderWebSockets = new EnumMap<>(MDSource.class);
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> orderWebSockets = new EnumMap<>(MDSource.class);
@@ -753,7 +757,9 @@ public class Main {
 
         // Indy
         final ConfigGroup indyConfig = root.getGroup("indy");
-        final IndyClient indyListener = new IndyClient(channels.communityInstrumentIDs, channels.communitySymbols, channels.instDefs, channels.etfDefs, channels.symbolDescs);
+        final IndyClient indyListener =
+                new IndyClient(channels.communityInstrumentIDs, channels.communitySymbols, channels.instDefs, channels.etfDefs,
+                        channels.symbolDescs);
         channels.searchResults.subscribe(selectIOFiber, indyListener::setSearchResult);
 
         final String indyUsername = indyConfig.getString("username");
@@ -1003,7 +1009,8 @@ public class Main {
     private static void setupStackManager(final Application<ReddalComponents> app, final ReddalFibers fibers, final ReddalChannels channels,
             final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber, final SelectIO opxlSelectIO,
             final IFuseBox<OPXLComponents> opxlMonitor, final OpxlClient<?> opxlClient,
-            final SpreadContractSetGenerator contractSetGenerator, final boolean isForETF) throws Exception {
+            final SpreadContractSetGenerator contractSetGenerator, final boolean isForETF, final Set<StackCommunity> primaryCommunity)
+            throws Exception {
 
         final ConfigGroup stackConfig = app.config.getEnabledGroup("stacks");
         if (null != stackConfig) {
@@ -1025,7 +1032,6 @@ public class Main {
             final OpxlStrategyOffsetsUI symbolOffsetUI = new OpxlStrategyOffsetsUI(opxlClient, symbolOffsetOPXLConfig);
             app.selectIO.addDelayedAction(10_000, symbolOffsetUI::flush);
 
-            final Set<StackCommunity> primaryCommunity = stackConfig.getEnumSet("primaryCommunities", StackCommunity.class);
             final Set<StackCommunity> secondaryViews = stackConfig.getEnumSet("otherCommunities", StackCommunity.class);
 
             final StackFamilyPresenter stackFamilyPresenter =
@@ -1147,8 +1153,8 @@ public class Main {
     private static Map<MDSource, LinkedList<ConfigGroup>> setupBackgroundNibblerTransport(final Application<ReddalComponents> app,
             final SelectIO opxlSelectIO, final IFuseBox<OPXLComponents> opxlMonitor, final OpxlClient<OPXLComponents> opxlClient,
             final ReddalFibers fibers, final WebApplication webApp, final UILogger webLog, final SelectIOFiber selectIOFiber,
-            final ReddalChannels channels, final Thread.UncaughtExceptionHandler uncaughtExceptionHandler)
-            throws ConfigException, IOException {
+            final ReddalChannels channels, final Thread.UncaughtExceptionHandler uncaughtExceptionHandler,
+            final Set<StackCommunity> primaryCommunities) throws ConfigException, IOException {
 
         final Map<MDSource, LinkedList<ConfigGroup>> result = new EnumMap<>(MDSource.class);
 
@@ -1198,13 +1204,14 @@ public class Main {
                 rfqObligationPresenter = presenter;
             }
 
-            final QuotingObligationsRouter quotingObligationsRouter = new QuotingObligationsRouter(app.selectIO, webLog);
+            final QuotingObligationsPresenter quotingObligationsPresenter =
+                    new QuotingObligationsPresenter(primaryCommunities, app.selectIO, webLog);
             for (final Map.Entry<StackCommunity, TypedChannel<String>> entry : channels.communitySymbols.entrySet()) {
                 final StackCommunity community = entry.getKey();
                 final TypedChannel<String> channel = entry.getValue();
-                channel.subscribe(selectIOFiber, symbol -> quotingObligationsRouter.setSymbol(community, symbol));
+                channel.subscribe(selectIOFiber, symbol -> quotingObligationsPresenter.setSymbol(community, symbol));
             }
-            channels.quotingObligationsCmds.subscribe(selectIOFiber, quotingObligationsRouter::enableQuotes);
+            channels.quotingObligationsCmds.subscribe(selectIOFiber, quotingObligationsPresenter::enableQuotes);
             final FutureObligationPresenter futureObligationPresenter = new FutureObligationPresenter();
 
             final IWorkingOrdersCallback bestWorkingOrderMaintainer;
@@ -1306,7 +1313,7 @@ public class Main {
                         throw new IllegalStateException("Trading nibbler [" + nibbler + "] configured without priority.");
                     } else {
 
-                        quotingObligationsRouter.setNibblerHandler(nibbler, client);
+                        quotingObligationsPresenter.setNibblerHandler(nibbler, client);
 
                         orderRouter.addNibbler(nibbler, orderEntry);
 
@@ -1316,7 +1323,7 @@ public class Main {
                         workingOrderPresenter.addNibbler(nibbler);
                         final WorkingOrderListener workingOrderListener =
                                 new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
-                                        gtcWorkingOrdersMaintainer, futureObligationPresenter, quotingObligationsRouter, orderRouter);
+                                        gtcWorkingOrdersMaintainer, futureObligationPresenter, quotingObligationsPresenter, orderRouter);
                         cache.addTradingDataListener(workingOrderListener, true, true);
 
                         blotterClient.setWorkingOrderListener(workingOrderListener);
@@ -1345,7 +1352,7 @@ public class Main {
 
             final TypedChannel<WebSocketControlMessage> quotingObligationsWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("quotingObligations", "quotingObligations", fibers.ui, webApp, quotingObligationsWebSocket);
-            quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsRouter::webControl);
+            quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsPresenter::webControl);
 
             final boolean isMarketNumbersWanted = app.config.paramExists("marketNumbers") && app.config.getBoolean("marketNumbers");
             final ConfigGroup indyConfigGroup = app.config.getEnabledGroup("indyConfig");

@@ -12,6 +12,8 @@ import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.EnumSet;
+
 public class QuotingObligationsPresenterTest {
 
     public static final User USER = User.CMILLER;
@@ -34,34 +36,66 @@ public class QuotingObligationsPresenterTest {
     @Test
     public void doNotStartQuotingDisabledTest() {
 
-        final QuotingObligationsPresenter presenter = new QuotingObligationsPresenter(StackCommunity.DM, selectIO, webLog);
+        final QuotingObligationsPresenter presenter =
+                new QuotingObligationsPresenter(EnumSet.of(StackCommunity.DM, StackCommunity.FI), selectIO, webLog);
 
         final QuotingState quotingState = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, quotingState);
 
-        presenter.setEnabledState(SYMBOL);
-        presenter.startStrategy(SYMBOL, USER);
-        presenter.everythingOn(inboundData);
+        presenter.setEnabledState("DM", SYMBOL, null);
+        presenter.startStrategy(StackCommunity.DM, SYMBOL, USER);
+        presenter.everythingOn("DM", inboundData);
 
         Mockito.verify(nibblerHandler, Mockito.never()).startQuoter(1, USER);
 
-        presenter.setEnabledState(SYMBOL);
-        presenter.startStrategy(SYMBOL, USER);
+        presenter.setEnabledState("DM", SYMBOL, null);
+        presenter.startStrategy(StackCommunity.DM, SYMBOL, USER);
 
         Mockito.verify(nibblerHandler).startQuoter(1, USER);
     }
 
     @Test
+    public void fiDMSplitTest() {
+
+        final QuotingObligationsPresenter presenter =
+                new QuotingObligationsPresenter(EnumSet.of(StackCommunity.DM, StackCommunity.FI), selectIO, webLog);
+
+        final QuotingState quotingState = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
+        presenter.setNibblerHandler(NIBBLER, nibblerHandler);
+        presenter.setQuotingState(NIBBLER, quotingState);
+
+        presenter.setEnabledState("DM", SYMBOL, null);
+        presenter.startStrategy(StackCommunity.DM, SYMBOL, USER);
+        presenter.everythingOn("DM", inboundData);
+
+        Mockito.verify(nibblerHandler, Mockito.never()).startQuoter(1, USER);
+
+        presenter.setEnabledState("DM", SYMBOL, null);
+        presenter.startStrategy(StackCommunity.DM, SYMBOL, USER);
+
+        Mockito.verify(nibblerHandler).startQuoter(1, USER);
+        Mockito.reset(nibblerHandler);
+
+        presenter.setSymbol(StackCommunity.FI, SYMBOL);
+        presenter.stopStrategy("DM", SYMBOL, null);
+        Mockito.verifyZeroInteractions(nibblerHandler);
+        presenter.stopStrategy("FI", SYMBOL, null);
+        Mockito.verify(nibblerHandler).stopQuoter(1);
+        Mockito.verify(nibblerHandler).batchComplete();
+    }
+
+    @Test
     public void disableQuotingTest() {
-        final QuotingObligationsPresenter presenter = new QuotingObligationsPresenter(StackCommunity.DM, selectIO, webLog);
+        final QuotingObligationsPresenter presenter =
+                new QuotingObligationsPresenter(EnumSet.of(StackCommunity.DM, StackCommunity.FI), selectIO, webLog);
 
         final QuotingState quotingState = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, quotingState);
 
         presenter.setQuotingState(NIBBLER, new QuotingState(1, 1, SYMBOL, true, SYMBOL));
-        presenter.setEnabledState(SYMBOL);
+        presenter.setEnabledState("DM", SYMBOL, null);
 
         Mockito.verify(nibblerHandler).stopQuoter(1);
     }

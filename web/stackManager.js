@@ -7,6 +7,30 @@ let isLazy = false;
 const searchedForSymbols = new Set()
 const subscribedToSymbols = new Set()
 
+const emojiSymbols = {
+	"omega": "\u03A9",
+	"smile": String.fromCodePoint(0x1F600),
+	"smiley": String.fromCodePoint(0x1F600),
+	"poop": String.fromCodePoint(0x1F4A9),
+	"middle-finger": String.fromCodePoint(0x1F595),
+	"cloud-sun": String.fromCodePoint(0x26C5),
+	"money-mouth-face": String.fromCodePoint(0x1F911),
+	"hundred-points": String.fromCodePoint(0x1F4AF),
+	"australia": String.fromCodePoint(0x1F1FA),
+	"brazil": String.fromCodePoint(0x1F1F7),
+	"china": String.fromCodePoint(0x1F1F3),
+	"germany": String.fromCodePoint(0x1F1EC),
+	"spain": String.fromCodePoint(0x1F1F8),
+	"european-union": String.fromCodePoint(0x1F1FA),
+	"france": String.fromCodePoint(0x1F1F7),
+	"united-kingdom": String.fromCodePoint(0x1F1E7),
+	"hong-kong": String.fromCodePoint(0x1F1F0),
+	"netherlands": String.fromCodePoint(0x1F1F1),
+	"norway": String.fromCodePoint(0x1F1F4),
+	"russia": String.fromCodePoint(0x1F1FA),
+	"united-states": String.fromCodePoint(0x1F1F2)
+}
+
 $(function () {
 
 	ws = connect();
@@ -615,10 +639,10 @@ function addFamily(familyName, isAsylum, _uiName) {
 
 		let editable = false
 
-		let lastUIName = familyName;
+		let lastUIName = emojify(familyName);
 
 		const uiNameDiv = family.find(".uiName");
-		uiNameDiv.text(uiName);
+		uiNameDiv.text(emojify(uiName));
 		uiNameDiv.unbind().bind("click", function () {
 			if(!editable) {
 				familyBlock.toggleClass("hidden", !familyBlock.hasClass("hidden"));
@@ -628,10 +652,10 @@ function addFamily(familyName, isAsylum, _uiName) {
 		uiNameDiv.bind('keypress', function (e) {
 			if(editable) {
 				if(e.keyCode === 13) {
-					const currentUIName = uiNameDiv.text();
-					const regexMatch =  /^[a-z0-9_][a-z0-9 _-]+$/i;
-					const lengthCheck = 3 <= currentUIName.length && 10 >= currentUIName.length;
-					const charCheck = currentUIName.match(regexMatch) !== null
+					const currentUIName = unemojify(uiNameDiv.text());
+					const regexMatch =  /^[a-z0-9_][a-z0-9_-]+$/i;
+					const lengthCheck = 3 <= currentUIName.length && 30 >= currentUIName.length;
+					const charCheck = currentUIName.match(regexMatch) !== null;
 					if(!lengthCheck) {
 						displayErrorMsg("Family name must be between 3 and 10 characters long")
 					} else if(!charCheck) {
@@ -1177,7 +1201,8 @@ function setFamilyName(parentSymbol, uiName) {
 	const familyID = "family_" + cleanID(parentSymbol);
 	let family = findChild(familyID);
 	if (family.length >= 1) {
-		family.find('.uiName').text(uiName);
+		let emojiFied = emojify(uiName);
+		family.find('.uiName').text(emojiFied);
 	}
 }
 
@@ -1191,4 +1216,20 @@ function playSound(sound) {
 		sound.load();
 	}
 	sound.play();
+}
+
+function emojify(uiName) {
+	let emojiFied = uiName
+	for(let key in emojiSymbols) {
+		emojiFied = emojiFied.replace(key, emojiSymbols[key])
+	}
+	return emojiFied;
+}
+
+function unemojify(uiName) {
+	let emojiFied = uiName
+	for(let key in emojiSymbols) {
+		emojiFied = emojiFied.replace(emojiSymbols[key], key)
+	}
+	return emojiFied;
 }
