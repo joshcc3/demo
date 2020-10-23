@@ -1,9 +1,7 @@
 package com.drwtrading.london.reddal.stacks.family;
 
-import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
-import com.drwtrading.london.eeif.stack.manager.relations.StackFamily;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
 import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
 import com.drwtrading.london.eeif.stack.transport.data.config.StackConfigGroup;
@@ -288,5 +286,4 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             return StackCommunity.DM;
         }
     }
-
 }

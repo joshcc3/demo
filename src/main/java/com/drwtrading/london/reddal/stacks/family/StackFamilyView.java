@@ -243,7 +243,6 @@ public class StackFamilyView {
             children.add(searchResult.symbol);
 
             updateSymbolFilters(searchResult.symbol);
-
         }
     }
 
