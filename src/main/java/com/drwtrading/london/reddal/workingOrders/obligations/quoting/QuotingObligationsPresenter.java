@@ -316,7 +316,7 @@ public class QuotingObligationsPresenter {
         for (final QuotingObligationState obligation : obligations.values()) {
             final String symbol = obligation.getSymbol();
             final StackCommunity symbolCommunity = symbolToCommunity.getOrDefault(symbol, StackCommunity.EXILES);
-            if (StackCommunity.uiCommunityContansHack(uiCommunity, symbolCommunity)) {
+            if (StackCommunity.uiCommunityContainsHack(uiCommunity, symbolCommunity)) {
                 f.apply(obligation);
             }
         }

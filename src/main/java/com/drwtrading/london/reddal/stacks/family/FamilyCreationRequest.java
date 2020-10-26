@@ -2,7 +2,6 @@ package com.drwtrading.london.reddal.stacks.family;
 
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 
-import java.util.List;
 import java.util.Set;
 
 public class FamilyCreationRequest {

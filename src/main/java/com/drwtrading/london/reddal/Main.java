@@ -1036,7 +1036,7 @@ public class Main {
 
             final StackFamilyPresenter stackFamilyPresenter =
                     new StackFamilyPresenter(app.selectIO, opxlSelectIO, webLog, contractSetGenerator, primaryCommunity, secondaryViews,
-                            strategySymbolUI, channels.quotingObligationsCmds, app.logDir);
+                            strategySymbolUI, channels.quotingObligationsCmds);
             channels.etfDefs.subscribe(selectIOFiber, stackFamilyPresenter::autoFamily);
 
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);

@@ -2,9 +2,6 @@ package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import drw.eeif.trades.transport.outbound.ITrade;
-
-import javax.imageio.ImageTranscoder;
 
 public class NibblerLastTradeDataForSymbol {
 

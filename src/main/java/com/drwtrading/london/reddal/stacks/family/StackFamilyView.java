@@ -45,12 +45,8 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -122,15 +118,13 @@ public class StackFamilyView {
     private StackCommunityManager communityManager;
 
     private double globalPriceOffsetBPS;
-    private final Path familiesToCreateFile;
 
     private static final List<String> TAIL_PREFERENCE =
             List.of("UF", "UP", "GY", "FH", "DC", "SS", "SE", "ID", "PL", "BB", "NA", "FP", "LI", "LN", "IM");
 
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final StackCommunity community,
             final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
-            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
-            final Path familiesToCreateFile) {
+            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
@@ -142,7 +136,6 @@ public class StackFamilyView {
         this.strategySymbolUI = strategySymbolUI;
 
         this.quotingObligationsCmds = quotingObligationsCmds;
-        this.familiesToCreateFile = familiesToCreateFile;
 
         this.userViews = new HashMap<>();
 
@@ -639,30 +632,6 @@ public class StackFamilyView {
         return 30_000L;
     }
 
-    @FromWebSocketView
-    public void createFamiliesFromFile(final WebSocketInboundData data) {
-        final IStackFamilyUI ui = views.get(data.getOutboundChannel());
-        try {
-            final List<String> familyDefinitions = Files.readAllLines(familiesToCreateFile);
-
-            final List<FamilyCreationRequest> definitions = new ArrayList<>(familyDefinitions.size());
-
-            if (checkViewEligibility(ui)) {
-
-                final boolean allOk = checkAndParseInputFile(ui, familyDefinitions, definitions);
-                final String source = SOURCE_UI + "_FILE";
-                if (allOk) {
-                    createFamilies(ui, source, familyDefinitions, definitions);
-                } else {
-                    ui.displayInfoMsg("Invalid definitions in family input file - no actions performed");
-                }
-            }
-
-        } catch (final IOException e) {
-            ui.displayInfoMsg(e.getMessage());
-        }
-    }
-
     private void createFamilies(final IStackFamilyUI ui, final String source, final List<String> familyDefinitions,
             final List<FamilyCreationRequest> definitions) {
         ui.displayInfoMsg("All input families passed checks - going to create " + familyDefinitions.size() + " families");
@@ -681,27 +650,6 @@ public class StackFamilyView {
                 }
             }
         }
-    }
-
-    private boolean checkAndParseInputFile(final IStackFamilyUI ui, final List<String> familyDefinitions,
-            final List<FamilyCreationRequest> definitions) {
-        boolean allOk = true;
-        int ix = 0;
-        final Set<String> resultingFamilyNames = new HashSet<>(familyUIData.keySet());
-        final List<String> errors = new LinkedList<>();
-        while (ix < familyDefinitions.size() && allOk) {
-            final String familyDefinition = familyDefinitions.get(ix);
-            final String[] parsedDefinition = familyDefinition.split(",");
-            final String familyName = parsedDefinition[0];
-
-            if (!resultingFamilyNames.contains(familyName) && checkRecord(parsedDefinition, errors)) {
-                allOk = checkFamilyAddition(errors, definitions, resultingFamilyNames, parsedDefinition[1], familyName);
-            }
-            ix++;
-        }
-
-        errors.forEach(ui::displayInfoMsg);
-        return allOk;
     }
 
     private boolean checkFamilyAddition(final List<String> errors, final List<FamilyCreationRequest> definitions,
@@ -741,15 +689,6 @@ public class StackFamilyView {
         }
 
         return result;
-    }
-
-    private boolean checkRecord(final String[] parsedDefinition, final List<String> ui) {
-        if (parsedDefinition.length < 2) {
-            ui.add("Invalid record [" + Arrays.toString(parsedDefinition) + ']');
-            return false;
-        } else {
-            return true;
-        }
     }
 
     private static boolean isOTCChild(final String isin, final String child) {
@@ -806,15 +745,6 @@ public class StackFamilyView {
             return false;
         }
 
-    }
-
-    private boolean checkViewEligibility(final IStackFamilyUI ui) {
-        if (!EnumSet.of(StackCommunity.DM, StackCommunity.FI).contains(community) || InstType.ETF != community.instType) {
-            ui.displayInfoMsg("Attempted to create family for invalid stackManager Community " + community);
-            return false;
-        } else {
-            return true;
-        }
     }
 
     @FromWebSocketView
