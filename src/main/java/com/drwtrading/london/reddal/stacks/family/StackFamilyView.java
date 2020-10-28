@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.stacks.family;
 
+import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.persistence.StackPersistenceReader;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
@@ -91,6 +92,8 @@ public class StackFamilyView {
     private final OpxlStrategySymbolUI strategySymbolUI;
 
     private final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds;
+    private final TypedChannel<String> symbolsChannel;
+    private final TypedChannel<InstrumentID> instrumentIDChannel;
 
     private final WebSocketViews<IStackFamilyUI> views;
     private final Map<String, HashSet<IStackFamilyUI>> userViews;
@@ -124,7 +127,8 @@ public class StackFamilyView {
 
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final StackCommunity community,
             final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
-            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
+            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
+            final TypedChannel<String> symbolsChannel, final TypedChannel<InstrumentID> instrumentIDChannel) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
@@ -136,6 +140,8 @@ public class StackFamilyView {
         this.strategySymbolUI = strategySymbolUI;
 
         this.quotingObligationsCmds = quotingObligationsCmds;
+        this.symbolsChannel = symbolsChannel;
+        this.instrumentIDChannel = instrumentIDChannel;
 
         this.userViews = new HashMap<>();
 
@@ -234,6 +240,18 @@ public class StackFamilyView {
 
             final Set<String> children = MapUtils.getMappedLinkedSet(fungibleInsts, searchResult.instID.isin);
             children.add(searchResult.symbol);
+
+            final String symbol = searchResult.symbol;
+
+            final ChildUIData childUIData = childrenUIData.get(symbol);
+
+            if(null != childUIData && !StackOrphanage.ORPHANAGE.equals(childUIData.getFamily())) {
+                final FamilyUIData family = familyUIData.get(childUIData.getFamily());
+                if(null != family && community == family.getStackCommunity()) {
+                    symbolsChannel.publish(symbol);
+                    instrumentIDChannel.publish(searchResult.instID);
+                }
+            }
 
             updateSymbolFilters(searchResult.symbol);
         }
@@ -433,6 +451,12 @@ public class StackFamilyView {
         if (isFamilyDisplayable(parentSymbol)) {
 
             strategySymbolUI.addStrategySymbol(community.instType, childSymbol);
+
+            symbolsChannel.publish(childSymbol);
+            final SearchResult searchResult = searchResults.get(childSymbol);
+            if(null != searchResult) {
+                instrumentIDChannel.publish(searchResult.instID);
+            }
 
             views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
                     familyToChildRatio);

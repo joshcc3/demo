@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.stacks.family;
 
+import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
 import com.drwtrading.london.eeif.stack.manager.relations.StackOrphanage;
@@ -48,7 +49,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     public StackFamilyPresenter(final SelectIO presenterSelectIO, final SelectIO backgroundSelectIO, final UILogger uiLogger,
             final SpreadContractSetGenerator contractSetGenerator, final Set<StackCommunity> primaryCommunities,
             final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
-            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds) {
+            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
+            final EnumMap<StackCommunity, TypedChannel<String>> communitySymbols,
+            final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs) {
 
         this.uiLogger = uiLogger;
         this.primaryCommunities = primaryCommunities;
@@ -58,7 +61,8 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         for (final StackCommunity primaryCommunity : primaryCommunities) {
             final StackFamilyView familyView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, primaryCommunity, contractSetGenerator, false,
-                            strategySymbolUI, quotingObligationsCmds);
+                            strategySymbolUI, quotingObligationsCmds, communitySymbols.get(primaryCommunity),
+                            communityInstrumentIDs.get(primaryCommunity));
             communityViews.put(primaryCommunity, familyView);
             otherCommunities.remove(primaryCommunity);
         }
@@ -70,7 +74,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
             final StackFamilyView asylumView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, stackCommunity, contractSetGenerator, true, strategySymbolUI,
-                            Constants::NO_OP);
+                            Constants::NO_OP, communitySymbols.get(stackCommunity), communityInstrumentIDs.get(stackCommunity));
             communityViews.put(stackCommunity, asylumView);
         }
 
