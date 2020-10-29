@@ -16,12 +16,16 @@ function launchLadderAtPrice(symbol, price) {
 	launchLadder(symbol + ";" + price);
 }
 
-function getLadderHosts(symbol) {
+function getLadderHosts(symbol, ternaryIsFutures) {
 
 	const isDev = DEV_URLS.has(window.location.hostname);
 
 	if (isDev) {
 		return {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
+	} else if(true === ternaryIsFutures) {
+		return {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
+	} else if(false === ternaryIsFutures) {
+		return {ladderHost: "prod-equities-ladder.eeif.drw:9044", workspaceHost: "prod-equities-ladder.eeif.drw:9045"};
 	} else if (symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9](;.*)?$/) || symbol.match(/ FWD$/)) {
 		return {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
 	} else {
@@ -33,9 +37,9 @@ function getLadderUrl(symbol) {
 	return getLadderHosts(symbol).ladderHost + "/ladder#" + symbol;
 }
 
-function launchLadder(symbol, skipBasket) {
+function launchLadder(symbol, skipBasket, ternaryIsFutures) {
 	symbol = symbol.toUpperCase();
-	const hosts = getLadderHosts(symbol);
+	const hosts = getLadderHosts(symbol, ternaryIsFutures);
 	$.ajax({
 		success: function (d, s, x) {
 			if ("success" !== d) {

@@ -3,6 +3,8 @@ let ws;
 let saveSound;
 let loadSound;
 
+let isFutures;
+
 let isLazy = false;
 const searchedForSymbols = new Set()
 const subscribedToSymbols = new Set()
@@ -38,6 +40,8 @@ $(function () {
 	ws.onmessage = function (m) {
 		eval(m);
 	};
+
+	isFutures = document.location.href.includes("prod-futures-ladder.eeif.drw")
 
 	const adminBlock = $("#adminBlock");
 	const hash = document.location.hash.substr(1);
@@ -608,7 +612,7 @@ function addFamily(familyName, isAsylum, _uiName) {
 		const familyDetails = family.find(".familyDetails");
 		const familyBlock = family.find(".children");
 		familyDetails.find(".openStack").unbind().bind("click", function () {
-			launchLadder(familyName + ";S");
+			launchLadder(familyName + ";S", undefined, isFutures);
 		});
 		familyDetails.find(".refreshParent").unbind().bind("click", function () {
 			ws.send(command("refreshParent", [familyName]));
