@@ -633,7 +633,9 @@ public class StackFamilyView {
 
     private String constructFamilyName(final String primaryListing) {
 
-        final String root = primaryListing.substring(0, primaryListing.indexOf(' '));
+        final int spaceIx = primaryListing.indexOf(' ');
+        final int symbolRootEnd = spaceIx > 0 ? spaceIx : primaryListing.length() - 2;
+        final String root = primaryListing.substring(0, symbolRootEnd);
         //        String newFamilyName = root;
         //        int suffixIx = 1;
         //        while (familyUIData.containsKey(newFamilyName)) {
@@ -650,7 +652,13 @@ public class StackFamilyView {
         final List<ETFDef> etfDefs = new ArrayList<>(bufferedETFDefs.values());
 
         for (final ETFDef etfDef : etfDefs) {
-            autoFamily(etfDef);
+            try {
+                autoFamily(etfDef);
+            } catch (Exception e) {
+                // TODO jcoutinho clean this up today
+                System.out.println(etfDef);
+                e.printStackTrace();
+            }
         }
 
         return 30_000L;
