@@ -149,6 +149,9 @@ public class StackConfigPresenter {
         final double leanToQuoteRatio = Double.parseDouble(leanToQuoteRatioStr);
         final long leanPriceAdjustment = (long) (Double.parseDouble(leanPriceAdjustmentRawStr) * Constants.NORMALISING_FACTOR);
 
+        final byte limitedQuoteFlickerBufferPercent = (byte) Math.max(0, Math.min((byte) quoteFlickerBufferPercent, 99));
+        final byte limitedPicardMaxPapaWeight = (byte) Math.max(0, Math.min((byte) picardMaxPapaWeight, 101));
+
         final StackClientHandler configClient = configClients.get(nibblerName);
         if (null != configClient) {
             final long configGroupID = Long.parseLong(configGroupIDStr);
@@ -168,7 +171,7 @@ public class StackConfigPresenter {
             configClient.planConfigUpdated(SOURCE, configGroupID, planMinLevelQty, planMaxLevelQty, planLotSize, planMaxLevels,
                     minPicardQty);
             configClient.strategyConfigUpdated(SOURCE, configGroupID, maxOrdersPerLevel, isOnlySubmitBestLevel, isQuoteBettermentOn,
-                    modTicks, (byte) quoteFlickerBufferPercent, picardMaxBPSThrough, (byte) picardMaxPapaWeight, picardMaxPerSec,
+                    modTicks, limitedQuoteFlickerBufferPercent, picardMaxBPSThrough, limitedPicardMaxPapaWeight, picardMaxPerSec,
                     picardMaxPerMin, picardMaxPerHour, picardMaxPerDay);
 
             configClient.batchComplete();
