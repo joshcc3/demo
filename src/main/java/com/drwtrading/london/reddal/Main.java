@@ -1037,7 +1037,7 @@ public class Main {
             final Set<StackCommunity> secondaryViews = stackConfig.getEnumSet("otherCommunities", StackCommunity.class);
 
             final StackFamilyPresenter stackFamilyPresenter =
-                    new StackFamilyPresenter(app.selectIO, opxlSelectIO, webLog, contractSetGenerator, primaryCommunity, secondaryViews,
+                    new StackFamilyPresenter(app.selectIO, opxlSelectIO, stackManagerMonitor, webLog, contractSetGenerator, primaryCommunity, secondaryViews,
                             strategySymbolUI, channels.quotingObligationsCmds, channels.communitySymbols, channels.communityInstrumentIDs);
             channels.etfDefs.subscribe(selectIOFiber, stackFamilyPresenter::autoFamily);
 

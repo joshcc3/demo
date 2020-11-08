@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.stacks.family;
 
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
+import com.drwtrading.london.eeif.stack.manager.StackManagerComponents;
 import com.drwtrading.london.eeif.stack.manager.persistence.StackPersistenceReader;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunityManager;
@@ -23,6 +24,7 @@ import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.ExpiryMonthCodes;
 import com.drwtrading.london.eeif.utils.staticData.ExpiryPeriod;
@@ -33,6 +35,7 @@ import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
+import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
@@ -83,6 +86,7 @@ public class StackFamilyView {
     private final SelectIO managementSelectIO;
     private final SelectIO backgroundSelectIO;
 
+    private final IFuseBox<StackManagerComponents> fuseBox;
     private final StackCommunity community;
     private final SpreadContractSetGenerator contractSetGenerator;
     private final boolean isPrimaryView;
@@ -125,13 +129,14 @@ public class StackFamilyView {
     private static final List<String> TAIL_PREFERENCE =
             List.of("UF", "UP", "GY", "FH", "DC", "SS", "SE", "ID", "PL", "BB", "NA", "FP", "LI", "LN", "IM");
 
-    StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final StackCommunity community,
+    StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final IFuseBox<StackManagerComponents> fuseBox, final StackCommunity community,
             final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
             final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
             final TypedChannel<String> symbolsChannel, final TypedChannel<InstrumentID> instrumentIDChannel) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
+        this.fuseBox = fuseBox;
         this.community = community;
 
         this.contractSetGenerator = contractSetGenerator;
@@ -598,7 +603,6 @@ public class StackFamilyView {
         final List<String> familyDefinitions = List.of(familyName);
 
         if (!familyUIData.containsKey(familyName)) {
-            // TODO jcoutinho cleanup
             final boolean successful = checkFamilyAddition(errors, requests, resultingFamilyNames, primaryListing, familyName);
             final IStackFamilyUI allViews = views.all();
             for (final String error : errors) {
@@ -651,14 +655,18 @@ public class StackFamilyView {
 
         final List<ETFDef> etfDefs = new ArrayList<>(bufferedETFDefs.values());
 
+        boolean allOk = true;
         for (final ETFDef etfDef : etfDefs) {
             try {
                 autoFamily(etfDef);
-            } catch (Exception e) {
-                // TODO jcoutinho clean this up today
-                System.out.println(etfDef);
-                e.printStackTrace();
+            } catch (final Exception e) {
+                allOk = false;
+                fuseBox.logError(StackManagerComponents.FAMILY_AUTO_CREATION, etfDef.indexDef.name, e);
             }
+        }
+
+        if(allOk) {
+            fuseBox.setOK(StackManagerComponents.FAMILY_AUTO_CREATION);
         }
 
         return 30_000L;
@@ -1657,14 +1665,9 @@ public class StackFamilyView {
         communityManager.startFamilies(community, BookSide.BID, user);
         communityManager.startFamilies(community, BookSide.ASK, user);
 
-        // TODO jcoutinho - remove this once quoting obligations has been split out properly
-        if (isPrimaryView && quotingObligationsEnabled()) {
+        if (isPrimaryView) {
             quotingObligationsCmds.publish(new QuoteObligationsEnableCmd(user, community));
         }
-    }
-
-    private boolean quotingObligationsEnabled() {
-        return EnumSet.of(StackCommunity.DM, StackCommunity.FUTURE).contains(community);
     }
 
     @FromWebSocketView
