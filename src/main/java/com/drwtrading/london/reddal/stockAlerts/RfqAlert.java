@@ -41,4 +41,9 @@ public class RfqAlert {
     public int hashCode() {
         return (int) (milliSinceMidnight ^ (milliSinceMidnight >>> 32));
     }
+
+    @Override
+    public String toString() {
+        return "RFQ Alert " + milliSinceMidnight + ", " + symbol + ": " + price + ", " + qty;
+    }
 }

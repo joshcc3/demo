@@ -839,6 +839,8 @@ public class Main {
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "single-order.json", channels.errorPublisher),
                 channels.singleOrderCommand);
         fibers.logging.subscribe(new FileLogger(clock, logDir, "stockAlerts.json", channels.errorPublisher), channels.stockAlerts);
+        fibers.logging.subscribe(new FileLogger(clock, logDir, "rfqStockAlerts.json", channels.errorPublisher), channels.rfqStockAlerts);
+        fibers.logging.subscribe(new FileLogger(clock, logDir, "picardSpots.json", channels.errorPublisher), channels.picardRows);
         fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trace.json", channels.errorPublisher), channels.trace);
 
         for (final Map.Entry<String, TypedChannel<WebSocketControlMessage>> stringTypedChannelEntry : webSocketsForLogging.entrySet()) {
