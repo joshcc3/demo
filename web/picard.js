@@ -62,6 +62,12 @@ $(function () {
 		});
 	});
 
+	const picardsDiv = $("#picards");
+	$("#hideOPXLFilterList").change(() => {
+		const isHideOPXLFilterList = $("#hideOPXLFilterList").attr('checked');
+		picardsDiv.toggleClass("hideOPXLFilterList", isHideOPXLFilterList);
+	});
+
 	setInterval(sortPicards, 1000);
 
 });
@@ -90,8 +96,8 @@ function displaySymbol(symbol, listing) {
 	return symbol;
 }
 
-//TODO:: remove longPrice
-function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, description, state, inAuction, longPrice, isPlaySound) {
+function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, description, state, inAuction, isPlaySound,
+	isOnOPXLFilterList) {
 
 	if (!RUSSIA_SSF.test(symbol)) {
 
@@ -100,12 +106,11 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 		let isRfq = symbol.endsWith(" RFQ");
 
 		if (picards.hasOwnProperty(key)) {
+
 			picard = picards[key];
-		} else {
-			if (state === "DEAD") {
-				// Don't create a picard just to kill it
-				return;
-			}
+
+		} else if (state !== "DEAD") {
+
 			picard = $('tr.picard.template').clone().removeClass('template');
 			picard.click(function () {
 				let priceText = picard.find('.price').text();
@@ -159,6 +164,8 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 					playSound();
 				}
 			}
+
+			picard.toggleClass("isOnOPXLFilterList", isOnOPXLFilterList);
 		}
 	}
 }
@@ -188,9 +195,9 @@ function toId(symbol) {
 }
 
 function test() {
-	picard("sym1", "CHIX", "BID", "20.3", "400", "EUR", "1000.0", "Description", "live");
-	picard("sym2", "CHIX", "ASK", "0.3", "350", "EUR", "1000.0", "Description", "live");
-	picard("sym3", "CHIX", "BID", "30.3", "0", "EUR", "1000.0", "Description", "live");
-	picard("sym4", "CHIX", "BID", "1.65", "400", "EUR", "233.0", "Description", "fade");
-	picard("sym4", "CHIX", "BID", "1.65", "700", "EUR", "233.0", "Description", "dead");
+	picard("sym1", "CHIX", "BID", "20.3", "400", "EUR", "1000.0", "Description", "live", false, false, false);
+	picard("sym2", "CHIX", "ASK", "0.3", "350", "EUR", "1000.0", "Description", "live", false, false, true);
+	picard("sym3", "CHIX", "BID", "30.3", "0", "EUR", "1000.0", "Description", "live", false, false, true);
+	picard("sym4", "CHIX", "BID", "1.65", "400", "EUR", "233.0", "Description", "fade", false, false, true);
+	picard("sym4", "CHIX", "BID", "1.65", "700", "EUR", "233.0", "Description", "dead", false, false, true);
 }

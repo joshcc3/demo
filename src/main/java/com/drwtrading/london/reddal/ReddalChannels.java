@@ -30,8 +30,8 @@ import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.m
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCSupportedSymbol;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.IOrderCmd;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
-import com.drwtrading.london.reddal.picard.PicardRowWithInstID;
 import com.drwtrading.london.reddal.picard.PicardRow;
+import com.drwtrading.london.reddal.picard.PicardRowWithInstID;
 import com.drwtrading.london.reddal.pks.PKSExposures;
 import com.drwtrading.london.reddal.premium.Premium;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
@@ -57,6 +57,7 @@ import org.jetlang.channels.Channel;
 import org.jetlang.channels.Publisher;
 
 import java.util.EnumMap;
+import java.util.Set;
 
 class ReddalChannels {
 
@@ -110,6 +111,7 @@ class ReddalChannels {
     final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs;
     final EnumMap<StackCommunity, TypedChannel<String>> communitySymbols;
     final TypedChannel<PicardRowWithInstID> picardRows;
+    final SelectIOChannel<Set<String>> picardDMFilterSymbols;
     final TypedChannel<LiquidityFinderData> laserDistances;
     final TypedChannel<PicardRow> yodaPicardRows;
     final TypedChannel<Premium> spreadnoughtPremiums;
@@ -179,6 +181,8 @@ class ReddalChannels {
         }
 
         this.picardRows = create(PicardRowWithInstID.class);
+        this.picardDMFilterSymbols = new SelectIOChannel<>();
+
         this.laserDistances = create(LiquidityFinderData.class);
         this.yodaPicardRows = create(PicardRow.class);
         this.rfqStockAlerts = create(RfqAlert.class);

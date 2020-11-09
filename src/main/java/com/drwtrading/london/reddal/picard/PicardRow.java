@@ -6,6 +6,7 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.util.Struct;
 
 public class PicardRow extends Struct {
+
     public final long milliSinceMidnight;
     public final String symbol;
     public final InstType instType;
@@ -24,13 +25,13 @@ public class PicardRow extends Struct {
     public final boolean isNewRow;
 
     public PicardRow(final PicardRow oldRow, final PicardRowState newState) {
-        this(oldRow.milliSinceMidnight, oldRow.symbol, oldRow.instType, oldRow.ccy, oldRow.side, oldRow.price, oldRow.prettyPrice, oldRow.bpsThrough,
-                oldRow.opportunitySize, newState, oldRow.description, oldRow.inAuction, false);
+        this(oldRow.milliSinceMidnight, oldRow.symbol, oldRow.instType, oldRow.ccy, oldRow.side, oldRow.price, oldRow.prettyPrice,
+                oldRow.bpsThrough, oldRow.opportunitySize, newState, oldRow.description, oldRow.inAuction, false);
     }
 
-    public PicardRow(final long milliSinceMidnight, final String symbol, final InstType instType, final CCY ccy, final BookSide side, final long price,
-            final String prettyPrice, final double bpsThrough, final double opportunitySize, final PicardRowState state, final String description,
-            final boolean inAuction, final boolean isNewRow) {
+    public PicardRow(final long milliSinceMidnight, final String symbol, final InstType instType, final CCY ccy, final BookSide side,
+            final long price, final String prettyPrice, final double bpsThrough, final double opportunitySize, final PicardRowState state,
+            final String description, final boolean inAuction, final boolean isNewRow) {
 
         this.milliSinceMidnight = milliSinceMidnight;
         this.symbol = symbol;

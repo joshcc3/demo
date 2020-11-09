@@ -68,7 +68,7 @@ td.description {
 	font-size: 0;
 }
 
-.hidden {
+.hidden, #picards.hideOPXLFilterList .isOnOPXLFilterList  {
 	display: none;
 }
 

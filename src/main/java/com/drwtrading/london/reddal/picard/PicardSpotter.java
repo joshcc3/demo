@@ -226,9 +226,9 @@ public class PicardSpotter implements IPicardSpotter {
         }
     }
 
-    private PicardRowWithInstID createPicardRow(final IBook<?> book, final IBookLevel bestLevel, final BookSide side, final LaserLineValue laserLine,
-            final boolean isNewRow, final String description, final long nowMilliSinceUTC, final boolean isInAuction, final long bestPrice,
-            final String bestPricePrint, final double bpsThrough) {
+    private PicardRowWithInstID createPicardRow(final IBook<?> book, final IBookLevel bestLevel, final BookSide side,
+            final LaserLineValue laserLine, final boolean isNewRow, final String description, final long nowMilliSinceUTC,
+            final boolean isInAuction, final long bestPrice, final String bestPricePrint, final double bpsThrough) {
 
         final double fx;
         final CCY opportunityCcy;
@@ -253,8 +253,9 @@ public class PicardSpotter implements IPicardSpotter {
             opportunitySize = calculateOpportunitySize(laserLine.getValue(), bestLevel, side, fx);
         }
 
-        return new PicardRowWithInstID(nowMilliSinceUTC, book.getSymbol(), book.getInstID(), book.getInstType(), opportunityCcy, side.getOppositeSide(), bestPrice,
-                bestPricePrint, bpsThrough, opportunitySize, PicardRowState.LIVE, description, isInAuction, isNewRow);
+        return new PicardRowWithInstID(nowMilliSinceUTC, book.getSymbol(), book.getInstID(), book.getInstType(), opportunityCcy,
+                side.getOppositeSide(), bestPrice, bestPricePrint, bpsThrough, opportunitySize, PicardRowState.LIVE, description,
+                isInAuction, isNewRow);
     }
 
     private static double opportunitySizeForLevel(final long theoreticalValue, final long levelPrice, final long levelQty, final double wpv,

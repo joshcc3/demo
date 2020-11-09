@@ -86,6 +86,7 @@ import com.drwtrading.london.reddal.ladders.shredders.ShredderPresenter;
 import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
 import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
 import com.drwtrading.london.reddal.opxl.OPXLEtfStackFilters;
+import com.drwtrading.london.reddal.opxl.OPXLPicardFilterReader;
 import com.drwtrading.london.reddal.opxl.OPXLSpreadnoughtFilters;
 import com.drwtrading.london.reddal.opxl.OpxlDividendTweets;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
@@ -422,7 +423,9 @@ public class Main {
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderWebSockets = new EnumMap<>(MDSource.class);
 
         setupPicardUI(app.selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
-                channels.displaySymbol, webApp, channels.communityInstrumentIDs);
+                channels.displaySymbol, webApp, channels.communityInstrumentIDs, channels.picardDMFilterSymbols);
+
+        new OPXLPicardFilterReader(opxlClient, app.selectIO, opxlMonitor, app.env, "EEIF", app.logDir, channels.picardDMFilterSymbols);
 
         setupLaserDistancesUI(app.selectIO, selectIOFiber, webLog, channels.laserDistances, channels.displaySymbol, webApp);
 
@@ -1409,7 +1412,8 @@ public class Main {
     private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
             final Channel<PicardRowWithInstID> picardRows, final Channel<PicardRow> yodaRows,
             final Channel<RecenterLadder> recenterLadderChannel, final TypedChannel<DisplaySymbol> displaySymbol,
-            final WebApplication webApp, final Map<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs) {
+            final WebApplication webApp, final Map<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs,
+            final SelectIOChannel<Set<String>> picardDMFilterSymbols) {
 
         final PicardUI futureUI = setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol,
                 EnumSet.of(InstType.FUTURE, InstType.FUTURE_SPREAD), PicardSounds.FUTURES, webApp, "picard");
@@ -1420,22 +1424,25 @@ public class Main {
                         PicardSounds.SPREADER, webApp, "picardspread");
         picardRows.subscribe(fiber, spreadUI::addPicardRow);
 
-        setupEtfSplitPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, communityInstrumentIDs, displaySymbol, webApp);
+        setupEtfSplitPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, communityInstrumentIDs, displaySymbol,
+                picardDMFilterSymbols, webApp);
 
-        final PicardUI stonksUI =
+        final PicardUI stocksUI =
                 setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.allOf(InstType.class),
                         PicardSounds.STOCKS, webApp, "picardstocks");
-        yodaRows.subscribe(fiber, stonksUI::addPicardRow);
+        yodaRows.subscribe(fiber, stocksUI::addPicardRow);
     }
 
     private static void setupEtfSplitPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
             final Channel<PicardRowWithInstID> picardRows, final Channel<RecenterLadder> recenterLadderChannel,
             final Map<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs, final TypedChannel<DisplaySymbol> displaySymbol,
-            final WebApplication webApp) {
+            final SelectIOChannel<Set<String>> picardDMFilterSymbols, final WebApplication webApp) {
 
         final PicardUI picardDM =
                 setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF_DM,
                         webApp, "picardetf");
+        picardDMFilterSymbols.subscribe(selectIO, picardDM::setOPXLFilterList);
+
         final PicardUI picardFI =
                 setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF_FI,
                         webApp, "picardetf-fi");

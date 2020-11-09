@@ -16,6 +16,7 @@ import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,6 +39,8 @@ public class PicardUI {
     private final Map<String, PicardRow> cache;
     private final Map<String, PicardRow> dirty;
 
+    private final Set<String> opxlFilterSymbols;
+
     private final WebSocketViews<IPicardView> views;
 
     public PicardUI(final UILogger webLog, final Set<InstType> instTypes, final PicardSounds sounds,
@@ -57,6 +60,9 @@ public class PicardUI {
         this.displaySymbols = new HashMap<>();
         this.cache = new HashMap<>();
         this.dirty = new HashMap<>();
+
+        this.opxlFilterSymbols = new HashSet<>();
+
         this.views = new WebSocketViews<>(IPicardView.class, this);
     }
 
@@ -69,6 +75,12 @@ public class PicardUI {
 
     public void setDisplaySymbol(final DisplaySymbol displaySymbol) {
         displaySymbols.put(displaySymbol.marketDataSymbol, displaySymbol.marketDataSymbol);
+    }
+
+    public void setOPXLFilterList(final Set<String> symbols) {
+
+        opxlFilterSymbols.clear();
+        opxlFilterSymbols.addAll(symbols);
     }
 
     public void webControl(final WebSocketControlMessage msg) {
@@ -143,7 +155,9 @@ public class PicardUI {
 
         final boolean isPlaySound = soundsOn && row.isNewRow;
 
+        final boolean isOnOPXLFilterList = opxlFilterSymbols.contains(row.symbol);
+
         view.picard(row.symbol, displaySymbol, row.side.toString(), bpsThrough, opportunitySize, ccy, row.prettyPrice, row.description,
-                row.state.toString(), row.inAuction, Long.toString(row.price), isPlaySound);
+                row.state.toString(), row.inAuction, isPlaySound, isOnOPXLFilterList);
     }
 }
