@@ -126,6 +126,8 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			picards[key] = picard;
 			$('#picards').append(picard);
 			queueSort();
+		} else {
+			return;
 		}
 
 		if (state === "DEAD") {
