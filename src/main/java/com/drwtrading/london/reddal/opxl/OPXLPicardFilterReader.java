@@ -49,7 +49,7 @@ public class OPXLPicardFilterReader extends AOpxlLoggingReader<OPXLComponents, S
 
                 if (testColsPresent(row, symbolCol)) {
 
-                    final String symbol = row[i].toString();
+                    final String symbol = row[symbolCol].toString();
                     result.add(symbol);
                 }
             }

@@ -426,7 +426,7 @@ public class Main {
         setupPicardUI(app.selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
                 channels.displaySymbol, webApp, channels.communityInstrumentIDs, channels.picardDMFilterSymbols);
 
-        new OPXLPicardFilterReader(opxlClient, app.selectIO, opxlMonitor, app.env, "EEIF", app.logDir, channels.picardDMFilterSymbols);
+        new OPXLPicardFilterReader(opxlClient, app.selectIO, opxlMonitor, com.drwtrading.london.eeif.utils.application.Environment.PROD, "EEIF", app.logDir, channels.picardDMFilterSymbols);
 
         setupLaserDistancesUI(app.selectIO, selectIOFiber, webLog, channels.laserDistances, channels.displaySymbol, webApp);
 
