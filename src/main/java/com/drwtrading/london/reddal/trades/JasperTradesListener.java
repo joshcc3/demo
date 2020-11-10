@@ -1,4 +1,4 @@
-package com.drwtrading.london.reddal;
+package com.drwtrading.london.reddal.trades;
 
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
@@ -11,9 +11,9 @@ public class JasperTradesListener implements ITransportCacheListener<String, ITr
 
     private final Set<String> seenTradeIds = new HashSet<>();
 
-    private final TypedChannel<ITrade> trades;
+    private final TypedChannel<MrChillTrade> trades;
 
-    public JasperTradesListener(final TypedChannel<ITrade> trades) {
+    public JasperTradesListener(final TypedChannel<MrChillTrade> trades) {
         this.trades = trades;
     }
 
@@ -22,7 +22,10 @@ public class JasperTradesListener implements ITransportCacheListener<String, ITr
         if (seenTradeIds.add(trade.getTradeId())) {
             final String tag = trade.getTag().toLowerCase();
             if (tag.startsWith("jasper") || tag.startsWith("tow")) {
-                trades.publish(trade);
+
+                final MrChillTrade mrChillTrade = new MrChillTrade(trade.getSymbol(), trade.getSide(), trade.getPrice());
+
+                trades.publish(mrChillTrade);
             }
         }
         return true;

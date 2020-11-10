@@ -59,6 +59,7 @@ import com.drwtrading.london.reddal.symbols.ChixSymbolPair;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.symbols.SymbolIndyData;
+import com.drwtrading.london.reddal.trades.MrChillTrade;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
@@ -74,7 +75,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import drw.eeif.fees.FeesCalc;
-import drw.eeif.trades.transport.outbound.ITrade;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Converter;
 import org.jetlang.channels.Publisher;
@@ -237,9 +237,9 @@ public class LadderPresenter implements IStackPresenterCallback {
         data.setLastTrade(lastTrade);
     }
 
-    public void setLastTradeForJasper(final ITrade lastTrade) {
+    public void setLastTradeForJasper(final MrChillTrade lastTrade) {
 
-        final JasperLastTradeDataForSymbol data = lastTradeBySymbolForJasper.get(lastTrade.getSymbol());
+        final JasperLastTradeDataForSymbol data = lastTradeBySymbolForJasper.get(lastTrade.symbol);
         data.setLastTrade(lastTrade);
     }
 

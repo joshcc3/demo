@@ -150,6 +150,8 @@ import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
+import com.drwtrading.london.reddal.trades.JasperTradesListener;
+import com.drwtrading.london.reddal.trades.MrChillTrade;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
 import com.drwtrading.london.reddal.util.FileLogger;
 import com.drwtrading.london.reddal.util.NibblerNotificationHandler;
@@ -192,7 +194,6 @@ import drw.eeif.eeifoe.Update;
 import drw.eeif.phockets.Phockets;
 import drw.eeif.phockets.tcp.PhocketClient;
 import drw.eeif.photons.signals.Signals;
-import drw.eeif.trades.transport.outbound.ITrade;
 import drw.eeif.trades.transport.outbound.io.TradesClientFactory;
 import drw.eeif.trades.transport.outbound.io.TradesClientHandler;
 import drw.eeif.trades.transport.outbound.io.TradesTransportComponents;
@@ -447,7 +448,7 @@ public class Main {
         createWebPageWithWebSocket("autopuller", "autopuller", fibers.ui, webApp, autoPullerWebSocket);
         fibers.ui.subscribe(autoPullerUI, autoPullerWebSocket);
 
-        final TypedChannel<ITrade> jasperTradesChan = TypedChannels.create(ITrade.class);
+        final TypedChannel<MrChillTrade> jasperTradesChan = TypedChannels.create(MrChillTrade.class);
         initJasperTradesPublisher(app, errorLog, parentMonitor, jasperTradesChan);
 
         // MD Sources
@@ -856,7 +857,7 @@ public class Main {
     }
 
     private static void initJasperTradesPublisher(final Application<ReddalComponents> app, final IErrorLogger errorLog,
-            final MultiLayeredFuseBox<ReddalComponents> parentMonitor, final TypedChannel<ITrade> jasperTradesChan)
+            final MultiLayeredFuseBox<ReddalComponents> parentMonitor, final TypedChannel<MrChillTrade> jasperTradesChan)
             throws IOException, ConfigException {
         final JasperTradesListener jasperTradesPublisher = new JasperTradesListener(jasperTradesChan);
         final String mrChillThreadName = "MrChill-JasperTrades";
@@ -1040,8 +1041,9 @@ public class Main {
             final Set<StackCommunity> secondaryViews = stackConfig.getEnumSet("otherCommunities", StackCommunity.class);
 
             final StackFamilyPresenter stackFamilyPresenter =
-                    new StackFamilyPresenter(app.selectIO, opxlSelectIO, stackManagerMonitor, webLog, contractSetGenerator, primaryCommunity, secondaryViews,
-                            strategySymbolUI, channels.quotingObligationsCmds, channels.communitySymbols, channels.communityInstrumentIDs);
+                    new StackFamilyPresenter(app.selectIO, opxlSelectIO, stackManagerMonitor, webLog, contractSetGenerator,
+                            primaryCommunity, secondaryViews, strategySymbolUI, channels.quotingObligationsCmds, channels.communitySymbols,
+                            channels.communityInstrumentIDs);
             channels.etfDefs.subscribe(selectIOFiber, stackFamilyPresenter::autoFamily);
 
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);

@@ -49,6 +49,7 @@ import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
+import com.drwtrading.london.reddal.trades.MrChillTrade;
 import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
@@ -59,7 +60,6 @@ import drw.eeif.eeifoe.Metadata;
 import drw.eeif.eeifoe.OrderSide;
 import drw.eeif.eeifoe.Submit;
 import drw.eeif.fees.FeesCalc;
-import drw.eeif.trades.transport.outbound.ITrade;
 import drw.london.json.Jsonable;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetlang.channels.Publisher;
@@ -661,12 +661,12 @@ public class LadderBookView implements ILadderBoard {
             final long nibblerLastAskPrice =
                     lastAsk != null ? tickTable.roundAwayToTick(BookSide.ASK, lastAsk.getPrice(), zoomLevel) : Long.MAX_VALUE;
 
-            final ITrade jasperLastBid = jasperDataForSymbol.lastBid();
-            final ITrade jasperLastAsk = jasperDataForSymbol.lastAsk();
+            final MrChillTrade jasperLastBid = jasperDataForSymbol.lastBid();
+            final MrChillTrade jasperLastAsk = jasperDataForSymbol.lastAsk();
             final long jasperLastBidPrice =
-                    jasperLastBid != null ? tickTable.roundAwayToTick(BookSide.BID, jasperLastBid.getPrice(), zoomLevel) : Long.MIN_VALUE;
+                    jasperLastBid != null ? tickTable.roundAwayToTick(BookSide.BID, jasperLastBid.price, zoomLevel) : Long.MIN_VALUE;
             final long jasperLastAskPrice =
-                    jasperLastAsk != null ? tickTable.roundAwayToTick(BookSide.ASK, jasperLastAsk.getPrice(), zoomLevel) : Long.MAX_VALUE;
+                    jasperLastAsk != null ? tickTable.roundAwayToTick(BookSide.ASK, jasperLastAsk.price, zoomLevel) : Long.MAX_VALUE;
 
             for (int i = 0; i < levels; ++i) {
                 final BookPanelRow priceRow = bookPanel.getRow(i);

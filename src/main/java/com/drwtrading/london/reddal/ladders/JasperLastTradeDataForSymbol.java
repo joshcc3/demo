@@ -1,35 +1,34 @@
 package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import drw.eeif.trades.transport.outbound.ITrade;
+import com.drwtrading.london.reddal.trades.MrChillTrade;
 
 public class JasperLastTradeDataForSymbol {
 
     public final String symbol;
 
-    private ITrade bidLastTrade;
-    private ITrade askLastTrade;
+    private MrChillTrade bidLastTrade;
+    private MrChillTrade askLastTrade;
 
-    public JasperLastTradeDataForSymbol(final String symbol) {
+    JasperLastTradeDataForSymbol(final String symbol) {
 
         this.symbol = symbol;
     }
 
+    public void setLastTrade(final MrChillTrade lastTrade) {
 
-    public void setLastTrade(final ITrade lastTrade) {
-
-        if (BookSide.BID == lastTrade.getSide()) {
+        if (BookSide.BID == lastTrade.side) {
             bidLastTrade = lastTrade;
         } else {
             askLastTrade = lastTrade;
         }
     }
 
-    public ITrade lastBid() {
+    public MrChillTrade lastBid() {
         return bidLastTrade;
     }
 
-    public ITrade lastAsk() {
+    MrChillTrade lastAsk() {
         return askLastTrade;
     }
 
