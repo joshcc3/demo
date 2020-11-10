@@ -9,11 +9,19 @@ import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class FxUi {
 
-    static final List<CCY> CCY_LIST = Arrays.asList(CCY.EUR, CCY.GBP, CCY.USD, CCY.CHF, CCY.NOK, CCY.SEK, CCY.DKK, CCY.RUB, CCY.JPY);
+    static final List<CCY> CCY_LIST =
+            Arrays.asList(CCY.CHF, CCY.AED, CCY.TRY, CCY.THB, CCY.CNH, CCY.EUR, CCY.COP, CCY.CLP, CCY.TWD, CCY.PHP, CCY.GBP, CCY.MYR,
+                    CCY.SEK, CCY.BRL, CCY.SAR, CCY.KRW, CCY.RUB, CCY.NOK, CCY.JPY, CCY.MXN, CCY.EGP, CCY.DKK, CCY.PKR, CCY.USD, CCY.QAR,
+                    CCY.INR, CCY.IDR);
 
     private final FXCalc<?> fxCalc;
     private final WebSocketViews<FxView> views = new WebSocketViews<>(FxView.class, this);
@@ -43,9 +51,9 @@ public class FxUi {
         final FxView fxView = views.get(data.getOutboundChannel());
         final double value;
         try {
-            value = Double.valueOf(input);
+            value = Double.parseDouble(input);
         } catch (final Throwable t) {
-            fxView.error("[" + input + "] isn't a number");
+            fxView.error('[' + input + "] isn't a number");
             return;
         }
         final Map<String, Double> result = new HashMap<>();
@@ -55,16 +63,19 @@ public class FxUi {
                 if (Double.isNaN(rate)) {
                     rate = fxCalc.getLastValidMid(from, CCY.EUR) * fxCalc.getLastValidMid(CCY.EUR, to);
                 }
-                final double converted =  flip ? rate * value : value / rate ;
-                result.put(from.name() + "_" + to.name(), converted);
+                final double converted = flip ? rate * value : value / rate;
+                result.put(from.name() + '_' + to.name(), converted);
             }
         }
         fxView.update(result);
     }
 
     public interface FxView {
+
         public void create(List<CCY> currencies);
+
         public void update(Map<String, Double> rates);
+
         public void error(String err);
     }
 
