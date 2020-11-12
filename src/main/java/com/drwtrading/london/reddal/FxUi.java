@@ -11,17 +11,15 @@ import com.drwtrading.websockets.WebSocketInboundData;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class FxUi {
 
     static final List<CCY> CCY_LIST =
-            Arrays.asList(CCY.CHF, CCY.AED, CCY.TRY, CCY.THB, CCY.CNH, CCY.EUR, CCY.COP, CCY.CLP, CCY.TWD, CCY.PHP, CCY.GBP, CCY.MYR,
-                    CCY.SEK, CCY.BRL, CCY.SAR, CCY.KRW, CCY.RUB, CCY.NOK, CCY.JPY, CCY.MXN, CCY.EGP, CCY.DKK, CCY.PKR, CCY.USD, CCY.QAR,
-                    CCY.INR, CCY.IDR);
+            Arrays.asList(CCY.USD, CCY.GBP, CCY.EUR, CCY.CHF, CCY.JPY, CCY.RUB, CCY.CNH, CCY.HKD, CCY.SEK, CCY.AED, CCY.TRY, CCY.THB,
+                    CCY.COP, CCY.CLP, CCY.TWD, CCY.PHP, CCY.MYR, CCY.BRL, CCY.SAR, CCY.KRW, CCY.NOK, CCY.MXN, CCY.EGP, CCY.DKK, CCY.PKR,
+                    CCY.QAR, CCY.INR, CCY.IDR);
 
     private final FXCalc<?> fxCalc;
     private final WebSocketViews<FxView> views = new WebSocketViews<>(FxView.class, this);

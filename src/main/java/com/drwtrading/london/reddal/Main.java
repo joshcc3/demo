@@ -762,7 +762,7 @@ public class Main {
         // Indy
         final ConfigGroup indyConfig = root.getGroup("indy");
         final IndyClient indyListener =
-                new IndyClient(app.selectIO, channels.communityInstrumentIDs, channels.communitySymbols, channels.instDefs, channels.etfDefs,
+                new IndyClient(channels.communityInstrumentIDs, channels.communitySymbols, channels.instDefs, channels.etfDefs,
                         channels.symbolDescs);
         channels.searchResults.subscribe(selectIOFiber, indyListener::setSearchResult);
 

@@ -3,12 +3,10 @@ package com.drwtrading.london.reddal.symbols;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
-import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.IndexConstant;
-import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.indy.transport.cache.IIndyCacheListener;
 import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.indy.transport.data.IndexDef;
@@ -46,7 +44,7 @@ public class IndyClient implements IIndyCacheListener {
     private final Publisher<ETFDef> etfDefs;
     private final Publisher<SymbolIndyData> symbolDescriptions;
 
-    public IndyClient(final SelectIO selectIO, final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs,
+    public IndyClient(final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs,
             final EnumMap<StackCommunity, TypedChannel<String>> symbolCommunityChannels, final TypedChannel<InstrumentDef> instDefs,
             final TypedChannel<ETFDef> etfDefs, final Publisher<SymbolIndyData> symbolDescriptions) {
         this.symbolCommunityInstrumentIDs = symbolCommunityInstrumentIDs;
@@ -72,13 +70,31 @@ public class IndyClient implements IIndyCacheListener {
 
         if (futuresForIndex != null) {
             for (final FutureConstant future : futuresForIndex) {
-
+                final StackCommunity community;
+                switch (future.type) {
+                    case GOVIES:
+                    case EURO_DOLLAR:
+                        community = StackCommunity.FI;
+                        break;
+                    case INDEX:
+                    case FX:
+                    case TAS:
+                    case TIC:
+                    case TACO:
+                    case DIVIDEND:
+                    case COMMODITY:
+                    case SINGLE_STOCK:
+                    default:
+                        community = StackCommunity.DM;
+                }
                 for (int i = 0; i < 3; i++) {
                     final String symbol = futureExpiryCalc.getFutureCode(future, i);
                     final InstrumentID instId = futureExpiryCalc.getInstID(future, i);
 
                     final SymbolIndyData data = new SymbolIndyData(instId, symbol, indexDef.name, indexDef.source);
-                    instIDCommunities.put(instId, StackCommunity.getForIndexType(indexDef.indexType));
+
+                    // TODO - mapping from future type to stack community should be in the stack transport
+                    instIDCommunities.put(instId, community);
                     publishSearchResultCommunity(searchResultCommunities.get(instId));
                     symbolDescriptions.publish(data);
                 }
