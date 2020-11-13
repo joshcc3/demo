@@ -23,8 +23,8 @@ public class LadderMetaData {
     public long deskPosition;
     public String formattedDeskPosition;
 
-    public long mrPhilNetPosition;
-    public String formattedMrPhilNetPosition;
+    public long mrChillNetPosition;
+    public String formattedMrChillNetPosition;
 
     public long mrPhilVolume;
     public String formattedMrPhilVolume;
@@ -42,7 +42,7 @@ public class LadderMetaData {
         this.displaySymbol = symbol;
 
         this.formattedDeskPosition = null;
-        this.formattedMrPhilNetPosition = null;
+        this.formattedMrChillNetPosition = null;
         this.formattedMrPhilVolume = null;
 
         this.pksData = null;
@@ -77,10 +77,10 @@ public class LadderMetaData {
 
     public void setMrPhilPosition(final DecimalFormat formatter, final Position mrPhilPosition) {
 
-        if (null == formattedMrPhilNetPosition || mrPhilNetPosition != mrPhilPosition.getNet()) {
+        if (null == formattedMrChillNetPosition || mrChillNetPosition != mrPhilPosition.getNet()) {
 
-            this.mrPhilNetPosition = mrPhilPosition.getNet();
-            this.formattedMrPhilNetPosition = formatPosition(formatter, mrPhilNetPosition);
+            this.mrChillNetPosition = mrPhilPosition.getNet();
+            this.formattedMrChillNetPosition = formatPosition(formatter, mrChillNetPosition);
 
             this.mrPhilVolume = mrPhilPosition.getVolume();
             this.formattedMrPhilVolume = formatPosition(formatter, mrPhilVolume);

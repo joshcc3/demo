@@ -450,8 +450,8 @@ public class LadderView implements UiEventHandler {
                 leftHandPanel.setDeskPosition(metaData.deskPosition, metaData.formattedDeskPosition);
             }
             // Day position
-            if (null != metaData.formattedMrPhilNetPosition) {
-                leftHandPanel.setDayPosition(metaData.mrPhilNetPosition, metaData.formattedMrPhilNetPosition);
+            if (null != metaData.formattedMrChillNetPosition) {
+                leftHandPanel.setDayPosition(metaData.mrChillNetPosition, metaData.formattedMrChillNetPosition);
                 leftHandPanel.setOurTotalTradedQty(metaData.mrPhilVolume, metaData.formattedMrPhilVolume);
 
                 ladderModel.setClass(HTML.POSITION, CSSClass.INVISIBLE, showTotalTraded);
