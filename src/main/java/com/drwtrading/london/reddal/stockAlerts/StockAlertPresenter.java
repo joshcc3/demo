@@ -47,6 +47,7 @@ public class StockAlertPresenter {
     private final SimpleDateFormat sdf;
     private final EnumMap<StackCommunity, WebSocketViews<IStockAlertsView>> communityViews;
     private final EnumMap<StackCommunity, LinkedHashSet<StockAlert>> communityAlerts;
+    private final Set<RfqAlert> seenRFQs;
     private final long millisAtMidnightUTC = DateTimeUtil.getMillisAtMidnight();
     private final Map<String, StackCommunity> symbolCommunity;
 
@@ -59,6 +60,8 @@ public class StockAlertPresenter {
         this.qtyDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 0);
         this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
         this.sdf.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
+
+        this.seenRFQs = new HashSet<>();
 
         this.communityViews = new EnumMap<>(StackCommunity.class);
         final WebSocketViews<IStockAlertsView> dmView = WebSocketViews.create(IStockAlertsView.class, this);
@@ -142,7 +145,7 @@ public class StockAlertPresenter {
     }
 
     public void addRfq(final RfqAlert alert) {
-        if (!isRFQFiltered(alert.symbol)) {
+        if (!isRFQFiltered(alert.symbol) && seenRFQs.add(alert)) {
 
             final StockAlert stockAlert = getStockAlertFromRfq(alert);
             addAlert(stockAlert);
