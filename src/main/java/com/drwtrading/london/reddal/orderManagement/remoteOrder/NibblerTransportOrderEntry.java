@@ -15,7 +15,9 @@ import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteCancelColumns;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteModifyColumns;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteShutdownOMSColumns;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteStartQuoterColumns;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteStopAllStrategiesColumns;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteStopQuoterColumns;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteSubmitColumns;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteTables;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.logging.NibblerRemoteTraderLoginColumns;
@@ -39,8 +41,13 @@ public class NibblerTransportOrderEntry {
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteSubmitColumns> submitRow;
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteModifyColumns> modifyRow;
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteCancelColumns> cancelRow;
+
+    private final FileTableRow<NibblerRemoteTables, NibblerRemoteStartQuoterColumns> startQuoterRow;
+    private final FileTableRow<NibblerRemoteTables, NibblerRemoteStopQuoterColumns> stopQuoterRow;
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteStopAllStrategiesColumns> stopStrategiesRow;
+
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteShutdownOMSColumns> shutdownRow;
+
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteTraderLoginColumns> traderLoginRow;
 
     private int prevClOrdID;
@@ -62,6 +69,8 @@ public class NibblerTransportOrderEntry {
         this.modifyRow = log.addTable(NibblerRemoteTables.MODIFY, NibblerRemoteModifyColumns.values());
         this.cancelRow = log.addTable(NibblerRemoteTables.CANCEL, NibblerRemoteCancelColumns.values());
         this.stopStrategiesRow = log.addTable(NibblerRemoteTables.STOP_ALL_STRATEGIES, NibblerRemoteStopAllStrategiesColumns.values());
+        this.startQuoterRow = log.addTable(NibblerRemoteTables.START_QUOTER, NibblerRemoteStartQuoterColumns.values());
+        this.stopQuoterRow = log.addTable(NibblerRemoteTables.STOP_QUOTER, NibblerRemoteStopQuoterColumns.values());
         this.shutdownRow = log.addTable(NibblerRemoteTables.SHUTDOWN_OMS, NibblerRemoteShutdownOMSColumns.values());
         this.traderLoginRow = log.addTable(NibblerRemoteTables.TRADER_LOGIN, NibblerRemoteTraderLoginColumns.values());
 
@@ -127,6 +136,23 @@ public class NibblerTransportOrderEntry {
         writeRow(cancelRow, NibblerRemoteCancelColumns.timestamp);
     }
 
+    public void startQuoter(final int strategyID, final User user) {
+        nibblerClient.startQuoter(strategyID, user);
+
+        startQuoterRow.set(NibblerRemoteStartQuoterColumns.STRATEGY_ID, strategyID);
+        startQuoterRow.set(NibblerRemoteStartQuoterColumns.USERNAME, user);
+        writeRow(startQuoterRow, NibblerRemoteStartQuoterColumns.timestamp);
+
+    }
+
+    public void stopQuoter(final int strategyID) {
+        nibblerClient.stopQuoter(strategyID);
+
+        stopQuoterRow.set(NibblerRemoteStopQuoterColumns.STRATEGY_ID, strategyID);
+        writeRow(stopQuoterRow, NibblerRemoteStopQuoterColumns.timestamp);
+
+    }
+
     public void stopAllStrategies(final String reason) {
 
         nibblerClient.stopAllStrategies(reason);
@@ -175,6 +201,10 @@ public class NibblerTransportOrderEntry {
         writeRow(traderLoginRow, NibblerRemoteTraderLoginColumns.timestamp);
     }
 
+    public void batchComplete() {
+        nibblerClient.batchComplete();
+    }
+
     private <C extends Enum<C>> void writeRow(final FileTableRow<NibblerRemoteTables, C> row, final C timestampCol) {
 
         try {
@@ -188,4 +218,5 @@ public class NibblerTransportOrderEntry {
             monitor.logError(ReddalComponents.BLOTTER_CONNECTION_LOG, "Failed to log [" + row.getTableName() + "] row.", e);
         }
     }
+
 }

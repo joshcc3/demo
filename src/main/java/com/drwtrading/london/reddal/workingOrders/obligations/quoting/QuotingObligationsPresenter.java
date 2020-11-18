@@ -1,11 +1,11 @@
 package com.drwtrading.london.reddal.workingOrders.obligations.quoting;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
-import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
@@ -38,7 +38,7 @@ public class QuotingObligationsPresenter {
     private final EnumMap<StackCommunity, WebSocketViews<IQuotingObligationView>> communityViews;
     private final Map<Publisher<WebSocketOutboundData>, WebSocketViews<IQuotingObligationView>> userViews;
 
-    private final Map<String, NibblerClientHandler> nibblers;
+    private final Map<String, NibblerTransportOrderEntry> nibblers;
 
     private final Map<String, StackCommunity> symbolToCommunity;
     private final Map<String, QuotingObligationState> obligations;
@@ -82,14 +82,13 @@ public class QuotingObligationsPresenter {
 
     }
 
-    public void setNibblerHandler(final String nibblerName, final NibblerClientHandler nibblerHandler) {
+    public void setNibblerHandler(final String nibblerName, final NibblerTransportOrderEntry nibblerHandler) {
         nibblers.put(nibblerName, nibblerHandler);
     }
 
     public void setSymbol(final StackCommunity community, final String symbol) {
         symbolToCommunity.put(symbol, community);
     }
-
 
     public void setQuotingState(final String sourceNibbler, final QuotingState quotingState) {
 
@@ -100,7 +99,6 @@ public class QuotingObligationsPresenter {
             }
         }
     }
-
 
     void onSubscribe(final String communityStr, final WebSocketInboundData connected) {
 
@@ -146,8 +144,8 @@ public class QuotingObligationsPresenter {
         if (null != community) {
             everythingOn(community, user);
         }
-    }
 
+    }
 
     public void enableQuotes(final QuoteObligationsEnableCmd cmd) {
         uiSelectIO.addDelayedAction(2_000, () -> everythingOn(cmd.community, cmd.user));
@@ -156,16 +154,16 @@ public class QuotingObligationsPresenter {
     @FromWebSocketView
     public void everythingOff(final String communityStr, final WebSocketInboundData inboundData) {
 
-        final List<NibblerClientHandler> nibblers = new ArrayList<>();
+        final List<NibblerTransportOrderEntry> nibblers = new ArrayList<>();
 
         doForSymbolsInUICommunity(communityStr, quotingState -> {
-            final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
-            nibblers.add(nibblerClientHandler);
-            nibblerClientHandler.stopQuoter(quotingState.getStrategyID());
+            final NibblerTransportOrderEntry nibblerOE = quotingState.getNibblerOE();
+            nibblers.add(nibblerOE);
+            nibblerOE.stopQuoter(quotingState.getStrategyID());
             return null;
         });
 
-        for (final NibblerClientHandler nibbler : nibblers) {
+        for (final NibblerTransportOrderEntry nibbler : nibblers) {
             nibbler.batchComplete();
         }
     }
@@ -229,9 +227,9 @@ public class QuotingObligationsPresenter {
         doForUICommunityAndSymbol(community, symbol, (uiCommunity, symbolCommunity) -> {
             final QuotingObligationState quotingState = obligations.get(symbol);
             if (quotingState.isAvailable()) {
-                final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
-                nibblerClientHandler.stopQuoter(quotingState.getStrategyID());
-                nibblerClientHandler.batchComplete();
+                final NibblerTransportOrderEntry nibblerOE = quotingState.getNibblerOE();
+                nibblerOE.stopQuoter(quotingState.getStrategyID());
+                nibblerOE.batchComplete();
             }
             return null;
         });
@@ -284,7 +282,6 @@ public class QuotingObligationsPresenter {
         return Math.min(morningLimited, maxMilliSinceMidnight);
     }
 
-
     private QuotingObligationState getObligation(final String sourceNibbler, final QuotingState quotingState) {
 
         final String symbol = quotingState.getSymbol();
@@ -292,7 +289,7 @@ public class QuotingObligationsPresenter {
 
         final QuotingObligationState result = obligations.get(symbol);
         if (null == result) {
-            final NibblerClientHandler nibblerClient = nibblers.get(sourceNibbler);
+            final NibblerTransportOrderEntry nibblerClient = nibblers.get(sourceNibbler);
             final QuotingObligationState newState =
                     new QuotingObligationState(symbol, quotingState.getStrategyID(), sourceNibbler, nibblerClient,
                             sysStartMillisSinceMidnight, nowMilliSinceMidnight, quotingState.isRunning(), quotingState.getStrategyInfo());
@@ -322,28 +319,26 @@ public class QuotingObligationsPresenter {
         }
     }
 
-
     private long everythingOn(final StackCommunity community, final User user) {
 
-        final List<NibblerClientHandler> nibblers = new ArrayList<>();
+        final List<NibblerTransportOrderEntry> nibblers = new ArrayList<>();
 
         doForSymbolsInUICommunity(community, quotingState -> {
             if (quotingState.isEnabled()) {
-                final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
+                final NibblerTransportOrderEntry nibblerClientHandler = quotingState.getNibblerOE();
                 nibblers.add(nibblerClientHandler);
                 nibblerClientHandler.startQuoter(quotingState.getStrategyID(), user);
             }
             return null;
         });
 
-        for (final NibblerClientHandler nibbler : nibblers) {
+        for (final NibblerTransportOrderEntry nibbler : nibblers) {
             nibbler.batchComplete();
         }
 
         return -1;
 
     }
-
 
     private void startStrategy(final String symbol, final StackCommunity c, final User user) {
         doForUICommunityAndSymbol(c, symbol, (uiCommunity, symbolCommunity) -> {
@@ -358,9 +353,9 @@ public class QuotingObligationsPresenter {
             final QuotingObligationState quotingState = obligations.get(symbol);
 
             if (quotingState.isAvailable() && quotingState.isEnabled()) {
-                final NibblerClientHandler nibblerClientHandler = quotingState.getNibblerClient();
-                nibblerClientHandler.startQuoter(quotingState.getStrategyID(), user);
-                nibblerClientHandler.batchComplete();
+                final NibblerTransportOrderEntry nibblerOE = quotingState.getNibblerOE();
+                nibblerOE.startQuoter(quotingState.getStrategyID(), user);
+                nibblerOE.batchComplete();
             }
             return null;
         });
@@ -368,7 +363,7 @@ public class QuotingObligationsPresenter {
 
     private StackCommunity mapToCommunity(final String communityStr) {
         final StackCommunity community = StackCommunity.get(communityStr);
-        if(null == community && "DEFAULT".equals(communityStr)) {
+        if (null == community && "DEFAULT".equals(communityStr)) {
             if (primaryCommunities.contains(StackCommunity.FUTURE)) {
                 return StackCommunity.FUTURE;
             } else {

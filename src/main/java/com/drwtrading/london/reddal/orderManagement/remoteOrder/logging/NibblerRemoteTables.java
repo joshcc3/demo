@@ -6,7 +6,10 @@ public enum NibblerRemoteTables {
     MODIFY,
     CANCEL,
 
+    START_QUOTER,
+    STOP_QUOTER,
     STOP_ALL_STRATEGIES,
+
     SHUTDOWN_OMS,
     TRADER_LOGIN
 }

@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.workingOrders.obligations.quoting;
 
-import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
+import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
 
 import java.util.regex.Pattern;
 
@@ -10,7 +10,7 @@ public class QuotingObligationState {
 
     private final String symbol;
     private final String sourceNibbler;
-    private final NibblerClientHandler nibblerClient;
+    private final NibblerTransportOrderEntry nibblerClient;
 
     private final String key;
 
@@ -25,9 +25,9 @@ public class QuotingObligationState {
     private String stateDescription;
     private long lastCheckMillisSinceMidnight;
 
-    QuotingObligationState(final String symbol, final int strategyID, final String sourceNibbler, final NibblerClientHandler nibblerClient,
-            final long systemOnMilliSinceMidnight, final long nowMilliSinceMidnight, final boolean isStrategyOn,
-            final String stateDescription) {
+    QuotingObligationState(final String symbol, final int strategyID, final String sourceNibbler,
+            final NibblerTransportOrderEntry nibblerClient, final long systemOnMilliSinceMidnight, final long nowMilliSinceMidnight,
+            final boolean isStrategyOn, final String stateDescription) {
 
         this.symbol = symbol;
         this.strategyID = strategyID;
@@ -63,7 +63,7 @@ public class QuotingObligationState {
         return sourceNibbler;
     }
 
-    NibblerClientHandler getNibblerClient() {
+    NibblerTransportOrderEntry getNibblerOE() {
         return nibblerClient;
     }
 
