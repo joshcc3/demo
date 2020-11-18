@@ -324,8 +324,6 @@ public class QuotingObligationsPresenter {
 
 
     private long everythingOn(final StackCommunity community, final User user) {
-        assert primaryCommunities.contains(community);
-        assert user.canTrade || "jcoutinho".equals(user.username.toLowerCase());
 
         final List<NibblerClientHandler> nibblers = new ArrayList<>();
 
