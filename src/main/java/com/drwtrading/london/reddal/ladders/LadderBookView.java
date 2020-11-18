@@ -278,12 +278,14 @@ public class LadderBookView implements ILadderBoard {
     public void setCenteredPrice(final long newCenterPrice) {
 
         if (null != marketData.getBook()) {
+
+            final ITickTable tickTable = marketData.getBook().getTickTable();
+
             final BookPanel bookPanel = ladderModel.getBookPanel();
             final int zoomLevel = bookPanel.getZoomLevel();
-            this.centeredPrice = this.marketData.getBook().getTickTable().roundAwayToTick(BookSide.BID, newCenterPrice, zoomLevel);
+            this.centeredPrice = tickTable.roundAwayToTick(BookSide.BID, newCenterPrice, zoomLevel);
 
             final long centerLevel = levels / 2;
-            final ITickTable tickTable = marketData.getBook().getTickTable();
             topPrice = tickTable.addTicks(this.centeredPrice, centerLevel * zoomLevel);
 
             bookPanel.clearPriceMapping();

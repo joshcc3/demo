@@ -2,6 +2,9 @@ package com.drwtrading.london.reddal.data.ibook;
 
 public class NoMDSubscriptions implements IMDSubscriber {
 
+    public NoMDSubscriptions() {
+    }
+
     @Override
     public MDForSymbol subscribeForMD(final String symbol, final Object listener) {
         return new MDForSymbol(symbol);
