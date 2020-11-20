@@ -51,6 +51,7 @@ public class StockAlertPresenter {
     private final long millisAtMidnightUTC = DateTimeUtil.getMillisAtMidnight();
     private final Map<String, StackCommunity> symbolCommunity;
 
+    // TODO - refactor this to be more like the quoting obligation screen
     public StockAlertPresenter(final IClock clock, final FXCalc<?> fxCalc, final UILogger webLog) {
 
         this.clock = clock;
@@ -66,17 +67,26 @@ public class StockAlertPresenter {
         this.communityViews = new EnumMap<>(StackCommunity.class);
         final WebSocketViews<IStockAlertsView> dmView = WebSocketViews.create(IStockAlertsView.class, this);
         final WebSocketViews<IStockAlertsView> fiView = WebSocketViews.create(IStockAlertsView.class, this);
+        final WebSocketViews<IStockAlertsView> emView = WebSocketViews.create(IStockAlertsView.class, this);
         this.communityAlerts = new EnumMap<>(StackCommunity.class);
         final LinkedHashSet<StockAlert> dmAlerts = new LinkedHashSet<>();
         final LinkedHashSet<StockAlert> fiAlerts = new LinkedHashSet<>();
+        final LinkedHashSet<StockAlert> emAlerts = new LinkedHashSet<>();
 
         for (final StackCommunity community : StackCommunity.values()) {
-            if (community == StackCommunity.FI) {
-                this.communityViews.put(community, fiView);
-                this.communityAlerts.put(community, fiAlerts);
-            } else {
-                this.communityViews.put(community, dmView);
-                this.communityAlerts.put(community, dmAlerts);
+            switch (community) {
+                case FI:
+                    this.communityViews.put(community, fiView);
+                    this.communityAlerts.put(community, fiAlerts);
+                    break;
+                case EM:
+                    this.communityViews.put(community, emView);
+                    this.communityAlerts.put(community, emAlerts);
+                    break;
+                case DM:
+                default:
+                    this.communityViews.put(community, dmView);
+                    this.communityAlerts.put(community, dmAlerts);
             }
         }
 
@@ -85,7 +95,6 @@ public class StockAlertPresenter {
 
     @Subscribe
     public void onConnected(final WebSocketConnected connected) {
-
     }
 
     public void setCommunityForSymbol(final String symbol, final StackCommunity community) {

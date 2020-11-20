@@ -21,6 +21,7 @@ public class QuotingObligationsPresenterTest {
     public static final String SYMBOL = "VOD LN";
     public static final String SYMBOL2 = "TRY LN";
     public static final String SYMBOL3 = "TRY2 LN";
+    public static final String SYMBOL4 = "TRY3 LN";
 
     private final SelectIO selectIO = Mockito.mock(SelectIO.class);
     private final UILogger webLog = Mockito.mock(UILogger.class);
@@ -95,17 +96,20 @@ public class QuotingObligationsPresenterTest {
         final QuotingState quotingState1 = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
         final QuotingState quotingState2 = new QuotingState(2, 2, SYMBOL2, false, SYMBOL2);
         final QuotingState quotingState3 = new QuotingState(3, 3, SYMBOL3, false, SYMBOL3);
+        final QuotingState quotingState4 = new QuotingState(4, 4, SYMBOL4, false, SYMBOL4);
 
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, quotingState1);
         presenter.setQuotingState(NIBBLER, quotingState2);
         presenter.setQuotingState(NIBBLER, quotingState3);
+        presenter.setQuotingState(NIBBLER, quotingState4);
 
         presenter.everythingOn("DM", inboundData);
         Mockito.verify(nibblerHandler).startQuoter(1, USER);
         Mockito.verify(nibblerHandler).startQuoter(2, USER);
         Mockito.verify(nibblerHandler).startQuoter(3, USER);
-        Mockito.verify(nibblerHandler, Mockito.times(3)).batchComplete();
+        Mockito.verify(nibblerHandler).startQuoter(4, USER);
+        Mockito.verify(nibblerHandler, Mockito.times(4)).batchComplete();
         Mockito.verifyNoMoreInteractions(nibblerHandler);
 
         presenter.setSymbol(StackCommunity.FI, SYMBOL);
@@ -113,12 +117,13 @@ public class QuotingObligationsPresenterTest {
         presenter.everythingOff("DM", null);
         Mockito.verify(nibblerHandler).stopQuoter(2);
         Mockito.verify(nibblerHandler).stopQuoter(3);
-        Mockito.verify(nibblerHandler, Mockito.times(5)).batchComplete();
+        Mockito.verify(nibblerHandler).stopQuoter(4);
+        Mockito.verify(nibblerHandler, Mockito.times(7)).batchComplete();
         Mockito.verifyNoMoreInteractions(nibblerHandler);
 
         presenter.everythingOff("FI", null);
         Mockito.verify(nibblerHandler).stopQuoter(1);
-        Mockito.verify(nibblerHandler, Mockito.times(6)).batchComplete();
+        Mockito.verify(nibblerHandler, Mockito.times(8)).batchComplete();
         Mockito.verifyNoMoreInteractions(nibblerHandler);
 
         presenter.setSymbol(StackCommunity.FI, SYMBOL2);
@@ -126,7 +131,15 @@ public class QuotingObligationsPresenterTest {
         presenter.everythingOn("FI", inboundData);
         Mockito.verify(nibblerHandler, Mockito.times(2)).startQuoter(1, USER);
         Mockito.verify(nibblerHandler, Mockito.times(2)).startQuoter(2, USER);
-        Mockito.verify(nibblerHandler, Mockito.times(8)).batchComplete();
+        Mockito.verify(nibblerHandler, Mockito.times(10)).batchComplete();
+        Mockito.verifyNoMoreInteractions(nibblerHandler);
+
+
+        presenter.setSymbol(StackCommunity.EM, SYMBOL4);
+
+        presenter.everythingOn("EM", inboundData);
+        Mockito.verify(nibblerHandler, Mockito.times(2)).startQuoter(4, USER);
+        Mockito.verify(nibblerHandler, Mockito.times(11)).batchComplete();
         Mockito.verifyNoMoreInteractions(nibblerHandler);
 
     }

@@ -149,7 +149,7 @@ import com.drwtrading.london.reddal.symbols.ChixInstMatcher;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
-import com.drwtrading.london.reddal.symbols.IndyClient;
+import com.drwtrading.london.reddal.symbols.RefdataClient;
 import com.drwtrading.london.reddal.trades.JasperTradesListener;
 import com.drwtrading.london.reddal.trades.MrChillTrade;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
@@ -762,8 +762,8 @@ public class Main {
 
         // Indy
         final ConfigGroup indyConfig = root.getGroup("indy");
-        final IndyClient indyListener =
-                new IndyClient(channels.communityInstrumentIDs, channels.communitySymbols, channels.instDefs, channels.etfDefs,
+        final RefdataClient indyListener =
+                new RefdataClient(channels.communityInstrumentIDs, channels.communitySymbols, channels.instDefs, channels.etfDefs,
                         channels.symbolDescs);
         channels.searchResults.subscribe(selectIOFiber, indyListener::setSearchResult);
 
@@ -1450,12 +1450,18 @@ public class Main {
                 setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF_FI,
                         webApp, "picardetf-fi");
 
-        final DelegatingPicardUI ui = new DelegatingPicardUI(picardFI, picardDM);
+        final PicardUI picardEM =
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF_FI,
+                        webApp, "picardetf-em");
+
+        final DelegatingPicardUI ui = new DelegatingPicardUI(picardFI, picardEM, picardDM);
         picardRows.subscribe(fiber, ui::addPicardRow);
         final TypedChannel<InstrumentID> dmInstrumentIDs = communityInstrumentIDs.get(StackCommunity.DM);
         final TypedChannel<InstrumentID> fiInstrumentIDs = communityInstrumentIDs.get(StackCommunity.FI);
+        final TypedChannel<InstrumentID> emInstrumentIDs = communityInstrumentIDs.get(StackCommunity.EM);
         dmInstrumentIDs.subscribe(fiber, ui::addDMInstrumentID);
         fiInstrumentIDs.subscribe(fiber, ui::addFIInstrumentID);
+        emInstrumentIDs.subscribe(fiber, ui::addEMInstrumentID);
     }
 
     private static PicardUI setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,

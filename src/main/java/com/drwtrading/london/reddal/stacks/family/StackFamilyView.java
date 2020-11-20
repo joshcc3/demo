@@ -548,6 +548,15 @@ public class StackFamilyView {
     }
 
     @FromWebSocketView
+    public void switchCommunity(final String familyName, final String communityStr) {
+        final StackCommunity community = StackCommunity.get(communityStr);
+        final FamilyUIData familyData = familyUIData.get(familyName);
+        if(null != community && null != familyData) {
+            communityManager.setFamilyCommunity(SOURCE_UI, familyName, community);
+        }
+    }
+
+    @FromWebSocketView
     public void lazySubscribe(final String symbol, final WebSocketInboundData data) {
         if (3 <= symbol.length()) {
             final List<FamilyUIData> familyUIs = new LinkedList<>();

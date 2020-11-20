@@ -51,9 +51,6 @@ public class QuotingObligationsPresenter {
     public QuotingObligationsPresenter(final Set<StackCommunity> primaryCommunities, final SelectIO uiSelectIO, final UILogger webLog) {
         this.primaryCommunities = primaryCommunities;
 
-        assert EnumSet.of(StackCommunity.FUTURE).equals(primaryCommunities) ||
-                EnumSet.of(StackCommunity.DM, StackCommunity.FI).equals(primaryCommunities);
-
         this.uiSelectIO = uiSelectIO;
         this.webLog = webLog;
 
@@ -254,7 +251,7 @@ public class QuotingObligationsPresenter {
 
         final String symbol = obligation.getSymbol();
 
-        if (StackCommunity.uiCommunityContansHack(community, symbolToCommunity.getOrDefault(symbol, StackCommunity.EXILES))) {
+        if (StackCommunity.uiCommunityContains(community, symbolToCommunity.getOrDefault(symbol, StackCommunity.EXILES))) {
             final String key = obligation.getKey();
             final boolean isStrategyOn = obligation.isStrategyOn();
             final boolean isQuoting = obligation.isQuoting();
@@ -269,7 +266,7 @@ public class QuotingObligationsPresenter {
             final BiFunction<StackCommunity, StackCommunity, T> f) {
         final StackCommunity symbolCommunity = symbolToCommunity.getOrDefault(symbol, StackCommunity.EXILES);
         if (null != uiCommunity && primaryCommunities.contains(uiCommunity) &&
-                StackCommunity.uiCommunityContansHack(uiCommunity, symbolCommunity)) {
+                StackCommunity.uiCommunityContains(uiCommunity, symbolCommunity)) {
             return f.apply(uiCommunity, symbolCommunity);
         } else {
             return null;
@@ -313,7 +310,7 @@ public class QuotingObligationsPresenter {
         for (final QuotingObligationState obligation : obligations.values()) {
             final String symbol = obligation.getSymbol();
             final StackCommunity symbolCommunity = symbolToCommunity.getOrDefault(symbol, StackCommunity.EXILES);
-            if (StackCommunity.uiCommunityContansHack(uiCommunity, symbolCommunity)) {
+            if (StackCommunity.uiCommunityContains(uiCommunity, symbolCommunity)) {
                 f.apply(obligation);
             }
         }

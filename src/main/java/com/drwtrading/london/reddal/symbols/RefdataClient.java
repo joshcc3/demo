@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.symbols;
 
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
+import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
@@ -20,7 +21,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class IndyClient implements IIndyCacheListener {
+// TODO make the refdata client implement IStackRelationshipListener instead and have it decide how symbols are associated with families.
+public class RefdataClient implements IIndyCacheListener {
 
     private static final Map<IndexConstant, EnumSet<FutureConstant>> FUTURES_FOR_INDEX = new EnumMap<>(IndexConstant.class);
     private final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs;
@@ -44,7 +46,7 @@ public class IndyClient implements IIndyCacheListener {
     private final Publisher<ETFDef> etfDefs;
     private final Publisher<SymbolIndyData> symbolDescriptions;
 
-    public IndyClient(final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs,
+    public RefdataClient(final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs,
             final EnumMap<StackCommunity, TypedChannel<String>> symbolCommunityChannels, final TypedChannel<InstrumentDef> instDefs,
             final TypedChannel<ETFDef> etfDefs, final Publisher<SymbolIndyData> symbolDescriptions) {
         this.symbolCommunityInstrumentIDs = symbolCommunityInstrumentIDs;
@@ -70,31 +72,13 @@ public class IndyClient implements IIndyCacheListener {
 
         if (futuresForIndex != null) {
             for (final FutureConstant future : futuresForIndex) {
-                final StackCommunity community;
-                switch (future.type) {
-                    case GOVIES:
-                    case EURO_DOLLAR:
-                        community = StackCommunity.FI;
-                        break;
-                    case INDEX:
-                    case FX:
-                    case TAS:
-                    case TIC:
-                    case TACO:
-                    case DIVIDEND:
-                    case COMMODITY:
-                    case SINGLE_STOCK:
-                    default:
-                        community = StackCommunity.DM;
-                }
+                final StackCommunity community = StackCommunity.getForFutureType(future.type);
                 for (int i = 0; i < 3; i++) {
                     final String symbol = futureExpiryCalc.getFutureCode(future, i);
                     final InstrumentID instId = futureExpiryCalc.getInstID(future, i);
 
                     final SymbolIndyData data = new SymbolIndyData(instId, symbol, indexDef.name, indexDef.source);
-
-                    // TODO - mapping from future type to stack community should be in the stack transport
-                    instIDCommunities.put(instId, community);
+                    instIDCommunities.putIfAbsent(instId, community);
                     publishSearchResultCommunity(searchResultCommunities.get(instId));
                     symbolDescriptions.publish(data);
                 }
@@ -109,7 +93,7 @@ public class IndyClient implements IIndyCacheListener {
         for (final InstrumentDef instDef : etfDef.instDefs) {
             final SymbolIndyData data = new SymbolIndyData(instDef.instID, instDef.bbgCode, etfDef.indexDef.name, etfDef.indexDef.source);
             symbolDescriptions.publish(data);
-            instIDCommunities.put(instDef.instID, StackCommunity.getForIndexType(etfDef.indexDef.indexType));
+            instIDCommunities.putIfAbsent(instDef.instID, StackCommunity.getForIndexType(etfDef.indexDef.indexType));
             publishSearchResultCommunity(searchResultCommunities.get(instDef.instID));
         }
         etfDefs.publish(etfDef);
