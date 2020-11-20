@@ -86,8 +86,9 @@ public enum ManagedOrderType {
     YODA {
         @Override
         public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
-            return new OrderParameters(new PegToBook(BookPegLevel.MID, 50), Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
+            return new OrderParameters(new PegToBook(BookPegLevel.MID, 50), Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    Constants.NO_TAKING, new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false),
+                    new PredictionParameters(true));
         }
 
         @Override
@@ -162,11 +163,8 @@ public enum ManagedOrderType {
     SNAGGIT {
         @Override
         public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
-            return new OrderParameters(new PegToPrice(price),
-                    new BookParameters(false, true, false, false, false, false, 0),
-                    new TakingParameters(true, 0, 1_00_00, 25, false, 0),
-                    Constants.NO_QUOTING,
-                    new PredictionParameters(false));
+            return new OrderParameters(new PegToPrice(price), new BookParameters(false, true, false, false, false, false, 0),
+                    new TakingParameters(true, 0, 1_00_00, 25, false, 0), Constants.NO_QUOTING, new PredictionParameters(false));
         }
 
         @Override
@@ -174,7 +172,6 @@ public enum ManagedOrderType {
             return false;
         }
     };
-
 
     public static int divisible(final int qty, final int i) {
         return qty - (qty % i);

@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.orderManagement.oe;
 
-import drw.eeif.eeifoe.Update;
 import com.drwtrading.london.util.Struct;
+import drw.eeif.eeifoe.Update;
 
 public class UpdateFromServer extends Struct implements OrderEntryFromServer {
 

@@ -27,9 +27,8 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
     private final Publisher<LaserLineValue> laserLinePublisher;
     private final Publisher<OpxlLadderText> ladderTextPublisher;
 
-    public OpxlLadderTextSubscriber(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor,
-            final Collection<String> topics, final Publisher<LaserLineValue> laserLinePublisher,
-            final Publisher<OpxlLadderText> ladderTextPublisher) {
+    public OpxlLadderTextSubscriber(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor, final Collection<String> topics,
+            final Publisher<LaserLineValue> laserLinePublisher, final Publisher<OpxlLadderText> ladderTextPublisher) {
 
         super(selectIO, selectIO, monitor, OPXLComponents.OPXL_LADDER_TEXT, topics, "OpxlLadderTextSubscriber");
 

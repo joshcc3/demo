@@ -18,6 +18,8 @@ public enum ReddalComponents implements IFuse {
     MD_L3_HANDLER,
     MD_L2_HANDLER,
 
+    MD_RFQ_HANDLER,
+
     MD_TRANSPORT,
 
     FEES_CALC,

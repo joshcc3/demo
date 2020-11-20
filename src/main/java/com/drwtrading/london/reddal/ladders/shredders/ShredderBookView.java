@@ -25,7 +25,9 @@ import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 
 import java.text.NumberFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
 
 class ShredderBookView {
 
@@ -60,7 +62,7 @@ class ShredderBookView {
     Integer shreddedRowWidth = 0;
 
     ShredderBookView(final UiPipeImpl ui, final IShredderUI view, final MDForSymbol marketData, final String symbol, final int levels,
-                     final WorkingOrdersByID workingOrders, final SymbolStackData stackData) {
+            final WorkingOrdersByID workingOrders, final SymbolStackData stackData) {
 
         this.ui = ui;
         this.view = view;
@@ -161,7 +163,6 @@ class ShredderBookView {
             ui.data(htmlRowKeys.bookOrderKey, DataKey.PRICE, price);
         }
     }
-
 
     void highlightSize(final long size) {
         CSSClass firstEmpty = null;

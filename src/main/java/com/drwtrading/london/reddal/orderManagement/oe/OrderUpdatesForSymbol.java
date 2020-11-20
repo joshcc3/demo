@@ -16,7 +16,8 @@ import java.util.TreeMap;
 public class OrderUpdatesForSymbol {
 
     private final String symbol;
-    private final Map<BookSide, NavigableMap<Long, HashMap<String, UpdateFromServer>>> updatesBySideAndPrice = new EnumMap<>(BookSide.class);
+    private final Map<BookSide, NavigableMap<Long, HashMap<String, UpdateFromServer>>> updatesBySideAndPrice =
+            new EnumMap<>(BookSide.class);
     public Map<String, UpdateFromServer> updatesByKey = new HashMap<>();
     public Map<Long, Map<String, UpdateFromServer>> updatesByPrice = new MapMaker().makeComputingMap(price -> new HashMap<>());
 
@@ -56,8 +57,8 @@ public class OrderUpdatesForSymbol {
     public void onDisconnected(final ServerDisconnected disconnected) {
         updatesByKey.values().removeIf(fromServer -> fromServer.server.equals(disconnected.server));
         updatesByPrice.forEach((price, map) -> map.values().removeIf(fromServer -> fromServer.server.equals(disconnected.server)));
-        updatesBySideAndPrice.values().forEach(byPrice -> byPrice
-                .forEach((price, byServer) -> byServer.values().removeIf(server -> server.server.equals(disconnected.server))));
+        updatesBySideAndPrice.values().forEach(byPrice -> byPrice.forEach(
+                (price, byServer) -> byServer.values().removeIf(server -> server.server.equals(disconnected.server))));
     }
 
     private static BookSide convertSide(final OrderSide side) {

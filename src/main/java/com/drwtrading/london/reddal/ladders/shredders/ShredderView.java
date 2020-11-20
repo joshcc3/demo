@@ -7,7 +7,7 @@ import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByID;
 
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ShredderView implements UiEventHandler {
@@ -47,7 +47,7 @@ public class ShredderView implements UiEventHandler {
     }
 
     void subscribeToSymbol(final String symbol, final int levels, final MDForSymbol marketData, final WorkingOrdersByID workingOrders,
-                           final SymbolStackData stackData) {
+            final SymbolStackData stackData) {
 
         this.symbol = symbol;
         this.levels = levels;

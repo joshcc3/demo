@@ -6,7 +6,6 @@ public class Premium {
     final double midMarketPremium;
     final double lastTradPremium;
 
-
     Premium(final String symbol, final Double midMarketPremium, final double lastTradPremium) {
 
         this.symbol = symbol;

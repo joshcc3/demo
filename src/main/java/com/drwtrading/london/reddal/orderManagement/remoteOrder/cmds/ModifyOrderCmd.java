@@ -28,9 +28,9 @@ public class ModifyOrderCmd implements IOrderCmd {
     private final long toPrice;
     private final int toQty;
 
-    public ModifyOrderCmd(final String toServer, final Publisher<LadderClickTradingIssue> rejectChannel, final User user,
-            final int chainID, final String symbol, final BookSide side, final OrderType orderType, final AlgoType algoType,
-            final String tag, final long fromPrice, final int fromQty, final long toPrice, final int toQty) {
+    public ModifyOrderCmd(final String toServer, final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final int chainID,
+            final String symbol, final BookSide side, final OrderType orderType, final AlgoType algoType, final String tag,
+            final long fromPrice, final int fromQty, final long toPrice, final int toQty) {
 
         this.toServer = toServer;
         this.rejectChannel = rejectChannel;

@@ -18,7 +18,6 @@ import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.indy.transport.data.ETFDef;
-import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -50,9 +49,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Map<String, FamilyUIData> familiesData;
 
     public StackFamilyPresenter(final SelectIO presenterSelectIO, final SelectIO backgroundSelectIO,
-            final IFuseBox<StackManagerComponents> fuseBox, final UILogger uiLogger, final SpreadContractSetGenerator contractSetGenerator, final Set<StackCommunity> primaryCommunities,
-            final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
-            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
+            final IFuseBox<StackManagerComponents> fuseBox, final UILogger uiLogger, final SpreadContractSetGenerator contractSetGenerator,
+            final Set<StackCommunity> primaryCommunities, final Set<StackCommunity> otherCommunities,
+            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
             final EnumMap<StackCommunity, TypedChannel<String>> communitySymbols,
             final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs) {
 
@@ -76,8 +75,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         for (final StackCommunity stackCommunity : otherCommunities) {
 
             final StackFamilyView asylumView =
-                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, fuseBox, stackCommunity, contractSetGenerator, true, strategySymbolUI,
-                            Constants::NO_OP, communitySymbols.get(stackCommunity), communityInstrumentIDs.get(stackCommunity));
+                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, fuseBox, stackCommunity, contractSetGenerator, true,
+                            strategySymbolUI, Constants::NO_OP, communitySymbols.get(stackCommunity),
+                            communityInstrumentIDs.get(stackCommunity));
             communityViews.put(stackCommunity, asylumView);
         }
 

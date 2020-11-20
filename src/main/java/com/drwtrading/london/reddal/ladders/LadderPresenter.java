@@ -148,8 +148,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     public LadderPresenter(final IFuseBox<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
             final Publisher<IOrderCmd> remoteOrderCommandByServer, final LadderOptions ladderOptions, final IPicardSpotter picardSpotter,
-            final IPremiumCalc premiumCalc, final FXCalc<?> fxCalc,
-            final Publisher<LadderSettingsStoreLadderPref> storeLadderPrefPublisher,
+            final IPremiumCalc premiumCalc, final FXCalc<?> fxCalc, final Publisher<LadderSettingsStoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
             final Fiber fiber, final Publisher<Jsonable> trace, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
@@ -301,9 +300,9 @@ public class LadderPresenter implements IStackPresenterCallback {
                 final InstrumentMetaData instMetaData = getInstMetaDataForSymbol(mdForSymbol);
 
                 final String userName = msg.getClient().getUserName();
-                view.subscribeToSymbol(symbol, levels, supportedOrderTypes, mdForSymbol, workingOrders, ladderMetaData,
-                        instMetaData, lastTradeDataForNibbler, lastTradeDataForJasper, stackData,
-                        getLadderPrefsForSymbolUser(symbol, userName), orderUpdates);
+                view.subscribeToSymbol(symbol, levels, supportedOrderTypes, mdForSymbol, workingOrders, ladderMetaData, instMetaData,
+                        lastTradeDataForNibbler, lastTradeDataForJasper, stackData, getLadderPrefsForSymbolUser(symbol, userName),
+                        orderUpdates);
 
                 if (3 < args.length) {
                     if ("S".equals(args[3])) {

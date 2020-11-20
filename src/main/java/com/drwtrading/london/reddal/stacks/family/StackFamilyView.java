@@ -35,7 +35,6 @@ import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
-import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
@@ -54,7 +53,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -129,8 +127,8 @@ public class StackFamilyView {
     private static final List<String> TAIL_PREFERENCE =
             List.of("UF", "UP", "GY", "FH", "DC", "SS", "SE", "ID", "PL", "BB", "NA", "FP", "LI", "LN", "IM");
 
-    StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final IFuseBox<StackManagerComponents> fuseBox, final StackCommunity community,
-            final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
+    StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final IFuseBox<StackManagerComponents> fuseBox,
+            final StackCommunity community, final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
             final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
             final TypedChannel<String> symbolsChannel, final TypedChannel<InstrumentID> instrumentIDChannel) {
 
@@ -250,9 +248,9 @@ public class StackFamilyView {
 
             final ChildUIData childUIData = childrenUIData.get(symbol);
 
-            if(null != childUIData && !StackOrphanage.ORPHANAGE.equals(childUIData.getFamily())) {
+            if (null != childUIData && !StackOrphanage.ORPHANAGE.equals(childUIData.getFamily())) {
                 final FamilyUIData family = familyUIData.get(childUIData.getFamily());
-                if(null != family && community == family.getStackCommunity()) {
+                if (null != family && community == family.getStackCommunity()) {
                     symbolsChannel.publish(symbol);
                     instrumentIDChannel.publish(searchResult.instID);
                 }
@@ -421,9 +419,10 @@ public class StackFamilyView {
         final StackUIData uiData = familyData.uiData;
 
         if (isFamilyDisplayable(uiData.symbol)) {
-            view.setParentData(uiData.symbol, familyData.getUIName(), uiData.getActiveBidPriceOffsetBPS(), uiData.getActiveAskPriceOffsetBPS(),
-                    uiData.isStackEnabled(BookSide.BID, StackType.PICARD), uiData.isStackEnabled(BookSide.BID, StackType.QUOTER),
-                    uiData.isStackEnabled(BookSide.ASK, StackType.PICARD), uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
+            view.setParentData(uiData.symbol, familyData.getUIName(), uiData.getActiveBidPriceOffsetBPS(),
+                    uiData.getActiveAskPriceOffsetBPS(), uiData.isStackEnabled(BookSide.BID, StackType.PICARD),
+                    uiData.isStackEnabled(BookSide.BID, StackType.QUOTER), uiData.isStackEnabled(BookSide.ASK, StackType.PICARD),
+                    uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
         }
     }
 
@@ -459,7 +458,7 @@ public class StackFamilyView {
 
             symbolsChannel.publish(childSymbol);
             final SearchResult searchResult = searchResults.get(childSymbol);
-            if(null != searchResult) {
+            if (null != searchResult) {
                 instrumentIDChannel.publish(searchResult.instID);
             }
 
@@ -665,7 +664,7 @@ public class StackFamilyView {
             }
         }
 
-        if(allOk) {
+        if (allOk) {
             fuseBox.setOK(StackManagerComponents.FAMILY_AUTO_CREATION);
         }
 

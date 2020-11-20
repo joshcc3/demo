@@ -134,4 +134,7 @@ public class IndyClient implements IIndyCacheListener {
     public void setSearchResult(final SearchResult searchResult) {
         publishSearchResultCommunity(List.of(searchResult));
     }
+
 }
+
+

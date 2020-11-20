@@ -48,7 +48,7 @@ class FamilyUIData {
     }
 
     void setUIName(final String uiName) {
-        this.uiName  = uiName;
+        this.uiName = uiName;
     }
 
     String getUIName() {

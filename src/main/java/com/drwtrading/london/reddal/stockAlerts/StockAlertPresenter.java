@@ -105,7 +105,7 @@ public class StockAlertPresenter {
         final String data = msg.getData();
 
         final String[] cmdParts = data.split(",");
-        if("subscribeToCommunity".equals(cmdParts[0])) {
+        if ("subscribeToCommunity".equals(cmdParts[0])) {
             subscribeToCommunity(cmdParts[1], msg);
         }
     }

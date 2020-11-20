@@ -50,8 +50,9 @@ public class YodaTWAPClient implements ITransportCacheListener<YodaSymbolSideKey
             } else {
                 action = "Buying every ";
             }
-            final String msg = action + period + " for " + duration + " seconds [Bucket " + signal.volumeBucketMin + ", " +
-                    signal.volumeBucketMax + "].";
+            final String msg =
+                    action + period + " for " + duration + " seconds [Bucket " + signal.volumeBucketMin + ", " + signal.volumeBucketMax +
+                            "].";
 
             final StockAlert alert = new StockAlert(signal.milliSinceMidnight, timestamp, signal.key.signal.name(), signal.key.symbol, msg);
             stockAlerts.publish(alert);

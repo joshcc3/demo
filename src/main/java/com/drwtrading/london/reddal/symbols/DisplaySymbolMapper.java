@@ -18,7 +18,6 @@ public class DisplaySymbolMapper {
 
     private final Publisher<DisplaySymbol> displaySymbolPublisher;
 
-
     private final Map<String, HashSet<String>> mdSymbolsByIsin;
     private final Map<String, String> bbgByIsin;
     private final Set<DisplaySymbol> displaySymbols;

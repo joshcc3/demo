@@ -5,12 +5,15 @@ import com.drwtrading.london.indy.transport.data.Source;
 import com.drwtrading.london.reddal.symbols.SymbolIndyData;
 
 public class InstrumentMetaData {
+
     public final InstrumentID instrumentID;
 
     private Source indyDefSource;
     private String indyDefName;
 
-    public InstrumentMetaData(final InstrumentID instrumentID) {this.instrumentID = instrumentID;}
+    public InstrumentMetaData(final InstrumentID instrumentID) {
+        this.instrumentID = instrumentID;
+    }
 
     public void setSymbolIndyData(final SymbolIndyData symbolIndyData) {
         this.indyDefName = symbolIndyData.description;

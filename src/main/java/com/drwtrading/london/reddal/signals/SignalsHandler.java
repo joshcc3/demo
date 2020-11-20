@@ -6,9 +6,9 @@ import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
+import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.picard.PicardRowState;
 import com.drwtrading.london.reddal.picard.PicardSpotter;
-import com.drwtrading.london.reddal.picard.PicardRow;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
 import drw.eeif.phockets.PhocketConnection;
 import drw.eeif.phockets.PhocketHandler;
@@ -127,8 +127,9 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
             } else {
                 action = "Buying every ";
             }
-            final String msg = action + period + " for " + duration + " seconds [Bucket " + signal.volumeBucketMin + ", " +
-                    signal.volumeBucketMax + "].";
+            final String msg =
+                    action + period + " for " + duration + " seconds [Bucket " + signal.volumeBucketMin + ", " + signal.volumeBucketMax +
+                            "].";
 
             final StockAlert alert = new StockAlert(signal.getMillisSinceMidnight(), timestamp, "TWAP", signal.getSymbol(), msg);
             stockAlerts.publish(alert);
@@ -140,7 +141,7 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
     public Void visitTweetAlert(final TweetAlert signal) {
         if (!signal.getMsg().isEmpty()) {
             final String timestamp = sdf.format(milliAtMidnightUTC + signal.getMillisSinceMidnight());
-            final String action = signal.getSide().name()+ ": ";
+            final String action = signal.getSide().name() + ": ";
             final String msg = action + signal.getMsg();
             final StockAlert alert = new StockAlert(signal.getMillisSinceMidnight(), timestamp, "TWEET", signal.getSymbol(), msg);
             stockAlerts.publish(alert);
@@ -160,10 +161,9 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
             if (null == bookSide) {
                 return null;
             }
-            final PicardRow row =
-                    new PicardRow(signalMilliSinceUTC, signal.getSymbol(), InstType.EQUITY, null, bookSide.getOppositeSide(),
-                            signal.closePrice, closePrice, PicardSpotter.getBPSThrough(signal.theoPrice, signal.closePrice),
-                            Math.abs(signal.theoPrice - signal.closePrice), PicardRowState.LIVE, "AT_CLOSE", false, isNewRow);
+            final PicardRow row = new PicardRow(signalMilliSinceUTC, signal.getSymbol(), InstType.EQUITY, null, bookSide.getOppositeSide(),
+                    signal.closePrice, closePrice, PicardSpotter.getBPSThrough(signal.theoPrice, signal.closePrice),
+                    Math.abs(signal.theoPrice - signal.closePrice), PicardRowState.LIVE, "AT_CLOSE", false, isNewRow);
             rowBySymbol.put(symbol, row);
             rowPublisher.publish(row);
         } else if (!isNewRow) {
@@ -188,6 +188,5 @@ public class SignalsHandler implements PhocketHandler<Signals, Void>, Alert.Visi
         }
         return bookSide;
     }
-
 
 }

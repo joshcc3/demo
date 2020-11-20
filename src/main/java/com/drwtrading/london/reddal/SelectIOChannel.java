@@ -18,7 +18,7 @@ public class SelectIOChannel<T> {
         subscribers.addIfAbsent(callback);
     }
 
-    public void  subscribe(final SelectIO selectIO, final Callback<T> callback) {
+    public void subscribe(final SelectIO selectIO, final Callback<T> callback) {
 
         final Callback<T> laterCallback = message -> selectIO.execute(() -> callback.onMessage(message));
         subscribers.addIfAbsent(laterCallback);
