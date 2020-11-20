@@ -80,33 +80,48 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
     @Override
     public void referencePrice(final IBook<IBookLevel> book, final IBookReferencePrice refPrice) {
 
-        if (refPrice.isValid()) {
-            switch (refPrice.getReferencePoint()) {
+        final long seq1 = book.getLastPacketSeqNum();
+        final long refPriceValue = refPrice.getPrice();
+        final long refPriceReceivedNanos = refPrice.getReceivedNanoSinceMidnight();
+        final long refPriceQty = refPrice.getQty();
+        final ReferencePoint referencePoint = refPrice.getReferencePoint();
+
+        final IBookReferencePrice yestClose = book.getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
+        final long yestCloseValue = yestClose.getPrice();
+
+        final boolean yestCloseIsValid = yestClose.isValid();
+        final boolean refPriceIsValid = refPrice.isValid();
+
+        if (refPriceIsValid) {
+            switch (referencePoint) {
                 case YESTERDAY_CLOSE: {
-                    if (refPrice.isValid()) {
-                        final SymbolReferencePrice symbolRefPrice = new SymbolReferencePrice(book, refPrice.getPrice());
-                        symbolRefPrices.publish(symbolRefPrice);
-                    }
+                    final SymbolReferencePrice symbolRefPrice = new SymbolReferencePrice(book, refPriceValue);
+                    symbolRefPrices.publish(symbolRefPrice);
                     break;
                 }
                 case RFQ: {
-                    final long milliSinceMidnight = refPrice.getReceivedNanoSinceMidnight() / DateTimeUtil.NANOS_IN_MILLIS;
+                    final long milliSinceMidnight = refPriceReceivedNanos / DateTimeUtil.NANOS_IN_MILLIS;
                     final boolean isETF = book.getInstType() == InstType.ETF;
 
-                    final IBookReferencePrice yestClose = book.getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
                     final long price;
-                    if (refPrice.isValid() && yestClose.isValid()) {
-                        price = yestClose.getPrice();
+                    if (yestCloseIsValid) {
+                        price = yestCloseValue;
                     } else {
                         price = 0;
                     }
 
-                    final RfqAlert rfqAlert =
-                            new RfqAlert(milliSinceMidnight, book.getSymbol(), price, refPrice.getQty(), book.getCCY(), isETF);
+                    final RfqAlert rfqAlert = new RfqAlert(milliSinceMidnight, book.getSymbol(), price, refPriceQty, book.getCCY(), isETF);
                     stockAlertChannel.publish(rfqAlert);
                     break;
                 }
             }
+        }
+        final long seq2 = book.getLastPacketSeqNum();
+        if (seq1 != seq2) {
+            monitor.logError(ReddalComponents.MD_RFQ_HANDLER,
+                    "Seq Nums snapped within Ref Price update different seq1: [" + seq1 + "], seq2: [" + seq2 + ']');
+        } else {
+            monitor.setOK(ReddalComponents.MD_RFQ_HANDLER);
         }
     }
 
