@@ -2,7 +2,6 @@ package com.drwtrading.london.reddal.symbols;
 
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
-import com.drwtrading.london.eeif.stack.transport.cache.relationships.IStackRelationshipListener;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;

@@ -551,7 +551,7 @@ public class StackFamilyView {
     public void switchCommunity(final String familyName, final String communityStr) {
         final StackCommunity community = StackCommunity.get(communityStr);
         final FamilyUIData familyData = familyUIData.get(familyName);
-        if(null != community && null != familyData) {
+        if (null != community && null != familyData) {
             communityManager.setFamilyCommunity(SOURCE_UI, familyName, community);
         }
     }
