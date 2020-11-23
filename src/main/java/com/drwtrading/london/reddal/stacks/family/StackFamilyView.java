@@ -62,6 +62,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class StackFamilyView {
 
@@ -1129,32 +1130,36 @@ public class StackFamilyView {
 
                 try {
                     final String frontMonthSymbol = expiryCalc.getFutureCode(future, 0);
-                    final StackFamilyChildRow frontMonthData = childrenUIData.get(frontMonthSymbol).getChildRow();
+                    final ChildUIData frontMonthUiData = childrenUIData.get(frontMonthSymbol);
 
-                    for (int i = 1; i < 3; ++i) {
+                    if (frontMonthUiData != null) {
+                        final StackFamilyChildRow frontMonthChild = frontMonthUiData.getChildRow();
 
-                        final String backMonthSymbol = expiryCalc.getFutureCode(future, i);
-                        final SearchResult backMonthSearchResult = searchResults.get(backMonthSymbol);
+                        for (int i = 1; i < 3; ++i) {
 
-                        final ChildUIData backMonthUiData = childrenUIData.get(backMonthSymbol);
-                        final boolean backMonthNotPresent = backMonthUiData == null;
+                            final String backMonthSymbol = expiryCalc.getFutureCode(future, i);
+                            final SearchResult backMonthSearchResult = searchResults.get(backMonthSymbol);
 
-                        if (null != frontMonthData && backMonthNotPresent && null != backMonthSearchResult) {
+                            final ChildUIData backMonthUiData = childrenUIData.get(backMonthSymbol);
+                            final boolean backMonthNotPresent = backMonthUiData == null;
 
-                            final StackClientHandler strategyClient = nibblerClients.get(frontMonthData.getSource());
+                            if (null != frontMonthChild && backMonthNotPresent && null != backMonthSearchResult) {
 
-                            if (null != strategyClient) {
+                                final StackClientHandler strategyClient = nibblerClients.get(frontMonthChild.getSource());
 
-                                final String additiveSymbol;
-                                if (frontMonthData.getAdditiveSymbol().equals(frontMonthData.getSymbol())) {
-                                    additiveSymbol = backMonthSymbol;
-                                } else {
-                                    additiveSymbol = frontMonthData.getAdditiveSymbol();
+                                if (null != strategyClient) {
+
+                                    final String additiveSymbol;
+                                    if (frontMonthChild.getAdditiveSymbol().equals(frontMonthChild.getSymbol())) {
+                                        additiveSymbol = backMonthSymbol;
+                                    } else {
+                                        additiveSymbol = frontMonthChild.getAdditiveSymbol();
+                                    }
+
+                                    strategyClient.createStrategy(backMonthSymbol, backMonthSearchResult.instID, InstType.INDEX,
+                                            backMonthSymbol, backMonthSearchResult.instID, additiveSymbol);
+                                    strategyClient.batchComplete();
                                 }
-
-                                strategyClient.createStrategy(backMonthSymbol, backMonthSearchResult.instID, InstType.INDEX,
-                                        backMonthSymbol, backMonthSearchResult.instID, additiveSymbol);
-                                strategyClient.batchComplete();
                             }
                         }
                     }
@@ -1450,9 +1455,10 @@ public class StackFamilyView {
 
             if (!StackOrphanage.ORPHANAGE.equals(familyChildren.getKey())) {
 
-                for (final StackUIRelationship child : familyChildren.getValue().getAllRelationships()) {
+                final Collection<StackUIRelationship> relationships = familyChildren.getValue().getAllRelationships();
+                final Collection<String> childSymbols = relationships.stream().map(rel -> rel.childSymbol).collect(Collectors.toList());
 
-                    final String childSymbol = child.childSymbol;
+                for (final String childSymbol : childSymbols) {
 
                     final FutureConstant future = FutureConstant.getFutureFromSymbol(childSymbol);
                     if (null != future && FutureConstant.FEXD != future) {
