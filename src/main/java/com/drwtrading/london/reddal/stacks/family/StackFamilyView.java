@@ -1123,21 +1123,19 @@ public class StackFamilyView {
     private void createFutures(final ExpiryPeriod expiryPeriod) {
 
         for (final FutureConstant future : FutureConstant.values()) {
+            fuseBox.setOK(StackManagerComponents.CHILD_AUTO_CREATION);
 
             if (expiryPeriod == future.expiryPeriod) {
 
-                final String frontMonthSymbol = expiryCalc.getFutureCode(future, 0);
-                final StackFamilyChildRow frontMonthData = childrenUIData.get(frontMonthSymbol).getChildRow();
+                try {
+                    final String frontMonthSymbol = expiryCalc.getFutureCode(future, 0);
+                    final StackFamilyChildRow frontMonthData = childrenUIData.get(frontMonthSymbol).getChildRow();
 
-                for (int i = 1; i < 3; ++i) {
+                    for (int i = 1; i < 3; ++i) {
 
-                    final String backMonthSymbol = expiryCalc.getFutureCode(future, i);
-                    final SearchResult backMonthSearchResult = searchResults.get(backMonthSymbol);
-
-                    final ChildUIData childUIData = childrenUIData.get(backMonthSymbol);
-
-                    if (childUIData != null) {
-                        final StackFamilyChildRow backMonthData = childUIData.getChildRow();
+                        final String backMonthSymbol = expiryCalc.getFutureCode(future, i);
+                        final SearchResult backMonthSearchResult = searchResults.get(backMonthSymbol);
+                        final StackFamilyChildRow backMonthData = childrenUIData.get(backMonthSymbol).getChildRow();
 
                         if (null != frontMonthData && null == backMonthData && null != backMonthSearchResult) {
 
@@ -1158,6 +1156,8 @@ public class StackFamilyView {
                             }
                         }
                     }
+                } catch (final Exception e) {
+                    fuseBox.logError(StackManagerComponents.CHILD_AUTO_CREATION, "Failed to create child for future [" + future + "].", e);
                 }
             }
         }
@@ -1183,10 +1183,8 @@ public class StackFamilyView {
     @FromWebSocketView
     public void copyChildSetup(final String fromSymbol, final String toSymbol, final WebSocketInboundData data) {
 
-        final ChildUIData childUIData = childrenUIData.get(toSymbol);
-
-        if (childUIData != null) {
-            final String family = childUIData.getFamily();
+        try {
+            final String family = childrenUIData.get(toSymbol).getFamily();
             communityManager.stopChild(family, toSymbol, BookSide.BID);
             communityManager.stopChild(family, toSymbol, BookSide.ASK);
 
@@ -1231,7 +1229,11 @@ public class StackFamilyView {
 
                 configClient.batchComplete();
             }
+        } catch (final Exception e) {
+            fuseBox.logError(StackManagerComponents.CHILD_COPY_CONFIG,
+                    "Failed to copy config from [" + fromSymbol + "] to [" + toSymbol + "].", e);
         }
+
     }
 
     @FromWebSocketView
