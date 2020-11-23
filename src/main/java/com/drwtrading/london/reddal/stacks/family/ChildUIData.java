@@ -7,12 +7,12 @@ public class ChildUIData {
     private StackFamilyChildRow childRow;
     private String family;
 
-    public ChildUIData(final String childSymbol, final StackFamilyChildRow childRow) {
+    ChildUIData(final String childSymbol, final StackFamilyChildRow childRow) {
         this.childSymbol = childSymbol;
         this.childRow = childRow;
     }
 
-    public ChildUIData(final String childSymbol, final String family) {
+    ChildUIData(final String childSymbol, final String family) {
         this.childSymbol = childSymbol;
         this.family = family;
     }

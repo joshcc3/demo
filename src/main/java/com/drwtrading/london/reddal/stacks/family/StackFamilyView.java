@@ -1135,9 +1135,11 @@ public class StackFamilyView {
 
                         final String backMonthSymbol = expiryCalc.getFutureCode(future, i);
                         final SearchResult backMonthSearchResult = searchResults.get(backMonthSymbol);
-                        final StackFamilyChildRow backMonthData = childrenUIData.get(backMonthSymbol).getChildRow();
 
-                        if (null != frontMonthData && null == backMonthData && null != backMonthSearchResult) {
+                        final ChildUIData backMonthUiData = childrenUIData.get(backMonthSymbol);
+                        final boolean backMonthNotPresent = backMonthUiData == null;
+
+                        if (null != frontMonthData && backMonthNotPresent && null != backMonthSearchResult) {
 
                             final StackClientHandler strategyClient = nibblerClients.get(frontMonthData.getSource());
 
