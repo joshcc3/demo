@@ -4,6 +4,8 @@ import com.drwtrading.london.eeif.utils.staticData.CCY;
 
 public class RfqAlert {
 
+    private static final long NULL_VALUE = Long.MIN_VALUE;
+
     public final long milliSinceMidnight;
 
     public final String symbol;
@@ -35,6 +37,14 @@ public class RfqAlert {
 
         return milliSinceMidnight == rfqAlert.milliSinceMidnight && price == rfqAlert.price && qty == rfqAlert.qty &&
                 symbol.equals(rfqAlert.symbol) && ccy == rfqAlert.ccy && isETF == rfqAlert.isETF;
+    }
+
+    public boolean isValidQty() {
+        return qty != NULL_VALUE;
+    }
+
+    public boolean isValidPrice() {
+        return price != NULL_VALUE;
     }
 
     @Override

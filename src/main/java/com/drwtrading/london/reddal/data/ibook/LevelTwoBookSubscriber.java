@@ -80,16 +80,9 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
     @Override
     public void referencePrice(final IBook<IBookLevel> book, final IBookReferencePrice refPrice) {
 
-        final long seq1 = book.getLastPacketSeqNum();
         final long refPriceValue = refPrice.getPrice();
-        final long refPriceReceivedNanos = refPrice.getReceivedNanoSinceMidnight();
-        final long refPriceQty = refPrice.getQty();
         final ReferencePoint referencePoint = refPrice.getReferencePoint();
 
-        final IBookReferencePrice yestClose = book.getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
-        final long yestCloseValue = yestClose.getPrice();
-
-        final boolean yestCloseIsValid = yestClose.isValid();
         final boolean refPriceIsValid = refPrice.isValid();
 
         if (refPriceIsValid) {
@@ -100,6 +93,14 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
                     break;
                 }
                 case RFQ: {
+                    final long refPriceReceivedNanos = refPrice.getReceivedNanoSinceMidnight();
+                    final long refPriceQty = refPrice.getQty();
+
+                    final IBookReferencePrice yestClose = book.getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
+                    final long yestCloseValue = yestClose.getPrice();
+
+                    final boolean yestCloseIsValid = yestClose.isValid();
+
                     final long milliSinceMidnight = refPriceReceivedNanos / DateTimeUtil.NANOS_IN_MILLIS;
                     final boolean isETF = book.getInstType() == InstType.ETF;
 
@@ -115,13 +116,6 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
                     break;
                 }
             }
-        }
-        final long seq2 = book.getLastPacketSeqNum();
-        if (seq1 != seq2) {
-            monitor.logError(ReddalComponents.MD_RFQ_HANDLER,
-                    "Seq Nums snapped within Ref Price update different seq1: [" + seq1 + "], seq2: [" + seq2 + ']');
-        } else {
-            monitor.setOK(ReddalComponents.MD_RFQ_HANDLER);
         }
     }
 
