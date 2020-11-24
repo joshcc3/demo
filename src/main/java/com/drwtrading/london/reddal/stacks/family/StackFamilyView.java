@@ -303,7 +303,7 @@ public class StackFamilyView {
                 case ETF:
                 case DR:
                 case EQUITY:
-                    strategySymbolUI.addStrategySymbol(community.instType, childRow.getLeanSymbol());
+                    strategySymbolUI.addStrategySymbol(community.instType, childRow.getLeanSymbol(), true);
             }
         }
     }
@@ -455,7 +455,7 @@ public class StackFamilyView {
 
         if (isFamilyDisplayable(parentSymbol)) {
 
-            strategySymbolUI.addStrategySymbol(community.instType, childSymbol);
+            strategySymbolUI.addStrategySymbol(community.instType, childSymbol, false);
 
             symbolsChannel.publish(childSymbol);
             final SearchResult searchResult = searchResults.get(childSymbol);

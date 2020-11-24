@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.stacks.opxl;
 
 import com.drwtrading.london.eeif.opxl.OpxlClient;
 import com.drwtrading.london.eeif.opxl.OpxlData;
+import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
@@ -9,22 +10,21 @@ import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 
 import java.util.Date;
 import java.util.EnumMap;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class OpxlStrategySymbolUI {
 
     private static final String TOPIC = ".eeif.strategy.symbols.";
     private static final String TOPIC_PREFIX_PARAM = "env";
 
-    private static final Object[] HEADERS = {"Symbol", "StrategyType"};
+    private static final Object[] HEADERS = {"Symbol", "StrategyType", "Lean", "Quote"};
 
     private static final long PUBLISH_INTERVAL = 60_000;
 
     private final OpxlClient<?> writer;
 
-    private final Map<InstType, Set<String>> symbolsPerTopics;
+    private final Map<InstType, HashMap<String, OpxlStrategyData>> symbolsPerTopics;
 
     private final String topic;
 
@@ -41,32 +41,31 @@ public class OpxlStrategySymbolUI {
         this.topic = topicPrefix + TOPIC + topicSuffix;
         this.symbolsPerTopics = new EnumMap<>(InstType.class);
 
-        for (final InstType instType : InstType.values()) {
-
-            final HashSet<String> symbols = new HashSet<>();
-            symbolsPerTopics.put(instType, symbols);
-        }
-
         this.table = new Object[1][];
         table[0] = HEADERS;
 
         this.isUpdated = true;
     }
 
-    public void addStrategySymbol(final InstType strategyInstType, final String symbol) {
+    public void addStrategySymbol(final InstType strategyInstType, final String symbol, final boolean isLean) {
 
-        final Set<String> seenSymbols = symbolsPerTopics.get(strategyInstType);
-        if (seenSymbols.add(symbol)) {
+        final Map<String, OpxlStrategyData> seenSymbols = MapUtils.getMappedMap(symbolsPerTopics, strategyInstType);
+        OpxlStrategyData data = seenSymbols.get(symbol);
 
+        if (data == null) {
             final Object[][] newTable = new Object[table.length + 1][];
             System.arraycopy(table, 0, newTable, 0, table.length);
 
-            final Object[] newRow = {symbol, strategyInstType};
+            final Object[] newRow = {symbol, strategyInstType, false, false};
             newTable[table.length] = newRow;
             this.table = newTable;
 
-            isUpdated = true;
+            data = new OpxlStrategyData(strategyInstType, symbol, newRow);
+            seenSymbols.put(symbol, data);
         }
+
+        final boolean updated = isLean ? data.setLean() : data.setQuote();
+        isUpdated |= updated;
     }
 
     public long flush() {
