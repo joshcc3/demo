@@ -62,7 +62,6 @@ import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.reddal.autopull.autopuller.onMD.AutoPuller;
 import com.drwtrading.london.reddal.autopull.autopuller.ui.AutoPullPersistence;
 import com.drwtrading.london.reddal.autopull.autopuller.ui.AutoPullerUI;
-import com.drwtrading.london.reddal.autopull.marketNumbers.MarketNumberPresenter;
 import com.drwtrading.london.reddal.blotter.BlotterClient;
 import com.drwtrading.london.reddal.blotter.MsgBlotterPresenter;
 import com.drwtrading.london.reddal.blotter.SafetiesBlotterPresenter;
@@ -180,7 +179,6 @@ import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
 import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
-import com.drwtrading.photons.eeif.configuration.MarketNumbers;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.photons.mrphil.Subscription;
@@ -1362,30 +1360,7 @@ public class Main {
             createWebPageWithWebSocket("quotingObligations", "quotingObligations", fibers.ui, webApp, quotingObligationsWebSocket);
             quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsPresenter::webControl);
 
-            final boolean isMarketNumbersWanted = app.config.paramExists("marketNumbers") && app.config.getBoolean("marketNumbers");
             final ConfigGroup indyConfigGroup = app.config.getEnabledGroup("indyConfig");
-
-            if (isMarketNumbersWanted) {
-
-                if (null == indyConfigGroup) {
-                    throw new IllegalStateException("Market numbers wanted without Indy config.");
-                } else {
-                    final MarketNumberPresenter marketNumberPresenter =
-                            new MarketNumberPresenter(app.selectIO, webLog, channels.cmdsForNibblers);
-
-                    final TypedChannel<WebSocketControlMessage> marketNumbersWebSocket =
-                            TypedChannels.create(WebSocketControlMessage.class);
-                    createWebPageWithWebSocket("marketNumbers", "marketNumbers", fibers.ui, webApp, marketNumbersWebSocket);
-                    marketNumbersWebSocket.subscribe(selectIOFiber, marketNumberPresenter::webControl);
-
-                    channels.eeifConfiguration.subscribe(selectIOFiber, eeifConfig -> {
-                        if (EeifConfiguration.Type.MARKET_NUMBERS == eeifConfig.typeEnum()) {
-                            final MarketNumbers marketNumber = (MarketNumbers) eeifConfig;
-                            marketNumberPresenter.setMarketNumber(marketNumber);
-                        }
-                    });
-                }
-            }
 
             if (null != indyConfigGroup) {
 
