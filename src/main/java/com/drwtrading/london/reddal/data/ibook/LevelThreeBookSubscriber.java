@@ -105,7 +105,11 @@ public class LevelThreeBookSubscriber implements IBookLevelThreeMonitor {
                     final boolean isETF = book.getInstType() == InstType.ETF;
 
                     final long price;
-                    if (yestCloseIsValid) {
+                    final IBookLevelWithOrders bestBid = book.getBestBid();
+                    final IBookLevelWithOrders bestAsk = book.getBestAsk();
+                    if (null != bestAsk && null != bestBid) {
+                        price = (bestBid.getPrice() >> 1) + (bestAsk.getPrice() >> 1);
+                    } else if (yestCloseIsValid) {
                         price = yestCloseValue;
                     } else {
                         price = 0;
