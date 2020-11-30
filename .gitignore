@@ -21,3 +21,4 @@ ffc_*log
 /web/ladder-resources/external-js/
 /web/ladder-resources/sounds/
 /web/sounds
+*.iml
