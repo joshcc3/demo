@@ -739,8 +739,8 @@ public class Main {
         }
 
         // Mr. Phil position
-        {
-            final ConfigGroup mrPhilConfig = root.getGroup("mr-phil");
+        final ConfigGroup mrPhilConfig = root.getEnabledGroup("mr-phil");
+        if (null != mrPhilConfig) {
             final InetSocketAddress indyAddress = IOConfigParser.getTargetAddress(mrPhilConfig);
             final OnHeapBufferPhotocolsNioClient<Position, Subscription> client =
                     OnHeapBufferPhotocolsNioClient.client(indyAddress, "0.0.0.0", Position.class, Subscription.class,
