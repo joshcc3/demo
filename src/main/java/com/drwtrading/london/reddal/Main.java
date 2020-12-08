@@ -809,13 +809,34 @@ public class Main {
             channels.ultimateParents.subscribe(selectIOFiber, pksClient::setUltimateParent);
             channels.searchResults.subscribe(selectIOFiber, pksClient::setSearchResult);
 
-            final PositionClientHandler positionCache =
-                    PositionCacheFactory.createClientCache(app.selectIO, pksMonitor, "PKS", app.appName, pksClient);
-            positionCache.addConstituentListener(pksClient);
+            final ConfigGroup dryConfig = pksConfig.getEnabledGroup("dry");
+            final ConfigGroup dripConfig = pksConfig.getEnabledGroup("drip");
 
-            final TransportTCPKeepAliveConnection<?, ?> client =
-                    PositionCacheFactory.createClient(app.selectIO, pksConfig, pksMonitor, positionCache);
-            client.restart();
+            if (dryConfig != null) {
+                final PKSPositionClient.DryPksClient dryClient = pksClient.getDryClient();
+
+                final PositionClientHandler dryPositionCache =
+                        PositionCacheFactory.createClientCache(app.selectIO, pksMonitor, "PKS", app.appName, dryClient);
+                dryPositionCache.addConstituentListener(dryClient);
+
+                final TransportTCPKeepAliveConnection<?, ?> client =
+                        PositionCacheFactory.createClient(app.selectIO, dryConfig, pksMonitor, dryPositionCache);
+                client.restart();
+            }
+
+            if (dripConfig != null) {
+                final PKSPositionClient.DripPksClient dripClient = pksClient.getDripClient();
+
+                final PositionClientHandler dripPositionCache =
+                        PositionCacheFactory.createClientCache(app.selectIO, pksMonitor, "PKS", app.appName, dripClient);
+                dripPositionCache.addConstituentListener(dripClient);
+
+                final TransportTCPKeepAliveConnection<?, ?> client =
+                        PositionCacheFactory.createClient(app.selectIO, dripConfig, pksMonitor, dripPositionCache);
+                client.restart();
+
+            }
+
         }
 
         final UltimateParentOPXL ultimateParentOPXL = new UltimateParentOPXL(opxlSelectIO, opxlMonitor, logDir, channels.ultimateParents);

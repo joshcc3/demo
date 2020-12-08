@@ -1214,13 +1214,14 @@ public class LadderBookView implements ILadderBoard {
 
                 final PKSExposure pksExposure = metaData.getPKSData();
                 if (null != pksExposure) {
-                    clickTradingBoxQty = Math.abs((int) pksExposure.exposure);
+                    clickTradingBoxQty = Math.abs((int) pksExposure.dryExposure);
                 }
             } else if (label.equals(HTML.PKS_POSITION)) {
 
                 final PKSExposure pksExposure = metaData.getPKSData();
                 if (null != pksExposure) {
-                    clickTradingBoxQty = Math.abs((int) pksExposure.position);
+                    final double combinedPosition = pksExposure.getCombinedPosition();
+                    clickTradingBoxQty = Math.abs((int) Math.round(combinedPosition));
                 }
             }
         } else if ("right".equals(button)) {

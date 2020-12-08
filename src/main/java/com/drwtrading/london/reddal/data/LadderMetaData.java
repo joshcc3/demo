@@ -90,8 +90,10 @@ public class LadderMetaData {
     public void onPKSExposure(final DecimalFormat formatter, final PKSExposure data) {
 
         this.pksData = data;
-        this.pksExposure = formatPosition(formatter, data.exposure);
-        this.pksPosition = formatPosition(formatter, data.position);
+        final double combinedPosition = data.getCombinedPosition();
+
+        this.pksExposure = formatPosition(formatter, data.dryExposure);
+        this.pksPosition = formatPosition(formatter, combinedPosition);
     }
 
     public PKSExposure getPKSData() {

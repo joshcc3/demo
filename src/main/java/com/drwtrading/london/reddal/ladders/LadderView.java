@@ -460,8 +460,10 @@ public class LadderView implements UiEventHandler {
 
             final PKSExposure pksExposure = metaData.getPKSData();
             if (null != pksExposure) {
-                headerPanel.setPksExposure(pksExposure.exposure, metaData.pksExposure);
-                headerPanel.setPksPosition(pksExposure.position, metaData.pksPosition);
+                final double combinedPosition = pksExposure.getCombinedPosition();
+
+                headerPanel.setPksExposure(pksExposure.dryExposure, metaData.pksExposure);
+                headerPanel.setPksPosition(combinedPosition, metaData.pksPosition);
             }
 
             // Ladder text
