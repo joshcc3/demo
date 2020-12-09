@@ -197,7 +197,7 @@ public class SymbolStackData {
         return result;
     }
 
-    public void overrideStackData(final LaserLineValue laserLineValue) {
+    public void overrideStackData(final LaserLine laserLineValue) {
         this.stacksLaserLineCalc.overrideLaserLine(laserLineValue);
     }
 
@@ -213,15 +213,15 @@ public class SymbolStackData {
         this.stacksLaserLineCalc.setSpreadnoughtTheo(theo);
     }
 
-    public LaserLineValue getNavLaserLine() {
+    public LaserLine getNavLaserLine() {
         return stacksLaserLineCalc.getNavLaserLine();
     }
 
-    public LaserLineValue getTheoLaserLine() {
+    public LaserLine getTheoLaserLine() {
         return stacksLaserLineCalc.getTheoLaserLine();
     }
 
-    public Collection<LaserLineValue> getLaserLines() {
+    public Collection<LaserLine> getLaserLines() {
         return stacksLaserLineCalc.getLaserLines();
     }
 

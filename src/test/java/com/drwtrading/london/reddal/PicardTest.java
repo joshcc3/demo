@@ -15,8 +15,8 @@ import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
-import com.drwtrading.london.reddal.data.LaserLineType;
-import com.drwtrading.london.reddal.data.LaserLineValue;
+import com.drwtrading.london.icepie.transport.data.LaserLineType;
+import com.drwtrading.london.reddal.data.LaserLine;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.picard.LiquidityFinderData;
@@ -57,7 +57,7 @@ public class PicardTest {
                 new PicardSpotter(new SystemClock(), bookSubscriber, picardPublisher, laserDistancesPublisher, fxCalc);
 
         setUpBook(bookSubscriber, CCY.USD, BookMarketState.CONTINUOUS);
-        final LaserLineValue laserLine = getLaserLine(LaserLineType.BID, 103);
+        final LaserLine laserLine = getLaserLine(LaserLineType.BID, 103);
 
         picardSpotter.setLaserLine(laserLine);
         picardSpotter.checkAnyCrossed();
@@ -79,7 +79,7 @@ public class PicardTest {
                 new PicardSpotter(new SystemClock(), bookSubscriber, picardPublisher, laserDistancesPublisher, fxCalc);
 
         setUpBook(bookSubscriber, CCY.USD, BookMarketState.CONTINUOUS);
-        final LaserLineValue laserLine = getLaserLine(LaserLineType.BID, 100);
+        final LaserLine laserLine = getLaserLine(LaserLineType.BID, 100);
 
         picardSpotter.setLaserLine(laserLine);
         picardSpotter.checkAnyCrossed();
@@ -94,7 +94,7 @@ public class PicardTest {
                 new PicardSpotter(new SystemClock(), bookSubscriber, picardPublisher, laserDistancesPublisher, fxCalc);
 
         setUpBook(bookSubscriber, CCY.USD, BookMarketState.AUCTION);
-        final LaserLineValue laserLine = getLaserLine(LaserLineType.BID, 103);
+        final LaserLine laserLine = getLaserLine(LaserLineType.BID, 103);
 
         picardSpotter.setLaserLine(laserLine);
         picardSpotter.checkAnyCrossed();
@@ -114,7 +114,7 @@ public class PicardTest {
                 new PicardSpotter(new SystemClock(), bookSubscriber, picardPublisher, laserDistancesPublisher, fxCalc);
 
         setUpBook(bookSubscriber, CCY.USD, BookMarketState.CONTINUOUS);
-        final LaserLineValue laserLine = getLaserLine(LaserLineType.BID, 100.909181736d);
+        final LaserLine laserLine = getLaserLine(LaserLineType.BID, 100.909181736d);
         picardSpotter.setLaserLine(laserLine);
 
         picardSpotter.checkAnyCrossed();
@@ -132,7 +132,7 @@ public class PicardTest {
 
         Mockito.verifyNoMoreInteractions(laserDistancesPublisher);
 
-        final LaserLineValue laserLineTwo = getLaserLine(LaserLineType.BID, 101.0505d);
+        final LaserLine laserLineTwo = getLaserLine(LaserLineType.BID, 101.0505d);
         picardSpotter.setLaserLine(laserLineTwo);
 
         picardSpotter.checkAnyCrossed();
@@ -145,7 +145,7 @@ public class PicardTest {
         Assert.assertEquals(laserDistanceTwo.side, BookSide.BID, "Side.");
         Assert.assertEquals(laserDistanceTwo.bpsFromTouch, -5, 0.0001d, "BPS to touch.");
 
-        final LaserLineValue laserLineThree = getLaserLine(LaserLineType.BID, 80);
+        final LaserLine laserLineThree = getLaserLine(LaserLineType.BID, 80);
         picardSpotter.setLaserLine(laserLineThree);
 
         picardSpotter.checkAnyCrossed();
@@ -165,7 +165,7 @@ public class PicardTest {
                 new PicardSpotter(new SystemClock(), bookSubscriber, picardPublisher, laserDistancesPublisher, fxCalc);
 
         setUpBook(bookSubscriber, CCY.USD, BookMarketState.CONTINUOUS);
-        final LaserLineValue laserLine = getLaserLine(LaserLineType.ASK, 100.09d);
+        final LaserLine laserLine = getLaserLine(LaserLineType.ASK, 100.09d);
         picardSpotter.setLaserLine(laserLine);
 
         picardSpotter.checkAnyCrossed();
@@ -183,7 +183,7 @@ public class PicardTest {
 
         Mockito.verifyNoMoreInteractions(laserDistancesPublisher);
 
-        final LaserLineValue laserLineTwo = getLaserLine(LaserLineType.ASK, 80d);
+        final LaserLine laserLineTwo = getLaserLine(LaserLineType.ASK, 80d);
         picardSpotter.setLaserLine(laserLineTwo);
 
         picardSpotter.checkAnyCrossed();
@@ -196,7 +196,7 @@ public class PicardTest {
         Assert.assertEquals(laserDistanceTwo.side, BookSide.ASK, "Side.");
         Assert.assertEquals(laserDistanceTwo.bpsFromTouch, -2500, 0.0001d, "BPS to touch.");
 
-        final LaserLineValue laserLineThree = getLaserLine(LaserLineType.ASK, 120);
+        final LaserLine laserLineThree = getLaserLine(LaserLineType.ASK, 120);
         picardSpotter.setLaserLine(laserLineThree);
 
         picardSpotter.checkAnyCrossed();
@@ -233,9 +233,9 @@ public class PicardTest {
         mdForSymbol.setBook(book);
     }
 
-    private static LaserLineValue getLaserLine(final LaserLineType laserLineType, final double price) {
+    private static LaserLine getLaserLine(final LaserLineType laserLineType, final double price) {
 
-        final LaserLineValue laserLine = new LaserLineValue(SYMBOL, laserLineType);
+        final LaserLine laserLine = new LaserLine(SYMBOL, laserLineType);
         laserLine.setValue((long) (price * Constants.NORMALISING_FACTOR));
         return laserLine;
     }

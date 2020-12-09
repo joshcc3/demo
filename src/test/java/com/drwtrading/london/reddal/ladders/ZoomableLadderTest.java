@@ -18,13 +18,13 @@ import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
+import com.drwtrading.london.icepie.transport.data.LaserLineType;
 import com.drwtrading.london.reddal.FXFuse;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.InstrumentMetaData;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.LaserLineType;
-import com.drwtrading.london.reddal.data.LaserLineValue;
+import com.drwtrading.london.reddal.data.LaserLine;
 import com.drwtrading.london.reddal.data.NibblerLastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
@@ -78,13 +78,13 @@ public class ZoomableLadderTest {
     private static final long DEFAULT_CENTER_PRICE = 0L;
     private static final int LEVELS = 50;
 
-    private static final Map<LaserLineType, LaserLineValue> LAZORS = new EnumMap<>(LaserLineType.class);
+    private static final Map<LaserLineType, LaserLine> LAZORS = new EnumMap<>(LaserLineType.class);
     private static final String RIGHT = "right";
     private static final String LEFT = "left";
 
     static {
         for (final LaserLineType lazorType : LaserLineType.values()) {
-            LAZORS.put(lazorType, new LaserLineValue(SYMBOL, lazorType, 0));
+            LAZORS.put(lazorType, new LaserLine(SYMBOL, lazorType, 0));
         }
     }
 

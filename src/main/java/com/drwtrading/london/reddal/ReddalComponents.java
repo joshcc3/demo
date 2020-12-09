@@ -43,7 +43,8 @@ public enum ReddalComponents implements IFuse {
 
     FX,
 
-    MR_CHILL_TRADES;
+    MR_CHILL_TRADES,
+    ICE_PIE;
 
     @Override
     public String getMnemonic() {

@@ -4,9 +4,9 @@ import com.drwtrading.london.eeif.opxl.reader.AOpxlReader;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
+import com.drwtrading.london.icepie.transport.data.LaserLineType;
 import com.drwtrading.london.reddal.OPXLComponents;
-import com.drwtrading.london.reddal.data.LaserLineType;
-import com.drwtrading.london.reddal.data.LaserLineValue;
+import com.drwtrading.london.reddal.data.LaserLine;
 import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
 import org.jetlang.channels.Publisher;
 
@@ -24,11 +24,11 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
 
     private static final int MAX_LENGTH_OF_TEXT = 6;
 
-    private final Publisher<LaserLineValue> laserLinePublisher;
-    private final Publisher<OpxlLadderText> ladderTextPublisher;
+    private final Publisher<LaserLine> laserLinePublisher;
+    private final Publisher<LadderTextUpdate> ladderTextPublisher;
 
     public OpxlLadderTextSubscriber(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor, final Collection<String> topics,
-            final Publisher<LaserLineValue> laserLinePublisher, final Publisher<OpxlLadderText> ladderTextPublisher) {
+            final Publisher<LaserLine> laserLinePublisher, final Publisher<LadderTextUpdate> ladderTextPublisher) {
 
         super(selectIO, selectIO, monitor, OPXLComponents.OPXL_LADDER_TEXT, topics, "OpxlLadderTextSubscriber");
 
@@ -44,8 +44,8 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
     @Override
     protected OpxlLadderTextRow parseTable(final Object[][] opxlTable) {
 
-        final List<OpxlLadderText> ladderTexts = new ArrayList<>(opxlTable.length);
-        final List<LaserLineValue> laserLines = new ArrayList<>(opxlTable.length);
+        final List<LadderTextUpdate> ladderTexts = new ArrayList<>(opxlTable.length);
+        final List<LaserLine> laserLines = new ArrayList<>(opxlTable.length);
 
         for (final Object[] data : opxlTable) {
 
@@ -59,7 +59,7 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
                 if (cell.startsWith("laser")) {
 
                     final String colour = data[COLOUR_COL].toString();
-                    final LaserLineValue laserLineValue = getLaserLine(symbol, cell, value, colour);
+                    final LaserLine laserLineValue = getLaserLine(symbol, cell, value, colour);
                     laserLines.add(laserLineValue);
 
                 } else {
@@ -76,7 +76,7 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
                             text = value;
                         }
 
-                        final OpxlLadderText ladderText = new OpxlLadderText(symbol, freeTextCell, text, description);
+                        final LadderTextUpdate ladderText = new LadderTextUpdate(symbol, freeTextCell, text, description);
                         ladderTexts.add(ladderText);
                     }
                 }
@@ -86,7 +86,7 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
         return new OpxlLadderTextRow(ladderTexts, laserLines);
     }
 
-    private LaserLineValue getLaserLine(final String symbol, final String cell, final String value, final String colour) {
+    private LaserLine getLaserLine(final String symbol, final String cell, final String value, final String colour) {
 
         final LaserLineType laserType;
         if ("bid".equals(colour)) {
@@ -98,14 +98,14 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
         }
 
         if (value.isEmpty() || "#ERR".equals(value)) {
-            return new LaserLineValue(symbol, laserType);
+            return new LaserLine(symbol, laserType);
         } else {
             try {
                 final long price = (long) (Constants.NORMALISING_FACTOR * Double.parseDouble(value));
-                return new LaserLineValue(symbol, laserType, price);
+                return new LaserLine(symbol, laserType, price);
             } catch (final NumberFormatException e) {
                 logErrorOnSelectIO("Could not format: " + value + " for " + symbol + ' ' + cell, e);
-                return new LaserLineValue(symbol, laserType);
+                return new LaserLine(symbol, laserType);
             }
         }
     }
@@ -113,11 +113,11 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
     @Override
     protected void handleUpdate(final OpxlLadderTextRow prevValue, final OpxlLadderTextRow values) {
 
-        for (final LaserLineValue laserLineValue : values.laserLines) {
+        for (final LaserLine laserLineValue : values.laserLines) {
             laserLinePublisher.publish(laserLineValue);
         }
 
-        for (final OpxlLadderText ladderText : values.ladderText) {
+        for (final LadderTextUpdate ladderText : values.ladderText) {
             ladderTextPublisher.publish(ladderText);
         }
     }
