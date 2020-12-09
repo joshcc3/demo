@@ -1,6 +1,8 @@
 package com.drwtrading.london.reddal.data;
 
-public class LaserLineValue {
+import com.drwtrading.london.icepie.transport.data.LaserLineType;
+
+public class LaserLine {
 
     public final String symbol;
 
@@ -9,19 +11,19 @@ public class LaserLineValue {
     private boolean isValid;
     private long value;
 
-    public LaserLineValue(final String symbol, final LaserLineType type, final long value) {
+    public LaserLine(final String symbol, final LaserLineType type, final long value) {
 
         this(symbol, type);
         setValue(value);
     }
 
-    public LaserLineValue(final String symbol, final LaserLineType type) {
+    public LaserLine(final String symbol, final LaserLineType type) {
 
         this.symbol = symbol;
         this.type = type;
     }
 
-    void set(final LaserLineValue other) {
+    void set(final LaserLine other) {
 
         this.isValid = other.isValid;
         this.value = other.value;

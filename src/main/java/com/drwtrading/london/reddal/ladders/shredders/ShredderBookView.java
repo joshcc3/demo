@@ -11,7 +11,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
-import com.drwtrading.london.reddal.data.LaserLineValue;
+import com.drwtrading.london.reddal.data.LaserLine;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
@@ -106,15 +106,15 @@ class ShredderBookView {
 
         if (null != marketData.getBook() && marketData.getBook().isValid()) {
 
-            for (final LaserLineValue laserLine : stackData.getLaserLines()) {
+            for (final LaserLine laserLine : stackData.getLaserLines()) {
                 setLaserLine(laserLine);
             }
         }
     }
 
-    private void setLaserLine(final LaserLineValue laserLine) {
+    private void setLaserLine(final LaserLine laserLine) {
 
-        final String laserKey = laserLine.getType().htmlKey;
+        final String laserKey = LadderBookView.LASER_LINE_HTML_MAP.get(laserLine.getType());
 
         if (laserLine.isValid() && 0 < levels) {
 

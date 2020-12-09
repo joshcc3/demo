@@ -27,7 +27,7 @@ import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.InstrumentMetaData;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.LaserLineValue;
+import com.drwtrading.london.reddal.data.LaserLine;
 import com.drwtrading.london.reddal.data.NibblerLastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
@@ -38,8 +38,8 @@ import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPref;
 import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPrefLoaded;
 import com.drwtrading.london.reddal.ladders.settings.LadderSettingsStoreLadderPref;
 import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
+import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
-import com.drwtrading.london.reddal.opxl.OpxlLadderText;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntrySymbolChannel;
@@ -399,7 +399,7 @@ public class LadderPresenter implements IStackPresenterCallback {
         return -1;
     }
 
-    public void overrideLaserLine(final LaserLineValue laserLine) {
+    public void overrideLaserLine(final LaserLine laserLine) {
 
         final SymbolStackData stackData = stackBySymbol.get(laserLine.symbol);
         stackData.overrideStackData(laserLine);
@@ -439,7 +439,7 @@ public class LadderPresenter implements IStackPresenterCallback {
         }
     }
 
-    public void setLadderText(final OpxlLadderText ladderText) {
+    public void setLadderText(final LadderTextUpdate ladderText) {
 
         final LadderMetaData metaData = metaDataBySymbol.get(ladderText.symbol);
         metaData.setLadderText(ladderText);

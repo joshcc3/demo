@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.icepie.transport.data.LaserLineType;
 import com.drwtrading.london.reddal.picard.IPicardSpotter;
 import com.drwtrading.london.reddal.premium.IPremiumCalc;
 
@@ -22,14 +23,14 @@ public class StacksLaserLineCalc {
     private final IPicardSpotter picardSpotter;
     private final IPremiumCalc premiumCalc;
 
-    private final LaserLineValue navLine;
-    private final LaserLineValue theoLine;
-    private final LaserLineValue spreadnoughtLine;
+    private final LaserLine navLine;
+    private final LaserLine theoLine;
+    private final LaserLine spreadnoughtLine;
 
-    private final LaserLineValue bidTheo;
-    private final LaserLineValue askTheo;
+    private final LaserLine bidTheo;
+    private final LaserLine askTheo;
 
-    private final Map<LaserLineType, LaserLineValue> laserLines;
+    private final Map<LaserLineType, LaserLine> laserLines;
 
     private TheoValue theoValue;
     private SpreadnoughtTheo spreadnoughtTheo;
@@ -41,12 +42,12 @@ public class StacksLaserLineCalc {
         this.picardSpotter = picardSpotter;
         this.premiumCalc = premiumCalc;
 
-        this.navLine = new LaserLineValue(symbol, LaserLineType.NAV);
-        this.theoLine = new LaserLineValue(symbol, LaserLineType.GREEN);
-        this.spreadnoughtLine = new LaserLineValue(symbol, LaserLineType.WHITE);
+        this.navLine = new LaserLine(symbol, LaserLineType.NAV);
+        this.theoLine = new LaserLine(symbol, LaserLineType.GREEN);
+        this.spreadnoughtLine = new LaserLine(symbol, LaserLineType.WHITE);
 
-        this.bidTheo = new LaserLineValue(symbol, LaserLineType.BID);
-        this.askTheo = new LaserLineValue(symbol, LaserLineType.ASK);
+        this.bidTheo = new LaserLine(symbol, LaserLineType.BID);
+        this.askTheo = new LaserLine(symbol, LaserLineType.ASK);
 
         this.laserLines = new EnumMap<>(LaserLineType.class);
 
@@ -56,9 +57,9 @@ public class StacksLaserLineCalc {
         this.laserLines.put(askTheo.getType(), askTheo);
     }
 
-    void overrideLaserLine(final LaserLineValue laserLine) {
+    void overrideLaserLine(final LaserLine laserLine) {
 
-        final LaserLineValue overriddenLaserLine = laserLines.get(laserLine.getType());
+        final LaserLine overriddenLaserLine = laserLines.get(laserLine.getType());
         overriddenLaserLine.set(laserLine);
 
         picardSpotter.setLaserLine(laserLine);
@@ -97,7 +98,7 @@ public class StacksLaserLineCalc {
         this.premiumCalc.setTheoMid(theo.getSymbol(), isValid, mid);
     }
 
-    private static void setTheoValue(final LaserLineValue theoLine, final boolean isValid, final long theoValue) {
+    private static void setTheoValue(final LaserLine theoLine, final boolean isValid, final long theoValue) {
 
         if (isValid) {
             theoLine.setValue(theoValue);
@@ -118,7 +119,7 @@ public class StacksLaserLineCalc {
         updateLaserLine(BookSide.ASK, askTheo, askStackGroup, ASK_PULLBACK_MULT);
     }
 
-    private void updateLaserLine(final BookSide side, final LaserLineValue laserLine, final StackGroup stackGroup,
+    private void updateLaserLine(final BookSide side, final LaserLine laserLine, final StackGroup stackGroup,
             final long pullbackDirection) {
 
         if (null == spreadnoughtTheo) {
@@ -130,7 +131,7 @@ public class StacksLaserLineCalc {
         }
     }
 
-    private void updateLaserFromTheo(final LaserLineValue laserLine, final StackGroup stackGroup, final long pullbackDirection) {
+    private void updateLaserFromTheo(final LaserLine laserLine, final StackGroup stackGroup, final long pullbackDirection) {
 
         if (null != theoValue && theoValue.isValid()) {
             updateLaserLine(laserLine, true, theoValue.getTheoreticalValue(), stackGroup, pullbackDirection);
@@ -139,7 +140,7 @@ public class StacksLaserLineCalc {
         }
     }
 
-    private void updateLaserLine(final LaserLineValue laserLine, final boolean isTheoValid, final long theo, final StackGroup stackGroup,
+    private void updateLaserLine(final LaserLine laserLine, final boolean isTheoValid, final long theo, final StackGroup stackGroup,
             final long pullbackDirection) {
 
         if (null != stackGroup && isTheoValid) {
@@ -192,15 +193,15 @@ public class StacksLaserLineCalc {
         picardSpotter.setLaserLine(laserLine);
     }
 
-    LaserLineValue getNavLaserLine() {
+    LaserLine getNavLaserLine() {
         return navLine;
     }
 
-    LaserLineValue getTheoLaserLine() {
+    LaserLine getTheoLaserLine() {
         return theoLine;
     }
 
-    Collection<LaserLineValue> getLaserLines() {
+    Collection<LaserLine> getLaserLines() {
         return laserLines.values();
     }
 }

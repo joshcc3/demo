@@ -12,7 +12,7 @@ import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
-import com.drwtrading.london.reddal.data.LaserLineValue;
+import com.drwtrading.london.reddal.data.LaserLine;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import org.jetlang.channels.Publisher;
@@ -55,7 +55,7 @@ public class PicardSpotter implements IPicardSpotter {
     }
 
     @Override
-    public void setLaserLine(final LaserLineValue laserLine) {
+    public void setLaserLine(final LaserLine laserLine) {
 
         final PicardData picardData = picardDatas.get(laserLine.symbol);
         if (null == picardData) {
@@ -68,7 +68,7 @@ public class PicardSpotter implements IPicardSpotter {
         }
     }
 
-    private static void setLaserLine(final PicardData picardData, final LaserLineValue laserLine) {
+    private static void setLaserLine(final PicardData picardData, final LaserLine laserLine) {
 
         switch (laserLine.getType()) {
             case BID: {
@@ -96,8 +96,8 @@ public class PicardSpotter implements IPicardSpotter {
 
         if (null != book) {
 
-            final LaserLineValue bidLaserLine = picardData.bidLaserLine;
-            final LaserLineValue askLaserLine = picardData.askLaserLine;
+            final LaserLine bidLaserLine = picardData.bidLaserLine;
+            final LaserLine askLaserLine = picardData.askLaserLine;
 
             final boolean isNewRow = null == picardData.previousRow;
 
@@ -227,7 +227,7 @@ public class PicardSpotter implements IPicardSpotter {
     }
 
     private PicardRowWithInstID createPicardRow(final IBook<?> book, final IBookLevel bestLevel, final BookSide side,
-            final LaserLineValue laserLine, final boolean isNewRow, final String description, final long nowMilliSinceUTC,
+            final LaserLine laserLine, final boolean isNewRow, final String description, final long nowMilliSinceUTC,
             final boolean isInAuction, final long bestPrice, final String bestPricePrint, final double bpsThrough) {
 
         final double fx;

@@ -48,12 +48,18 @@ import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
+import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
+import com.drwtrading.london.eeif.utils.transport.cache.TransportCache;
 import com.drwtrading.london.eeif.utils.transport.io.TransportTCPKeepAliveConnection;
 import com.drwtrading.london.eeif.yoda.transport.YodaSignalType;
 import com.drwtrading.london.eeif.yoda.transport.YodaTransportComponents;
 import com.drwtrading.london.eeif.yoda.transport.cache.YodaClientCacheFactory;
 import com.drwtrading.london.eeif.yoda.transport.cache.YodaNullClient;
 import com.drwtrading.london.eeif.yoda.transport.io.YodaClientHandler;
+import com.drwtrading.london.icepie.transport.IcePieTransportComponents;
+import com.drwtrading.london.icepie.transport.data.FreeTextValue;
+import com.drwtrading.london.icepie.transport.data.LaserLineValue;
+import com.drwtrading.london.icepie.transport.io.IcePieCacheFactory;
 import com.drwtrading.london.indy.transport.IndyTransportComponents;
 import com.drwtrading.london.indy.transport.cache.IndyCacheFactory;
 import com.drwtrading.london.jetlang.DefaultJetlangFactory;
@@ -90,7 +96,6 @@ import com.drwtrading.london.reddal.opxl.OPXLSpreadnoughtFilters;
 import com.drwtrading.london.reddal.opxl.OpxlDividendTweets;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlFXCalcUpdater;
-import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.opxl.UltimateParentOPXL;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
@@ -505,7 +510,7 @@ public class Main {
                 final ShredderPresenter shredderPresenter = new ShredderPresenter(depthBookSubscriber);
                 fiberBuilder.subscribe(shredderPresenter, shredderWebSocket);
 
-                channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), shredderPresenter::overrideLaserLine);
+                channels.laserLineData.subscribe(fiberBuilder.getFiber(), shredderPresenter::overrideLaserLine);
                 displaySelectIO.addDelayedAction(1000, shredderPresenter::flushAllShredders);
                 displaySelectIO.addDelayedAction(1500, shredderPresenter::sendAllHeartbeats);
 
@@ -792,10 +797,7 @@ public class Main {
             final ConfigGroup ladderTextConfig = opxlConfig.getEnabledGroup("laddertext");
             if (null != ladderTextConfig) {
 
-                final Set<String> keys = ladderTextConfig.getSet("keys");
-                final OpxlLadderTextSubscriber ladderTextReader =
-                        new OpxlLadderTextSubscriber(opxlSelectIO, opxlMonitor, keys, channels.opxlLaserLineData, channels.ladderText);
-                app.addStartUpAction(ladderTextReader::start);
+                initialiseIcePieClient(app, channels);
             }
         }
 
@@ -853,6 +855,30 @@ public class Main {
 
         app.addStartUpAction(fibers::start);
         app.run();
+    }
+
+    private static void initialiseIcePieClient(final Application<ReddalComponents> app, final ReddalChannels channels)
+            throws ConfigException {
+        final IFuseBox<IcePieTransportComponents> icePieMonitor =
+                new ExpandedDetailResourceMonitor<>(app.monitor, "IcePie", app.errorLog, IcePieTransportComponents.class,
+                        ReddalComponents.ICE_PIE);
+
+        final TransportCache<?, String, FreeTextValue> freeTextCache =
+                new TransportCache<>(icePieMonitor, IcePieTransportComponents.FREE_TEXT_CACHE);
+        final TransportCache<?, String, LaserLineValue> laserLineCache =
+                new TransportCache<>(icePieMonitor, IcePieTransportComponents.LASER_LINE_CACHE);
+
+        final TransportTCPKeepAliveConnection<?, ?> client =
+                IcePieCacheFactory.createClient(app.selectIO, app.config.getGroup("icePie"), icePieMonitor, freeTextCache, laserLineCache,
+                        app.appName);
+
+        final ITransportCacheListener<String, FreeTextValue> listener = new FreeTextCacheListener(channels.ladderText);
+        freeTextCache.addListener(listener, true);
+
+        final ITransportCacheListener<String, LaserLineValue> laserLineListener = new LaserLineCacheListener(channels.laserLineData);
+        laserLineCache.addListener(laserLineListener, true);
+
+        app.addStartUpAction(client::restart);
     }
 
     private static void initJasperTradesPublisher(final Application<ReddalComponents> app, final IErrorLogger errorLog,
@@ -928,7 +954,7 @@ public class Main {
         channels.ladderText.subscribe(fiberBuilder.getFiber(), ladderPresenter::setLadderText);
         channels.isinsGoingEx.subscribe(fiberBuilder.getFiber(), ladderPresenter::setISINsGoingEx);
 
-        channels.opxlLaserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);
+        channels.laserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);
         channels.ladderClickTradingIssues.subscribe(fiberBuilder.getFiber(), ladderPresenter::displayTradeIssue);
         channels.deskPositions.subscribe(fiberBuilder.getFiber(), ladderPresenter::setDeskPositions);
         channels.pksExposures.subscribe(fiberBuilder.getFiber(), ladderPresenter::setPKSExposures);
@@ -1501,4 +1527,5 @@ public class Main {
 
         new OPXLBulkOrderPriceLimits(selectIO, monitor, logDir, opxlClient, bulkOrderUI);
     }
+
 }
