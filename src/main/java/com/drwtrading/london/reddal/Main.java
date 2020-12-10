@@ -794,11 +794,7 @@ public class Main {
             }
 
             // Ladder Text
-            final ConfigGroup ladderTextConfig = opxlConfig.getEnabledGroup("laddertext");
-            if (null != ladderTextConfig) {
-
-                initialiseIcePieClient(app, channels);
-            }
+            initialiseIcePieClient(app, channels);
         }
 
         final ConfigGroup pksConfig = root.getEnabledGroup("pks");

@@ -14,6 +14,7 @@ config default
 	include drw.london.eeif-stack-transport/318
 	include drw.london.eeif-yoda-transport/271
 	include drw.london.eeif-indy-transport/493
+	include drw.london.eeif-icepie-transport/4
 	include drw.london.eeif-fees/240
 	include drw.london.eeif-trades-transport/128
 
