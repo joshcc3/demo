@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
-import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
+import com.drwtrading.london.reddal.opxl.OpxlLadderText;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
@@ -61,7 +61,7 @@ public class LadderMetaData {
         }
     }
 
-    public void setLadderText(final LadderTextUpdate ladderText) {
+    public void setLadderText(final OpxlLadderText ladderText) {
         this.freeTextCells.put(ladderText.cell, ladderText.text);
         this.freeTextDescription.put(ladderText.cell, ladderText.description);
     }

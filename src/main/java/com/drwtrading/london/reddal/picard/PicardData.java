@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.picard;
 
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import com.drwtrading.london.reddal.data.LaserLine;
+import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 
 class PicardData {
@@ -12,8 +12,8 @@ class PicardData {
     final LiquidityFinderData invalidBidLaserDistanceRow;
     final LiquidityFinderData invalidAskLaserDistanceRow;
 
-    LaserLine bidLaserLine;
-    LaserLine askLaserLine;
+    LaserLineValue bidLaserLine;
+    LaserLineValue askLaserLine;
 
     PicardRowWithInstID previousRow;
 

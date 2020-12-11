@@ -7,7 +7,7 @@ import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
-import com.drwtrading.london.reddal.data.LaserLine;
+import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
@@ -119,7 +119,7 @@ public class ShredderPresenter implements IStackPresenterCallback {
         stackData.setSpreadnoughtTheo(theo);
     }
 
-    public void overrideLaserLine(final LaserLine laserLine) {
+    public void overrideLaserLine(final LaserLineValue laserLine) {
 
         final SymbolStackData stackData = stackBySymbol.get(laserLine.symbol);
         stackData.overrideStackData(laserLine);

@@ -54,7 +54,6 @@ public class SelectIOFiber implements Fiber {
         return scheduleAtFixedRate(command, initialDelay, delay, unit);
     }
 
-    @Override
     public Disposable scheduleAtFixedRate(final Runnable command, final long initialDelay, final long period, final TimeUnit unit) {
 
         final long initDelayMillis = TimeUnit.MILLISECONDS.convert(initialDelay, unit);

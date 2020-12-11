@@ -17,12 +17,11 @@ import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
-import com.drwtrading.london.icepie.transport.data.LaserLineType;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.data.InstrumentMetaData;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
-import com.drwtrading.london.reddal.data.LaserLine;
+import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.NibblerLastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradeTracker;
@@ -83,8 +82,6 @@ import java.util.stream.Collectors;
 public class LadderBookView implements ILadderBoard {
 
     public static final int REALLY_BIG_NUMBER_THRESHOLD = 100000;
-    public static final EnumMap<LaserLineType, String> LASER_LINE_HTML_MAP;
-
     private static final String LADDER_SOURCE = "LadderView";
     private static final int MODIFY_TIMEOUT_MILLI = 5000;
     private static final double DEFAULT_EQUITY_NOTIONAL_EUR = 100000.0;
@@ -100,12 +97,6 @@ public class LadderBookView implements ILadderBoard {
     private static final Set<String> NON_DISPLAY_PREFS = new HashSet<>();
 
     static {
-        LASER_LINE_HTML_MAP = new EnumMap<>(LaserLineType.class);
-        LASER_LINE_HTML_MAP.put(LaserLineType.NAV, HTML.LASER_NAV);
-        LASER_LINE_HTML_MAP.put(LaserLineType.GREEN, HTML.LASER_GREEN);
-        LASER_LINE_HTML_MAP.put(LaserLineType.WHITE, HTML.LASER_WHITE);
-        LASER_LINE_HTML_MAP.put(LaserLineType.BID, HTML.LASER_BID);
-        LASER_LINE_HTML_MAP.put(LaserLineType.ASK, HTML.LASER_ASK);
 
         WORKING_ORDER_CSS = EnumSet.noneOf(CSSClass.class);
 
@@ -575,7 +566,7 @@ public class LadderBookView implements ILadderBoard {
 
         if (!pendingRefDataAndSettle) {
 
-            final LaserLine navLaserLine = stackData.getNavLaserLine();
+            final LaserLineValue navLaserLine = stackData.getNavLaserLine();
             final BookPanel bookPanel = ladderModel.getBookPanel();
 
             switch (pricingModes.get()) {
@@ -759,15 +750,15 @@ public class LadderBookView implements ILadderBoard {
 
         if (null != marketData.getBook() && marketData.getBook().isValid()) {
 
-            for (final LaserLine laserLine : stackData.getLaserLines()) {
+            for (final LaserLineValue laserLine : stackData.getLaserLines()) {
                 setLaserLine(laserLine);
             }
         }
     }
 
-    private void setLaserLine(final LaserLine laserLine) {
+    private void setLaserLine(final LaserLineValue laserLine) {
 
-        final String laserKey = LASER_LINE_HTML_MAP.get(laserLine.getType());
+        final String laserKey = laserLine.getType().htmlKey;
         final BookPanel bookPanel = ladderModel.getBookPanel();
 
         if (0 < levels && laserLine.isValid() && !bookPanel.isEmpty()) {
@@ -1233,11 +1224,7 @@ public class LadderBookView implements ILadderBoard {
                 }
             }
         } else if ("right".equals(button)) {
-            final QtyButton qtyButton = QtyButton.getButtonFromHTML(label);
-            if (buttonQty.containsKey(qtyButton)) {
-                clickTradingBoxQty -= buttonQty.get(qtyButton);
-                recalcFee();
-            } else if (HTML.BUTTON_CLR.equals(label)) {
+            if (HTML.BUTTON_CLR.equals(label)) {
                 ladderPrefsForSymbolUser.set(HTML.INP_RELOAD, Integer.toString(clickTradingBoxQty));
             } else if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
                 if (ladderPrefsForSymbolUser != null) {

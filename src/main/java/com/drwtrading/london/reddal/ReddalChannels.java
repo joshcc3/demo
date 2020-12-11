@@ -8,7 +8,7 @@ import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.reddal.autopull.autopuller.msgs.cmds.IAutoPullerCmd;
 import com.drwtrading.london.reddal.autopull.autopuller.msgs.updates.IAutoPullerUpdate;
-import com.drwtrading.london.reddal.data.LaserLine;
+import com.drwtrading.london.reddal.data.LaserLineValue;
 import com.drwtrading.london.reddal.ladders.HeartbeatRoundtrip;
 import com.drwtrading.london.reddal.ladders.ISingleOrderCommand;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
@@ -18,8 +18,8 @@ import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
 import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPrefLoaded;
 import com.drwtrading.london.reddal.ladders.settings.LadderSettingsStoreLadderPref;
 import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
-import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
+import com.drwtrading.london.reddal.opxl.OpxlLadderText;
 import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
@@ -63,8 +63,8 @@ class ReddalChannels {
 
     final TypedChannel<Throwable> error;
     final Publisher<Throwable> errorPublisher;
-    final TypedChannel<LaserLine> laserLineData;
-    final TypedChannel<LadderTextUpdate> ladderText;
+    final TypedChannel<LaserLineValue> opxlLaserLineData;
+    final TypedChannel<OpxlLadderText> ladderText;
     final TypedChannel<LadderMetadata> metaData;
     final TypedChannel<OPXLDeskPositions> deskPositions;
     final TypedChannel<Position> position;
@@ -130,8 +130,8 @@ class ReddalChannels {
 
         this.error = TypedChannels.create(Throwable.class);
         this.errorPublisher = new BogusErrorFilteringPublisher(error);
-        this.laserLineData = create(LaserLine.class);
-        this.ladderText = create(LadderTextUpdate.class);
+        this.opxlLaserLineData = create(LaserLineValue.class);
+        this.ladderText = create(OpxlLadderText.class);
         this.metaData = create(LadderMetadata.class);
         this.deskPositions = create(OPXLDeskPositions.class);
         this.position = create(Position.class);
