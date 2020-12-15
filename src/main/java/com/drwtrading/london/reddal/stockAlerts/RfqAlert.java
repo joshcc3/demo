@@ -35,7 +35,7 @@ public class RfqAlert {
 
         final RfqAlert rfqAlert = (RfqAlert) o;
 
-        return milliSinceMidnight == rfqAlert.milliSinceMidnight && price == rfqAlert.price && qty == rfqAlert.qty &&
+        return milliSinceMidnight == rfqAlert.milliSinceMidnight && qty == rfqAlert.qty &&
                 symbol.equals(rfqAlert.symbol) && ccy == rfqAlert.ccy && isETF == rfqAlert.isETF;
     }
 
