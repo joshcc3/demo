@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.symbols;
 
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
-import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
@@ -15,19 +14,12 @@ import org.jetlang.channels.Publisher;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 // TODO make the refdata client implement IStackRelationshipListener instead and have it decide how symbols are associated with families.
 public class IndyClient implements IIndyCacheListener {
 
     private static final Map<IndexConstant, EnumSet<FutureConstant>> FUTURES_FOR_INDEX = new EnumMap<>(IndexConstant.class);
-    private final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs;
-    private final EnumMap<StackCommunity, TypedChannel<String>> symbolCommunityChannels;
-    private final Map<InstrumentID, List<SearchResult>> searchResultCommunities;
-    private final Map<InstrumentID, StackCommunity> instIDCommunities;
 
     static {
         for (final FutureConstant future : FutureConstant.values()) {
@@ -45,16 +37,13 @@ public class IndyClient implements IIndyCacheListener {
     private final Publisher<ETFDef> etfDefs;
     private final Publisher<SymbolIndyData> symbolDescriptions;
 
-    public IndyClient(final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs,
-            final EnumMap<StackCommunity, TypedChannel<String>> symbolCommunityChannels, final TypedChannel<InstrumentDef> instDefs,
-            final TypedChannel<ETFDef> etfDefs, final Publisher<SymbolIndyData> symbolDescriptions) {
-        this.symbolCommunityInstrumentIDs = symbolCommunityInstrumentIDs;
-        this.symbolCommunityChannels = symbolCommunityChannels;
+    public IndyClient(final TypedChannel<InstrumentDef> instDefs, final TypedChannel<ETFDef> etfDefs,
+            final Publisher<SymbolIndyData> symbolDescriptions) {
+
         this.instDefs = instDefs;
         this.etfDefs = etfDefs;
         this.symbolDescriptions = symbolDescriptions;
-        searchResultCommunities = new HashMap<>();
-        instIDCommunities = new HashMap<>();
+
     }
 
     @Override
@@ -71,14 +60,11 @@ public class IndyClient implements IIndyCacheListener {
 
         if (futuresForIndex != null) {
             for (final FutureConstant future : futuresForIndex) {
-                final StackCommunity community = StackCommunity.getForFutureType(future.type);
                 for (int i = 0; i < 3; i++) {
                     final String symbol = futureExpiryCalc.getFutureCode(future, i);
                     final InstrumentID instId = futureExpiryCalc.getInstID(future, i);
 
                     final SymbolIndyData data = new SymbolIndyData(instId, symbol, indexDef.name, indexDef.source);
-                    instIDCommunities.putIfAbsent(instId, community);
-                    publishSearchResultCommunity(searchResultCommunities.get(instId));
                     symbolDescriptions.publish(data);
                 }
             }
@@ -92,30 +78,9 @@ public class IndyClient implements IIndyCacheListener {
         for (final InstrumentDef instDef : etfDef.instDefs) {
             final SymbolIndyData data = new SymbolIndyData(instDef.instID, instDef.bbgCode, etfDef.indexDef.name, etfDef.indexDef.source);
             symbolDescriptions.publish(data);
-            instIDCommunities.putIfAbsent(instDef.instID, StackCommunity.getForIndexType(etfDef.indexDef.indexType));
-            publishSearchResultCommunity(searchResultCommunities.get(instDef.instID));
         }
         etfDefs.publish(etfDef);
         return true;
-    }
-
-    private void publishSearchResultCommunity(final List<SearchResult> searchResults) {
-        if (null != searchResults) {
-            for (final SearchResult searchResult : searchResults) {
-                final StackCommunity community = instIDCommunities.get(searchResult.instID);
-                if (null != community) {
-                    symbolCommunityInstrumentIDs.get(community).publish(searchResult.instID);
-                    symbolCommunityChannels.get(community).publish(searchResult.symbol);
-                } else {
-                    searchResultCommunities.putIfAbsent(searchResult.instID, new LinkedList<>());
-                    searchResultCommunities.get(searchResult.instID).add(searchResult);
-                }
-            }
-        }
-    }
-
-    public void setSearchResult(final SearchResult searchResult) {
-        publishSearchResultCommunity(List.of(searchResult));
     }
 
 }

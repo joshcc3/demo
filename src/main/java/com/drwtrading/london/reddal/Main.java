@@ -149,6 +149,7 @@ import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
 import com.drwtrading.london.reddal.symbols.IndyClient;
+import com.drwtrading.london.reddal.symbols.RFQCommunityPublisher;
 import com.drwtrading.london.reddal.trades.JasperTradesListener;
 import com.drwtrading.london.reddal.trades.MrChillTrade;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
@@ -760,10 +761,16 @@ public class Main {
 
         // Indy
         final ConfigGroup indyConfig = root.getGroup("indy");
-        final IndyClient indyListener =
-                new IndyClient(channels.communityInstrumentIDs, channels.communitySymbols, channels.instDefs, channels.etfDefs,
-                        channels.symbolDescs);
-        channels.searchResults.subscribe(selectIOFiber, indyListener::setSearchResult);
+        final IndyClient indyListener = new IndyClient(channels.instDefs, channels.etfDefs, channels.symbolDescs);
+
+        final RFQCommunityPublisher rfqSymbolCommunityPublisher = new RFQCommunityPublisher(channels.communitySymbols);
+        channels.searchResults.subscribe(selectIOFiber, rfqSymbolCommunityPublisher::setSearchResult);
+        for (final Map.Entry<StackCommunity, TypedChannel<InstrumentID>> communityChannels : channels.communityInstrumentIDs.entrySet()) {
+            final StackCommunity community = communityChannels.getKey();
+            final TypedChannel<InstrumentID> channel = communityChannels.getValue();
+            channel.subscribe(selectIOFiber,
+                    instrumentID -> rfqSymbolCommunityPublisher.setCommunityForInstrumentID(community, instrumentID));
+        }
 
         final String indyUsername = indyConfig.getString("username");
         final IFuseBox<IndyTransportComponents> indyMonitor =

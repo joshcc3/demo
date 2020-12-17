@@ -78,7 +78,7 @@ public class StackFamilyView {
     private static final String EXPIRY_FRONT_MONTH_FILTER = "Front months";
     private static final String EXPIRY_BACK_MONTH_FILTER = "Back months";
 
-    private static final String RFQ_SUFFIX = " RFQ";
+    public static final String RFQ_SUFFIX = " RFQ";
 
     private static final double GLOBAL_OFFSET_INCREMENT_BPS = 1d;
 
