@@ -604,24 +604,47 @@ public class StackFamilyView {
 
     void autoFamily(final ETFDef etfDef) {
         bufferedETFDefs.remove(etfDef.indexDef.name);
-        final Set<String> resultingFamilyNames = new HashSet<>();
         final List<String> errors = new LinkedList<>();
-        final List<FamilyCreationRequest> requests = new LinkedList<>();
         final String primaryListing = getPrimaryListing(etfDef);
         final String familyName = constructFamilyName(primaryListing);
-        final List<String> familyDefinitions = List.of(familyName);
+
+        final String source = SOURCE_UI + "_AUTO";
 
         if (!familyUIData.containsKey(familyName)) {
+            final Set<String> resultingFamilyNames = new HashSet<>();
+            final List<FamilyCreationRequest> requests = new LinkedList<>();
+            final List<String> familyDefinitions = List.of(familyName);
+
             final boolean successful = checkFamilyAddition(errors, requests, resultingFamilyNames, primaryListing, familyName);
             final IStackFamilyUI allViews = views.all();
             for (final String error : errors) {
                 allViews.displayInfoMsg(error);
             }
             if (successful) {
-                final String source = SOURCE_UI + "_AUTO";
                 createFamilies(allViews, source, familyDefinitions, requests);
             } else {
                 bufferedETFDefs.put(etfDef.indexDef.name, etfDef);
+            }
+        } else {
+            final Set<String> allIsins = etfDef.instDefs.stream().map(x -> x.instID.isin).collect(Collectors.toSet());
+            final Set<String> allChildren = new HashSet<>();
+            for (final String isin : allIsins) {
+                // TODO - we need to delete children that should no longer be a part of the family
+                final Set<String> availableChildren = filterToAvailableChildren(fungibleInsts.get(isin));
+                allChildren.addAll(availableChildren);
+            }
+
+            if (allChildren.isEmpty()) {
+                errors.add("No children available for [" + allIsins + ']');
+            } else {
+                for (final String child : allChildren) {
+                    for (final String anIsin : allIsins) {
+                        if(checkChild(anIsin, child, errors)) {
+                            communityManager.setRelationship(source, familyName, child);
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
@@ -713,7 +736,7 @@ public class StackFamilyView {
                 allOk = false;
             }
             for (final String child : allChildren) {
-                allOk = allOk && checkChild(instID, child, errors);
+                allOk = allOk && checkChild(instID.isin, child, errors);
             }
             final String otcChild = instID.isin + " OTC";
             if (checkChildIsAvailable(otcChild, errors)) {
@@ -760,12 +783,12 @@ public class StackFamilyView {
         return childAlreadyCreated && StackOrphanage.ORPHANAGE.equals(this.childrenUIData.get(child).getFamily());
     }
 
-    private boolean checkChild(final InstrumentID instID, final String child, final List<String> ui) {
+    private boolean checkChild(final String isin, final String child, final List<String> ui) {
         final boolean childAvailable = checkChildIsAvailable(child, ui);
-        final boolean nibblerIsAssociatedWith = isOTCChild(instID.isin, child) || tradableSymbols.containsKey(child);
-        final LinkedHashSet<String> fungibleInstruments = fungibleInsts.get(instID.isin);
+        final boolean nibblerIsAssociatedWith = isOTCChild(isin, child) || tradableSymbols.containsKey(child);
+        final LinkedHashSet<String> fungibleInstruments = fungibleInsts.get(isin);
         final boolean isFungibleWithParent = null != fungibleInstruments && fungibleInstruments.contains(child);
-        final boolean isFungibleWith = isOTCChild(instID.isin, child) || isFungibleWithParent;
+        final boolean isFungibleWith = isOTCChild(isin, child) || isFungibleWithParent;
 
         final boolean allChecksPass = childAvailable && nibblerIsAssociatedWith && isFungibleWith;
 
