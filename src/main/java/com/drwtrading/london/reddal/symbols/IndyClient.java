@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 // TODO make the refdata client implement IStackRelationshipListener instead and have it decide how symbols are associated with families.
-public class RefdataClient implements IIndyCacheListener {
+public class IndyClient implements IIndyCacheListener {
 
     private static final Map<IndexConstant, EnumSet<FutureConstant>> FUTURES_FOR_INDEX = new EnumMap<>(IndexConstant.class);
     private final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs;
@@ -45,7 +45,7 @@ public class RefdataClient implements IIndyCacheListener {
     private final Publisher<ETFDef> etfDefs;
     private final Publisher<SymbolIndyData> symbolDescriptions;
 
-    public RefdataClient(final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs,
+    public IndyClient(final EnumMap<StackCommunity, TypedChannel<InstrumentID>> symbolCommunityInstrumentIDs,
             final EnumMap<StackCommunity, TypedChannel<String>> symbolCommunityChannels, final TypedChannel<InstrumentDef> instDefs,
             final TypedChannel<ETFDef> etfDefs, final Publisher<SymbolIndyData> symbolDescriptions) {
         this.symbolCommunityInstrumentIDs = symbolCommunityInstrumentIDs;

@@ -148,7 +148,7 @@ import com.drwtrading.london.reddal.symbols.ChixInstMatcher;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.symbols.DisplaySymbolMapper;
 import com.drwtrading.london.reddal.symbols.IndexUIPresenter;
-import com.drwtrading.london.reddal.symbols.RefdataClient;
+import com.drwtrading.london.reddal.symbols.IndyClient;
 import com.drwtrading.london.reddal.trades.JasperTradesListener;
 import com.drwtrading.london.reddal.trades.MrChillTrade;
 import com.drwtrading.london.reddal.util.ConnectionCloser;
@@ -760,8 +760,8 @@ public class Main {
 
         // Indy
         final ConfigGroup indyConfig = root.getGroup("indy");
-        final RefdataClient indyListener =
-                new RefdataClient(channels.communityInstrumentIDs, channels.communitySymbols, channels.instDefs, channels.etfDefs,
+        final IndyClient indyListener =
+                new IndyClient(channels.communityInstrumentIDs, channels.communitySymbols, channels.instDefs, channels.etfDefs,
                         channels.symbolDescs);
         channels.searchResults.subscribe(selectIOFiber, indyListener::setSearchResult);
 
