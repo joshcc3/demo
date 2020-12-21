@@ -6,7 +6,7 @@ import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.photons.ladder.LadderText;
-import com.drwtrading.photons.mrphil.Position;
+import drw.eeif.photons.mrchill.Position;
 
 import java.text.DecimalFormat;
 import java.util.EnumMap;
@@ -75,14 +75,16 @@ public class LadderMetaData {
         }
     }
 
-    public void setMrPhilPosition(final DecimalFormat formatter, final Position mrPhilPosition) {
+    public void setMrPhilPosition(final DecimalFormat formatter, final Position position) {
+        final long netPosition = position.getDayBuy() - position.getDaySell();
+        final long volume = position.getDayBuy() + position.getDaySell();
 
-        if (null == formattedMrChillNetPosition || mrChillNetPosition != mrPhilPosition.getNet()) {
+        if (null == formattedMrChillNetPosition || mrChillNetPosition != netPosition) {
 
-            this.mrChillNetPosition = mrPhilPosition.getNet();
+            this.mrChillNetPosition = netPosition;
             this.formattedMrChillNetPosition = formatPosition(formatter, mrChillNetPosition);
 
-            this.mrPhilVolume = mrPhilPosition.getVolume();
+            this.mrPhilVolume = volume;
             this.formattedMrPhilVolume = formatPosition(formatter, mrPhilVolume);
         }
     }

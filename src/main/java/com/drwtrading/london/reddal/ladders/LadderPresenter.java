@@ -66,7 +66,6 @@ import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
 import com.drwtrading.photons.ladder.LadderText;
-import com.drwtrading.photons.mrphil.Position;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
@@ -75,6 +74,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import drw.eeif.fees.FeesCalc;
+import drw.eeif.photons.mrchill.Position;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Converter;
 import org.jetlang.channels.Publisher;
@@ -418,7 +418,11 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     @Subscribe
     public void setMrPhilPosition(final Position position) {
-        metaDataBySymbol.get(position.getSymbol()).setMrPhilPosition(oneDP, position);
+        final LadderMetaData ladderMetaData = metaDataBySymbol.get(position.getSymbol());
+
+        if (ladderMetaData != null) {
+            ladderMetaData.setMrPhilPosition(oneDP, position);
+        }
     }
 
     public void setPKSExposures(final PKSExposures positions) {

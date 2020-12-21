@@ -51,7 +51,7 @@ import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
 import com.drwtrading.photons.ladder.LadderMetadata;
-import com.drwtrading.photons.mrphil.Position;
+import drw.eeif.photons.mrchill.Position;
 import drw.london.json.Jsonable;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.Publisher;

@@ -119,7 +119,7 @@ import com.drwtrading.london.reddal.picard.PicardSpotter;
 import com.drwtrading.london.reddal.picard.PicardUI;
 import com.drwtrading.london.reddal.picard.YodaAtCloseClient;
 import com.drwtrading.london.reddal.pks.PKSPositionClient;
-import com.drwtrading.london.reddal.position.PositionSubscriptionPhotocolsHandler;
+import com.drwtrading.london.reddal.position.PositionPhotocolsHandler;
 import com.drwtrading.london.reddal.premium.IPremiumCalc;
 import com.drwtrading.london.reddal.premium.PremiumCalculator;
 import com.drwtrading.london.reddal.premium.PremiumOPXLWriter;
@@ -181,8 +181,6 @@ import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
 import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
 import com.drwtrading.photons.ladder.LadderMetadata;
-import com.drwtrading.photons.mrphil.Position;
-import com.drwtrading.photons.mrphil.Subscription;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import drw.eeif.eeifoe.OrderEntryCommandMsg;
@@ -192,6 +190,7 @@ import drw.eeif.eeifoe.OrderUpdateEventMsg;
 import drw.eeif.eeifoe.Update;
 import drw.eeif.phockets.Phockets;
 import drw.eeif.phockets.tcp.PhocketClient;
+import drw.eeif.photons.mrchill.Position;
 import drw.eeif.photons.signals.Signals;
 import drw.eeif.trades.transport.outbound.io.TradesClientFactory;
 import drw.eeif.trades.transport.outbound.io.TradesClientHandler;
@@ -202,6 +201,7 @@ import org.jetlang.channels.Channel;
 import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -740,16 +740,16 @@ public class Main {
         }
 
         // Mr. Phil position
-        final ConfigGroup mrPhilConfig = root.getEnabledGroup("mr-phil");
-        if (null != mrPhilConfig) {
-            final InetSocketAddress indyAddress = IOConfigParser.getTargetAddress(mrPhilConfig);
-            final OnHeapBufferPhotocolsNioClient<Position, Subscription> client =
-                    OnHeapBufferPhotocolsNioClient.client(indyAddress, "0.0.0.0", Position.class, Subscription.class,
-                            fibers.mrPhil.getFiber(), EXCEPTION_HANDLER);
-            final PositionSubscriptionPhotocolsHandler positionHandler = new PositionSubscriptionPhotocolsHandler(channels.position);
-            channels.searchResults.subscribe(fibers.mrPhil.getFiber(), positionHandler::setSearchResult);
-            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logDir.resolve("mr-phil.log").toFile(), fibers.logging.getFiber(),
-                    true).handler(positionHandler);
+        final ConfigGroup mrChillPositionsConfig = root.getEnabledGroup("mrchill-positions");
+        if (null != mrChillPositionsConfig) {
+            final InetSocketAddress address = IOConfigParser.getTargetAddress(mrChillPositionsConfig);
+            final OnHeapBufferPhotocolsNioClient<Position, Void> client =
+                    OnHeapBufferPhotocolsNioClient.client(address, "0.0.0.0", Position.class, Void.class, fibers.mrPhil.getFiber(),
+                            EXCEPTION_HANDLER);
+
+            final PositionPhotocolsHandler positionHandler = new PositionPhotocolsHandler(channels.position);
+            final File logFile = logDir.resolve("mr-phil.log").toFile();
+            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS).logFile(logFile, fibers.logging.getFiber(), true).handler(positionHandler);
             app.addStartUpAction(client::start);
         }
 
