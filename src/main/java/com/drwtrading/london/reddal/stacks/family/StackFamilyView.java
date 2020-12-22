@@ -603,7 +603,6 @@ public class StackFamilyView {
     }
 
     void autoFamily(final ETFDef etfDef) {
-        bufferedETFDefs.remove(etfDef.indexDef.name);
         final List<String> errors = new LinkedList<>();
         final String primaryListing = getPrimaryListing(etfDef);
         final String familyName = constructFamilyName(primaryListing);
@@ -622,16 +621,17 @@ public class StackFamilyView {
             }
             if (successful) {
                 createFamilies(allViews, source, familyDefinitions, requests);
-            } else {
-                bufferedETFDefs.put(etfDef.indexDef.name, etfDef);
+                bufferedETFDefs.remove(etfDef.indexDef.name);
             }
         } else {
             final Set<String> allIsins = etfDef.instDefs.stream().map(x -> x.instID.isin).collect(Collectors.toSet());
             final Set<String> allChildren = new HashSet<>();
             for (final String isin : allIsins) {
                 // TODO - we need to delete children that should no longer be a part of the family
-                final Set<String> availableChildren = filterToAvailableChildren(fungibleInsts.get(isin));
-                allChildren.addAll(availableChildren);
+                if(fungibleInsts.containsKey(isin)) {
+                    final Set<String> availableChildren = filterToAvailableChildren(fungibleInsts.get(isin));
+                    allChildren.addAll(availableChildren);
+                }
             }
 
             if (allChildren.isEmpty()) {
@@ -645,6 +645,7 @@ public class StackFamilyView {
                         }
                     }
                 }
+                bufferedETFDefs.remove(etfDef.indexDef.name);
             }
         }
     }
@@ -752,15 +753,18 @@ public class StackFamilyView {
     }
 
     private Set<String> filterToAvailableChildren(final LinkedHashSet<String> children) {
-        final Set<String> result = new HashSet<>();
+        if(null != children) {
+            final Set<String> result = new HashSet<>();
 
-        for (final String child : children) {
-            if (childIsAnOrphan(child, childrenUIData.containsKey(child))) {
-                result.add(child);
+            for (final String child : children) {
+                if (childIsAnOrphan(child, childrenUIData.containsKey(child))) {
+                    result.add(child);
+                }
             }
+            return result;
+        } else {
+            return new HashSet<>();
         }
-
-        return result;
     }
 
     private static boolean isOTCChild(final String isin, final String child) {
