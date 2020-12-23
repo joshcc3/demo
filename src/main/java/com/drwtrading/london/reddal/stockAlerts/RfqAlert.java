@@ -35,8 +35,8 @@ public class RfqAlert {
 
         final RfqAlert rfqAlert = (RfqAlert) o;
 
-        return milliSinceMidnight == rfqAlert.milliSinceMidnight && qty == rfqAlert.qty &&
-                symbol.equals(rfqAlert.symbol) && ccy == rfqAlert.ccy && isETF == rfqAlert.isETF;
+        return milliSinceMidnight == rfqAlert.milliSinceMidnight && qty == rfqAlert.qty && symbol.equals(rfqAlert.symbol) &&
+                ccy == rfqAlert.ccy && isETF == rfqAlert.isETF;
     }
 
     public boolean isValidQty() {

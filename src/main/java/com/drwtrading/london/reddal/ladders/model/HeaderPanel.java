@@ -6,8 +6,8 @@ import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.indy.transport.data.Source;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
-import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 import com.drwtrading.london.reddal.fastui.html.HTML;
+import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 
 import java.text.DecimalFormat;
 

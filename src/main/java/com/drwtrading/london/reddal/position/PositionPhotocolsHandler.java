@@ -2,8 +2,6 @@ package com.drwtrading.london.reddal.position;
 
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.PhotocolsHandler;
-import drw.eeif.phockets.PhocketConnection;
-import drw.eeif.phockets.PhocketHandler;
 import drw.eeif.photons.mrchill.Position;
 import org.jetlang.channels.Publisher;
 

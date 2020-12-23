@@ -4,7 +4,6 @@ import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.icepie.transport.data.LaserLineValue;
 import com.drwtrading.london.reddal.data.LaserLine;
-import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -29,7 +28,7 @@ public class LaserLineCacheListener implements ITransportCacheListener<String, L
     public boolean updateValue(final int transportID, final LaserLineValue item) {
         final LaserLine laserData;
         if (item.seqNum >= 0) {
-             laserData = new LaserLine(item.symbol, item.type, item.value);
+            laserData = new LaserLine(item.symbol, item.type, item.value);
         } else {
             laserData = new LaserLine(item.symbol, item.type);
         }

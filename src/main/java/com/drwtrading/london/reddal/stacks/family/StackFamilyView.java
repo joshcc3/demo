@@ -628,7 +628,7 @@ public class StackFamilyView {
             final Set<String> allChildren = new HashSet<>();
             for (final String isin : allIsins) {
                 // TODO - we need to delete children that should no longer be a part of the family
-                if(fungibleInsts.containsKey(isin)) {
+                if (fungibleInsts.containsKey(isin)) {
                     final Set<String> availableChildren = filterToAvailableChildren(fungibleInsts.get(isin));
                     allChildren.addAll(availableChildren);
                 }
@@ -639,7 +639,7 @@ public class StackFamilyView {
             } else {
                 for (final String child : allChildren) {
                     for (final String anIsin : allIsins) {
-                        if(checkChild(anIsin, child, errors)) {
+                        if (checkChild(anIsin, child, errors)) {
                             communityManager.setRelationship(source, familyName, child);
                             break;
                         }
@@ -753,7 +753,7 @@ public class StackFamilyView {
     }
 
     private Set<String> filterToAvailableChildren(final LinkedHashSet<String> children) {
-        if(null != children) {
+        if (null != children) {
             final Set<String> result = new HashSet<>();
 
             for (final String child : children) {

@@ -29,8 +29,7 @@ public class FreeTextCacheListener implements ITransportCacheListener<String, Fr
     public boolean updateValue(final int transportID, final FreeTextValue item) {
         if (item.seqNum >= 0) {
             final ReddalFreeTextCell cell = ReddalFreeTextCell.getFromTransportCell(item.cell);
-            final LadderTextUpdate ladderText =
-                    new LadderTextUpdate(item.symbol, cell, item.text, item.description);
+            final LadderTextUpdate ladderText = new LadderTextUpdate(item.symbol, cell, item.text, item.description);
             dirty.add(ladderText);
         }
         return true;

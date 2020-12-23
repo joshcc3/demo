@@ -4,7 +4,7 @@ import com.drwtrading.london.eeif.position.transport.cache.IPositionCmdListener;
 import com.drwtrading.london.eeif.position.transport.data.ConstituentExposure;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 
-public class PksClient implements ITransportCacheListener<String, ConstituentExposure   >, IPositionCmdListener {
+public class PksClient implements ITransportCacheListener<String, ConstituentExposure>, IPositionCmdListener {
 
     @Override
     public boolean setHedgingEnabled(final boolean isHedgingEnabled) {
