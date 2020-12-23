@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.data;
 
-import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
+import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
@@ -17,8 +17,8 @@ public class LadderMetaData {
     public final String symbol;
     public String displaySymbol;
 
-    public final Map<FreeTextCell, String> freeTextCells;
-    public final Map<FreeTextCell, String> freeTextDescription;
+    public final Map<ReddalFreeTextCell, String> freeTextCells;
+    public final Map<ReddalFreeTextCell, String> freeTextDescription;
 
     public long deskPosition;
     public String formattedDeskPosition;
@@ -49,13 +49,13 @@ public class LadderMetaData {
         this.pksExposure = null;
         this.pksPosition = null;
 
-        this.freeTextCells = new EnumMap<>(FreeTextCell.class);
-        this.freeTextDescription = new EnumMap<>(FreeTextCell.class);
+        this.freeTextCells = new EnumMap<>(ReddalFreeTextCell.class);
+        this.freeTextDescription = new EnumMap<>(ReddalFreeTextCell.class);
     }
 
     public void onLadderText(final LadderText ladderText) {
 
-        final FreeTextCell cell = FreeTextCell.getCell(ladderText.getCell());
+        final ReddalFreeTextCell cell = ReddalFreeTextCell.getCell(ladderText.getCell());
         if (null != cell) {
             this.freeTextCells.put(cell, ladderText.getText());
         }

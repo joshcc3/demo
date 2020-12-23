@@ -77,6 +77,8 @@ import com.drwtrading.london.reddal.data.ibook.LevelThreeBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.NoMDSubscriptions;
 import com.drwtrading.london.reddal.data.ibook.ReddalMDTransportClient;
+import com.drwtrading.london.reddal.icepie.FreeTextCacheListener;
+import com.drwtrading.london.reddal.icepie.LaserLineCacheListener;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
 import com.drwtrading.london.reddal.ladders.LadderPresenter;

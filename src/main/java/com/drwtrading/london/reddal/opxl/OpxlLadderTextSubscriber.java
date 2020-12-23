@@ -7,7 +7,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.icepie.transport.data.LaserLineType;
 import com.drwtrading.london.reddal.OPXLComponents;
 import com.drwtrading.london.reddal.data.LaserLine;
-import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
+import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 import org.jetlang.channels.Publisher;
 
 import java.util.ArrayList;
@@ -64,7 +64,7 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
 
                 } else {
 
-                    final FreeTextCell freeTextCell = FreeTextCell.getCell(cell);
+                    final ReddalFreeTextCell freeTextCell = ReddalFreeTextCell.getCell(cell);
                     if (null == freeTextCell) {
                         logErrorOnSelectIO("Opxl Ladder Text Cell is not valid [" + cell + "] for [" + symbol + "].");
                     } else {

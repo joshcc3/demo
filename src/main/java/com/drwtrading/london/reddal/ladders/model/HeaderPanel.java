@@ -6,7 +6,7 @@ import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.indy.transport.data.Source;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
-import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
+import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 
 import java.text.DecimalFormat;
@@ -128,11 +128,11 @@ public class HeaderPanel {
         }
     }
 
-    public void setFreeText(final FreeTextCell cell, final String text) {
+    public void setFreeText(final ReddalFreeTextCell cell, final String text) {
         ui.txt(cell.htmlID, text);
     }
 
-    public void setCellDescription(final FreeTextCell cell, final String description) {
+    public void setCellDescription(final ReddalFreeTextCell cell, final String description) {
         ui.tooltip(cell.htmlID, description);
     }
 

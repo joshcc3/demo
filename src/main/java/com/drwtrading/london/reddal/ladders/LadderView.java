@@ -22,7 +22,7 @@ import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.fastui.UiEventHandler;
 import com.drwtrading.london.reddal.fastui.UiPipeImpl;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
-import com.drwtrading.london.reddal.fastui.html.FreeTextCell;
+import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.ladders.model.HeaderPanel;
 import com.drwtrading.london.reddal.ladders.model.LadderViewModel;
@@ -467,9 +467,9 @@ public class LadderView implements UiEventHandler {
             }
 
             // Ladder text
-            for (final Map.Entry<FreeTextCell, String> ladderText : metaData.freeTextCells.entrySet()) {
+            for (final Map.Entry<ReddalFreeTextCell, String> ladderText : metaData.freeTextCells.entrySet()) {
 
-                final FreeTextCell cell = ladderText.getKey();
+                final ReddalFreeTextCell cell = ladderText.getKey();
                 final String text = ladderText.getValue();
                 headerPanel.setFreeText(cell, text);
 
