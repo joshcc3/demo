@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Quoting Obligations</title>
+	<link rel="stylesheet" type="text/css" href="quotingObligations.css">
+	<script src="jquery-1.8.3.js"></script>
+	<script src="js/websocket.js"></script>
+	<script src="js/websocket-ui.js"></script>
+	<script src="/launcher.js"></script>
+	<script src="cell-functions.js"></script>
+	<script src="inverseObligations.js"></script>
+</head>
+<body>
+
+<div id="background"></div>
+
+<div id="header">
+	<label for="showAll">Show all</label>
+	<input type="checkbox" name="showAll" value="showAll" id="showAll">
+	<label for="showOn">Show on-only</label>
+	<input type="checkbox" name="showOn" value="showOn" id="showOn">
+</div>
+
+<div id="main">
+
+	<div id="strategies" class="hideMetObligations">
+		<div id="strategyTemplate" class="headerRow row">
+			<div class="infoCell symbol">Symbol</div>
+			<div class="infoCell percentageOn">Current %</div>
+			<div class="infoCell nibblerName">Nibbler</div>
+			<div class="infoCell description">Desc</div>
+		</div>
+	</div>
+</div>
+
+<div id="footer"></div>
+
+</body>
+</html>

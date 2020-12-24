@@ -43,6 +43,8 @@ public enum ReddalComponents implements IFuse {
 
     FX,
 
+    INVERSE_OBLIGATIONS,
+
     MR_CHILL_TRADES,
     ICE_PIE;
 
