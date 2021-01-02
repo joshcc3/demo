@@ -694,14 +694,13 @@ public class LadderBookView implements ILadderBoard {
 
     private Collection<String> filterUsableOrderTypes(final Collection<CSSClass> types) {
         if (null != marketData.getBook()) {
-            final String mic = marketData.getBook().getMIC().name();
-            return types.stream().filter(orderType -> isOrderTypeSupported(orderType, mic)).map(Enum::name).collect(Collectors.toList());
+            return types.stream().filter(this::isOrderTypeSupported).map(Enum::name).collect(Collectors.toList());
         } else {
             return Collections.emptyList();
         }
     }
 
-    private boolean isOrderTypeSupported(final CSSClass orderTypeCSS, final String mic) {
+    private boolean isOrderTypeSupported(final CSSClass orderTypeCSS) {
 
         final RemoteOrderType orderType = getRemoteOrderType(orderTypeCSS.name());
 

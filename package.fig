@@ -7,16 +7,16 @@ retrieve JS_SOUND_FILES->web/js
 retrieve WAV_SOUND_FILES->web/sounds
 
 config default
-	include drw.london.eeif-utils/562
-	include drw.london.eeif-nibbler-transport/260
-	include drw.london.eeif-opxl-client/324
-	include drw.london.eeif-position-transport/260
-	include drw.london.eeif-stack-transport/325
-	include drw.london.eeif-yoda-transport/277
-	include drw.london.eeif-indy-transport/500
-	include drw.london.eeif-icepie-transport/18
-	include drw.london.eeif-fees/246
-	include drw.london.eeif-trades-transport/135
+	include drw.london.eeif-utils/566
+	include drw.london.eeif-nibbler-transport/264
+	include drw.london.eeif-opxl-client/328
+	include drw.london.eeif-position-transport/262
+	include drw.london.eeif-stack-transport/329
+	include drw.london.eeif-yoda-transport/281
+	include drw.london.eeif-indy-transport/504
+	include drw.london.eeif-icepie-transport/20
+	include drw.london.eeif-fees/248
+	include drw.london.eeif-trades-transport/137
 
 	include drw.opxl/1.5.1
 
@@ -49,8 +49,8 @@ config default
 
 	# Photons
 	include log4j/1.2.16 # For protocols
-	include drw.london.eeif-photocols-client/432
-	include drw.london.eeif-phockets/191
+	include drw.london.eeif-photocols-client/436
+	include drw.london.eeif-phockets/195
 	include drw.eeif.photons.mrchill/2
 	include com.drwtrading.london.photons.reddal/2
 	include drw.eeif.eeifoe/2

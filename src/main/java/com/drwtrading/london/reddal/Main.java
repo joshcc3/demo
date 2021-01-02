@@ -669,12 +669,14 @@ public class Main {
         nonSSOWebapp.addHandler("/open", httpHandler);
 
         // Settings
-        final Path settingsFile = app.config.getGroup("settings").getPath("file");
+        final Path settingsFile = app.persistenceDir.resolve("settings.json");
         final LadderSettings ladderSettings = new LadderSettings(settingsFile, channels.ladderPrefsLoaded);
         fibers.settings.subscribe(ladderSettings, channels.storeLadderPref);
         app.addStartUpAction(() -> fibers.settings.execute(ladderSettings::load));
 
-        // EEIF-OE
+        final ConfigGroup oeCmdConfig = root.getEnabledGroup("eeifoeCommand");
+        final ConfigGroup oeUpdateConfig = root.getEnabledGroup("eeifoeUpdate");
+
         final Collection<String> oeList = environment.getList(EEIF_OE);
         for (final String server : oeList) {
 
@@ -683,8 +685,10 @@ public class Main {
             final OrderEntryClient client = new OrderEntryClient(instanceName, new SystemClock(), server, fibers.remoteOrders.getFiber(),
                     channels.orderEntrySymbols, channels.ladderClickTradingIssues);
 
-            final HostAndNic command = environment.getHostAndNic(EEIF_OE + "Command", server);
-            if (command != null) {
+            final ConfigGroup commandConfig = oeCmdConfig.getEnabledGroup(server);
+            if (null != commandConfig) {
+
+                final HostAndNic command = Environment.getHostAndNic(commandConfig);
                 final OnHeapBufferPhotocolsNioClient<OrderEntryReplyMsg, OrderEntryCommandMsg> cmdClient =
                         OnHeapBufferPhotocolsNioClient.client(command.host, command.nic, OrderEntryReplyMsg.class,
                                 OrderEntryCommandMsg.class, fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
@@ -699,8 +703,10 @@ public class Main {
                 System.out.println("EEIF-OE: " + server + "\tCommand: " + command.host);
             }
 
-            final HostAndNic update = environment.getHostAndNic(EEIF_OE + "Update", server);
-            if (update != null) {
+            final ConfigGroup updateConfig = oeUpdateConfig.getEnabledGroup(server);
+            if (null != updateConfig) {
+
+                final HostAndNic update = Environment.getHostAndNic(updateConfig);
                 final OnHeapBufferPhotocolsNioClient<OrderUpdateEventMsg, Void> updateClient =
                         OnHeapBufferPhotocolsNioClient.client(update.host, update.nic, OrderUpdateEventMsg.class, Void.class,
                                 fibers.remoteOrders.getFiber(), EXCEPTION_HANDLER);
@@ -732,16 +738,16 @@ public class Main {
             }
         }
 
-        // Meta data
-        for (final String server : environment.getList(Environment.METADATA)) {
+        final ConfigGroup metaDataConfig = root.getEnabledGroup("metadata");
+        if (null != metaDataConfig) {
 
             final String statsName = root.getGroup("stats").getString("name");
-            final HostAndNic hostAndNic = environment.getHostAndNic(Environment.METADATA, server);
+            final HostAndNic hostAndNic = Environment.getHostAndNic(metaDataConfig);
             final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client =
                     OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
                             Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
             client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
-            client.logFile(logDir.resolve("ladderText." + server + ".log").toFile(), fibers.logging.getFiber(), true);
+            client.logFile(logDir.resolve("ladderText.risk.log").toFile(), fibers.logging.getFiber(), true);
             client.handler(new PhotocolsStatsPublisher<>(channels.stats, statsName, 10));
             client.handler(new JetlangChannelHandler<>(channels.metaData));
             app.addStartUpAction(client::start);

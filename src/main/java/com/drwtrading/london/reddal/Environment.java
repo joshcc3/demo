@@ -14,8 +14,6 @@ import java.util.Collections;
 
 public class Environment {
 
-    public static final String METADATA = "metadata";
-
     private final ConfigGroup config;
 
     Environment(final ConfigGroup config) {
@@ -48,23 +46,12 @@ public class Environment {
         return new LadderOptions(leftClickOrderTypes, rightClickOrderTypes, traders, basketURL);
     }
 
-    public HostAndNic getHostAndNic(final String prefix, final String server) throws SocketException, ConfigException {
+    public static HostAndNic getHostAndNic(final ConfigGroup serverConfig) throws SocketException, ConfigException {
 
-        if (config.groupExists(prefix) && config.getGroup(prefix).groupExists(server)) {
+        final String nic = "0.0.0.0";
+        final String address = serverConfig.getString("address");
 
-            final ConfigGroup serverConfig = config.getGroup(prefix).getGroup(server);
-
-            final String address = serverConfig.getString("address");
-            final String nic;
-            if (serverConfig.paramExists("nic")) {
-                nic = serverConfig.getString("nic");
-            } else {
-                nic = "0.0.0.0";
-            }
-            return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])),
-                    NetworkInterfaces.find(nic));
-        } else {
-            return null;
-        }
+        return new HostAndNic(new InetSocketAddress(address.split(":")[0], Integer.parseInt(address.split(":")[1])),
+                NetworkInterfaces.find(nic));
     }
 }

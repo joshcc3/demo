@@ -16,23 +16,6 @@ function launchLadderAtPrice(symbol, price) {
 	launchLadder(symbol + ";" + price);
 }
 
-function getLadderHosts(symbol, ternaryIsFutures) {
-
-	const isDev = DEV_URLS.has(window.location.hostname);
-
-	if (isDev) {
-		return {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
-	} else if(true === ternaryIsFutures) {
-		return {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
-	} else if(false === ternaryIsFutures) {
-		return {ladderHost: "prod-equities-ladder.eeif.drw:9044", workspaceHost: "prod-equities-ladder.eeif.drw:9045"};
-	} else if (symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9](;.*)?$/) || symbol.match(/ FWD$/)) {
-		return {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
-	} else {
-		return {ladderHost: "prod-equities-ladder.eeif.drw:9044", workspaceHost: "prod-equities-ladder.eeif.drw:9045"};
-	}
-}
-
 function getLadderUrl(symbol) {
 	return getLadderHosts(symbol).ladderHost + "/ladder#" + symbol;
 }
@@ -55,6 +38,39 @@ function launchLadder(symbol, skipBasket, ternaryIsFutures) {
 	});
 	if (!skipBasket) {
 		launchBasket(symbol, true);
+	}
+}
+
+function getLadderHosts(symbol, ternaryIsFutures) {
+
+	const isDev = DEV_URLS.has(window.location.hostname);
+
+	if (isDev) {
+
+		return {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
+
+	} else if (false === ternaryIsFutures) {
+
+		return getBestEquityLadder();
+
+	} else if (true === ternaryIsFutures || symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9](;.*)?$/) || symbol.match(/ FWD$/)) {
+
+		return {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
+
+	} else {
+
+		return getBestEquityLadder();
+	}
+}
+
+function getBestEquityLadder() {
+
+	if (window.location.hostname === "prod-gm-equities-ladder.eeif.drw") {
+
+		return {ladderHost: "prod-gm-equities-ladder.eeif.drw:9144", workspaceHost: "prod-gm-equities-ladder.eeif.drw:9145"};
+	} else {
+
+		return {ladderHost: "prod-equities-ladder.eeif.drw:9144", workspaceHost: "prod-equities-ladder.eeif.drw:9145"};
 	}
 }
 
@@ -94,14 +110,10 @@ function webwormLink(symbols, date) {
 			symbol = parts[0];
 		}
 
-		return symbolTemplate
-			.split("{{EXCHANGE}}").join(exchange)
-			.split("{{SYMBOL}}").join(symbol);
+		return symbolTemplate.split("{{EXCHANGE}}").join(exchange).split("{{SYMBOL}}").join(symbol);
 	}).join(",");
 
-	const link = linkTemplate
-		.split("{{SYMBOLS}}").join(symbolList)
-		.split("{{DATE}}").join(d.toISOString().split("T")[0]);
+	const link = linkTemplate.split("{{SYMBOLS}}").join(symbolList).split("{{DATE}}").join(d.toISOString().split("T")[0]);
 
 	console.log(link);
 	popUp(link, undefined, 1400, 1000);
