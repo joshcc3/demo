@@ -119,6 +119,8 @@ public class StackFamilyView {
     private final Map<String, String> filterGroups;
     private final Map<String, StackChildFilter> filters;
 
+    private final Set<String> blacklistedTails;
+
     private final DecimalFormat priceOffsetDF;
 
     private StackCommunityManager communityManager;
@@ -131,7 +133,8 @@ public class StackFamilyView {
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final IFuseBox<StackManagerComponents> fuseBox,
             final StackCommunity community, final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
             final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
-            final TypedChannel<String> symbolsChannel, final TypedChannel<InstrumentID> instrumentIDChannel) {
+            final TypedChannel<String> symbolsChannel, final TypedChannel<InstrumentID> instrumentIDChannel,
+            final Set<String> blacklistedTails) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
@@ -146,6 +149,7 @@ public class StackFamilyView {
         this.quotingObligationsCmds = quotingObligationsCmds;
         this.symbolsChannel = symbolsChannel;
         this.instrumentIDChannel = instrumentIDChannel;
+        this.blacklistedTails = blacklistedTails;
 
         this.userViews = new HashMap<>();
 
@@ -602,7 +606,7 @@ public class StackFamilyView {
         }
     }
 
-    void autoFamily(final ETFDef etfDef) {
+     void autoFamily(final ETFDef etfDef) {
         final List<String> errors = new LinkedList<>();
         final String primaryListing = getPrimaryListing(etfDef);
         final String familyName = constructFamilyName(primaryListing);
@@ -757,7 +761,7 @@ public class StackFamilyView {
             final Set<String> result = new HashSet<>();
 
             for (final String child : children) {
-                if (childIsAnOrphan(child, childrenUIData.containsKey(child))) {
+                if (childIsAnOrphan(child, childrenUIData.containsKey(child)) && !blacklistedListing(blacklistedTails, child)) {
                     result.add(child);
                 }
             }
@@ -765,6 +769,12 @@ public class StackFamilyView {
         } else {
             return new HashSet<>();
         }
+    }
+
+    private static boolean blacklistedListing(final Set<String> blacklistedTails, final String child) {
+        final int spaceIx = child.lastIndexOf(' ');
+        final String childTail = child.substring(spaceIx + 1);
+        return blacklistedTails.contains(childTail);
     }
 
     private static boolean isOTCChild(final String isin, final String child) {

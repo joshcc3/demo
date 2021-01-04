@@ -53,7 +53,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final Set<StackCommunity> primaryCommunities, final Set<StackCommunity> otherCommunities,
             final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
             final EnumMap<StackCommunity, TypedChannel<String>> communitySymbols,
-            final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs) {
+            final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs, final Set<String> blacklistedStrategyTails) {
 
         this.uiLogger = uiLogger;
         this.primaryCommunities = primaryCommunities;
@@ -64,7 +64,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final StackFamilyView familyView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, fuseBox, primaryCommunity, contractSetGenerator, false,
                             strategySymbolUI, quotingObligationsCmds, communitySymbols.get(primaryCommunity),
-                            communityInstrumentIDs.get(primaryCommunity));
+                            communityInstrumentIDs.get(primaryCommunity), blacklistedStrategyTails);
             communityViews.put(primaryCommunity, familyView);
             otherCommunities.remove(primaryCommunity);
         }
@@ -77,7 +77,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final StackFamilyView asylumView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, fuseBox, stackCommunity, contractSetGenerator, true,
                             strategySymbolUI, Constants::NO_OP, communitySymbols.get(stackCommunity),
-                            communityInstrumentIDs.get(stackCommunity));
+                            communityInstrumentIDs.get(stackCommunity), blacklistedStrategyTails);
             communityViews.put(stackCommunity, asylumView);
         }
 
