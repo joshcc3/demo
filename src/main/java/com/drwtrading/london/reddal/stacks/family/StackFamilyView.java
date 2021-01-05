@@ -24,6 +24,7 @@ import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.ExpiryMonthCodes;
@@ -79,6 +80,7 @@ public class StackFamilyView {
     private static final String EXPIRY_BACK_MONTH_FILTER = "Back months";
 
     public static final String RFQ_SUFFIX = " RFQ";
+    private static final String OTC_SUFFIX = " OTC";
 
     private static final double GLOBAL_OFFSET_INCREMENT_BPS = 1d;
 
@@ -86,6 +88,8 @@ public class StackFamilyView {
     private final SelectIO backgroundSelectIO;
 
     private final IFuseBox<StackManagerComponents> fuseBox;
+    private final IErrorLogger errorLogger;
+
     private final StackCommunity community;
     private final SpreadContractSetGenerator contractSetGenerator;
     private final boolean isPrimaryView;
@@ -96,7 +100,7 @@ public class StackFamilyView {
 
     private final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds;
     private final TypedChannel<String> symbolsChannel;
-    private final TypedChannel<InstrumentID> instrumentIDChannel;
+    private final TypedChannel<String> isinChannel;
 
     private final WebSocketViews<IStackFamilyUI> views;
     private final Map<String, HashSet<IStackFamilyUI>> userViews;
@@ -129,13 +133,15 @@ public class StackFamilyView {
             List.of("UF", "UP", "GY", "FH", "DC", "SS", "SE", "ID", "PL", "BB", "NA", "FP", "LI", "LN", "IM");
 
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final IFuseBox<StackManagerComponents> fuseBox,
-            final StackCommunity community, final SpreadContractSetGenerator contractSetGenerator, final boolean isSecondaryView,
-            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
-            final TypedChannel<String> symbolsChannel, final TypedChannel<InstrumentID> instrumentIDChannel) {
+            final IErrorLogger errorLogger, final StackCommunity community, final SpreadContractSetGenerator contractSetGenerator,
+            final boolean isSecondaryView, final OpxlStrategySymbolUI strategySymbolUI,
+            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds, final TypedChannel<String> symbolsChannel,
+            final TypedChannel<String> isinChannel) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
         this.fuseBox = fuseBox;
+        this.errorLogger = errorLogger;
         this.community = community;
 
         this.contractSetGenerator = contractSetGenerator;
@@ -145,7 +151,7 @@ public class StackFamilyView {
 
         this.quotingObligationsCmds = quotingObligationsCmds;
         this.symbolsChannel = symbolsChannel;
-        this.instrumentIDChannel = instrumentIDChannel;
+        this.isinChannel = isinChannel;
 
         this.userViews = new HashMap<>();
 
@@ -253,7 +259,7 @@ public class StackFamilyView {
                 final FamilyUIData family = familyUIData.get(childUIData.getFamily());
                 if (null != family && community == family.getStackCommunity()) {
                     symbolsChannel.publish(symbol);
-                    instrumentIDChannel.publish(searchResult.instID);
+                    isinChannel.publish(searchResult.instID.isin);
                 }
             }
 
@@ -460,7 +466,15 @@ public class StackFamilyView {
             symbolsChannel.publish(childSymbol);
             final SearchResult searchResult = searchResults.get(childSymbol);
             if (null != searchResult) {
-                instrumentIDChannel.publish(searchResult.instID);
+                isinChannel.publish(searchResult.instID.isin);
+            } else if (childSymbol.endsWith(OTC_SUFFIX)) {
+                final int spaceIx = childSymbol.lastIndexOf(' ');
+                if (spaceIx != 12) {
+                    errorLogger.error("Invalid OTC symbol [" + childSymbol + ']');
+                } else {
+                    final String isin = childSymbol.substring(0, spaceIx);
+                    isinChannel.publish(isin);
+                }
             }
 
             views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,

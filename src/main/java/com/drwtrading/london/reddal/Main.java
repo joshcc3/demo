@@ -32,7 +32,6 @@ import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
 import com.drwtrading.london.eeif.utils.io.channels.IOConfigParser;
-import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.marketData.fx.md.FXMDUtils;
@@ -431,7 +430,7 @@ public class Main {
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderWebSockets = new EnumMap<>(MDSource.class);
 
         setupPicardUI(app.selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
-                channels.displaySymbol, webApp, channels.communityInstrumentIDs, channels.picardDMFilterSymbols);
+                channels.displaySymbol, webApp, channels.communityIsins, channels.picardDMFilterSymbols);
 
         new OPXLPicardFilterReader(opxlClient, app.selectIO, opxlMonitor, com.drwtrading.london.eeif.utils.application.Environment.PROD,
                 "EEIF", app.logDir, channels.picardDMFilterSymbols);
@@ -779,11 +778,10 @@ public class Main {
 
         final RFQCommunityPublisher rfqSymbolCommunityPublisher = new RFQCommunityPublisher(channels.communitySymbols);
         channels.searchResults.subscribe(selectIOFiber, rfqSymbolCommunityPublisher::setSearchResult);
-        for (final Map.Entry<StackCommunity, TypedChannel<InstrumentID>> communityChannels : channels.communityInstrumentIDs.entrySet()) {
+        for (final Map.Entry<StackCommunity, TypedChannel<String>> communityChannels : channels.communityIsins.entrySet()) {
             final StackCommunity community = communityChannels.getKey();
-            final TypedChannel<InstrumentID> channel = communityChannels.getValue();
-            channel.subscribe(selectIOFiber,
-                    instrumentID -> rfqSymbolCommunityPublisher.setCommunityForInstrumentID(community, instrumentID));
+            final TypedChannel<String> channel = communityChannels.getValue();
+            channel.subscribe(selectIOFiber, isin -> rfqSymbolCommunityPublisher.setCommunityForIsin(community, isin));
         }
 
         final String indyUsername = indyConfig.getString("username");
@@ -1110,9 +1108,9 @@ public class Main {
             final Set<StackCommunity> secondaryViews = stackConfig.getEnumSet("otherCommunities", StackCommunity.class);
 
             final StackFamilyPresenter stackFamilyPresenter =
-                    new StackFamilyPresenter(app.selectIO, opxlSelectIO, stackManagerMonitor, webLog, contractSetGenerator,
+                    new StackFamilyPresenter(app.selectIO, opxlSelectIO, stackManagerMonitor, app.errorLog, webLog, contractSetGenerator,
                             primaryCommunity, secondaryViews, strategySymbolUI, channels.quotingObligationsCmds, channels.communitySymbols,
-                            channels.communityInstrumentIDs);
+                            channels.communityIsins);
             channels.etfDefs.subscribe(selectIOFiber, stackFamilyPresenter::autoFamily);
 
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
@@ -1460,7 +1458,7 @@ public class Main {
     private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
             final Channel<PicardRowWithInstID> picardRows, final Channel<PicardRow> yodaRows,
             final Channel<RecenterLadder> recenterLadderChannel, final TypedChannel<DisplaySymbol> displaySymbol,
-            final WebApplication webApp, final Map<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs,
+            final WebApplication webApp, final Map<StackCommunity, TypedChannel<String>> communityIsins,
             final SelectIOChannel<Set<String>> picardDMFilterSymbols) {
 
         final PicardUI futureUI = setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol,
@@ -1472,7 +1470,7 @@ public class Main {
                         PicardSounds.SPREADER, webApp, "picardspread");
         picardRows.subscribe(fiber, spreadUI::addPicardRow);
 
-        setupEtfSplitPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, communityInstrumentIDs, displaySymbol,
+        setupEtfSplitPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, communityIsins, displaySymbol,
                 picardDMFilterSymbols, webApp);
 
         final PicardUI stocksUI =
@@ -1483,7 +1481,7 @@ public class Main {
 
     private static void setupEtfSplitPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
             final Channel<PicardRowWithInstID> picardRows, final Channel<RecenterLadder> recenterLadderChannel,
-            final Map<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs, final TypedChannel<DisplaySymbol> displaySymbol,
+            final Map<StackCommunity, TypedChannel<String>> communityIsins, final TypedChannel<DisplaySymbol> displaySymbol,
             final SelectIOChannel<Set<String>> picardDMFilterSymbols, final WebApplication webApp) {
 
         final PicardUI picardDM =
@@ -1501,12 +1499,12 @@ public class Main {
 
         final DelegatingPicardUI ui = new DelegatingPicardUI(picardFI, picardEM, picardDM);
         picardRows.subscribe(fiber, ui::addPicardRow);
-        final TypedChannel<InstrumentID> dmInstrumentIDs = communityInstrumentIDs.get(StackCommunity.DM);
-        final TypedChannel<InstrumentID> fiInstrumentIDs = communityInstrumentIDs.get(StackCommunity.FI);
-        final TypedChannel<InstrumentID> emInstrumentIDs = communityInstrumentIDs.get(StackCommunity.EM);
-        dmInstrumentIDs.subscribe(fiber, ui::addDMInstrumentID);
-        fiInstrumentIDs.subscribe(fiber, ui::addFIInstrumentID);
-        emInstrumentIDs.subscribe(fiber, ui::addEMInstrumentID);
+        final TypedChannel<String> dmIsins = communityIsins.get(StackCommunity.DM);
+        final TypedChannel<String> fiIsins = communityIsins.get(StackCommunity.FI);
+        final TypedChannel<String> emIsins = communityIsins.get(StackCommunity.EM);
+        dmIsins.subscribe(fiber, ui::addDMIsin);
+        fiIsins.subscribe(fiber, ui::addFIIsin);
+        emIsins.subscribe(fiber, ui::addEMIsin);
     }
 
     private static PicardUI setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,

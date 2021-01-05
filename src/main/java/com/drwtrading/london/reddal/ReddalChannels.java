@@ -3,7 +3,6 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
-import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.reddal.autopull.autopuller.msgs.cmds.IAutoPullerCmd;
@@ -108,7 +107,7 @@ class ReddalChannels {
     final TypedChannel<StackIncreaseChildOffsetCmd> increaseChildOffsetBPSCmds;
     final TypedChannel<StacksSetSiblingsEnableCmd> setSiblingsEnabledCmds;
 
-    final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs;
+    final EnumMap<StackCommunity, TypedChannel<String>> communityIsins;
     final EnumMap<StackCommunity, TypedChannel<String>> communitySymbols;
     final TypedChannel<PicardRowWithInstID> picardRows;
     final SelectIOChannel<Set<String>> picardDMFilterSymbols;
@@ -173,10 +172,10 @@ class ReddalChannels {
         this.increaseChildOffsetBPSCmds = create(StackIncreaseChildOffsetCmd.class);
         this.setSiblingsEnabledCmds = create(StacksSetSiblingsEnableCmd.class);
 
-        this.communityInstrumentIDs = new EnumMap<>(StackCommunity.class);
+        this.communityIsins = new EnumMap<>(StackCommunity.class);
         this.communitySymbols = new EnumMap<>(StackCommunity.class);
         for (final StackCommunity stackCommunity : StackCommunity.values()) {
-            this.communityInstrumentIDs.put(stackCommunity, create(InstrumentID.class));
+            this.communityIsins.put(stackCommunity, create(String.class));
             this.communitySymbols.put(stackCommunity, create(String.class));
         }
 

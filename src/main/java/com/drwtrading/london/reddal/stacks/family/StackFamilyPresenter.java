@@ -13,6 +13,7 @@ import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
@@ -49,11 +50,12 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Map<String, FamilyUIData> familiesData;
 
     public StackFamilyPresenter(final SelectIO presenterSelectIO, final SelectIO backgroundSelectIO,
-            final IFuseBox<StackManagerComponents> fuseBox, final UILogger uiLogger, final SpreadContractSetGenerator contractSetGenerator,
-            final Set<StackCommunity> primaryCommunities, final Set<StackCommunity> otherCommunities,
-            final OpxlStrategySymbolUI strategySymbolUI, final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
+            final IFuseBox<StackManagerComponents> fuseBox, final IErrorLogger errorLogger, final UILogger uiLogger,
+            final SpreadContractSetGenerator contractSetGenerator, final Set<StackCommunity> primaryCommunities,
+            final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
+            final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
             final EnumMap<StackCommunity, TypedChannel<String>> communitySymbols,
-            final EnumMap<StackCommunity, TypedChannel<InstrumentID>> communityInstrumentIDs) {
+            final EnumMap<StackCommunity, TypedChannel<String>> communityIsins) {
 
         this.uiLogger = uiLogger;
         this.primaryCommunities = primaryCommunities;
@@ -62,9 +64,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         for (final StackCommunity primaryCommunity : primaryCommunities) {
             final StackFamilyView familyView =
-                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, fuseBox, primaryCommunity, contractSetGenerator, false,
-                            strategySymbolUI, quotingObligationsCmds, communitySymbols.get(primaryCommunity),
-                            communityInstrumentIDs.get(primaryCommunity));
+                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, fuseBox, errorLogger, primaryCommunity, contractSetGenerator,
+                            false, strategySymbolUI, quotingObligationsCmds, communitySymbols.get(primaryCommunity),
+                            communityIsins.get(primaryCommunity));
             communityViews.put(primaryCommunity, familyView);
             otherCommunities.remove(primaryCommunity);
         }
@@ -75,9 +77,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         for (final StackCommunity stackCommunity : otherCommunities) {
 
             final StackFamilyView asylumView =
-                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, fuseBox, stackCommunity, contractSetGenerator, true,
-                            strategySymbolUI, Constants::NO_OP, communitySymbols.get(stackCommunity),
-                            communityInstrumentIDs.get(stackCommunity));
+                    new StackFamilyView(presenterSelectIO, backgroundSelectIO, fuseBox, errorLogger, stackCommunity, contractSetGenerator,
+                            true, strategySymbolUI, Constants::NO_OP, communitySymbols.get(stackCommunity),
+                            communityIsins.get(stackCommunity));
             communityViews.put(stackCommunity, asylumView);
         }
 

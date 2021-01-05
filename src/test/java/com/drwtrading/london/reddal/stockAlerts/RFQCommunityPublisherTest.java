@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.stockAlerts;
 
-import com.drwtrading.jetlang.NamedThreadFactory;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
@@ -67,10 +66,10 @@ public class RFQCommunityPublisherTest {
         communityPublisher.setSearchResult(s3);
         communityPublisher.setSearchResult(s4);
 
-        communityPublisher.setCommunityForInstrumentID(StackCommunity.DM, inst1);
-        communityPublisher.setCommunityForInstrumentID(StackCommunity.EM, inst2);
-        communityPublisher.setCommunityForInstrumentID(StackCommunity.FI, inst3);
-        communityPublisher.setCommunityForInstrumentID(StackCommunity.FUTURE, inst4);
+        communityPublisher.setCommunityForIsin(StackCommunity.DM, inst1.isin);
+        communityPublisher.setCommunityForIsin(StackCommunity.EM, inst2.isin);
+        communityPublisher.setCommunityForIsin(StackCommunity.FI, inst3.isin);
+        communityPublisher.setCommunityForIsin(StackCommunity.FUTURE, inst4.isin);
 
         final ArgumentCaptor<String> dmCapture = ArgumentCaptor.forClass(String.class);
         final ArgumentCaptor<String> emCapture = ArgumentCaptor.forClass(String.class);

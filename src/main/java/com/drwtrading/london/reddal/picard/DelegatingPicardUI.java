@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.picard;
 
-import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 
 import java.util.HashMap;
@@ -12,7 +11,7 @@ public class DelegatingPicardUI {
     private final PicardUI emPicardUI;
     private final PicardUI dmPicardUI;
 
-    private final Map<InstrumentID, PicardUI> instIDToUI;
+    private final Map<String, PicardUI> isinToUI;
 
     private final PicardUI defaultUI;
 
@@ -22,24 +21,24 @@ public class DelegatingPicardUI {
         this.fiPicardUI = fiPicardUI;
         this.emPicardUI = emPicardUI;
         this.dmPicardUI = dmPicardUI;
-        instIDToUI = new HashMap<>();
+        isinToUI = new HashMap<>();
         defaultUI = dmPicardUI;
     }
 
-    public void addFIInstrumentID(final InstrumentID instrumentID) {
-        instIDToUI.put(instrumentID, fiPicardUI);
+    public void addFIIsin(final String isin) {
+        isinToUI.put(isin, fiPicardUI);
     }
 
-    public void addEMInstrumentID(final InstrumentID instrumentID) {
-        instIDToUI.put(instrumentID, emPicardUI);
+    public void addEMIsin(final String isin) {
+        isinToUI.put(isin, emPicardUI);
     }
 
-    public void addDMInstrumentID(final InstrumentID instrumentID) {
-        instIDToUI.put(instrumentID, dmPicardUI);
+    public void addDMIsin(final String isin) {
+        isinToUI.put(isin, dmPicardUI);
     }
 
     public void addPicardRow(final PicardRowWithInstID row) {
-        final PicardUI picardUI = instIDToUI.getOrDefault(row.instrumentID, defaultUI);
+        final PicardUI picardUI = isinToUI.getOrDefault(row.instrumentID.isin, defaultUI);
         picardUI.addPicardRow(row);
     }
 
