@@ -1109,12 +1109,10 @@ public class Main {
 
             final Set<StackCommunity> secondaryViews = stackConfig.getEnumSet("otherCommunities", StackCommunity.class);
 
-            final Set<String> blacklistedStrategyTails = stackConfig.getSet("blacklistedChildStrategyTails");
-
             final StackFamilyPresenter stackFamilyPresenter =
                     new StackFamilyPresenter(app.selectIO, opxlSelectIO, stackManagerMonitor, webLog, contractSetGenerator,
                             primaryCommunity, secondaryViews, strategySymbolUI, channels.quotingObligationsCmds, channels.communitySymbols,
-                            channels.communityInstrumentIDs, blacklistedStrategyTails);
+                            channels.communityInstrumentIDs);
             channels.etfDefs.subscribe(selectIOFiber, stackFamilyPresenter::autoFamily);
 
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
