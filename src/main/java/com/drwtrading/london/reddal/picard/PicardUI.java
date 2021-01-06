@@ -51,7 +51,7 @@ public class PicardUI {
         this.instType = instTypes;
 
         this.sounds = sounds;
-        this.soundsOn = instTypes.contains(InstType.FUTURE);
+        this.soundsOn = PicardSounds.SPREADER == sounds || instTypes.contains(InstType.FUTURE);
 
         this.reddalMessagePublisher = recenterLadderPublisher;
 

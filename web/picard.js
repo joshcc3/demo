@@ -160,11 +160,10 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			}
 			let bigEnough = opportunity > displayThreshold;
 			picard.toggleClass("hidden", !bigEnough || (hideRfq && isRfq));
-			if (bigEnough) {
-				if (picard.hasClass("toPlaySound")) {
-					picard.removeClass("toPlaySound");
-					playSound();
-				}
+			if (bigEnough && picard.hasClass("toPlaySound")) {
+
+				picard.removeClass("toPlaySound");
+				playSound();
 			}
 
 			picard.toggleClass("isOnOPXLFilterList", isOnOPXLFilterList);
