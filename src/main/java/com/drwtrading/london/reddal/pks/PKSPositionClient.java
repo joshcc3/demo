@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.pks;
 import com.drwtrading.london.eeif.position.transport.cache.IPositionCmdListener;
 import com.drwtrading.london.eeif.position.transport.data.ConstituentExposure;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -61,15 +62,7 @@ public class PKSPositionClient {
         final Set<String> symbols = MapUtils.getMappedItem(isinToSymbols, searchResult.instID.isin, CopyOnWriteArraySet::new);
         symbols.add(searchResult.symbol);
 
-        final ConstituentExposure dryPksPosition = dryIsinExposures.get(searchResult.instID.isin);
-        if (null != dryPksPosition) {
-            updateExposure(dryPksPosition, dryIsinExposures, this::updateDryExposure);
-        }
-
-        final ConstituentExposure dripPksPosition = dripIsinExposures.get(searchResult.instID.isin);
-        if (null != dripPksPosition) {
-            updateExposure(dripPksPosition, dripIsinExposures, this::updateDripExposure);
-        }
+        updateDryAndDripExposure(searchResult.instID);
     }
 
     public void setUltimateParent(final UltimateParentMapping ultimateParent) {
@@ -85,15 +78,27 @@ public class PKSPositionClient {
             final Set<UltimateParentMapping> children = MapUtils.getMappedSet(ultimateParentChildren, ultimateParent.parentID.isin);
             children.add(ultimateParent);
 
-            final ConstituentExposure dryParentPosition = dryIsinExposures.get(ultimateParent.parentID.isin);
-            if (null != dryParentPosition) {
-                updateExposure(dryParentPosition, dryIsinExposures, this::updateDryExposure);
-            }
+            updateDryAndDripExposure(ultimateParent.parentID);
+        } else {
 
-            final ConstituentExposure dripParentPosition = dripIsinExposures.get(ultimateParent.parentID.isin);
-            if (null != dripParentPosition) {
-                updateExposure(dripParentPosition, dripIsinExposures, this::updateDripExposure);
+            final UltimateParentMapping prevMapping = ultimateParents.remove(ultimateParent.childISIN);
+            if (null != prevMapping) {
+                final Set<UltimateParentMapping> children = ultimateParentChildren.get(prevMapping.parentID.isin);
+                children.remove(ultimateParent);
+                updateDryAndDripExposure(ultimateParent.parentID);
             }
+        }
+    }
+
+    private void updateDryAndDripExposure(final InstrumentID parentID) {
+        final ConstituentExposure dryParentPosition = dryIsinExposures.get(parentID.isin);
+        if (null != dryParentPosition) {
+            updateExposure(dryParentPosition, dryIsinExposures, this::updateDryExposure);
+        }
+
+        final ConstituentExposure dripParentPosition = dripIsinExposures.get(parentID.isin);
+        if (null != dripParentPosition) {
+            updateExposure(dripParentPosition, dripIsinExposures, this::updateDripExposure);
         }
     }
 
