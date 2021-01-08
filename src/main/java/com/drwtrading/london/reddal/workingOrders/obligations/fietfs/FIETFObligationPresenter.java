@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.workingOrders.obligations.fietfs;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
+import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
@@ -17,11 +18,10 @@ import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
 import java.util.Calendar;
-import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 public final class FIETFObligationPresenter {
 
@@ -29,40 +29,40 @@ public final class FIETFObligationPresenter {
 
     private static final int MAX_PERCENT = 20;
 
+    private static final String GM = "gm";
+    private static final String XETRA = "xetra";
+
     private final IFuseBox<ReddalComponents> monitor;
     private final UILogger webLog;
     private final SelectIO uiSelectIO;
+    private final boolean enabled;
 
-    private final EnumMap<StackCommunity, WebSocketViews<IQuotingObligationView>> communityViews;
+    private final WebSocketViews<IQuotingObligationView> fiCommunityView;
     private final Map<Publisher<WebSocketOutboundData>, WebSocketViews<IQuotingObligationView>> userViews;
 
     private final Map<String, NibblerTransportOrderEntry> nibblers;
 
-    private final Map<String, StackCommunity> symbolToCommunity;
     private final Map<String, FIETFObligationState> obligations;
 
     private final long minMilliSinceMidnight;
     private final long maxMilliSinceMidnight;
     private final long sysStartMillisSinceMidnight;
-    private final Set<StackCommunity> primaryCommunities;
+    private final Map<String, HashSet<String>> failingObligations;
 
-    public FIETFObligationPresenter(final Set<StackCommunity> primaryCommunities, final SelectIO uiSelectIO,
-            final IFuseBox<ReddalComponents> monitor, final UILogger webLog) {
-        this.primaryCommunities = primaryCommunities;
+    public FIETFObligationPresenter(final String appName, final SelectIO uiSelectIO, final IFuseBox<ReddalComponents> monitor,
+            final UILogger webLog) {
+
+        this.enabled = appName.toLowerCase().contains(GM);
 
         this.uiSelectIO = uiSelectIO;
         this.monitor = monitor;
         this.webLog = webLog;
 
         this.userViews = new HashMap<>();
-        this.communityViews = new EnumMap<>(StackCommunity.class);
-        for (final StackCommunity primaryCommunity : StackCommunity.values()) {
-            communityViews.put(primaryCommunity, WebSocketViews.create(IQuotingObligationView.class, this));
-        }
+        this.fiCommunityView = WebSocketViews.create(IQuotingObligationView.class, this);
 
         this.nibblers = new HashMap<>();
         this.obligations = new HashMap<>();
-        this.symbolToCommunity = new HashMap<>();
 
         final Calendar cal = DateTimeUtil.getCalendar();
         cal.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
@@ -77,22 +77,26 @@ public final class FIETFObligationPresenter {
 
         uiSelectIO.addDelayedAction(CHECK_OBLIGATION_PERIOD_MILLIS, this::checkObligations);
 
+        failingObligations = new HashMap<>();
     }
 
     public void setNibblerHandler(final String nibblerName, final NibblerTransportOrderEntry nibblerHandler) {
-        nibblers.put(nibblerName, nibblerHandler);
+
+        if (enabled && isXetraNibbler(nibblerName)) {
+            nibblers.put(nibblerName, nibblerHandler);
+        }
     }
 
-    public void setSymbol(final StackCommunity community, final String symbol) {
-        symbolToCommunity.put(symbol, community);
+    private static boolean isXetraNibbler(final String nibblerName) {
+        return nibblerName.toLowerCase().contains(XETRA);
     }
 
     public void setQuotingState(final String sourceNibbler, final QuotingState quotingState) {
 
-        final FIETFObligationState obligation = getObligation(sourceNibbler, quotingState);
-        if (obligation.getSourceNibbler().equals(sourceNibbler)) {
-            for (final Map.Entry<StackCommunity, WebSocketViews<IQuotingObligationView>> entry : communityViews.entrySet()) {
-                setObligation(entry.getKey(), entry.getValue().all(), obligation);
+        if (enabled && isXetraNibbler(sourceNibbler)) {
+            final FIETFObligationState obligation = getObligation(sourceNibbler, quotingState);
+            if (obligation.getSourceNibbler().equals(sourceNibbler)) {
+                setObligation(StackCommunity.FI, fiCommunityView.all(), obligation);
             }
         }
     }
@@ -100,17 +104,14 @@ public final class FIETFObligationPresenter {
     void onSubscribe(final String communityStr, final WebSocketInboundData connected) {
 
         final StackCommunity uiCommunity = mapToCommunity(communityStr);
-        if (null != uiCommunity && communityViews.containsKey(uiCommunity)) {
+        if (uiCommunity == StackCommunity.FI) {
 
-            final WebSocketViews<IQuotingObligationView> wsView = communityViews.get(uiCommunity);
+            userViews.put(connected.getOutboundChannel(), fiCommunityView);
 
-            userViews.put(connected.getOutboundChannel(), wsView);
-
-            final IQuotingObligationView view = wsView.get(connected.getOutboundChannel());
-            doForSymbolsInUICommunity(uiCommunity, quotingState -> {
-                setObligation(uiCommunity, view, quotingState);
-                return null;
-            });
+            final IQuotingObligationView view = fiCommunityView.get(connected.getOutboundChannel());
+            for (final FIETFObligationState obligation : obligations.values()) {
+                setObligation(uiCommunity, view, obligation);
+            }
         }
     }
 
@@ -135,10 +136,12 @@ public final class FIETFObligationPresenter {
 
     public void setNibblerDisconnected(final String sourceNibbler) {
 
-        for (final FIETFObligationState obligation : obligations.values()) {
+        if (enabled && isXetraNibbler(sourceNibbler)) {
 
-            if (obligation.getSourceNibbler().equals(sourceNibbler)) {
-                obligation.setIsAvailable(false);
+            for (final FIETFObligationState obligation : obligations.values()) {
+                if (obligation.getSourceNibbler().equals(sourceNibbler)) {
+                    obligation.setIsAvailable(false);
+                }
             }
         }
     }
@@ -158,25 +161,30 @@ public final class FIETFObligationPresenter {
         for (final FIETFObligationState obligation : obligations.values()) {
 
             obligation.updatePercent(nowMilliSinceMidnight);
-            for (final Map.Entry<StackCommunity, WebSocketViews<IQuotingObligationView>> entry : communityViews.entrySet()) {
-                setObligation(entry.getKey(), entry.getValue().all(), obligation);
-                entry.getValue().all().checkWarning();
-            }
+            setObligation(StackCommunity.FI, fiCommunityView.all(), obligation);
+            fiCommunityView.all().checkWarning();
+
+            final Set<String> failingSymbols = MapUtils.getMappedSet(failingObligations, obligation.getSourceNibbler());
             if (isFailingObligation(obligation)) {
-                monitor.logError(ReddalComponents.INVERSE_OBLIGATIONS, "Two-sided quoting more than " + MAX_PERCENT + '%');
+                if (!failingSymbols.contains(obligation.getSymbol())) {
+                    failingSymbols.add(obligation.getSymbol());
+                    monitor.logError(ReddalComponents.INVERSE_OBLIGATIONS, "Failing inverse obligation for " + obligation.getSymbol());
+                }
             } else {
                 monitor.setOK(ReddalComponents.INVERSE_OBLIGATIONS);
+                failingSymbols.remove(obligation.getSymbol());
             }
         }
 
         return CHECK_OBLIGATION_PERIOD_MILLIS;
     }
 
-    private void setObligation(final StackCommunity community, final IQuotingObligationView view, final FIETFObligationState obligation) {
+    private static void setObligation(final StackCommunity community, final IQuotingObligationView view,
+            final FIETFObligationState obligation) {
 
         final String symbol = obligation.getSymbol();
 
-        if (StackCommunity.uiCommunityContains(community, symbolToCommunity.getOrDefault(symbol, StackCommunity.EXILES))) {
+        if (StackCommunity.FI == community) {
             final String key = obligation.getKey();
             final boolean isStrategyOn = obligation.isStrategyOn();
             final boolean isQuoting = obligation.isQuoting();
@@ -219,24 +227,10 @@ public final class FIETFObligationPresenter {
         }
     }
 
-    private void doForSymbolsInUICommunity(final StackCommunity uiCommunity, final Function<FIETFObligationState, Void> f) {
-        for (final FIETFObligationState obligation : obligations.values()) {
-            final String symbol = obligation.getSymbol();
-            final StackCommunity symbolCommunity = symbolToCommunity.getOrDefault(symbol, StackCommunity.EXILES);
-            if (StackCommunity.uiCommunityContains(uiCommunity, symbolCommunity)) {
-                f.apply(obligation);
-            }
-        }
-    }
-
-    private StackCommunity mapToCommunity(final String communityStr) {
+    private static StackCommunity mapToCommunity(final String communityStr) {
         final StackCommunity community = StackCommunity.get(communityStr);
         if (null == community && "DEFAULT".equals(communityStr)) {
-            if (primaryCommunities.contains(StackCommunity.FUTURE)) {
-                return StackCommunity.FUTURE;
-            } else {
-                return StackCommunity.DM;
-            }
+            return StackCommunity.DM;
         } else {
             return community;
         }

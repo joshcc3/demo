@@ -1247,14 +1247,11 @@ public class Main {
             final QuotingObligationsPresenter quotingObligationsPresenter =
                     new QuotingObligationsPresenter(primaryCommunities, app.selectIO, webLog);
             final FIETFObligationPresenter fiETFObligationPresenter =
-                    new FIETFObligationPresenter(EnumSet.of(StackCommunity.FI), app.selectIO, app.monitor, webLog);
+                    new FIETFObligationPresenter(app.appName, app.selectIO, app.monitor, webLog);
             for (final Map.Entry<StackCommunity, TypedChannel<String>> entry : channels.communitySymbols.entrySet()) {
                 final StackCommunity community = entry.getKey();
                 final TypedChannel<String> channel = entry.getValue();
                 channel.subscribe(selectIOFiber, symbol -> quotingObligationsPresenter.setSymbol(community, symbol));
-                if (community == StackCommunity.FI) {
-                    channel.subscribe(selectIOFiber, symbol -> fiETFObligationPresenter.setSymbol(community, symbol));
-                }
             }
             channels.quotingObligationsCmds.subscribe(selectIOFiber, quotingObligationsPresenter::enableQuotes);
             final FutureObligationPresenter futureObligationPresenter = new FutureObligationPresenter();

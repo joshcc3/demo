@@ -1,7 +1,6 @@
 package com.drwtrading.london.reddal.workingOrders.obligations.fietfs;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
-import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.io.ISelectIORunnable;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
@@ -20,12 +19,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Calendar;
-import java.util.EnumSet;
 
 public class FIETFObligationPresenterTest {
 
     public static final User USER = User.CMILLER;
-    public static final String NIBBLER = "TEST_NIBBLER";
+    public static final String APP = "LADDERS_GM_TEST";
+    public static final String NIBBLER = "TEST_XETRA_NIBBLER";
     public static final String SYMBOL = "VOD LN";
 
     private static final QuotingState ON = new QuotingState(1, 1, SYMBOL, true, "OK");
@@ -58,7 +57,7 @@ public class FIETFObligationPresenterTest {
     @Test
     public void correctStartingObligationPercentageTest() {
         setTimeFromMidnight(8, 0);
-        final FIETFObligationPresenter presenter = new FIETFObligationPresenter(EnumSet.of(StackCommunity.FI), selectIO, monitor, webLog);
+        final FIETFObligationPresenter presenter = new FIETFObligationPresenter(APP, selectIO, monitor, webLog);
         Mockito.verify(selectIO).addDelayedAction(Mockito.anyLong(), checkObligations.capture());
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, ON);
@@ -73,7 +72,7 @@ public class FIETFObligationPresenterTest {
     @Test
     public void fuseBlownAtCorrectPercentageStartingOnTest() {
         setTimeFromMidnight(8, 0);
-        final FIETFObligationPresenter presenter = new FIETFObligationPresenter(EnumSet.of(StackCommunity.FI), selectIO, monitor, webLog);
+        final FIETFObligationPresenter presenter = new FIETFObligationPresenter(APP, selectIO, monitor, webLog);
         Mockito.verify(selectIO).addDelayedAction(Mockito.anyLong(), checkObligations.capture());
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, ON);
@@ -86,9 +85,47 @@ public class FIETFObligationPresenterTest {
     }
 
     @Test
+    public void fuseStaysBlownUtilRecoveryTest() {
+        setTimeFromMidnight(8, 0);
+        final FIETFObligationPresenter presenter = new FIETFObligationPresenter(APP, selectIO, monitor, webLog);
+        Mockito.verify(selectIO).addDelayedAction(Mockito.anyLong(), checkObligations.capture());
+        presenter.setNibblerHandler(NIBBLER, nibblerHandler);
+        presenter.setQuotingState(NIBBLER, ON);
+        checkObligations.getValue().run();
+
+        presenter.setQuotingState(NIBBLER, ON);
+        setTimeFromMidnight(9, 0);
+        checkObligations.getValue().run();
+
+        Mockito.verify(monitor, Mockito.times(1)).logError(Mockito.eq(ReddalComponents.INVERSE_OBLIGATIONS), Mockito.any(String.class));
+        Mockito.verify(monitor, Mockito.times(1)).setOK(ReddalComponents.INVERSE_OBLIGATIONS);
+
+        presenter.setQuotingState(NIBBLER, ON);
+        setTimeFromMidnight(9, 10);
+        checkObligations.getValue().run();
+
+        Mockito.verify(monitor, Mockito.times(1)).logError(Mockito.eq(ReddalComponents.INVERSE_OBLIGATIONS), Mockito.any(String.class));
+        Mockito.verify(monitor, Mockito.times(1)).setOK(ReddalComponents.INVERSE_OBLIGATIONS);
+
+        presenter.setQuotingState(NIBBLER, OFF);
+        setTimeFromMidnight(11, 10);
+        checkObligations.getValue().run();
+
+        Mockito.verify(monitor, Mockito.times(1)).logError(Mockito.eq(ReddalComponents.INVERSE_OBLIGATIONS), Mockito.any(String.class));
+        Mockito.verify(monitor, Mockito.times(2)).setOK(ReddalComponents.INVERSE_OBLIGATIONS);
+
+        presenter.setQuotingState(NIBBLER, ON);
+        setTimeFromMidnight(12, 10);
+        checkObligations.getValue().run();
+
+        Mockito.verify(monitor, Mockito.times(2)).logError(Mockito.eq(ReddalComponents.INVERSE_OBLIGATIONS), Mockito.any(String.class));
+        Mockito.verify(monitor, Mockito.times(2)).setOK(ReddalComponents.INVERSE_OBLIGATIONS);
+    }
+
+    @Test
     public void fuseBlownAtCorrectPercentageStartingOffTest() {
         setTimeFromMidnight(8, 0);
-        final FIETFObligationPresenter presenter = new FIETFObligationPresenter(EnumSet.of(StackCommunity.FI), selectIO, monitor, webLog);
+        final FIETFObligationPresenter presenter = new FIETFObligationPresenter(APP, selectIO, monitor, webLog);
         Mockito.verify(selectIO).addDelayedAction(Mockito.anyLong(), checkObligations.capture());
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, OFF);
@@ -114,7 +151,7 @@ public class FIETFObligationPresenterTest {
     @Test
     public void fuseRecoversWithPercentageRecoveringTest() {
         setTimeFromMidnight(8, 0);
-        final FIETFObligationPresenter presenter = new FIETFObligationPresenter(EnumSet.of(StackCommunity.FI), selectIO, monitor, webLog);
+        final FIETFObligationPresenter presenter = new FIETFObligationPresenter(APP, selectIO, monitor, webLog);
         Mockito.verify(selectIO).addDelayedAction(Mockito.anyLong(), checkObligations.capture());
 
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
