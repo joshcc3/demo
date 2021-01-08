@@ -1438,7 +1438,7 @@ public class Main {
 
             final TypedChannel<WebSocketControlMessage> fiETFObligationsWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("inverseObligations", "inverseObligations", fibers.ui, webApp, fiETFObligationsWebSocket);
-            quotingObligationsWebSocket.subscribe(selectIOFiber, fiETFObligationPresenter::webControl);
+            fiETFObligationsWebSocket.subscribe(selectIOFiber, fiETFObligationPresenter::webControl);
 
             final ConfigGroup indyConfigGroup = app.config.getEnabledGroup("indyConfig");
 

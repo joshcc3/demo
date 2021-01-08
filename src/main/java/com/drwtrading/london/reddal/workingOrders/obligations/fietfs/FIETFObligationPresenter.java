@@ -120,7 +120,7 @@ public final class FIETFObligationPresenter {
 
     public void onMessage(final WebSocketInboundData msg) {
 
-        webLog.write("quotingObligations", msg);
+        webLog.write("inverseObligations", msg);
 
         final String[] cmdParts = msg.getData().split(",");
         if ("subscribeToCommunity".equals(cmdParts[0])) {
