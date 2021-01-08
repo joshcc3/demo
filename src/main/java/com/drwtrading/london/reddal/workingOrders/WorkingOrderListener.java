@@ -18,7 +18,6 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
     private final String sourceNibbler;
 
     private final WorkingOrdersPresenter workingOrdersPresenter;
-    private final IWorkingOrdersCallback obligationPresenter;
     private final IWorkingOrdersCallback bestWorkingOrderMaintainer;
     private final IWorkingOrdersCallback gtcWorkingOrderMaintainer;
     private final IWorkingOrdersCallback futureObligationPresenter;
@@ -29,15 +28,13 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
     private final LongMap<SourcedWorkingOrder> sourcedWorkingOrder;
 
     public WorkingOrderListener(final String sourceNibbler, final WorkingOrdersPresenter workingOrdersPresenter,
-            final IWorkingOrdersCallback obligationPresenter, final IWorkingOrdersCallback bestWorkingOrderMaintainer,
-            final IWorkingOrdersCallback gtcWorkingOrderMaintainer, final IWorkingOrdersCallback futureObligationPresenter,
-            final QuotingObligationsPresenter quotingObligationsPresenter, final FIETFObligationPresenter fiETFObligationPresenter,
-            final RemoteOrderServerRouter orderRouter) {
+            final IWorkingOrdersCallback bestWorkingOrderMaintainer, final IWorkingOrdersCallback gtcWorkingOrderMaintainer,
+            final IWorkingOrdersCallback futureObligationPresenter, final QuotingObligationsPresenter quotingObligationsPresenter,
+            final FIETFObligationPresenter fiETFObligationPresenter, final RemoteOrderServerRouter orderRouter) {
 
         this.sourceNibbler = sourceNibbler;
 
         this.workingOrdersPresenter = workingOrdersPresenter;
-        this.obligationPresenter = obligationPresenter;
         this.bestWorkingOrderMaintainer = bestWorkingOrderMaintainer;
         this.gtcWorkingOrderMaintainer = gtcWorkingOrderMaintainer;
         this.futureObligationPresenter = futureObligationPresenter;
@@ -96,7 +93,6 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
         sourcedWorkingOrder.put(order.getWorkingOrderID(), sourcedOrder);
 
         workingOrdersPresenter.setWorkingOrder(sourcedOrder);
-        obligationPresenter.setWorkingOrder(sourcedOrder);
         bestWorkingOrderMaintainer.setWorkingOrder(sourcedOrder);
         gtcWorkingOrderMaintainer.setWorkingOrder(sourcedOrder);
         futureObligationPresenter.setWorkingOrder(sourcedOrder);
@@ -110,7 +106,6 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
         final SourcedWorkingOrder sourcedOrder = sourcedWorkingOrder.get(order.getWorkingOrderID());
 
         workingOrdersPresenter.setWorkingOrder(sourcedOrder);
-        obligationPresenter.setWorkingOrder(sourcedOrder);
         bestWorkingOrderMaintainer.setWorkingOrder(sourcedOrder);
         gtcWorkingOrderMaintainer.setWorkingOrder(sourcedOrder);
         futureObligationPresenter.setWorkingOrder(sourcedOrder);
@@ -124,7 +119,6 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
         final SourcedWorkingOrder sourcedOrder = sourcedWorkingOrder.remove(order.getWorkingOrderID());
 
         workingOrdersPresenter.deleteWorkingOrder(sourcedOrder);
-        obligationPresenter.deleteWorkingOrder(sourcedOrder);
         bestWorkingOrderMaintainer.deleteWorkingOrder(sourcedOrder);
         gtcWorkingOrderMaintainer.deleteWorkingOrder(sourcedOrder);
         futureObligationPresenter.deleteWorkingOrder(sourcedOrder);
@@ -161,7 +155,6 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
 
         workingOrdersPresenter.setNibblerConnectionEstablished(sourceNibbler, false);
 
-        obligationPresenter.setNibblerDisconnected(sourceNibbler);
         bestWorkingOrderMaintainer.setNibblerDisconnected(sourceNibbler);
         gtcWorkingOrderMaintainer.setNibblerDisconnected(sourceNibbler);
         futureObligationPresenter.setNibblerDisconnected(sourceNibbler);

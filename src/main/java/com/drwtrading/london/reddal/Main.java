@@ -175,9 +175,6 @@ import com.drwtrading.london.reddal.workingOrders.gtc.OPXLGTCWorkingOrdersPresen
 import com.drwtrading.london.reddal.workingOrders.obligations.fietfs.FIETFObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.futures.FutureObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
-import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationOPXL;
-import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationPresenter;
-import com.drwtrading.london.reddal.workingOrders.obligations.rfq.RFQObligationSet;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workspace.LadderWorkspace;
 import com.drwtrading.london.reddal.workspace.SpreadContractSetGenerator;
@@ -206,7 +203,6 @@ import drw.eeif.trades.transport.outbound.io.TradesTransportComponents;
 import drw.eeif.trades.transport.outbound.messages.TradesTransportBaseMsg;
 import org.jetlang.channels.BatchSubscriber;
 import org.jetlang.channels.Channel;
-import org.jetlang.channels.MemoryChannel;
 import org.jetlang.channels.Publisher;
 
 import java.io.File;
@@ -216,7 +212,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -1249,36 +1244,6 @@ public class Main {
             channels.orderEntryFromServer.subscribe(selectIOFiber,
                     new BatchSubscriber<>(selectIOFiber, workingOrderPresenter::oeUpdate, 250, TimeUnit.MILLISECONDS));
 
-            final IWorkingOrdersCallback rfqObligationPresenter;
-            final Set<String> rfqObligationNibblers;
-
-            final ConfigGroup obligationsConfig = app.config.getEnabledGroup("obligations");
-            if (null == obligationsConfig) {
-
-                rfqObligationPresenter = NoWorkingOrdersCallback.INSTANCE;
-                rfqObligationNibblers = Collections.emptySet();
-            } else {
-
-                rfqObligationNibblers = obligationsConfig.getSet("nibblers");
-                final Pattern filterRegex = Pattern.compile(obligationsConfig.getString("filterRegex"));
-                final FXCalc<?> fxCalc = createOPXLFXCalc(app, opxlSelectIO, app.selectIO, opxlMonitor);
-                final MemoryChannel<RFQObligationSet> rfqObligationChannel = new MemoryChannel<>();
-                final RFQObligationPresenter presenter = new RFQObligationPresenter(fxCalc, filterRegex.asPredicate());
-                final RFQObligationOPXL obligationOPXL =
-                        new RFQObligationOPXL(opxlSelectIO, opxlMonitor, OPXLComponents.OPXL_OBLIGATIONS_RFQ, app.logDir,
-                                rfqObligationChannel::publish);
-
-                final TypedChannel<WebSocketControlMessage> ws = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("obligations", "obligations", fibers.ui, webApp, ws);
-                ws.subscribe(selectIOFiber, presenter::webControl);
-                channels.searchResults.subscribe(selectIOFiber, presenter::onSearchResult);
-                rfqObligationChannel.subscribe(selectIOFiber, presenter::onObligations);
-                app.selectIO.addDelayedAction(10000, presenter::update);
-                selectIOFiber.execute(obligationOPXL::start);
-
-                rfqObligationPresenter = presenter;
-            }
-
             final QuotingObligationsPresenter quotingObligationsPresenter =
                     new QuotingObligationsPresenter(primaryCommunities, app.selectIO, webLog);
             final FIETFObligationPresenter fiETFObligationPresenter =
@@ -1364,13 +1329,6 @@ public class Main {
                         new ExpandedDetailResourceMonitor<>(childMonitor, "Nibbler Transport", app.errorLog,
                                 NibblerTransportComponents.class, ReddalComponents.BLOTTER_CONNECTION);
 
-                final IWorkingOrdersCallback obligationsCallback;
-                if (rfqObligationNibblers.contains(nibbler)) {
-                    obligationsCallback = rfqObligationPresenter;
-                } else {
-                    obligationsCallback = NoWorkingOrdersCallback.INSTANCE;
-                }
-
                 final BlotterClient blotterClient =
                         new BlotterClient(nibbler, msgBlotter, safetiesBlotter, connectedNibblerChannel, nibbler);
 
@@ -1403,7 +1361,7 @@ public class Main {
 
                         workingOrderPresenter.addNibbler(nibbler);
                         final WorkingOrderListener workingOrderListener =
-                                new WorkingOrderListener(nibbler, workingOrderPresenter, obligationsCallback, bestWorkingOrderMaintainer,
+                                new WorkingOrderListener(nibbler, workingOrderPresenter, bestWorkingOrderMaintainer,
                                         gtcWorkingOrdersMaintainer, futureObligationPresenter, quotingObligationsPresenter,
                                         fiETFObligationPresenter, orderRouter);
                         cache.addTradingDataListener(workingOrderListener, true, true);
