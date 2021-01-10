@@ -1,140 +1,59 @@
 package com.drwtrading.london.reddal.workingOrders.obligations.fietfs;
 
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
-
-import java.util.regex.Pattern;
+import com.drwtrading.photons.eeif.configuration.QuotingObligation;
 
 public class FIETFObligationState {
 
-    private static final Pattern SPACE_REPLACE = Pattern.compile(" ", Pattern.LITERAL);
+    private final QuotingObligation obligation;
 
-    private final String symbol;
-    private final String sourceNibbler;
-    private final NibblerTransportOrderEntry nibblerClient;
+    private long totalMillis;
+    private long totalTwoSidedMillis;
 
-    private final String key;
-
-    private long totalOffMillis;
-    private long totalOnMillis;
-
-    private boolean isAvailable;
-    private int strategyID;
-    private boolean isEnabled;
-    private boolean isStrategyOn;
-    private boolean isQuoting;
-    private String stateDescription;
     private long lastCheckMillisSinceMidnight;
+    private boolean isTwoSided;
 
-    FIETFObligationState(final String symbol, final int strategyID, final String sourceNibbler,
-            final NibblerTransportOrderEntry nibblerClient, final long systemOnMilliSinceMidnight, final long nowMilliSinceMidnight,
-            final boolean isStrategyOn, final String stateDescription) {
+    FIETFObligationState(final QuotingObligation obligation, final long systemOnMilliSinceMidnight, final long nowMilliSinceMidnight) {
 
-        this.symbol = symbol;
-        this.strategyID = strategyID;
-        this.sourceNibbler = sourceNibbler;
+        this.obligation = obligation;
+        this.totalMillis = nowMilliSinceMidnight - systemOnMilliSinceMidnight;
+        this.totalTwoSidedMillis = 0;
 
-        this.key = SPACE_REPLACE.matcher(symbol + "_obligation").replaceAll("_");
-        this.nibblerClient = nibblerClient;
-
-        this.totalOffMillis = nowMilliSinceMidnight - systemOnMilliSinceMidnight;
-        this.totalOnMillis = 0;
-
-        this.isAvailable = true;
-        this.isEnabled = true;
-        this.isStrategyOn = isStrategyOn;
-        this.isQuoting = isQuoting(isStrategyOn, stateDescription);
-        this.stateDescription = stateDescription;
+        this.isTwoSided = false;
         this.lastCheckMillisSinceMidnight = nowMilliSinceMidnight;
     }
 
-    public String getSymbol() {
-        return symbol;
-    }
-
-    boolean isAvailable() {
-        return isAvailable;
-    }
-
-    int getStrategyID() {
-        return strategyID;
-    }
-
-    public String getSourceNibbler() {
-        return sourceNibbler;
-    }
-
-    NibblerTransportOrderEntry getNibblerOE() {
-        return nibblerClient;
-    }
-
-    public String getKey() {
-        return key;
-    }
-
-    boolean isStrategyOn() {
-        return isStrategyOn;
-    }
-
-    public boolean isQuoting() {
-        return isQuoting;
-    }
-
-    String getStateDescription() {
-        return stateDescription;
-    }
-
-    void setIsAvailable(final boolean isAvailable) {
-        this.isAvailable = isAvailable;
-    }
-
-    void updatePercent(final long nowMilliSinceMidnight) {
-        setState(nowMilliSinceMidnight, strategyID, isStrategyOn, stateDescription);
-    }
-
-    boolean isEnabled() {
-        return isEnabled;
-    }
-
-    void setEnabled(final boolean enabled) {
-        this.isEnabled = enabled;
-    }
-
-    void setState(final long nowMilliSinceMidnight, final int strategyID, final boolean isStrategyOn, final String stateDescription) {
+    void setState(final long nowMilliSinceMidnight, final boolean isTwoSided) {
 
         final long millisSinceLastCheck = nowMilliSinceMidnight - lastCheckMillisSinceMidnight;
         this.lastCheckMillisSinceMidnight = nowMilliSinceMidnight;
 
-        this.strategyID = strategyID;
-
-        if (this.isQuoting) {
-            totalOnMillis += millisSinceLastCheck;
+        if (this.isTwoSided) {
+            totalTwoSidedMillis += millisSinceLastCheck;
         } else {
-            totalOffMillis += millisSinceLastCheck;
+            totalMillis += millisSinceLastCheck;
         }
 
-        this.isStrategyOn = isStrategyOn;
-        this.isQuoting = isQuoting(isStrategyOn, stateDescription);
-        this.stateDescription = stateDescription;
+        this.isTwoSided = isTwoSided;
     }
 
     long getTotalTime() {
-        return totalOffMillis + totalOnMillis;
+        return totalMillis + totalTwoSidedMillis;
     }
 
-    private static boolean isQuoting(final boolean isStrategyOn, final String stateDescription) {
-        return isStrategyOn && "OK".equals(stateDescription);
+    long getMillisTwoSided() {
+        return totalTwoSidedMillis;
     }
 
-    long getMillisOn() {
-        return totalOnMillis;
-    }
-
-    long getOnPercent() {
-        final long totalTime = totalOnMillis + totalOffMillis;
+    long getTwoSidedPercent() {
+        final long totalTime = totalTwoSidedMillis + totalMillis;
         if (0 < totalTime) {
-            return (100 * totalOnMillis) / totalTime;
+            return (100 * totalTwoSidedMillis) / totalTime;
         } else {
             return 0;
         }
+    }
+
+    QuotingObligation getObligation() {
+        return this.obligation;
     }
 }

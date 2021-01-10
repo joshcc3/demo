@@ -1,96 +1,79 @@
-let meowSound;
-new Date().getTime();
-let communityName;
+let handler;
+const Contracts = {};
+const Meeting = {};
+let HideOK = false;
 
+let $okButton = $("button.toggleOK");
 $(function () {
-
 	ws = connect();
 	ws.logToConsole = false;
-
-	ws.onmessage = function (m) {
-		eval(m);
+	ws.onmessage = function (x) {
+		eval(x);
 	};
+	$okButton.unbind('click').bind('click', toggleHideOK);
 
-	const hash = document.location.hash.substr(1);
-	if (0 === hash.length) {
-		communityName = "DEFAULT";
-	} else {
-		communityName = hash;
-	}
+	HideOK = localStorage.hideOK === "true";
+	HideFake = localStorage.hideFake === "true";
 
-	ws.send("subscribeToCommunity," + communityName)
+	$okButton.text(HideOK ? "No OK" : "OK");
 
-	$(window).trigger("startup-done");
-
-	meowSound = new Audio("sounds/meow.wav");
-
-	const strategies = $("#strategies");
-	$("#showAll").change(function () {
-		strategies.toggleClass("hideMetObligations", !this.checked);
-	});
-
-	$("#showOff").change(function () {
-		strategies.toggleClass("hideOnStrategies", this.checked);
-	});
 });
 
-function setRow(rowID, symbol, sourceNibbler, percentageOn, isEnabled, isStrategyOn, isStrategyQuoting, stateDescription,
-	isObligationFail) {
+function setObligation(symbol, isFailing, percentage) {
 
-	let row = $("#" + rowID);
-	if (row.size() < 1) {
+	let row = Contracts[symbol];
 
-		const table = $("#strategies");
-		row = $("#strategyTemplate").clone();
-
-		row.removeClass("headerRow");
-
-		row.attr("id", rowID);
-		const symbolCell = row.find(".symbol");
+	if (!Contracts.hasOwnProperty(symbol)) {
+		const spreadTable = $("#spreadTable");
+		row = spreadTable.find('tr.template').clone().removeClass('template');
+		Contracts[symbol] = row;
+		const symbolCell = row.find('.symbol');
 		symbolCell.text(symbol);
-		row.find(".nibblerName").text(sourceNibbler);
-
-		symbolCell.unbind().bind("click", function () {
-			launchLadder(symbol);
+		symbolCell.bind('click', function () {
+			launchLadder(symbol)
 		});
-
-		addSortedDiv(table.find(".row"), row, function (a, b) {
-			const aID = a.attr("id");
-			const bID = b.attr("id");
-			return aID < bID ? -1 : aID === bID ? 0 : 1;
+		row.data('symbol', symbol);
+		spreadTable.addSorted(row, function (a, b) {
+			a = $(a);
+			b = $(b);
+			return a.data('symbol') < b.data('symbol') ? -1 : a.data('symbol') === b.data('symbol') ? 0 : 1;
 		});
 	}
 
-	const wasOn = row.hasClass("strategyOn");
-	row.toggleClass("wasOn", wasOn);
+	row.find(".percentage").text(percentage);
+	row.toggleClass("obligationMet", !isFailing);
+	row.toggleClass("obligationNotMet", isFailing);
 
-	row.toggleClass("obligationFail", isObligationFail);
-	row.toggleClass("strategyOn", isStrategyOn);
-	row.toggleClass("strategyQuoting", isStrategyQuoting);
-	row.find(".enabled").attr('checked', isEnabled);
-	row.find(".percentageOn").text(percentageOn);
-	row.find(".description").text(stateDescription);
+	row.toggleClass("hidden", !isFailing && HideOK);
 
-	row.toggleClass("hidden", false);
+	Meeting[symbol] = !isFailing;
+	updateCounter();
 }
 
-function addSortedDiv(tableRows, row, comparator) {
-
-	let bottom = 0;
-	let top = tableRows.length;
-	while (bottom < top - 1) {
-
-		const mid = Math.floor((bottom + top) / 2);
-
-		if (0 < comparator($(row), $(tableRows[mid]))) {
-			bottom = mid;
-		} else {
-			top = mid;
+function updateCounter() {
+	let count = 0;
+	let total = 0;
+	for (let symbol in Meeting) {
+		if (Meeting[symbol]) {
+			count += 1;
 		}
+		total += 1;
 	}
-	row.insertAfter($(tableRows[bottom]));
+	$(".met").text(count);
+	$(".total").text(total);
 }
 
-function deleteRow(id) {
-	$("#" + id).toggleClass("hidden", true);
+function toggleHideOK() {
+	HideOK = !HideOK;
+	localStorage.hideOK = "" + HideOK;
+	$okButton.text(HideOK ? "No OK" : "OK");
+	updateHidden();
+}
+
+function updateHidden() {
+	for (let symbol in Contracts) {
+		const row = Contracts[symbol];
+		const obligationMet = row.hasClass("obligationMet");
+		row.toggleClass("hidden", obligationMet && HideOK);
+	}
 }

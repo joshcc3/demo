@@ -1,39 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-GB">
 <head>
-	<title>Quoting Obligations</title>
-	<link rel="stylesheet" type="text/css" href="quotingObligations.css">
+	<title>Inverse Obligations</title>
+	<link rel="stylesheet" type="text/css" href="futureObligations.css">
 	<script src="jquery-1.8.3.js"></script>
+	<script src="js/jquery-extras.js"></script>
 	<script src="js/websocket.js"></script>
 	<script src="js/websocket-ui.js"></script>
 	<script src="/launcher.js"></script>
-	<script src="cell-functions.js"></script>
 	<script src="inverseObligations.js"></script>
 </head>
 <body>
-
-<div id="background"></div>
-
-<div id="header">
-	<label for="showAll">Show all</label>
-	<input type="checkbox" name="showAll" value="showAll" id="showAll">
-	<label for="showOn">Show on-only</label>
-	<input type="checkbox" name="showOn" value="showOn" id="showOn">
-</div>
-
-<div id="main">
-
-	<div id="strategies" class="hideMetObligations">
-		<div id="strategyTemplate" class="headerRow row">
-			<div class="infoCell symbol">Symbol</div>
-			<div class="infoCell percentageOn">Current %</div>
-			<div class="infoCell nibblerName">Nibbler</div>
-			<div class="infoCell description">Desc</div>
-		</div>
-	</div>
-</div>
-
-<div id="footer"></div>
-
+<table>
+	<thead>
+	<tr class="header_row">
+		<th>
+			<button class="toggleOK">OK</button>
+		</th>
+		<th>Two-sided Percentage</th>
+	</tr>
+	</thead>
+	<tbody id="spreadTable">
+	<tr class="template spread">
+		<td class="symbol"></td>
+		<td class="qtyObligation percentage"></td>
+	</tr>
+	</tbody>
+</table>
+<p>Meeting <span class="met"></span> out of <span class="total"></span></p>
 </body>
 </html>

@@ -75,14 +75,12 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
     @Override
     public boolean addQuotingState(final QuotingState quotingState) {
         quotingObligationsPresenter.setQuotingState(sourceNibbler, quotingState);
-        fiETFObligationPresenter.setQuotingState(sourceNibbler, quotingState);
         return true;
     }
 
     @Override
     public boolean updateQuotingState(final QuotingState quotingState) {
         quotingObligationsPresenter.setQuotingState(sourceNibbler, quotingState);
-        fiETFObligationPresenter.setQuotingState(sourceNibbler, quotingState);
         return true;
     }
 
@@ -96,6 +94,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
         bestWorkingOrderMaintainer.setWorkingOrder(sourcedOrder);
         gtcWorkingOrderMaintainer.setWorkingOrder(sourcedOrder);
         futureObligationPresenter.setWorkingOrder(sourcedOrder);
+        fiETFObligationPresenter.setWorkingOrder(sourcedOrder);
         orderRouter.setWorkingOrder(sourcedOrder);
         return true;
     }
@@ -109,6 +108,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
         bestWorkingOrderMaintainer.setWorkingOrder(sourcedOrder);
         gtcWorkingOrderMaintainer.setWorkingOrder(sourcedOrder);
         futureObligationPresenter.setWorkingOrder(sourcedOrder);
+        fiETFObligationPresenter.setWorkingOrder(sourcedOrder);
         orderRouter.setWorkingOrder(sourcedOrder);
         return true;
     }
@@ -122,6 +122,7 @@ public class WorkingOrderListener implements INibblerTradingDataListener {
         bestWorkingOrderMaintainer.deleteWorkingOrder(sourcedOrder);
         gtcWorkingOrderMaintainer.deleteWorkingOrder(sourcedOrder);
         futureObligationPresenter.deleteWorkingOrder(sourcedOrder);
+        fiETFObligationPresenter.deleteWorkingOrder(sourcedOrder);
         orderRouter.deleteWorkingOrder(sourcedOrder);
         return true;
     }

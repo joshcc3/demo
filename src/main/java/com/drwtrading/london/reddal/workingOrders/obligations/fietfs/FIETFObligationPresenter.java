@@ -1,21 +1,20 @@
 package com.drwtrading.london.reddal.workingOrders.obligations.fietfs;
 
-import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.QuotingState;
-import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
-import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
+import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.ReddalComponents;
-import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
-import com.drwtrading.london.reddal.util.UILogger;
-import com.drwtrading.london.reddal.workingOrders.obligations.quoting.IQuotingObligationView;
+import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
+import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
+import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByBestPrice;
+import com.drwtrading.london.reddal.workingOrders.bestPrices.BestWorkingPriceForSymbol;
 import com.drwtrading.london.websocket.WebSocketViews;
+import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
+import com.drwtrading.photons.eeif.configuration.QuotingObligation;
+import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
-import com.drwtrading.websockets.WebSocketInboundData;
-import com.drwtrading.websockets.WebSocketOutboundData;
-import org.jetlang.channels.Publisher;
 
 import java.util.Calendar;
 import java.util.HashMap;
@@ -23,46 +22,37 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public final class FIETFObligationPresenter {
-
-    private static final int CHECK_OBLIGATION_PERIOD_MILLIS = 30000;
+public final class FIETFObligationPresenter implements IWorkingOrdersCallback {
 
     private static final int MAX_PERCENT = 20;
 
-    private static final String GM = "gm";
-    private static final String XETRA = "xetra";
+    private static final long OBLIGATION_CALC_PERIOD_MILLIS = 1000;
+
+    private final Map<String, WorkingOrdersByBestPrice> workingOrders;
+    private final Map<String, FIETFObligationState> obligations;
+    private final WebSocketViews<IFIETFObligationView> views;
+    private final Set<String> failingObligations;
 
     private final IFuseBox<ReddalComponents> monitor;
-    private final UILogger webLog;
     private final SelectIO uiSelectIO;
     private final boolean enabled;
-
-    private final WebSocketViews<IQuotingObligationView> fiCommunityView;
-    private final Map<Publisher<WebSocketOutboundData>, WebSocketViews<IQuotingObligationView>> userViews;
-
-    private final Map<String, NibblerTransportOrderEntry> nibblers;
-
-    private final Map<String, FIETFObligationState> obligations;
 
     private final long minMilliSinceMidnight;
     private final long maxMilliSinceMidnight;
     private final long sysStartMillisSinceMidnight;
-    private final Map<String, HashSet<String>> failingObligations;
 
-    public FIETFObligationPresenter(final String appName, final SelectIO uiSelectIO, final IFuseBox<ReddalComponents> monitor,
-            final UILogger webLog) {
+    public FIETFObligationPresenter(final boolean active, final SelectIO uiSelectIO, final IFuseBox<ReddalComponents> monitor) {
 
-        this.enabled = appName.toLowerCase().contains(GM);
+        // TODO: Add this field to all the prod config files
+        this.enabled = active;
 
         this.uiSelectIO = uiSelectIO;
         this.monitor = monitor;
-        this.webLog = webLog;
 
-        this.userViews = new HashMap<>();
-        this.fiCommunityView = WebSocketViews.create(IQuotingObligationView.class, this);
-
-        this.nibblers = new HashMap<>();
+        this.workingOrders = new HashMap<>();
         this.obligations = new HashMap<>();
+
+        this.views = new WebSocketViews<>(IFIETFObligationView.class, this);
 
         final Calendar cal = DateTimeUtil.getCalendar();
         cal.setTimeZone(DateTimeUtil.LONDON_TIME_ZONE);
@@ -74,166 +64,140 @@ public final class FIETFObligationPresenter {
         this.maxMilliSinceMidnight = cal.getTimeInMillis() - uiSelectIO.getMillisAtMidnightUTC();
 
         this.sysStartMillisSinceMidnight = getMilliSinceMidnightNow();
-
-        uiSelectIO.addDelayedAction(CHECK_OBLIGATION_PERIOD_MILLIS, this::checkObligations);
-
-        failingObligations = new HashMap<>();
+        failingObligations = new HashSet<>();
     }
 
-    public void setNibblerHandler(final String nibblerName, final NibblerTransportOrderEntry nibblerHandler) {
-
-        if (enabled && isXetraNibbler(nibblerName)) {
-            nibblers.put(nibblerName, nibblerHandler);
+    public void start() {
+        if (enabled) {
+            uiSelectIO.addDelayedAction(OBLIGATION_CALC_PERIOD_MILLIS, this::calcObligations);
         }
     }
 
-    private static boolean isXetraNibbler(final String nibblerName) {
-        return nibblerName.toLowerCase().contains(XETRA);
-    }
+    public void setEeifConfig(final EeifConfiguration eeifConfig) {
 
-    public void setQuotingState(final String sourceNibbler, final QuotingState quotingState) {
+        if (eeifConfig instanceof QuotingObligation) {
 
-        if (enabled && isXetraNibbler(sourceNibbler)) {
-            final FIETFObligationState obligation = getObligation(sourceNibbler, quotingState);
-            if (obligation.getSourceNibbler().equals(sourceNibbler)) {
-                setObligation(StackCommunity.FI, fiCommunityView.all(), obligation);
+            final QuotingObligation quotingObligation = (QuotingObligation) eeifConfig;
+            if (isXetraSymbol(quotingObligation.getSymbol()) && !obligations.containsKey(quotingObligation.getSymbol())) {
+                obligations.put(quotingObligation.getSymbol(),
+                        new FIETFObligationState(quotingObligation, uiSelectIO.getMillisSinceMidnightUTC(),
+                                uiSelectIO.getMillisSinceMidnightUTC()));
             }
         }
     }
 
-    void onSubscribe(final String communityStr, final WebSocketInboundData connected) {
+    @Override
+    public void setWorkingOrder(final SourcedWorkingOrder workingOrder) {
 
-        final StackCommunity uiCommunity = mapToCommunity(communityStr);
-        if (uiCommunity == StackCommunity.FI) {
-
-            userViews.put(connected.getOutboundChannel(), fiCommunityView);
-
-            final IQuotingObligationView view = fiCommunityView.get(connected.getOutboundChannel());
-            for (final FIETFObligationState obligation : obligations.values()) {
-                setObligation(uiCommunity, view, obligation);
-            }
+        if (isXetraSymbol(workingOrder.order.getSymbol())) {
+            final WorkingOrdersByBestPrice orderedWorkingOrders =
+                    workingOrders.computeIfAbsent(workingOrder.order.getSymbol(), WorkingOrdersByBestPrice::new);
+            orderedWorkingOrders.setWorkingOrder(workingOrder);
         }
     }
 
-    void onDisconnected(final WebSocketDisconnected disconnected) {
-        userViews.get(disconnected.getOutboundChannel()).unregister(disconnected);
-    }
+    @Override
+    public void deleteWorkingOrder(final SourcedWorkingOrder workingOrder) {
 
-    public void onMessage(final WebSocketInboundData msg) {
-
-        webLog.write("inverseObligations", msg);
-
-        final String[] cmdParts = msg.getData().split(",");
-        if ("subscribeToCommunity".equals(cmdParts[0])) {
-            onSubscribe(cmdParts[1], msg);
-        } else {
-            final WebSocketViews<IQuotingObligationView> view = userViews.get(msg.getOutboundChannel());
-            if (null != view) {
-                view.invoke(msg);
-            }
+        if (isXetraSymbol(workingOrder.order.getSymbol())) {
+            final WorkingOrdersByBestPrice orderedWorkingOrders = workingOrders.get(workingOrder.order.getSymbol());
+            orderedWorkingOrders.removeWorkingOrder(workingOrder);
         }
     }
 
-    public void setNibblerDisconnected(final String sourceNibbler) {
+    @Override
+    public void setNibblerDisconnected(final String source) {
 
-        if (enabled && isXetraNibbler(sourceNibbler)) {
-
-            for (final FIETFObligationState obligation : obligations.values()) {
-                if (obligation.getSourceNibbler().equals(sourceNibbler)) {
-                    obligation.setIsAvailable(false);
-                }
-            }
+        for (final WorkingOrdersByBestPrice orderedWorkingOrders : workingOrders.values()) {
+            orderedWorkingOrders.connectionLost(source);
         }
     }
 
     public void webControl(final WebSocketControlMessage webMsg) {
 
-        if (webMsg instanceof WebSocketDisconnected) {
+        if (webMsg instanceof WebSocketConnected) {
+
+            onConnected((WebSocketConnected) webMsg);
+
+        } else if (webMsg instanceof WebSocketDisconnected) {
+
             onDisconnected((WebSocketDisconnected) webMsg);
-        } else if (webMsg instanceof WebSocketInboundData) {
-            onMessage((WebSocketInboundData) webMsg);
         }
     }
 
-    private long checkObligations() {
+    public void onConnected(final WebSocketConnected connected) {
 
-        final long nowMilliSinceMidnight = getMilliSinceMidnightNow();
+        final IFIETFObligationView view = views.register(connected);
+        for (final FIETFObligationState obligation : obligations.values()) {
+            update(view, obligation);
+        }
+    }
+
+    public void onDisconnected(final WebSocketDisconnected disconnected) {
+
+        views.unregister(disconnected);
+    }
+
+    private long calcObligations() {
+
         for (final FIETFObligationState obligation : obligations.values()) {
 
-            obligation.updatePercent(nowMilliSinceMidnight);
-            setObligation(StackCommunity.FI, fiCommunityView.all(), obligation);
-            fiCommunityView.all().checkWarning();
+            final WorkingOrdersByBestPrice workingOrders = this.workingOrders.get(obligation.getObligation().getSymbol());
 
-            final Set<String> failingSymbols = MapUtils.getMappedSet(failingObligations, obligation.getSourceNibbler());
-            if (isFailingObligation(obligation)) {
-                if (!failingSymbols.contains(obligation.getSymbol())) {
-                    failingSymbols.add(obligation.getSymbol());
-                    monitor.logError(ReddalComponents.INVERSE_OBLIGATIONS, "Failing inverse obligation for " + obligation.getSymbol());
-                }
-            } else {
-                monitor.setOK(ReddalComponents.INVERSE_OBLIGATIONS);
-                failingSymbols.remove(obligation.getSymbol());
+            obligation.setState(uiSelectIO.getMillisSinceMidnightUTC(), isTwoSided(workingOrders));
+
+            update(views.all(), obligation);
+        }
+        return OBLIGATION_CALC_PERIOD_MILLIS;
+    }
+
+    public void update(final IFIETFObligationView view, final FIETFObligationState obligationState) {
+
+        final QuotingObligation obligation = obligationState.getObligation();
+
+        final long percentage = getOnPercentage(obligationState);
+
+        if (isFailing(percentage)) {
+            if (!failingObligations.contains(obligation.getSymbol())) {
+                failingObligations.add(obligation.getSymbol());
+                monitor.logError(ReddalComponents.INVERSE_OBLIGATIONS, "Failing inverse obligation for " + obligation.getSymbol());
             }
+        } else {
+            monitor.setOK(ReddalComponents.INVERSE_OBLIGATIONS);
+            failingObligations.remove(obligation.getSymbol());
         }
 
-        return CHECK_OBLIGATION_PERIOD_MILLIS;
+        view.setObligation(obligation.getSymbol(), isFailing(percentage), String.valueOf(percentage));
     }
 
-    private static void setObligation(final StackCommunity community, final IQuotingObligationView view,
-            final FIETFObligationState obligation) {
+    private static boolean isFailing(final double percentage) {
+        return percentage >= MAX_PERCENT;
+    }
 
-        final String symbol = obligation.getSymbol();
+    private static boolean isTwoSided(final WorkingOrdersByBestPrice workingOrders) {
 
-        if (StackCommunity.FI == community) {
-            final String key = obligation.getKey();
-            final boolean isStrategyOn = obligation.isStrategyOn();
-            final boolean isQuoting = obligation.isQuoting();
-            final boolean isFailingObligation = obligation.getOnPercent() > MAX_PERCENT;
-
-            view.setRow(key, symbol, obligation.getSourceNibbler(), obligation.getOnPercent(), obligation.isEnabled(), isStrategyOn,
-                    isQuoting, obligation.getStateDescription(), isFailingObligation);
+        if (null == workingOrders) {
+            return false;
+        } else {
+            final BestWorkingPriceForSymbol prices = workingOrders.getBestWorkingPrices();
+            return prices.askPrice != null && prices.bidPrice != null;
         }
     }
 
-    private boolean isFailingObligation(final FIETFObligationState obligation) {
-        final long totalTimeOn = obligation.getMillisOn();
+    private static boolean isXetraSymbol(final String symbol) {
+        return symbol.endsWith(MIC.XETR.getBBGCode(null));
+    }
+
+    private long getOnPercentage(final FIETFObligationState obligation) {
+        final long millisTwoSided = obligation.getMillisTwoSided();
         final long totalTimeInTradingDay = this.maxMilliSinceMidnight - this.sysStartMillisSinceMidnight + obligation.getTotalTime();
-        return ((totalTimeOn * 2 * 100) / totalTimeInTradingDay) >= MAX_PERCENT;
+        return (millisTwoSided * 2 * 100) / totalTimeInTradingDay;
     }
 
     private long getMilliSinceMidnightNow() {
         final long currentTimeMillis = uiSelectIO.getMillisSinceMidnightUTC();
         final long morningLimited = Math.max(currentTimeMillis, minMilliSinceMidnight);
         return Math.min(morningLimited, maxMilliSinceMidnight);
-    }
-
-    private FIETFObligationState getObligation(final String sourceNibbler, final QuotingState quotingState) {
-
-        final String symbol = quotingState.getSymbol();
-        final long nowMilliSinceMidnight = getMilliSinceMidnightNow();
-
-        final FIETFObligationState result = obligations.get(symbol);
-        if (null == result) {
-            final NibblerTransportOrderEntry nibblerClient = nibblers.get(sourceNibbler);
-            final FIETFObligationState newState =
-                    new FIETFObligationState(symbol, quotingState.getStrategyID(), sourceNibbler, nibblerClient,
-                            sysStartMillisSinceMidnight, nowMilliSinceMidnight, quotingState.isRunning(), quotingState.getStrategyInfo());
-            obligations.put(symbol, newState);
-            return newState;
-        } else {
-            result.setState(nowMilliSinceMidnight, quotingState.getStrategyID(), quotingState.isRunning(), quotingState.getStrategyInfo());
-            result.setIsAvailable(true);
-            return result;
-        }
-    }
-
-    private static StackCommunity mapToCommunity(final String communityStr) {
-        final StackCommunity community = StackCommunity.get(communityStr);
-        if (null == community && "DEFAULT".equals(communityStr)) {
-            return StackCommunity.DM;
-        } else {
-            return community;
-        }
     }
 
 }
