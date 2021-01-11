@@ -1,4 +1,31 @@
 const DEV_URLS = new Set(["localhost", "lnhq-wudrn01", "wud-ldnrn01"]);
+const LOCAL_LADDERS_URLS = {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
+const FUTURES_LADDER_URLS = {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
+const GM_EQUITY_LADDERS_URLS = {ladderHost: "prod-gm-equities-ladder.eeif.drw:9144", workspaceHost: "prod-gm-equities-ladder.eeif.drw:9145"};
+const SELECTA_LADDERS_URLS = "http://prod-selecta.eeif.drw:9134/ladders_urls";
+
+let BEST_EQUITY_LADDER_URLS = {ladderHost: "prod-equities-ladder.eeif.drw:9144", workspaceHost: "prod-equities-ladder.eeif.drw:9145"};
+
+$(function () {
+	$.ajax({
+		url: SELECTA_LADDERS_URLS,
+		type: "GET",
+		crossOrigin: true,
+		crossDomain: true,
+		headers: {
+			"accept": "application/json",
+			"Access-Control-Cross-Origin": "*"
+		},
+		success: function (result) {
+			console.log(result);
+			BEST_EQUITY_LADDER_URLS = result;
+		},
+		error: function (error) {
+			console.log("Error getting best ladders for user");
+			console.log(error);
+		}
+	});
+});
 
 function openLink(ladderHost, symbol) {
 	const priceSplitPos = symbol.indexOf(';');
@@ -47,7 +74,7 @@ function getLadderHosts(symbol, ternaryIsFutures) {
 
 	if (isDev) {
 
-		return {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
+		return LOCAL_LADDERS_URLS;
 
 	} else if (false === ternaryIsFutures) {
 
@@ -55,7 +82,7 @@ function getLadderHosts(symbol, ternaryIsFutures) {
 
 	} else if (true === ternaryIsFutures || symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9](;.*)?$/) || symbol.match(/ FWD$/)) {
 
-		return {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
+		return FUTURES_LADDER_URLS;
 
 	} else {
 
@@ -67,10 +94,10 @@ function getBestEquityLadder() {
 
 	if (window.location.hostname === "prod-gm-equities-ladder.eeif.drw") {
 
-		return {ladderHost: "prod-gm-equities-ladder.eeif.drw:9144", workspaceHost: "prod-gm-equities-ladder.eeif.drw:9145"};
+		return GM_EQUITY_LADDERS_URLS;
 	} else {
 
-		return {ladderHost: "prod-equities-ladder.eeif.drw:9144", workspaceHost: "prod-equities-ladder.eeif.drw:9145"};
+		return BEST_EQUITY_LADDER_URLS;
 	}
 }
 
