@@ -114,7 +114,7 @@ public class FIETFObligationPresenterTest {
         Mockito.verify(monitor, Mockito.times(1)).logError(Mockito.eq(ReddalComponents.INVERSE_OBLIGATIONS), Mockito.any(String.class));
         Mockito.verify(monitor, Mockito.times(1)).setOK(ReddalComponents.INVERSE_OBLIGATIONS);
 
-        setTimeFromMidnight(11, 10);
+        setTimeFromMidnight(11, 15);
         presenter.setWorkingOrder(BID);
         checkObligations.getValue().run();
 
