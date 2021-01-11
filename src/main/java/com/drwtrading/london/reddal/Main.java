@@ -1390,15 +1390,17 @@ public class Main {
             createWebPageWithWebSocket("quotingObligations", "quotingObligations", fibers.ui, webApp, quotingObligationsWebSocket);
             quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsPresenter::webControl);
 
+            final TypedChannel<WebSocketControlMessage> fiETFObligationsWebSocket = TypedChannels.create(WebSocketControlMessage.class);
+            createWebPageWithWebSocket("inverseObligations", "inverseObligations", fibers.ui, webApp, fiETFObligationsWebSocket);
+            fiETFObligationsWebSocket.subscribe(selectIOFiber, fiETFObligationPresenter::webControl);
+            app.addStartUpAction(fiETFObligationPresenter::start);
+
             final ConfigGroup indyConfigGroup = app.config.getEnabledGroup("indyConfig");
 
             if (null != indyConfigGroup) {
 
                 channels.eeifConfiguration.subscribe(selectIOFiber, futureObligationPresenter::setEeifConfig);
                 app.addStartUpAction(() -> futureObligationPresenter.start(app.selectIO));
-
-                channels.eeifConfiguration.subscribe(selectIOFiber, fiETFObligationPresenter::setEeifConfig);
-                app.addStartUpAction(fiETFObligationPresenter::start);
 
                 final InetSocketAddress indyAddress = IOConfigParser.getTargetAddress(indyConfigGroup);
                 final OnHeapBufferPhotocolsNioClient<EeifConfiguration, Void> client =
@@ -1415,9 +1417,6 @@ public class Main {
                 createWebPageWithWebSocket("futureObligations", "futureObligations", fibers.ui, webApp, futureObligationsWebSocket);
                 futureObligationsWebSocket.subscribe(selectIOFiber, futureObligationPresenter::webControl);
 
-                final TypedChannel<WebSocketControlMessage> fiETFObligationsWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-                createWebPageWithWebSocket("inverseObligations", "inverseObligations", fibers.ui, webApp, fiETFObligationsWebSocket);
-                fiETFObligationsWebSocket.subscribe(selectIOFiber, fiETFObligationPresenter::webControl);
             }
         }
 

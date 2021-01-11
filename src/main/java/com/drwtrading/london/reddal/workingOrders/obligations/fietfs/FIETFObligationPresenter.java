@@ -8,10 +8,7 @@ import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByBestPrice;
-import com.drwtrading.london.reddal.workingOrders.bestPrices.BestWorkingPriceForSymbol;
 import com.drwtrading.london.websocket.WebSocketViews;
-import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
-import com.drwtrading.photons.eeif.configuration.QuotingObligation;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
@@ -43,7 +40,6 @@ public final class FIETFObligationPresenter implements IWorkingOrdersCallback {
 
     public FIETFObligationPresenter(final boolean active, final SelectIO uiSelectIO, final IFuseBox<ReddalComponents> monitor) {
 
-        // TODO: Add this field to all the prod config files
         this.enabled = active;
 
         this.uiSelectIO = uiSelectIO;
@@ -60,7 +56,7 @@ public final class FIETFObligationPresenter implements IWorkingOrdersCallback {
         DateTimeUtil.setToTimeOfDay(cal, 8, 0, 0, 0);
         this.minMilliSinceMidnight = cal.getTimeInMillis() - uiSelectIO.getMillisAtMidnightUTC();
 
-        DateTimeUtil.setToTimeOfDay(cal, 16, 35, 0, 0);
+        DateTimeUtil.setToTimeOfDay(cal, 16, 30, 0, 0);
         this.maxMilliSinceMidnight = cal.getTimeInMillis() - uiSelectIO.getMillisAtMidnightUTC();
 
         this.sysStartMillisSinceMidnight = getMilliSinceMidnightNow();
@@ -73,35 +69,33 @@ public final class FIETFObligationPresenter implements IWorkingOrdersCallback {
         }
     }
 
-    public void setEeifConfig(final EeifConfiguration eeifConfig) {
-
-        if (eeifConfig instanceof QuotingObligation) {
-
-            final QuotingObligation quotingObligation = (QuotingObligation) eeifConfig;
-            if (isXetraSymbol(quotingObligation.getSymbol()) && !obligations.containsKey(quotingObligation.getSymbol())) {
-                obligations.put(quotingObligation.getSymbol(),
-                        new FIETFObligationState(quotingObligation, uiSelectIO.getMillisSinceMidnightUTC(),
-                                uiSelectIO.getMillisSinceMidnightUTC()));
-            }
-        }
-    }
-
     @Override
     public void setWorkingOrder(final SourcedWorkingOrder workingOrder) {
 
-        if (isXetraSymbol(workingOrder.order.getSymbol())) {
-            final WorkingOrdersByBestPrice orderedWorkingOrders =
-                    workingOrders.computeIfAbsent(workingOrder.order.getSymbol(), WorkingOrdersByBestPrice::new);
+        final String symbol = workingOrder.order.getSymbol();
+        if (isXetraSymbol(symbol)) {
+            final WorkingOrdersByBestPrice orderedWorkingOrders = workingOrders.computeIfAbsent(symbol, WorkingOrdersByBestPrice::new);
             orderedWorkingOrders.setWorkingOrder(workingOrder);
+
+            final long currentMillisSinceMidnight = getMilliSinceMidnightNow();
+
+            final FIETFObligationState obligation = obligations.computeIfAbsent(symbol,
+                    orderSymbol -> new FIETFObligationState(orderSymbol, sysStartMillisSinceMidnight, currentMillisSinceMidnight,
+                            maxMilliSinceMidnight));
+            obligation.setState(currentMillisSinceMidnight, orderedWorkingOrders.isTwoSided());
         }
     }
 
     @Override
     public void deleteWorkingOrder(final SourcedWorkingOrder workingOrder) {
 
-        if (isXetraSymbol(workingOrder.order.getSymbol())) {
-            final WorkingOrdersByBestPrice orderedWorkingOrders = workingOrders.get(workingOrder.order.getSymbol());
+        final String symbol = workingOrder.order.getSymbol();
+        if (isXetraSymbol(symbol)) {
+            final WorkingOrdersByBestPrice orderedWorkingOrders = workingOrders.get(symbol);
             orderedWorkingOrders.removeWorkingOrder(workingOrder);
+
+            final FIETFObligationState obligation = obligations.get(symbol);
+            obligation.setState(getMilliSinceMidnightNow(), orderedWorkingOrders.isTwoSided());
         }
     }
 
@@ -140,22 +134,18 @@ public final class FIETFObligationPresenter implements IWorkingOrdersCallback {
 
     private long calcObligations() {
 
+        final long nowMillisFromMidnight = getMilliSinceMidnightNow();
+
         for (final FIETFObligationState obligation : obligations.values()) {
-
-            final WorkingOrdersByBestPrice workingOrders = this.workingOrders.get(obligation.getObligation().getSymbol());
-
-            obligation.setState(uiSelectIO.getMillisSinceMidnightUTC(), isTwoSided(workingOrders));
-
+            obligation.setState(nowMillisFromMidnight);
             update(views.all(), obligation);
         }
         return OBLIGATION_CALC_PERIOD_MILLIS;
     }
 
-    public void update(final IFIETFObligationView view, final FIETFObligationState obligationState) {
+    public void update(final IFIETFObligationView view, final FIETFObligationState obligation) {
 
-        final QuotingObligation obligation = obligationState.getObligation();
-
-        final long percentage = getOnPercentage(obligationState);
+        final int percentage = obligation.getTwoSidedPercentage();
 
         if (isFailing(percentage)) {
             if (!failingObligations.contains(obligation.getSymbol())) {
@@ -167,31 +157,17 @@ public final class FIETFObligationPresenter implements IWorkingOrdersCallback {
             failingObligations.remove(obligation.getSymbol());
         }
 
-        view.setObligation(obligation.getSymbol(), isFailing(percentage), String.valueOf(percentage));
+        if (obligation.percentageChanged()) {
+            view.setObligation(obligation.getSymbol(), isFailing(percentage), String.valueOf(percentage));
+        }
     }
 
     private static boolean isFailing(final double percentage) {
         return percentage >= MAX_PERCENT;
     }
 
-    private static boolean isTwoSided(final WorkingOrdersByBestPrice workingOrders) {
-
-        if (null == workingOrders) {
-            return false;
-        } else {
-            final BestWorkingPriceForSymbol prices = workingOrders.getBestWorkingPrices();
-            return prices.askPrice != null && prices.bidPrice != null;
-        }
-    }
-
     private static boolean isXetraSymbol(final String symbol) {
         return symbol.endsWith(MIC.XETR.getBBGCode(null));
-    }
-
-    private long getOnPercentage(final FIETFObligationState obligation) {
-        final long millisTwoSided = obligation.getMillisTwoSided();
-        final long totalTimeInTradingDay = this.maxMilliSinceMidnight - this.sysStartMillisSinceMidnight + obligation.getTotalTime();
-        return (millisTwoSided * 2 * 100) / totalTimeInTradingDay;
     }
 
     private long getMilliSinceMidnightNow() {

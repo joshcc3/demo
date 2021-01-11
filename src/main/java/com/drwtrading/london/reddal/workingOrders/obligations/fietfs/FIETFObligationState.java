@@ -1,10 +1,9 @@
 package com.drwtrading.london.reddal.workingOrders.obligations.fietfs;
 
-import com.drwtrading.photons.eeif.configuration.QuotingObligation;
-
 public class FIETFObligationState {
 
-    private final QuotingObligation obligation;
+    private final String symbol;
+    private final long millisInADay;
 
     private long totalMillis;
     private long totalTwoSidedMillis;
@@ -12,17 +11,30 @@ public class FIETFObligationState {
     private long lastCheckMillisSinceMidnight;
     private boolean isTwoSided;
 
-    FIETFObligationState(final QuotingObligation obligation, final long systemOnMilliSinceMidnight, final long nowMilliSinceMidnight) {
+    private int twoSidedPercentage;
+    private boolean percentageChangedSinceLastViewUpdate;
 
-        this.obligation = obligation;
+    FIETFObligationState(final String symbol, final long systemOnMilliSinceMidnight, final long nowMilliSinceMidnight,
+            final long maxMillisSinceMidnight) {
+
+        this.symbol = symbol;
         this.totalMillis = nowMilliSinceMidnight - systemOnMilliSinceMidnight;
+        this.millisInADay = maxMillisSinceMidnight - systemOnMilliSinceMidnight;
         this.totalTwoSidedMillis = 0;
 
         this.isTwoSided = false;
         this.lastCheckMillisSinceMidnight = nowMilliSinceMidnight;
+
+        this.twoSidedPercentage = 0;
+        this.percentageChangedSinceLastViewUpdate = true;
     }
 
     void setState(final long nowMilliSinceMidnight, final boolean isTwoSided) {
+        setState(nowMilliSinceMidnight);
+        this.isTwoSided = isTwoSided;
+    }
+
+    void setState(final long nowMilliSinceMidnight) {
 
         final long millisSinceLastCheck = nowMilliSinceMidnight - lastCheckMillisSinceMidnight;
         this.lastCheckMillisSinceMidnight = nowMilliSinceMidnight;
@@ -33,27 +45,26 @@ public class FIETFObligationState {
             totalMillis += millisSinceLastCheck;
         }
 
-        this.isTwoSided = isTwoSided;
+        recalculateTwoSidedPercentage();
     }
 
-    long getTotalTime() {
-        return totalMillis + totalTwoSidedMillis;
+    private void recalculateTwoSidedPercentage() {
+        final long totalTimeInTradingDay = millisInADay + totalMillis + totalTwoSidedMillis;
+        final int newTwoSidedPercentage = Math.toIntExact((totalTwoSidedMillis * 2 * 100) / totalTimeInTradingDay);
+
+        percentageChangedSinceLastViewUpdate = newTwoSidedPercentage != twoSidedPercentage;
+        twoSidedPercentage = newTwoSidedPercentage;
     }
 
-    long getMillisTwoSided() {
-        return totalTwoSidedMillis;
+    public int getTwoSidedPercentage() {
+        return twoSidedPercentage;
     }
 
-    long getTwoSidedPercent() {
-        final long totalTime = totalTwoSidedMillis + totalMillis;
-        if (0 < totalTime) {
-            return (100 * totalTwoSidedMillis) / totalTime;
-        } else {
-            return 0;
-        }
+    public boolean percentageChanged() {
+        return percentageChangedSinceLastViewUpdate;
     }
 
-    QuotingObligation getObligation() {
-        return this.obligation;
+    public String getSymbol() {
+        return symbol;
     }
 }

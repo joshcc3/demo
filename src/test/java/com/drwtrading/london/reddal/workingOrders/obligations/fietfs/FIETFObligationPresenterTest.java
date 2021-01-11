@@ -13,7 +13,6 @@ import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.NibblerTransportOrderEntry;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
-import com.drwtrading.photons.eeif.configuration.QuotingObligation;
 import com.drwtrading.websockets.WebSocketClient;
 import com.drwtrading.websockets.WebSocketInboundData;
 import org.mockito.ArgumentCaptor;
@@ -31,7 +30,6 @@ public class FIETFObligationPresenterTest {
     public static final boolean ACTIVE = true;
     public static final String SYMBOL = "VODFMZ0015_PGY";
 
-    private static final QuotingObligation OBLIGATION = new QuotingObligation(SYMBOL, 100, 10, "11/11/2011");
     private static final SourcedWorkingOrder BID =
             new SourcedWorkingOrder("", new WorkingOrder(1, 1, 1, SYMBOL, "", BookSide.BID, AlgoType.MANUAL, OrderType.LIMIT, 1, 1, 1, 1));
     private static final SourcedWorkingOrder ASK =
@@ -67,7 +65,6 @@ public class FIETFObligationPresenterTest {
         final FIETFObligationPresenter presenter = new FIETFObligationPresenter(ACTIVE, selectIO, monitor);
         presenter.start();
         Mockito.verify(selectIO).addDelayedAction(Mockito.anyLong(), checkObligations.capture());
-        presenter.setEeifConfig(OBLIGATION);
         presenter.setWorkingOrder(BID);
         presenter.setWorkingOrder(ASK);
         checkObligations.getValue().run();
@@ -84,7 +81,6 @@ public class FIETFObligationPresenterTest {
         final FIETFObligationPresenter presenter = new FIETFObligationPresenter(ACTIVE, selectIO, monitor);
         presenter.start();
         Mockito.verify(selectIO).addDelayedAction(Mockito.anyLong(), checkObligations.capture());
-        presenter.setEeifConfig(OBLIGATION);
         presenter.setWorkingOrder(BID);
         presenter.setWorkingOrder(ASK);
         checkObligations.getValue().run();
@@ -101,7 +97,6 @@ public class FIETFObligationPresenterTest {
         final FIETFObligationPresenter presenter = new FIETFObligationPresenter(ACTIVE, selectIO, monitor);
         presenter.start();
         Mockito.verify(selectIO).addDelayedAction(Mockito.anyLong(), checkObligations.capture());
-        presenter.setEeifConfig(OBLIGATION);
         presenter.setWorkingOrder(BID);
         presenter.setWorkingOrder(ASK);
         checkObligations.getValue().run();
@@ -119,8 +114,8 @@ public class FIETFObligationPresenterTest {
         Mockito.verify(monitor, Mockito.times(1)).logError(Mockito.eq(ReddalComponents.INVERSE_OBLIGATIONS), Mockito.any(String.class));
         Mockito.verify(monitor, Mockito.times(1)).setOK(ReddalComponents.INVERSE_OBLIGATIONS);
 
-        presenter.setWorkingOrder(BID);
         setTimeFromMidnight(11, 10);
+        presenter.setWorkingOrder(BID);
         checkObligations.getValue().run();
 
         Mockito.verify(monitor, Mockito.times(1)).logError(Mockito.eq(ReddalComponents.INVERSE_OBLIGATIONS), Mockito.any(String.class));
@@ -139,15 +134,14 @@ public class FIETFObligationPresenterTest {
         final FIETFObligationPresenter presenter = new FIETFObligationPresenter(ACTIVE, selectIO, monitor);
         presenter.start();
         Mockito.verify(selectIO).addDelayedAction(Mockito.anyLong(), checkObligations.capture());
-        presenter.setEeifConfig(OBLIGATION);
         presenter.setWorkingOrder(BID);
         checkObligations.getValue().run();
 
         Mockito.verify(monitor, Mockito.never()).logError(Mockito.eq(ReddalComponents.INVERSE_OBLIGATIONS), Mockito.any(String.class));
         Mockito.verify(monitor, Mockito.times(1)).setOK(ReddalComponents.INVERSE_OBLIGATIONS);
 
-        presenter.setWorkingOrder(ASK);
         setTimeFromMidnight(9, 0);
+        presenter.setWorkingOrder(ASK);
         checkObligations.getValue().run();
 
         Mockito.verify(monitor, Mockito.never()).logError(Mockito.eq(ReddalComponents.INVERSE_OBLIGATIONS), Mockito.any(String.class));
@@ -166,7 +160,6 @@ public class FIETFObligationPresenterTest {
         final FIETFObligationPresenter presenter = new FIETFObligationPresenter(ACTIVE, selectIO, monitor);
         presenter.start();
         Mockito.verify(selectIO).addDelayedAction(Mockito.anyLong(), checkObligations.capture());
-        presenter.setEeifConfig(OBLIGATION);
         presenter.setWorkingOrder(BID);
         presenter.setWorkingOrder(ASK);
 

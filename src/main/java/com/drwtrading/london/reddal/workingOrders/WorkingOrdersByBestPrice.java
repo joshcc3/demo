@@ -195,4 +195,8 @@ public class WorkingOrdersByBestPrice {
 
         return new PriceQtyPair(worstPrice, foundQty);
     }
+
+    public boolean isTwoSided() {
+        return !bidOrdersByPrice.isEmpty() && !askOrdersByPrice.isEmpty();
+    }
 }
