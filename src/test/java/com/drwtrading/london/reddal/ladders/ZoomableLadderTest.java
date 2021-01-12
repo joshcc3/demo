@@ -54,7 +54,6 @@ import drw.eeif.eeifoe.RemoteOrder;
 import drw.eeif.eeifoe.TakingParameters;
 import drw.eeif.eeifoe.Update;
 import drw.eeif.fees.FeesCalc;
-import drw.london.json.Jsonable;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetlang.channels.Publisher;
 import org.mockito.Mockito;
@@ -104,8 +103,6 @@ public class ZoomableLadderTest {
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher = Mockito.mock(Publisher.class);
     @SuppressWarnings("unchecked")
     private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher = Mockito.mock(Publisher.class);
-    @SuppressWarnings("unchecked")
-    private final Publisher<Jsonable> trace = Mockito.mock(Publisher.class);
 
     private final IBookLevelThreeMonitor bookViewer = Mockito.mock(IBookLevelThreeMonitor.class);
     private final ILadderUI view = Mockito.mock(ILadderUI.class);
@@ -123,15 +120,14 @@ public class ZoomableLadderTest {
     private final JasperLastTradeDataForSymbol jasperLastTradeDataForSymbol = new JasperLastTradeDataForSymbol("");
     private final LadderMetaData metaData = new LadderMetaData("");
     private final InstrumentMetaData instMetaData = new InstrumentMetaData(INST_ID);
-    private final LadderOptions ladderOptions =
-            new LadderOptions(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), "");
+    private final LadderOptions ladderOptions = new LadderOptions(Collections.emptyList(), "");
     private final Map<String, OrderEntrySymbolChannel> orderEntryMap = new HashMap<>();
 
     @BeforeMethod
     public void setup() {
 
         Mockito.reset(monitor, ladderClickTradingIssuePublisher, remoteOrderCommandPublisher, eeifCommandToServer, stackParentCmdPublisher,
-                increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, view, ladderPrefsForSymbolUser, stackData, uiPipe,
+                increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, view, ladderPrefsForSymbolUser, stackData, uiPipe,
                 bookViewer);
 
         Mockito.when(stackData.getNavLaserLine()).thenReturn(LAZORS.get(LaserLineType.NAV));
@@ -372,11 +368,11 @@ public class ZoomableLadderTest {
             final WorkingOrdersByPrice workingOrders, final OrderUpdatesForSymbol orderUpdatesForSymbol,
             final Map<String, OrderEntrySymbolChannel> orderEntryMap) {
 
-        return new LadderBookView(monitor, USER, true, symbol, ladderModel, view, ladderOptions, fxCalc, feesCalc, feeDF,
-                ladderPrefsForSymbolUser, ladderClickTradingIssuePublisher, remoteOrderCommandPublisher, eeifCommandToServer,
-                tradingStatusForAll, supportedOrderTypes, mdForSymbol, workingOrders, nibblerLastTradeDataForSymbol,
-                jasperLastTradeDataForSymbol, orderUpdatesForSymbol, LEVELS, stackData, metaData, instMetaData, stackParentCmdPublisher,
-                increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, trace, orderEntryMap, DEFAULT_CENTER_PRICE);
+        return new LadderBookView(monitor, USER, true, symbol, ladderModel, view, fxCalc, feesCalc, feeDF, ladderPrefsForSymbolUser,
+                ladderClickTradingIssuePublisher, remoteOrderCommandPublisher, eeifCommandToServer, tradingStatusForAll,
+                supportedOrderTypes, mdForSymbol, workingOrders, nibblerLastTradeDataForSymbol, jasperLastTradeDataForSymbol,
+                orderUpdatesForSymbol, LEVELS, stackData, metaData, instMetaData, stackParentCmdPublisher, increaseChildOffsetCmdPublisher,
+                disableSiblingsCmdPublisher, orderEntryMap, DEFAULT_CENTER_PRICE);
     }
 
     private static SourcedWorkingOrder getWorkingOrder(final int qty, final int orderId, final long price, final BookSide side) {

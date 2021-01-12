@@ -81,7 +81,7 @@ function draw(levels) {
 	}
 }
 
-function trading(clickTrading, workingOrderTags, orderTypesLeft, orderTypesRight) {
+function trading(clickTrading, workingOrderTags, orderTypes) {
 
 	$("#clicktrading").toggleClass("invisible", !clickTrading);
 
@@ -104,7 +104,7 @@ function trading(clickTrading, workingOrderTags, orderTypesLeft, orderTypesRight
 
 	$("#order_type_left").each(function (i, el) {
 		$(el).find("option").remove();
-		orderTypesLeft.forEach(function (orderType) {
+		orderTypes.forEach(function (orderType) {
 			const option = $("<option value=\"" + orderType + "\">" + orderType + "</option>");
 			option.addClass(orderType);
 			$(el).append(option);
@@ -113,7 +113,7 @@ function trading(clickTrading, workingOrderTags, orderTypesLeft, orderTypesRight
 
 	$("#order_type_right").each(function (i, el) {
 		$(el).find("option").remove();
-		orderTypesRight.forEach(function (orderType) {
+		orderTypes.forEach(function (orderType) {
 			const option = $("<option value=\"" + orderType + "\">" + orderType + "</option>");
 			option.addClass(orderType);
 			$(el).append(option);

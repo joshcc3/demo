@@ -137,7 +137,7 @@ public class LadderStackView implements ILadderBoard {
     @Override
     public void switchedTo() {
 
-        view.trading(isTrader, STACK_TYPES, STACK_ORDER_TYPES, STACK_ORDER_TYPES);
+        view.trading(isTrader, STACK_TYPES, STACK_ORDER_TYPES);
 
         ladderModel.setClass(HTML.LADDER_DIV, CSSClass.STACK_VIEW, true);
 

@@ -61,26 +61,26 @@ public enum CSSClass {
 
     EEIF_ORDER_TYPE("eeif_order_type_managed"),
 
-    MKT_CLOSE("MKT_CLOSE"),
-    MIDPOINT("MIDPOINT"),
-    HIDDEN("HIDDEN"),
+    GTC("GTC"),
     HAM("HAM"),
-    HAMON("HAMON"),
-    YAMON("YAMON"),
-    YODA("YODA"),
     HAM3("HAM3"),
+    HAMON("HAMON"),
     HAMON3("HAMON3"),
-    TRON("TRON"),
-    TRON3("TRON3"),
-    SNAGGIT("SNAGGIT"),
-    MARKET("MARKET"),
+    HAWK("HAWK"),
+    HIDDEN("HIDDEN"),
+    IOC("IOC"),
     MANUAL("MANUAL"),
+    MARKET("MARKET"),
+    MIDPOINT("MIDPOINT"),
+    MKT_CLOSE("MKT_CLOSE"),
+    QUICKDRAW("QUICKDRAW"),
+    SNAGGIT("SNAGGIT"),
     TAKER("TAKER"),
     TICKTAKER("TICKTAKER"),
-    HAWK("HAWK"),
-    IOC("IOC"),
-    GTC("GTC"),
-    QUICKDRAW("QUICKDRAW"),
+    TRON("TRON"),
+    TRON3("TRON3"),
+    YAMON("YAMON"),
+    YODA("YODA"),
 
     PICARD("PICARD"),
     QUOTER("QUOTER"),
@@ -130,10 +130,13 @@ public enum CSSClass {
         this.cssText = cssText;
     }
 
+    static final CSSClass[] CLASSES = values();
+
     public static final EnumSet<CSSClass> STACK_TYPES;
     public static final EnumSet<CSSClass> STACK_ORDER_TYPES;
     private static final Map<String, CSSClass> CSS_CLASS_BY_NAME;
-    static final CSSClass[] CLASSES = values();
+
+    public static final EnumSet<CSSClass> ORDER_TYPES;
 
     static {
         STACK_TYPES = EnumSet.of(QUOTER, PICARD);
@@ -143,6 +146,10 @@ public enum CSSClass {
         for (final CSSClass cssClass : CSSClass.values()) {
             CSS_CLASS_BY_NAME.put(cssClass.name(), cssClass);
         }
+
+        ORDER_TYPES = EnumSet.of(CSSClass.GTC, CSSClass.HAM, CSSClass.HAM3, CSSClass.HAMON, CSSClass.HAMON3, CSSClass.HAWK, CSSClass.HIDDEN,
+                CSSClass.IOC, CSSClass.MANUAL, CSSClass.MARKET, CSSClass.MIDPOINT, CSSClass.MKT_CLOSE, CSSClass.QUICKDRAW, CSSClass.SNAGGIT,
+                CSSClass.TAKER, CSSClass.TICKTAKER, CSSClass.TRON, CSSClass.TRON3, CSSClass.YAMON, CSSClass.YODA);
     }
 
     public static CSSClass getCSSClass(final String name) {

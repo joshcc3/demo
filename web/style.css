@@ -252,7 +252,7 @@ div {
 	background-color: #ffbaa2 !important;
 }
 
-.BATS_PEGGED_DARK_BOOK_ONLY, .BATS_PEGGED_DARK_BOOK_ONLY:hover {
+.DARK_PEGGED, .DARK_PEGGED:hover {
 	background-color: black;
 	color: #c5c5c5;
 }

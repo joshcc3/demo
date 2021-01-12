@@ -75,7 +75,6 @@ import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import drw.eeif.fees.FeesCalc;
 import drw.eeif.photons.mrchill.Position;
-import drw.london.json.Jsonable;
 import org.jetlang.channels.Converter;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
@@ -133,7 +132,6 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Publisher<LadderSettingsStoreLadderPref> storeLadderPrefPublisher;
     private final Publisher<HeartbeatRoundtrip> roundTripPublisher;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
-    private final Publisher<Jsonable> trace;
     private final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
     private final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher;
@@ -150,7 +148,7 @@ public class LadderPresenter implements IStackPresenterCallback {
             final Publisher<IOrderCmd> remoteOrderCommandByServer, final LadderOptions ladderOptions, final IPicardSpotter picardSpotter,
             final IPremiumCalc premiumCalc, final FXCalc<?> fxCalc, final Publisher<LadderSettingsStoreLadderPref> storeLadderPrefPublisher,
             final Publisher<HeartbeatRoundtrip> roundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
-            final Fiber fiber, final Publisher<Jsonable> trace, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
+            final Fiber fiber, final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
             final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
@@ -180,7 +178,6 @@ public class LadderPresenter implements IStackPresenterCallback {
         this.roundTripPublisher = roundTripPublisher;
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.fiber = fiber;
-        this.trace = trace;
         this.increaseParentOffsetPublisher = increaseParentOffsetPublisher;
         this.increaseChildOffsetCmdPublisher = increaseChildOffsetCmdPublisher;
         this.disableSiblingsCmdPublisher = disableSiblingsCmdPublisher;
@@ -249,10 +246,9 @@ public class LadderPresenter implements IStackPresenterCallback {
         final ILadderUI view = new WebSocketOutputDispatcher<>(ILadderUI.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final LadderView ladderView =
                 new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions, fxCalc,
-                        feesCalc, feeDF, tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, trace,
-                        ladderClickTradingIssuePublisher, userCycleContractPublisher, userWorkspaceRequests, orderEntryMap,
-                        orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
-                        disableSiblingsCmdPublisher, refData);
+                        feesCalc, feeDF, tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, ladderClickTradingIssuePublisher,
+                        userCycleContractPublisher, userWorkspaceRequests, orderEntryMap, orderEntryCommandToServerPublisher,
+                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, refData);
 
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);

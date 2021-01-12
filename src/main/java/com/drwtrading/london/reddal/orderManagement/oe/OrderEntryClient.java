@@ -46,6 +46,7 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
 
     public OrderEntryClient(final String thisInstance, final IClock clock, final String serverInstance, final Fiber fiber,
             final Publisher<OrderEntrySymbolChannel> publisher, final Publisher<LadderClickTradingIssue> ladderClickTradingIssues) {
+
         this.thisInstance = thisInstance;
         this.clock = clock;
         this.serverInstance = serverInstance;

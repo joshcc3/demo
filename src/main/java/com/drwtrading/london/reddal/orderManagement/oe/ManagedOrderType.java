@@ -12,6 +12,9 @@ import drw.eeif.eeifoe.PredictionParameters;
 import drw.eeif.eeifoe.QuotingParameters;
 import drw.eeif.eeifoe.TakingParameters;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public enum ManagedOrderType {
 
     // Quote better by 1, no taking
@@ -19,9 +22,9 @@ public enum ManagedOrderType {
     HAM {
         @Override
         public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
-            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(false));
+            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)), ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    NO_TAKING, new QuotingParameters(true, 1, BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false),
+                    new PredictionParameters(false));
         }
 
         @Override
@@ -36,15 +39,14 @@ public enum ManagedOrderType {
                 return HAM.getOrder(price, qty, orderSide);
             }
             qty = getQty(qty);
-            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false),
+            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)), ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    NO_TAKING, new QuotingParameters(true, 1, BETTER_BY_ONE, 1, 0, 0, qty / THREE, THREE, 0, 4, false),
                     new PredictionParameters(false));
         }
 
         @Override
         public int getQty(final int qty) {
-            return divisible(qty, Constants.THREE);
+            return divisible(qty, THREE);
         }
 
         @Override
@@ -58,9 +60,9 @@ public enum ManagedOrderType {
     HAMON {
         @Override
         public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
-            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(false));
+            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)), ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    NO_TAKING, new QuotingParameters(true, 1, NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false),
+                    new PredictionParameters(false));
         }
 
         @Override
@@ -72,9 +74,8 @@ public enum ManagedOrderType {
     YAMON {
         @Override
         public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
-            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
+            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)), ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    NO_TAKING, new QuotingParameters(true, 1, NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
         }
 
         @Override
@@ -86,9 +87,8 @@ public enum ManagedOrderType {
     YODA {
         @Override
         public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
-            return new OrderParameters(new PegToBook(BookPegLevel.MID, 50), Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION,
-                    Constants.NO_TAKING, new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false),
-                    new PredictionParameters(true));
+            return new OrderParameters(new PegToBook(BookPegLevel.MID, 50), ALLOW_ALL_EXCEPT_STATE_TRANSITION, NO_TAKING,
+                    new QuotingParameters(true, 1, NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
         }
 
         @Override
@@ -103,15 +103,14 @@ public enum ManagedOrderType {
                 return HAMON.getOrder(price, qty, orderSide);
             }
             qty = getQty(qty);
-            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.NO_TAKING,
-                    new QuotingParameters(true, 1, Constants.NO_BETTERMENT, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false),
+            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)), ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    NO_TAKING, new QuotingParameters(true, 1, NO_BETTERMENT, 1, 0, 0, qty / THREE, THREE, 0, 4, false),
                     new PredictionParameters(false));
         }
 
         @Override
         public int getQty(final int qty) {
-            return divisible(qty, Constants.THREE);
+            return divisible(qty, THREE);
         }
 
         @Override
@@ -125,9 +124,9 @@ public enum ManagedOrderType {
     TRON {
         @Override
         public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
-            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.TAKE_BETTER_BY_ONE,
-                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(false));
+            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)), ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    TAKE_BETTER_BY_ONE, new QuotingParameters(true, 1, BETTER_BY_ONE, 1, 0, 0, qty, 1, 0, 4, false),
+                    new PredictionParameters(false));
         }
 
         @Override
@@ -142,9 +141,8 @@ public enum ManagedOrderType {
                 return TRON.getOrder(price, qty, orderSide);
             }
             qty = getQty(qty);
-            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)),
-                    Constants.ALLOW_ALL_EXCEPT_STATE_TRANSITION, Constants.TAKE_BETTER_BY_ONE,
-                    new QuotingParameters(true, 1, Constants.BETTER_BY_ONE, 1, 0, 0, qty / Constants.THREE, Constants.THREE, 0, 4, false),
+            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)), ALLOW_ALL_EXCEPT_STATE_TRANSITION,
+                    TAKE_BETTER_BY_ONE, new QuotingParameters(true, 1, BETTER_BY_ONE, 1, 0, 0, qty / THREE, THREE, 0, 4, false),
                     new PredictionParameters(false));
         }
 
@@ -155,7 +153,7 @@ public enum ManagedOrderType {
 
         @Override
         public int getQty(final int qty) {
-            return divisible(qty, Constants.THREE);
+            return divisible(qty, THREE);
         }
     },
 
@@ -164,7 +162,7 @@ public enum ManagedOrderType {
         @Override
         public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
             return new OrderParameters(new PegToPrice(price), new BookParameters(false, true, false, false, false, false, 0),
-                    new TakingParameters(true, 0, 1_00_00, 25, false, 0), Constants.NO_QUOTING, new PredictionParameters(false));
+                    new TakingParameters(true, 0, 1_00_00, 25, false, 0), NO_QUOTING, new PredictionParameters(false));
         }
 
         @Override
@@ -173,27 +171,38 @@ public enum ManagedOrderType {
         }
     };
 
+    private static final BookParameters ALLOW_ALL_EXCEPT_STATE_TRANSITION = new BookParameters(true, true, false, true, true, false, 0);
+    private static final TakingParameters TAKE_BETTER_BY_ONE = new TakingParameters(true, 0, 100, 2, true, 1);
+    private static final TakingParameters NO_TAKING = new TakingParameters(false, 0, 0, 0, false, 0);
+    private static final QuotingParameters NO_QUOTING = new QuotingParameters(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false);
+    private static final int NO_BETTERMENT = 0;
+    private static final int BETTER_BY_ONE = 1;
+    private static final int THREE = 3;
+
+    public static final ManagedOrderType[] ALL_TYPES = ManagedOrderType.values();
+    private static final Map<String, ManagedOrderType> TYPES = new HashMap<>();
+
+    static {
+
+        for (final ManagedOrderType orderType : ALL_TYPES) {
+            TYPES.put(orderType.name(), orderType);
+        }
+    }
+
+    public static ManagedOrderType getOrderType(final String name) {
+        return TYPES.get(name);
+    }
+
     public static int divisible(final int qty, final int i) {
         return qty - (qty % i);
     }
-
-    public abstract OrderParameters getOrder(final long price, final int qty, OrderSide orderSide);
-
-    public abstract boolean requiresLean();
 
     public int getQty(final int qty) {
         return qty;
     }
 
-    private static class Constants {
+    public abstract OrderParameters getOrder(final long price, final int qty, OrderSide orderSide);
 
-        public static final BookParameters ALLOW_ALL_EXCEPT_STATE_TRANSITION = new BookParameters(true, true, false, true, true, false, 0);
-        public static final TakingParameters TAKE_BETTER_BY_ONE = new TakingParameters(true, 0, 100, 2, true, 1);
-        public static final TakingParameters NO_TAKING = new TakingParameters(false, 0, 0, 0, false, 0);
-        public static final QuotingParameters NO_QUOTING = new QuotingParameters(false, 0, 0, 0, 0, 0, 0, 0, 0, 0, false);
-        public static final int NO_BETTERMENT = 0;
-        public static final int BETTER_BY_ONE = 1;
-        public static final int THREE = 3;
-    }
+    public abstract boolean requiresLean();
 
 }

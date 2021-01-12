@@ -51,7 +51,6 @@ import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import drw.eeif.photons.mrchill.Position;
-import drw.london.json.Jsonable;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.Publisher;
 
@@ -90,7 +89,6 @@ class ReddalChannels {
     final TypedChannel<HostWorkspaceRequest> userWorkspaceRequests;
     final TypedChannel<ChixSymbolPair> chixSymbolPairs;
     final TypedChannel<ISingleOrderCommand> singleOrderCommand;
-    final TypedChannel<Jsonable> trace;
     final TypedChannel<ReplaceCommand> replaceCommand;
     final TypedChannel<LadderClickTradingIssue> ladderClickTradingIssues;
     final TypedChannel<UserCycleRequest> userCycleContractPublisher;
@@ -155,7 +153,6 @@ class ReddalChannels {
         this.userWorkspaceRequests = create(HostWorkspaceRequest.class);
         this.chixSymbolPairs = create(ChixSymbolPair.class);
         this.singleOrderCommand = create(ISingleOrderCommand.class);
-        this.trace = create(Jsonable.class);
         this.ladderClickTradingIssues = create(LadderClickTradingIssue.class);
         this.userCycleContractPublisher = create(UserCycleRequest.class);
         this.replaceCommand = create(ReplaceCommand.class);

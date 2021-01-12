@@ -4,18 +4,17 @@ import java.util.Collection;
 
 public interface ILadderUI {
 
-    void draw(final int levels);
+    public void draw(final int levels);
 
-    void trading(final boolean tradingEnabled, final Collection<String> workingOrderTags, final Collection<String> orderTypesLeft,
-            final Collection<String> orderTypesRight);
+    public void trading(final boolean tradingEnabled, final Collection<String> workingOrderTags, final Collection<String> orderTypes);
 
-    void goToSymbol(final String symbol);
+    public void goToSymbol(final String symbol);
 
-    void goToUrl(final String url);
+    public void goToUrl(final String url);
 
-    void popUp(final String url, final String name, final int width, final int height);
+    public void popUp(final String url, final String name, final int width, final int height);
 
-    void launchBasket(final String symbol);
+    public void launchBasket(final String symbol);
 
-    void replace(final String from, final String to);
+    public void replace(final String from, final String to);
 }

@@ -884,7 +884,6 @@ public class Main {
         fibers.logging.subscribe(new FileLogger(clock, logDir, "stockAlerts.json", channels.errorPublisher), channels.stockAlerts);
         fibers.logging.subscribe(new FileLogger(clock, logDir, "rfqStockAlerts.json", channels.errorPublisher), channels.rfqStockAlerts);
         fibers.logging.subscribe(new FileLogger(clock, logDir, "picardSpots.json", channels.errorPublisher), channels.picardRows);
-        fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "trace.json", channels.errorPublisher), channels.trace);
 
         for (final Map.Entry<String, TypedChannel<WebSocketControlMessage>> stringTypedChannelEntry : webSocketsForLogging.entrySet()) {
             fibers.logging.subscribe(new JsonChannelLogger(logDir.toFile(), "websocket" + stringTypedChannelEntry.getKey() + ".json",
@@ -979,7 +978,7 @@ public class Main {
         final LadderPresenter ladderPresenter =
                 new LadderPresenter(displayMonitor, depthBookSubscriber, ewokBaseURL, channels.cmdsForNibblers, environment.ladderOptions(),
                         picardSpotter, premiumCalc, fxCalc, channels.storeLadderPref, channels.heartbeatRoundTrips,
-                        channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.trace, channels.increaseParentOffsetCmds,
+                        channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.increaseParentOffsetCmds,
                         channels.increaseChildOffsetBPSCmds, channels.setSiblingsEnabledCmds, channels.ladderClickTradingIssues,
                         channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
 

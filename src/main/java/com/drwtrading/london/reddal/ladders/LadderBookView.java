@@ -61,24 +61,23 @@ import drw.eeif.eeifoe.Metadata;
 import drw.eeif.eeifoe.OrderSide;
 import drw.eeif.eeifoe.Submit;
 import drw.eeif.fees.FeesCalc;
-import drw.london.json.Jsonable;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class LadderBookView implements ILadderBoard {
 
@@ -135,7 +134,6 @@ public class LadderBookView implements ILadderBoard {
     private final LadderViewModel ladderModel;
     private final ILadderUI view;
 
-    private final LadderOptions ladderOptions;
     private final FXCalc<?> fxCalc;
     private final FeesCalc feesCalc;
     private final DecimalFormat feeDF;
@@ -167,10 +165,7 @@ public class LadderBookView implements ILadderBoard {
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
     private final Publisher<StacksSetSiblingsEnableCmd> stackSiblingsCmdPublisher;
 
-    private final Publisher<Jsonable> trace;
     private final Map<String, OrderEntrySymbolChannel> orderEntryMap;
-    private final Set<String> managedOrderTypes;
-    private final Set<String> oldOrderTypes;
 
     private boolean isCashEquityOrFX;
     private boolean showYesterdaySettleInsteadOfCOD;
@@ -189,8 +184,8 @@ public class LadderBookView implements ILadderBoard {
     private long modifyFromPriceSelectedTime;
 
     LadderBookView(final IFuseBox<ReddalComponents> monitor, final User user, final boolean isTrader, final String symbol,
-            final LadderViewModel ladderModel, final ILadderUI view, final LadderOptions ladderOptions, final FXCalc<?> fxCalc,
-            final FeesCalc feesCalc, final DecimalFormat feeDF, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
+            final LadderViewModel ladderModel, final ILadderUI view, final FXCalc<?> fxCalc, final FeesCalc feesCalc,
+            final DecimalFormat feeDF, final LadderPrefsForSymbolUser ladderPrefsForSymbolUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuesPublisher,
             final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final Publisher<OrderEntryCommandToServer> eeifCommandToServer,
             final TradingStatusForAll tradingStatusForAll, final Set<OrderType> supportedOrderTypes, final MDForSymbol marketData,
@@ -199,8 +194,8 @@ public class LadderBookView implements ILadderBoard {
             final int levels, final SymbolStackData stackData, final LadderMetaData metaData, final InstrumentMetaData instMetaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<StacksSetSiblingsEnableCmd> stackSiblingsCmdPublisher, final Publisher<Jsonable> trace,
-            final Map<String, OrderEntrySymbolChannel> orderEntryMap, final long centeredPrice) {
+            final Publisher<StacksSetSiblingsEnableCmd> stackSiblingsCmdPublisher, final Map<String, OrderEntrySymbolChannel> orderEntryMap,
+            final long centeredPrice) {
 
         this.monitor = monitor;
 
@@ -211,7 +206,6 @@ public class LadderBookView implements ILadderBoard {
         this.ladderModel = ladderModel;
         this.view = view;
 
-        this.ladderOptions = ladderOptions;
         this.fxCalc = fxCalc;
         this.feesCalc = feesCalc;
         this.feeDF = feeDF;
@@ -255,18 +249,7 @@ public class LadderBookView implements ILadderBoard {
         this.pricingModes = new EnumSwitcher<>(PricingMode.class, PricingMode.values());
         this.buttonQty = new EnumMap<>(QtyButton.class);
 
-        this.trace = trace;
         this.orderEntryMap = orderEntryMap;
-
-        this.managedOrderTypes = new HashSet<>();
-        for (final ManagedOrderType orderType : ManagedOrderType.values()) {
-            managedOrderTypes.add(orderType.toString());
-        }
-
-        this.oldOrderTypes = new HashSet<>();
-        for (final RemoteOrderType orderType : RemoteOrderType.values()) {
-            oldOrderTypes.add(orderType.toString());
-        }
 
         this.isCashEquityOrFX = false;
         this.pendingRefDataAndSettle = true;
@@ -370,14 +353,14 @@ public class LadderBookView implements ILadderBoard {
 
     @Override
     public void switchedTo() {
+
         final int zoomLevel = Integer.parseInt(getPref(HTML.ZOOM_LEVEL));
         ladderModel.getBookPanel().setZoomLevel(zoomLevel);
 
         ladderModel.setClass(HTML.LADDER_DIV, CSSClass.STACK_VIEW, false);
         ladderModel.setClass(HTML.LADDER, CSSClass.ZOOMED_OUT, zoomLevel != 1);
 
-        view.trading(isTrader, TAGS, filterUsableOrderTypes(ladderOptions.orderTypesLeft),
-                filterUsableOrderTypes(ladderOptions.orderTypesRight));
+        view.trading(isTrader, TAGS, filterUsableOrderTypes());
 
         ladderModel.setClickable('#' + HTML.YESTERDAY_SETTLE);
         ladderModel.setClickable('#' + HTML.LAST_TRADE_COD);
@@ -400,6 +383,32 @@ public class LadderBookView implements ILadderBoard {
         for (int i = 0; i < levels; i++) {
             ladderModel.setClickable('#' + HTML.VOLUME + i);
         }
+    }
+
+    private Collection<String> filterUsableOrderTypes() {
+
+        final List<String> list = new ArrayList<>();
+
+        for (final RemoteOrderType orderType : RemoteOrderType.values()) {
+
+            if (supportedOrderTypes.contains(orderType.orderType)) {
+                list.add(orderType.name());
+            }
+        }
+
+        final OrderEntrySymbolChannel orderEntry = orderEntryMap.get(symbol);
+
+        if (null != orderEntry) {
+
+            for (final ManagedOrderType managedOrderType : ManagedOrderType.ALL_TYPES) {
+
+                if (orderEntry.supportedTypes.contains(managedOrderType)) {
+
+                    list.add(managedOrderType.name());
+                }
+            }
+        }
+        return list;
     }
 
     @Override
@@ -692,26 +701,6 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private Collection<String> filterUsableOrderTypes(final Collection<CSSClass> types) {
-        if (null != marketData.getBook()) {
-            return types.stream().filter(this::isOrderTypeSupported).map(Enum::name).collect(Collectors.toList());
-        } else {
-            return Collections.emptyList();
-        }
-    }
-
-    private boolean isOrderTypeSupported(final CSSClass orderTypeCSS) {
-
-        final RemoteOrderType orderType = getRemoteOrderType(orderTypeCSS.name());
-
-        return null != orderType && TAGS.stream().anyMatch(tag -> {
-            final boolean manualOrderType = supportedOrderTypes.contains(orderType.orderType);
-            final boolean newOrderType = orderEntryMap.containsKey(symbol) && managedOrderTypes.contains(orderType.name()) &&
-                    orderEntryMap.get(symbol).supportedTypes.contains(ManagedOrderType.valueOf(orderType.name()));
-            return manualOrderType || newOrderType;
-        });
-    }
-
     private void drawClickTrading() {
 
         if (null != ladderPrefsForSymbolUser) {
@@ -726,13 +715,13 @@ public class LadderBookView implements ILadderBoard {
             }
 
             final String leftOrderPricePref = getPref(HTML.ORDER_TYPE_LEFT);
-            for (final CSSClass type : ladderOptions.orderTypesLeft) {
-                ladderModel.setClass(HTML.ORDER_TYPE_LEFT, type, type.name().equals(leftOrderPricePref));
-            }
-
             final String rightOrderPricePref = getPref(HTML.ORDER_TYPE_RIGHT);
-            for (final CSSClass type : ladderOptions.orderTypesRight) {
-                ladderModel.setClass(HTML.ORDER_TYPE_RIGHT, type, type.name().equals(rightOrderPricePref));
+
+            for (final CSSClass type : CSSClass.ORDER_TYPES) {
+
+                final String orderTypeName = type.name();
+                ladderModel.setClass(HTML.ORDER_TYPE_LEFT, type, orderTypeName.equals(leftOrderPricePref));
+                ladderModel.setClass(HTML.ORDER_TYPE_RIGHT, type, orderTypeName.equals(rightOrderPricePref));
             }
         }
 
@@ -915,6 +904,7 @@ public class LadderBookView implements ILadderBoard {
     private void drawWorkingOrders() {
 
         if (!pendingRefDataAndSettle && null != workingOrders && null != orderUpdatesForSymbol) {
+
             final BookPanel bookPanel = ladderModel.getBookPanel();
             final int zoomLevel = bookPanel.getZoomLevel();
             final ITickTable tickTable = marketData.getBook().getTickTable();
@@ -1302,7 +1292,7 @@ public class LadderBookView implements ILadderBoard {
         } else if ("middle".equals(button)) {
             if (label.startsWith(HTML.ORDER)) {
                 final String priceLevel = data.get("price");
-                final long price = Long.valueOf(priceLevel);
+                final long price = Long.parseLong(priceLevel);
                 final ITickTable tickTable = marketData.getBook().getTickTable();
                 final int zoomLevel = ladderModel.getBookPanel().getZoomLevel();
                 final long bidPrice = tickTable.addTicks(price, zoomLevel - 1);
@@ -1406,11 +1396,19 @@ public class LadderBookView implements ILadderBoard {
             throw new IllegalArgumentException("No tag provided.");
         } else {
 
-            if (orderType != null && 0 < clickTradingBoxQty) {
-                if (managedOrderTypes.contains(orderType)) {
-                    submitManagedOrder(orderType, price, side, tag);
-                } else if (oldOrderTypes.contains(orderType)) {
-                    submitOrder(clientSpeedState, orderType, price, side, tag);
+            if (null != orderType && 0 < clickTradingBoxQty) {
+
+                final ManagedOrderType managedOrderType = ManagedOrderType.getOrderType(orderType);
+                final RemoteOrderType remoteOrderType = RemoteOrderType.get(orderType);
+
+                if (null != managedOrderType) {
+
+                    submitManagedOrder(managedOrderType, price, side, tag);
+
+                } else if (null != remoteOrderType) {
+
+                    submitOrder(clientSpeedState, remoteOrderType, price, side, tag);
+
                 } else {
                     ladderModel.setErrorText("Unknown order type [" + orderType + "].");
                     return;
@@ -1423,41 +1421,38 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private void submitManagedOrder(final String orderType, final long price, final BookSide side, final String tag) {
+    private void submitManagedOrder(final ManagedOrderType orderType, final long price, final BookSide side, final String tag) {
 
-        int tradingBoxQty = this.clickTradingBoxQty;
-        trace.publish(
-                new CommandTrace("submitManaged", user, symbol, orderType, true, price, side.name(), tag, tradingBoxQty, orderSeqNo++));
         final OrderEntrySymbolChannel symbolOrderChannel = orderEntryMap.get(symbol);
-        if (null != symbolOrderChannel) {
-            final ManagedOrderType managedOrderType = ManagedOrderType.valueOf(orderType);
-            if (!symbolOrderChannel.supportedTypes.contains(managedOrderType)) {
-                ladderModel.setErrorText("Order type [" + orderType + "] not supported.");
-                return;
-            }
-            tradingBoxQty = managedOrderType.getQty(tradingBoxQty);
+
+        if (null == symbolOrderChannel) {
+
+            ladderModel.setErrorText("Cannot find server to send order type [" + orderType + "].");
+
+        } else if (!symbolOrderChannel.supportedTypes.contains(orderType)) {
+
+            ladderModel.setErrorText("Order type [" + orderType + "] not supported.");
+
+        } else {
+
+            int tradingBoxQty = orderType.getQty(this.clickTradingBoxQty);
             if (0 == tradingBoxQty) {
                 tradingBoxQty = clickTradingBoxQty;
             }
+
             final OrderSide orderSide = BookSide.BID == side ? OrderSide.BUY : OrderSide.SELL;
             final drw.eeif.eeifoe.RemoteOrder remoteOrder =
                     new drw.eeif.eeifoe.RemoteOrder(symbol, orderSide, price, tradingBoxQty, user.username,
-                            managedOrderType.getOrder(price, tradingBoxQty, orderSide),
+                            orderType.getOrder(price, tradingBoxQty, orderSide),
                             new ObjectArrayList<>(Arrays.asList(LADDER_SOURCE_METADATA, new Metadata("TAG", tag))));
+
             final Submit submit = new Submit(remoteOrder);
             symbolOrderChannel.publisher.publish(submit);
-        } else {
-            ladderModel.setErrorText("Cannot find server to send order type [" + orderType + "].");
         }
     }
 
-    private void submitOrder(final ClientSpeedState clientSpeedState, final String orderType, final long price, final BookSide side,
-            final String tag) {
-
-        final int sequenceNumber = orderSeqNo++;
-
-        trace.publish(
-                new CommandTrace("submit", user, symbol, orderType, true, price, side.name(), tag, clickTradingBoxQty, sequenceNumber));
+    private void submitOrder(final ClientSpeedState clientSpeedState, final RemoteOrderType orderType, final long price,
+            final BookSide side, final String tag) {
 
         if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
             final String message =
@@ -1467,17 +1462,16 @@ public class LadderBookView implements ILadderBoard {
             ladderClickTradingIssuesPublisher.publish(new LadderClickTradingIssue(symbol, message));
         } else {
 
-            final RemoteOrderType remoteOrderType = getRemoteOrderType(orderType);
-
-            final IOrderCmd submit = new SubmitOrderCmd(symbol, ladderClickTradingIssuesPublisher, user, side, remoteOrderType.orderType,
-                    remoteOrderType.algoType, tag, price, clickTradingBoxQty);
+            final IOrderCmd submit =
+                    new SubmitOrderCmd(symbol, ladderClickTradingIssuesPublisher, user, side, orderType.orderType, orderType.algoType, tag,
+                            price, clickTradingBoxQty);
             remoteOrderCommandToServerPublisher.publish(submit);
         }
     }
 
     private void rightClickModify(final ClientSpeedState clientSpeedState, final Map<String, String> data) {
 
-        final long price = Long.valueOf(data.get("price"));
+        final long price = Long.parseLong(data.get("price"));
         final ITickTable tickTable = marketData.getBook().getTickTable();
         if (null != modifyFromPrice) {
             if (modifyFromPrice != price) {
@@ -1523,10 +1517,6 @@ public class LadderBookView implements ILadderBoard {
             final long totalQuantity) {
 
         final String sourceNibbler = sourcedOrder.source;
-        final WorkingOrder order = sourcedOrder.order;
-
-        trace.publish(new CommandTrace("modify", user, symbol, order.getOrderType().toString(), true, price, order.getSide().toString(),
-                order.getTag(), clickTradingBoxQty, order.getChainID()));
 
         if (isTrader) {
 
@@ -1577,9 +1567,6 @@ public class LadderBookView implements ILadderBoard {
 
     private void cancelManagedOrder(final UpdateFromServer updateFromServer) {
 
-        final drw.eeif.eeifoe.RemoteOrder order = updateFromServer.update.getOrder();
-        trace.publish(new CommandTrace("cancelManaged", user, symbol, "MANAGED", false, updateFromServer.update.getIndicativePrice(),
-                order.getSide().name(), "?", clickTradingBoxQty, updateFromServer.update.getSystemOrderId()));
         if (isTrader) {
             eeifCommandToServer.publish(new OrderEntryCommandToServer(updateFromServer.server,
                     new Cancel(updateFromServer.update.getSystemOrderId(), updateFromServer.update.getOrder())));
@@ -1628,11 +1615,6 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void cancelOrder(final SourcedWorkingOrder sourcedOrder) {
-
-        final WorkingOrder order = sourcedOrder.order;
-
-        trace.publish(new CommandTrace("cancel", user, symbol, order.getOrderType().toString(), false, order.getPrice(),
-                order.getSide().toString(), order.getTag(), clickTradingBoxQty, order.getChainID()));
 
         if (isTrader) {
             final IOrderCmd cancel = sourcedOrder.buildCancel(ladderClickTradingIssuesPublisher, user, false);
@@ -1720,16 +1702,6 @@ public class LadderBookView implements ILadderBoard {
         } else {
             return BookSide.ASK;
         }
-    }
-
-    private static RemoteOrderType getRemoteOrderType(final String orderType) {
-
-        for (final RemoteOrderType remoteOrderType : RemoteOrderType.values()) {
-            if (remoteOrderType.toString().toUpperCase().equals(orderType.toUpperCase())) {
-                return remoteOrderType;
-            }
-        }
-        return RemoteOrderType.MANUAL;
     }
 
     static class RowAccumulator {
