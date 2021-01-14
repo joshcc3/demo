@@ -123,7 +123,7 @@ public final class FIETFObligationPresenter implements IWorkingOrdersCallback {
 
         final IFIETFObligationView view = views.register(connected);
         for (final FIETFObligationState obligation : obligations.values()) {
-            update(view, obligation);
+            update(view, obligation, true);
         }
     }
 
@@ -138,12 +138,12 @@ public final class FIETFObligationPresenter implements IWorkingOrdersCallback {
 
         for (final FIETFObligationState obligation : obligations.values()) {
             obligation.setState(nowMillisFromMidnight);
-            update(views.all(), obligation);
+            update(views.all(), obligation, false);
         }
         return OBLIGATION_CALC_PERIOD_MILLIS;
     }
 
-    public void update(final IFIETFObligationView view, final FIETFObligationState obligation) {
+    public void update(final IFIETFObligationView view, final FIETFObligationState obligation, final boolean isNewConnection) {
 
         final int percentage = obligation.getTwoSidedPercentage();
 
@@ -157,7 +157,7 @@ public final class FIETFObligationPresenter implements IWorkingOrdersCallback {
             failingObligations.remove(obligation.getSymbol());
         }
 
-        if (obligation.percentageChanged()) {
+        if (obligation.percentageChanged() || isNewConnection) {
             view.setObligation(obligation.getSymbol(), isFailing(percentage), String.valueOf(percentage));
         }
     }
