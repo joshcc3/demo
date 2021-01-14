@@ -73,7 +73,6 @@ public enum CSSClass {
     MARKET("MARKET"),
     MIDPOINT("MIDPOINT"),
     MKT_CLOSE("MKT_CLOSE"),
-    QUICKDRAW("QUICKDRAW"),
     SNAGGIT("SNAGGIT"),
     TAKER("TAKER"),
     TICKTAKER("TICKTAKER"),
@@ -110,7 +109,7 @@ public enum CSSClass {
     WORKING_ORDER_TYPE_HAWK("working_order_type_hawk"),
     WORKING_ORDER_TYPE_HEDGER("working_order_type_hedger"),
     WORKING_ORDER_TYPE_SPRINTER("working_order_type_sprinter"),
-    WORKING_ORDER_TYPE_QUICKDRAW("working_order_type_quickdraw"),
+    WORKING_ORDER_TYPE_PICARD("working_order_type_picard"),
     WORKING_ORDER_TYPE_MKT_CLOSE("working_order_type_mkt_close"),
     WORKING_ORDER_TYPE_MARKET("working_order_type_market"),
     WORKING_ORDER_TYPE_GTC("working_order_type_gtc"),
@@ -148,8 +147,8 @@ public enum CSSClass {
         }
 
         ORDER_TYPES = EnumSet.of(CSSClass.GTC, CSSClass.HAM, CSSClass.HAM3, CSSClass.HAMON, CSSClass.HAMON3, CSSClass.HAWK, CSSClass.HIDDEN,
-                CSSClass.IOC, CSSClass.MANUAL, CSSClass.MARKET, CSSClass.MIDPOINT, CSSClass.MKT_CLOSE, CSSClass.QUICKDRAW, CSSClass.SNAGGIT,
-                CSSClass.TAKER, CSSClass.TICKTAKER, CSSClass.TRON, CSSClass.TRON3, CSSClass.YAMON, CSSClass.YODA);
+                CSSClass.IOC, CSSClass.MANUAL, CSSClass.MARKET, CSSClass.MIDPOINT, CSSClass.MKT_CLOSE, CSSClass.SNAGGIT, CSSClass.TAKER,
+                CSSClass.TICKTAKER, CSSClass.TRON, CSSClass.TRON3, CSSClass.YAMON, CSSClass.YODA);
     }
 
     public static CSSClass getCSSClass(final String name) {

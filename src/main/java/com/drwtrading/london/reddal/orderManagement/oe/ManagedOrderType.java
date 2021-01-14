@@ -1,19 +1,19 @@
 package com.drwtrading.london.reddal.orderManagement.oe;
 
 import drw.eeif.eeifoe.BookParameters;
-import drw.eeif.eeifoe.BookPegLevel;
 import drw.eeif.eeifoe.OrderParameters;
 import drw.eeif.eeifoe.OrderSide;
 import drw.eeif.eeifoe.PegPriceToTheoOnSubmit;
-import drw.eeif.eeifoe.PegToBook;
 import drw.eeif.eeifoe.PegToPrice;
 import drw.eeif.eeifoe.PegToTheo;
 import drw.eeif.eeifoe.PredictionParameters;
 import drw.eeif.eeifoe.QuotingParameters;
 import drw.eeif.eeifoe.TakingParameters;
 
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public enum ManagedOrderType {
 
@@ -71,31 +71,6 @@ public enum ManagedOrderType {
         }
     },
 
-    YAMON {
-        @Override
-        public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
-            return new OrderParameters(new PegToTheo(101, 5, 10, new PegPriceToTheoOnSubmit(price)), ALLOW_ALL_EXCEPT_STATE_TRANSITION,
-                    NO_TAKING, new QuotingParameters(true, 1, NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
-        }
-
-        @Override
-        public boolean requiresLean() {
-            return true;
-        }
-    },
-
-    YODA {
-        @Override
-        public OrderParameters getOrder(final long price, final int qty, final OrderSide orderSide) {
-            return new OrderParameters(new PegToBook(BookPegLevel.MID, 50), ALLOW_ALL_EXCEPT_STATE_TRANSITION, NO_TAKING,
-                    new QuotingParameters(true, 1, NO_BETTERMENT, 1, 0, 0, qty, 1, 0, 4, false), new PredictionParameters(true));
-        }
-
-        @Override
-        public boolean requiresLean() {
-            return true;
-        }
-    },
     HAMON3 {
         @Override
         public OrderParameters getOrder(final long price, int qty, final OrderSide orderSide) {
@@ -179,12 +154,16 @@ public enum ManagedOrderType {
     private static final int BETTER_BY_ONE = 1;
     private static final int THREE = 3;
 
-    public static final ManagedOrderType[] ALL_TYPES = ManagedOrderType.values();
+    public static final Set<ManagedOrderType> EQUITY_TYPES =
+            EnumSet.of(ManagedOrderType.HAM, ManagedOrderType.HAM3, ManagedOrderType.HAMON, ManagedOrderType.HAMON3, ManagedOrderType.TRON,
+                    ManagedOrderType.TRON3);
+    public static final Set<ManagedOrderType> FUTURE_TYPES = EnumSet.of(ManagedOrderType.SNAGGIT);
+
     private static final Map<String, ManagedOrderType> TYPES = new HashMap<>();
 
     static {
 
-        for (final ManagedOrderType orderType : ALL_TYPES) {
+        for (final ManagedOrderType orderType : ManagedOrderType.values()) {
             TYPES.put(orderType.name(), orderType);
         }
     }

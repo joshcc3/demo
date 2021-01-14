@@ -68,6 +68,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -165,7 +166,7 @@ public class LadderBookView implements ILadderBoard {
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
     private final Publisher<StacksSetSiblingsEnableCmd> stackSiblingsCmdPublisher;
 
-    private final Map<String, OrderEntrySymbolChannel> orderEntryMap;
+    private final Map<String, OrderEntrySymbolChannel> managedOrderEntries;
 
     private boolean isCashEquityOrFX;
     private boolean showYesterdaySettleInsteadOfCOD;
@@ -194,8 +195,8 @@ public class LadderBookView implements ILadderBoard {
             final int levels, final SymbolStackData stackData, final LadderMetaData metaData, final InstrumentMetaData instMetaData,
             final Publisher<StackIncreaseParentOffsetCmd> stackParentCmdPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
-            final Publisher<StacksSetSiblingsEnableCmd> stackSiblingsCmdPublisher, final Map<String, OrderEntrySymbolChannel> orderEntryMap,
-            final long centeredPrice) {
+            final Publisher<StacksSetSiblingsEnableCmd> stackSiblingsCmdPublisher,
+            final Map<String, OrderEntrySymbolChannel> managedOrderEntries, final long centeredPrice) {
 
         this.monitor = monitor;
 
@@ -249,7 +250,7 @@ public class LadderBookView implements ILadderBoard {
         this.pricingModes = new EnumSwitcher<>(PricingMode.class, PricingMode.values());
         this.buttonQty = new EnumMap<>(QtyButton.class);
 
-        this.orderEntryMap = orderEntryMap;
+        this.managedOrderEntries = managedOrderEntries;
 
         this.isCashEquityOrFX = false;
         this.pendingRefDataAndSettle = true;
@@ -396,11 +397,13 @@ public class LadderBookView implements ILadderBoard {
             }
         }
 
-        final OrderEntrySymbolChannel orderEntry = orderEntryMap.get(symbol);
+        final OrderEntrySymbolChannel orderEntry = managedOrderEntries.get(symbol);
 
         if (null != orderEntry) {
 
-            for (final ManagedOrderType managedOrderType : ManagedOrderType.ALL_TYPES) {
+            final Set<ManagedOrderType> managedOrderTypes = getSupportedManagedOrderTypes();
+
+            for (final ManagedOrderType managedOrderType : managedOrderTypes) {
 
                 if (orderEntry.supportedTypes.contains(managedOrderType)) {
 
@@ -409,6 +412,32 @@ public class LadderBookView implements ILadderBoard {
             }
         }
         return list;
+    }
+
+    // TODO: CONVERT TO DATA-DRIVEN
+    private Set<ManagedOrderType> getSupportedManagedOrderTypes() {
+
+        if (null == marketData.getBook()) {
+            return Collections.emptySet();
+        } else {
+            final IBook<?> book = marketData.getBook();
+
+            switch (book.getInstType()) {
+
+                case EQUITY:
+                case ETF:
+                case DR: {
+                    return ManagedOrderType.EQUITY_TYPES;
+                }
+                case FUTURE:
+                case FUTURE_SPREAD: {
+                    return ManagedOrderType.FUTURE_TYPES;
+                }
+                default: {
+                    return Collections.emptySet();
+                }
+            }
+        }
     }
 
     @Override
@@ -1423,7 +1452,7 @@ public class LadderBookView implements ILadderBoard {
 
     private void submitManagedOrder(final ManagedOrderType orderType, final long price, final BookSide side, final String tag) {
 
-        final OrderEntrySymbolChannel symbolOrderChannel = orderEntryMap.get(symbol);
+        final OrderEntrySymbolChannel symbolOrderChannel = managedOrderEntries.get(symbol);
 
         if (null == symbolOrderChannel) {
 

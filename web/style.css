@@ -173,7 +173,7 @@ div {
 	background-color: gray !important;
 }
 
-.order.working_order_type_quickdraw {
+.order.working_order_type_picard {
 	border: dotted 3px #ff0006 !important;
 	background-color: gray !important;
 }
@@ -221,10 +221,6 @@ div {
 
 .TAKER, .TAKER:hover {
 	background-color: #00bd00;
-}
-
-.QUICKDRAW, .QUICKDRAW:hover {
-	background-color: #bd000a;
 }
 
 .MKT_CLOSE, .MKT_CLOSE:hover {

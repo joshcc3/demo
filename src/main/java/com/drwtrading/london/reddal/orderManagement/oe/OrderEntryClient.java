@@ -122,7 +122,7 @@ public class OrderEntryClient implements PhotocolsHandler<OrderEntryReplyMsg, Or
 
         for (final ManagedOrderType managedOrderType : ManagedOrderType.values()) {
 
-            if (availableSymbol.isLeanAllowed() || !managedOrderType.requiresLean()) {
+            if (!managedOrderType.requiresLean() || availableSymbol.isLeanAllowed()) {
                 orderTypes.add(managedOrderType);
             }
         }

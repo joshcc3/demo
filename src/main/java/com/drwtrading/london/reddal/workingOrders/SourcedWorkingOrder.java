@@ -84,7 +84,7 @@ public class SourcedWorkingOrder {
         } else if (AlgoType.HIDDEN_TICK_TAKER == algoType) {
             return CSSClass.WORKING_ORDER_TYPE_HIDDEN_TICKTAKER;
         } else if (AlgoType.PICARD == algoType) {
-            return CSSClass.WORKING_ORDER_TYPE_QUICKDRAW;
+            return CSSClass.WORKING_ORDER_TYPE_PICARD;
         } else {
             throw new IllegalArgumentException(
                     "Unknown CSSClass for [" + order.getSymbol() + "] for [" + algoType + "], [" + orderType + "].");
