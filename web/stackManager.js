@@ -201,7 +201,7 @@ $(function () {
 	});
 	$("#symbolLookupGo").unbind().bind("click", function () {
 		const symbol = childSymbolSearchInput.val();
-		showChild(symbol);
+		showChild(symbol.toUpperCase());
 	});
 
 	$("#hideUnregistered").unbind().bind("click", function (cb) {
@@ -563,8 +563,8 @@ function removeAll(nibblerName) {
 	setOrderCount(nibblerName);
 }
 
-function findChild(symbol) {
-
+function findChild(symbol_unclean) {
+	let symbol = symbol_unclean.toUpperCase();
 	const rowID = cleanID(symbol);
 	const element = $("#" + rowID);
 	if (isLazy && 1 > element.length && 3 <= symbol.length) {
