@@ -1,3 +1,5 @@
+// WARNING - the layout of the html is depended upon
+
 let ws;
 
 let saveSound;
@@ -8,6 +10,9 @@ let isFutures;
 let isLazy = false;
 const searchedForSymbols = new Set()
 const subscribedToSymbols = new Set()
+
+const UI_VERSION_NUM = "1";
+const DELIMITER = "\u0000";
 
 const emojiSymbols = {
 	"omega": "\u03A9",
@@ -33,10 +38,16 @@ const emojiSymbols = {
 	"united-states": String.fromCodePoint(0x1F1F2)
 }
 
+let templateFamilyElement;
+let familiesDiv;
+
 $(function () {
 
+	templateFamilyElement = $("#templateFamily");
+	familiesDiv = $("#families");
+
 	ws = connect();
-	ws.logToConsole = false;
+	ws.logToConsole = true;
 	ws.onmessage = function (m) {
 		eval(m);
 	};
@@ -52,11 +63,11 @@ $(function () {
 	let subscriptionString;
 	if (hash.startsWith("Asylum")) {
 		adminBlock.toggleClass("isAsylumView", true);
-		subscriptionString = "subscribe" + hash.replace("Asylum", "Family");
+		subscriptionString = "subscribeNew" + hash.replace("Asylum", "Family");
 	} else if (hash) {
-		subscriptionString = "subscribe" + hash;
+		subscriptionString = "subscribeNew" + hash;
 	} else {
-		subscriptionString = "subscribeFamily,DEFAULT" + suffix;
+		subscriptionString = "subscribeNewFamily,DEFAULT" + suffix;
 	}
 
 	ws.send(subscriptionString);
@@ -603,110 +614,120 @@ function addFamily(familyName, isAsylum, _uiName) {
 	let family = findChild(familyID);
 	if (family.length < 1 && (!isLazy || subscribedToSymbols.has(familyName))) {
 
-		family = $("#templateFamily").clone();
+		family = templateFamilyElement.clone();
 		family.attr("id", familyID);
 		family.removeClass("template");
-
 		family.toggleClass("isAsylum", isAsylum);
 
-		const familyDetails = family.find(".familyDetails");
-		const familyBlock = family.find(".children");
-		familyDetails.find(".openStack").unbind().bind("click", function () {
+		let childElems = family.children();
+
+		const familyDetails = childElems[0];
+		const familyBlock = childElems[1];
+
+		let openStackButton = familyDetails.children[0];
+		openStackButton.onclick = () => {
 			launchLadder(familyName + ";S", undefined, isFutures);
-		});
-		familyDetails.find(".refreshParent").unbind().bind("click", function () {
+		};
+		let refreshParentButton = familyDetails.children[1];
+		refreshParentButton.onclick = () => {
 			ws.send(command("refreshParent", [familyName]));
-		});
+		};
 
-		const bidStartButton = family.find(".familyDetails .bid .start");
-		bidStartButton.unbind().bind("click", function () {
+		const bidControlsDiv = familyDetails.children[4];
+		const bidStartButton = bidControlsDiv.children[0];
+		bidStartButton.onclick = () => {
 			ws.send(command("startFamily", [familyName, "BID"]));
-		});
+		};
 
-		const bidStopButton = family.find(".familyDetails .bid .stop");
-		bidStopButton.unbind().bind("click", function () {
+		const bidStopButton = bidControlsDiv.children[1];
+		bidStopButton.onclick = () => {
 			ws.send(command("stopFamily", [familyName, "BID"]));
-		});
+		};
 
-		const askStartButton = family.find(".familyDetails .ask .start");
-		askStartButton.unbind().bind("click", function () {
+		const askControlsDiv = familyDetails.children[5];
+		const askStartButton = askControlsDiv.children[0];
+		askStartButton.onclick = () => {
 			ws.send(command("startFamily", [familyName, "ASK"]));
-		});
+		};
 
-		const askStopButton = family.find(".familyDetails .ask .stop");
-		askStopButton.unbind().bind("click", function () {
+		const askStopButton = askControlsDiv.children[1];
+		askStopButton.onclick = () => {
 			ws.send(command("stopFamily", [familyName, "ASK"]));
-		});
+		};
 
-		const familyNameDiv = family.find(".familyName");
-		familyNameDiv.text(familyName);
+		const familyNameDiv = familyDetails.children[7];
+		familyNameDiv.innerText = familyName;
 
 		let editable = false
 
-		let lastUIName = emojify(familyName);
+		let lastUIName = familyName;
 
-		const uiNameDiv = family.find(".uiName");
-		uiNameDiv.text(emojify(uiName));
-		uiNameDiv.unbind().bind("click", function () {
-			if(!editable) {
-				familyBlock.toggleClass("hidden", !familyBlock.hasClass("hidden"));
+		const uiNameDiv = familyDetails.children[8];
+		uiNameDiv.innerText = uiName;
+		uiNameDiv.onclick = () => {
+			if (!editable) {
+
+				if (familyBlock.classList.contains("hidden")) {
+					familyBlock.classList.remove("hidden");
+				} else {
+					familyBlock.classList.add("hidden");
+				}
 			}
-		});
+		};
 
-		uiNameDiv.bind('keypress', function (e) {
-			if(editable) {
-				if(e.keyCode === 13) {
-					const currentUIName = unemojify(uiNameDiv.text());
-					const regexMatch =  /^[a-z0-9_][a-z0-9_-]+$/i;
+		uiNameDiv.onkeypress = function (e) {
+			if (editable) {
+				if (e.keyCode === 13) {
+					const currentUIName = uiNameDiv.innerText;
+					const regexMatch = /^[a-z0-9_][a-z0-9_-]+$/i;
 					const lengthCheck = 3 <= currentUIName.length && 30 >= currentUIName.length;
 					const charCheck = currentUIName.match(regexMatch) !== null;
-					if(!lengthCheck) {
+					if (!lengthCheck) {
 						displayErrorMsg("Family name must be between 3 and 10 characters long")
-					} else if(!charCheck) {
+					} else if (!charCheck) {
 						displayErrorMsg("Family name can only have the following characters [a-z0-9 _-]")
 					} else {
 						ws.send(`renameFamily,${familyName},${currentUIName}`)
-						uiNameDiv.text(lastUIName);
-						uiNameDiv.attr('contenteditable', 'false');
+						uiNameDiv.innerText = lastUIName;
+						uiNameDiv.setAttribute('contenteditable', 'false');
 						editable = false;
 					}
 					return false;
 				}
 			}
-		})
+		};
 
-		const uiNameEdit = family.find(".uiNameEdit");
-		uiNameEdit.unbind().bind("click", function() {
-			lastUIName = uiNameDiv.text()
-			uiNameDiv.attr('contenteditable', 'true');
+		const uiNameEdit = familyDetails.children[9];
+		uiNameEdit.onclick = () => {
+			lastUIName = uiNameDiv.innerText
+			uiNameDiv.setAttribute('contenteditable', 'true');
 			editable = true;
-		});
-		uiNameDiv.bind("onblur", function() {
-			console.log(uiNameDiv.text());
-		});
+		};
 
-		const bidOffsetUpButton = family.find(".bid .priceOffsetUp");
-		bidOffsetUpButton.mousedown(priceOffsetChange("increaseOffset", familyName, "BID", 1));
+		let bidOffsetDiv = familyDetails.children[11];
+		const bidOffsetUpButton = bidOffsetDiv.children[0]; //.find(".bid .priceOffsetUp");
+		bidOffsetUpButton.onmousedown = priceOffsetChange("increaseOffset", familyName, "BID", 1);
 
-		const bidOffsetDownButton = family.find(".bid .priceOffsetDown");
-		bidOffsetDownButton.mousedown(priceOffsetChange("increaseOffset", familyName, "BID", -1));
+		const bidOffsetDownButton = bidOffsetDiv.children[1];
+		bidOffsetDownButton.onmousedown = priceOffsetChange("increaseOffset", familyName, "BID", -1);
 
-		const askOffsetUpButton = family.find(".ask .priceOffsetUp");
-		askOffsetUpButton.mousedown(priceOffsetChange("increaseOffset", familyName, "ASK", 1));
+		let askOffsetDiv = familyDetails.children[13];
+		const askOffsetUpButton = askOffsetDiv.children[0]; // find(".ask .priceOffsetUp");
+		askOffsetUpButton.onmousedown = priceOffsetChange("increaseOffset", familyName, "ASK", 1);
 
-		const askOffsetDownButton = family.find(".ask .priceOffsetDown");
-		askOffsetDownButton.mousedown(priceOffsetChange("increaseOffset", familyName, "ASK", -1));
+		const askOffsetDownButton = askOffsetDiv.children[1];
+		askOffsetDownButton.onmousedown = priceOffsetChange("increaseOffset", familyName, "ASK", -1);
 
-		const openConfigWindowDiv = family.find(".configControls .configWindow");
-		openConfigWindowDiv.unbind().bind("click", function () {
+		const openConfigWindowDiv = familyDetails.children[14].children[0]; // family.find(".configControls .configWindow");
+		openConfigWindowDiv.onclick = function () {
 			let configs = familyName;
 			family.find(".children .row:not(.header)").each(function () {
 				configs = configs + "," + $(this).attr("id").replace("_", " ");
 			});
 			popUp("/stackConfig#;" + configs, "Configs", 2200, 400);
-		});
+		};
 
-		openConfigWindowDiv.mousedown(function (e) {
+		openConfigWindowDiv.onmousedown = function (e) {
 			if (e.button === 2) {
 				const children = family.find(".children .row:not(.header)");
 				if (children.length) {
@@ -718,29 +739,33 @@ function addFamily(familyName, isAsylum, _uiName) {
 					popUp("/stackConfig#;" + configs, "Configs", 2200, 400);
 				}
 			}
-		});
+		};
 
-		const bidPicardDiv = family.find(".bid .picardEnabled");
-		bidPicardDiv.mousedown(stackEnableStackChange(familyName, "BID", "PICARD"));
+		let bidStackControlsDiv = familyDetails.children[15];
+		const bidPicardDiv = bidStackControlsDiv.children[0];// find(".bid .picardEnabled");
+		bidPicardDiv.onmousedown = stackEnableStackChange(familyName, "BID", "PICARD");
 
-		const bidQuoterDiv = family.find(".bid .quoterEnabled");
-		bidQuoterDiv.mousedown(stackEnableStackChange(familyName, "BID", "QUOTER"));
+		const bidQuoterDiv = bidStackControlsDiv.children[1];
+		bidQuoterDiv.onmousedown = stackEnableStackChange(familyName, "BID", "QUOTER");
 
-		const askQuoterDiv = family.find(".ask .quoterEnabled");
-		askQuoterDiv.mousedown(stackEnableStackChange(familyName, "ASK", "QUOTER"));
+		let askStackControlsDiv = familyDetails.children[16];
+		const askQuoterDiv = askStackControlsDiv.children[0];
+		askQuoterDiv.onmousedown = stackEnableStackChange(familyName, "ASK", "QUOTER");
 
-		const askPicardDiv = family.find(".ask .picardEnabled");
-		askPicardDiv.mousedown(stackEnableStackChange(familyName, "ASK", "PICARD"));
+		const askPicardDiv = askStackControlsDiv.children[1];
+		askPicardDiv.onmousedown = stackEnableStackChange(familyName, "ASK", "PICARD");
 
-		const allEnableDiv = family.find(".stackControls.allEnabled");
-		allEnableDiv.mousedown(stackEnableAllStackChange(familyName));
+		const allEnableDiv = familyDetails.children[17]; // family.find(".stackControls.allEnabled");
+		allEnableDiv.onmousedown = stackEnableAllStackChange(familyName);
 
-		const cleanFamilyDiv = family.find(".stackControls.cleanParent");
-		cleanFamilyDiv.mousedown(function () {
+		const cleanFamilyDiv = familyDetails.children[18]; // family.find(".stackControls.cleanParent");
+		cleanFamilyDiv.onmousedown = function () {
 			ws.send(command("cleanParent", [familyName]));
-		});
+		};
 
-		addSortedDiv($("#families").find(".family"), family, tableComparator);
+		familiesDiv.append(family);
+
+		// addSortedDiv($("#families").find(".family"), family, tableComparator);
 
 		setChildCount(familyName);
 	}
@@ -898,18 +923,39 @@ function lazySymbolSubscribe(familyName) {
 	subscribedToSymbols.add(familyName)
 }
 
-function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled, askQuoterEnabled) {
+function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
+	askQuoterEnabled) {
 
-	const family = addFamily(familyName, false, uiName);
+	const familyDetailElems = addFamily(familyName, false, uiName).children()[0].children;
 
-	family.find(".familyDetails .bid.priceOffset").text(bidPriceOffset);
-	family.find(".familyDetails .ask.priceOffset").text(askPriceOffset);
+	familyDetailElems[10].innerText = bidPriceOffset;
+	familyDetailElems[12].innerText = askPriceOffset;
 
-	family.find(".familyDetails .bid .picardEnabled").toggleClass("enabled", bidPicardEnabled);
-	family.find(".familyDetails .bid .quoterEnabled").toggleClass("enabled", bidQuoterEnabled);
+	const bidStackControls = familyDetailElems[15];
+	if (bidPicardEnabled) {
+		bidStackControls.children[0].classList.add("enabled")
+	} else {
+		bidStackControls.children[0].classList.remove("enabled")
+	}
 
-	family.find(".familyDetails .ask .picardEnabled").toggleClass("enabled", askPicardEnabled);
-	family.find(".familyDetails .ask .quoterEnabled").toggleClass("enabled", askQuoterEnabled);
+	if (bidQuoterEnabled) {
+		bidStackControls.children[1].classList.add("enabled")
+	} else {
+		bidStackControls.children[0].classList.add("enabled")
+	}
+
+	const askStackControls = familyDetailElems[16];
+	if (askPicardEnabled) {
+		askStackControls.children[0].classList.add("enabled")
+	} else {
+		askStackControls.children[0].classList.remove("enabled")
+	}
+
+	if (askQuoterEnabled) {
+		askStackControls.children[1].classList.add("enabled")
+	} else {
+		askStackControls.children[0].classList.add("enabled")
+	}
 }
 
 function removeChild(familyName, childSymbol) {
@@ -931,46 +977,54 @@ function removeChild(familyName, childSymbol) {
 function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier, familyToChildRatio) {
 
 	const rowID = cleanID(childSymbol);
-	let row = $("#" + rowID);
+	let row = document.getElementById("#" + rowID);
 
-	const exchangeTable =  addFamily(familyName).find(".children");
+	let familyElems = addFamily(familyName).children();
+	const exchangeTable = familyElems[1]
 	let quoteSymbolCell;
-	if (row.length < 1) {
+	if (!row) {
 
-		row = exchangeTable.find(".header").clone();
-		row.removeClass("header");
-		row.attr("id", rowID);
-		row.addClass("dataRow");
-		row.toggleClass("unregistered", true);
+		row = exchangeTable.children[1].cloneNode(true); // find(".header").clone();
+		row.classList.remove("header");
+		row.classList.remove("hidden");
+		row.setAttribute("id", rowID);
+		row.classList.add("dataRow");
+		row.classList.add("unregistered");
 
-		quoteSymbolCell = setCellData(row.find(".symbol"), childSymbol);
+		const symbolElem = row.children[0].children[0];
+		quoteSymbolCell = setCellData(symbolElem, childSymbol); // row.find(".symbol"), childSymbol);
 
-		addSortedDiv(exchangeTable.find(".row"), row, rowComparator);
+		// TODO - fix this here
+		// addSortedDiv(exchangeTable.find(".row"), row, rowComparator);
+		exchangeTable.appendChild(row);
 
-	} else if (row.parent().get(0) !== exchangeTable.get(0)) {
+		// TODO - fix this here
 
-		const oldFamily = row.parent().parent().find(".familyName").text();
+		// } else if (row.parent().get(0) !== exchangeTable.get(0)) {
+	} else if (row.parentElement !== exchangeTable) {
+
+		const oldFamily = row.parentElement.parentElement.children[0].children[7].innerText; //.find(".familyName").text();
 		row.remove();
 		setChildCount(oldFamily);
 
-		quoteSymbolCell = row.find(".symbol");
-
-		addSortedDiv(exchangeTable.find(".row"), row, rowComparator);
+		quoteSymbolCell = row.children[0].children[0]; //find(".symbol");
+		exchangeTable.appendChild(row);
 	} else {
-		quoteSymbolCell = row.find(".symbol");
+		quoteSymbolCell = row.children[0].children[0];
 	}
 
-	quoteSymbolCell.unbind().bind("click", function () {
+	quoteSymbolCell.onclick = function () {
 		launchLadder(childSymbol);
-	});
+	};
 
-	const bidPriceOffsetDiv = addNumberBox(row, ".bid.priceOffset");
-	const bidQtyMultiplierDiv = addNumberBox(row, ".bid.qtyMultiplier");
+	const rowChildren = row.children[0];
+	const bidQtyMultiplierDiv = addNumberBox(rowChildren.children[1].children[0]); // , ".bid.qtyMultiplier");
+	const bidPriceOffsetDiv = addNumberBox(rowChildren.children[2].children[0]); // row, ".bid.priceOffset");
 
-	const askPriceOffsetDiv = addNumberBox(row, ".ask.priceOffset");
-	const askQtyMultiplierDiv = addNumberBox(row, ".ask.qtyMultiplier");
+	const familyToChildRatioDiv = addNumberBox(rowChildren.children[3].children[0]); // row, ".familyToChildRatio");
 
-	const familyToChildRatioDiv = addNumberBox(row, ".familyToChildRatio");
+	const askPriceOffsetDiv = addNumberBox(rowChildren.children[4].children[0]); //row, ".ask.priceOffset");
+	const askQtyMultiplierDiv = addNumberBox(rowChildren.children[5].children[0]); // row, ".ask.qtyMultiplier");
 
 	setDoubleData(bidPriceOffsetDiv, bidPriceOffset);
 	setDoubleData(bidQtyMultiplierDiv, bidQtyMultiplier);
@@ -979,71 +1033,71 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 
 	setDoubleData(familyToChildRatioDiv, familyToChildRatio);
 
-	const submitButton = row.find("input[type=Submit]");
-	submitButton.removeClass("hidden");
-	submitButton.unbind().bind("click", function () {
+	const submitButton = row.children[0].children[6]; // find("input[type=Submit]");
+	submitButton.classList.remove("hidden");
+	submitButton.onclick = function () {
 
-		const bidOffset = bidPriceOffsetDiv.val();
-		const bidMultiplier = bidQtyMultiplierDiv.val();
+		const bidOffset = bidPriceOffsetDiv.value;
+		const bidMultiplier = bidQtyMultiplierDiv.value;
 
-		const askOffset = askPriceOffsetDiv.val();
-		const askMultiplier = askQtyMultiplierDiv.val();
+		const askOffset = askPriceOffsetDiv.value;
+		const askMultiplier = askQtyMultiplierDiv.value;
 
-		const ratio = familyToChildRatioDiv.val();
+		const ratio = familyToChildRatioDiv.value;
 
 		ws.send(command("setRelationship", [childSymbol, bidOffset, bidMultiplier, askOffset, askMultiplier, ratio]));
-	});
+	};
 
-	const orphanButton = row.find(".orphanButton");
-	orphanButton.removeClass("hidden");
-	orphanButton.unbind().bind("click", function () {
+	const orphanButton = row.children[0].children[7]; // find(".orphanButton");
+	orphanButton.classList.remove("hidden");
+	orphanButton.onclick = function () {
 		ws.send(command("orphanChild", [childSymbol]));
-	});
+	};
 
-	const killSymbolButton = row.find(".killSymbolButton");
-	killSymbolButton.removeClass("hidden");
-	killSymbolButton.unbind().bind("click", function () {
+	const killSymbolButton = row.children[0].children[8]; //(".killSymbolButton");
+	killSymbolButton.classList.remove("hidden");
+	killSymbolButton.onclick = function () {
 		ws.send(command("killChild", [childSymbol]));
-	});
+	};
 
-	const childControls = row.find(".childControls");
+	const childControls = row.children[2]; // find(".childControls");
 
-	const openConfigWindowDiv = childControls.find(".configWindow");
-	openConfigWindowDiv.unbind().bind("click", function () {
+	const openConfigWindowDiv = childControls.children[0].children[0];//(".configWindow");
+	openConfigWindowDiv.onclick = function () {
 		popUp("/stackConfig#;" + childSymbol, "Configs", 2200, 400);
-	});
+	};
 
-	const bidControls = childControls.find(".bid");
-	const askControls = childControls.find(".ask");
+	// const bidControls = childControls.find(".bid");
+	// const askControls = childControls.find(".ask");
 
-	const bidPicardButton = bidControls.find(".picardEnabled");
-	const bidQuoterButton = bidControls.find(".quoterEnabled");
-	const askQuoterButton = askControls.find(".quoterEnabled");
-	const askPicardButton = askControls.find(".picardEnabled");
-	bidPicardButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "BID", "PICARD"));
-	bidQuoterButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "BID", "QUOTER"));
-	askQuoterButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "ASK", "QUOTER"));
-	askPicardButton.mousedown(stackChildEnableStackChange(familyName, childSymbol, "ASK", "PICARD"));
+	const bidPicardButton = childControls.children[1].children[0]; // .find(".picardEnabled");
+	const bidQuoterButton = childControls.children[1].children[1]; // .find(".quoterEnabled");
+	const askQuoterButton = childControls.children[3].children[1]; // .find(".quoterEnabled");
+	const askPicardButton = childControls.children[3].children[0]; // .find(".picardEnabled");
+	bidPicardButton.onmousedown = stackChildEnableStackChange(familyName, childSymbol, "BID", "PICARD");
+	bidQuoterButton.onmousedown = stackChildEnableStackChange(familyName, childSymbol, "BID", "QUOTER");
+	askQuoterButton.onmousedown = stackChildEnableStackChange(familyName, childSymbol, "ASK", "QUOTER");
+	askPicardButton.onmousedown = stackChildEnableStackChange(familyName, childSymbol, "ASK", "PICARD");
 
-	const bidStartConfigWindowDiv = bidControls.find(".start");
-	bidStartConfigWindowDiv.unbind().bind("click", function () {
+	const bidStartConfigWindowDiv = childControls.children[2].children[0]; // .find(".start");
+	bidStartConfigWindowDiv.onclick = function () {
 		ws.send(command("startChild", [familyName, childSymbol, "BID"]));
-	});
+	};
 
-	const bidStopConfigWindowDiv = bidControls.find(".stop");
-	bidStopConfigWindowDiv.unbind().bind("click", function () {
+	const bidStopConfigWindowDiv = childControls.children[2].children[1];
+	bidStopConfigWindowDiv.onclick = function () {
 		ws.send(command("stopChild", [familyName, childSymbol, "BID"]));
-	});
+	};
 
-	const askStartConfigWindowDiv = askControls.find(".start");
-	askStartConfigWindowDiv.unbind().bind("click", function () {
+	const askStartConfigWindowDiv = childControls.children[4].children[0];// askControls.find(".start");
+	askStartConfigWindowDiv.onclick = function () {
 		ws.send(command("startChild", [familyName, childSymbol, "ASK"]));
-	});
+	};
 
-	const askStopConfigWindowDiv = askControls.find(".stop");
-	askStopConfigWindowDiv.unbind().bind("click", function () {
+	const askStopConfigWindowDiv = childControls.children[4].children[1];
+	askStopConfigWindowDiv.onclick = function () {
 		ws.send(command("stopChild", [familyName, childSymbol, "ASK"]));
-	});
+	};
 
 	setChildCount(familyName);
 }
@@ -1095,31 +1149,38 @@ function rowComparator(a, b) {
 	return aSymbol < bSymbol ? -1 : aSymbol === bSymbol ? 0 : 1;
 }
 
-function addNumberBox(row, selector) {
+function addNumberBox(inputElem) {
 
-	const div = row.find(selector);
-	let input = div.find("input");
+	//
+	// if (!input.length) {
+	// 	input = $("<input type=\"number\"/>");
+	// 	div.text("");
+	// 	div.append(input);
+	// }
+	inputElem.onkeypress = function () {
+		if (inputElem.value !== inputElem.getAttribute("data")) {
+			inputElem.classList.add("notPersisted")
+		} else {
+			inputElem.classList.remove("notPersisted")
+		}
+	};
+	inputElem.classList.remove("hidden");
+	// input.off("input").on("input", function () {
+	// 	input.toggleClass("notPersisted", input.val() !== input.attr("data"));
+	// });
 
-	if (!input.length) {
-		input = $("<input type=\"number\"/>");
-		div.text("");
-		div.append(input);
-	}
-	input.off("input").on("input", function () {
-		input.toggleClass("notPersisted", input.val() !== input.attr("data"));
-	});
+	return inputElem;
 
-	return input;
 }
 
 function setCellData(input, value) {
 
 	if (typeof value != "undefined") {
-		input.attr("data", value);
-		input.text(value);
+		input.setAttribute("data", value);
+		input.innerText = value;
 	} else {
-		input.attr("data", "");
-		input.text("");
+		input.setAttribute("data", "");
+		input.innerText = "";
 	}
 	return input
 }
@@ -1127,21 +1188,21 @@ function setCellData(input, value) {
 function setDoubleData(input, value) {
 
 	if (typeof value != "undefined") {
-		input.attr("data", value);
-		input.val(parseFloat(value));
+		input.setAttribute("data", value);
+		input.value = parseFloat(value);
 	} else {
-		input.attr("data", "");
-		input.val("");
+		input.setAttribute("data", "");
+		input.value = "";
 	}
-	input.removeClass("notPersisted");
+	input.classList.remove("notPersisted");
 }
 
 function setChildCount(familyName) {
 
 	const family = addFamily(familyName);
-	const orderCountDiv = family.find(".childCount");
-	const orders = family.find(".children .row").length - 1;
-	orderCountDiv.text(orders);
+	const orderCountDiv = family.children()[0].children[2]; // find(".childCount");
+	const orders = family.children()[1].children.length - 1;
+	orderCountDiv.innerText = orders;
 }
 
 function setActiveChildCounts(family) {
@@ -1205,8 +1266,7 @@ function setFamilyName(parentSymbol, uiName) {
 	const familyID = "family_" + cleanID(parentSymbol);
 	let family = findChild(familyID);
 	if (family.length >= 1) {
-		let emojiFied = emojify(uiName);
-		family.find('.uiName').text(emojiFied);
+		family.find('.uiName').text(uiName);
 	}
 }
 
@@ -1222,18 +1282,87 @@ function playSound(sound) {
 	sound.play();
 }
 
-function emojify(uiName) {
-	let emojiFied = uiName
-	for(let key in emojiSymbols) {
-		emojiFied = emojiFied.replace(key, emojiSymbols[key])
+function sendUIVersionFormat(uiVersionNum) {
+	if (UI_VERSION_NUM !== uiVersionNum) {
+		throw `Version num mismatch: expected ${UI_VERSION_NUM}, got: ${uiVersionNum}`;
 	}
-	return emojiFied;
 }
 
-function unemojify(uiName) {
-	let emojiFied = uiName
-	for(let key in emojiSymbols) {
-		emojiFied = emojiFied.replace(emojiSymbols[key], key)
+function sendInitializationParentData(cachedFamilyData) {
+	const parsed = cachedFamilyData.split(DELIMITER);
+	let i = 0;
+	while (i < parsed.length) {
+		const funcName = parsed[i];
+		i += 1;
+		let numArgs;
+		if ("addFamily" === funcName) {
+			numArgs = 3;
+			const familyName = parsed[i];
+			const isAsylum = parsed[i + 1] === "1";
+			const uiName = parsed[i + 2];
+			addFamily(familyName, isAsylum, uiName);
+		} else if ("setParentData" === funcName) {
+			numArgs = 5;
+
+			const familyName = parsed[i];
+			const uiName = parsed[i + 1];
+			const bidPriceOffset = parsed[i + 2];
+			const askPriceOffset = parsed[i + 3];
+			const bitSet = parseInt(parsed[i + 4]);
+			const bidPicardEnabled = bitSet & 1;
+			const bidQuoterEnabled = bitSet & 2;
+			const askPicardEnabled = bitSet & 4;
+			const askQuoterEnabled = bitSet & 8;
+			setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
+				askQuoterEnabled)
+		} else {
+			throw `Invalid function called ${funcName}`;
+		}
+		i += numArgs;
 	}
-	return emojiFied;
 }
+
+function sendInitializationChildData(cachedFamilyData) {
+	setTimeout(() => {
+		const parsed = cachedFamilyData.split(DELIMITER);
+		let i = 0;
+		while (i < parsed.length) {
+			const funcName = parsed[i];
+			i += 1;
+			let numArgs;
+			if ("setChild" === funcName) {
+				numArgs = 7;
+				const familyName = parsed[i];
+				const childSymbol = parsed[i + 1];
+				const bidPriceOffset = parsed[i + 2];
+				const bidQtyMultiplier = parsed[i + 3];
+				const askPriceOffset = parsed[i + 4];
+				const askQtyMultiplier = parsed[i + 5];
+				const familyToChildRatio = parsed[i + 6];
+				setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier, familyToChildRatio);
+			} else if ("setChildData" === funcName) {
+				numArgs = 6;
+
+				const symbol = parsed[i];
+				const leanSymbol = parsed[i + 1];
+				const nibblerName = parsed[i + 2];
+				const bidInfo = parsed[i + 3];
+				const askInfo = parsed[i + 4];
+				const bitSet = parseInt(parsed[i + 5]);
+				const isBidStrategyOn = bitSet & 1;
+				const isBidPicardEnabled = bitSet & 2;
+				const isBidQuoterEnabled = bitSet & 4;
+				const isAskStrategyOn = bitSet & 8;
+				const isAskPicardEnabled = bitSet & 16;
+				const isAskQuoterEnabled = bitSet & 32;
+				setChildData(symbol, leanSymbol, nibblerName, isBidStrategyOn, bidInfo, isBidPicardEnabled, isBidQuoterEnabled,
+					isAskStrategyOn,
+					askInfo, isAskPicardEnabled, isAskQuoterEnabled);
+			} else {
+				throw `Invalid function called ${funcName}`;
+			}
+			i += numArgs;
+		}
+	}, 200);
+}
+

@@ -62,13 +62,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class StackFamilyView {
 
     private static final Collection<String> ALLOWED_INST_TYPES = StackStrategiesPresenter.ALLOWED_INST_TYPES;
     private static final StackType[] STACK_TYPES = StackType.values();
+    private static final String UI_VERSION_NUM = "1";
 
     static final String SOURCE_UI = "FAMILY_ADMIN_UI";
 
@@ -83,6 +86,8 @@ public class StackFamilyView {
     private static final String OTC_SUFFIX = " OTC";
 
     private static final double GLOBAL_OFFSET_INCREMENT_BPS = 1d;
+
+    private final StackFamilyUIDataCompressor batchingView = new StackFamilyUIDataCompressor(50 * 1024 * 1024);
 
     private final SelectIO managementSelectIO;
     private final SelectIO backgroundSelectIO;
@@ -131,6 +136,9 @@ public class StackFamilyView {
 
     private static final List<String> TAIL_PREFERENCE =
             List.of("UF", "UP", "GY", "FH", "DC", "SS", "SE", "ID", "PL", "BB", "NA", "FP", "LI", "LN", "IM");
+    private String cachedFamilyData;
+    private String cachedChildData;
+    private boolean mustRefresh = true;
 
     StackFamilyView(final SelectIO managementSelectIO, final SelectIO backgroundSelectIO, final IFuseBox<StackManagerComponents> fuseBox,
             final IErrorLogger errorLogger, final StackCommunity community, final SpreadContractSetGenerator contractSetGenerator,
@@ -207,9 +215,11 @@ public class StackFamilyView {
     public void setMetadata(final String parentSymbol, final String uiName) {
         final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
         if (null != familyUIData) {
+            mustRefresh = true;
             familyUIData.setUIName(uiName);
             final boolean isAdded = communityUINames.add(uiName);
             assert isAdded;
+            mustRefresh = true;
             views.all().setFamilyName(parentSymbol, uiName);
         }
     }
@@ -269,6 +279,7 @@ public class StackFamilyView {
 
     void addChildUIData(final StackUIData uiData) {
 
+        mustRefresh = true;
         final StackFamilyChildRow childRow = new StackFamilyChildRow(uiData);
         updateChildrenUIDataWith(uiData.symbol, childRow);
         updateChildUIData(views.all(), childRow);
@@ -290,11 +301,12 @@ public class StackFamilyView {
 
         final StackFamilyChildRow childRow = childrenUIData.get(uiData.symbol).getChildRow();
         if (null != childRow && childRow.updateSnapshot(uiData)) {
+            mustRefresh = true;
             updateChildUIData(views.all(), childRow);
         }
     }
 
-    private void updateChildUIData(final IStackFamilyUI view, final StackFamilyChildRow childRow) {
+    private void updateChildUIData(final IStackFamilyInitializerUI view, final StackFamilyChildRow childRow) {
 
         final ChildUIData uiData = childrenUIData.get(childRow.getSymbol());
 
@@ -409,7 +421,7 @@ public class StackFamilyView {
         familyUIData.put(familyName, familyData);
 
         if (isFamilyDisplayable(familyData)) {
-
+            mustRefresh = true;
             final boolean isAsylum = isFamilyAsylum(familyData);
             views.all().addFamily(familyName, isAsylum, familyData.getUIName());
             updateFamilyUIData(views.all(), familyData);
@@ -418,10 +430,11 @@ public class StackFamilyView {
 
     void updateFamilyUIData(final FamilyUIData uiData) {
 
+        mustRefresh = true;
         updateFamilyUIData(views.all(), uiData);
     }
 
-    private void updateFamilyUIData(final IStackFamilyUI view, final FamilyUIData familyData) {
+    private void updateFamilyUIData(final IStackFamilyInitializerUI view, final FamilyUIData familyData) {
 
         final StackUIData uiData = familyData.uiData;
 
@@ -441,6 +454,7 @@ public class StackFamilyView {
     public boolean updateRelationship(final String childSymbol, final String parentSymbol, final double bidPriceOffset,
             final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio) {
 
+        mustRefresh = true;
         for (final Map.Entry<String, FamilyUIData> familyRelations : familyUIData.entrySet()) {
 
             final FamilyUIData familyUIData = familyRelations.getValue();
@@ -508,8 +522,9 @@ public class StackFamilyView {
         }
     }
 
+    // TODO - delete and cleanup
     void addUI(final String username, final boolean isLazy, final Publisher<WebSocketOutboundData> channel) {
-
+        final long current = System.currentTimeMillis();
         final IStackFamilyUI newView = views.get(channel);
         MapUtils.getMappedSet(userViews, username).add(newView);
 
@@ -519,6 +534,7 @@ public class StackFamilyView {
             for (final Map.Entry<String, FamilyUIData> family : familyUIData.entrySet()) {
 
                 initFamilyUIData(newView, family.getValue());
+                initChildUIData(newView, family.getValue(), family.getKey());
             }
 
             for (final FamilyUIData familyUIData : familyUIData.values()) {
@@ -536,14 +552,67 @@ public class StackFamilyView {
         presentGlobalStackEnabling(newView);
     }
 
-    private void initFamilyUIData(final IStackFamilyUI newView, final FamilyUIData family) {
+    void addUINew(final String username, final boolean isLazy, final Publisher<WebSocketOutboundData> channel) {
+
+        final long current = System.currentTimeMillis();
+        final IStackFamilyUI newView = views.get(channel);
+        MapUtils.getMappedSet(userViews, username).add(newView);
+
+        newView.setFilters(filterGroups);
+
+        if (!isLazy) {
+
+            if (mustRefresh) {
+
+                final Set<Map.Entry<String, FamilyUIData>> familyUIDataEntries = familyUIData.entrySet();
+                final Stream<Map.Entry<String, FamilyUIData>> entries = familyUIDataEntries.stream().sorted(Map.Entry.comparingByKey());
+                final Consumer<Map.Entry<String, FamilyUIData>> entryConsumer = entry -> initFamilyUIData(batchingView, entry.getValue());
+                entries.forEach(entryConsumer);
+                for (final FamilyUIData familyUIData : familyUIData.values()) {
+                    updateFamilyUIData(batchingView, familyUIData);
+                }
+                cachedFamilyData = batchingView.batchComplete();
+
+                for (final Map.Entry<String, FamilyUIData> entry : familyUIData.entrySet()) {
+
+                    initChildUIData(batchingView, entry.getValue(), entry.getKey());
+                }
+
+                for (final ChildUIData uiData : childrenUIData.values()) {
+                    if (null != uiData.getChildRow()) {
+                        updateChildUIData(batchingView, uiData.getChildRow());
+                    }
+                }
+                cachedChildData = batchingView.batchComplete();
+            }
+
+            mustRefresh = false;
+            newView.sendUIVersionFormat(UI_VERSION_NUM);
+            if (!cachedFamilyData.isEmpty()) {
+                newView.sendInitializationParentData(cachedFamilyData);
+            }
+            if (!cachedChildData.isEmpty()) {
+                newView.sendInitializationChildData(cachedChildData);
+            }
+
+        }
+
+        presentGlobalOffset(newView);
+        presentGlobalStackEnabling(newView);
+
+    }
+
+    private void initFamilyUIData(final IStackFamilyInitializerUI newView, final FamilyUIData family) {
         final String familyName = family.uiData.symbol;
         if (isFamilyDisplayable(familyName)) {
-
             final FamilyUIData parentUIData = familyUIData.get(familyName);
             final boolean isAsylum = isFamilyAsylum(parentUIData);
             newView.addFamily(familyName, isAsylum, family.getUIName());
+        }
+    }
 
+    private void initChildUIData(final IStackFamilyInitializerUI newView, final FamilyUIData family, final String familyName) {
+        if (isFamilyDisplayable(familyName)) {
             for (final StackUIRelationship child : family.getAllRelationships()) {
 
                 newView.setChild(familyName, child.childSymbol, child.bidPriceOffsetBPS, child.bidQtyMultiplier, child.askPriceOffsetBPS,
@@ -605,6 +674,7 @@ public class StackFamilyView {
                 final IStackFamilyUI view = views.get(data.getOutboundChannel());
                 view.lazySymbolSubscribe(familyUI.uiData.symbol);
                 initFamilyUIData(view, familyUI);
+                initChildUIData(view, familyUI, familyUI.uiData.symbol);
                 updateFamilyUIData(view, familyUI);
                 for (final StackUIRelationship relationship : familyUI.getAllRelationships()) {
                     final ChildUIData childUIData = childrenUIData.get(relationship.childSymbol);
@@ -686,15 +756,8 @@ public class StackFamilyView {
 
         final int spaceIx = primaryListing.indexOf(' ');
         final int symbolRootEnd = spaceIx > 0 ? spaceIx : primaryListing.length() - 2;
-        final String root = primaryListing.substring(0, symbolRootEnd);
-        //        String newFamilyName = root;
-        //        int suffixIx = 1;
-        //        while (familyUIData.containsKey(newFamilyName)) {
-        //            newFamilyName = root + '_' + suffixIx;
-        //            suffixIx++;
-        //        }
 
-        return root;
+        return primaryListing.substring(0, symbolRootEnd);
 
     }
 
@@ -911,6 +974,7 @@ public class StackFamilyView {
         final boolean isAskQuoteEnabled = communityManager.getStackState(community, BookSide.ASK, StackType.QUOTER);
         final boolean isAskPicardEnabled = communityManager.getStackState(community, BookSide.ASK, StackType.PICARD);
 
+        mustRefresh = true;
         view.setGlobalStackEnabled(isBidPicardEnabled, isBidQuoteEnabled, isAskQuoteEnabled, isAskPicardEnabled);
     }
 
@@ -930,6 +994,7 @@ public class StackFamilyView {
             } catch (final Exception e) {
                 managementSelectIO.execute(() -> views.all().displayErrorMsg(e.getMessage()));
             }
+            mustRefresh = true;
             views.all().offsetsLoaded();
         });
     }

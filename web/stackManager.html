@@ -1,3 +1,5 @@
+<!-- WARNING - the layout of the html is depended upon -->
+
 <html>
 <head>
 	<title>Stack Manager</title>
@@ -14,7 +16,7 @@
 	<script src="stackManager.js"></script>
 </head>
 <body>
-
+<!--- WARNING - The layout of the html elements is depended up on!-->
 <div id="adminBlock" class="hideAdmin">
 	<div id="background"></div>
 
@@ -353,6 +355,7 @@
 						<div class="relationship">
 							<div class="symbol childDetail"></div>
 
+							<!-- TODO A header row still remains over here !-->
 							<div class="bid qtyMultiplier childDetail hideForAsylum">Qty multiplier</div>
 							<div class="bid priceOffset childDetail hideForAsylum">Offset BPS</div>
 
@@ -360,6 +363,24 @@
 
 							<div class="ask priceOffset childDetail hideForAsylum">Offset BPS</div>
 							<div class="ask qtyMultiplier childDetail hideForAsylum">Qty multiplier</div>
+
+							<input type="submit" class="submitButton hidden childDetail hideForAsylum" value="Submit">
+							<button type="button" class="orphanButton hidden adminOnly">Orphan</button>
+							<button type="button" class="killSymbolButton hidden adminOnly">Kill</button>
+						</div>
+					</div>
+					<div class="template header row">
+
+						<div class="relationship">
+							<div class="symbol childDetail"></div>
+
+							<div class="bid qtyMultiplier childDetail hideForAsylum"><input class="hidden" type="number"/></div>
+							<div class="bid priceOffset childDetail hideForAsylum"><input class="hidden" type="number"/></div>
+
+							<div class="familyToChildRatio childDetail hideForAsylum"><input class="hidden" type="number"/></div>
+
+							<div class="ask priceOffset childDetail hideForAsylum"><input class="hidden" type="number"/></div>
+							<div class="ask qtyMultiplier childDetail hideForAsylum"><input class="hidden" type="number"/></div>
 
 							<input type="submit" class="submitButton hidden childDetail hideForAsylum" value="Submit">
 							<button type="button" class="orphanButton hidden adminOnly">Orphan</button>

@@ -277,6 +277,23 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
                 final boolean isLazy = 3 <= cmdParts.length && "Lazy".equals(cmdParts[2]);
                 familyView.addUI(username, isLazy, outChannel);
             }
+        } else if ("subscribeNewFamily".equals(cmdParts[0])) {
+            StackCommunity unit;
+            if ("DEFAULT".equals(cmdParts[1])) {
+                unit = getDefaultCommunity(primaryCommunities);
+            } else {
+                try {
+                    unit = StackCommunity.get(cmdParts[1]);
+                } catch (final IllegalArgumentException e) {
+                    unit = null;
+                }
+            }
+            if (null != unit && communityViews.containsKey(unit)) {
+                final StackFamilyView familyView = communityViews.get(unit);
+                userViews.put(outChannel, familyView);
+                final boolean isLazy = 3 <= cmdParts.length && "Lazy".equals(cmdParts[2]);
+                familyView.addUINew(username, isLazy, outChannel);
+            }
         } else {
 
             final StackFamilyView view = userViews.get(outChannel);
@@ -286,7 +303,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         }
     }
 
-    private StackCommunity getDefaultCommunity(final Set<StackCommunity> primaryCommunities) {
+    private static StackCommunity getDefaultCommunity(final Set<StackCommunity> primaryCommunities) {
         if (primaryCommunities.contains(StackCommunity.FUTURE)) {
             return StackCommunity.FUTURE;
         } else {

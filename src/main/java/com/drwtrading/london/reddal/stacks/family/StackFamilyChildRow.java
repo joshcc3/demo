@@ -80,7 +80,7 @@ public class StackFamilyChildRow {
         return hasChanged;
     }
 
-    public void sendRowState(final IStackFamilyUI view) {
+    public void sendRowState(final IStackFamilyInitializerUI view) {
         view.setChildData(uiData.symbol, uiData.leanSymbol, uiData.source, isBidStrategyOn, bidInfo, isBidPicardEnabled, isBidQuoterEnabled,
                 isAskStrategyOn, askInfo, isAskPicardEnabled, isAskQuoterEnabled);
     }
