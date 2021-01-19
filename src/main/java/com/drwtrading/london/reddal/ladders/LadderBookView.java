@@ -179,7 +179,7 @@ public class LadderBookView implements ILadderBoard {
 
     private int clickTradingBoxQty;
     private String feeString;
-    private int orderSeqNo = 0;
+    private final int orderSeqNo = 0;
 
     private Long modifyFromPrice;
     private long modifyFromPriceSelectedTime;

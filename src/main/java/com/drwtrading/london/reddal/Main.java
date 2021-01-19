@@ -814,16 +814,16 @@ public class Main {
                 final Set<String> softwareKeys = ladderTextConfig.getSet("softwareKeys");
 
                 final Set<String> allKeys = new HashSet<>();
-                if(null != softwareKeys) {
+                if (null != softwareKeys) {
                     for (final String softwareKey : softwareKeys) {
-                        if('.' != softwareKey.charAt(0) || '.' != softwareKey.charAt(softwareKey.length() - 1)) {
+                        if ('.' != softwareKey.charAt(0) || '.' != softwareKey.charAt(softwareKey.length() - 1)) {
                             throw new IllegalArgumentException("Invalid software key format [" + softwareKey + ']');
                         }
                         final String topic = OpxlUtils.getTopic("prod", softwareKey, new Date(), "");
                         allKeys.add(topic);
                     }
                 }
-                if(null != sheetsKeys) {
+                if (null != sheetsKeys) {
                     allKeys.addAll(sheetsKeys);
                 }
                 System.out.println("Laddertext Keys [" + allKeys + ']');
