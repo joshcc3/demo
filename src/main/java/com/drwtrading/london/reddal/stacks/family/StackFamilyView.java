@@ -219,7 +219,6 @@ public class StackFamilyView {
             familyUIData.setUIName(uiName);
             final boolean isAdded = communityUINames.add(uiName);
             assert isAdded;
-            mustRefresh = true;
             views.all().setFamilyName(parentSymbol, uiName);
         }
     }
@@ -453,8 +452,8 @@ public class StackFamilyView {
 
     public boolean updateRelationship(final String childSymbol, final String parentSymbol, final double bidPriceOffset,
             final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio) {
-
         mustRefresh = true;
+
         for (final Map.Entry<String, FamilyUIData> familyRelations : familyUIData.entrySet()) {
 
             final FamilyUIData familyUIData = familyRelations.getValue();
@@ -524,7 +523,6 @@ public class StackFamilyView {
 
     // TODO - delete and cleanup
     void addUI(final String username, final boolean isLazy, final Publisher<WebSocketOutboundData> channel) {
-        final long current = System.currentTimeMillis();
         final IStackFamilyUI newView = views.get(channel);
         MapUtils.getMappedSet(userViews, username).add(newView);
 
@@ -554,7 +552,6 @@ public class StackFamilyView {
 
     void addUINew(final String username, final boolean isLazy, final Publisher<WebSocketOutboundData> channel) {
 
-        final long current = System.currentTimeMillis();
         final IStackFamilyUI newView = views.get(channel);
         MapUtils.getMappedSet(userViews, username).add(newView);
 

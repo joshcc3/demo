@@ -429,8 +429,8 @@ input::-webkit-inner-spin-button:hover {
 }
 
 #families .relationship div input {
-	width: 70px;
-	text-align: center;
+    width: 70px;
+    text-align: center;
 }
 
 .asylumControls {
