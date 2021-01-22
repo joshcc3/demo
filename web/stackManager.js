@@ -41,13 +41,18 @@ const emojiSymbols = {
 let templateFamilyElement;
 let familiesDiv;
 
+const numberStrings = [];
+for (let i = 0; i < 100; i++) {
+	numberStrings.push(i.toString());
+}
+
 $(function () {
 
 	templateFamilyElement = $("#templateFamily");
 	familiesDiv = $("#families");
 
 	ws = connect();
-	ws.logToConsole = false;
+	ws.logToConsole = true;
 	ws.onmessage = function (m) {
 		eval(m);
 	};
@@ -961,9 +966,9 @@ function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPi
 function removeChild(familyName, childSymbol) {
 
 	const rowID = cleanID(childSymbol);
-	const row = $("#" + rowID);
+	const row = document.getElementById(rowID);
 
-	const family = row.parent().parent();
+	const family = row.parentElement.parentElement;
 	row.remove();
 	setActiveChildCounts(family);
 
@@ -979,7 +984,8 @@ function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, ask
 	const rowID = cleanID(childSymbol);
 	let row = document.getElementById("#" + rowID);
 
-	let familyElems = addFamily(familyName).children();
+	let familyDiv = addFamily(familyName);
+	let familyElems = familyDiv.children();
 	const exchangeTable = familyElems[1]
 	let quoteSymbolCell;
 	if (!row) {
@@ -1106,37 +1112,60 @@ function setChildData(childSymbol, leanSymbol, nibblerName, isBidStrategyOn, bid
 	askInfo, askPicardEnabled, askQuoterEnabled) {
 
 	const rowID = cleanID(childSymbol);
-	const row = $("#" + rowID);
+	const rowDOMElement = document.getElementById(rowID)
+	const row = $(rowDOMElement);
 
 	if (row) {
 
 		row.removeClass("unregistered");
 
-		const leanSymbolCell = row.find(".leanSymbol");
-		leanSymbolCell.text(leanSymbol);
-		leanSymbolCell.unbind().bind("click", function () {
+		const leanSymbolCell = rowDOMElement.children[1].children[0];
+		leanSymbolCell.innerText = leanSymbol;
+		leanSymbolCell.onclick = function () {
 			launchLadder(leanSymbol);
-		});
+		};
 
-		const childControls = row.find(".childControls");
+		const childControls = rowDOMElement.children[2];
 
-		childControls.find(".nibblerName").text(nibblerName);
+		childControls.children[5].innerText = nibblerName;
 
-		const bidControls = childControls.find(".bid");
-		bidControls.filter(".runningControls").toggleClass("enabled", isBidStrategyOn);
-		bidControls.find(".picardEnabled").toggleClass("enabled", bidPicardEnabled);
-		bidControls.find(".quoterEnabled").toggleClass("enabled", bidQuoterEnabled);
-		bidControls.filter(".strategyInfo").text(bidInfo);
-		childControls.toggleClass("bidChildRunning", isBidStrategyOn && (bidPicardEnabled || bidQuoterEnabled));
+		let bidRunningControls = childControls.children[2];
+		let bidPicardEnabledElem = childControls.children[1].children[0];
+		let bidQuoterEnabledElem = childControls.children[1].children[1];
+		let bidStrategyInfoElem = childControls.children[6];
 
-		const askControls = childControls.find(".ask");
-		askControls.filter(".runningControls").toggleClass("enabled", isAskStrategyOn);
-		askControls.find(".picardEnabled").toggleClass("enabled", askPicardEnabled);
-		askControls.find(".quoterEnabled").toggleClass("enabled", askQuoterEnabled);
-		askControls.filter(".strategyInfo").text(askInfo);
-		childControls.toggleClass("askChildRunning", isAskStrategyOn && (askPicardEnabled || askQuoterEnabled));
+		toggleClassForDOMElem(bidRunningControls, "enabled", isBidStrategyOn);
+		toggleClassForDOMElem(bidPicardEnabledElem, "enabled", bidPicardEnabled);
+		toggleClassForDOMElem(bidQuoterEnabledElem, "enabled", bidQuoterEnabled);
+		bidStrategyInfoElem.innerText = bidInfo;
+		toggleClassForDOMElem(childControls, "bidChildRunning", isBidStrategyOn && (bidPicardEnabled || bidQuoterEnabled));
 
-		const family = row.parent().parent();
+		let askRunningControls = childControls.children[4];
+		let askPicardEnabledElem = childControls.children[3].children[0];
+		let askQuoterEnabledElem = childControls.children[3].children[1];
+		let askStrategyInfoElem = childControls.children[7];
+
+		toggleClassForDOMElem(askRunningControls, "enabled", isAskStrategyOn);
+		toggleClassForDOMElem(askPicardEnabledElem, "enabled", askPicardEnabled);
+		toggleClassForDOMElem(askQuoterEnabledElem, "enabled", askQuoterEnabled);
+		askStrategyInfoElem.innerText = askInfo;
+		toggleClassForDOMElem(childControls, "askChildRunning", isAskStrategyOn && (askPicardEnabled || askQuoterEnabled));
+
+		// const bidControls = childControls.find(".bid");
+		// bidControls.filter(".runningControls").toggleClass("enabled", isBidStrategyOn);
+		// bidControls.find(".picardEnabled").toggleClass("enabled", bidPicardEnabled);
+		// bidControls.find(".quoterEnabled").toggleClass("enabled", bidQuoterEnabled);
+		// bidControls.filter(".strategyInfo").text(bidInfo);
+		// childControls.toggleClass("bidChildRunning", isBidStrategyOn && (bidPicardEnabled || bidQuoterEnabled));
+		//
+		// const askControls = childControls.find(".ask");
+		// askControls.filter(".runningControls").toggleClass("enabled", isAskStrategyOn);
+		// askControls.find(".picardEnabled").toggleClass("enabled", askPicardEnabled);
+		// askControls.find(".quoterEnabled").toggleClass("enabled", askQuoterEnabled);
+		// askControls.filter(".strategyInfo").text(askInfo);
+		// childControls.toggleClass("askChildRunning", isAskStrategyOn && (askPicardEnabled || askQuoterEnabled));
+
+		const family = rowDOMElement.parentElement.parentElement;
 		setActiveChildCounts(family);
 	}
 }
@@ -1201,30 +1230,60 @@ function setChildCount(familyName) {
 
 	const family = addFamily(familyName);
 	const orderCountDiv = family.children()[0].children[2]; // find(".childCount");
-	const orders = family.children()[1].children.length - 1;
-	orderCountDiv.innerText = orders;
+	const orders = family.children()[1].children.length - 2;
+	orderCountDiv.innerText = numberStrings[orders];
+}
+
+
+function setChildCountOnDiv(familyDiv) {
+
+	const orderCountDiv = familyDiv.children[0].children[2]; // find(".childCount");
+	const orders = familyDiv.children[1].children.length - 2;
+	orderCountDiv.innerText = numberStrings[orders];
 }
 
 function setActiveChildCounts(family) {
 
-	const childControls = family.find(".childControls");
+	// TODO verify in ui
+	const childrenRows = family.children[1];
+	let allChildRows = 0;
+	let onBids = 0;
+	let onAsks = 0;
+	for (let i = 2; i < childrenRows.children.length; i++) {
+		const childRow = childrenRows.children[i];
 
-	const onBids = childControls.filter(".bidChildRunning").length;
-	const offBids = childControls.length - onBids - 1;
+		allChildRows++;
+		const childControls = childRow.children[2];
+		if (childControls.classList.contains("bidChildRunning")) {
+			onBids++
+		}
+		if (childControls.classList.contains("askChildRunning")) {
+			onAsks++
+		}
+	}
 
-	const onAsks = childControls.filter(".askChildRunning").length;
-	const offAsks = childControls.length - onAsks - 1;
+	const offBids = allChildRows - onBids;
+	const offAsks = allChildRows - onAsks;
 
-	const familyDetails = family.find(".activeCount");
-	const bidCounts = familyDetails.filter(".bid");
-	bidCounts.find(".on").text(onBids);
-	bidCounts.find(".off").text(offBids);
-	bidCounts.toggleClass("somethingOff", 0 < offBids);
+	const familyDetails = family.children[0];
+	const bidActiveCountsElem = familyDetails.children[3];
+	bidActiveCountsElem.children[0].innerText = numberStrings[onBids];
+	bidActiveCountsElem.children[1].innerText = numberStrings[offBids];
+	if (0 < offBids) {
+		bidActiveCountsElem.classList.add("somethingOff");
+	} else {
+		bidActiveCountsElem.classList.remove("somethingOff");
+	}
 
-	const askCounts = familyDetails.filter(".ask");
-	askCounts.find(".on").text(onAsks);
-	askCounts.find(".off").text(offAsks);
-	askCounts.toggleClass("somethingOff", 0 < offAsks);
+	const askActiveCountsElem = familyDetails.children[6];
+	askActiveCountsElem.children[0].innerText = numberStrings[onAsks];
+	askActiveCountsElem.children[1].innerText = numberStrings[offAsks];
+	if (0 < offAsks) {
+		askActiveCountsElem.classList.add("somethingOff");
+	} else {
+		askActiveCountsElem.classList.remove("somethingOff");
+	}
+
 }
 
 function displayInfoMsg(text) {
@@ -1323,46 +1382,51 @@ function sendInitializationParentData(cachedFamilyData) {
 }
 
 function sendInitializationChildData(cachedFamilyData) {
-	setTimeout(() => {
-		const parsed = cachedFamilyData.split(DELIMITER);
-		let i = 0;
-		while (i < parsed.length) {
-			const funcName = parsed[i];
-			i += 1;
-			let numArgs;
-			if ("setChild" === funcName) {
-				numArgs = 7;
-				const familyName = parsed[i];
-				const childSymbol = parsed[i + 1];
-				const bidPriceOffset = parsed[i + 2];
-				const bidQtyMultiplier = parsed[i + 3];
-				const askPriceOffset = parsed[i + 4];
-				const askQtyMultiplier = parsed[i + 5];
-				const familyToChildRatio = parsed[i + 6];
-				setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier, familyToChildRatio);
-			} else if ("setChildData" === funcName) {
-				numArgs = 6;
+	const parsed = cachedFamilyData.split(DELIMITER);
+	let i = 0;
+	while (i < parsed.length) {
+		const funcName = parsed[i];
+		i += 1;
+		let numArgs;
+		if ("setChild" === funcName) {
+			numArgs = 7;
+			const familyName = parsed[i];
+			const childSymbol = parsed[i + 1];
+			const bidPriceOffset = parsed[i + 2];
+			const bidQtyMultiplier = parsed[i + 3];
+			const askPriceOffset = parsed[i + 4];
+			const askQtyMultiplier = parsed[i + 5];
+			const familyToChildRatio = parsed[i + 6];
+			setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier, familyToChildRatio);
+		} else if ("setChildData" === funcName) {
+			numArgs = 6;
 
-				const symbol = parsed[i];
-				const leanSymbol = parsed[i + 1];
-				const nibblerName = parsed[i + 2];
-				const bidInfo = parsed[i + 3];
-				const askInfo = parsed[i + 4];
-				const bitSet = parseInt(parsed[i + 5]);
-				const isBidStrategyOn = bitSet & 1;
-				const isBidPicardEnabled = bitSet & 2;
-				const isBidQuoterEnabled = bitSet & 4;
-				const isAskStrategyOn = bitSet & 8;
-				const isAskPicardEnabled = bitSet & 16;
-				const isAskQuoterEnabled = bitSet & 32;
-				setChildData(symbol, leanSymbol, nibblerName, isBidStrategyOn, bidInfo, isBidPicardEnabled, isBidQuoterEnabled,
-					isAskStrategyOn,
-					askInfo, isAskPicardEnabled, isAskQuoterEnabled);
-			} else {
-				throw `Invalid function called ${funcName}`;
-			}
-			i += numArgs;
+			const symbol = parsed[i];
+			const leanSymbol = parsed[i + 1];
+			const nibblerName = parsed[i + 2];
+			const bidInfo = parsed[i + 3];
+			const askInfo = parsed[i + 4];
+			const bitSet = parseInt(parsed[i + 5]);
+			const isBidStrategyOn = bitSet & 1;
+			const isBidPicardEnabled = bitSet & 2;
+			const isBidQuoterEnabled = bitSet & 4;
+			const isAskStrategyOn = bitSet & 8;
+			const isAskPicardEnabled = bitSet & 16;
+			const isAskQuoterEnabled = bitSet & 32;
+			setChildData(symbol, leanSymbol, nibblerName, isBidStrategyOn, bidInfo, isBidPicardEnabled, isBidQuoterEnabled,
+				isAskStrategyOn,
+				askInfo, isAskPicardEnabled, isAskQuoterEnabled);
+		} else {
+			throw `Invalid function called ${funcName}`;
 		}
-	}, 200);
+		i += numArgs;
+	}
 }
 
+function toggleClassForDOMElem(elem, cls, enabled) {
+	if (enabled) {
+		elem.classList.add(cls);
+	} else {
+		elem.classList.remove(cls);
+	}
+}
