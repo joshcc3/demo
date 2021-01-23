@@ -52,7 +52,7 @@ $(function () {
 	familiesDiv = $("#families");
 
 	ws = connect();
-	ws.logToConsole = true;
+	ws.logToConsole = false;
 	ws.onmessage = function (m) {
 		eval(m);
 	};
@@ -937,30 +937,13 @@ function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPi
 	familyDetailElems[12].innerText = askPriceOffset;
 
 	const bidStackControls = familyDetailElems[15];
-	if (bidPicardEnabled) {
-		bidStackControls.children[0].classList.add("enabled")
-	} else {
-		bidStackControls.children[0].classList.remove("enabled")
-	}
-
-	if (bidQuoterEnabled) {
-		bidStackControls.children[1].classList.add("enabled")
-	} else {
-		bidStackControls.children[0].classList.add("enabled")
-	}
-
 	const askStackControls = familyDetailElems[16];
-	if (askPicardEnabled) {
-		askStackControls.children[0].classList.add("enabled")
-	} else {
-		askStackControls.children[0].classList.remove("enabled")
-	}
 
-	if (askQuoterEnabled) {
-		askStackControls.children[1].classList.add("enabled")
-	} else {
-		askStackControls.children[0].classList.add("enabled")
-	}
+	toggleClassForDOMElem(bidStackControls.children[0], "enabled", bidPicardEnabled);
+	toggleClassForDOMElem(bidStackControls.children[1], "enabled", bidQuoterEnabled);
+	toggleClassForDOMElem(askStackControls.children[1], "enabled", askPicardEnabled);
+	toggleClassForDOMElem(askStackControls.children[0], "enabled", askQuoterEnabled);
+
 }
 
 function removeChild(familyName, childSymbol) {
