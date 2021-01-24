@@ -95,7 +95,16 @@ public class StackFamilyUIDataCompressor implements IStackFamilyInitializerUI {
         sb.append(DELIMITER);
         sb.append(quoterStateBitSet);
         sb.append(DELIMITER);
+    }
 
+    @Override
+    public void setEnabledForDateState(final String familyName, final StackEnabledForDateState state) {
+        sb.append("setEnabledForDateState");
+        sb.append(DELIMITER);
+        sb.append(familyName);
+        sb.append(DELIMITER);
+        sb.append(state);
+        sb.append(DELIMITER);
     }
 
     public String batchComplete() {

@@ -31,6 +31,8 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -48,6 +50,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     private final Set<StackCommunity> primaryCommunities;
 
     private final Map<String, FamilyUIData> familiesData;
+    private final long todayEpochDay;
 
     public StackFamilyPresenter(final SelectIO presenterSelectIO, final SelectIO backgroundSelectIO,
             final IFuseBox<StackManagerComponents> fuseBox, final IErrorLogger errorLogger, final UILogger uiLogger,
@@ -85,6 +88,10 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
 
         this.userViews = new HashMap<>();
         this.familiesData = new LinkedHashMap<>();
+
+        final LocalDate now = LocalDate.now();
+        final LocalDate epoch = LocalDate.ofEpochDay(0);
+        this.todayEpochDay = ChronoUnit.DAYS.between(epoch, now);
 
         final String orphanageSymbol = StackOrphanage.ORPHANAGE;
         final String orphanISIN = Constants.createISINForSymbol(orphanageSymbol);
@@ -224,6 +231,13 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         assert source.equals(StackFamilyView.SOURCE_UI);
         for (final StackFamilyView familyView : communityViews.values()) {
             familyView.setMetadata(parentSymbol, uiName);
+        }
+        return true;
+    }
+
+    boolean enableForDate(final String source, final String parentSymbol, final long epochDay) {
+        for (final StackFamilyView familyView : communityViews.values()) {
+            familyView.enableForDate(parentSymbol, epochDay);
         }
         return true;
     }

@@ -48,4 +48,5 @@ public interface IStackFamilyUI extends IStackFamilyInitializerUI {
     void sendInitializationParentData(String cachedFamilyData);
 
     void sendInitializationChildData(String cachedChildData);
+
 }

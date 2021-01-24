@@ -567,3 +567,11 @@ input[type=Submit].hidden {
 #footer .filterName.selected {
 	color: green;
 }
+
+.enabledTomorrow {
+	color: orange;
+}
+
+.reenabledToday {
+	color: green;
+}

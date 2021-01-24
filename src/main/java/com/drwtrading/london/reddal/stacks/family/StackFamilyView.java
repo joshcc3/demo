@@ -48,6 +48,7 @@ import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
+import org.mockito.cglib.core.Local;
 
 import java.text.DecimalFormat;
 import java.time.DayOfWeek;
@@ -64,6 +65,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -74,7 +76,7 @@ public class StackFamilyView {
 
     private static final Collection<String> ALLOWED_INST_TYPES = StackStrategiesPresenter.ALLOWED_INST_TYPES;
     private static final StackType[] STACK_TYPES = StackType.values();
-    private static final String UI_VERSION_NUM = "1";
+    private static final String UI_VERSION_NUM = "2";
 
     static final String SOURCE_UI = "FAMILY_ADMIN_UI";
 
@@ -133,6 +135,7 @@ public class StackFamilyView {
 
     private final DecimalFormat priceOffsetDF;
     private final int nextWorkingEpochDay;
+    private final int todayEpochDay;
 
     private StackCommunityManager communityManager;
 
@@ -194,12 +197,14 @@ public class StackFamilyView {
         this.bufferedETFDefs = new HashMap<>();
 
         final LocalDate epoch = LocalDate.EPOCH;
-        LocalDate nextWorkingDay = LocalDate.now();
+        final LocalDate today = LocalDate.now();
+        LocalDate nextWorkingDay = today;
         nextWorkingDay = nextWorkingDay.plus(1, ChronoUnit.DAYS);
         while(DayOfWeek.SATURDAY.ordinal() <= DayOfWeek.from(nextWorkingDay).ordinal()) {
             nextWorkingDay = nextWorkingDay.plus(1, ChronoUnit.DAYS);
         }
         this.nextWorkingEpochDay = (int)ChronoUnit.DAYS.between(epoch, nextWorkingDay);
+        this.todayEpochDay = (int)ChronoUnit.DAYS.between(epoch, today);
 
         managementSelectIO.addDelayedAction(60_000L, this::tryBufferedETFAdditions);
     }
@@ -232,6 +237,27 @@ public class StackFamilyView {
             final boolean isAdded = communityUINames.add(uiName);
             assert isAdded;
             views.all().setFamilyName(parentSymbol, uiName);
+        }
+    }
+
+    public void enableForDate(final String parentSymbol, final long epochDay) {
+        final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
+        if(null != familyUIData) {
+            mustRefresh = true;
+            final StackEnabledForDateState oldState = familyUIData.getEnabledForDateState();
+            final StackEnabledForDateState newState;
+            if(nextWorkingEpochDay == epochDay) {
+                newState = StackEnabledForDateState.ENABLED_TOMORROW;
+            } else if(todayEpochDay == epochDay) {
+                newState = StackEnabledForDateState.REENABLED_TODAY;
+            } else {
+                newState = StackEnabledForDateState.NONE;
+            }
+
+            if(oldState.ordinal() < newState.ordinal()) {
+                familyUIData.setEnabledForDateState(newState);
+                updateFamilyUIData(familyUIData);
+            }
         }
     }
 
@@ -454,6 +480,7 @@ public class StackFamilyView {
                     uiData.getActiveAskPriceOffsetBPS(), uiData.isStackEnabled(BookSide.BID, StackType.PICARD),
                     uiData.isStackEnabled(BookSide.BID, StackType.QUOTER), uiData.isStackEnabled(BookSide.ASK, StackType.PICARD),
                     uiData.isStackEnabled(BookSide.ASK, StackType.QUOTER));
+            view.setEnabledForDateState(uiData.symbol, familyData.getEnabledForDateState());
         }
     }
 

@@ -11,7 +11,7 @@ let isLazy = false;
 const searchedForSymbols = new Set()
 const subscribedToSymbols = new Set()
 
-const UI_VERSION_NUM = "1";
+const UI_VERSION_NUM = "2";
 const DELIMITER = "\u0000";
 
 const emojiSymbols = {
@@ -364,6 +364,10 @@ function killFamily(symbol) {
 
 function createAllFamiliesFromFile() {
 	ws.send(command("createFamiliesFromFile", []));
+}
+
+function disableForToday(symbol) {
+	ws.send(command("disableStacksForADay", [symbol]));
 }
 
 function popUp(url, name, width, height) {
@@ -775,7 +779,7 @@ function addFamily(familyName, isAsylum, _uiName, unhide) {
 		setChildCount(familyName);
 	}
 
-	if(unhide) {
+	if (unhide) {
 		family.removeClass("hidden")
 	}
 	return family;
@@ -935,13 +939,13 @@ function lazySymbolSubscribe(familyName) {
 function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
 	askQuoterEnabled) {
 	setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
-		askQuoterEnabled);
+		askQuoterEnabled, true);
 }
 
 function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
-	askQuoterEnabled) {
+	askQuoterEnabled, unhide) {
 
-	const familyDetailElems = addFamily(familyName, false, uiName).children()[0].children;
+	const familyDetailElems = addFamily(familyName, false, uiName, unhide).children()[0].children;
 
 	familyDetailElems[10].innerText = bidPriceOffset;
 	familyDetailElems[12].innerText = askPriceOffset;
@@ -1227,12 +1231,16 @@ function setChildCount(familyName) {
 	orderCountDiv.innerText = numberStrings[orders];
 }
 
-function setChildCountOnDiv(familyDiv) {
-
-	const orderCountDiv = familyDiv.children[0].children[2]; // find(".childCount");
-	const orders = familyDiv.children[1].children.length - 2;
-	orderCountDiv.innerText = numberStrings[orders];
+function setEnabledForDateState(familyName, state, unhide) {
+	const family = addFamily(familyName, unhide);
+	const familyNameElem = family.find(".uiName");
+	if ("REENABLED_TODAY" === state) {
+		familyNameElem.removeClass("reenabledToday");
+	} else if ("ENABLED_TOMORROW" === state) {
+		familyNameElem.addClass("enabledTomorrow");
+	}
 }
+
 
 function setActiveChildCounts(family) {
 
@@ -1357,7 +1365,7 @@ function sendInitializationParentData(cachedFamilyData) {
 			const uiName = parsed[i + 2];
 			const familyElem = addFamily(familyName, isAsylum, uiName);
 			unhideBatch.push(familyElem);
-			if(unhideBatch.length >= bufferSize) {
+			if (unhideBatch.length >= bufferSize) {
 				const batchClone = unhideBatch;
 				setTimeout(() => {
 					batchClone.forEach(elem => elem.removeClass("hidden"));
@@ -1379,12 +1387,17 @@ function sendInitializationParentData(cachedFamilyData) {
 			const askQuoterEnabled = bitSet & 8;
 			setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
 				askQuoterEnabled, false)
+		} else if ("setEnabledForDateState" === funcName) {
+			numArgs = 2;
+
+			const familyName = parsed[i];
+			const enabledState = parsed[i + 1];
+			setEnabledForDateState(familyName, enabledState);
 		} else {
 			throw `Invalid function called ${funcName}`;
 		}
 		i += numArgs;
 	}
-
 	setTimeout(() => unhideBatch.forEach(elem => elem.removeClass("hidden")), paintInterval * batchNum);
 
 }
