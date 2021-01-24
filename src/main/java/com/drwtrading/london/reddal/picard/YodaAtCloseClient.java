@@ -2,9 +2,12 @@ package com.drwtrading.london.reddal.picard;
 
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
+import com.drwtrading.london.eeif.yoda.transport.YodaTransportComponents;
 import com.drwtrading.london.eeif.yoda.transport.data.AtCloseSignal;
 import com.drwtrading.london.eeif.yoda.transport.data.YodaSymbolSideKey;
 import org.jetlang.channels.Publisher;
@@ -16,15 +19,17 @@ import java.util.Map;
 public class YodaAtCloseClient implements ITransportCacheListener<YodaSymbolSideKey, AtCloseSignal> {
 
     private final long milliAtMidnightUTC;
+    private IFuseBox<YodaTransportComponents> fuseBox;
     private final Publisher<PicardRow> rowPublisher;
 
     private final DecimalFormat priceDF;
 
     private final Map<String, PicardRow> rowBySymbol;
 
-    public YodaAtCloseClient(final IClock clock, final Publisher<PicardRow> rowPublisher) {
+    public YodaAtCloseClient(final IClock clock, final IFuseBox<YodaTransportComponents> monitor, final Publisher<PicardRow> rowPublisher) {
 
         this.milliAtMidnightUTC = clock.getMillisAtMidnightUTC();
+        this.fuseBox = monitor;
         this.rowPublisher = rowPublisher;
 
         this.priceDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 5);
@@ -50,13 +55,34 @@ public class YodaAtCloseClient implements ITransportCacheListener<YodaSymbolSide
             final long signalMilliSinceUTC = milliAtMidnightUTC + signal.milliSinceMidnight;
             final String closePrice = priceDF.format(signal.closePrice / (double) Constants.NORMALISING_FACTOR);
 
-            final PicardRow row =
-                    new PicardRow(signalMilliSinceUTC, signal.key.symbol, InstType.EQUITY, null, signal.getKey().side.getOppositeSide(),
-                            signal.closePrice, closePrice, PicardSpotter.getBPSThrough(signal.theoPrice, signal.closePrice),
-                            Math.abs(signal.theoPrice - signal.closePrice), PicardRowState.LIVE, "AT_CLOSE", false, isNewRow);
+            final BookSide oppositeSide;
 
-            rowBySymbol.put(symbol, row);
-            rowPublisher.publish(row);
+            switch (signal.getKey().side) {
+                case BID: {
+                    oppositeSide = BookSide.ASK;
+                    break;
+                }
+                case ASK: {
+                    oppositeSide = BookSide.BID;
+                    break;
+                }
+                default: {
+                    fuseBox.logError(YodaTransportComponents.AT_CLOSE_CACHE,
+                            "Unexpected atClose signal, side [" + signal.getKey().side + "].");
+                    oppositeSide = null;
+                }
+            }
+
+            if (null != oppositeSide) {
+
+                final PicardRow row =
+                        new PicardRow(signalMilliSinceUTC, signal.key.symbol, InstType.EQUITY, null, oppositeSide, signal.closePrice,
+                                closePrice, PicardSpotter.getBPSThrough(signal.theoPrice, signal.closePrice),
+                                Math.abs(signal.theoPrice - signal.closePrice), PicardRowState.LIVE, "AT_CLOSE", false, isNewRow);
+
+                rowBySymbol.put(symbol, row);
+                rowPublisher.publish(row);
+            }
 
         } else if (!isNewRow) {
             final PicardRow row = new PicardRow(oldRow, PicardRowState.DEAD);

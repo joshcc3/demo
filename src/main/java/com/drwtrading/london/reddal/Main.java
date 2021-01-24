@@ -1071,7 +1071,7 @@ public class Main {
                 final String instanceName = yodaInstanceConfig.getKey();
                 final IFuseBox<YodaTransportComponents> yodaChildMonitor = yodaParentMonitor.createChildResourceMonitor(instanceName);
 
-                final YodaAtCloseClient atCloseClient = new YodaAtCloseClient(selectIO, atClosePublisher);
+                final YodaAtCloseClient atCloseClient = new YodaAtCloseClient(selectIO, yodaChildMonitor, atClosePublisher);
                 final YodaRestingOrderClient restingClient = new YodaRestingOrderClient(millisAtMidnight, stockAlerts);
                 final YodaSweepClient sweepClient = new YodaSweepClient(millisAtMidnight, stockAlerts);
                 final YodaTweetClient tweetClient = new YodaTweetClient(millisAtMidnight, stockAlerts);

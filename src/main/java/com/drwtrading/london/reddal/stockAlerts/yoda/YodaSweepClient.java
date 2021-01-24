@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.stockAlerts.yoda;
 
-import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.eeif.yoda.transport.data.SweepSignal;
@@ -39,10 +38,23 @@ public class YodaSweepClient implements ITransportCacheListener<YodaSymbolSideKe
         if (0 < signal.numLevels) {
             final String timestamp = sdf.format(millisAtMidnight + signal.milliSinceMidnight);
             final String action;
-            if (BookSide.BID == signal.key.side) {
-                action = "Buys ";
-            } else {
-                action = "Sells ";
+            switch (signal.key.side) {
+                case ASK: {
+                    action = "Sells ";
+                    break;
+                }
+                case BID: {
+                    action = "Buys ";
+                    break;
+                }
+                case BOTH: {
+                    action = "Both ";
+                    break;
+                }
+                default: {
+                    action = "UNKNOWN ";
+                    break;
+                }
             }
             final String msg = action + signal.numLevels + " levels [qty:" + signal.qty + "].";
 

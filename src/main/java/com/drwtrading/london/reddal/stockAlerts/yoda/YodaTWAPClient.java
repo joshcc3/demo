@@ -45,11 +45,26 @@ public class YodaTWAPClient implements ITransportCacheListener<YodaSymbolSideKey
             final String period = df.format(signal.twapPeriodMillis / 1000d);
             final String duration = df.format(signal.twapDurationMillis / 1000d);
             final String action;
-            if (BookSide.BID == signal.key.side) {
-                action = "Selling every ";
-            } else {
-                action = "Buying every ";
+
+            switch (signal.key.side) {
+                case BID: {
+                    action = "Selling every ";
+                    break;
+                }
+                case ASK: {
+                    action = "Buying every ";
+                    break;
+
+                }
+                case BOTH: {
+                    action = "Selling and buying every ";
+                    break;
+                }
+                default: {
+                    action = "UNKNOWN every ";
+                }
             }
+
             final String msg =
                     action + period + " for " + duration + " seconds [Bucket " + signal.volumeBucketMin + ", " + signal.volumeBucketMax +
                             "].";

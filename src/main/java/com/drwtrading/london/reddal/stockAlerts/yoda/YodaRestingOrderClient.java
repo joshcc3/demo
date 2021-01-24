@@ -44,7 +44,26 @@ public class YodaRestingOrderClient implements ITransportCacheListener<YodaSymbo
         if (0 < signal.price) {
             final String timestamp = sdf.format(millisAtMidnight + signal.milliSinceMidnight);
             final String start = sdf.format(signal.timePlacedMilliSinceMidnight);
-            final String side = BookSide.BID == signal.getKey().side ? "Buy " : "Sell ";
+            final String side;
+            switch (signal.key.side) {
+                case BID: {
+                    side = "Buy ";
+                    break;
+                }
+
+                case ASK: {
+                    side = "Sell ";
+                    break;
+                }
+                case BOTH: {
+                    side = "Both ";
+                    break;
+                }
+                default: {
+                    side = "Unknown ";
+                    break;
+                }
+            }
             final String price = priceDF.format(signal.price / (double) Constants.NORMALISING_FACTOR);
             final String msg = side + signal.qty + " @ " + price + " [at " + start + "].";
 

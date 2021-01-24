@@ -1,6 +1,5 @@
 package com.drwtrading.london.reddal.stockAlerts.yoda;
 
-import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.eeif.yoda.transport.data.TweetSignal;
@@ -39,10 +38,23 @@ public class YodaTweetClient implements ITransportCacheListener<YodaSymbolSideKe
         if (!signal.msgText.isEmpty()) {
             final String timestamp = sdf.format(millisAtMidnight + signal.milliSinceMidnight);
             final String action;
-            if (BookSide.BID == signal.key.side) {
-                action = "BID: ";
-            } else {
-                action = "ASK: ";
+            switch (signal.key.side) {
+                case BID: {
+                    action = "BID: ";
+                    break;
+                }
+                case ASK: {
+                    action = "ASK: ";
+                    break;
+
+                }
+                case BOTH: {
+                    action = "BOTH: ";
+                    break;
+                }
+                default: {
+                    action = "UNKNOWN: ";
+                }
             }
             final String msg = action + signal.msgText;
 
