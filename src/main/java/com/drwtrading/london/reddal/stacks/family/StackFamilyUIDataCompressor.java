@@ -11,7 +11,7 @@ public class StackFamilyUIDataCompressor implements IStackFamilyInitializerUI {
     }
 
     @Override
-    public void addFamily(final String familyName, final boolean isAsylum, final String uiName) {
+    public void addFamily(final String familyName, final boolean isAsylum, final String uiName, final boolean unhide) {
         sb.append("addFamily");
         sb.append(DELIMITER);
         sb.append(familyName);

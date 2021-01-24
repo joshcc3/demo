@@ -2,7 +2,7 @@ package com.drwtrading.london.reddal.stacks.family;
 
 public interface IStackFamilyInitializerUI {
 
-    public void addFamily(final String familyName, final boolean isAsylum, final String uiName);
+    public void addFamily(final String familyName, final boolean isAsylum, final String uiName, final boolean unhide);
 
     public void setChild(final String familyName, final String childSymbol, final double bidPriceOffset, final double bidQtyMultiplier,
             final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio);

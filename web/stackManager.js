@@ -612,7 +612,7 @@ function minimiseAll() {
 	$(".family .children").toggleClass("hidden", true);
 }
 
-function addFamily(familyName, isAsylum, _uiName) {
+function addFamily(familyName, isAsylum, _uiName, unhide) {
 
 	const uiName = _uiName ? _uiName : familyName;
 	const familyID = "family_" + cleanID(familyName);
@@ -774,6 +774,10 @@ function addFamily(familyName, isAsylum, _uiName) {
 
 		setChildCount(familyName);
 	}
+
+	if(unhide) {
+		family.removeClass("hidden")
+	}
 	return family;
 }
 
@@ -926,6 +930,12 @@ function globalWidthControls(instruction) {
 
 function lazySymbolSubscribe(familyName) {
 	subscribedToSymbols.add(familyName)
+}
+
+function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
+	askQuoterEnabled) {
+	setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
+		askQuoterEnabled);
 }
 
 function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
@@ -1217,7 +1227,6 @@ function setChildCount(familyName) {
 	orderCountDiv.innerText = numberStrings[orders];
 }
 
-
 function setChildCountOnDiv(familyDiv) {
 
 	const orderCountDiv = familyDiv.children[0].children[2]; // find(".childCount");
@@ -1333,6 +1342,10 @@ function sendUIVersionFormat(uiVersionNum) {
 function sendInitializationParentData(cachedFamilyData) {
 	const parsed = cachedFamilyData.split(DELIMITER);
 	let i = 0;
+	let unhideBatch = [];
+	const bufferSize = 50;
+	const paintInterval = 50;
+	let batchNum = 0;
 	while (i < parsed.length) {
 		const funcName = parsed[i];
 		i += 1;
@@ -1342,7 +1355,16 @@ function sendInitializationParentData(cachedFamilyData) {
 			const familyName = parsed[i];
 			const isAsylum = parsed[i + 1] === "1";
 			const uiName = parsed[i + 2];
-			addFamily(familyName, isAsylum, uiName);
+			const familyElem = addFamily(familyName, isAsylum, uiName);
+			unhideBatch.push(familyElem);
+			if(unhideBatch.length >= bufferSize) {
+				const batchClone = unhideBatch;
+				setTimeout(() => {
+					batchClone.forEach(elem => elem.removeClass("hidden"));
+				}, paintInterval * batchNum);
+				batchNum++;
+				unhideBatch = [];
+			}
 		} else if ("setParentData" === funcName) {
 			numArgs = 5;
 
@@ -1356,12 +1378,15 @@ function sendInitializationParentData(cachedFamilyData) {
 			const askPicardEnabled = bitSet & 4;
 			const askQuoterEnabled = bitSet & 8;
 			setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
-				askQuoterEnabled)
+				askQuoterEnabled, false)
 		} else {
 			throw `Invalid function called ${funcName}`;
 		}
 		i += numArgs;
 	}
+
+	setTimeout(() => unhideBatch.forEach(elem => elem.removeClass("hidden")), paintInterval * batchNum);
+
 }
 
 function sendInitializationChildData(cachedFamilyData) {

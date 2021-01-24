@@ -434,7 +434,7 @@ public class StackFamilyView {
         if (isFamilyDisplayable(familyData)) {
             mustRefresh = true;
             final boolean isAsylum = isFamilyAsylum(familyData);
-            views.all().addFamily(familyName, isAsylum, familyData.getUIName());
+            views.all().addFamily(familyName, isAsylum, familyData.getUIName(), true);
             updateFamilyUIData(views.all(), familyData);
         }
     }
@@ -543,7 +543,7 @@ public class StackFamilyView {
         if (!isLazy) {
             for (final Map.Entry<String, FamilyUIData> family : familyUIData.entrySet()) {
 
-                initFamilyUIData(newView, family.getValue());
+                initFamilyUIData(newView, family.getValue(), true);
                 initChildUIData(newView, family.getValue(), family.getKey());
             }
 
@@ -575,7 +575,7 @@ public class StackFamilyView {
 
                 final Set<Map.Entry<String, FamilyUIData>> familyUIDataEntries = familyUIData.entrySet();
                 final Stream<Map.Entry<String, FamilyUIData>> entries = familyUIDataEntries.stream().sorted(Map.Entry.comparingByKey());
-                final Consumer<Map.Entry<String, FamilyUIData>> entryConsumer = entry -> initFamilyUIData(batchingView, entry.getValue());
+                final Consumer<Map.Entry<String, FamilyUIData>> entryConsumer = entry -> initFamilyUIData(batchingView, entry.getValue(), false);
                 entries.forEach(entryConsumer);
                 for (final FamilyUIData familyUIData : familyUIData.values()) {
                     updateFamilyUIData(batchingView, familyUIData);
@@ -611,12 +611,12 @@ public class StackFamilyView {
 
     }
 
-    private void initFamilyUIData(final IStackFamilyInitializerUI newView, final FamilyUIData family) {
+    private void initFamilyUIData(final IStackFamilyInitializerUI newView, final FamilyUIData family, final boolean unhide) {
         final String familyName = family.uiData.symbol;
         if (isFamilyDisplayable(familyName)) {
             final FamilyUIData parentUIData = familyUIData.get(familyName);
             final boolean isAsylum = isFamilyAsylum(parentUIData);
-            newView.addFamily(familyName, isAsylum, family.getUIName());
+            newView.addFamily(familyName, isAsylum, family.getUIName(), unhide);
         }
     }
 
@@ -682,7 +682,7 @@ public class StackFamilyView {
             for (final FamilyUIData familyUI : familyUIs) {
                 final IStackFamilyUI view = views.get(data.getOutboundChannel());
                 view.lazySymbolSubscribe(familyUI.uiData.symbol);
-                initFamilyUIData(view, familyUI);
+                initFamilyUIData(view, familyUI, true);
                 initChildUIData(view, familyUI, familyUI.uiData.symbol);
                 updateFamilyUIData(view, familyUI);
                 for (final StackUIRelationship relationship : familyUI.getAllRelationships()) {
