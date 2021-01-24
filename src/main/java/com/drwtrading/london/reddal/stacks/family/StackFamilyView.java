@@ -50,6 +50,9 @@ import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -129,6 +132,7 @@ public class StackFamilyView {
     private final Map<String, StackChildFilter> filters;
 
     private final DecimalFormat priceOffsetDF;
+    private final int nextWorkingEpochDay;
 
     private StackCommunityManager communityManager;
 
@@ -188,6 +192,14 @@ public class StackFamilyView {
         this.views = WebSocketViews.create(IStackFamilyUI.class, this);
 
         this.bufferedETFDefs = new HashMap<>();
+
+        final LocalDate epoch = LocalDate.EPOCH;
+        LocalDate nextWorkingDay = LocalDate.now();
+        nextWorkingDay = nextWorkingDay.plus(1, ChronoUnit.DAYS);
+        while(DayOfWeek.SATURDAY.ordinal() <= DayOfWeek.from(nextWorkingDay).ordinal()) {
+            nextWorkingDay = nextWorkingDay.plus(1, ChronoUnit.DAYS);
+        }
+        this.nextWorkingEpochDay = (int)ChronoUnit.DAYS.between(epoch, nextWorkingDay);
 
         managementSelectIO.addDelayedAction(60_000L, this::tryBufferedETFAdditions);
     }
@@ -1721,6 +1733,18 @@ public class StackFamilyView {
         for (final BookSide side : BookSide.values()) {
             for (final StackType stackType : StackType.values()) {
                 communityManager.setStackEnabled(SOURCE_UI, familyName, side, stackType, isEnabled);
+            }
+        }
+    }
+
+    @FromWebSocketView
+    public void disableStacksForADay(final String familyName, final WebSocketInboundData data) {
+        final IStackFamilyUI view = views.get(data.getOutboundChannel());
+
+        communityManager.setFamilyEnabledForDate(SOURCE_UI, familyName, nextWorkingEpochDay);
+        for (final BookSide side : BookSide.values()) {
+            for (final StackType stackType : StackType.values()) {
+                communityManager.setStackEnabled(SOURCE_UI, familyName, side, stackType, false);
             }
         }
     }
