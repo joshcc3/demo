@@ -407,6 +407,17 @@ input::-webkit-inner-spin-button:hover {
 	border: 3px solid #9a9a9a;
 }
 
+#families .disableToday {
+	background-color: buttonface;
+	color: #8c2629;
+	font-weight: bold;
+	border: 3px solid #5970B2;
+}
+
+#families .disableToday:active {
+	border: 3px solid #9a9a9a;
+}
+
 .relationship, .relationship div {
 	display: inline-block;
 }

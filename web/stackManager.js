@@ -772,6 +772,11 @@ function addFamily(familyName, isAsylum, _uiName, unhide) {
 			ws.send(command("cleanParent", [familyName]));
 		};
 
+		const disableFamilyDiv = familyDetails.children[19]; // family.find(".stackControls.cleanParent");
+		disableFamilyDiv.onmousedown = function () {
+			ws.send(command("disableStacksForADay", [familyName]));
+		};
+
 		familiesDiv.append(family);
 
 		// addSortedDiv($("#families").find(".family"), family, tableComparator);
