@@ -352,6 +352,7 @@ input::-webkit-inner-spin-button:hover {
 	cursor: pointer;
 	visibility: hidden;
 }
+
 .familyDetails .uiName {
 	text-align: left;
 	width: 120px;
@@ -440,8 +441,8 @@ input::-webkit-inner-spin-button:hover {
 }
 
 #families .relationship div input {
-    width: 70px;
-    text-align: center;
+	width: 70px;
+	text-align: center;
 }
 
 .asylumControls {
@@ -506,7 +507,7 @@ input[type=Submit], #families .dataRow > button {
 	visibility: hidden;
 }
 
-#adminBlock.isAsylumView #header .hideForAsylum,  #families .family.isAsylum .hideForAsylum {
+#adminBlock.isAsylumView #header .hideForAsylum, #families .family.isAsylum .hideForAsylum {
 	display: none;
 }
 
