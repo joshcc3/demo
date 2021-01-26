@@ -153,8 +153,11 @@ public final class FIETFObligationPresenter implements IWorkingOrdersCallback {
                 monitor.logError(ReddalComponents.INVERSE_OBLIGATIONS, "Failing inverse obligation for " + obligation.getSymbol());
             }
         } else {
-            monitor.setOK(ReddalComponents.INVERSE_OBLIGATIONS);
             failingObligations.remove(obligation.getSymbol());
+        }
+
+        if (failingObligations.isEmpty()) {
+            monitor.setOK(ReddalComponents.INVERSE_OBLIGATIONS);
         }
 
         if (obligation.percentageChanged() || isNewConnection) {
