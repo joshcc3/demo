@@ -1140,8 +1140,13 @@ public class Main {
                 communityManager.increaseChildPriceOffset(msg.source, childSymbol, msg.side, msg.offsetIncreaseBPS);
             });
             channels.setSiblingsEnabledCmds.subscribe(selectIOFiber, msg -> {
+
                 final String familyName = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
                 stackFamilyPresenter.setChildStackEnabled(msg.source, familyName, msg.side, msg.isEnabled);
+
+                if (null != msg.otcSymbol && !msg.isEnabled) {
+                    stackFamilyPresenter.stopChild(msg.source, msg.otcSymbol, msg.side);
+                }
             });
 
             final StackFamilyListener familyListener = new StackFamilyListener(stackFamilyPresenter);

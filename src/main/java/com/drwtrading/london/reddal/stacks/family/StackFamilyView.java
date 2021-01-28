@@ -48,7 +48,6 @@ import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
-import org.mockito.cglib.core.Local;
 
 import java.text.DecimalFormat;
 import java.time.DayOfWeek;
@@ -65,7 +64,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -491,6 +489,7 @@ public class StackFamilyView {
 
     public boolean updateRelationship(final String childSymbol, final String parentSymbol, final double bidPriceOffset,
             final double bidQtyMultiplier, final double askPriceOffset, final double askQtyMultiplier, final int familyToChildRatio) {
+
         mustRefresh = true;
 
         for (final Map.Entry<String, FamilyUIData> familyRelations : familyUIData.entrySet()) {
@@ -1428,6 +1427,7 @@ public class StackFamilyView {
         } catch (final Exception e) {
             final IStackFamilyUI ui = views.get(data.getOutboundChannel());
             ui.displayErrorMsg(e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -1935,6 +1935,15 @@ public class StackFamilyView {
                     }
                 }
             }
+        }
+    }
+
+    public void stopChild(final String symbol, final BookSide side) {
+
+        final ChildUIData childUIData = childrenUIData.get(symbol);
+        if (null != childUIData) {
+
+            communityManager.stopChild(childUIData.getFamily(), symbol, side);
         }
     }
 }

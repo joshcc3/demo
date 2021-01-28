@@ -585,15 +585,23 @@ public class LadderStackView implements ILadderBoard {
             } else if (label.equals(HTML.START_SELL)) {
                 stackData.startAskStrategy(user);
             } else if (label.equals(HTML.STOP_BUY)) {
+
                 stackData.stopBidStrategy();
+
+                final String isin = getISIN();
                 final StacksSetSiblingsEnableCmd cmd =
-                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, false);
+                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, isin, BookSide.BID, false);
                 disableSiblingsCmdPublisher.publish(cmd);
+
             } else if (label.equals(HTML.STOP_SELL)) {
+
                 stackData.stopAskStrategy();
+
+                final String isin = getISIN();
                 final StacksSetSiblingsEnableCmd cmd =
-                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, false);
+                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, isin, BookSide.ASK, false);
                 disableSiblingsCmdPublisher.publish(cmd);
+
             } else if (label.equals(HTML.STACK_BID_QUOTE_ENABLED)) {
                 stackData.setBidStackEnabled(StackType.QUOTER, true);
             } else if (label.equals(HTML.STACK_BID_PICARD_ENABLED)) {
@@ -701,15 +709,21 @@ public class LadderStackView implements ILadderBoard {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
             } else if (label.equals(HTML.START_BUY)) {
+
                 stackData.startBidStrategy(user);
+
                 final StacksSetSiblingsEnableCmd cmd =
-                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, true);
+                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, null, BookSide.BID, true);
                 disableSiblingsCmdPublisher.publish(cmd);
+
             } else if (label.equals(HTML.START_SELL)) {
+
                 stackData.startAskStrategy(user);
+
                 final StacksSetSiblingsEnableCmd cmd =
-                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, true);
+                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, null, BookSide.ASK, true);
                 disableSiblingsCmdPublisher.publish(cmd);
+
             } else if (label.equals(HTML.STOP_BUY)) {
                 stackData.stopBidStrategy();
             } else if (label.equals(HTML.STOP_SELL)) {
@@ -742,6 +756,16 @@ public class LadderStackView implements ILadderBoard {
             //    view.popUp(url, "orders", 270, 20 * (1 + orders.size()));
             //}
             //}
+        }
+    }
+
+    private String getISIN() {
+
+        final IBook<?> book = marketData.getBook();
+        if (null != book) {
+            return book.getISIN();
+        } else {
+            return null;
         }
     }
 

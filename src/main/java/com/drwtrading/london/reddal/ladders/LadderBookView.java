@@ -179,7 +179,6 @@ public class LadderBookView implements ILadderBoard {
 
     private int clickTradingBoxQty;
     private String feeString;
-    private final int orderSeqNo = 0;
 
     private Long modifyFromPrice;
     private long modifyFromPriceSelectedTime;
@@ -1209,15 +1208,21 @@ public class LadderBookView implements ILadderBoard {
                 stackData.startAskStrategy(user);
             } else if (label.equals(HTML.STOP_BUY)) {
                 if (null != metaData.spreadContractSet.parentSymbol) {
+
+                    final String isin = getISIN();
                     final StacksSetSiblingsEnableCmd cmd =
-                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, false);
+                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, isin, BookSide.BID,
+                                    false);
                     stackSiblingsCmdPublisher.publish(cmd);
                 }
                 stackData.stopBidStrategy();
             } else if (label.equals(HTML.STOP_SELL)) {
                 if (null != metaData.spreadContractSet.parentSymbol) {
+
+                    final String isin = getISIN();
                     final StacksSetSiblingsEnableCmd cmd =
-                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, false);
+                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, isin, BookSide.ASK,
+                                    false);
                     stackSiblingsCmdPublisher.publish(cmd);
                 }
                 stackData.stopAskStrategy();
@@ -1299,8 +1304,10 @@ public class LadderBookView implements ILadderBoard {
             } else if (label.equals(HTML.START_BUY)) {
 
                 if (null != metaData.spreadContractSet.parentSymbol) {
+
                     final StacksSetSiblingsEnableCmd cmd =
-                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.BID, true);
+                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, null, BookSide.BID,
+                                    true);
                     stackSiblingsCmdPublisher.publish(cmd);
                 }
                 stackData.startBidStrategy(user);
@@ -1309,8 +1316,10 @@ public class LadderBookView implements ILadderBoard {
 
                 stackData.startAskStrategy(user);
                 if (null != metaData.spreadContractSet.parentSymbol) {
+
                     final StacksSetSiblingsEnableCmd cmd =
-                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, BookSide.ASK, true);
+                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, null, BookSide.ASK,
+                                    true);
                     stackSiblingsCmdPublisher.publish(cmd);
                 }
             } else if (label.equals(HTML.STOP_BUY)) {
@@ -1681,8 +1690,9 @@ public class LadderBookView implements ILadderBoard {
 
     private static <T> Map.Entry<Long, T> iterate(final ITickTable tickTable, final long rowPrice, final int zoomLevel, final BookSide side,
             Map.Entry<Long, T> entry, final Iterator<Map.Entry<Long, T>> it, final Consumer<T> accumulator) {
-        while (it.hasNext() || entry != null) {
-            if (entry != null) {
+
+        while (it.hasNext() || null != entry) {
+            if (null != entry) {
                 final int comparison = Long.compare(tickTable.roundAwayToTick(side, entry.getKey(), zoomLevel), rowPrice);
                 if (comparison == 0) {
                     accumulator.accept(entry.getValue());
@@ -1730,6 +1740,16 @@ public class LadderBookView implements ILadderBoard {
             return BookSide.BID;
         } else {
             return BookSide.ASK;
+        }
+    }
+
+    private String getISIN() {
+
+        final IBook<?> book = marketData.getBook();
+        if (null != book) {
+            return book.getISIN();
+        } else {
+            return null;
         }
     }
 
