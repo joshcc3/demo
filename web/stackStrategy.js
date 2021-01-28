@@ -154,10 +154,10 @@ function removeAll(nibblerName) {
 }
 
 function setRow(nibblerName, strategyID, quoteSymbol, quoteISIN, quoteCCY, quoteMIC, leanInstType, leanSymbol, leanISIN, leanCCY, leanMIC,
-				isQuoteInstDefEventAvailable, isQuoteBookAvailable, isLeanBookAvailable, isFXAvailable, isAdditiveAvailable,
-				additiveSymbol) {
+	isQuoteInstDefEventAvailable, isQuoteBookAvailable, isLeanBookAvailable, isFXAvailable, isAdditiveAvailable,
+	additiveSymbol) {
 
-	const rowID = nibblerName + strategyID;
+	const rowID = nibblerName + "n" + strategyID;
 	let row = $("#" + rowID);
 	if (row.length < 1) {
 
@@ -234,7 +234,13 @@ function getExchangeTable(nibblerName) {
 			exchangeBlock.toggleClass("hidden", !exchangeBlock.hasClass("hidden"))
 		});
 
-		$("#exchanges").append(nibbler);
+		const exchangeDiv = $("#exchanges");
+		const exchanges = exchangeDiv.children();
+		if (exchanges.length < 1) {
+			exchangeDiv.append(nibbler);
+		} else {
+			addSortedDiv(exchanges, nibbler, compareExchangeRow);
+		}
 
 		const headerRow = nibbler.find(".header.row");
 		const killSymbol = headerRow.find(".killStrategy button");
@@ -244,6 +250,14 @@ function getExchangeTable(nibblerName) {
 		});
 	}
 	return nibbler.find(".exchange");
+}
+
+function compareExchangeRow(a, b) {
+
+	const aName = a.attr("id");
+	const bName = b.attr("id");
+
+	return aName < bName ? -1 : aName === bName ? 0 : 1;
 }
 
 function setCellData(row, cellID, value) {
