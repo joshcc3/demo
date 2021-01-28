@@ -6,7 +6,6 @@ import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.photons.ladder.LadderText;
-import drw.eeif.photons.mrchill.Position;
 
 import java.text.DecimalFormat;
 import java.util.EnumMap;
@@ -23,12 +22,6 @@ public class LadderMetaData {
     public long deskPosition;
     public String formattedDeskPosition;
 
-    public long mrChillNetPosition;
-    public String formattedMrChillNetPosition;
-
-    public long mrPhilVolume;
-    public String formattedMrPhilVolume;
-
     private PKSExposure pksData;
     public String pksExposure;
     public String pksPosition;
@@ -42,8 +35,6 @@ public class LadderMetaData {
         this.displaySymbol = symbol;
 
         this.formattedDeskPosition = null;
-        this.formattedMrChillNetPosition = null;
-        this.formattedMrPhilVolume = null;
 
         this.pksData = null;
         this.pksExposure = null;
@@ -71,21 +62,7 @@ public class LadderMetaData {
         if (null == formattedDeskPosition || deskPosition != position) {
 
             this.deskPosition = position;
-            this.formattedDeskPosition = formatPosition(formatter, position);
-        }
-    }
-
-    public void setMrPhilPosition(final DecimalFormat formatter, final Position position) {
-        final long netPosition = position.getDayBuy() - position.getDaySell();
-        final long volume = position.getDayBuy() + position.getDaySell();
-
-        if (null == formattedMrChillNetPosition || mrChillNetPosition != netPosition) {
-
-            this.mrChillNetPosition = netPosition;
-            this.formattedMrChillNetPosition = formatPosition(formatter, mrChillNetPosition);
-
-            this.mrPhilVolume = volume;
-            this.formattedMrPhilVolume = formatPosition(formatter, mrPhilVolume);
+            this.formattedDeskPosition = DataUtils.formatPosition(formatter, position);
         }
     }
 
@@ -94,8 +71,8 @@ public class LadderMetaData {
         this.pksData = data;
         final double combinedPosition = data.getCombinedPosition();
 
-        this.pksExposure = formatPosition(formatter, data.dryExposure);
-        this.pksPosition = formatPosition(formatter, combinedPosition);
+        this.pksExposure = DataUtils.formatPosition(formatter, data.dryExposure);
+        this.pksPosition = DataUtils.formatPosition(formatter, combinedPosition);
     }
 
     public PKSExposure getPKSData() {
@@ -117,15 +94,4 @@ public class LadderMetaData {
         }
     }
 
-    private static String formatPosition(final DecimalFormat formatter, final double qty) {
-
-        final double absQty = Math.abs(qty);
-        if (absQty < 10000) {
-            return Integer.toString((int) qty);
-        } else if (absQty < 1000000) {
-            return formatter.format(qty / 1000.0) + 'K';
-        } else {
-            return formatter.format(qty / 1000000.0) + 'M';
-        }
-    }
 }

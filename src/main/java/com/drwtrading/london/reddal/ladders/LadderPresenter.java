@@ -414,11 +414,12 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     @Subscribe
     public void setMrPhilPosition(final Position position) {
-        final LadderMetaData ladderMetaData = metaDataBySymbol.get(position.getSymbol());
+        final CCY ccy = CCY.valueOf(position.getCcy());
+        final MIC mic = MIC.valueOf(position.getMic());
+        final InstrumentID instId = new InstrumentID(position.getIsin(), ccy, mic);
 
-        if (ladderMetaData != null) {
-            ladderMetaData.setMrPhilPosition(oneDP, position);
-        }
+        final InstrumentMetaData metaData = instrumentMetaData.get(instId);
+        metaData.setMrPhilPosition(oneDP, position);
     }
 
     public void setPKSExposures(final PKSExposures positions) {
