@@ -14,6 +14,8 @@ import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,8 +67,8 @@ public class StackFamilyListener implements IStackStrategyCacheListener, IStackG
     }
 
     @Override
-    public boolean enableForDate(final String source, final String familyName, final int epochDay) {
-        presenter.enableForDate(source, familyName, epochDay);
+    public boolean setFamilyRunnableForDate(final String source, final String familyName, final Date date, final boolean isRunnable) {
+        presenter.setStrategyRunnableForDate(source, familyName, date, isRunnable);
         return true;
     }
 

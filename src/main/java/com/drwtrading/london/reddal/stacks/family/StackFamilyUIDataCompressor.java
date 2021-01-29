@@ -98,12 +98,12 @@ public class StackFamilyUIDataCompressor implements IStackFamilyInitializerUI {
     }
 
     @Override
-    public void setEnabledForDateState(final String familyName, final StackEnabledForDateState state) {
-        sb.append("setEnabledForDateState");
+    public void setIsRunnable(final String familyName, final boolean isRunnable) {
+        sb.append("setIsRunnable");
         sb.append(DELIMITER);
         sb.append(familyName);
         sb.append(DELIMITER);
-        sb.append(state);
+        sb.append(isRunnable);
         sb.append(DELIMITER);
     }
 

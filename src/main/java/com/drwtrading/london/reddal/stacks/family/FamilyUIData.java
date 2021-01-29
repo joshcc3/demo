@@ -14,7 +14,7 @@ class FamilyUIData {
 
     private StackCommunity stackCommunity;
     private String uiName;
-    private StackEnabledForDateState enabledForDateState;
+    private boolean isRunnable;
 
     FamilyUIData(final StackUIData uiData) {
 
@@ -22,7 +22,7 @@ class FamilyUIData {
         this.relationships = new TreeMap<>();
         this.uiName = uiData.symbol;
         this.stackCommunity = null;
-        this.enabledForDateState = StackEnabledForDateState.NONE;
+        this.isRunnable = true;
     }
 
     void setCommunity(final StackCommunity stackCommunity) {
@@ -53,15 +53,15 @@ class FamilyUIData {
         this.uiName = uiName;
     }
 
-    public StackEnabledForDateState getEnabledForDateState() {
-        return enabledForDateState;
-    }
-
-    void setEnabledForDateState(final StackEnabledForDateState state) {
-        this.enabledForDateState = state;
+    public boolean isRunnable() {
+        return isRunnable;
     }
 
     String getUIName() {
         return uiName;
+    }
+
+    void setIsRunnable(final boolean isRunnable) {
+        this.isRunnable = isRunnable;
     }
 }

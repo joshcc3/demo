@@ -31,7 +31,9 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
+import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -228,19 +230,17 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         }
     }
 
-    boolean setMetadata(final String source, final String parentSymbol, final String uiName) {
+    void setMetadata(final String source, final String parentSymbol, final String uiName) {
 
         for (final StackFamilyView familyView : communityViews.values()) {
             familyView.setMetadata(parentSymbol, uiName);
         }
-        return true;
     }
 
-    boolean enableForDate(final String source, final String parentSymbol, final long epochDay) {
+    void setStrategyRunnableForDate(final String source, final String parentSymbol, final Date date, final boolean isRunnable) {
         for (final StackFamilyView familyView : communityViews.values()) {
-            familyView.enableForDate(parentSymbol, epochDay);
+            familyView.setStrategyRunnableForDate(parentSymbol, date, isRunnable);
         }
-        return true;
     }
 
     public void autoFamily(final ETFDef etfDef) {

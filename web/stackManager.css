@@ -408,16 +408,25 @@ input::-webkit-inner-spin-button:hover {
 	border: 3px solid #9a9a9a;
 }
 
-#families .disableToday {
+.familyDetails .todayEnabled {
 	background-color: buttonface;
-	color: #8c2629;
-	font-weight: bold;
-	border: 3px solid #5970B2;
+	color: black;
+    width: 19px;
+    height: 15px;
+    text-align: center;
 }
 
-#families .disableToday:active {
-	border: 3px solid #9a9a9a;
+.familyDetails .todayEnabled.isRunnable {
+    border: 3px solid green;
 }
+
+.familyDetails .todayEnabled.isNotRunnable {
+    border: 3px solid red;
+}
+
+/*#families .todayEnabled:active {*/
+/*	border: 3px solid #9a9a9a;*/
+/*}*/
 
 .relationship, .relationship div {
 	display: inline-block;
@@ -577,13 +586,5 @@ input[type=Submit].hidden {
 }
 
 #footer .filterName.selected {
-	color: green;
-}
-
-.enabledTomorrow {
-	color: orange;
-}
-
-.reenabledToday {
 	color: green;
 }

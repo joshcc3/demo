@@ -10,6 +10,7 @@ let isFutures;
 let isLazy = false;
 const searchedForSymbols = new Set()
 const subscribedToSymbols = new Set()
+const notRunnableFamilies = new Set()
 
 const UI_VERSION_NUM = "2";
 const DELIMITER = "\u0000";
@@ -364,10 +365,6 @@ function killFamily(symbol) {
 
 function createAllFamiliesFromFile() {
 	ws.send(command("createFamiliesFromFile", []));
-}
-
-function disableForToday(symbol) {
-	ws.send(command("disableStacksForADay", [symbol]));
 }
 
 function popUp(url, name, width, height) {
@@ -774,7 +771,8 @@ function addFamily(familyName, isAsylum, _uiName, unhide) {
 
 		const disableFamilyDiv = familyDetails.children[19]; // family.find(".stackControls.cleanParent");
 		disableFamilyDiv.onmousedown = function () {
-			ws.send(command("disableStacksForADay", [familyName]));
+			const isNotRunnable = notRunnableFamilies.has(familyName)
+			ws.send(command("setFamilyRunnableForToday", [familyName, isNotRunnable]));
 		};
 
 		familiesDiv.append(family);
@@ -1236,13 +1234,17 @@ function setChildCount(familyName) {
 	orderCountDiv.innerText = numberStrings[orders];
 }
 
-function setEnabledForDateState(familyName, state, unhide) {
-	const family = addFamily(familyName, unhide);
-	const familyNameElem = family.find(".uiName");
-	if ("REENABLED_TODAY" === state) {
-		familyNameElem.removeClass("reenabledToday");
-	} else if ("ENABLED_TOMORROW" === state) {
-		familyNameElem.addClass("enabledTomorrow");
+function setIsRunnable(familyName, isRunnable) {
+	const family = addFamily(familyName, false);
+	let runnableToday = family.find('.todayEnabled');
+	if(isRunnable) {
+		notRunnableFamilies.delete(familyName)
+		runnableToday.toggleClass("isNotRunnable", false)
+		runnableToday.toggleClass("isRunnable", true)
+	} else if(!isRunnable) {
+		notRunnableFamilies.add(familyName)
+		runnableToday.toggleClass("isRunnable", false)
+		runnableToday.toggleClass("isNotRunnable", true)
 	}
 }
 
@@ -1392,12 +1394,12 @@ function sendInitializationParentData(cachedFamilyData) {
 			const askQuoterEnabled = bitSet & 8;
 			setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
 				askQuoterEnabled, false)
-		} else if ("setEnabledForDateState" === funcName) {
+		} else if ("setIsRunnable" === funcName) {
 			numArgs = 2;
 
 			const familyName = parsed[i];
 			const enabledState = parsed[i + 1];
-			setEnabledForDateState(familyName, enabledState);
+			setIsRunnable(familyName, enabledState !== "false");
 		} else {
 			throw `Invalid function called ${funcName}`;
 		}
