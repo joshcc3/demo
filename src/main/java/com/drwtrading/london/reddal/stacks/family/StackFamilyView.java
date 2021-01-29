@@ -198,11 +198,11 @@ public class StackFamilyView {
         final LocalDate today = LocalDate.now();
         LocalDate nextWorkingDay = today;
         nextWorkingDay = nextWorkingDay.plus(1, ChronoUnit.DAYS);
-        while(DayOfWeek.SATURDAY.ordinal() <= DayOfWeek.from(nextWorkingDay).ordinal()) {
+        while (DayOfWeek.SATURDAY.ordinal() <= DayOfWeek.from(nextWorkingDay).ordinal()) {
             nextWorkingDay = nextWorkingDay.plus(1, ChronoUnit.DAYS);
         }
-        this.nextWorkingEpochDay = (int)ChronoUnit.DAYS.between(epoch, nextWorkingDay);
-        this.todayEpochDay = (int)ChronoUnit.DAYS.between(epoch, today);
+        this.nextWorkingEpochDay = (int) ChronoUnit.DAYS.between(epoch, nextWorkingDay);
+        this.todayEpochDay = (int) ChronoUnit.DAYS.between(epoch, today);
 
         managementSelectIO.addDelayedAction(60_000L, this::tryBufferedETFAdditions);
     }
@@ -240,19 +240,19 @@ public class StackFamilyView {
 
     public void enableForDate(final String parentSymbol, final long epochDay) {
         final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
-        if(null != familyUIData) {
+        if (null != familyUIData) {
             mustRefresh = true;
             final StackEnabledForDateState oldState = familyUIData.getEnabledForDateState();
             final StackEnabledForDateState newState;
-            if(nextWorkingEpochDay == epochDay) {
+            if (nextWorkingEpochDay == epochDay) {
                 newState = StackEnabledForDateState.ENABLED_TOMORROW;
-            } else if(todayEpochDay == epochDay) {
+            } else if (todayEpochDay == epochDay) {
                 newState = StackEnabledForDateState.REENABLED_TODAY;
             } else {
                 newState = StackEnabledForDateState.NONE;
             }
 
-            if(oldState.ordinal() < newState.ordinal()) {
+            if (oldState.ordinal() < newState.ordinal()) {
                 familyUIData.setEnabledForDateState(newState);
                 updateFamilyUIData(familyUIData);
             }
@@ -601,7 +601,8 @@ public class StackFamilyView {
 
                 final Set<Map.Entry<String, FamilyUIData>> familyUIDataEntries = familyUIData.entrySet();
                 final Stream<Map.Entry<String, FamilyUIData>> entries = familyUIDataEntries.stream().sorted(Map.Entry.comparingByKey());
-                final Consumer<Map.Entry<String, FamilyUIData>> entryConsumer = entry -> initFamilyUIData(batchingView, entry.getValue(), false);
+                final Consumer<Map.Entry<String, FamilyUIData>> entryConsumer =
+                        entry -> initFamilyUIData(batchingView, entry.getValue(), false);
                 entries.forEach(entryConsumer);
                 for (final FamilyUIData familyUIData : familyUIData.values()) {
                     updateFamilyUIData(batchingView, familyUIData);
@@ -1768,12 +1769,12 @@ public class StackFamilyView {
     public void disableStacksForADay(final String familyName, final WebSocketInboundData data) {
         final IStackFamilyUI view = views.get(data.getOutboundChannel());
 
-        communityManager.setFamilyEnabledForDate(SOURCE_UI, familyName, nextWorkingEpochDay);
         for (final BookSide side : BookSide.values()) {
             for (final StackType stackType : StackType.values()) {
                 communityManager.setStackEnabled(SOURCE_UI, familyName, side, stackType, false);
             }
         }
+        communityManager.setFamilyEnabledForDate(SOURCE_UI, familyName, nextWorkingEpochDay);
     }
 
     @FromWebSocketView

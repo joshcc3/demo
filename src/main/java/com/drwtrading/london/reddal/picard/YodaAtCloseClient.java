@@ -19,7 +19,7 @@ import java.util.Map;
 public class YodaAtCloseClient implements ITransportCacheListener<YodaSymbolSideKey, AtCloseSignal> {
 
     private final long milliAtMidnightUTC;
-    private IFuseBox<YodaTransportComponents> fuseBox;
+    private final IFuseBox<YodaTransportComponents> fuseBox;
     private final Publisher<PicardRow> rowPublisher;
 
     private final DecimalFormat priceDF;

@@ -16,7 +16,6 @@ class FamilyUIData {
     private String uiName;
     private StackEnabledForDateState enabledForDateState;
 
-
     FamilyUIData(final StackUIData uiData) {
 
         this.uiData = uiData;
