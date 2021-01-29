@@ -1141,8 +1141,10 @@ public class Main {
             });
             channels.setSiblingsEnabledCmds.subscribe(selectIOFiber, msg -> {
 
-                final String familyName = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
-                stackFamilyPresenter.setChildStackEnabled(msg.source, familyName, msg.side, msg.isEnabled);
+                if (null != msg.familyName) {
+                    final String familyName = PARENT_STACK_SUFFIX.matcher(msg.familyName).replaceAll("");
+                    stackFamilyPresenter.setChildStackEnabled(msg.source, familyName, msg.side, msg.isEnabled);
+                }
 
                 if (null != msg.otcSymbol && !msg.isEnabled) {
                     stackFamilyPresenter.stopChild(msg.source, msg.otcSymbol, msg.side);
