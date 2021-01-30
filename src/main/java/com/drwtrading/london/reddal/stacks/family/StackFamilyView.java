@@ -50,7 +50,6 @@ import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -722,7 +721,7 @@ public class StackFamilyView {
                 allViews.displayInfoMsg(error);
             }
             if (successful) {
-                createFamilies(allViews, source, familyDefinitions, requests);
+                createFamilies(requests);
                 bufferedETFDefs.remove(etfDef.indexDef.name);
             }
         } else {
@@ -800,21 +799,15 @@ public class StackFamilyView {
         return 30_000L;
     }
 
-    private void createFamilies(final IStackFamilyUI ui, final String source, final List<String> familyDefinitions,
-            final List<FamilyCreationRequest> definitions) {
-        ui.displayInfoMsg("All input families passed checks - going to create " + familyDefinitions.size() + " families");
+    private void createFamilies(final List<FamilyCreationRequest> definitions) {
 
         for (final FamilyCreationRequest parsedDefinition : definitions) {
             final String familyName = parsedDefinition.familyName;
-            ui.displayInfoMsg("Creating " + familyName);
-            communityManager.createFamily(source, familyName, parsedDefinition.instID, community.instType, community);
-            if (!familyUIData.containsKey(familyName)) {
-                ui.displayInfoMsg("Failed to create family (not in familyUIData) " + familyName);
-            } else {
+            communityManager.createFamily("FAMILY_ADMIN_UI_AUTO", familyName, parsedDefinition.instID, community.instType, community);
+            if (familyUIData.containsKey(familyName)) {
                 for (final String child : parsedDefinition.children) {
                     // these must happen sequentially
-                    ui.displayInfoMsg("Adding child relationship " + familyName + " -> " + child);
-                    communityManager.setRelationship(source, familyName, child);
+                    communityManager.setRelationship("FAMILY_ADMIN_UI_AUTO", familyName, child);
                 }
             }
         }
@@ -1846,7 +1839,7 @@ public class StackFamilyView {
             final ChildUIData childUIData = childrenUIData.get(childSymbol);
             final String familyName = childUIData.getFamily();
             final FamilyUIData familyUIData = this.familyUIData.get(familyName);
-            if(familyUIData.isRunnable()) {
+            if (familyUIData.isRunnable()) {
                 communityManager.startChild(familyName, childSymbol, side, user);
             }
         }
