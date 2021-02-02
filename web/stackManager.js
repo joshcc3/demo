@@ -948,7 +948,8 @@ function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPi
 function setParentData(familyName, uiName, bidPriceOffset, askPriceOffset, bidPicardEnabled, bidQuoterEnabled, askPicardEnabled,
 	askQuoterEnabled, unhide) {
 
-	const familyDetailElems = addFamily(familyName, false, uiName, unhide).children()[0].children;
+	let familyElem = addFamily(familyName, false, uiName, unhide);
+	const familyDetailElems = familyElem.children()[0].children;
 
 	familyDetailElems[10].innerText = bidPriceOffset;
 	familyDetailElems[12].innerText = askPriceOffset;
@@ -982,7 +983,7 @@ function removeChild(familyName, childSymbol) {
 function setChild(familyName, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier, familyToChildRatio) {
 
 	const rowID = cleanID(childSymbol);
-	let row = document.getElementById("#" + rowID);
+	let row = document.getElementById(rowID);
 
 	let familyDiv = addFamily(familyName);
 	let familyElems = familyDiv.children();
@@ -1115,7 +1116,7 @@ function setChildData(childSymbol, leanSymbol, nibblerName, isBidStrategyOn, bid
 	const rowDOMElement = document.getElementById(rowID)
 	const row = $(rowDOMElement);
 
-	if (row) {
+	if (rowDOMElement) {
 
 		row.removeClass("unregistered");
 

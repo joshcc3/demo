@@ -826,7 +826,6 @@ public class Main {
                 if (null != sheetsKeys) {
                     allKeys.addAll(sheetsKeys);
                 }
-                System.out.println("Laddertext Keys [" + allKeys + ']');
                 final OpxlLadderTextSubscriber ladderTextReader =
                         new OpxlLadderTextSubscriber(opxlSelectIO, opxlMonitor, allKeys, channels.laserLineData, channels.ladderText);
                 app.addStartUpAction(ladderTextReader::start);
