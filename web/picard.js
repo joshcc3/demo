@@ -1,3 +1,5 @@
+const DISPLAY_THRESHOLD = "display-threshold"
+
 let ws;
 
 let isSoundsOn = true;
@@ -49,6 +51,7 @@ $(function () {
 
 	$("#filterValue").change(() => {
 		displayThreshold = parseFloat($("#filterValue").val());
+		localStorage[DISPLAY_THRESHOLD] = displayThreshold;
 		$(".picard").each((index, row) => {
 			let isPicardRow = $(row).hasClass("rfqPicard");
 			$(row).toggleClass("hidden", (isPicardRow && hideRfq) || $(row).data("opportunitySize") < displayThreshold);
@@ -70,6 +73,11 @@ $(function () {
 
 	setInterval(sortPicards, 1000);
 
+
+	if (localStorage[DISPLAY_THRESHOLD]) {
+		displayThreshold = parseFloat(localStorage[DISPLAY_THRESHOLD]);
+		$("#filterValue").val(displayThreshold);
+	}
 });
 
 function setSound(filename) {
