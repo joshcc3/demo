@@ -4,7 +4,10 @@ const WORKSPACE_HOST_PROP = "workspaceHost";
 const DEV_URLS = new Set(["localhost", "lnhq-wudrn01", "wud-ldnrn01"]);
 const LOCAL_LADDERS_URLS = {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
 const FUTURES_LADDER_URLS = {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
-const GM_EQUITY_LADDERS_URLS = {ladderHost: "prod-gm-equities-ladder.eeif.drw:9144", workspaceHost: "prod-gm-equities-ladder.eeif.drw:9145"};
+const GM_EQUITY_LADDERS_URLS = {
+	ladderHost: "prod-gm-equities-ladder.eeif.drw:9144",
+	workspaceHost: "prod-gm-equities-ladder.eeif.drw:9145"
+};
 const SELECTA_LADDERS_URLS = "http://prod-selecta.eeif.drw:9134/ladders_urls";
 
 let BEST_EQUITY_LADDER_URLS = {ladderHost: "prod-equities-ladder.eeif.drw:9144", workspaceHost: "prod-equities-ladder.eeif.drw:9145"};
@@ -21,10 +24,20 @@ $(function () {
 });
 
 function setBestEquityLadder(newUrls) {
-	if (newUrls && typeof newUrls === "object" && newUrls.hasOwnProperty(LADDER_HOST_PROP) && newUrls.hasOwnProperty(WORKSPACE_HOST_PROP)) {
-		BEST_EQUITY_LADDER_URLS = newUrls;
+	let newUrlsObject;
+	if (typeof newUrls === "string") {
+		try {
+			newUrlsObject = JSON.parse(newUrls);
+		} finally {
+		}
 	} else {
-		console.log("The new urls were malformed: " + newUrls);
+		newUrlsObject = newUrls;
+	}
+
+	if (newUrlsObject && newUrlsObject.hasOwnProperty(LADDER_HOST_PROP) && newUrlsObject.hasOwnProperty(WORKSPACE_HOST_PROP)) {
+		BEST_EQUITY_LADDER_URLS = newUrlsObject;
+	} else {
+		console.log("The new urls were malformed: " + newUrls + " parsed to " + newUrlsObject);
 	}
 }
 
