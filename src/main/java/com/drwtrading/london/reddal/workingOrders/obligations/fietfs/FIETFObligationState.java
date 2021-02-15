@@ -49,8 +49,9 @@ public class FIETFObligationState {
     }
 
     private void recalculateTwoSidedPercentage() {
-        final long totalTimeInTradingDay = millisInADay + totalMillis + totalTwoSidedMillis;
-        final int newTwoSidedPercentage = Math.toIntExact((totalTwoSidedMillis * 2 * 100) / totalTimeInTradingDay);
+        final double totalTimeInTradingDay = millisInADay + totalMillis + totalTwoSidedMillis;
+        final int newTwoSidedPercentage =
+                Math.toIntExact(Math.round(((double) totalTwoSidedMillis * 2 * 100) / totalTimeInTradingDay));
 
         percentageChangedSinceLastViewUpdate = newTwoSidedPercentage != twoSidedPercentage;
         twoSidedPercentage = newTwoSidedPercentage;
