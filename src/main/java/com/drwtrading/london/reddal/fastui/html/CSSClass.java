@@ -121,7 +121,11 @@ public enum CSSClass {
     IS_POISONED("isPoisoned"),
     IS_ON_LINE_DEF("isOnlineDef"),
 
-    ZOOMED_OUT("zoomed_out");
+    ZOOMED_OUT("zoomed_out"),
+
+    BPS("bps"),
+    EFP("efp"),
+    RAW("raw");
 
     public final String cssText;
 
@@ -142,13 +146,13 @@ public enum CSSClass {
         STACK_ORDER_TYPES = EnumSet.of(EPHEMERAL, ONE_SHOT, AUTO_MANAGE, REFRESHABLE);
 
         CSS_CLASS_BY_NAME = new HashMap<>();
-        for (final CSSClass cssClass : CSSClass.values()) {
+        for (final CSSClass cssClass : values()) {
             CSS_CLASS_BY_NAME.put(cssClass.name(), cssClass);
         }
 
-        ORDER_TYPES = EnumSet.of(CSSClass.GTC, CSSClass.HAM, CSSClass.HAM3, CSSClass.HAMON, CSSClass.HAMON3, CSSClass.HAWK, CSSClass.HIDDEN,
-                CSSClass.IOC, CSSClass.MANUAL, CSSClass.MARKET, CSSClass.MIDPOINT, CSSClass.MKT_CLOSE, CSSClass.SNAGGIT, CSSClass.TAKER,
-                CSSClass.TICKTAKER, CSSClass.TRON, CSSClass.TRON3, CSSClass.YAMON, CSSClass.YODA);
+        ORDER_TYPES =
+                EnumSet.of(GTC, HAM, HAM3, HAMON, HAMON3, HAWK, HIDDEN, IOC, MANUAL, MARKET, MIDPOINT, MKT_CLOSE, SNAGGIT, TAKER, TICKTAKER,
+                        TRON, TRON3, YAMON, YODA);
     }
 
     public static CSSClass getCSSClass(final String name) {

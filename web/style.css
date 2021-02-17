@@ -320,6 +320,10 @@ div {
 	width: 50px;
 }
 
+.price.bps {
+	color: #AAFFC0;
+}
+
 .book .price.price_traded {
 	background-color: #737373;
 }

@@ -53,6 +53,8 @@ public class BookPanel {
     private int zoomIndex;
     private int zoomLevel;
 
+    private PricingMode pricingMode = PricingMode.RAW;
+
     BookPanel(final UiPipeImpl ui) {
 
         this.ui = ui;
@@ -83,6 +85,7 @@ public class BookPanel {
         for (int i = rows.size(); i < levels; ++i) {
             final BookPanelRow row = new BookPanelRow(i);
             rows.add(i, row);
+            ui.cls(row.htmlData.bookPriceKey, pricingMode.cssClass, true);
         }
     }
 
@@ -109,6 +112,21 @@ public class BookPanel {
         if (zoomIndex < MAX_ZOOM_INDEX) {
             zoomIndex++;
             this.zoomLevel = ZOOM_STEPS[zoomIndex];
+        }
+    }
+
+    public void setPricingMode(final PricingMode newPricingMode) {
+        if (newPricingMode != null && newPricingMode != this.pricingMode) {
+
+            final PricingMode currentPricingMode = this.pricingMode;
+            this.pricingMode = newPricingMode;
+
+            for (int i = 0; i < rows.size(); i++) {
+                final BookPanelRow row = rows.get(i);
+                ui.cls(row.htmlData.bookPriceKey, currentPricingMode.cssClass, false);
+                ui.cls(row.htmlData.bookPriceKey, newPricingMode.cssClass, true);
+            }
+
         }
     }
 
@@ -145,6 +163,7 @@ public class BookPanel {
     }
 
     public void setRawPrices(final int levels) {
+        setPricingMode(PricingMode.RAW);
 
         for (int i = 0; i < levels; ++i) {
 

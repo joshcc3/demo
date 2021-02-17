@@ -475,6 +475,12 @@ public class LadderBookView implements ILadderBoard {
 
                     break;
                 }
+                case FUTURE:
+                case FUTURE_SPREAD: {
+                    pricingModes.setValidChoices(PricingMode.values());
+                    pricingModes.set(PricingMode.EFP);
+                    break;
+                }
                 default: {
                     pricingModes.setValidChoices(PricingMode.EFP, PricingMode.RAW);
                     pricingModes.set(PricingMode.EFP);
@@ -647,6 +653,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void drawBPSBook(final BookPanel bookPanel, final long basePrice) {
+        bookPanel.setPricingMode(PricingMode.BPS);
 
         for (int i = 0; i < levels; ++i) {
             final BookPanelRow row = bookPanel.getRow(i);
@@ -656,6 +663,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void drawEFPBook(final BookPanel bookPanel, final double navPrice) {
+        bookPanel.setPricingMode(PricingMode.EFP);
 
         for (int i = 0; i < levels; ++i) {
             final BookPanelRow row = bookPanel.getRow(i);
@@ -665,6 +673,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void drawInvertedFXFutureBook(final BookPanel bookPanel) {
+        bookPanel.setPricingMode(PricingMode.EFP);
 
         for (int i = 0; i < levels; ++i) {
             final BookPanelRow row = bookPanel.getRow(i);
