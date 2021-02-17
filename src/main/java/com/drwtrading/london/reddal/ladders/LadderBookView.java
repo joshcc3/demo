@@ -1266,7 +1266,11 @@ public class LadderBookView implements ILadderBoard {
                 }
             }
         } else if ("right".equals(button)) {
-            if (HTML.BUTTON_CLR.equals(label)) {
+            final QtyButton qtyButton = QtyButton.getButtonFromHTML(label);
+            if (buttonQty.containsKey(qtyButton)) {
+                clickTradingBoxQty -= buttonQty.get(qtyButton);
+                recalcFee();
+            } else if (HTML.BUTTON_CLR.equals(label)) {
                 ladderPrefsForSymbolUser.set(HTML.INP_RELOAD, Integer.toString(clickTradingBoxQty));
             } else if (label.startsWith(HTML.BID) || label.startsWith(HTML.OFFER)) {
                 if (ladderPrefsForSymbolUser != null) {
