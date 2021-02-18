@@ -21,16 +21,18 @@ public class BookPanel {
     private static final int MIN_ZOOM_LEVEL = 1;
     private static final int MAX_ZOOM_LEVEL = 16384;
 
+    private static final PricingMode DEFAULT_PRICING_MODE = PricingMode.RAW;
+
     private static final int[] ZOOM_STEPS;
 
     static {
         final TreeSet<Integer> zoomSteps = new TreeSet<>();
 
-        for (int zoomLevel = MIN_ZOOM_LEVEL; zoomLevel < MAX_ZOOM_LEVEL; zoomLevel = zoomLevel * 2) {
+        for (int zoomLevel = MIN_ZOOM_LEVEL; zoomLevel < MAX_ZOOM_LEVEL; zoomLevel *= 2) {
             zoomSteps.add(zoomLevel);
         }
 
-        for (int zoomLevel = MIN_ZOOM_LEVEL; zoomLevel < MAX_ZOOM_LEVEL; zoomLevel = zoomLevel * 10) {
+        for (int zoomLevel = MIN_ZOOM_LEVEL; zoomLevel < MAX_ZOOM_LEVEL; zoomLevel *= 10) {
             zoomSteps.add(zoomLevel);
         }
 
@@ -53,7 +55,7 @@ public class BookPanel {
     private int zoomIndex;
     private int zoomLevel;
 
-    private PricingMode pricingMode = PricingMode.RAW;
+    private PricingMode pricingMode = DEFAULT_PRICING_MODE;
 
     BookPanel(final UiPipeImpl ui) {
 
@@ -76,6 +78,7 @@ public class BookPanel {
 
         this.ccy = null;
         this.mic = null;
+        this.pricingMode = DEFAULT_PRICING_MODE;
 
         rows.forEach(BookPanelRow::clear);
     }
@@ -163,7 +166,7 @@ public class BookPanel {
     }
 
     public void setRawPrices(final int levels) {
-        setPricingMode(PricingMode.RAW);
+        setPricingMode(DEFAULT_PRICING_MODE);
 
         for (int i = 0; i < levels; ++i) {
 
