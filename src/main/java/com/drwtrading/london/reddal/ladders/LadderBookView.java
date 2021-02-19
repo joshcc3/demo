@@ -618,11 +618,9 @@ public class LadderBookView implements ILadderBoard {
 
         if (!pendingRefDataAndSettle) {
 
-            final LaserLine theoLaserLine = stackData.getTheoLaserLine();
+            final LaserLine theoLine = stackData.getTheoLaserLine();
             final LaserLine navLaserLine = stackData.getNavLaserLine();
             final BookPanel bookPanel = ladderModel.getBookPanel();
-            final IBook<?> mdBook = marketData.getBook();
-            final InstType instType = mdBook != null ? mdBook.getInstType() : InstType.UNKNOWN;
 
             switch (pricingModes.get()) {
                 case RAW: {
@@ -630,24 +628,14 @@ public class LadderBookView implements ILadderBoard {
                     break;
                 }
                 case BPS: {
-                    final boolean bpsToTheo = instType == InstType.FUTURE || instType == InstType.FUTURE_SPREAD;
 
-                    if (bpsToTheo && theoLaserLine.isValid()) {
+                    if (theoLine.isValid()) {
 
-                        final long basePrice = theoLaserLine.getValue();
-                        drawBPSBook(bookPanel, basePrice);
-
-                    } else if (!bpsToTheo && navLaserLine.isValid()) {
-
-                        final long basePrice = navLaserLine.getValue();
-                        drawBPSBook(bookPanel, basePrice);
-
-                    } else if (isCashEquityOrFX && hasBestBid()) {
-
-                        final long basePrice = marketData.getBook().getBestBid().getPrice();
+                        final long basePrice = theoLine.getValue();
                         drawBPSBook(bookPanel, basePrice);
 
                     } else {
+
                         bookPanel.setRawPrices(levels);
                     }
                     break;
