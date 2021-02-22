@@ -221,6 +221,10 @@ public class SymbolStackData {
         return stacksLaserLineCalc.getTheoLaserLine();
     }
 
+    public LaserLine getSpreadnoughtLaserLine() {
+        return stacksLaserLineCalc.getSpreadnoughtLaserLine();
+    }
+
     public Collection<LaserLine> getLaserLines() {
         return stacksLaserLineCalc.getLaserLines();
     }

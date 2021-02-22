@@ -201,6 +201,10 @@ public class StacksLaserLineCalc {
         return theoLine;
     }
 
+    LaserLine getSpreadnoughtLaserLine() {
+        return spreadnoughtLine;
+    }
+
     Collection<LaserLine> getLaserLines() {
         return laserLines.values();
     }

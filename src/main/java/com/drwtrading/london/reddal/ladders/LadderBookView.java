@@ -620,6 +620,7 @@ public class LadderBookView implements ILadderBoard {
 
             final LaserLine theoLine = stackData.getTheoLaserLine();
             final LaserLine navLaserLine = stackData.getNavLaserLine();
+            final LaserLine spreadnoughtLine = stackData.getSpreadnoughtLaserLine();
             final BookPanel bookPanel = ladderModel.getBookPanel();
 
             switch (pricingModes.get()) {
@@ -634,6 +635,10 @@ public class LadderBookView implements ILadderBoard {
                         final long basePrice = theoLine.getValue();
                         drawBPSBook(bookPanel, basePrice);
 
+                    } else if (spreadnoughtLine.isValid()) {
+
+                        final long basePrice = spreadnoughtLine.getValue();
+                        drawBPSBook(bookPanel, basePrice);
                     } else {
 
                         bookPanel.setRawPrices(levels);
