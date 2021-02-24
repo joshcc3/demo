@@ -168,7 +168,7 @@ public class LadderBookView implements ILadderBoard {
 
     private final Map<String, OrderEntrySymbolChannel> managedOrderEntries;
 
-    private boolean isCashEquityOrFX;
+    private boolean isFXInst;
     private boolean showYesterdaySettleInsteadOfCOD;
 
     private boolean pendingRefDataAndSettle;
@@ -251,7 +251,7 @@ public class LadderBookView implements ILadderBoard {
 
         this.managedOrderEntries = managedOrderEntries;
 
-        this.isCashEquityOrFX = false;
+        this.isFXInst = false;
         this.pendingRefDataAndSettle = true;
 
         this.centeredPrice = centeredPrice;
@@ -453,7 +453,6 @@ public class LadderBookView implements ILadderBoard {
                 case EQUITY:
                 case ETF:
                 case DR: {
-                    isCashEquityOrFX = true;
                     pricingModes.setValidChoices(PricingMode.BPS, PricingMode.RAW);
                     pricingModes.set(PricingMode.BPS);
                     final IBookReferencePrice closePrice = marketData.getBook().getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
@@ -468,7 +467,7 @@ public class LadderBookView implements ILadderBoard {
                     break;
                 }
                 case FX: {
-                    isCashEquityOrFX = true;
+                    isFXInst = true;
                     pricingModes.setValidChoices(PricingMode.BPS, PricingMode.RAW);
                     pricingModes.set(PricingMode.BPS);
                     defaultPrefs.put(HTML.INP_RELOAD, "1000000");
@@ -639,6 +638,12 @@ public class LadderBookView implements ILadderBoard {
 
                         final long basePrice = spreadnoughtLine.getValue();
                         drawBPSBook(bookPanel, basePrice);
+
+                    } else if (isFXInst && hasBestBid()) {
+
+                        final long basePrice = marketData.getBook().getBestBid().getPrice();
+                        drawBPSBook(bookPanel, basePrice);
+
                     } else {
 
                         bookPanel.setRawPrices(levels);
