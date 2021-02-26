@@ -113,9 +113,11 @@ public class OrdersPresenter {
     public void subscribe(final String symbol, final String priceStr, final String bidPriceStr, final String askPriceStr,
             final WebSocketInboundData data) {
         final IOrdersView view = views.get(data.getOutboundChannel());
-        final long price = Long.valueOf(priceStr);
-        final long bidPrice = Long.valueOf(bidPriceStr);
-        final long askPrice = Long.valueOf(askPriceStr);
+
+        final long price = Long.parseLong(priceStr);
+        final long bidPrice = Long.parseLong(bidPriceStr);
+        final long askPrice = Long.parseLong(askPriceStr);
+
         final OrdersPresenterSymbolPrice symbolPrice = new OrdersPresenterSymbolPrice(symbol, price, bidPrice, askPrice);
         subscribed.put(symbolPrice, view);
         update(symbol, price, price);
