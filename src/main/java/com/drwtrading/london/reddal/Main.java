@@ -173,7 +173,6 @@ import com.drwtrading.london.reddal.workingOrders.bestPrices.BestWorkingOrderMai
 import com.drwtrading.london.reddal.workingOrders.bestPrices.OPXLBestWorkingOrdersPresenter;
 import com.drwtrading.london.reddal.workingOrders.gtc.GTCWorkingOrderMaintainer;
 import com.drwtrading.london.reddal.workingOrders.gtc.OPXLGTCWorkingOrdersPresenter;
-import com.drwtrading.london.reddal.workingOrders.obligations.fietfs.FIETFObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.futures.FutureObligationPresenter;
 import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuotingObligationsPresenter;
 import com.drwtrading.london.reddal.workingOrders.ui.WorkingOrdersPresenter;
@@ -1268,8 +1267,6 @@ public class Main {
 
             final QuotingObligationsPresenter quotingObligationsPresenter =
                     new QuotingObligationsPresenter(primaryCommunities, app.selectIO, webLog);
-            final FIETFObligationPresenter fiETFObligationPresenter =
-                    new FIETFObligationPresenter(app.config.getBoolean("inverseObligationsActive"), app.selectIO, app.monitor);
             for (final Map.Entry<StackCommunity, TypedChannel<String>> entry : channels.communitySymbols.entrySet()) {
                 final StackCommunity community = entry.getKey();
                 final TypedChannel<String> channel = entry.getValue();
@@ -1380,8 +1377,7 @@ public class Main {
                         workingOrderPresenter.addNibbler(nibbler);
                         final WorkingOrderListener workingOrderListener =
                                 new WorkingOrderListener(nibbler, workingOrderPresenter, bestWorkingOrderMaintainer,
-                                        gtcWorkingOrdersMaintainer, futureObligationPresenter, quotingObligationsPresenter,
-                                        fiETFObligationPresenter, orderRouter);
+                                        gtcWorkingOrdersMaintainer, futureObligationPresenter, quotingObligationsPresenter, orderRouter);
                         cache.addTradingDataListener(workingOrderListener, true, true);
 
                         blotterClient.setWorkingOrderListener(workingOrderListener);
@@ -1411,11 +1407,6 @@ public class Main {
             final TypedChannel<WebSocketControlMessage> quotingObligationsWebSocket = TypedChannels.create(WebSocketControlMessage.class);
             createWebPageWithWebSocket("quotingObligations", "quotingObligations", fibers.ui, webApp, quotingObligationsWebSocket);
             quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsPresenter::webControl);
-
-            final TypedChannel<WebSocketControlMessage> fiETFObligationsWebSocket = TypedChannels.create(WebSocketControlMessage.class);
-            createWebPageWithWebSocket("inverseObligations", "inverseObligations", fibers.ui, webApp, fiETFObligationsWebSocket);
-            fiETFObligationsWebSocket.subscribe(selectIOFiber, fiETFObligationPresenter::webControl);
-            app.addStartUpAction(fiETFObligationPresenter::start);
 
             final ConfigGroup indyConfigGroup = app.config.getEnabledGroup("indyConfig");
 
