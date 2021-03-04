@@ -134,7 +134,6 @@ public class QuotingObligationsPresenterTest {
         Mockito.verify(nibblerHandler, Mockito.times(10)).batchComplete();
         Mockito.verifyNoMoreInteractions(nibblerHandler);
 
-
         presenter.setSymbol(StackCommunity.EM, SYMBOL4);
 
         presenter.everythingOn("EM", inboundData);

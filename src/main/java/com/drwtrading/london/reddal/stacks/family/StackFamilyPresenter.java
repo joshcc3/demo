@@ -20,6 +20,7 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
 import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
+import com.drwtrading.london.reddal.stacks.StackRunnableInfo;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.symbols.SearchResult;
 import com.drwtrading.london.reddal.util.UILogger;
@@ -31,7 +32,6 @@ import com.drwtrading.websockets.WebSocketInboundData;
 import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
-import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Date;
 import java.util.EnumMap;
@@ -57,7 +57,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final Set<StackCommunity> otherCommunities, final OpxlStrategySymbolUI strategySymbolUI,
             final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds,
             final EnumMap<StackCommunity, TypedChannel<String>> communitySymbols,
-            final EnumMap<StackCommunity, TypedChannel<String>> communityIsins) {
+            final EnumMap<StackCommunity, TypedChannel<String>> communityIsins, final TypedChannel<StackRunnableInfo> disabledInfo) {
 
         this.uiLogger = uiLogger;
         this.primaryCommunities = primaryCommunities;
@@ -68,7 +68,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final StackFamilyView familyView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, fuseBox, errorLogger, primaryCommunity, contractSetGenerator,
                             false, strategySymbolUI, quotingObligationsCmds, communitySymbols.get(primaryCommunity),
-                            communityIsins.get(primaryCommunity));
+                            communityIsins.get(primaryCommunity), disabledInfo);
             communityViews.put(primaryCommunity, familyView);
             otherCommunities.remove(primaryCommunity);
         }
@@ -81,7 +81,7 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
             final StackFamilyView asylumView =
                     new StackFamilyView(presenterSelectIO, backgroundSelectIO, fuseBox, errorLogger, stackCommunity, contractSetGenerator,
                             true, strategySymbolUI, Constants::NO_OP, communitySymbols.get(stackCommunity),
-                            communityIsins.get(stackCommunity));
+                            communityIsins.get(stackCommunity), disabledInfo);
             communityViews.put(stackCommunity, asylumView);
         }
 

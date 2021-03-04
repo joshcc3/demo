@@ -23,7 +23,6 @@ import java.util.TreeMap;
 
 public class RFQCommunityPublisherTest {
 
-
     @Mock
     TypedChannel<String> dmChannel;
     @Mock
@@ -49,13 +48,13 @@ public class RFQCommunityPublisherTest {
 
         final RFQCommunityPublisher communityPublisher = new RFQCommunityPublisher(channels);
         final ITickTable tickTable = Mockito.mock(ITickTable.class);
-        NavigableMap<Long, Long> mp = new TreeMap<>();
+        final NavigableMap<Long, Long> mp = new TreeMap<>();
         mp.put(1L, 1L);
         Mockito.when(tickTable.getRawTickLevels()).thenReturn(mp);
         final InstrumentID inst1 = InstrumentID.getFromIsinCcyMic("000000000001.GBP.XLON");
-        final InstrumentID inst2= InstrumentID.getFromIsinCcyMic("000000000002.GBP.XLON");
-        final InstrumentID inst3= InstrumentID.getFromIsinCcyMic("000000000003.GBP.XLON");
-        final InstrumentID inst4= InstrumentID.getFromIsinCcyMic("000000000004.GBP.XLON");
+        final InstrumentID inst2 = InstrumentID.getFromIsinCcyMic("000000000002.GBP.XLON");
+        final InstrumentID inst3 = InstrumentID.getFromIsinCcyMic("000000000003.GBP.XLON");
+        final InstrumentID inst4 = InstrumentID.getFromIsinCcyMic("000000000004.GBP.XLON");
         final SearchResult s1 = new SearchResult("1 RFQ", inst1, InstType.EQUITY, "", MDSource.ALL, List.of(), 1, tickTable);
         final SearchResult s2 = new SearchResult("2 RFQ", inst2, InstType.EQUITY, "", MDSource.ALL, List.of(), 1, tickTable);
         final SearchResult s3 = new SearchResult("3 RFQ", inst3, InstType.EQUITY, "", MDSource.ALL, List.of(), 1, tickTable);

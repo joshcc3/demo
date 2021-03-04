@@ -35,6 +35,7 @@ import com.drwtrading.london.reddal.pks.PKSExposures;
 import com.drwtrading.london.reddal.premium.Premium;
 import com.drwtrading.london.reddal.stacks.StackIncreaseChildOffsetCmd;
 import com.drwtrading.london.reddal.stacks.StackIncreaseParentOffsetCmd;
+import com.drwtrading.london.reddal.stacks.StackRunnableInfo;
 import com.drwtrading.london.reddal.stacks.StacksSetSiblingsEnableCmd;
 import com.drwtrading.london.reddal.stockAlerts.RfqAlert;
 import com.drwtrading.london.reddal.stockAlerts.StockAlert;
@@ -77,6 +78,7 @@ class ReddalChannels {
     final TypedChannel<ETFDef> etfDefs;
     final TypedChannel<SymbolIndyData> symbolDescs;
     final TypedChannel<DisplaySymbol> displaySymbol;
+    final TypedChannel<StackRunnableInfo> runnableInfo;
     final TypedChannel<SearchResult> searchResults;
     final TypedChannel<SymbolReferencePrice> symbolRefPrices;
     final TypedChannel<StockAlert> stockAlerts;
@@ -143,6 +145,7 @@ class ReddalChannels {
         this.etfDefs = create(ETFDef.class);
         this.symbolDescs = create(SymbolIndyData.class);
         this.displaySymbol = create(DisplaySymbol.class);
+        this.runnableInfo = create(StackRunnableInfo.class);
         this.searchResults = create(SearchResult.class);
         this.symbolRefPrices = create(SymbolReferencePrice.class);
         this.stockAlerts = create(StockAlert.class);

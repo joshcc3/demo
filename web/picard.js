@@ -105,7 +105,7 @@ function displaySymbol(symbol, listing) {
 }
 
 function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, description, state, inAuction, isPlaySound,
-	isOnOPXLFilterList) {
+	isOnOPXLFilterList, isRunnable) {
 
 	if (!RUSSIA_SSF.test(symbol)) {
 
@@ -175,6 +175,7 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			}
 
 			picard.toggleClass("isOnOPXLFilterList", isOnOPXLFilterList);
+			picard.toggleClass("isNotRunnable", !isRunnable);
 		}
 	}
 }

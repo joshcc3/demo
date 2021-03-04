@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.picard;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.reddal.ladders.RecenterLadder;
+import com.drwtrading.london.reddal.stacks.StackRunnableInfo;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
@@ -40,6 +41,7 @@ public class PicardUI {
     private final Map<String, PicardRow> dirty;
 
     private final Set<String> opxlFilterSymbols;
+    private final Set<String> nonRunnableSymbols;
 
     private final WebSocketViews<IPicardView> views;
 
@@ -62,6 +64,7 @@ public class PicardUI {
         this.dirty = new HashMap<>();
 
         this.opxlFilterSymbols = new HashSet<>();
+        this.nonRunnableSymbols = new HashSet<>();
 
         this.views = new WebSocketViews<>(IPicardView.class, this);
     }
@@ -81,6 +84,14 @@ public class PicardUI {
 
         opxlFilterSymbols.clear();
         opxlFilterSymbols.addAll(symbols);
+    }
+
+    public void setSymbolRunnable(final StackRunnableInfo info) {
+        if (info.isRunnable) {
+            nonRunnableSymbols.remove(info.symbol);
+        } else {
+            nonRunnableSymbols.add(info.symbol);
+        }
     }
 
     public void webControl(final WebSocketControlMessage msg) {
@@ -156,8 +167,9 @@ public class PicardUI {
         final boolean isPlaySound = soundsOn && row.isNewRow;
 
         final boolean isOnOPXLFilterList = opxlFilterSymbols.contains(row.symbol);
+        final boolean isRunnable = !nonRunnableSymbols.contains(row.symbol);
 
         view.picard(row.symbol, displaySymbol, row.side.toString(), bpsThrough, opportunitySize, ccy, row.prettyPrice, row.description,
-                row.state.toString(), row.inAuction, isPlaySound, isOnOPXLFilterList);
+                row.state.toString(), row.inAuction, isPlaySound, isOnOPXLFilterList, isRunnable);
     }
 }

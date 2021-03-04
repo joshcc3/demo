@@ -137,6 +137,7 @@ import com.drwtrading.london.reddal.stacks.StackCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackGroupCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackManagerGroupCallbackBatcher;
 import com.drwtrading.london.reddal.stacks.StackPresenterMultiplexor;
+import com.drwtrading.london.reddal.stacks.StackRunnableInfo;
 import com.drwtrading.london.reddal.stacks.autoManager.StackAutoManagerPresenter;
 import com.drwtrading.london.reddal.stacks.configui.StackConfigPresenter;
 import com.drwtrading.london.reddal.stacks.family.StackChildListener;
@@ -426,7 +427,7 @@ public class Main {
         final Map<MDSource, TypedChannel<WebSocketControlMessage>> shredderWebSockets = new EnumMap<>(MDSource.class);
 
         setupPicardUI(app.selectIO, selectIOFiber, webLog, channels.picardRows, channels.yodaPicardRows, channels.recenterLadder,
-                channels.displaySymbol, webApp, channels.communityIsins, channels.picardDMFilterSymbols);
+                channels.displaySymbol, channels.runnableInfo, webApp, channels.communityIsins, channels.picardDMFilterSymbols);
 
         new OPXLPicardFilterReader(opxlClient, app.selectIO, opxlMonitor, com.drwtrading.london.eeif.utils.application.Environment.PROD,
                 "EEIF", app.logDir, channels.picardDMFilterSymbols);
@@ -1120,7 +1121,7 @@ public class Main {
             final StackFamilyPresenter stackFamilyPresenter =
                     new StackFamilyPresenter(app.selectIO, opxlSelectIO, stackManagerMonitor, app.errorLog, webLog, contractSetGenerator,
                             primaryCommunity, secondaryViews, strategySymbolUI, channels.quotingObligationsCmds, channels.communitySymbols,
-                            channels.communityIsins);
+                            channels.communityIsins, channels.runnableInfo);
             channels.etfDefs.subscribe(selectIOFiber, stackFamilyPresenter::autoFamily);
 
             final StackConfigPresenter stackConfigPresenter = new StackConfigPresenter(webLog);
@@ -1439,23 +1440,22 @@ public class Main {
     private static void setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
             final Channel<PicardRowWithInstID> picardRows, final Channel<PicardRow> yodaRows,
             final Channel<RecenterLadder> recenterLadderChannel, final TypedChannel<DisplaySymbol> displaySymbol,
-            final WebApplication webApp, final Map<StackCommunity, TypedChannel<String>> communityIsins,
-            final SelectIOChannel<Set<String>> picardDMFilterSymbols) {
+            final TypedChannel<StackRunnableInfo> runnableInfo, final WebApplication webApp,
+            final Map<StackCommunity, TypedChannel<String>> communityIsins, final SelectIOChannel<Set<String>> picardDMFilterSymbols) {
 
-        final PicardUI futureUI = setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol,
+        final PicardUI futureUI = setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo,
                 EnumSet.of(InstType.FUTURE, InstType.FUTURE_SPREAD), PicardSounds.FUTURES, webApp, "picard");
         picardRows.subscribe(fiber, futureUI::addPicardRow);
 
-        final PicardUI spreadUI =
-                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.DR, InstType.EQUITY),
-                        PicardSounds.SPREADER, webApp, "picardspread");
+        final PicardUI spreadUI = setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo,
+                EnumSet.of(InstType.DR, InstType.EQUITY), PicardSounds.SPREADER, webApp, "picardspread");
         picardRows.subscribe(fiber, spreadUI::addPicardRow);
 
-        setupEtfSplitPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, communityIsins, displaySymbol,
+        setupEtfSplitPicardUI(selectIO, fiber, webLog, picardRows, recenterLadderChannel, communityIsins, displaySymbol, runnableInfo,
                 picardDMFilterSymbols, webApp);
 
         final PicardUI stocksUI =
-                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.allOf(InstType.class),
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.allOf(InstType.class),
                         PicardSounds.STOCKS, webApp, "picardstocks");
         yodaRows.subscribe(fiber, stocksUI::addPicardRow);
     }
@@ -1463,20 +1463,21 @@ public class Main {
     private static void setupEtfSplitPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
             final Channel<PicardRowWithInstID> picardRows, final Channel<RecenterLadder> recenterLadderChannel,
             final Map<StackCommunity, TypedChannel<String>> communityIsins, final TypedChannel<DisplaySymbol> displaySymbol,
-            final SelectIOChannel<Set<String>> picardDMFilterSymbols, final WebApplication webApp) {
+            final TypedChannel<StackRunnableInfo> runnableInfo, final SelectIOChannel<Set<String>> picardDMFilterSymbols,
+            final WebApplication webApp) {
 
         final PicardUI picardDM =
-                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF_DM,
-                        webApp, "picardetf");
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.of(InstType.ETF),
+                        PicardSounds.ETF_DM, webApp, "picardetf");
         picardDMFilterSymbols.subscribe(selectIO, picardDM::setOPXLFilterList);
 
         final PicardUI picardFI =
-                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF_FI,
-                        webApp, "picardetf-fi");
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.of(InstType.ETF),
+                        PicardSounds.ETF_FI, webApp, "picardetf-fi");
 
         final PicardUI picardEM =
-                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, EnumSet.of(InstType.ETF), PicardSounds.ETF_FI,
-                        webApp, "picardetf-em");
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.of(InstType.ETF),
+                        PicardSounds.ETF_FI, webApp, "picardetf-em");
 
         final DelegatingPicardUI ui = new DelegatingPicardUI(picardFI, picardEM, picardDM);
         picardRows.subscribe(fiber, ui::addPicardRow);
@@ -1490,11 +1491,13 @@ public class Main {
 
     private static PicardUI setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,
             final Channel<RecenterLadder> recenterLadderChannel, final TypedChannel<DisplaySymbol> displaySymbol,
-            final Set<InstType> filterList, final PicardSounds sound, final WebApplication webApp, final String alias) {
+            final TypedChannel<StackRunnableInfo> runnableInfo, final Set<InstType> filterList, final PicardSounds sound,
+            final WebApplication webApp, final String alias) {
 
         final PicardUI picardUI = new PicardUI(webLog, filterList, sound, recenterLadderChannel);
         selectIO.addDelayedAction(1000, picardUI::flush);
         displaySymbol.subscribe(fiber, picardUI::setDisplaySymbol);
+        runnableInfo.subscribe(fiber, picardUI::setSymbolRunnable);
 
         webApp.alias('/' + alias, "/picard.html");
         final TypedChannel<WebSocketControlMessage> webSocketChannel = TypedChannels.create(WebSocketControlMessage.class);

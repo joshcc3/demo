@@ -37,6 +37,7 @@ import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.reddal.ladders.history.SymbolSelection;
+import com.drwtrading.london.reddal.stacks.StackRunnableInfo;
 import com.drwtrading.london.reddal.stacks.opxl.OpxlStrategySymbolUI;
 import com.drwtrading.london.reddal.stacks.strategiesUI.StackStrategiesPresenter;
 import com.drwtrading.london.reddal.symbols.SearchResult;
@@ -108,6 +109,7 @@ public class StackFamilyView {
     private final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds;
     private final TypedChannel<String> symbolsChannel;
     private final TypedChannel<String> isinChannel;
+    private final TypedChannel<StackRunnableInfo> runnableInfoChan;
 
     private final WebSocketViews<IStackFamilyUI> views;
     private final Map<String, HashSet<IStackFamilyUI>> userViews;
@@ -146,12 +148,12 @@ public class StackFamilyView {
             final IErrorLogger errorLogger, final StackCommunity community, final SpreadContractSetGenerator contractSetGenerator,
             final boolean isSecondaryView, final OpxlStrategySymbolUI strategySymbolUI,
             final Publisher<QuoteObligationsEnableCmd> quotingObligationsCmds, final TypedChannel<String> symbolsChannel,
-            final TypedChannel<String> isinChannel) {
+            final TypedChannel<String> isinChannel, final TypedChannel<StackRunnableInfo> runnableInfoChan) {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
 
-        today = new Date(managementSelectIO.getMillisAtMidnightUTC());
+        this.today = new Date(managementSelectIO.getMillisAtMidnightUTC());
 
         this.fuseBox = fuseBox;
         this.errorLogger = errorLogger;
@@ -165,6 +167,7 @@ public class StackFamilyView {
         this.quotingObligationsCmds = quotingObligationsCmds;
         this.symbolsChannel = symbolsChannel;
         this.isinChannel = isinChannel;
+        this.runnableInfoChan = runnableInfoChan;
 
         this.userViews = new HashMap<>();
 
@@ -235,6 +238,11 @@ public class StackFamilyView {
             if (today.equals(date)) {
                 familyUIData.setIsRunnable(isRunnable);
                 updateFamilyUIData(familyUIData);
+                for (final StackUIRelationship relationship : familyUIData.getAllRelationships()) {
+                    final String symbol = relationship.childSymbol;
+                    final StackRunnableInfo info = new StackRunnableInfo(symbol, isRunnable);
+                    runnableInfoChan.publish(info);
+                }
             }
         }
     }
@@ -479,6 +487,7 @@ public class StackFamilyView {
             if (familyUIData.removeChild(childSymbol) && isFamilyDisplayable(parentSymbol)) {
                 final String oldFamily = familyRelations.getKey();
                 views.all().removeChild(oldFamily, childSymbol);
+
             }
         }
 
@@ -509,6 +518,8 @@ public class StackFamilyView {
                 }
             }
 
+            final StackRunnableInfo runnableInfo = new StackRunnableInfo(childSymbol, familyUIData.isRunnable());
+            runnableInfoChan.publish(runnableInfo);
             views.all().setChild(parentSymbol, childSymbol, bidPriceOffset, bidQtyMultiplier, askPriceOffset, askQtyMultiplier,
                     familyToChildRatio);
 
@@ -661,20 +672,7 @@ public class StackFamilyView {
     public void lazySubscribe(final String symbol, final WebSocketInboundData data) {
         if (3 <= symbol.length()) {
             final List<FamilyUIData> familyUIs = new LinkedList<>();
-            if ("disabled".equals(symbol)) {
-                for (final Map.Entry<String, FamilyUIData> entries : familyUIData.entrySet()) {
-                    final FamilyUIData familyUIData = entries.getValue();
-                    boolean allSidePQEnabled = true;
-                    for (final BookSide value : BookSide.values()) {
-                        for (final StackType stackType : StackType.values()) {
-                            allSidePQEnabled = allSidePQEnabled && familyUIData.uiData.isStackEnabled(value, stackType);
-                        }
-                    }
-                    if (!allSidePQEnabled) {
-                        familyUIs.add(familyUIData);
-                    }
-                }
-            } else if (!symbol.startsWith("family_")) {
+            if (!symbol.startsWith("family_")) {
                 final ChildUIData childUIData = childrenUIData.get(symbol);
                 if (null != childUIData && null != childUIData.getFamily() && !StackOrphanage.ORPHANAGE.equals(childUIData.getFamily())) {
                     familyUIs.add(familyUIData.get(childUIData.getFamily()));
