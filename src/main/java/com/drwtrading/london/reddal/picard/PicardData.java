@@ -7,10 +7,11 @@ import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 class PicardData {
 
     final String symbol;
-    final MDForSymbol mdForSymbol;
 
     final LiquidityFinderData invalidBidLaserDistanceRow;
     final LiquidityFinderData invalidAskLaserDistanceRow;
+
+    MDForSymbol mdForSymbol;
 
     LaserLine bidLaserLine;
     LaserLine askLaserLine;
@@ -20,10 +21,9 @@ class PicardData {
     LiquidityFinderData bidLaserDistance;
     LiquidityFinderData askLaserDistance;
 
-    PicardData(final String symbol, final MDForSymbol mdForSymbol) {
+    PicardData(final String symbol) {
 
         this.symbol = symbol;
-        this.mdForSymbol = mdForSymbol;
 
         this.invalidBidLaserDistanceRow = new LiquidityFinderData(symbol, false, BookSide.BID, Long.MAX_VALUE);
         this.invalidAskLaserDistanceRow = new LiquidityFinderData(symbol, false, BookSide.ASK, Long.MAX_VALUE);

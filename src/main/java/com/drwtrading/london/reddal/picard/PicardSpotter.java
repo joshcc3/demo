@@ -14,7 +14,6 @@ import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.data.LaserLine;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
-import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
@@ -59,8 +58,7 @@ public class PicardSpotter implements IPicardSpotter {
 
         final PicardData picardData = picardDatas.get(laserLine.symbol);
         if (null == picardData) {
-            final MDForSymbol mdForSymbol = bookSubscriber.subscribeForMD(laserLine.symbol, this);
-            final PicardData newPicardData = new PicardData(laserLine.symbol, mdForSymbol);
+            final PicardData newPicardData = new PicardData(laserLine.symbol);
             setLaserLine(newPicardData, laserLine);
             picardDatas.put(laserLine.symbol, newPicardData);
         } else {
@@ -68,17 +66,26 @@ public class PicardSpotter implements IPicardSpotter {
         }
     }
 
-    private static void setLaserLine(final PicardData picardData, final LaserLine laserLine) {
+    private void setLaserLine(final PicardData picardData, final LaserLine laserLine) {
 
         switch (laserLine.getType()) {
             case BID: {
+                checkMDSubscription(picardData);
                 picardData.bidLaserLine = laserLine;
                 break;
             }
             case ASK: {
+                checkMDSubscription(picardData);
                 picardData.askLaserLine = laserLine;
                 break;
             }
+        }
+    }
+
+    private void checkMDSubscription(final PicardData picardData) {
+
+        if (null == picardData.mdForSymbol) {
+            picardData.mdForSymbol = bookSubscriber.subscribeForMD(picardData.symbol, this);
         }
     }
 
@@ -92,7 +99,7 @@ public class PicardSpotter implements IPicardSpotter {
 
     private void checkCrossed(final PicardData picardData) {
 
-        final IBook<?> book = picardData.mdForSymbol.getBook();
+        final IBook<?> book = null == picardData.mdForSymbol ? null : picardData.mdForSymbol.getBook();
 
         if (null != book) {
 
