@@ -808,7 +808,6 @@ public class Main {
             final ConfigGroup ladderTextConfig = opxlConfig.getEnabledGroup("laddertext");
             if (null != icepieConfig) {
                 initialiseIcePieClient(app, channels);
-
             } else if (null != ladderTextConfig) {
                 final Set<String> sheetsKeys = ladderTextConfig.getSet("keys");
                 final Set<String> softwareKeys = ladderTextConfig.getSet("softwareKeys");
