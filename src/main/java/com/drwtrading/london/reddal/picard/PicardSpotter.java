@@ -70,21 +70,21 @@ public class PicardSpotter implements IPicardSpotter {
 
         switch (laserLine.getType()) {
             case BID: {
-                checkMDSubscription(picardData);
+                checkMDSubscription(picardData, laserLine.isValid());
                 picardData.bidLaserLine = laserLine;
                 break;
             }
             case ASK: {
-                checkMDSubscription(picardData);
+                checkMDSubscription(picardData, laserLine.isValid());
                 picardData.askLaserLine = laserLine;
                 break;
             }
         }
     }
 
-    private void checkMDSubscription(final PicardData picardData) {
+    private void checkMDSubscription(final PicardData picardData, final boolean isLaserLineValid) {
 
-        if (null == picardData.mdForSymbol) {
+        if (null == picardData.mdForSymbol && isLaserLineValid) {
             picardData.mdForSymbol = bookSubscriber.subscribeForMD(picardData.symbol, this);
         }
     }
