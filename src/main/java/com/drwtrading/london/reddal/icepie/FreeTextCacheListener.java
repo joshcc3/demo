@@ -1,21 +1,22 @@
 package com.drwtrading.london.reddal.icepie;
 
-import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import com.drwtrading.london.icepie.transport.data.FreeTextValue;
+import com.drwtrading.london.reddal.SelectIOChannel;
 import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class FreeTextCacheListener implements ITransportCacheListener<String, FreeTextValue> {
 
-    private final TypedChannel<LadderTextUpdate> ladderTextChannel;
-    private final List<LadderTextUpdate> dirty;
+    private final SelectIOChannel<Collection<LadderTextUpdate>> ladderTextChannel;
+    private List<LadderTextUpdate> dirty;
 
-    public FreeTextCacheListener(final TypedChannel<LadderTextUpdate> ladderTextChannel) {
-        this.dirty = new ArrayList<>(2000);
+    public FreeTextCacheListener(final SelectIOChannel<Collection<LadderTextUpdate>> ladderTextChannel) {
+        this.dirty = new ArrayList<>(20000);
         this.ladderTextChannel = ladderTextChannel;
     }
 
@@ -37,10 +38,7 @@ public class FreeTextCacheListener implements ITransportCacheListener<String, Fr
 
     @Override
     public void batchComplete() {
-        for (final LadderTextUpdate ladderTextUpdate : dirty) {
-            ladderTextChannel.publish(ladderTextUpdate);
-        }
-        dirty.clear();
-
+        ladderTextChannel.publish(dirty);
+        dirty = new ArrayList<>();
     }
 }

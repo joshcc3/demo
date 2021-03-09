@@ -1003,7 +1003,7 @@ public class Main {
                 channels.orderEntryFromServer, channels.searchResults, channels.symbolDescs);
 
         channels.nibblerTransportConnected.subscribe(fiberBuilder.getFiber(), ladderPresenter::setNibblerConnected);
-        channels.ladderText.subscribe(fiberBuilder.getFiber(), ladderPresenter::setLadderText);
+        channels.ladderText.subscribe(displaySelectIO, ladderPresenter::setLadderText);
         channels.isinsGoingEx.subscribe(fiberBuilder.getFiber(), ladderPresenter::setISINsGoingEx);
 
         channels.laserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);

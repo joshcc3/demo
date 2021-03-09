@@ -51,10 +51,12 @@ import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
 import com.drwtrading.photons.ladder.LadderMetadata;
+import com.drwtrading.photons.ladder.LadderText;
 import drw.eeif.photons.mrchill.Position;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.Publisher;
 
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Set;
 
@@ -63,7 +65,7 @@ class ReddalChannels {
     final TypedChannel<Throwable> error;
     final Publisher<Throwable> errorPublisher;
     final TypedChannel<LaserLine> laserLineData;
-    final TypedChannel<LadderTextUpdate> ladderText;
+    final SelectIOChannel<Collection<LadderTextUpdate>> ladderText;
     final TypedChannel<LadderMetadata> metaData;
     final TypedChannel<OPXLDeskPositions> deskPositions;
     final TypedChannel<Position> position;
@@ -130,7 +132,7 @@ class ReddalChannels {
         this.error = TypedChannels.create(Throwable.class);
         this.errorPublisher = new BogusErrorFilteringPublisher(error);
         this.laserLineData = create(LaserLine.class);
-        this.ladderText = create(LadderTextUpdate.class);
+        this.ladderText = new SelectIOChannel<>();
         this.metaData = create(LadderMetadata.class);
         this.deskPositions = create(OPXLDeskPositions.class);
         this.position = create(Position.class);

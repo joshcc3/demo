@@ -6,6 +6,7 @@ import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.icepie.transport.data.LaserLineType;
 import com.drwtrading.london.reddal.OPXLComponents;
+import com.drwtrading.london.reddal.SelectIOChannel;
 import com.drwtrading.london.reddal.data.LaserLine;
 import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 import org.jetlang.channels.Publisher;
@@ -25,10 +26,10 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
     private static final int MAX_LENGTH_OF_TEXT = 6;
 
     private final Publisher<LaserLine> laserLinePublisher;
-    private final Publisher<LadderTextUpdate> ladderTextPublisher;
+    private final SelectIOChannel<Collection<LadderTextUpdate>> ladderTextPublisher;
 
     public OpxlLadderTextSubscriber(final SelectIO selectIO, final IFuseBox<OPXLComponents> monitor, final Collection<String> topics,
-            final Publisher<LaserLine> laserLinePublisher, final Publisher<LadderTextUpdate> ladderTextPublisher) {
+            final Publisher<LaserLine> laserLinePublisher, final SelectIOChannel<Collection<LadderTextUpdate>> ladderTextPublisher) {
 
         super(selectIO, selectIO, monitor, OPXLComponents.OPXL_LADDER_TEXT, topics, "OpxlLadderTextSubscriber");
 
@@ -117,9 +118,7 @@ public class OpxlLadderTextSubscriber extends AOpxlReader<OPXLComponents, OpxlLa
             laserLinePublisher.publish(laserLineValue);
         }
 
-        for (final LadderTextUpdate ladderText : values.ladderText) {
-            ladderTextPublisher.publish(ladderText);
-        }
+        ladderTextPublisher.publish(values.ladderText);
     }
 
     @Override

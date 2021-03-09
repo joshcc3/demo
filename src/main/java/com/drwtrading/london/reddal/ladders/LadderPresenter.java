@@ -440,10 +440,12 @@ public class LadderPresenter implements IStackPresenterCallback {
         }
     }
 
-    public void setLadderText(final LadderTextUpdate ladderText) {
+    public void setLadderText(final Collection<LadderTextUpdate> ladderTexts) {
 
-        final LadderMetaData metaData = metaDataBySymbol.get(ladderText.symbol);
-        metaData.setLadderText(ladderText);
+        for (final LadderTextUpdate ladderText : ladderTexts) {
+            final LadderMetaData metaData = metaDataBySymbol.get(ladderText.symbol);
+            metaData.setLadderText(ladderText);
+        }
     }
 
     public void displayTradeIssue(final LadderClickTradingIssue issue) {
