@@ -118,7 +118,7 @@ public class StackConfigPresenter {
                 quoteConfig.getBettermentTicks(), quoteConfig.isBettermentOppositeSide(), quoteConfig.getOppositeSideBettermentTicks(),
                 fxConfig.getMaxBookAgeMillis(), fxConfig.getMaxJumpBPS(), leanConfig.getMaxBookAgeMillis(), leanConfig.getMaxJumpBPS(),
                 leanConfig.getRequiredQty(), leanConfig.getMaxPapaWeight(), leanToQuoteRatio, leanPriceAdjustmentRaw,
-                additiveConfig.isEnabled(), additiveConfig.getMaxSignalAgeMillis(), additiveConfig.getMinRequiredBPS(),
+                additiveConfig.isCollarEnabled(), additiveConfig.getMaxSignalAgeMillis(), additiveConfig.getMinRequiredBPS(),
                 additiveConfig.getMaxBPS(), planConfig.getMinLevelQty(), planConfig.getMaxLevelQty(), planConfig.getLotSize(),
                 planConfig.getMaxLevels(), planConfig.getMinPicardQty(), strategyConfig.getMaxOrdersPerLevel(),
                 strategyConfig.isOnlySubmitBestLevel(), strategyConfig.isQuoteBettermentOn(), strategyConfig.getModTicks(),

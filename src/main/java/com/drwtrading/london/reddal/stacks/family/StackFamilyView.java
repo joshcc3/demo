@@ -1336,7 +1336,7 @@ public class StackFamilyView {
 
                 final StackAdditiveConfig additiveConfig = fromConfig.additiveConfig;
                 configClient.additiveConfigUpdated(SOURCE_UI, toConfig.configGroupID, additiveConfig.getMaxSignalAgeMillis(),
-                        additiveConfig.isEnabled(), additiveConfig.getMinRequiredBPS(), additiveConfig.getMaxBPS());
+                        additiveConfig.isCollarEnabled(), additiveConfig.getMinRequiredBPS(), additiveConfig.getMaxBPS());
 
                 final StackPlanConfig planConfig = fromConfig.planConfig;
                 configClient.planConfigUpdated(SOURCE_UI, toConfig.configGroupID, planConfig.getMinLevelQty(), planConfig.getMaxLevelQty(),
