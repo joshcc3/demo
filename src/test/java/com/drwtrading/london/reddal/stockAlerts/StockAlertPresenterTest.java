@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 
 public class StockAlertPresenterTest {
 
-    private final FXCalc<FXFuse> fxCalc = new FXCalc<>(new IgnoredFuseBox<>(), FXFuse.FX_TIMEOUT, MDSource.INTERNAL);
+    private final FXCalc<FXFuse> fxCalc = new FXCalc<>(new IgnoredFuseBox<>(), FXFuse.FX_TIMEOUT, MDSource.HOTSPOT_EU);
 
     private final IClock clock = new ManualClock(1);
     private final UILogger logger = Mockito.mock(UILogger.class);
