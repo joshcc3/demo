@@ -132,6 +132,7 @@ public class LadderView implements UiEventHandler {
     private final TradingStatusForAll tradingStatusForAll;
     private final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
+    private final Publisher<UserPriceModeRequest> userPriceModeRequestPublisher;
     private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
     private final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher;
     private final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher;
@@ -169,8 +170,9 @@ public class LadderView implements UiEventHandler {
             final FXCalc<?> fxCalc, final FeesCalc feesCalc, final DecimalFormat feeDF, final TradingStatusForAll tradingStatusForAll,
             final Publisher<HeartbeatRoundtrip> heartbeatRoundTripPublisher, final Publisher<RecenterLaddersForUser> recenterLaddersForUser,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
-            final Publisher<UserCycleRequest> userCycleContractPublisher, final Publisher<HostWorkspaceRequest> userWorkspaceRequests,
-            final Map<String, OrderEntrySymbolChannel> orderEntryMap,
+            final Publisher<UserCycleRequest> userCycleContractPublisher,
+            final Publisher<UserPriceModeRequest> userPriceModeRequestPublisher,
+            final Publisher<HostWorkspaceRequest> userWorkspaceRequests, final Map<String, OrderEntrySymbolChannel> orderEntryMap,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
             final Publisher<StackIncreaseParentOffsetCmd> increaseParentOffsetPublisher,
             final Publisher<StackIncreaseChildOffsetCmd> increaseChildOffsetCmdPublisher,
@@ -197,6 +199,7 @@ public class LadderView implements UiEventHandler {
         this.tradingStatusForAll = tradingStatusForAll;
         this.heartbeatRoundTripPublisher = heartbeatRoundTripPublisher;
         this.userCycleContractPublisher = userCycleContractPublisher;
+        this.userPriceModeRequestPublisher = userPriceModeRequestPublisher;
         this.userWorkspaceRequests = userWorkspaceRequests;
         this.refData = refData;
 
@@ -541,11 +544,11 @@ public class LadderView implements UiEventHandler {
         if (value != null) {
             value = value.trim();
             if (HTML.INP_QTY.equals(label)) {
-                activeView.setTradingBoxQty(Integer.valueOf(value));
+                activeView.setTradingBoxQty(Integer.parseInt(value));
             } else if (HTML.STACK_TICK_SIZE.equals(label)) {
-                activeView.setStackTickSize(Double.valueOf(value));
+                activeView.setStackTickSize(Double.parseDouble(value));
             } else if (HTML.STACK_ALIGNMENT_TICK_TO_BPS.equals(label)) {
-                activeView.setStackAlignmentTickToBPS(Double.valueOf(value));
+                activeView.setStackAlignmentTickToBPS(Double.parseDouble(value));
             } else if (!activeView.setPersistencePreference(label, value)) {
                 throw new IllegalArgumentException("Update for unknown value: " + label + ' ' + dataArg);
             }
@@ -733,6 +736,12 @@ public class LadderView implements UiEventHandler {
             final UserCycleRequest cycleRequest = new UserCycleRequest(client.getUserName(), contract);
             userCycleContractPublisher.publish(cycleRequest);
             return;
+        } else if (label.startsWith(HTML.PRICING) && "middle".equals(button)) {
+            final PricingMode mode = PricingMode.getFromHtml(label);
+            if (mode != null) {
+                final UserPriceModeRequest priceModeRequest = new UserPriceModeRequest(client.getUserName(), mode);
+                userPriceModeRequestPublisher.publish(priceModeRequest);
+            }
         } else {
 
             try {
@@ -766,6 +775,12 @@ public class LadderView implements UiEventHandler {
             } else {
                 nextContract();
             }
+        }
+    }
+
+    void setPricingMode(final PricingMode mode) {
+        if (bookView != null) {
+            bookView.setPricingMode(mode);
         }
     }
 

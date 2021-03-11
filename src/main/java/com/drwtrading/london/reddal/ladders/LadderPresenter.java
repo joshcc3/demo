@@ -139,6 +139,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Fiber fiber;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
     private final Publisher<UserCycleRequest> userCycleContractPublisher;
+    private final Publisher<UserPriceModeRequest> userPriceModeRequestPublisher;
     private final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher;
     private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
 
@@ -153,6 +154,7 @@ public class LadderPresenter implements IStackPresenterCallback {
             final Publisher<StacksSetSiblingsEnableCmd> disableSiblingsCmdPublisher,
             final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher,
             final Publisher<UserCycleRequest> userCycleContractPublisher,
+            final Publisher<UserPriceModeRequest> userPriceModeRequestPublisher,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServerPublisher,
             final Publisher<HostWorkspaceRequest> userWorkspaceRequests) {
 
@@ -164,6 +166,7 @@ public class LadderPresenter implements IStackPresenterCallback {
         this.ladderOptions = ladderOptions;
 
         this.fxCalc = fxCalc;
+        this.userPriceModeRequestPublisher = userPriceModeRequestPublisher;
         this.feesCalc = new FeesCalc(msg -> monitor.logError(ReddalComponents.FEES_CALC, msg), fxCalc);
         this.feeDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 5);
 
@@ -247,8 +250,9 @@ public class LadderPresenter implements IStackPresenterCallback {
         final LadderView ladderView =
                 new LadderView(monitor, connected.getClient(), uiPipe, view, ewokBaseURL, remoteOrderCommandByServer, ladderOptions, fxCalc,
                         feesCalc, feeDF, tradingStatusForAll, roundTripPublisher, recenterLaddersForUser, ladderClickTradingIssuePublisher,
-                        userCycleContractPublisher, userWorkspaceRequests, orderEntryMap, orderEntryCommandToServerPublisher,
-                        increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher, disableSiblingsCmdPublisher, refData);
+                        userCycleContractPublisher, userPriceModeRequestPublisher, userWorkspaceRequests, orderEntryMap,
+                        orderEntryCommandToServerPublisher, increaseParentOffsetPublisher, increaseChildOffsetCmdPublisher,
+                        disableSiblingsCmdPublisher, refData);
 
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
@@ -529,6 +533,13 @@ public class LadderPresenter implements IStackPresenterCallback {
     @Subscribe
     public void on(final UserCycleRequest request) {
         viewsByUser.get(request.username).forEach(ladderView -> ladderView.switchContract(request));
+    }
+
+    public void onUserPriceModeRequest(final UserPriceModeRequest request) {
+        final Collection<LadderView> views = viewsByUser.get(request.username);
+        for (final LadderView view : views) {
+            view.setPricingMode(request.mode);
+        }
     }
 
     @Subscribe

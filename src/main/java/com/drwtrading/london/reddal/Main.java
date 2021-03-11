@@ -995,12 +995,14 @@ public class Main {
                         picardSpotter, premiumCalc, fxCalc, channels.storeLadderPref, channels.heartbeatRoundTrips,
                         channels.recenterLaddersForUser, fiberBuilder.getFiber(), channels.increaseParentOffsetCmds,
                         channels.increaseChildOffsetBPSCmds, channels.setSiblingsEnabledCmds, channels.ladderClickTradingIssues,
-                        channels.userCycleContractPublisher, channels.orderEntryCommandToServer, channels.userWorkspaceRequests);
+                        channels.userCycleContractPublisher, channels.userPriceModeRequestPublisher, channels.orderEntryCommandToServer,
+                        channels.userWorkspaceRequests);
 
         fiberBuilder.subscribe(ladderPresenter, webSocket, channels.metaData, channels.position, channels.ladderPrefsLoaded,
                 channels.displaySymbol, channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs,
                 channels.singleOrderCommand, channels.replaceCommand, channels.userCycleContractPublisher, channels.orderEntrySymbols,
                 channels.orderEntryFromServer, channels.searchResults, channels.symbolDescs);
+        channels.userPriceModeRequestPublisher.subscribe(fiberBuilder.getFiber(), ladderPresenter::onUserPriceModeRequest);
 
         channels.nibblerTransportConnected.subscribe(fiberBuilder.getFiber(), ladderPresenter::setNibblerConnected);
         channels.ladderText.subscribe(displaySelectIO, ladderPresenter::setLadderText);

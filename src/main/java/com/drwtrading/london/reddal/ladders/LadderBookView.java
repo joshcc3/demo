@@ -1677,6 +1677,12 @@ public class LadderBookView implements ILadderBoard {
         refresh(symbol);
     }
 
+    void setPricingMode(final PricingMode mode) {
+        if (pricingModes.isValidChoice(mode)) {
+            pricingModes.set(mode);
+        }
+    }
+
     private void cancelOrder(final SourcedWorkingOrder sourcedOrder) {
 
         if (isTrader) {
