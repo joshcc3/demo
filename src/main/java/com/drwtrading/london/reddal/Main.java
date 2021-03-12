@@ -8,7 +8,6 @@ import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerCacheFactory;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerTransportCaches;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
 import com.drwtrading.london.eeif.opxl.OpxlClient;
-import com.drwtrading.london.eeif.opxl.OpxlUtils;
 import com.drwtrading.london.eeif.photocols.client.OnHeapBufferPhotocolsNioClient;
 import com.drwtrading.london.eeif.position.transport.PositionTransportComponents;
 import com.drwtrading.london.eeif.position.transport.cache.PositionCacheFactory;
@@ -98,7 +97,6 @@ import com.drwtrading.london.reddal.opxl.OPXLSpreadnoughtFilters;
 import com.drwtrading.london.reddal.opxl.OpxlDividendTweets;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlFXCalcUpdater;
-import com.drwtrading.london.reddal.opxl.OpxlLadderTextSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
 import com.drwtrading.london.reddal.opxl.UltimateParentOPXL;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
@@ -804,33 +802,12 @@ public class Main {
                         new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
                 app.addStartUpAction(opxlReader::start);
             }
+        }
 
-            final ConfigGroup ladderTextConfig = opxlConfig.getEnabledGroup("laddertext");
-            if (null != icepieConfig) {
-                initialiseIcePieClient(app, channels);
-            } else if (null != ladderTextConfig) {
-                final Set<String> sheetsKeys = ladderTextConfig.getSet("keys");
-                final Set<String> softwareKeys = ladderTextConfig.getSet("softwareKeys");
-
-                final Set<String> allKeys = new HashSet<>();
-                if (null != softwareKeys) {
-                    for (final String softwareKey : softwareKeys) {
-                        if ('.' != softwareKey.charAt(0) || '.' != softwareKey.charAt(softwareKey.length() - 1)) {
-                            throw new IllegalArgumentException("Invalid software key format [" + softwareKey + ']');
-                        }
-                        final String topic = OpxlUtils.getTopic("prod", softwareKey, new Date(), "");
-                        allKeys.add(topic);
-                    }
-                }
-                if (null != sheetsKeys) {
-                    allKeys.addAll(sheetsKeys);
-                }
-                final OpxlLadderTextSubscriber ladderTextReader =
-                        new OpxlLadderTextSubscriber(opxlSelectIO, opxlMonitor, allKeys, channels.laserLineData, channels.ladderText);
-                app.addStartUpAction(ladderTextReader::start);
-            } else {
-                app.errorLog.error("No ladderText being subscribed to");
-            }
+        if (null != icepieConfig) {
+            initialiseIcePieClient(app, channels);
+        } else {
+            app.errorLog.error("No ladderText being subscribed to");
         }
 
         final ConfigGroup pksConfig = root.getEnabledGroup("pks");
