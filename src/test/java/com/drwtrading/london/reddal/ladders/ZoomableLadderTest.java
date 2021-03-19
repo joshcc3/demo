@@ -70,7 +70,7 @@ import java.util.Set;
 
 public class ZoomableLadderTest {
 
-    private static final User USER = User.CMILLER;
+    private static final User USER = User.RNEWTON;
     private static final String SYMBOL = "VOD LN";
     private static final InstrumentID INST_ID = new InstrumentID("GB1234567890", CCY.GBX, MIC.XLON);
     private static final ITickTable TICK_TABLE = new SingleBandTickTable(Constants.NORMALISING_FACTOR);

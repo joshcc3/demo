@@ -88,7 +88,7 @@ function getLadderHosts(symbol, ternaryIsFutures) {
 
 	if (isDev) {
 
-		return LOCAL_LADDERS_URLS;
+		return {ladderHost: window.location.hostname + ":9044", workspaceHost: window.location.hostname + ":9045"};
 
 	} else if (false === ternaryIsFutures) {
 

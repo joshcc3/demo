@@ -99,6 +99,6 @@ public class RemoteOrderServerRouterTest {
     }
 
     private static SubmitOrderCmd submit(final OrderType limit, final String symbol) {
-        return new SubmitOrderCmd(symbol, new PublisherStub<>(), User.CMILLER, BookSide.BID, limit, AlgoType.MANUAL, "", 1, 1);
+        return new SubmitOrderCmd(symbol, new PublisherStub<>(), User.RNEWTON, BookSide.BID, limit, AlgoType.MANUAL, "", 1, 1);
     }
 }

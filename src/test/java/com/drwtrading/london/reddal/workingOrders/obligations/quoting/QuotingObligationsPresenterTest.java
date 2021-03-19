@@ -16,7 +16,7 @@ import java.util.EnumSet;
 
 public class QuotingObligationsPresenterTest {
 
-    public static final User USER = User.CMILLER;
+    public static final User USER = User.RNEWTON;
     public static final String NIBBLER = "TEST_NIBBLER";
     public static final String SYMBOL = "VOD LN";
     public static final String SYMBOL2 = "TRY LN";
