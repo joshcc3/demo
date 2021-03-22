@@ -823,7 +823,7 @@ public class StackFamilyView {
                 allOk = false;
             }
             for (final String child : allChildren) {
-                allOk = allOk && checkChild(instID.isin, child, errors);
+                allOk = checkChild(instID.isin, child, errors) && allOk;
             }
             final String otcChild = instID.isin + " OTC";
             if (checkChildIsAvailable(otcChild, errors)) {
@@ -843,7 +843,7 @@ public class StackFamilyView {
             final Set<String> result = new HashSet<>();
 
             for (final String child : children) {
-                if (childIsAnOrphan(child, childrenUIData.containsKey(child))) {
+                if (isChildAnOrphan(child, childrenUIData.containsKey(child))) {
                     result.add(child);
                 }
             }
@@ -859,17 +859,17 @@ public class StackFamilyView {
 
     private boolean checkChildIsAvailable(final String child, final List<String> ui) {
         final boolean childAlreadyCreated = this.childrenUIData.containsKey(child);
-        final boolean childNotInFamily = childIsAnOrphan(child, childAlreadyCreated);
-
+        final boolean childNotInFamily = isChildAnOrphan(child, childAlreadyCreated);
+        final String family = childAlreadyCreated ? this.childrenUIData.get(child).getFamily() : "null";
         final boolean available = childAlreadyCreated && childNotInFamily;
         if (!available) {
-            ui.add('[' + child + "] " + '[' + childAlreadyCreated + "] " + '[' + childNotInFamily + "] ");
+            ui.add('[' + child + "] " + '[' + childAlreadyCreated + "] " + '[' + childNotInFamily + "] [" + family + ']');
         }
 
         return available;
     }
 
-    private boolean childIsAnOrphan(final String child, final boolean childAlreadyCreated) {
+    private boolean isChildAnOrphan(final String child, final boolean childAlreadyCreated) {
         return childAlreadyCreated && StackOrphanage.ORPHANAGE.equals(this.childrenUIData.get(child).getFamily());
     }
 
