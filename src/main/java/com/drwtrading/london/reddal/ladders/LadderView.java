@@ -786,12 +786,14 @@ public class LadderView implements UiEventHandler {
 
     private void nextContract() {
         final SpreadContractSet contracts = metaData.spreadContractSet;
-        String nextContract = contracts.next(symbol);
-        int count = 3;
-        while (!refData.containsKey(nextContract) && 0 < count--) {
-            nextContract = contracts.next(nextContract);
+        if (contracts != null) {
+            String nextContract = contracts.next(symbol);
+            int count = 3;
+            while (!refData.containsKey(nextContract) && 0 < count--) {
+                nextContract = contracts.next(nextContract);
+            }
+            goToContract(nextContract);
         }
-        goToContract(nextContract);
     }
 
     private void goToContract(final String targetSymbol) {
