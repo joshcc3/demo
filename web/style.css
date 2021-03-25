@@ -183,6 +183,11 @@ div {
 	background-color: #3c3c3c !important;
 }
 
+.order.working_order_type_mkt_open {
+	border-right: solid 1px #5c04ff !important;
+	background-color: #3c3c3c !important;
+}
+
 .order.working_order_type_market {
 	border: solid 2px #ffe100 !important;
 	background-color: #3c3c3c !important;

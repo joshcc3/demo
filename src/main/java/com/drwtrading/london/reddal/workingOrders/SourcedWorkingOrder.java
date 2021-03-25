@@ -77,6 +77,8 @@ public class SourcedWorkingOrder {
             return CSSClass.WORKING_ORDER_TYPE_TAKER;
         } else if (OrderType.MKT_CLOSE == orderType) {
             return CSSClass.WORKING_ORDER_TYPE_MKT_CLOSE;
+        } else if (OrderType.MKT_OPEN == orderType) {
+            return CSSClass.WORKING_ORDER_TYPE_MKT_OPEN;
         } else if (OrderType.MARKET == orderType) {
             return CSSClass.WORKING_ORDER_TYPE_MARKET;
         } else if (AlgoType.MANUAL == algoType || AlgoType.THOR == algoType) {

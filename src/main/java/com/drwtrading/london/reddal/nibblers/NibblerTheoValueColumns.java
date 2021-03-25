@@ -13,6 +13,5 @@ public enum NibblerTheoValueColumns {
     THEO_VALUE,
 
     AFTER_HOURS_PERCENT,
-    RAW_AFTER_HOURS_PERCENT,
-    MOMENTUM_COMPONENT
+    TRUE_AFTER_HOURS_PERCENT
 }

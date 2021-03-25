@@ -13,7 +13,7 @@ import java.text.DecimalFormat;
 
 public class HeaderPanel {
 
-    private static final String RAW_AH_CELL_ID = HTML.TEXT_PREFIX + "r2c5";
+    private static final String TRUE_AH_CELL_ID = HTML.TEXT_PREFIX + "r2c5";
     private static final String[] AH_LABELS;
 
     static {
@@ -38,7 +38,7 @@ public class HeaderPanel {
     private long pksPosition;
 
     private int ahPercent;
-    private int rawAHPercent;
+    private int trueAHPercent;
     private double bestBidOffsetBPS;
     private double bestAskOffsetBPS;
 
@@ -58,7 +58,7 @@ public class HeaderPanel {
         this.pksPosition = Long.MIN_VALUE;
 
         this.ahPercent = Integer.MIN_VALUE;
-        this.rawAHPercent = Integer.MIN_VALUE;
+        this.trueAHPercent = Integer.MIN_VALUE;
 
         this.bestBidOffsetBPS = Double.NaN;
         this.bestAskOffsetBPS = Double.NaN;
@@ -141,7 +141,7 @@ public class HeaderPanel {
         if (null != theoValue) {
 
             final int ahPercent;
-            final int rawAHPercent;
+            final int trueAHPercent;
 
             if (theoValue.isValid()) {
 
@@ -150,10 +150,10 @@ public class HeaderPanel {
                 } else {
                     ahPercent = (int) Math.ceil(theoValue.getAfterHoursPct());
                 }
-                rawAHPercent = (int) Math.ceil(theoValue.getRawAfterHoursPct());
+                trueAHPercent = (int) Math.ceil(theoValue.getTrueAfterHoursPct());
             } else {
                 ahPercent = -1;
-                rawAHPercent = -1;
+                trueAHPercent = -1;
             }
 
             if (this.ahPercent != ahPercent) {
@@ -164,9 +164,9 @@ public class HeaderPanel {
 
             ui.cls(HTML.AFTER_HOURS_WEIGHT, CSSClass.IS_POISONED, theoValue.isPoisoned());
 
-            if (this.rawAHPercent != rawAHPercent) {
-                this.rawAHPercent = rawAHPercent;
-                setAHCell(RAW_AH_CELL_ID, rawAHPercent);
+            if (this.trueAHPercent != trueAHPercent) {
+                this.trueAHPercent = trueAHPercent;
+                setAHCell(TRUE_AH_CELL_ID, trueAHPercent);
             }
         }
     }

@@ -111,6 +111,7 @@ public enum CSSClass {
     WORKING_ORDER_TYPE_SPRINTER("working_order_type_sprinter"),
     WORKING_ORDER_TYPE_PICARD("working_order_type_picard"),
     WORKING_ORDER_TYPE_MKT_CLOSE("working_order_type_mkt_close"),
+    WORKING_ORDER_TYPE_MKT_OPEN("working_order_type_mkt_open"),
     WORKING_ORDER_TYPE_MARKET("working_order_type_market"),
     WORKING_ORDER_TYPE_GTC("working_order_type_gtc"),
     WORKING_ORDER_TYPE_QUOTE("working_order_type_quote"),

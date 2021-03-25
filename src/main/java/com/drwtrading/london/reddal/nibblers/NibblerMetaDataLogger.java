@@ -133,8 +133,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
                 priceDF.format(theoValue.getTheoreticalValue() / (double) Constants.NORMALISING_FACTOR));
 
         theoRow.set(NibblerTheoValueColumns.AFTER_HOURS_PERCENT, twoDF.format(theoValue.getAfterHoursPct()));
-        theoRow.set(NibblerTheoValueColumns.RAW_AFTER_HOURS_PERCENT, twoDF.format(theoValue.getAfterHoursPct()));
-        theoRow.set(NibblerTheoValueColumns.MOMENTUM_COMPONENT, twoDF.format(theoValue.getMomentumComponent()));
+        theoRow.set(NibblerTheoValueColumns.TRUE_AFTER_HOURS_PERCENT, twoDF.format(theoValue.getAfterHoursPct()));
 
         try {
             this.fileTableWriter.writeRow(theoRow, false);
