@@ -30,7 +30,6 @@ public class PicardUI {
     private final Set<InstType> instType;
 
     private final PicardSounds sounds;
-    private boolean soundsOn;
 
     private final Publisher<RecenterLadder> reddalMessagePublisher;
 
@@ -53,7 +52,6 @@ public class PicardUI {
         this.instType = instTypes;
 
         this.sounds = sounds;
-        this.soundsOn = PicardSounds.SPREADER == sounds || instTypes.contains(InstType.FUTURE);
 
         this.reddalMessagePublisher = recenterLadderPublisher;
 
@@ -113,7 +111,6 @@ public class PicardUI {
     private void webUIConnected(final WebSocketConnected connected) {
 
         final IPicardView view = views.register(connected);
-        view.setCheckCrossed(soundsOn);
         view.setSound(sounds.fileName);
         for (final PicardRow opportunity : cache.values()) {
             display(view, opportunity);
@@ -124,12 +121,6 @@ public class PicardUI {
 
         webLog.write("LadderWorkspace", msg);
         views.invoke(msg);
-    }
-
-    @FromWebSocketView
-    public void setCheckCrossed(final boolean showAllCrosses) {
-        this.soundsOn = showAllCrosses;
-        views.all().setCheckCrossed(showAllCrosses);
     }
 
     @FromWebSocketView
@@ -164,12 +155,10 @@ public class PicardUI {
             displaySymbol = givenSymbol;
         }
 
-        final boolean isPlaySound = soundsOn && row.isNewRow;
-
         final boolean isOnOPXLFilterList = opxlFilterSymbols.contains(row.symbol);
         final boolean isRunnable = !nonRunnableSymbols.contains(row.symbol);
 
         view.picard(row.symbol, displaySymbol, row.side.toString(), bpsThrough, opportunitySize, ccy, row.prettyPrice, row.description,
-                row.state.toString(), row.inAuction, isPlaySound, isOnOPXLFilterList, isRunnable);
+                row.state.toString(), row.inAuction, row.isNewRow, isOnOPXLFilterList, isRunnable);
     }
 }

@@ -3,7 +3,7 @@ const DISPLAY_THRESHOLD = "display-threshold"
 let ws;
 
 let isSoundsOn = true;
-let checkCrossed = false;
+let checkCrossed = true;
 
 const RUSSIA_SSF = /^(SR|SP|GZ|LK|RN|TT|MT|NK|VB|SG|HY|FS|UK|CH|TN|SN|GM|RT|ME|MN)([A-Z])([0-9])$/;
 
@@ -36,7 +36,8 @@ $(function () {
 	});
 
 	$("#all").bind('click', function () {
-		ws.send('setCheckCrossed,' + (!checkCrossed));
+		checkCrossed = !checkCrossed;
+		$(this).val(checkCrossed ? 'all crosses' : 'picards only');
 	});
 
 	$("#sortBy").click(() => {
@@ -72,7 +73,6 @@ $(function () {
 	});
 
 	setInterval(sortPicards, 1000);
-
 
 	if (localStorage[DISPLAY_THRESHOLD]) {
 		displayThreshold = parseFloat(localStorage[DISPLAY_THRESHOLD]);
@@ -152,25 +152,20 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			picard.find('.price').text(price);
 			picard.find('.side').text(side);
 			picard.find('.opportunitySize').text(opportunitySize + " " + ccy);
-
 			picard.find('.description').text(description);
+
 			picard.toggleClass("live", state === "LIVE");
 			picard.toggleClass("fade", state === "FADE");
 			picard.toggleClass("BID", !inAuction && side === "BID");
 			picard.toggleClass("ASK", !inAuction && side === "ASK");
 			picard.toggleClass("BID_AUCTION", inAuction && side === "BID");
 			picard.toggleClass("ASK_AUCTION", inAuction && side === "ASK");
-
 			picard.toggleClass("rfqPicard", isRfq);
-			if (isPlaySound) {
-				picard.toggleClass("toPlaySound", true);
 
-			}
 			let bigEnough = opportunity > displayThreshold;
 			picard.toggleClass("hidden", !bigEnough || (hideRfq && isRfq));
-			if (bigEnough && picard.hasClass("toPlaySound")) {
 
-				picard.removeClass("toPlaySound");
+			if (bigEnough && isPlaySound && checkCrossed) {
 				playSound();
 			}
 
@@ -178,11 +173,6 @@ function picard(symbol, listing, side, bpsThrough, opportunitySize, ccy, price, 
 			picard.toggleClass("isNotRunnable", !isRunnable);
 		}
 	}
-}
-
-function setCheckCrossed(check) {
-	checkCrossed = check;
-	$("#all").val(check ? 'all crosses' : 'picards only');
 }
 
 function queueSort() {
