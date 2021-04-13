@@ -4,6 +4,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
@@ -55,7 +56,6 @@ import com.drwtrading.london.reddal.util.EnumSwitcher;
 import com.drwtrading.london.reddal.util.Mathematics;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
-import com.google.common.collect.ImmutableSet;
 import drw.eeif.eeifoe.Cancel;
 import drw.eeif.eeifoe.Metadata;
 import drw.eeif.eeifoe.OrderSide;
@@ -93,13 +93,21 @@ public class LadderBookView implements ILadderBoard {
 
     private static final int AUTO_RECENTER_TICKS = 3;
 
-    private static final Set<String> TAGS = ImmutableSet.of("CHAD", "DIV", "STRING", "CLICKNOUGHT", "GLABN");
+    private static final Set<String> TAGS;
 
     private static final EnumSet<CSSClass> WORKING_ORDER_CSS;
     private static final Set<String> PERSISTENT_PREFS = new HashSet<>();
     private static final Set<String> NON_DISPLAY_PREFS = new HashSet<>();
 
     static {
+
+        TAGS = new HashSet<>();
+        for (final Tag tag : Tag.values()) {
+            if (tag.isManual) {
+                TAGS.add(tag.name());
+            }
+        }
+
         LASER_LINE_HTML_MAP = new EnumMap<>(LaserLineType.class);
         LASER_LINE_HTML_MAP.put(LaserLineType.NAV, HTML.LASER_NAV);
         LASER_LINE_HTML_MAP.put(LaserLineType.GREEN, HTML.LASER_GREEN);
@@ -217,7 +225,7 @@ public class LadderBookView implements ILadderBoard {
         this.ladderPrefsForSymbolUser = ladderPrefsForSymbolUser;
 
         this.defaultPrefs = new HashMap<>();
-        this.defaultPrefs.put(HTML.WORKING_ORDER_TAG, "CHAD");
+        this.defaultPrefs.put(HTML.WORKING_ORDER_TAG, Tag.CHAD.name());
         if (symbol.startsWith("FDAX")) {
             this.defaultPrefs.put(HTML.INP_RELOAD, "5");
         } else {
@@ -1453,7 +1461,7 @@ public class LadderBookView implements ILadderBoard {
             throw new IllegalArgumentException("Price " + price + " did not match key " + label);
         }
 
-        final String tag = ladderPrefsForSymbolUser.get(HTML.WORKING_ORDER_TAG);
+        final Tag tag = Tag.valueOf(ladderPrefsForSymbolUser.get(HTML.WORKING_ORDER_TAG));
 
         if (null == tag) {
             throw new IllegalArgumentException("No tag provided.");
@@ -1484,7 +1492,7 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private void submitManagedOrder(final ManagedOrderType orderType, final long price, final BookSide side, final String tag) {
+    private void submitManagedOrder(final ManagedOrderType orderType, final long price, final BookSide side, final Tag tag) {
 
         final OrderEntrySymbolChannel symbolOrderChannel = managedOrderEntries.get(symbol);
 
@@ -1507,7 +1515,7 @@ public class LadderBookView implements ILadderBoard {
             final drw.eeif.eeifoe.RemoteOrder remoteOrder =
                     new drw.eeif.eeifoe.RemoteOrder(symbol, orderSide, price, tradingBoxQty, user.username,
                             orderType.getOrder(price, tradingBoxQty, orderSide),
-                            new ObjectArrayList<>(Arrays.asList(LADDER_SOURCE_METADATA, new Metadata("TAG", tag))));
+                            new ObjectArrayList<>(Arrays.asList(LADDER_SOURCE_METADATA, new Metadata("TAG", tag.name()))));
 
             final Submit submit = new Submit(remoteOrder);
             symbolOrderChannel.publisher.publish(submit);
@@ -1515,7 +1523,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private void submitOrder(final ClientSpeedState clientSpeedState, final RemoteOrderType orderType, final long price,
-            final BookSide side, final String tag) {
+            final BookSide side, final Tag tag) {
 
         if (clientSpeedState == ClientSpeedState.TOO_SLOW) {
             final String message =
@@ -1742,6 +1750,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private static Long specialCaseCenterPrice(final IBook<?> book) {
+
         if (book.getInstType() == InstType.FUTURE && book.getSymbol().startsWith("FES1")) {
             return 0L;
         }
@@ -1749,6 +1758,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private static Long getLastTradeChangeOnDay(final MDForSymbol m) {
+
         final IBookReferencePrice refPriceData = m.getBook().getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
         if (refPriceData.isValid() && m.getTradeTracker().hasTrade()) {
             return m.getTradeTracker().getLastPrice() - refPriceData.getPrice();
@@ -1758,6 +1768,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private static Long getYesterdaySettle(final MDForSymbol m) {
+
         final IBookReferencePrice refPriceData = m.getBook().getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
         if (refPriceData.isValid()) {
             return refPriceData.getPrice();
@@ -1767,6 +1778,7 @@ public class LadderBookView implements ILadderBoard {
     }
 
     private static BookSide convertSide(final OrderSide side) {
+
         if (side == OrderSide.BUY) {
             return BookSide.BID;
         } else {

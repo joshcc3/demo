@@ -217,7 +217,7 @@ class ShredderBookView {
             }
             ui.cls(orderCellKey, CSSClass.MAYBE_OUR_OURDER, shreddedOrder.isOurs);
             ui.cls(orderCellKey, CSSClass.OUR_ORDER, shreddedOrder.isOurs && shreddedOrder.canOnlyBeOurs);
-            ui.data(orderCellKey, DataKey.TAG, shreddedOrder.tag);
+            ui.data(orderCellKey, DataKey.TAG, shreddedOrder.tag.name());
             ui.data(orderCellKey, DataKey.ORDER_TYPE, shreddedOrder.orderType);
         }
     }

@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.orderManagement.remoteOrder;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableRow;
@@ -78,7 +79,7 @@ public class NibblerTransportOrderEntry {
     }
 
     public void submitOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final String symbol,
-            final BookSide side, final OrderType orderType, final AlgoType algoType, final String tag, final long price, final int qty) {
+            final BookSide side, final OrderType orderType, final AlgoType algoType, final Tag tag, final long price, final int qty) {
 
         nibblerClient.submitOrder(++prevClOrdID, 0, user, symbol, side, orderType, algoType, tag, price, qty);
         if (!nibblerClient.batchComplete()) {
@@ -98,8 +99,8 @@ public class NibblerTransportOrderEntry {
     }
 
     public void modifyOrder(final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final int chainID, final String symbol,
-            final BookSide side, final OrderType orderType, final AlgoType algoType, final String tag, final long fromPrice,
-            final int fromQty, final long toPrice, final int toQty) {
+            final BookSide side, final OrderType orderType, final AlgoType algoType, final Tag tag, final long fromPrice, final int fromQty,
+            final long toPrice, final int toQty) {
 
         nibblerClient.modifyOrder(user, chainID, symbol, side, orderType, algoType, tag, fromPrice, fromQty, toPrice, toQty);
         if (!nibblerClient.batchComplete()) {

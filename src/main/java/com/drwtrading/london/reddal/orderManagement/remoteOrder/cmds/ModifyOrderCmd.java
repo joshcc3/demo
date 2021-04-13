@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
@@ -20,7 +21,7 @@ public class ModifyOrderCmd implements IOrderCmd {
     private final BookSide side;
     private final OrderType orderType;
     private final AlgoType algoType;
-    private final String tag;
+    private final Tag tag;
 
     private final long fromPrice;
     private final int fromQty;
@@ -29,7 +30,7 @@ public class ModifyOrderCmd implements IOrderCmd {
     private final int toQty;
 
     public ModifyOrderCmd(final String toServer, final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final int chainID,
-            final String symbol, final BookSide side, final OrderType orderType, final AlgoType algoType, final String tag,
+            final String symbol, final BookSide side, final OrderType orderType, final AlgoType algoType, final Tag tag,
             final long fromPrice, final int fromQty, final long toPrice, final int toQty) {
 
         this.toServer = toServer;

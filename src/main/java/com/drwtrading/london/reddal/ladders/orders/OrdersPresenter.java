@@ -48,6 +48,7 @@ public class OrdersPresenter {
 
     public OrdersPresenter(final Publisher<ISingleOrderCommand> singleOrderCommandPublisher,
             final Publisher<OrderEntryCommandToServer> orderEntryCommandToServer) {
+
         this.singleOrderCommandPublisher = singleOrderCommandPublisher;
         this.orderEntryCommandToServer = orderEntryCommandToServer;
     }
@@ -100,18 +101,21 @@ public class OrdersPresenter {
 
     @Subscribe
     public void on(final WebSocketDisconnected disconnected) {
+
         final IOrdersView view = views.unregister(disconnected);
         subscribed.entries().removeIf(next -> next.getValue().equals(view));
     }
 
     @Subscribe
     public void on(final WebSocketInboundData data) {
+
         views.invoke(data);
     }
 
     @FromWebSocketView
     public void subscribe(final String symbol, final String priceStr, final String bidPriceStr, final String askPriceStr,
             final WebSocketInboundData data) {
+
         final IOrdersView view = views.get(data.getOutboundChannel());
 
         final long price = Long.parseLong(priceStr);
@@ -125,16 +129,19 @@ public class OrdersPresenter {
 
     @FromWebSocketView
     public void modifyQuantity(final String symbol, final String key, final int newRemainingQty, final WebSocketClient client) {
+
         singleOrderCommandPublisher.publish(new ModifyOrderQtyCmd(symbol, key, client.getUserName(), newRemainingQty));
     }
 
     @FromWebSocketView
     public void cancelOrder(final String symbol, final String key, final WebSocketClient client) {
+
         singleOrderCommandPublisher.publish(new CancelOrderCmd(symbol, key, client.getUserName()));
     }
 
     @FromWebSocketView
     public void cancelManagedOrder(final String symbol, final String key, final WebSocketClient client) {
+
         final UpdateFromServer updateFromServer = managedOrders.get(symbol).updatesByKey.get(key);
         orderEntryCommandToServer.publish(new OrderEntryCommandToServer(updateFromServer.server,
                 new Cancel(updateFromServer.update.getSystemOrderId(), updateFromServer.update.getOrder())));
@@ -172,6 +179,7 @@ public class OrdersPresenter {
 
     private static Collection<UpdateFromServer> collectUpdates(final NavigableMap<Long, HashMap<String, UpdateFromServer>> bidUpdates,
             final NavigableMap<Long, HashMap<String, UpdateFromServer>> askUpdates) {
+
         if (bidUpdates.isEmpty() && askUpdates.isEmpty()) {
             return Collections.emptySet();
         } else {
@@ -199,6 +207,7 @@ public class OrdersPresenter {
 
     private static void addOrders(final NavigableMap<Long, LinkedHashSet<SourcedWorkingOrder>> ordersByPrice,
             final Collection<Map<String, String>> result) {
+
         for (final LinkedHashSet<SourcedWorkingOrder> orders : ordersByPrice.values()) {
             for (final SourcedWorkingOrder sourcedOrder : orders) {
 
@@ -212,7 +221,7 @@ public class OrdersPresenter {
                 orderMap.put("side", order.getSide().name());
                 orderMap.put("remainingQty", Long.toString(order.getOrderQty() - order.getFilledQty()));
                 orderMap.put("type", order.getOrderType().name());
-                orderMap.put("tag", order.getTag());
+                orderMap.put("tag", order.getTag().name());
                 orderMap.put("price", Double.toString((double) order.getPrice() / Constants.NORMALISING_FACTOR));
             }
         }

@@ -1,11 +1,12 @@
 package com.drwtrading.london.reddal.ladders.shredders;
 
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.fastui.html.CSSClass;
 
 public class ShreddedOrder {
 
-    String tag = "";
+    Tag tag = null;
     String orderType = "";
     int queuePosition;
     int level;

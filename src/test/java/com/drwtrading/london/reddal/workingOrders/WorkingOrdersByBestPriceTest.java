@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.workingOrders;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.workingOrders.bestPrices.BestWorkingPriceForSymbol;
@@ -33,7 +34,7 @@ public class WorkingOrdersByBestPriceTest {
         final long filledQty = 1;
 
         final WorkingOrder workingOrder =
-                new WorkingOrder(1, 1, 1, SYMBOL, "TAG", side, AlgoType.HAWK, OrderType.MARKET, 1, bidPrice, bidQty, filledQty);
+                new WorkingOrder(1, 1, 1, SYMBOL, Tag.CHAD, side, AlgoType.HAWK, OrderType.MARKET, 1, bidPrice, bidQty, filledQty);
         final SourcedWorkingOrder sourcedWorkingOrder = new SourcedWorkingOrder(SOURCE, workingOrder);
 
         final WorkingOrdersByBestPrice woByBest = new WorkingOrdersByBestPrice(SYMBOL);
@@ -58,7 +59,7 @@ public class WorkingOrdersByBestPriceTest {
         final long filledQty = 1;
 
         final WorkingOrder workingOrder =
-                new WorkingOrder(1, 1, 1, SYMBOL, "TAG", side, AlgoType.HAWK, OrderType.MARKET, 1, bidPrice, bidQty, filledQty);
+                new WorkingOrder(1, 1, 1, SYMBOL, Tag.CHAD, side, AlgoType.HAWK, OrderType.MARKET, 1, bidPrice, bidQty, filledQty);
         final SourcedWorkingOrder sourcedWorkingOrder = new SourcedWorkingOrder(SOURCE, workingOrder);
 
         final WorkingOrdersByBestPrice woByBest = new WorkingOrdersByBestPrice(SYMBOL);
@@ -80,7 +81,7 @@ public class WorkingOrdersByBestPriceTest {
         final long filledQty = 2;
 
         final WorkingOrder workingOrder =
-                new WorkingOrder(1, 1, 1, SYMBOL, "TAG", side, AlgoType.HAWK, OrderType.MARKET, 1, askPrice, askQty, filledQty);
+                new WorkingOrder(1, 1, 1, SYMBOL, Tag.CHAD, side, AlgoType.HAWK, OrderType.MARKET, 1, askPrice, askQty, filledQty);
         final SourcedWorkingOrder sourcedWorkingOrder = new SourcedWorkingOrder(SOURCE, workingOrder);
 
         final WorkingOrdersByBestPrice woByBest = new WorkingOrdersByBestPrice(SYMBOL);
@@ -102,7 +103,7 @@ public class WorkingOrdersByBestPriceTest {
         final long filledQty = 5;
 
         final WorkingOrder workingOrder =
-                new WorkingOrder(1, 1, 1, SYMBOL, "TAG", side, AlgoType.HAWK, OrderType.MARKET, 1, askPrice, askQty, filledQty);
+                new WorkingOrder(1, 1, 1, SYMBOL, Tag.CHAD, side, AlgoType.HAWK, OrderType.MARKET, 1, askPrice, askQty, filledQty);
         final SourcedWorkingOrder sourcedWorkingOrder = new SourcedWorkingOrder(SOURCE, workingOrder);
 
         final WorkingOrdersByBestPrice woByBest = new WorkingOrdersByBestPrice(SYMBOL);
@@ -194,7 +195,7 @@ public class WorkingOrdersByBestPriceTest {
     private SourcedWorkingOrder getWorkingOrder(final int woID, final BookSide side, final long price, final long qty) {
 
         final WorkingOrder workingOrder =
-                new WorkingOrder(woID, 1, 1, SYMBOL, "TAG", side, AlgoType.HAWK, OrderType.MARKET, 1, price, qty, 1);
+                new WorkingOrder(woID, 1, 1, SYMBOL, Tag.CHAD, side, AlgoType.HAWK, OrderType.MARKET, 1, price, qty, 1);
         return new SourcedWorkingOrder(SOURCE, workingOrder);
     }
 

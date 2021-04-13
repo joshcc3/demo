@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
@@ -18,12 +19,12 @@ public class SubmitOrderCmd implements IOrderCmd {
     private final BookSide side;
     private final OrderType orderType;
     private final AlgoType algoType;
-    private final String tag;
+    private final Tag tag;
     private final long price;
     private final int qty;
 
     public SubmitOrderCmd(final String symbol, final Publisher<LadderClickTradingIssue> rejectChannel, final User user, final BookSide side,
-            final OrderType orderType, final AlgoType algoType, final String tag, final long price, final int qty) {
+            final OrderType orderType, final AlgoType algoType, final Tag tag, final long price, final int qty) {
 
         this.symbol = symbol;
         this.rejectChannel = rejectChannel;

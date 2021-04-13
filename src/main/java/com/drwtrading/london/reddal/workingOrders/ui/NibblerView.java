@@ -168,7 +168,8 @@ class NibblerView {
 
         final String chainID = Integer.toString(order.getChainID());
         view.setWorkingOrder(sourcedOrder.uiKey, chainID, order.getSymbol(), order.getSide().toString(), price, order.getFilledQty(),
-                order.getOrderQty(), order.getAlgoType().name() + '-' + order.getOrderType().name(), order.getTag(), sourcedOrder.source);
+                order.getOrderQty(), order.getAlgoType().name() + '-' + order.getOrderType().name(), order.getTag().name(),
+                sourcedOrder.source);
     }
 
     public void cancelAllNonGTC(final User user, final String reason, final boolean isAutomated) {

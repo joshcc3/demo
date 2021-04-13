@@ -190,7 +190,7 @@ function setWorkingOrder(key, chainID, instrument, side, price, filledQuantity, 
 	row.find(".quantity").text(quantity);
 	row.find(".orderType").text(orderType);
 	row.find(".tag").text(tag);
-	row.toggleClass("notEnder", tag != "Ender");
+	row.toggleClass("notEnder", tag !== "ENDER");
 }
 
 function deleteWorkingOrder(key) {

@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.orderManagement.remoteOrder;
 import com.drwtrading.jetlang.PublisherStub;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.cmds.SubmitOrderCmd;
@@ -99,6 +100,6 @@ public class RemoteOrderServerRouterTest {
     }
 
     private static SubmitOrderCmd submit(final OrderType limit, final String symbol) {
-        return new SubmitOrderCmd(symbol, new PublisherStub<>(), User.RNEWTON, BookSide.BID, limit, AlgoType.MANUAL, "", 1, 1);
+        return new SubmitOrderCmd(symbol, new PublisherStub<>(), User.RNEWTON, BookSide.BID, limit, AlgoType.MANUAL, Tag.YOLO, 1, 1);
     }
 }

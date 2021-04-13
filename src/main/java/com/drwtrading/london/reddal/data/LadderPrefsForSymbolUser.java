@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.data;
 
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.reddal.fastui.html.HTML;
 import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPref;
 import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPrefLoaded;
@@ -16,7 +17,7 @@ public class LadderPrefsForSymbolUser {
     private static final Set<LadderSettingsPref> globalDefaults = new HashSet<>();
 
     static {
-        final LadderSettingsPref globalDefault = new LadderSettingsPref("*", "*", HTML.WORKING_ORDER_TAG, "CHAD");
+        final LadderSettingsPref globalDefault = new LadderSettingsPref("*", "*", HTML.WORKING_ORDER_TAG, Tag.CHAD.name());
         globalDefaults.add(globalDefault);
     }
 

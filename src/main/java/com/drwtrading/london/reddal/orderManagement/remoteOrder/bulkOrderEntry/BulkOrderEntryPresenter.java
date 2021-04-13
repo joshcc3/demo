@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -208,7 +209,7 @@ public class BulkOrderEntryPresenter {
             if (supportedSymbols.contains(symbol)) {
 
                 final SubmitOrderCmd cmd =
-                        new SubmitOrderCmd(symbol, tradingIssues, user, side, OrderType.GTC, AlgoType.THOR, "GTC", price, qty);
+                        new SubmitOrderCmd(symbol, tradingIssues, user, side, OrderType.GTC, AlgoType.THOR, Tag.GTC, price, qty);
                 cmds.add(cmd);
             } else {
 

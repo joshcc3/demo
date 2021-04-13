@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal.ladders;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -353,7 +354,7 @@ public class ZoomableLadderTest {
         bookView.refresh(SYMBOL);
 
         Mockito.doReturn("MANUAL").when(ladderPrefsForSymbolUser).get(Mockito.matches(HTML.ORDER_TYPE_LEFT), Mockito.any());
-        Mockito.doReturn("TEST_TAG").when(ladderPrefsForSymbolUser).get(Mockito.matches(HTML.WORKING_ORDER_TAG));
+        Mockito.doReturn(Tag.CHAD.name()).when(ladderPrefsForSymbolUser).get(Mockito.matches(HTML.WORKING_ORDER_TAG));
         Mockito.doReturn("50").when(ladderPrefsForSymbolUser).get(Mockito.matches(HTML.INP_RELOAD), Mockito.any());
         tradingStatusForAll.setNibblerConnected(new NibblerTransportConnected("", true));
         final Map<String, String> bidPriceInit = Collections.singletonMap("price", Long.toString(DEFAULT_CENTER_PRICE));
@@ -374,11 +375,13 @@ public class ZoomableLadderTest {
     }
 
     private static SourcedWorkingOrder getWorkingOrder(final int qty, final int orderId, final long price, final BookSide side) {
+
         return new SourcedWorkingOrder("",
-                new WorkingOrder(orderId, 1, orderId, SYMBOL, "", side, AlgoType.MANUAL, OrderType.LIMIT, orderId, price, qty, 0));
+                new WorkingOrder(orderId, 1, orderId, SYMBOL, Tag.CHAD, side, AlgoType.MANUAL, OrderType.LIMIT, orderId, price, qty, 0));
     }
 
     private static UpdateFromServer getUpdate(final int qty, final long price, final OrderSide side, final int orderId) {
+
         final PriceParameters priceParameters = new PegToPrice(price);
         final BookParameters bookParameters = new BookParameters(true, true, true, false, false, false, 0);
         final TakingParameters takingParameters = new TakingParameters(true, 0, 100000, 1, true, 1000);
