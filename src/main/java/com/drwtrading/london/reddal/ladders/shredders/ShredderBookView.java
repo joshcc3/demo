@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.ladders.shredders;
 
+import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -193,6 +194,7 @@ class ShredderBookView {
         wipeDisplayedOrders();
 
         for (final ShreddedOrder shreddedOrder : shreddedOrders) {
+
             final String orderCellKey = String.format("order_%s_%s", shreddedOrder.level, shreddedOrder.queuePosition);
 
             ui.cls(orderCellKey, CSSClass.BLANK_ORDER, false);
@@ -217,7 +219,12 @@ class ShredderBookView {
             }
             ui.cls(orderCellKey, CSSClass.MAYBE_OUR_OURDER, shreddedOrder.isOurs);
             ui.cls(orderCellKey, CSSClass.OUR_ORDER, shreddedOrder.isOurs && shreddedOrder.canOnlyBeOurs);
-            ui.data(orderCellKey, DataKey.TAG, shreddedOrder.tag.name());
+            final Tag tag = shreddedOrder.tag;
+            if (null == tag) {
+                ui.data(orderCellKey, DataKey.TAG, "");
+            } else {
+                ui.data(orderCellKey, DataKey.TAG, tag.name());
+            }
             ui.data(orderCellKey, DataKey.ORDER_TYPE, shreddedOrder.orderType);
         }
     }
