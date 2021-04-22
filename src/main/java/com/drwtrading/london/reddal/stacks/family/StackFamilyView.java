@@ -704,29 +704,43 @@ public class StackFamilyView {
     void autoFamily(final ETFDef etfDef) {
         final List<String> errors = new LinkedList<>();
         final String primaryListing = getPrimaryListing(etfDef);
-        final String familyName = constructFamilyName(primaryListing);
+        final ChildUIData primaryChildData = childrenUIData.get(primaryListing);
 
         final String source = SOURCE_UI + "_AUTO";
 
-        if (!familyUIData.containsKey(familyName)) {
+        String etfFamily = null;
+        boolean allOrphans = true;
+        boolean allPartOfSameFamily = true;
+        final boolean primaryListingNotParented = null == primaryChildData || null == primaryChildData.getFamily() ||
+                StackOrphanage.ORPHANAGE.equals(primaryChildData.getFamily());
+
+        for (final InstrumentDef instDef : etfDef.instDefs) {
+            final String listing = instDef.bbgCode;
+            final ChildUIData uiData = childrenUIData.get(listing);
+            if (null != uiData && null != uiData.getFamily()) {
+                allOrphans &= StackOrphanage.ORPHANAGE.equals(uiData.getFamily());
+                etfFamily = null == etfFamily ? uiData.getFamily() : etfFamily;
+                allPartOfSameFamily &= null == etfFamily || etfFamily.equals(uiData.getFamily());
+            } else {
+                allPartOfSameFamily = null != etfFamily;
+            }
+        }
+
+        if (allOrphans) {
             final Set<String> resultingFamilyNames = new HashSet<>();
             final List<FamilyCreationRequest> requests = new LinkedList<>();
-            final List<String> familyDefinitions = List.of(familyName);
-
+            final String familyName = constructFreshFamilyName(primaryListing);
             final boolean successful = checkFamilyAddition(errors, requests, resultingFamilyNames, primaryListing, familyName);
-            final IStackFamilyUI allViews = views.all();
-            for (final String error : errors) {
-                allViews.displayInfoMsg(error);
-            }
             if (successful) {
                 createFamilies(requests);
                 bufferedETFDefs.remove(etfDef.indexDef.name);
             }
-        } else {
+        } else if (!allPartOfSameFamily) {
+            errors.add('[' + etfDef.indexDef.name + "] children, not all part of the same family.");
+        } else if (null != etfFamily) {
             final Set<String> allIsins = etfDef.instDefs.stream().map(x -> x.instID.isin).collect(Collectors.toSet());
             final Set<String> allChildren = new HashSet<>();
             for (final String isin : allIsins) {
-                // TODO - we need to delete children that should no longer be a part of the family
                 if (fungibleInsts.containsKey(isin)) {
                     final Set<String> availableChildren = filterToAvailableChildren(fungibleInsts.get(isin));
                     allChildren.addAll(availableChildren);
@@ -736,10 +750,13 @@ public class StackFamilyView {
             if (allChildren.isEmpty()) {
                 errors.add("No children available for [" + allIsins + ']');
             } else {
+                if (primaryListingNotParented && !allChildren.contains(primaryListing)) {
+                    errors.add("Could not parent primary-listed child [" + primaryListing + "] to [" + etfFamily + ']');
+                }
                 for (final String child : allChildren) {
                     for (final String anIsin : allIsins) {
                         if (checkChild(anIsin, child, errors)) {
-                            communityManager.setRelationship(source, familyName, child);
+                            communityManager.setRelationship(source, etfFamily, child);
                             break;
                         }
                     }
@@ -747,9 +764,41 @@ public class StackFamilyView {
                 bufferedETFDefs.remove(etfDef.indexDef.name);
             }
         }
+
+        final IStackFamilyUI allViews = views.all();
+        for (final String error : errors) {
+            allViews.displayInfoMsg(error);
+        }
     }
 
-    private String getPrimaryListing(final ETFDef etfDef) {
+    private String constructFreshFamilyName(final String primaryListing) {
+
+        final int spaceIx = primaryListing.indexOf(' ');
+        final int symbolRootEnd = spaceIx > 0 ? spaceIx : primaryListing.length() - 2;
+
+        final String root = primaryListing.substring(0, symbolRootEnd);
+
+        if (!familyUIData.containsKey(root)) {
+            return root;
+        } else {
+            int count = 0;
+            while (familyUIData.containsKey(root + count)) {
+                count++;
+            }
+            return root + count;
+        }
+    }
+
+    private String findFamilyFor(final String primaryListing) {
+        final ChildUIData childUIData = childrenUIData.get(primaryListing);
+        if (null != childUIData && null != childUIData.getFamily() && !StackOrphanage.ORPHANAGE.equals(childUIData.getFamily())) {
+            return childUIData.getFamily();
+        } else {
+            return null;
+        }
+    }
+
+    private static String getPrimaryListing(final ETFDef etfDef) {
         int score = Integer.MIN_VALUE;
         String primaryListing = "";
         final StringBuilder tail = new StringBuilder(2);
@@ -765,15 +814,6 @@ public class StackFamilyView {
             }
         }
         return primaryListing;
-    }
-
-    private String constructFamilyName(final String primaryListing) {
-
-        final int spaceIx = primaryListing.indexOf(' ');
-        final int symbolRootEnd = spaceIx > 0 ? spaceIx : primaryListing.length() - 2;
-
-        return primaryListing.substring(0, symbolRootEnd);
-
     }
 
     private long tryBufferedETFAdditions() {
