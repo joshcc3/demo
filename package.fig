@@ -8,17 +8,17 @@ retrieve WAV_SOUND_FILES->web/sounds
 
 config default
 	include drw.london.eeif-utils/632
+
+	include drw.london.eeif-additive-transport/23
+	include drw.london.eeif-fees/290
+	include drw.london.eeif-icepie-transport/56
+	include drw.london.eeif-indy-transport/564
 	include drw.london.eeif-nibbler-transport/311
 	include drw.london.eeif-opxl-client/392
 	include drw.london.eeif-position-transport/298
 	include drw.london.eeif-stack-transport/378
-	include drw.london.eeif-yoda-transport/321
-	include drw.london.eeif-indy-transport/564
-	include drw.london.eeif-icepie-transport/56
-	include drw.london.eeif-fees/290
 	include drw.london.eeif-trades-transport/192
-
-	include drw.opxl/1.5.1
+	include drw.london.eeif-yoda-transport/321
 
 	# Libraries and containers
 	include google.guava/r06

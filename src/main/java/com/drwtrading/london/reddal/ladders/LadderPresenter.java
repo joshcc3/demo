@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.jetlang.autosubscribe.KeyedBatchSubscriber;
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.additiveTransport.data.AdditiveOffset;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.LastTrade;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
@@ -9,6 +10,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TradableIns
 import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
+import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -75,7 +77,6 @@ import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multimap;
 import drw.eeif.fees.FeesCalc;
 import drw.eeif.photons.mrchill.Position;
-import org.jetlang.channels.Converter;
 import org.jetlang.channels.Publisher;
 import org.jetlang.fibers.Fiber;
 
@@ -207,6 +208,12 @@ public class LadderPresenter implements IStackPresenterCallback {
 
         final SymbolStackData stackData = stackBySymbol.get(theo.getSymbol());
         stackData.setSpreadnoughtTheo(theo);
+    }
+
+    public void setAdditiveOffset(final AdditiveOffset additiveOffset) {
+
+        final SymbolStackData stackData = stackBySymbol.get(additiveOffset.getKey());
+        stackData.setAdditiveOffset(additiveOffset);
     }
 
     public void addTradableInstrument(final TradableInstrument tradableInstrument) {
@@ -547,14 +554,6 @@ public class LadderPresenter implements IStackPresenterCallback {
         orderEntryMap.put(symbolOrderChannel.symbol, symbolOrderChannel);
     }
 
-    public static class UpdateFromServerConverter implements Converter<UpdateFromServer, String> {
-
-        @Override
-        public String convert(final UpdateFromServer msg) {
-            return msg.key;
-        }
-    }
-
     @KeyedBatchSubscriber(converter = UpdateFromServerConverter.class, flushInterval = 100, timeUnit = TimeUnit.MILLISECONDS)
     @Subscribe
     public void onEeifOEUpdates(final Map<String, UpdateFromServer> updates) {
@@ -604,6 +603,14 @@ public class LadderPresenter implements IStackPresenterCallback {
         for (final SymbolStackData stackData : stackBySymbol.values()) {
             stackData.stackConnectionLost(remoteAppName);
         }
+    }
+
+    @Override
+    public void stackStrategyUpdated(final StackStrategy strategy) {
+
+        final String symbol = strategy.getSymbol();
+        final SymbolStackData stackData = stackBySymbol.get(symbol);
+        stackData.setStackStrategy(strategy);
     }
 
     @Override

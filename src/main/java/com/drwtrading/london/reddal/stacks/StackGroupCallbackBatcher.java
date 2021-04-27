@@ -21,7 +21,7 @@ public class StackGroupCallbackBatcher
 
     private final IStackPresenterCallback stackPresenter;
 
-    private final Set<StackGroup> stackBatch;
+    private final Set<StackGroup> stackGroupBatch;
 
     private StackClientHandler stackClientHandler;
 
@@ -29,7 +29,7 @@ public class StackGroupCallbackBatcher
 
         this.stackPresenter = stackPresenter;
 
-        this.stackBatch = new HashSet<>();
+        this.stackGroupBatch = new HashSet<>();
     }
 
     public void setStackClient(final StackClientHandler stackClientHandler) {
@@ -67,8 +67,18 @@ public class StackGroupCallbackBatcher
 
     @Override
     public void connectionLost(final String remoteAppName) {
-        stackBatch.clear();
+        stackGroupBatch.clear();
         stackPresenter.stacksConnectionLost(remoteAppName);
+    }
+
+    @Override
+    public void strategyCreated(final StackStrategy strategy) {
+        strategyUpdated(strategy);
+    }
+
+    @Override
+    public void strategyUpdated(final StackStrategy strategy) {
+        stackPresenter.stackStrategyUpdated(strategy);
     }
 
     @Override
@@ -78,12 +88,12 @@ public class StackGroupCallbackBatcher
 
     @Override
     public void stackGroupUpdated(final StackGroup stackGroup, final boolean isCrossCheckRequired) {
-        stackBatch.add(stackGroup);
+        stackGroupBatch.add(stackGroup);
     }
 
     @Override
     public void stackGroupInfoUpdated(final StackGroup stackGroup) {
-        stackBatch.add(stackGroup);
+        stackGroupBatch.add(stackGroup);
     }
 
     @Override
@@ -105,7 +115,7 @@ public class StackGroupCallbackBatcher
     @Override
     public void batchComplete() {
 
-        for (final StackGroup group : stackBatch) {
+        for (final StackGroup group : stackGroupBatch) {
             try {
                 stackPresenter.stackGroupUpdated(group);
             } catch (final Exception e) {
@@ -113,16 +123,6 @@ public class StackGroupCallbackBatcher
                 e.printStackTrace();
             }
         }
-        stackBatch.clear();
-    }
-
-    @Override
-    public void strategyCreated(final StackStrategy strategy) {
-        // no-op
-    }
-
-    @Override
-    public void strategyUpdated(final StackStrategy strategy) {
-        // no-op
+        stackGroupBatch.clear();
     }
 }

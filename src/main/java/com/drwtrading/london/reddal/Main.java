@@ -3,6 +3,9 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.jetlang.builder.FiberBuilder;
+import com.drwtrading.london.eeif.additiveTransport.AdditiveTransportFuses;
+import com.drwtrading.london.eeif.additiveTransport.cache.AdditiveCacheFactory;
+import com.drwtrading.london.eeif.additiveTransport.io.AdditiveClientHandler;
 import com.drwtrading.london.eeif.nibbler.transport.NibblerTransportComponents;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerCacheFactory;
 import com.drwtrading.london.eeif.nibbler.transport.cache.NibblerTransportCaches;
@@ -90,6 +93,7 @@ import com.drwtrading.london.reddal.ladders.settings.LadderSettings;
 import com.drwtrading.london.reddal.ladders.shredders.ShredderMessageRouter;
 import com.drwtrading.london.reddal.ladders.shredders.ShredderPresenter;
 import com.drwtrading.london.reddal.nibblers.NibblerMetaDataLogger;
+import com.drwtrading.london.reddal.nibblers.tradingData.AdditiveOffsetListener;
 import com.drwtrading.london.reddal.nibblers.tradingData.LadderInfoListener;
 import com.drwtrading.london.reddal.opxl.OPXLEtfStackFilters;
 import com.drwtrading.london.reddal.opxl.OPXLPicardFilterReader;
@@ -453,6 +457,8 @@ public class Main {
         final TypedChannel<MrChillTrade> jasperTradesChan = TypedChannels.create(MrChillTrade.class);
         initJasperTradesPublisher(app, errorLog, parentMonitor, jasperTradesChan);
 
+        final ConfigGroup additiveOffsetConfig = root.getEnabledGroup("additiveOffset");
+
         // MD Sources
         final ConfigGroup mdConfig = root.getGroup("md");
         for (final ConfigGroup mdSourceGroup : mdConfig.groups()) {
@@ -464,15 +470,15 @@ public class Main {
 
                 final String threadName = "Ladder-" + mdSource.name();
 
-                final IFuseBox<ReddalComponents> displayMonitor = parentMonitor.createChildResourceMonitor(threadName);
-                final IFuseBox<SelectIOComponents> selectIOMonitor =
-                        new ExpandedDetailResourceMonitor<>(displayMonitor, threadName, errorLog, SelectIOComponents.class,
+                final IFuseBox<ReddalComponents> displayFuseBox = parentMonitor.createChildResourceMonitor(threadName);
+                final IFuseBox<SelectIOComponents> selectIOFuseBox =
+                        new ExpandedDetailResourceMonitor<>(displayFuseBox, threadName, errorLog, SelectIOComponents.class,
                                 ReddalComponents.UI_SELECT_IO);
 
-                final SelectIO displaySelectIO = new SelectIO(selectIOMonitor);
+                final SelectIO displaySelectIO = new SelectIO(selectIOFuseBox);
 
                 final IMDSubscriber depthBookSubscriber =
-                        getMDSubscription(app, displayMonitor, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName,
+                        getMDSubscription(app, displayFuseBox, displaySelectIO, mdSource, mdSourceGroup, channels, localAppName,
                                 channels.rfqStockAlerts);
 
                 final TypedChannel<WebSocketControlMessage> ladderWebSocket = TypedChannels.create(WebSocketControlMessage.class);
@@ -497,7 +503,7 @@ public class Main {
                 displaySelectIO.addDelayedAction(1000, premiumCalc::recalcAll);
 
                 final LadderPresenter ladderPresenter =
-                        getLadderPresenter(displayMonitor, displaySelectIO, channels, environment, fxCalc, depthBookSubscriber, ewokBaseURL,
+                        getLadderPresenter(displayFuseBox, displaySelectIO, channels, environment, fxCalc, depthBookSubscriber, ewokBaseURL,
                                 ladderWebSocket, fiberBuilder, picardSpotter, premiumCalc);
 
                 final OrdersPresenter orderPresenter = new OrdersPresenter(channels.singleOrderCommand, channels.orderEntryCommandToServer);
@@ -516,7 +522,7 @@ public class Main {
                 if (null != mdSourceStackConfigs) {
 
                     final MultiLayeredFuseBox<StackTransportComponents> stackParentMonitor =
-                            MultiLayeredFuseBox.getExpandedMultiLayerMonitor(displayMonitor, "Stacks", errorLog,
+                            MultiLayeredFuseBox.getExpandedMultiLayerMonitor(displayFuseBox, "Stacks", errorLog,
                                     StackTransportComponents.class, ReddalComponents.STACK_GROUP_CLIENT);
 
                     final IStackPresenterCallback presenterSharer = new StackPresenterMultiplexor(ladderPresenter, shredderPresenter);
@@ -527,13 +533,32 @@ public class Main {
                         createStackClient(stackParentMonitor, displaySelectIO, threadName, stackClientConfig, stackUpdateBatcher,
                                 localAppName);
                     }
+
+                    if (null != additiveOffsetConfig) {
+
+                        final AdditiveOffsetListener additiveListener = new AdditiveOffsetListener(ladderPresenter, shredderPresenter);
+
+                        final String connectionName = threadName + "-roci";
+
+                        final IFuseBox<AdditiveTransportFuses> transportFuseBox =
+                                new ExpandedDetailResourceMonitor<>(displayFuseBox, connectionName, errorLog, AdditiveTransportFuses.class,
+                                        ReddalComponents.ROCI);
+
+                        final AdditiveClientHandler clientHandler =
+                                AdditiveCacheFactory.createClientCache(displaySelectIO, transportFuseBox, "Roci", threadName,
+                                        additiveListener);
+                        final TransportTCPKeepAliveConnection<?, ?> connection =
+                                AdditiveCacheFactory.createClient(displaySelectIO, additiveOffsetConfig, transportFuseBox, clientHandler);
+
+                        displaySelectIO.execute(connection::restart);
+                    }
                 }
 
                 final List<ConfigGroup> nibblerConfigs = nibblers.get(mdSource);
                 if (null != nibblerConfigs) {
 
                     final IFuseBox<NibblerTransportComponents> nibblerMonitor =
-                            new ExpandedDetailResourceMonitor<>(displayMonitor, threadName + "-Nibblers", errorLog,
+                            new ExpandedDetailResourceMonitor<>(displayFuseBox, threadName + "-Nibblers", errorLog,
                                     NibblerTransportComponents.class, ReddalComponents.TRADING_DATA);
                     final MultiLayeredFuseBox<NibblerTransportComponents> nibblerParentMonitor =
                             new MultiLayeredFuseBox<>(nibblerMonitor, NibblerTransportComponents.class, errorLog);

@@ -1,10 +1,12 @@
 package com.drwtrading.london.reddal.data;
 
+import com.drwtrading.london.eeif.additiveTransport.data.AdditiveOffset;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.Stack;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
+import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.icepie.transport.data.LaserLineType;
@@ -33,6 +35,10 @@ public class StacksLaserLineCalc {
     private final Map<LaserLineType, LaserLine> laserLines;
 
     private TheoValue theoValue;
+
+    private boolean isAdditiveOffsetRequired;
+    private AdditiveOffset additiveOffset;
+
     private SpreadnoughtTheo spreadnoughtTheo;
     private StackGroup bidStackGroup;
     private StackGroup askStackGroup;
@@ -55,6 +61,8 @@ public class StacksLaserLineCalc {
         this.laserLines.put(spreadnoughtLine.getType(), spreadnoughtLine);
         this.laserLines.put(bidTheo.getType(), bidTheo);
         this.laserLines.put(askTheo.getType(), askTheo);
+
+        this.isAdditiveOffsetRequired = true;
     }
 
     void overrideLaserLine(final LaserLine laserLine) {
@@ -70,11 +78,12 @@ public class StacksLaserLineCalc {
         this.theoValue = theoValue;
 
         if (null == spreadnoughtTheo) {
+
             setTheoValue(navLine, theoValue.isValid(), theoValue.getOriginalValue());
             setTheoValue(theoLine, theoValue.isValid(), theoValue.getTheoreticalValue());
 
-            updateLaserFromTheo(bidTheo, bidStackGroup, BID_PULLBACK_MULT);
-            updateLaserFromTheo(askTheo, askStackGroup, ASK_PULLBACK_MULT);
+            updateLaserFromTheo(BookSide.BID, bidTheo, bidStackGroup, BID_PULLBACK_MULT);
+            updateLaserFromTheo(BookSide.ASK, askTheo, askStackGroup, ASK_PULLBACK_MULT);
         }
     }
 
@@ -92,10 +101,20 @@ public class StacksLaserLineCalc {
         setTheoValue(spreadnoughtLine, isValid, mid);
         setTheoValue(theoLine, false, mid);
 
-        updateLaserLine(bidTheo, spreadnoughtTheo.isBidValid(), spreadnoughtTheo.getBidValue(), bidStackGroup, BID_PULLBACK_MULT);
-        updateLaserLine(askTheo, spreadnoughtTheo.isAskValid(), spreadnoughtTheo.getAskValue(), askStackGroup, ASK_PULLBACK_MULT);
+        updateLaserLine(BookSide.BID, bidTheo, spreadnoughtTheo.isBidValid(), spreadnoughtTheo.getBidValue(), bidStackGroup,
+                BID_PULLBACK_MULT);
+        updateLaserLine(BookSide.ASK, askTheo, spreadnoughtTheo.isAskValid(), spreadnoughtTheo.getAskValue(), askStackGroup,
+                ASK_PULLBACK_MULT);
 
         this.premiumCalc.setTheoMid(theo.getSymbol(), isValid, mid);
+    }
+
+    void setAdditiveOffset(final AdditiveOffset additiveOffset) {
+
+        this.additiveOffset = additiveOffset;
+
+        updateLaserLine(BookSide.BID, bidTheo, bidStackGroup, BID_PULLBACK_MULT);
+        updateLaserLine(BookSide.ASK, askTheo, askStackGroup, ASK_PULLBACK_MULT);
     }
 
     private static void setTheoValue(final LaserLine theoLine, final boolean isValid, final long theoValue) {
@@ -105,6 +124,14 @@ public class StacksLaserLineCalc {
         } else {
             theoLine.setInvalid();
         }
+    }
+
+    void setStackStrategy(final StackStrategy strategy) {
+
+        this.isAdditiveOffsetRequired = !strategy.getAdditiveSymbol().isEmpty();
+
+        updateLaserLine(BookSide.BID, bidTheo, bidStackGroup, BID_PULLBACK_MULT);
+        updateLaserLine(BookSide.ASK, askTheo, askStackGroup, ASK_PULLBACK_MULT);
     }
 
     void setBidStackGroup(final StackGroup stackGroup) {
@@ -123,27 +150,67 @@ public class StacksLaserLineCalc {
             final long pullbackDirection) {
 
         if (null == spreadnoughtTheo) {
-            updateLaserFromTheo(laserLine, stackGroup, pullbackDirection);
+            updateLaserFromTheo(side, laserLine, stackGroup, pullbackDirection);
         } else if (BookSide.BID == side) {
-            updateLaserLine(bidTheo, spreadnoughtTheo.isBidValid(), spreadnoughtTheo.getBidValue(), bidStackGroup, BID_PULLBACK_MULT);
+            updateLaserLine(side, bidTheo, spreadnoughtTheo.isBidValid(), spreadnoughtTheo.getBidValue(), bidStackGroup, BID_PULLBACK_MULT);
         } else {
-            updateLaserLine(askTheo, spreadnoughtTheo.isAskValid(), spreadnoughtTheo.getAskValue(), askStackGroup, ASK_PULLBACK_MULT);
+            updateLaserLine(side, askTheo, spreadnoughtTheo.isAskValid(), spreadnoughtTheo.getAskValue(), askStackGroup, ASK_PULLBACK_MULT);
         }
     }
 
-    private void updateLaserFromTheo(final LaserLine laserLine, final StackGroup stackGroup, final long pullbackDirection) {
+    private void updateLaserFromTheo(final BookSide side, final LaserLine laserLine, final StackGroup stackGroup,
+            final long pullbackDirection) {
 
-        if (null != theoValue && theoValue.isValid()) {
-            updateLaserLine(laserLine, true, theoValue.getTheoreticalValue(), stackGroup, pullbackDirection);
+        final boolean isTheoValid;
+        final long theo;
+        if (null == theoValue) {
+            isTheoValid = false;
+            theo = 0L;
         } else {
-            updateLaserLine(laserLine, false, 0L, stackGroup, pullbackDirection);
+            isTheoValid = theoValue.isValid();
+            theo = theoValue.getTheoreticalValue();
         }
+
+        updateLaserLine(side, laserLine, isTheoValid, theo, stackGroup, pullbackDirection);
+    }
+
+    private void updateLaserLine(final BookSide side, final LaserLine laserLine, final boolean isTheoValid, final long theo,
+            final StackGroup stackGroup, final long pullbackDirection) {
+
+        final boolean isAdditiveOffsetValid;
+        final double additiveOffsetBPS;
+
+        if (!isAdditiveOffsetRequired) {
+
+            isAdditiveOffsetValid = true;
+            additiveOffsetBPS = 0d;
+
+        } else if (null == additiveOffset) {
+
+            isAdditiveOffsetValid = false;
+            additiveOffsetBPS = 0d;
+
+        } else if (BookSide.BID == side) {
+
+            isAdditiveOffsetValid = additiveOffset.isBidValid();
+            additiveOffsetBPS = additiveOffset.getBidOffsetBPS();
+        } else {
+
+            isAdditiveOffsetValid = additiveOffset.isAskValid();
+            additiveOffsetBPS = additiveOffset.getAskOffsetBPS();
+        }
+
+        updateLaserLine(laserLine, isTheoValid, theo, stackGroup, pullbackDirection, isAdditiveOffsetValid, additiveOffsetBPS);
     }
 
     private void updateLaserLine(final LaserLine laserLine, final boolean isTheoValid, final long theo, final StackGroup stackGroup,
-            final long pullbackDirection) {
+            final long pullbackDirection, final boolean isAdditiveOffsetValid, final double additiveOffsetBPS) {
 
-        if (null != stackGroup && isTheoValid) {
+        if (null == stackGroup || !isTheoValid || !isAdditiveOffsetValid) {
+
+            laserLine.setInvalid();
+
+        } else {
 
             final Stack quoteStack = stackGroup.getStack(StackType.QUOTER);
             final Stack picardStack = stackGroup.getStack(StackType.PICARD);
@@ -177,8 +244,8 @@ public class StacksLaserLineCalc {
                 }
 
                 final double theoPriceMult = 1 +
-                        (stackGroup.getPriceOffsetBPS() + pullbackDirection * stackGroup.getStackAlignmentTickToBPS() * pullBackTicks) /
-                                10000d;
+                        (stackGroup.getPriceOffsetBPS() + pullbackDirection * stackGroup.getStackAlignmentTickToBPS() * pullBackTicks +
+                                additiveOffsetBPS) / 10000d;
 
                 final long theoPrice = (long) (theoPriceMult * theo);
                 laserLine.setValue(theoPrice);
@@ -186,8 +253,6 @@ public class StacksLaserLineCalc {
             } else {
                 laserLine.setInvalid();
             }
-        } else {
-            laserLine.setInvalid();
         }
 
         picardSpotter.setLaserLine(laserLine);

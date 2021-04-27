@@ -1,9 +1,11 @@
 package com.drwtrading.london.reddal.ladders.shredders;
 
 import com.drwtrading.jetlang.autosubscribe.Subscribe;
+import com.drwtrading.london.eeif.additiveTransport.data.AdditiveOffset;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
+import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -50,6 +52,7 @@ public class ShredderPresenter implements IStackPresenterCallback {
 
     @Subscribe
     public void onConnected(final WebSocketConnected connected) {
+
         final UiPipeImpl uiPipe = new UiPipeImpl(connected.getOutboundChannel());
         final IShredderUI view = new WebSocketOutputDispatcher<>(IShredderUI.class).wrap(msg -> uiPipe.eval(msg.getData()));
         final ShredderView shredderView = new ShredderView(view, uiPipe);
@@ -60,6 +63,7 @@ public class ShredderPresenter implements IStackPresenterCallback {
 
     @Subscribe
     public void onDisconnected(final WebSocketDisconnected disconnected) {
+
         final ShredderView view = viewsBySocket.remove(disconnected.getOutboundChannel());
         if (view != null && view.symbol != null) {
             final String symbol = view.symbol;
@@ -74,6 +78,7 @@ public class ShredderPresenter implements IStackPresenterCallback {
 
     @Subscribe
     public void onMessage(final WebSocketInboundData msg) {
+
         final String data = msg.getData();
         final String[] args = data.split("\0");
         final String cmd = args[0];
@@ -88,7 +93,7 @@ public class ShredderPresenter implements IStackPresenterCallback {
                 view.subscribeToSymbol(symbol, levels, mdForSymbol, workingOrdersBySymbol.get(symbol), stackData);
                 viewsBySymbol.put(symbol, view);
             } else if ("highlightSize".equals(cmd)) {
-                view.highlightSize(Long.valueOf(args[1]));
+                view.highlightSize(Long.parseLong(args[1]));
             } else {
                 view.onRawInboundData(data);
                 view.refreshAndFlush();
@@ -119,6 +124,12 @@ public class ShredderPresenter implements IStackPresenterCallback {
         stackData.setSpreadnoughtTheo(theo);
     }
 
+    public void setAdditiveOffset(final AdditiveOffset additiveOffset) {
+
+        final SymbolStackData stackData = stackBySymbol.get(additiveOffset.getKey());
+        stackData.setAdditiveOffset(additiveOffset);
+    }
+
     public void overrideLaserLine(final LaserLine laserLine) {
 
         final SymbolStackData stackData = stackBySymbol.get(laserLine.symbol);
@@ -145,6 +156,14 @@ public class ShredderPresenter implements IStackPresenterCallback {
         for (final SymbolStackData stackData : stackBySymbol.values()) {
             stackData.stackConnectionLost(remoteAppName);
         }
+    }
+
+    @Override
+    public void stackStrategyUpdated(final StackStrategy strategy) {
+
+        final String symbol = strategy.getSymbol();
+        final SymbolStackData stackData = stackBySymbol.get(symbol);
+        stackData.setStackStrategy(strategy);
     }
 
     @Override

@@ -1,10 +1,12 @@
 package com.drwtrading.london.reddal.data;
 
+import com.drwtrading.london.eeif.additiveTransport.data.AdditiveOffset;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.SpreadnoughtTheo;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.Stack;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackLevel;
+import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackOrderType;
 import com.drwtrading.london.eeif.stack.transport.data.types.StackType;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
@@ -106,6 +108,11 @@ public class SymbolStackData {
                 enabledAskStacks[stackType.ordinal()] = false;
             }
         }
+    }
+
+    public void setStackStrategy(final StackStrategy strategy) {
+
+        stacksLaserLineCalc.setStackStrategy(strategy);
     }
 
     public void setBidGroup(final StackGroup stackGroup) {
@@ -211,6 +218,10 @@ public class SymbolStackData {
 
     public void setSpreadnoughtTheo(final SpreadnoughtTheo theo) {
         this.stacksLaserLineCalc.setSpreadnoughtTheo(theo);
+    }
+
+    public void setAdditiveOffset(final AdditiveOffset additiveOffset) {
+        this.stacksLaserLineCalc.setAdditiveOffset(additiveOffset);
     }
 
     public LaserLine getNavLaserLine() {

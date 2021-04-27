@@ -46,7 +46,9 @@ public enum ReddalComponents implements IFuse {
     INVERSE_OBLIGATIONS,
 
     MR_CHILL_TRADES,
-    ICE_PIE;
+    ICE_PIE,
+
+    ROCI;
 
     @Override
     public String getMnemonic() {

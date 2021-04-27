@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.stacks;
 
 import com.drwtrading.london.eeif.stack.transport.data.stacks.StackGroup;
+import com.drwtrading.london.eeif.stack.transport.data.strategy.StackStrategy;
 import com.drwtrading.london.eeif.stack.transport.io.StackClientHandler;
 
 public class StackPresenterMultiplexor implements IStackPresenterCallback {
@@ -18,6 +19,13 @@ public class StackPresenterMultiplexor implements IStackPresenterCallback {
 
         a.stacksConnectionLost(remoteAppName);
         b.stacksConnectionLost(remoteAppName);
+    }
+
+    @Override
+    public void stackStrategyUpdated(final StackStrategy strategy) {
+
+        a.stackStrategyUpdated(strategy);
+        b.stackStrategyUpdated(strategy);
     }
 
     @Override
