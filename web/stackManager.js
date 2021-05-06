@@ -1236,19 +1236,19 @@ function setChildCount(familyName) {
 }
 
 function setIsRunnable(familyName, isRunnable) {
+
 	const family = addFamily(familyName, false);
 	let runnableToday = family.find('.todayEnabled');
-	if(isRunnable) {
+	if (isRunnable) {
 		notRunnableFamilies.delete(familyName)
 		runnableToday.toggleClass("isNotRunnable", false)
 		runnableToday.toggleClass("isRunnable", true)
-	} else if(!isRunnable) {
+	} else if (!isRunnable) {
 		notRunnableFamilies.add(familyName)
 		runnableToday.toggleClass("isRunnable", false)
 		runnableToday.toggleClass("isNotRunnable", true)
 	}
 }
-
 
 function setActiveChildCounts(family) {
 
