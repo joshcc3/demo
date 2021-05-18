@@ -113,7 +113,9 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
     public void setFamiliesFilters(final StackCommunity community, final Collection<StackChildFilter> filters) {
 
         final StackFamilyView view = communityViews.get(community);
-        view.setFilter(filters);
+        if (null != view) {
+            view.setFilter(filters);
+        }
     }
 
     void addTradableSymbol(final String nibblerName, final StackTradableSymbol tradableSymbol) {
