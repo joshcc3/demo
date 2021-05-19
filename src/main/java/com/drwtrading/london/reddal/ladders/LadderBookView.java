@@ -960,7 +960,7 @@ public class LadderBookView implements ILadderBoard {
 
     private void drawWorkingOrders() {
 
-        if (!pendingRefDataAndSettle && null != workingOrders && null != orderUpdatesForSymbol) {
+        if (!pendingRefDataAndSettle && null != workingOrders && null != orderUpdatesForSymbol && bottomPrice <= topPrice) {
 
             final BookPanel bookPanel = ladderModel.getBookPanel();
             final int zoomLevel = bookPanel.getZoomLevel();
