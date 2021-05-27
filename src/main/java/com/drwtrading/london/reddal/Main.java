@@ -1478,17 +1478,23 @@ public class Main {
                 setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.of(InstType.ETF),
                         PicardSounds.ETF_FI, webApp, "picardetf-fi");
 
+        final PicardUI picardFC =
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.of(InstType.ETF),
+                        PicardSounds.ETF_FC, webApp, "picardetf-fc");
+
         final PicardUI picardEM =
                 setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.of(InstType.ETF),
-                        PicardSounds.ETF_FI, webApp, "picardetf-em");
+                        PicardSounds.ETF_EM, webApp, "picardetf-em");
 
-        final DelegatingPicardUI ui = new DelegatingPicardUI(picardFI, picardEM, picardDM);
+        final DelegatingPicardUI ui = new DelegatingPicardUI(picardFI, picardFC, picardEM, picardDM);
         picardRows.subscribe(fiber, ui::addPicardRow);
         final TypedChannel<String> dmIsins = communityIsins.get(StackCommunity.DM);
         final TypedChannel<String> fiIsins = communityIsins.get(StackCommunity.FI);
+        final TypedChannel<String> fcIsins = communityIsins.get(StackCommunity.FC);
         final TypedChannel<String> emIsins = communityIsins.get(StackCommunity.EM);
         dmIsins.subscribe(fiber, ui::addDMIsin);
         fiIsins.subscribe(fiber, ui::addFIIsin);
+        fcIsins.subscribe(fiber, ui::addFCIsin);
         emIsins.subscribe(fiber, ui::addEMIsin);
     }
 

@@ -6,6 +6,7 @@ import com.drwtrading.london.eeif.utils.collections.LongMap;
 import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
+import com.drwtrading.london.reddal.ladders.model.BookRowPriceType;
 import com.drwtrading.london.reddal.util.UILogger;
 import com.drwtrading.london.websocket.FromWebSocketView;
 import com.drwtrading.london.websocket.WebSocketViews;
@@ -17,6 +18,7 @@ import com.google.common.collect.Lists;
 import org.jetlang.channels.Publisher;
 
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -187,4 +189,5 @@ public class StackStrategiesPresenter {
             }
         }
     }
+
 }
