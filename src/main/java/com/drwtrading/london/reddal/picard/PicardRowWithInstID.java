@@ -25,5 +25,4 @@ public class PicardRowWithInstID extends PicardRow {
 
         this.instrumentID = instrumentID;
     }
-
 }
