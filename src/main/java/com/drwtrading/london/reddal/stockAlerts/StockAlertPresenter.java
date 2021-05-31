@@ -77,21 +77,26 @@ public class StockAlertPresenter {
 
         for (final StackCommunity community : StackCommunity.values()) {
             switch (community) {
-                case FI:
+                case FI: {
                     this.communityViews.put(community, fiView);
                     this.communityAlerts.put(community, fiAlerts);
                     break;
-                case EM:
+                }
+                case EM: {
                     this.communityViews.put(community, emView);
                     this.communityAlerts.put(community, emAlerts);
                     break;
-                case FC:
+                }
+                case FC: {
                     this.communityViews.put(community, fcView);
                     this.communityAlerts.put(community, fcAlerts);
+                    break;
+                }
                 case DM:
-                default:
+                default: {
                     this.communityViews.put(community, dmView);
                     this.communityAlerts.put(community, dmAlerts);
+                }
             }
         }
 
