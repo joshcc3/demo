@@ -2,15 +2,11 @@ const LADDER_HOST_PROP = "ladderHost";
 const WORKSPACE_HOST_PROP = "workspaceHost";
 
 const DEV_URLS = new Set(["localhost", "lnhq-wudrn01", "wud-ldnrn01", "lnlmp-rnewton1"]);
-const LOCAL_LADDERS_URLS = {ladderHost: "localhost:9044", workspaceHost: "localhost:9045"};
+
 const FUTURES_LADDER_URLS = {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
-const GM_EQUITY_LADDERS_URLS = {
-	ladderHost: "prod-gm-equities-ladder.eeif.drw:9144",
-	workspaceHost: "prod-gm-equities-ladder.eeif.drw:9145"
-};
 const SELECTA_LADDERS_URLS = "http://prod-selecta.eeif.drw:9134/ladders_urls";
 
-let BEST_EQUITY_LADDER_URLS = {ladderHost: "prod-equities-ladder.eeif.drw:9144", workspaceHost: "prod-equities-ladder.eeif.drw:9145"};
+let EQUITY_LADDER_URLS = {ladderHost: "prod-equities-ladder.eeif.drw:9144", workspaceHost: "prod-equities-ladder.eeif.drw:9145"};
 
 $(function () {
 	$.ajax({
@@ -24,24 +20,23 @@ $(function () {
 });
 
 function setBestEquityLadder(newUrls) {
+
 	let newUrlsObject;
 	if (typeof newUrls === "string") {
-		try {
-			newUrlsObject = JSON.parse(newUrls);
-		} finally {
-		}
+		newUrlsObject = JSON.parse(newUrls);
 	} else {
 		newUrlsObject = newUrls;
 	}
 
 	if (newUrlsObject && newUrlsObject.hasOwnProperty(LADDER_HOST_PROP) && newUrlsObject.hasOwnProperty(WORKSPACE_HOST_PROP)) {
-		BEST_EQUITY_LADDER_URLS = newUrlsObject;
+		EQUITY_LADDER_URLS = newUrlsObject;
 	} else {
 		console.log("The new urls were malformed: " + newUrls + " parsed to " + newUrlsObject);
 	}
 }
 
 function openLink(ladderHost, symbol) {
+
 	const priceSplitPos = symbol.indexOf(';');
 	let rawSymbol;
 	if (0 < priceSplitPos) {
@@ -62,6 +57,7 @@ function getLadderUrl(symbol) {
 }
 
 function launchLadder(symbol, skipBasket, ternaryIsFutures) {
+	
 	symbol = symbol.toUpperCase();
 	const hosts = getLadderHosts(symbol, ternaryIsFutures);
 	$.ajax({
@@ -92,7 +88,7 @@ function getLadderHosts(symbol, ternaryIsFutures) {
 
 	} else if (false === ternaryIsFutures) {
 
-		return getBestEquityLadder();
+		return EQUITY_LADDER_URLS;
 
 	} else if (true === ternaryIsFutures || symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9](;.*)?$/) || symbol.match(/ FWD$/)) {
 
@@ -100,18 +96,7 @@ function getLadderHosts(symbol, ternaryIsFutures) {
 
 	} else {
 
-		return getBestEquityLadder();
-	}
-}
-
-function getBestEquityLadder() {
-
-	if (window.location.hostname === "prod-gm-equities-ladder.eeif.drw") {
-
-		return GM_EQUITY_LADDERS_URLS;
-	} else {
-
-		return BEST_EQUITY_LADDER_URLS;
+		return EQUITY_LADDER_URLS;
 	}
 }
 
