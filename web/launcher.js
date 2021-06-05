@@ -57,7 +57,7 @@ function getLadderUrl(symbol) {
 }
 
 function launchLadder(symbol, skipBasket, ternaryIsFutures) {
-	
+
 	symbol = symbol.toUpperCase();
 	const hosts = getLadderHosts(symbol, ternaryIsFutures);
 	$.ajax({
