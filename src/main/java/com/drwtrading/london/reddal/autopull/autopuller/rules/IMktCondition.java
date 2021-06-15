@@ -10,13 +10,12 @@ public interface IMktCondition extends Jsonable {
     public boolean conditionMet(final IBook<?> book);
 
     public static IMktCondition fromJSON(final JSONObject object) throws JSONException {
+
         final String type = object.getString("_type");
-        switch (type) {
-            case "MktConditionQtyAtPriceCondition":
-                return MktConditionQtyAtPriceCondition.fromJSON(object);
-            default:
-                throw new IllegalArgumentException("Could not parse [" + object + "] into MktCondition");
+        if ("MktConditionQtyAtPriceCondition".equals(type)) {
+            return MktConditionQtyAtPriceCondition.fromJSON(object);
+        } else {
+            throw new IllegalArgumentException("Could not parse [" + object + "] into MktCondition");
         }
     }
-
 }

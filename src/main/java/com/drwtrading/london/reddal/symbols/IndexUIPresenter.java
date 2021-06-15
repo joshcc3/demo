@@ -35,7 +35,7 @@ public class IndexUIPresenter {
     private final boolean isFuturesSearchable;
 
     private final SuffixTree<String> suffixTree;
-    private final WebSocketViews<IndexUIView> views;
+    private final WebSocketViews<IIndexUIView> views;
     private final Map<String, DisplaySymbol> symbolToDisplay;
     private final Map<String, SearchResult> searchResultBySymbol;
 
@@ -47,7 +47,7 @@ public class IndexUIPresenter {
         this.isFuturesSearchable = isFuturesSearchable;
 
         this.suffixTree = new SuffixTree<>();
-        this.views = WebSocketViews.create(IndexUIView.class, this);
+        this.views = WebSocketViews.create(IIndexUIView.class, this);
         this.symbolToDisplay = new HashMap<>();
         this.searchResultBySymbol = new HashMap<>();
     }
@@ -129,7 +129,7 @@ public class IndexUIPresenter {
     @FromWebSocketView
     public void search(final String searchTerms, final WebSocketInboundData data) {
 
-        final IndexUIView view = views.get(data.getOutboundChannel());
+        final IIndexUIView view = views.get(data.getOutboundChannel());
 
         final Set<String> matching = new HashSet<>();
 
@@ -159,7 +159,7 @@ public class IndexUIPresenter {
         displayResult(view, matching, searchTerms);
     }
 
-    private void displayResult(final IndexUIView view, final Set<String> matching, final String searchTerms) {
+    private void displayResult(final IIndexUIView view, final Set<String> matching, final String searchTerms) {
 
         final ArrayList<String> symbols = new ArrayList<>(matching);
         Collections.sort(symbols, (o1, o2) -> {
