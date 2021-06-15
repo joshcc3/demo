@@ -5,6 +5,7 @@ import com.drwtrading.london.eeif.utils.collections.LongMapNode;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.AggressorSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
+import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelThreeMonitor;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
@@ -93,30 +94,36 @@ public class LevelThreeBookSubscriber implements IBookLevelThreeMonitor {
                     break;
                 }
                 case RFQ: {
-                    final long refPriceReceivedNanos = refPrice.getReceivedNanoSinceMidnight();
-                    final long refPriceQty = refPrice.getQty();
 
-                    final IBookReferencePrice yestClose = book.getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
-                    final long yestCloseValue = yestClose.getPrice();
+                    if (InstType.ETF != book.getInstType()) {
 
-                    final boolean yestCloseIsValid = yestClose.isValid();
+                        final long refPriceReceivedNanos = refPrice.getReceivedNanoSinceMidnight();
+                        final long milliSinceMidnight = refPriceReceivedNanos / DateTimeUtil.NANOS_IN_MILLIS;
 
-                    final long milliSinceMidnight = refPriceReceivedNanos / DateTimeUtil.NANOS_IN_MILLIS;
-                    final boolean isETF = book.getInstType() == InstType.ETF;
+                        final IBookReferencePrice yestClose = book.getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
 
-                    final long price;
-                    final IBookLevelWithOrders bestBid = book.getBestBid();
-                    final IBookLevelWithOrders bestAsk = book.getBestAsk();
-                    if (null != bestAsk && null != bestBid) {
-                        price = (bestBid.getPrice() >> 1) + (bestAsk.getPrice() >> 1);
-                    } else if (yestCloseIsValid) {
-                        price = yestCloseValue;
-                    } else {
-                        price = 0;
+                        final IBookLevel bestBid = book.getBestBid();
+                        final IBookLevel bestAsk = book.getBestAsk();
+
+                        final long price;
+                        if (null != bestAsk && null != bestBid) {
+
+                            price = (bestBid.getPrice() >> 1) + (bestAsk.getPrice() >> 1);
+
+                        } else if (yestClose.isValid()) {
+
+                            price = yestClose.getPrice();
+                            
+                        } else {
+
+                            price = 0;
+                        }
+
+                        final long refPriceQty = refPrice.getQty();
+
+                        final RfqAlert rfqAlert = new RfqAlert(milliSinceMidnight, book.getSymbol(), price, refPriceQty, book.getCCY());
+                        stockAlertChannel.publish(rfqAlert);
                     }
-
-                    final RfqAlert rfqAlert = new RfqAlert(milliSinceMidnight, book.getSymbol(), price, refPriceQty, book.getCCY(), isETF);
-                    stockAlertChannel.publish(rfqAlert);
                     break;
                 }
             }

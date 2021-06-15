@@ -102,21 +102,24 @@ public class LevelTwoBookSubscriber implements IBookLevelTwoMonitor {
                     final boolean yestCloseIsValid = yestClose.isValid();
 
                     final long milliSinceMidnight = refPriceReceivedNanos / DateTimeUtil.NANOS_IN_MILLIS;
-                    final boolean isETF = book.getInstType() == InstType.ETF;
 
-                    final long price;
-                    final IBookLevel bestBid = book.getBestBid();
-                    final IBookLevel bestAsk = book.getBestAsk();
-                    if (null != bestAsk && null != bestBid) {
-                        price = (bestBid.getPrice() >> 1) + (bestAsk.getPrice() >> 1);
-                    } else if (yestCloseIsValid) {
-                        price = yestCloseValue;
-                    } else {
-                        price = 0;
+                    if (InstType.ETF != book.getInstType()) {
+
+                        final IBookLevel bestBid = book.getBestBid();
+                        final IBookLevel bestAsk = book.getBestAsk();
+
+                        final long price;
+                        if (null != bestAsk && null != bestBid) {
+                            price = (bestBid.getPrice() >> 1) + (bestAsk.getPrice() >> 1);
+                        } else if (yestCloseIsValid) {
+                            price = yestCloseValue;
+                        } else {
+                            price = 0;
+                        }
+
+                        final RfqAlert rfqAlert = new RfqAlert(milliSinceMidnight, book.getSymbol(), price, refPriceQty, book.getCCY());
+                        stockAlertChannel.publish(rfqAlert);
                     }
-
-                    final RfqAlert rfqAlert = new RfqAlert(milliSinceMidnight, book.getSymbol(), price, refPriceQty, book.getCCY(), isETF);
-                    stockAlertChannel.publish(rfqAlert);
                     break;
                 }
             }

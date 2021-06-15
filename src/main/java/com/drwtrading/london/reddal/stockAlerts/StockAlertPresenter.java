@@ -27,7 +27,6 @@ import java.util.Set;
 public class StockAlertPresenter {
 
     private static final Set<String> UNWANTED_RFQ_FUTURES = new HashSet<>();
-    private static final double RFQ_BIG_THRESHOLD = 5_000_000;
 
     static {
         UNWANTED_RFQ_FUTURES.add("FGBS");
@@ -51,7 +50,6 @@ public class StockAlertPresenter {
     private final long millisAtMidnightUTC = DateTimeUtil.getMillisAtMidnight();
     private final Map<String, StackCommunity> symbolCommunity;
 
-    // TODO - refactor this to be more like the quoting obligation screen
     public StockAlertPresenter(final IClock clock, final FXCalc<?> fxCalc, final UILogger webLog) {
 
         this.clock = clock;
@@ -76,6 +74,7 @@ public class StockAlertPresenter {
         final LinkedHashSet<StockAlert> emAlerts = new LinkedHashSet<>();
 
         for (final StackCommunity community : StackCommunity.values()) {
+
             switch (community) {
                 case FI: {
                     this.communityViews.put(community, fiView);
@@ -105,6 +104,7 @@ public class StockAlertPresenter {
 
     @Subscribe
     public void onConnected(final WebSocketConnected connected) {
+        // no-op
     }
 
     public void setCommunityForSymbol(final String symbol, final StackCommunity community) {
@@ -113,6 +113,7 @@ public class StockAlertPresenter {
 
     @Subscribe
     public void onDisconnected(final WebSocketDisconnected disconnected) {
+
         for (final WebSocketViews<IStockAlertsView> view : communityViews.values()) {
             view.unregister(disconnected);
         }
@@ -120,6 +121,7 @@ public class StockAlertPresenter {
 
     @Subscribe
     public void onMessage(final WebSocketInboundData msg) {
+
         webLog.write("stockAlerts", msg);
         final String data = msg.getData();
 
@@ -130,20 +132,51 @@ public class StockAlertPresenter {
     }
 
     public void subscribeToCommunity(final String communityStr, final WebSocketInboundData data) {
+
         final StackCommunity community = StackCommunity.get(communityStr.toUpperCase());
         if (null != community) {
+
             final IStockAlertsView newView = communityViews.get(community).get(data.getOutboundChannel());
             final LinkedHashSet<StockAlert> stockAlerts = communityAlerts.get(community);
+
             for (final StockAlert update : stockAlerts) {
+
                 newView.stockAlert(update.timestamp, update.type, update.symbol, update.msg, false);
             }
         }
     }
 
+    public void addRfq(final RfqAlert alert) {
+
+        final String symbol = alert.symbol;
+        final boolean isRFQWanted = symbol.length() < 4 || !UNWANTED_RFQ_FUTURES.contains(symbol.substring(0, 4));
+
+        if (isRFQWanted && seenRFQs.add(alert)) {
+
+            final StockAlert stockAlert = getStockAlertFromRfq(alert);
+            addAlert(stockAlert);
+        }
+    }
+
+    private StockAlert getStockAlertFromRfq(final RfqAlert alert) {
+
+        final boolean validFx = fxCalc.isValid(alert.ccy, CCY.EUR);
+        final double fxRate = validFx ? fxCalc.getMid(alert.ccy, CCY.EUR) : 1;
+        final long qty = alert.isValidQty() ? alert.qty : 0;
+        final double value = alert.price * qty * fxRate / Constants.NORMALISING_FACTOR;
+        final String notional = qtyDF.format(value);
+
+        final String msg = "Qty: " + qtyDF.format(qty) + ", notional: " + notional + ' ' + (validFx ? CCY.EUR.name() : alert.ccy.name());
+        return new StockAlert(alert.milliSinceMidnight, sdf.format(alert.milliSinceMidnight + millisAtMidnightUTC), "RFQ", alert.symbol,
+                msg);
+    }
+
     public void addAlert(final StockAlert stockAlert) {
+
         final StackCommunity community = symbolCommunity.getOrDefault(stockAlert.symbol, StackCommunity.DM);
         final LinkedHashSet<StockAlert> stockAlerts = communityAlerts.get(community);
         if (!stockAlerts.contains(stockAlert)) {
+
             stockAlerts.add(stockAlert);
             final boolean isRecent = Math.abs(stockAlert.milliSinceMidnight - clock.getMillisSinceMidnightUTC()) < MAX_RFQ_ALERT_MILLIS;
 
@@ -159,29 +192,4 @@ public class StockAlertPresenter {
         }
     }
 
-    private static boolean isRFQFiltered(final String symbol) {
-        return 4 < symbol.length() && UNWANTED_RFQ_FUTURES.contains(symbol.substring(0, 4));
-    }
-
-    public void addRfq(final RfqAlert alert) {
-        if (!isRFQFiltered(alert.symbol) && seenRFQs.add(alert)) {
-
-            final StockAlert stockAlert = getStockAlertFromRfq(alert);
-            addAlert(stockAlert);
-        }
-    }
-
-    StockAlert getStockAlertFromRfq(final RfqAlert alert) {
-        final boolean validFx = fxCalc.isValid(alert.ccy, CCY.EUR);
-        final double fxRate = validFx ? fxCalc.getMid(alert.ccy, CCY.EUR) : 1;
-        final long qty = alert.isValidQty() ? alert.qty : 0;
-        final double value = alert.price * qty * fxRate / Constants.NORMALISING_FACTOR;
-        final String notional = qtyDF.format(value);
-
-        final boolean bigRfq = alert.isETF && RFQ_BIG_THRESHOLD < value;
-        final String type = (bigRfq ? "BIG_" : "") + (alert.isETF ? "ETF_RFQ" : "RFQ");
-
-        return new StockAlert(alert.milliSinceMidnight, sdf.format(alert.milliSinceMidnight + millisAtMidnightUTC), type, alert.symbol,
-                "Qty: " + qtyDF.format(qty) + ", notional: " + notional + ' ' + (validFx ? CCY.EUR.name() : alert.ccy.name()));
-    }
 }
