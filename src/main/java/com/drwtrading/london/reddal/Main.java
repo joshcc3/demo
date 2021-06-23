@@ -614,8 +614,7 @@ public class Main {
 
             final SelectIO fxSelectIO = new SelectIO(selectIOFuseBox);
 
-            final FXCalc<FXFuse> fxCalc =
-                    new FXCalc<>(fxSelectIO, fxFuseBox, FXFuse.FX_CALC, FXFuse.FX_TIMEOUT, fxConfig, Constants::NO_OP);
+            final FXCalc<FXFuse> fxCalc = new FXCalc<>(fxFuseBox, FXFuse.FX_CALC, fxConfig, Constants::NO_OP);
 
             final ConfigGroup fxMDConfig = fxConfig.getGroup("md");
             FXMDUtils.connectToMD(fxSelectIO, fxFuseBox, FXFuse.FX_HANDLER, FXFuse.FX_MC, errorLog, fxMDConfig, app.appName, fxCalc);

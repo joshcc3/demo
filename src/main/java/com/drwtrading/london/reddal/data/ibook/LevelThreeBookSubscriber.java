@@ -113,7 +113,7 @@ public class LevelThreeBookSubscriber implements IBookLevelThreeMonitor {
                         } else if (yestClose.isValid()) {
 
                             price = yestClose.getPrice();
-                            
+
                         } else {
 
                             price = 0;
