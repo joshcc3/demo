@@ -307,9 +307,6 @@ public class Main {
                 !root.paramExists(IS_EQUITIES_SEARCHABLE_PARAM) || root.getBoolean(IS_EQUITIES_SEARCHABLE_PARAM);
         final boolean isFuturesSearchable = !root.paramExists(IS_FUTURES_SEARCHABLE_PARAM) || root.getBoolean(IS_FUTURES_SEARCHABLE_PARAM);
 
-        final Set<StackCommunity> primaryCommunities =
-                app.config.getEnabledGroup("stacks").getEnumSet("primaryCommunities", StackCommunity.class);
-
         final Map<String, TypedChannel<WebSocketControlMessage>> webSocketsForLogging = new HashMap<>();
 
         final WebApplication webApp = new WebApplication(webPort, channels.errorPublisher);
@@ -417,6 +414,8 @@ public class Main {
 
         final OpxlClient<OPXLComponents> opxlClient = new OpxlClient<>(opxlSelectIO, opxlMonitor, OPXLComponents.OPXL_WRITER_CLIENT);
         app.addStartUpAction(opxlClient::start);
+
+        final Set<StackCommunity> primaryCommunities = app.config.getGroup("stacks").getEnumSet("primaryCommunities", StackCommunity.class);
 
         setupStackManager(app, fibers, channels, webApp, webLog, selectIOFiber, opxlSelectIO, opxlMonitor, opxlClient, contractSetGenerator,
                 isEquitiesSearchable, primaryCommunities);
@@ -614,10 +613,11 @@ public class Main {
 
             final SelectIO fxSelectIO = new SelectIO(selectIOFuseBox);
 
-            final FXCalc<FXFuse> fxCalc = new FXCalc<>(fxFuseBox, FXFuse.FX_CALC, fxConfig, Constants::NO_OP);
+            final FXCalc<FXFuse> fxCalc =
+                    FXMDUtils.createMDFXCalc(fxSelectIO, fxFuseBox, errorLog, fxConfig, FXFuse.FX_CALC, FXFuse.FX_HANDLER, FXFuse.FX_MD,
+                            Constants::NO_OP, app.appName);
 
             final ConfigGroup fxMDConfig = fxConfig.getGroup("md");
-            FXMDUtils.connectToMD(fxSelectIO, fxFuseBox, FXFuse.FX_HANDLER, FXFuse.FX_MC, errorLog, fxMDConfig, app.appName, fxCalc);
 
             final SelectIOFiber fxFiber = new SelectIOFiber(fxSelectIO, errorLog, "FX SelectIO");
             final FiberBuilder fiberBuilder = fibers.fiberGroup.wrap(fxFiber, name);
