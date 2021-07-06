@@ -1729,8 +1729,7 @@ public class StackFamilyView {
     public void renameFamily(final String parentSymbol, final String newUIName, final WebSocketInboundData data) {
         final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
         if (null != familyUIData && !communityUINames.contains(newUIName)) {
-            final boolean isRemovedElement = communityUINames.remove(familyUIData.getUIName());
-            assert isRemovedElement;
+            communityUINames.remove(familyUIData.getUIName());
             communityUINames.add(newUIName);
             communityManager.setFamilyMetadata(SOURCE_UI, parentSymbol, newUIName);
         } else {

@@ -19,12 +19,11 @@ public class LadderMetaData {
     public final Map<ReddalFreeTextCell, String> freeTextCells;
     public final Map<ReddalFreeTextCell, String> freeTextDescription;
 
-    public long deskPosition;
-    public String formattedDeskPosition;
+    public final LazilyFormattedMetadataLong deskPosition;
 
     private PKSExposure pksData;
-    public String pksExposure;
-    public String pksPosition;
+    public final LazilyFormattedMetadataDouble pksExposure;
+    public final LazilyFormattedMetadataDouble pksPosition;
 
     public String chixSwitchSymbol;
     public SpreadContractSet spreadContractSet;
@@ -34,11 +33,10 @@ public class LadderMetaData {
         this.symbol = symbol;
         this.displaySymbol = symbol;
 
-        this.formattedDeskPosition = null;
-
+        this.deskPosition = new LazilyFormattedMetadataLong();
         this.pksData = null;
-        this.pksExposure = null;
-        this.pksPosition = null;
+        this.pksExposure = new LazilyFormattedMetadataDouble();
+        this.pksPosition = new LazilyFormattedMetadataDouble();
 
         this.freeTextCells = new EnumMap<>(ReddalFreeTextCell.class);
         this.freeTextDescription = new EnumMap<>(ReddalFreeTextCell.class);
@@ -59,11 +57,8 @@ public class LadderMetaData {
 
     public void setDeskPosition(final DecimalFormat formatter, final long position) {
 
-        if (null == formattedDeskPosition || deskPosition != position) {
+        this.deskPosition.updateValue(formatter, position);
 
-            this.deskPosition = position;
-            this.formattedDeskPosition = DataUtils.formatPosition(formatter, position);
-        }
     }
 
     public void onPKSExposure(final DecimalFormat formatter, final PKSExposure data) {
@@ -71,8 +66,8 @@ public class LadderMetaData {
         this.pksData = data;
         final double combinedPosition = data.getCombinedPosition();
 
-        this.pksExposure = DataUtils.formatPosition(formatter, data.dryExposure);
-        this.pksPosition = DataUtils.formatPosition(formatter, combinedPosition);
+        this.pksExposure.updateValue(formatter, data.dryExposure);
+        this.pksPosition.updateValue(formatter, combinedPosition);
     }
 
     public PKSExposure getPKSData() {

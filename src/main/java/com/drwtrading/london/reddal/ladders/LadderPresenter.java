@@ -86,6 +86,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class LadderPresenter implements IStackPresenterCallback {
@@ -121,7 +122,7 @@ public class LadderPresenter implements IStackPresenterCallback {
             new MapMaker().makeComputingMap(NibblerLastTradeDataForSymbol::new);
     private final Map<String, JasperLastTradeDataForSymbol> lastTradeBySymbolForJasper =
             new MapMaker().makeComputingMap(JasperLastTradeDataForSymbol::new);
-    private final Map<String, LadderMetaData> metaDataBySymbol = new MapMaker().makeComputingMap(LadderMetaData::new);
+    private final Map<String, LadderMetaData> metaDataBySymbolS = new ConcurrentHashMap<>();
     private final Map<InstrumentID, InstrumentMetaData> instrumentMetaData = new MapMaker().makeComputingMap(InstrumentMetaData::new);
 
     private final Map<String, Map<String, LadderPrefsForSymbolUser>> ladderPrefsForUserBySymbol;
@@ -298,7 +299,7 @@ public class LadderPresenter implements IStackPresenterCallback {
                 final Set<OrderType> supportedOrderTypes = supportedOrderTypesBySymbol.get(symbol);
                 final Set<AlgoType> supportedAlgoTypes = supportedAlgoTypesBySymbol.get(symbol);
                 final WorkingOrdersByPrice workingOrders = ordersBySymbol.get(symbol);
-                final LadderMetaData ladderMetaData = metaDataBySymbol.get(symbol);
+                final LadderMetaData ladderMetaData = getMetadataBySymbol(symbol);
                 final NibblerLastTradeDataForSymbol lastTradeDataForNibbler = lastTradeBySymbolForNibbler.get(symbol);
                 final JasperLastTradeDataForSymbol lastTradeDataForJasper = lastTradeBySymbolForJasper.get(symbol);
                 final SymbolStackData stackData = stackBySymbol.get(symbol);
@@ -417,10 +418,14 @@ public class LadderPresenter implements IStackPresenterCallback {
         for (final Map.Entry<String, Long> position : deskPositions.positions.entrySet()) {
 
             final String symbol = position.getKey();
-            final LadderMetaData metaData = metaDataBySymbol.get(symbol);
+            final LadderMetaData metaData = getMetadataBySymbol(symbol);
 
             metaData.setDeskPosition(oneDP, position.getValue());
         }
+    }
+
+    private LadderMetaData getMetadataBySymbol(final String symbol) {
+        return metaDataBySymbolS.computeIfAbsent(symbol, LadderMetaData::new);
     }
 
     @Subscribe
@@ -437,7 +442,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
         for (final PKSExposure position : positions.exposures) {
             for (final String symbol : position.symbols) {
-                metaDataBySymbol.get(symbol).onPKSExposure(oneDP, position);
+                getMetadataBySymbol(symbol).onPKSExposure(oneDP, position);
             }
         }
     }
@@ -447,14 +452,14 @@ public class LadderPresenter implements IStackPresenterCallback {
         if ("execution".equals(ladderText.getCell())) {
             displayTradeIssue(ladderText.getSymbol(), ladderText.getText());
         } else {
-            metaDataBySymbol.get(ladderText.getSymbol()).onLadderText(ladderText);
+            getMetadataBySymbol(ladderText.getSymbol()).onLadderText(ladderText);
         }
     }
 
     public void setLadderText(final Collection<LadderTextUpdate> ladderTexts) {
 
         for (final LadderTextUpdate ladderText : ladderTexts) {
-            final LadderMetaData metaData = metaDataBySymbol.get(ladderText.symbol);
+            final LadderMetaData metaData = getMetadataBySymbol(ladderText.symbol);
             metaData.setLadderText(ladderText);
         }
     }
@@ -475,20 +480,20 @@ public class LadderPresenter implements IStackPresenterCallback {
     @Subscribe
     public void on(final SpreadContractSet spreadContractSet) {
 
-        metaDataBySymbol.get(spreadContractSet.symbol).onSpreadContractSet(spreadContractSet);
+        getMetadataBySymbol(spreadContractSet.symbol).onSpreadContractSet(spreadContractSet);
         if (spreadContractSet.nextContract != null) {
-            metaDataBySymbol.get(spreadContractSet.nextContract).onSpreadContractSet(spreadContractSet);
+            getMetadataBySymbol(spreadContractSet.nextContract).onSpreadContractSet(spreadContractSet);
         }
         if (spreadContractSet.contractAfterNext != null) {
-            metaDataBySymbol.get(spreadContractSet.contractAfterNext).onSpreadContractSet(spreadContractSet);
+            getMetadataBySymbol(spreadContractSet.contractAfterNext).onSpreadContractSet(spreadContractSet);
         }
     }
 
     @Subscribe
     public void on(final ChixSymbolPair chixSymbolPair) {
 
-        metaDataBySymbol.get(chixSymbolPair.primarySymbol).setChixSwitchSymbol(chixSymbolPair.chixSymbol);
-        metaDataBySymbol.get(chixSymbolPair.chixSymbol).setChixSwitchSymbol(chixSymbolPair.primarySymbol);
+        getMetadataBySymbol(chixSymbolPair.primarySymbol).setChixSwitchSymbol(chixSymbolPair.chixSymbol);
+        getMetadataBySymbol(chixSymbolPair.chixSymbol).setChixSwitchSymbol(chixSymbolPair.primarySymbol);
     }
 
     public void setNibblerConnected(final NibblerTransportConnected serverTradingStatus) {
@@ -503,14 +508,17 @@ public class LadderPresenter implements IStackPresenterCallback {
 
     public void recenterLadder(final RecenterLadder recenterLadder) {
 
-        for (final LadderView ladderView : viewBySocket.values()) {
-            ladderView.recenterLadder(recenterLadder);
+        final Collection<LadderView> symbolViews = viewsBySymbol.get(recenterLadder.symbol);
+        if (null != symbolViews) {
+            for (final LadderView symbolView : symbolViews) {
+                symbolView.recenterLadder(recenterLadder);
+            }
         }
     }
 
     @Subscribe
     public void on(final DisplaySymbol displaySymbol) {
-        metaDataBySymbol.get(displaySymbol.marketDataSymbol).setDisplaySymbol(displaySymbol);
+        getMetadataBySymbol(displaySymbol.marketDataSymbol).setDisplaySymbol(displaySymbol);
     }
 
     @Subscribe

@@ -16,6 +16,9 @@ import java.util.Map;
 
 public class StackUIData implements IStackGroupUpdateCallback {
 
+    private static final ThreadLocal<DecimalFormat> priceOffsetDFTL =
+            ThreadLocal.withInitial(() -> NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 10));
+
     private static final String NO_PRICE_OFFSET = "---";
     private static final StackType[] STACK_TYPES = StackType.values();
 
@@ -25,8 +28,6 @@ public class StackUIData implements IStackGroupUpdateCallback {
     public final String leanSymbol;
     public final InstType leanInstType;
     public final String additiveSymbol;
-
-    private final DecimalFormat priceOffsetDF;
 
     private final Map<BookSide, StackGroup> stackGroups;
 
@@ -45,8 +46,6 @@ public class StackUIData implements IStackGroupUpdateCallback {
         this.leanSymbol = leanSymbol;
         this.leanInstType = leanInstType;
         this.additiveSymbol = additiveSymbol;
-
-        this.priceOffsetDF = NumberFormatUtil.getDF(NumberFormatUtil.THOUSANDS, 2, 10);
 
         this.stackGroups = new EnumMap<>(BookSide.class);
 
@@ -112,7 +111,7 @@ public class StackUIData implements IStackGroupUpdateCallback {
 
         if (isActiveStackDefined) {
 
-            this.activeBidPriceOffsetBPS = priceOffsetDF.format(bestActiveStack);
+            this.activeBidPriceOffsetBPS = priceOffsetDFTL.get().format(bestActiveStack);
             this.definedBidPriceOffsetBPS = activeBidPriceOffsetBPS;
 
         } else {
@@ -120,7 +119,7 @@ public class StackUIData implements IStackGroupUpdateCallback {
             this.activeBidPriceOffsetBPS = NO_PRICE_OFFSET;
 
             if (!isStackActive && isStackDefined) {
-                this.definedBidPriceOffsetBPS = priceOffsetDF.format(bestDefinedOffset);
+                this.definedBidPriceOffsetBPS = priceOffsetDFTL.get().format(bestDefinedOffset);
             } else {
                 this.definedBidPriceOffsetBPS = NO_PRICE_OFFSET;
             }
@@ -160,7 +159,7 @@ public class StackUIData implements IStackGroupUpdateCallback {
 
         if (isActiveStackDefined) {
 
-            this.activeAskPriceOffsetBPS = priceOffsetDF.format(bestActiveStack);
+            this.activeAskPriceOffsetBPS = priceOffsetDFTL.get().format(bestActiveStack);
             this.definedAskPriceOffsetBPS = activeAskPriceOffsetBPS;
 
         } else {
@@ -168,7 +167,7 @@ public class StackUIData implements IStackGroupUpdateCallback {
             this.activeAskPriceOffsetBPS = NO_PRICE_OFFSET;
 
             if (!isStackActive && isStackDefined) {
-                this.definedAskPriceOffsetBPS = priceOffsetDF.format(bestDefinedOffset);
+                this.definedAskPriceOffsetBPS = priceOffsetDFTL.get().format(bestDefinedOffset);
             } else {
                 this.definedAskPriceOffsetBPS = NO_PRICE_OFFSET;
             }

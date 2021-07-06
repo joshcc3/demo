@@ -446,8 +446,10 @@ public class LadderView implements UiEventHandler {
             }
             // Desk position
 
-            if (null != metaData.formattedDeskPosition) {
-                leftHandPanel.setDeskPosition(metaData.deskPosition, metaData.formattedDeskPosition);
+            if (metaData.deskPosition.isInitialised()) {
+                final String formattedDeskPosition = metaData.deskPosition.getFormattedValue();
+                final long deskPosition = metaData.deskPosition.getValue();
+                leftHandPanel.setDeskPosition(deskPosition, formattedDeskPosition);
             }
             // Day position
             if (null != instMetaData.getFormattedMrChillNetPosition()) {
@@ -462,8 +464,8 @@ public class LadderView implements UiEventHandler {
             if (null != pksExposure) {
                 final double combinedPosition = pksExposure.getCombinedPosition();
 
-                headerPanel.setPksExposure(pksExposure.dryExposure, metaData.pksExposure);
-                headerPanel.setPksPosition(combinedPosition, metaData.pksPosition);
+                headerPanel.setPksExposure(pksExposure.dryExposure, metaData.pksExposure.getFormattedValue());
+                headerPanel.setPksPosition(combinedPosition, metaData.pksPosition.getFormattedValue());
             }
 
             // Ladder text
