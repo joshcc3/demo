@@ -22,6 +22,7 @@ public class QuotingObligationsPresenterTest {
     public static final String SYMBOL2 = "TRY LN";
     public static final String SYMBOL3 = "TRY2 LN";
     public static final String SYMBOL4 = "TRY3 LN";
+    public static final String SYMBOL5 = "TRY4 LN";
 
     private final SelectIO selectIO = Mockito.mock(SelectIO.class);
     private final UILogger webLog = Mockito.mock(UILogger.class);
@@ -91,25 +92,29 @@ public class QuotingObligationsPresenterTest {
     @Test
     public void multiCommunityTest() {
         final QuotingObligationsPresenter presenter =
-                new QuotingObligationsPresenter(EnumSet.of(StackCommunity.DM, StackCommunity.FI, StackCommunity.FC), selectIO, webLog);
+                new QuotingObligationsPresenter(EnumSet.of(StackCommunity.DM, StackCommunity.FI, StackCommunity.FC, StackCommunity.CR),
+                        selectIO, webLog);
 
         final QuotingState quotingState1 = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
         final QuotingState quotingState2 = new QuotingState(2, 2, SYMBOL2, false, SYMBOL2);
         final QuotingState quotingState3 = new QuotingState(3, 3, SYMBOL3, false, SYMBOL3);
         final QuotingState quotingState4 = new QuotingState(4, 4, SYMBOL4, false, SYMBOL4);
+        final QuotingState quotingState5 = new QuotingState(5, 5, SYMBOL5, false, SYMBOL5);
 
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, quotingState1);
         presenter.setQuotingState(NIBBLER, quotingState2);
         presenter.setQuotingState(NIBBLER, quotingState3);
         presenter.setQuotingState(NIBBLER, quotingState4);
+        presenter.setQuotingState(NIBBLER, quotingState5);
 
         presenter.everythingOn("DM", inboundData);
         Mockito.verify(nibblerHandler).startQuoter(1, USER);
         Mockito.verify(nibblerHandler).startQuoter(2, USER);
         Mockito.verify(nibblerHandler).startQuoter(3, USER);
         Mockito.verify(nibblerHandler).startQuoter(4, USER);
-        Mockito.verify(nibblerHandler, Mockito.times(4)).batchComplete();
+        Mockito.verify(nibblerHandler).startQuoter(5, USER);
+        Mockito.verify(nibblerHandler, Mockito.times(5)).batchComplete();
         Mockito.verifyNoMoreInteractions(nibblerHandler);
 
         presenter.setSymbol(StackCommunity.FC, SYMBOL);
@@ -118,12 +123,13 @@ public class QuotingObligationsPresenterTest {
         Mockito.verify(nibblerHandler).stopQuoter(2);
         Mockito.verify(nibblerHandler).stopQuoter(3);
         Mockito.verify(nibblerHandler).stopQuoter(4);
-        Mockito.verify(nibblerHandler, Mockito.times(7)).batchComplete();
+        Mockito.verify(nibblerHandler).stopQuoter(5);
+        Mockito.verify(nibblerHandler, Mockito.times(9)).batchComplete();
         Mockito.verifyNoMoreInteractions(nibblerHandler);
 
         presenter.everythingOff("FC", null);
         Mockito.verify(nibblerHandler).stopQuoter(1);
-        Mockito.verify(nibblerHandler, Mockito.times(8)).batchComplete();
+        Mockito.verify(nibblerHandler, Mockito.times(10)).batchComplete();
         Mockito.verifyNoMoreInteractions(nibblerHandler);
 
         presenter.setSymbol(StackCommunity.FC, SYMBOL2);
@@ -131,14 +137,21 @@ public class QuotingObligationsPresenterTest {
         presenter.everythingOn("FC", inboundData);
         Mockito.verify(nibblerHandler, Mockito.times(2)).startQuoter(1, USER);
         Mockito.verify(nibblerHandler, Mockito.times(2)).startQuoter(2, USER);
-        Mockito.verify(nibblerHandler, Mockito.times(10)).batchComplete();
+        Mockito.verify(nibblerHandler, Mockito.times(12)).batchComplete();
         Mockito.verifyNoMoreInteractions(nibblerHandler);
 
         presenter.setSymbol(StackCommunity.EM, SYMBOL4);
 
         presenter.everythingOn("EM", inboundData);
         Mockito.verify(nibblerHandler, Mockito.times(2)).startQuoter(4, USER);
-        Mockito.verify(nibblerHandler, Mockito.times(11)).batchComplete();
+        Mockito.verify(nibblerHandler, Mockito.times(13)).batchComplete();
+        Mockito.verifyNoMoreInteractions(nibblerHandler);
+
+        presenter.setSymbol(StackCommunity.CR, SYMBOL5);
+
+        presenter.everythingOn("CR", inboundData);
+        Mockito.verify(nibblerHandler, Mockito.times(2)).startQuoter(5, USER);
+        Mockito.verify(nibblerHandler, Mockito.times(14)).batchComplete();
         Mockito.verifyNoMoreInteractions(nibblerHandler);
 
     }

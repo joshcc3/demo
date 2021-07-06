@@ -1485,16 +1485,22 @@ public class Main {
                 setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.of(InstType.ETF),
                         PicardSounds.ETF_EM, webApp, "picardetf-em");
 
-        final DelegatingPicardUI ui = new DelegatingPicardUI(picardFI, picardFC, picardEM, picardDM);
+        final PicardUI picardCR =
+                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.of(InstType.ETF),
+                        PicardSounds.ETF_CR, webApp, "picardetf-cr");
+
+        final DelegatingPicardUI ui = new DelegatingPicardUI(picardFI, picardFC, picardEM, picardDM, picardCR);
         picardRows.subscribe(fiber, ui::addPicardRow);
         final TypedChannel<String> dmIsins = communityIsins.get(StackCommunity.DM);
         final TypedChannel<String> fiIsins = communityIsins.get(StackCommunity.FI);
         final TypedChannel<String> fcIsins = communityIsins.get(StackCommunity.FC);
         final TypedChannel<String> emIsins = communityIsins.get(StackCommunity.EM);
+        final TypedChannel<String> crIsins = communityIsins.get(StackCommunity.CR);
         dmIsins.subscribe(fiber, ui::addDMIsin);
         fiIsins.subscribe(fiber, ui::addFIIsin);
         fcIsins.subscribe(fiber, ui::addFCIsin);
         emIsins.subscribe(fiber, ui::addEMIsin);
+        crIsins.subscribe(fiber, ui::addCRIsin);
     }
 
     private static PicardUI setupPicardUI(final SelectIO selectIO, final SelectIOFiber fiber, final UILogger webLog,

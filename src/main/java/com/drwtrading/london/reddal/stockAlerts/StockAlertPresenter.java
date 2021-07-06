@@ -67,11 +67,13 @@ public class StockAlertPresenter {
         final WebSocketViews<IStockAlertsView> fiView = WebSocketViews.create(IStockAlertsView.class, this);
         final WebSocketViews<IStockAlertsView> fcView = WebSocketViews.create(IStockAlertsView.class, this);
         final WebSocketViews<IStockAlertsView> emView = WebSocketViews.create(IStockAlertsView.class, this);
+        final WebSocketViews<IStockAlertsView> crView = WebSocketViews.create(IStockAlertsView.class, this);
         this.communityAlerts = new EnumMap<>(StackCommunity.class);
         final LinkedHashSet<StockAlert> dmAlerts = new LinkedHashSet<>();
         final LinkedHashSet<StockAlert> fiAlerts = new LinkedHashSet<>();
         final LinkedHashSet<StockAlert> fcAlerts = new LinkedHashSet<>();
         final LinkedHashSet<StockAlert> emAlerts = new LinkedHashSet<>();
+        final LinkedHashSet<StockAlert> crAlerts = new LinkedHashSet<>();
 
         for (final StackCommunity community : StackCommunity.values()) {
 
@@ -84,6 +86,11 @@ public class StockAlertPresenter {
                 case EM: {
                     this.communityViews.put(community, emView);
                     this.communityAlerts.put(community, emAlerts);
+                    break;
+                }
+                case CR: {
+                    this.communityViews.put(community, crView);
+                    this.communityAlerts.put(community, crAlerts);
                     break;
                 }
                 case FC: {

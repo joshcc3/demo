@@ -11,17 +11,20 @@ public class DelegatingPicardUI {
     private final PicardUI fcPicardUI;
     private final PicardUI emPicardUI;
     private final PicardUI dmPicardUI;
+    private final PicardUI crPicardUI;
 
     private final Map<String, PicardUI> isinToUI;
 
     private final PicardUI defaultUI;
 
-    public DelegatingPicardUI(final PicardUI fiPicardUI, final PicardUI fcPicardUI, final PicardUI emPicardUI, final PicardUI dmPicardUI) {
+    public DelegatingPicardUI(final PicardUI fiPicardUI, final PicardUI fcPicardUI, final PicardUI emPicardUI, final PicardUI dmPicardUI,
+            final PicardUI crPicardUI) {
 
         this.fiPicardUI = fiPicardUI;
         this.fcPicardUI = fcPicardUI;
         this.emPicardUI = emPicardUI;
         this.dmPicardUI = dmPicardUI;
+        this.crPicardUI = crPicardUI;
         isinToUI = new HashMap<>();
         defaultUI = dmPicardUI;
     }
@@ -38,6 +41,10 @@ public class DelegatingPicardUI {
         isinToUI.put(isin, emPicardUI);
     }
 
+    public void addCRIsin(final String isin) {
+        isinToUI.put(isin, crPicardUI);
+    }
+
     public void addDMIsin(final String isin) {
         isinToUI.put(isin, dmPicardUI);
     }
@@ -52,6 +59,7 @@ public class DelegatingPicardUI {
         fcPicardUI.setDisplaySymbol(displaySymbol);
         emPicardUI.setDisplaySymbol(displaySymbol);
         dmPicardUI.setDisplaySymbol(displaySymbol);
+        crPicardUI.setDisplaySymbol(displaySymbol);
     }
 
     public long flush() {
@@ -59,7 +67,8 @@ public class DelegatingPicardUI {
         final long delay2 = emPicardUI.flush();
         final long delay3 = dmPicardUI.flush();
         final long delay4 = fcPicardUI.flush();
-        return Math.min(delay4, Math.min(delay3, Math.min(delay1, delay2)));
+        final long delay5 = crPicardUI.flush();
+        return Math.min(Math.min(delay4, Math.min(delay3, Math.min(delay1, delay2))), delay5);
     }
 
 }
