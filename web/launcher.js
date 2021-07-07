@@ -7,6 +7,7 @@ const FUTURES_LADDER_URLS = {ladderHost: "prod-futures-ladder.eeif.drw:9044", wo
 const SELECTA_LADDERS_URLS = "http://prod-selecta.eeif.drw:9134/ladders_urls";
 
 let EQUITY_LADDER_URLS = {ladderHost: "prod-equities-ladder.eeif.drw:9144", workspaceHost: "prod-equities-ladder.eeif.drw:9145"};
+let RFQ_LADDER_URLS = {ladderHost: "prod-rfq-ladder.eeif.drw:9244", workspaceHost: "prod-rfq-ladder.eeif.drw:9245"};
 
 $(function () {
 	$.ajax({
@@ -93,6 +94,10 @@ function getLadderHosts(symbol, ternaryIsFutures) {
 	} else if (true === ternaryIsFutures || symbol.match(/^[^:]*[FGHJKMNQUVXZ][0-9](;.*)?$/) || symbol.match(/ FWD$/)) {
 
 		return FUTURES_LADDER_URLS;
+
+	} else if (symbol.match(/ RFQ$/)) {
+
+		return RFQ_LADDER_URLS;
 
 	} else {
 
