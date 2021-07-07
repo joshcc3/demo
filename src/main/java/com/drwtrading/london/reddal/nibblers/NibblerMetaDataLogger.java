@@ -8,7 +8,6 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TradableInstrument;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
 import com.drwtrading.london.eeif.stack.manager.persistence.CachingTimeFormatter;
-import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableRow;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableWriter;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
@@ -33,7 +32,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
     private final CachingTimeFormatter timeFormat;
 
     private final DecimalFormat twoDF;
-    private final DecimalFormat priceDF;
+    private final NormalizedValueDecimalFormat priceDF;
 
     private final FileTableWriter<NibblerMetaTables> fileTableWriter;
 
@@ -52,7 +51,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         this.timeFormat = new CachingTimeFormatter();
 
         this.twoDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2);
-        this.priceDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2, 6);
+        this.priceDF = new NormalizedValueDecimalFormat(2, 6);
 
         final Path logFile = logDir.resolve(LOG_FILE_PREFIX + nibblerName + ".csv");
         this.fileTableWriter = new FileTableWriter<>(logFile, NibblerMetaTables.class);
@@ -128,9 +127,9 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         theoRow.set(NibblerTheoValueColumns.THEO_TYPE, theoValue.getTheoType());
 
         theoRow.set(NibblerTheoValueColumns.ORIGINAL_VALUE,
-                priceDF.format(theoValue.getOriginalValue() / (double) Constants.NORMALISING_FACTOR));
+                priceDF.format(theoValue.getOriginalValue()));
         theoRow.set(NibblerTheoValueColumns.THEO_VALUE,
-                priceDF.format(theoValue.getTheoreticalValue() / (double) Constants.NORMALISING_FACTOR));
+                priceDF.format(theoValue.getTheoreticalValue()));
 
         theoRow.set(NibblerTheoValueColumns.AFTER_HOURS_PERCENT, twoDF.format(theoValue.getAfterHoursPct()));
         theoRow.set(NibblerTheoValueColumns.TRUE_AFTER_HOURS_PERCENT, twoDF.format(theoValue.getAfterHoursPct()));
@@ -163,10 +162,10 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.SYMBOL, theo.getSymbol());
 
         spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.IS_BID_VALID, theo.isBidValid());
-        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.BID, priceDF.format(theo.getBidValue() / (double) Constants.NORMALISING_FACTOR));
+        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.BID, priceDF.format(theo.getBidValue()));
 
         spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.IS_ASK_VALID, theo.isAskValid());
-        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.ASK, priceDF.format(theo.getAskValue() / (double) Constants.NORMALISING_FACTOR));
+        spreadnoughtRow.set(NibblerSpreadnoughtTheoColumns.ASK, priceDF.format(theo.getAskValue()));
 
         try {
             this.fileTableWriter.writeRow(spreadnoughtRow, false);
@@ -259,7 +258,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         lastTradeRow.set(NibblerLastTradeColumns.SYMBOL, lastTrade.getSymbol());
 
         lastTradeRow.set(NibblerLastTradeColumns.SIDE, lastTrade.getSide());
-        lastTradeRow.set(NibblerLastTradeColumns.PRICE, priceDF.format(lastTrade.getPrice() / (double) Constants.NORMALISING_FACTOR));
+        lastTradeRow.set(NibblerLastTradeColumns.PRICE, priceDF.format(lastTrade.getPrice()));
         lastTradeRow.set(NibblerLastTradeColumns.QTY, lastTrade.getQty());
 
         try {
