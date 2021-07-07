@@ -18,7 +18,7 @@ public class LazilyFormattedMetadataDouble {
 
     public void updateValue(final DecimalFormat formatter, final double value) {
 
-        this.isDirty = this.value == value || null == formattedValue;
+        this.isDirty = this.value != value || null == formattedValue;
         this.formatter = formatter;
         this.value = value;
         this.isInitialised = true;

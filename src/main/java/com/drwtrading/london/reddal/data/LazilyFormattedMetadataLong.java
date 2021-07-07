@@ -21,7 +21,7 @@ public class LazilyFormattedMetadataLong {
 
     public void updateValue(final DecimalFormat formatter, final long value) {
 
-        this.isDirty = this.value == value || null == formattedValue;
+        this.isDirty = this.value != value || null == formattedValue;
         this.formatter = formatter;
         this.value = value;
         this.isInitialised = true;

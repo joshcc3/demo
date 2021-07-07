@@ -225,8 +225,7 @@ public class StackFamilyView {
         if (null != familyUIData) {
             mustRefresh = true;
             familyUIData.setUIName(uiName);
-            final boolean isAdded = communityUINames.add(uiName);
-            assert isAdded;
+            communityUINames.add(uiName);
             views.all().setFamilyName(parentSymbol, uiName);
         }
     }
