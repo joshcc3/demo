@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.Spreadnough
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TradableInstrument;
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.WorkingOrder;
+import com.drwtrading.london.eeif.stack.manager.persistence.CachingTimeFormatter;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableRow;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableWriter;
@@ -20,7 +21,6 @@ import com.drwtrading.london.reddal.ReddalComponents;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.Set;
 
 public class NibblerMetaDataLogger implements INibblerTradingDataListener {
@@ -30,7 +30,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
     private final IFuseBox<ReddalComponents> monitor;
 
     private final long millisAtMidnight;
-    private final SimpleDateFormat timeFormat;
+    private final CachingTimeFormatter timeFormat;
 
     private final DecimalFormat twoDF;
     private final DecimalFormat priceDF;
@@ -49,7 +49,7 @@ public class NibblerMetaDataLogger implements INibblerTradingDataListener {
         this.monitor = monitor;
 
         this.millisAtMidnight = clock.getMillisAtMidnightUTC();
-        this.timeFormat = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
+        this.timeFormat = new CachingTimeFormatter();
 
         this.twoDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2);
         this.priceDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 2, 6);

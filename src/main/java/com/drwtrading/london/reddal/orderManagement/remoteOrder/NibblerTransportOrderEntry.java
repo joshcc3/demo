@@ -4,12 +4,12 @@ import com.drwtrading.london.eeif.nibbler.transport.data.types.AlgoType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.nibbler.transport.io.NibblerClientHandler;
+import com.drwtrading.london.eeif.stack.manager.persistence.CachingTimeFormatter;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableRow;
 import com.drwtrading.london.eeif.utils.csv.fileTables.FileTableWriter;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
-import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
@@ -26,7 +26,6 @@ import org.jetlang.channels.Publisher;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.text.SimpleDateFormat;
 import java.util.Set;
 
 public class NibblerTransportOrderEntry {
@@ -36,7 +35,7 @@ public class NibblerTransportOrderEntry {
 
     private final NibblerClientHandler nibblerClient;
 
-    private final SimpleDateFormat sdf;
+    private final CachingTimeFormatter ctf;
     private final FileTableWriter<NibblerRemoteTables> log;
 
     private final FileTableRow<NibblerRemoteTables, NibblerRemoteSubmitColumns> submitRow;
@@ -61,7 +60,7 @@ public class NibblerTransportOrderEntry {
 
         this.nibblerClient = nibblerClient;
 
-        this.sdf = DateTimeUtil.getDateFormatter(DateTimeUtil.TIME_FORMAT);
+        this.ctf = new CachingTimeFormatter();
 
         final Path logFile = logDir.resolve(nibblerClient.getRemoteUser() + ".csv");
         this.log = new FileTableWriter<>(logFile, NibblerRemoteTables.class);
@@ -210,7 +209,7 @@ public class NibblerTransportOrderEntry {
 
         try {
 
-            final String timestamp = sdf.format(clock.nowMilliUTC());
+            final String timestamp = ctf.format(clock.nowMilliUTC());
             row.set(timestampCol, timestamp);
 
             log.writeRow(row, true);
