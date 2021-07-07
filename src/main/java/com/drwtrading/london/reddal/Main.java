@@ -759,7 +759,7 @@ public class Main {
         final ConfigGroup metaDataConfig = root.getEnabledGroup("metadata");
         if (null != metaDataConfig) {
 
-            final String statsName = root.getGroup("stats").getString("name");
+            final String statsName = metaDataConfig.getString("name");
             final HostAndNic hostAndNic = Environment.getHostAndNic(metaDataConfig);
             final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client =
                     OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
