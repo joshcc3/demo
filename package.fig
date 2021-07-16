@@ -7,18 +7,18 @@ retrieve JS_SOUND_FILES->web/js
 retrieve WAV_SOUND_FILES->web/sounds
 
 config default
-	include drw.london.eeif-utils/672
+	include drw.london.eeif-utils/677
 
-	include drw.london.eeif-additive-transport/58
-	include drw.london.eeif-fees/315
-	include drw.london.eeif-icepie-transport/76
-	include drw.london.eeif-indy-transport/602
-	include drw.london.eeif-nibbler-transport/345
-	include drw.london.eeif-opxl-client/429
-	include drw.london.eeif-position-transport/318
-	include drw.london.eeif-stack-transport/415
-	include drw.london.eeif-trades-transport/220
-	include drw.london.eeif-yoda-transport/341
+	include drw.london.eeif-additive-transport/63
+	include drw.london.eeif-fees/317
+	include drw.london.eeif-icepie-transport/77
+	include drw.london.eeif-indy-transport/606
+	include drw.london.eeif-nibbler-transport/347
+	include drw.london.eeif-opxl-client/433
+	include drw.london.eeif-position-transport/319
+	include drw.london.eeif-stack-transport/417
+	include drw.london.eeif-trades-transport/223
+	include drw.london.eeif-yoda-transport/342
 
 	# Libraries and containers
 	include google.guava/r06
@@ -49,8 +49,8 @@ config default
 
 	# Photons
 	include log4j/1.2.16 # For protocols
-	include drw.london.eeif-photocols-client/528
-	include drw.london.eeif-phockets/276
+	include drw.london.eeif-photocols-client/531
+	include drw.london.eeif-phockets/277
 	include drw.eeif.photons.mrchill/2
 	include com.drwtrading.london.photons.reddal/2
 	include drw.eeif.eeifoe/2
