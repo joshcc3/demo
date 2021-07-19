@@ -12,11 +12,11 @@ config default
 	include drw.london.eeif-additive-transport/63
 	include drw.london.eeif-fees/317
 	include drw.london.eeif-icepie-transport/77
-	include drw.london.eeif-indy-transport/606
+	include drw.london.eeif-indy-transport/607
 	include drw.london.eeif-nibbler-transport/347
 	include drw.london.eeif-opxl-client/433
 	include drw.london.eeif-position-transport/319
-	include drw.london.eeif-stack-transport/417
+	include drw.london.eeif-stack-transport/418
 	include drw.london.eeif-trades-transport/223
 	include drw.london.eeif-yoda-transport/342
 
