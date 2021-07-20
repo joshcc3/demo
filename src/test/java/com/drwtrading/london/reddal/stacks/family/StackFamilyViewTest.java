@@ -16,6 +16,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.indy.transport.data.BasketType;
+import com.drwtrading.london.indy.transport.data.DefinitionState;
 import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.indy.transport.data.IndexCashComponent;
 import com.drwtrading.london.indy.transport.data.IndexConstituent;
@@ -144,7 +145,7 @@ public class StackFamilyViewTest {
                 List.of(new IndexConstituent(new InstrumentDef(constituentInstID, InstType.EQUITY, source, true, constituentBBGCode, true),
                         1, 50, 1));
         final List<IndexCashComponent> cashComponents = List.of(new IndexCashComponent(ccy, cashUnits, 50));
-        final IndexDef indexDef = new IndexDef("TEST", IndexDefProvider.ISHARES, 0, ccy, source, constituents, cashComponents, indexType);
+        final IndexDef indexDef = new IndexDef("TEST", IndexDefProvider.ISHARES, 0, ccy, source, constituents, cashComponents, indexType, DefinitionState.OK);
         return new ETFDef(instDefs, indexDef, basketType);
     }
 
