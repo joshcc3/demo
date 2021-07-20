@@ -796,12 +796,8 @@ public class Main {
         final IndyClient indyListener = new IndyClient(channels.instDefs, channels.etfDefs, channels.symbolDescs);
 
         final RFQCommunityPublisher rfqSymbolCommunityPublisher = new RFQCommunityPublisher(channels.communitySymbols);
+        channels.etfDefs.subscribe(selectIOFiber, rfqSymbolCommunityPublisher::setCommunityFromETF);
         channels.searchResults.subscribe(selectIOFiber, rfqSymbolCommunityPublisher::setSearchResult);
-        for (final Map.Entry<StackCommunity, TypedChannel<String>> communityChannels : channels.communityIsins.entrySet()) {
-            final StackCommunity community = communityChannels.getKey();
-            final TypedChannel<String> channel = communityChannels.getValue();
-            channel.subscribe(selectIOFiber, isin -> rfqSymbolCommunityPublisher.setCommunityForIsin(community, isin));
-        }
 
         final String indyUsername = indyConfig.getString("username");
         final IFuseBox<IndyTransportComponents> indyMonitor =

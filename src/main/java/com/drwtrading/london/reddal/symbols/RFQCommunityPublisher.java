@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.symbols;
 
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
+import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.reddal.stacks.family.StackFamilyView;
 
 import java.util.EnumMap;
@@ -52,4 +53,10 @@ public class RFQCommunityPublisher {
         }
     }
 
+    public void setCommunityFromETF(final ETFDef etfDef) {
+        final String isin = etfDef.instDefs.iterator().next().instID.isin;
+        final StackCommunity community = StackCommunity.getForIndexType(etfDef.indexDef.indexType);
+        this.isinCommunities.put(isin, community);
+        publishSearchResultCommunity(community, searchResultCommunities.get(isin));
+    }
 }
