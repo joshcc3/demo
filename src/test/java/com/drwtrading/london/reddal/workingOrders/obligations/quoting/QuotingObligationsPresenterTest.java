@@ -41,7 +41,7 @@ public class QuotingObligationsPresenterTest {
     public void basicTest() {
         final QuotingObligationsPresenter presenter =
                 new QuotingObligationsPresenter(EnumSet.of(StackCommunity.DM, StackCommunity.FI), selectIO, webLog);
-
+        presenter.setSymbol(StackCommunity.DM, SYMBOL);
         final QuotingState quotingState = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
 
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
@@ -68,6 +68,10 @@ public class QuotingObligationsPresenterTest {
         final QuotingState quotingState2 = new QuotingState(2, 2, SYMBOL2, false, SYMBOL2);
         final QuotingState quotingState3 = new QuotingState(3, 3, SYMBOL3, false, SYMBOL3);
 
+        presenter.setSymbol(StackCommunity.DM, SYMBOL);
+        presenter.setSymbol(StackCommunity.DM, SYMBOL2);
+        presenter.setSymbol(StackCommunity.DM, SYMBOL3);
+
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, quotingState1);
         presenter.setQuotingState(NIBBLER, quotingState2);
@@ -91,9 +95,9 @@ public class QuotingObligationsPresenterTest {
 
     @Test
     public void multiCommunityTest() {
-        final QuotingObligationsPresenter presenter =
-                new QuotingObligationsPresenter(EnumSet.of(StackCommunity.DM, StackCommunity.FI, StackCommunity.FC, StackCommunity.CR),
-                        selectIO, webLog);
+        final QuotingObligationsPresenter presenter = new QuotingObligationsPresenter(
+                EnumSet.of(StackCommunity.EXILES, StackCommunity.DM, StackCommunity.FI, StackCommunity.FC, StackCommunity.CR), selectIO,
+                webLog);
 
         final QuotingState quotingState1 = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
         final QuotingState quotingState2 = new QuotingState(2, 2, SYMBOL2, false, SYMBOL2);
@@ -107,6 +111,12 @@ public class QuotingObligationsPresenterTest {
         presenter.setQuotingState(NIBBLER, quotingState3);
         presenter.setQuotingState(NIBBLER, quotingState4);
         presenter.setQuotingState(NIBBLER, quotingState5);
+
+        presenter.setSymbol(StackCommunity.DM, SYMBOL);
+        presenter.setSymbol(StackCommunity.DM, SYMBOL2);
+        presenter.setSymbol(StackCommunity.DM, SYMBOL3);
+        presenter.setSymbol(StackCommunity.DM, SYMBOL4);
+        presenter.setSymbol(StackCommunity.DM, SYMBOL5);
 
         presenter.everythingOn("DM", inboundData);
         Mockito.verify(nibblerHandler).startQuoter(1, USER);
@@ -162,6 +172,8 @@ public class QuotingObligationsPresenterTest {
         final QuotingObligationsPresenter presenter =
                 new QuotingObligationsPresenter(EnumSet.of(StackCommunity.DM, StackCommunity.FI, StackCommunity.FC), selectIO, webLog);
 
+        presenter.setSymbol(StackCommunity.DM, SYMBOL);
+
         final QuotingState quotingState = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, quotingState);
@@ -184,6 +196,8 @@ public class QuotingObligationsPresenterTest {
         final QuotingObligationsPresenter presenter =
                 new QuotingObligationsPresenter(EnumSet.of(StackCommunity.DM, StackCommunity.FI, StackCommunity.FC), selectIO, webLog);
 
+        presenter.setSymbol(StackCommunity.DM, SYMBOL);
+
         final QuotingState quotingState = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, quotingState);
@@ -196,6 +210,7 @@ public class QuotingObligationsPresenterTest {
 
         presenter.setEnabledState("DM", SYMBOL, null);
         presenter.startStrategy(StackCommunity.DM, SYMBOL, USER);
+
 
         Mockito.verify(nibblerHandler).startQuoter(1, USER);
         Mockito.reset(nibblerHandler);
@@ -215,12 +230,15 @@ public class QuotingObligationsPresenterTest {
         final QuotingObligationsPresenter presenter =
                 new QuotingObligationsPresenter(EnumSet.of(StackCommunity.DM, StackCommunity.FI, StackCommunity.FC), selectIO, webLog);
 
+        presenter.setSymbol(StackCommunity.DM, SYMBOL);
+
         final QuotingState quotingState = new QuotingState(1, 1, SYMBOL, false, SYMBOL);
         presenter.setNibblerHandler(NIBBLER, nibblerHandler);
         presenter.setQuotingState(NIBBLER, quotingState);
 
         presenter.setQuotingState(NIBBLER, new QuotingState(1, 1, SYMBOL, true, SYMBOL));
         presenter.setEnabledState("DM", SYMBOL, null);
+        presenter.setSymbol(StackCommunity.DM, SYMBOL);
 
         Mockito.verify(nibblerHandler).stopQuoter(1);
     }
