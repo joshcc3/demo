@@ -1,10 +1,10 @@
 
 function addSortedDiv(tableRows, row, comparator) {
 
-	var bottom = 0;
-	var top = tableRows.length;
+	let bottom = 0;
+	let top = tableRows.length;
 	while (bottom < top - 1) {
-		var mid = Math.floor((bottom + top) / 2);
+		const mid = Math.floor((bottom + top) / 2);
 
 		if (0 < comparator($(row), $(tableRows[mid]))) {
 			bottom = mid;

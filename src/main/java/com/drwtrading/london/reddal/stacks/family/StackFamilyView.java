@@ -852,15 +852,19 @@ public class StackFamilyView {
 
     private boolean checkFamilyAddition(final List<String> errors, final List<FamilyCreationRequest> definitions,
             final Set<String> resultingFamilyNames, final String parentListing, final String familyName) {
+
         boolean allOk = checkFamilyName(familyName, parentListing, errors);
         if (allOk) {
-            final InstrumentID instID = searchResults.get(parentListing).instID;
 
-            final Set<String> allChildren = filterToAvailableChildren(fungibleInsts.get(instID.isin));
+            final InstrumentID instID = searchResults.get(parentListing).instID;
+            final LinkedHashSet<String> fungibleChildren = fungibleInsts.get(instID.isin);
+
+            final Set<String> allChildren = filterToAvailableChildren(fungibleChildren);
             if (allChildren.isEmpty()) {
-                errors.add("No children available for " + instID.isin + " from " + fungibleInsts.get(instID.isin));
+                errors.add("No children available for " + instID.isin + " from " + fungibleChildren);
                 allOk = false;
             }
+
             for (final String child : allChildren) {
                 allOk = checkChild(instID.isin, child, errors) && allOk;
             }
@@ -878,18 +882,19 @@ public class StackFamilyView {
     }
 
     private Set<String> filterToAvailableChildren(final LinkedHashSet<String> children) {
+
+        final Set<String> result = new HashSet<>();
+
         if (null != children) {
-            final Set<String> result = new HashSet<>();
 
             for (final String child : children) {
                 if (isChildAnOrphan(child, childrenUIData.containsKey(child))) {
                     result.add(child);
                 }
             }
-            return result;
-        } else {
-            return new HashSet<>();
         }
+
+        return result;
     }
 
     private static boolean isOTCChild(final String isin, final String child) {
