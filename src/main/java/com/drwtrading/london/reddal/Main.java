@@ -62,9 +62,10 @@ import com.drwtrading.london.eeif.yoda.transport.cache.YodaClientCacheFactory;
 import com.drwtrading.london.eeif.yoda.transport.cache.YodaNullClient;
 import com.drwtrading.london.eeif.yoda.transport.io.YodaClientHandler;
 import com.drwtrading.london.icepie.transport.IcePieTransportComponents;
-import com.drwtrading.london.icepie.transport.data.FreeTextValue;
+import com.drwtrading.london.icepie.transport.data.LadderTextFreeText;
 import com.drwtrading.london.icepie.transport.data.LaserLineValue;
 import com.drwtrading.london.icepie.transport.io.IcePieCacheFactory;
+import com.drwtrading.london.icepie.transport.io.LadderTextNumber;
 import com.drwtrading.london.indy.transport.IndyTransportComponents;
 import com.drwtrading.london.indy.transport.cache.IndyCacheFactory;
 import com.drwtrading.london.jetlang.DefaultJetlangFactory;
@@ -83,6 +84,7 @@ import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.NoMDSubscriptions;
 import com.drwtrading.london.reddal.data.ibook.ReddalMDTransportClient;
 import com.drwtrading.london.reddal.icepie.FreeTextCacheListener;
+import com.drwtrading.london.reddal.icepie.LadderTextNumberCacheListener;
 import com.drwtrading.london.reddal.icepie.LaserLineCacheListener;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
 import com.drwtrading.london.reddal.ladders.LadderMessageRouter;
@@ -916,17 +918,21 @@ public class Main {
                 new ExpandedDetailResourceMonitor<>(app.monitor, "IcePie", app.errorLog, IcePieTransportComponents.class,
                         ReddalComponents.ICE_PIE);
 
-        final TransportCache<?, String, FreeTextValue> freeTextCache =
+        final TransportCache<?, String, LadderTextFreeText> freeTextCache =
                 new TransportCache<>(icePieMonitor, IcePieTransportComponents.FREE_TEXT_CACHE);
+        final TransportCache<?, String, LadderTextNumber> numberCache =
+                new TransportCache<>(icePieMonitor, IcePieTransportComponents.NUMBER_CACHE);
         final TransportCache<?, String, LaserLineValue> laserLineCache =
                 new TransportCache<>(icePieMonitor, IcePieTransportComponents.LASER_LINE_CACHE);
 
         final TransportTCPKeepAliveConnection<?, ?> client =
-                IcePieCacheFactory.createClient(app.selectIO, app.config.getGroup("icepie"), icePieMonitor, freeTextCache, laserLineCache,
-                        app.appName);
+                IcePieCacheFactory.createClient(app.selectIO, app.config.getGroup("icepie"), icePieMonitor, freeTextCache, numberCache,
+                        laserLineCache, app.appName);
 
-        final ITransportCacheListener<String, FreeTextValue> listener = new FreeTextCacheListener(channels.ladderText);
-        freeTextCache.addListener(listener, true);
+        final ITransportCacheListener<String, LadderTextFreeText> textListener = new FreeTextCacheListener(channels.ladderText);
+        freeTextCache.addListener(textListener, true);
+        final ITransportCacheListener<String, LadderTextNumber> numberListener = new LadderTextNumberCacheListener(channels.ladderNumber);
+        numberCache.addListener(numberListener, true);
 
         final ITransportCacheListener<String, LaserLineValue> laserLineListener = new LaserLineCacheListener(channels.laserLineData);
         laserLineCache.addListener(laserLineListener, true);
@@ -1007,6 +1013,7 @@ public class Main {
 
         channels.nibblerTransportConnected.subscribe(fiberBuilder.getFiber(), ladderPresenter::setNibblerConnected);
         channels.ladderText.subscribe(displaySelectIO, ladderPresenter::setLadderText);
+        channels.ladderNumber.subscribe(displaySelectIO, ladderPresenter::setLadderNumber);
         channels.isinsGoingEx.subscribe(fiberBuilder.getFiber(), ladderPresenter::setISINsGoingEx);
 
         channels.laserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);

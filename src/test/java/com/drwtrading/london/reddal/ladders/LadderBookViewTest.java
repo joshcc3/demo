@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.ladders;
 
-import com.drwtrading.london.icepie.transport.data.FreeTextCell;
+import com.drwtrading.london.icepie.transport.data.LadderTextCell;
 import com.drwtrading.london.icepie.transport.data.LaserLineType;
 import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 import org.testng.Assert;
@@ -19,7 +19,7 @@ public class LadderBookViewTest {
 
     @Test
     public void allFreeTextCellEnumsMappedToTransportTest() {
-        final FreeTextCell[] transportCells = FreeTextCell.values();
+        final LadderTextCell[] transportCells = LadderTextCell.values();
         final ReddalFreeTextCell[] reddalCells = ReddalFreeTextCell.values();
         Assert.assertEquals(transportCells.length, reddalCells.length);
         for (int i = 0; i < transportCells.length; i++) {
@@ -29,8 +29,8 @@ public class LadderBookViewTest {
 
     @Test
     public void freeTextCellsMappedCorrectlyTest() {
-        for (final Map.Entry<FreeTextCell, ReddalFreeTextCell> entries : ReddalFreeTextCell.FREETEXT_CELL_TO_REDDAL_FREETEXT_CELL_MAP.entrySet()) {
-            Assert.assertEquals(entries.getKey(), FreeTextCell.valueOf(entries.getValue().name()));
+        for (final Map.Entry<LadderTextCell, ReddalFreeTextCell> entries : ReddalFreeTextCell.FREETEXT_CELL_TO_REDDAL_FREETEXT_CELL_MAP.entrySet()) {
+            Assert.assertEquals(entries.getKey(), LadderTextCell.valueOf(entries.getValue().name()));
             Assert.assertEquals(ReddalFreeTextCell.valueOf(entries.getKey().name()), entries.getValue());
         }
     }

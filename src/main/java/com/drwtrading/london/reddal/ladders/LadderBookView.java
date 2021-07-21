@@ -569,6 +569,10 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
+    public PricingMode getActivePricingMode() {
+        return pricingModes.get();
+    }
+
     private long getCenterPrice() {
 
         final IBook<?> book = marketData.getBook();

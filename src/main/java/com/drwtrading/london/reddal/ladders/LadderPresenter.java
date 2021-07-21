@@ -40,6 +40,7 @@ import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPref;
 import com.drwtrading.london.reddal.ladders.settings.LadderSettingsPrefLoaded;
 import com.drwtrading.london.reddal.ladders.settings.LadderSettingsStoreLadderPref;
 import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
+import com.drwtrading.london.reddal.opxl.LadderNumberUpdate;
 import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
 import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
@@ -461,6 +462,14 @@ public class LadderPresenter implements IStackPresenterCallback {
         for (final LadderTextUpdate ladderText : ladderTexts) {
             final LadderMetaData metaData = getMetadataBySymbol(ladderText.symbol);
             metaData.setLadderText(ladderText);
+        }
+    }
+
+    public void setLadderNumber(final Collection<LadderNumberUpdate> ladderNumberUpdates) {
+
+        for (final LadderNumberUpdate ladderText : ladderNumberUpdates) {
+            final LadderMetaData metaData = getMetadataBySymbol(ladderText.symbol);
+            metaData.setLadderNumber(ladderText);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.drwtrading.london.reddal.data;
 
 import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
+import com.drwtrading.london.reddal.opxl.LadderNumberUpdate;
 import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
 import com.drwtrading.london.reddal.pks.PKSExposure;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
@@ -17,7 +18,8 @@ public class LadderMetaData {
     public String displaySymbol;
 
     public final Map<ReddalFreeTextCell, String> freeTextCells;
-    public final Map<ReddalFreeTextCell, String> freeTextDescription;
+    public final Map<ReddalFreeTextCell, LadderNumberUpdate> ladderTextNumberCells;
+    public final Map<ReddalFreeTextCell, String> ladderTextDescription;
 
     public final LazilyFormattedMetadataLong deskPosition;
 
@@ -39,7 +41,8 @@ public class LadderMetaData {
         this.pksPosition = new LazilyFormattedMetadataDouble();
 
         this.freeTextCells = new EnumMap<>(ReddalFreeTextCell.class);
-        this.freeTextDescription = new EnumMap<>(ReddalFreeTextCell.class);
+        this.ladderTextNumberCells = new EnumMap<>(ReddalFreeTextCell.class);
+        this.ladderTextDescription = new EnumMap<>(ReddalFreeTextCell.class);
     }
 
     public void onLadderText(final LadderText ladderText) {
@@ -51,8 +54,17 @@ public class LadderMetaData {
     }
 
     public void setLadderText(final LadderTextUpdate ladderText) {
-        this.freeTextCells.put(ladderText.cell, ladderText.text);
-        this.freeTextDescription.put(ladderText.cell, ladderText.description);
+        final ReddalFreeTextCell cell = ladderText.cell;
+        this.freeTextCells.put(cell, ladderText.text);
+        this.ladderTextNumberCells.remove(cell);
+        this.ladderTextDescription.put(cell, ladderText.description);
+    }
+
+    public void setLadderNumber(final LadderNumberUpdate ladderNumber) {
+        final ReddalFreeTextCell cell = ladderNumber.cell;
+        this.ladderTextNumberCells.put(cell, ladderNumber);
+        this.freeTextCells.remove(cell);
+        this.ladderTextDescription.put(cell, ladderNumber.description);
     }
 
     public void setDeskPosition(final DecimalFormat formatter, final long position) {

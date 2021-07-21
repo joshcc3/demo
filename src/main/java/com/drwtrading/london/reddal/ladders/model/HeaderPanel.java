@@ -128,7 +128,7 @@ public class HeaderPanel {
         }
     }
 
-    public void setFreeText(final ReddalFreeTextCell cell, final String text) {
+    public void setLadderText(final ReddalFreeTextCell cell, final String text) {
         ui.txt(cell.htmlID, text);
     }
 

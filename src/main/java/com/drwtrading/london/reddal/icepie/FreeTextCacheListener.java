@@ -1,7 +1,7 @@
 package com.drwtrading.london.reddal.icepie;
 
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
-import com.drwtrading.london.icepie.transport.data.FreeTextValue;
+import com.drwtrading.london.icepie.transport.data.LadderTextFreeText;
 import com.drwtrading.london.reddal.SelectIOChannel;
 import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class FreeTextCacheListener implements ITransportCacheListener<String, FreeTextValue> {
+public class FreeTextCacheListener implements ITransportCacheListener<String, LadderTextFreeText> {
 
     private final SelectIOChannel<Collection<LadderTextUpdate>> ladderTextChannel;
     private List<LadderTextUpdate> dirty;
@@ -21,13 +21,13 @@ public class FreeTextCacheListener implements ITransportCacheListener<String, Fr
     }
 
     @Override
-    public boolean initialValue(final int transportID, final FreeTextValue item) {
+    public boolean initialValue(final int transportID, final LadderTextFreeText item) {
         updateValue(transportID, item);
         return true;
     }
 
     @Override
-    public boolean updateValue(final int transportID, final FreeTextValue item) {
+    public boolean updateValue(final int transportID, final LadderTextFreeText item) {
         if (item.seqNum >= 0) {
             final ReddalFreeTextCell cell = ReddalFreeTextCell.getFromTransportCell(item.cell);
             final LadderTextUpdate ladderText = new LadderTextUpdate(item.symbol, cell, item.text, item.description);

@@ -2,13 +2,19 @@ package com.drwtrading.london.reddal.ladders;
 
 import com.drwtrading.london.eeif.nibbler.transport.data.tradingData.TheoValue;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.User;
+import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
+import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
+import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
+import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
+import com.drwtrading.london.icepie.transport.io.LadderTextNumberUnits;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
@@ -28,6 +34,7 @@ import com.drwtrading.london.reddal.ladders.model.HeaderPanel;
 import com.drwtrading.london.reddal.ladders.model.LadderViewModel;
 import com.drwtrading.london.reddal.ladders.model.LeftHandPanel;
 import com.drwtrading.london.reddal.ladders.model.QtyButton;
+import com.drwtrading.london.reddal.opxl.LadderNumberUpdate;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntrySymbolChannel;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderUpdatesForSymbol;
@@ -125,6 +132,7 @@ public class LadderView implements UiEventHandler {
     private final FXCalc<?> fxCalc;
     private final FeesCalc feesCalc;
     private final DecimalFormat feeDF;
+    private final DecimalFormat ladderTextDF;
     private final Publisher<RecenterLaddersForUser> recenterLaddersForUser;
     private final Publisher<LadderClickTradingIssue> ladderClickTradingIssuePublisher;
     private final Map<String, OrderEntrySymbolChannel> orderEntryMap;
@@ -188,6 +196,7 @@ public class LadderView implements UiEventHandler {
         this.fxCalc = fxCalc;
         this.feesCalc = feesCalc;
         this.feeDF = feeDF;
+        this.ladderTextDF = NumberFormatUtil.getDF("0.#");
 
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
@@ -473,9 +482,31 @@ public class LadderView implements UiEventHandler {
 
                 final ReddalFreeTextCell cell = ladderText.getKey();
                 final String text = ladderText.getValue();
-                headerPanel.setFreeText(cell, text);
+                headerPanel.setLadderText(cell, text);
 
-                final String cellDescription = metaData.freeTextDescription.get(cell);
+                final String cellDescription = metaData.ladderTextDescription.get(cell);
+                if (cellDescription != null) {
+                    headerPanel.setCellDescription(cell, cellDescription);
+                }
+            }
+
+            // Ladder Numbers
+            for (final Map.Entry<ReddalFreeTextCell, LadderNumberUpdate> ladderNumber : metaData.ladderTextNumberCells.entrySet()) {
+
+                final ReddalFreeTextCell cell = ladderNumber.getKey();
+                final LadderNumberUpdate update = ladderNumber.getValue();
+                final double value = (double) update.value / Constants.NORMALISING_FACTOR;
+                final Double refPrice = getRefPrice();
+                final double convertedValue;
+                if (null == refPrice) {
+                    convertedValue = value;
+                } else {
+                    convertedValue = convertFrom(bookView.getActivePricingMode(), update.units, value, refPrice);
+                }
+                final String formattedValue = formatNumber(convertedValue, bookView.getActivePricingMode(), update.units);
+                headerPanel.setLadderText(cell, formattedValue);
+
+                final String cellDescription = metaData.ladderTextDescription.get(cell);
                 if (cellDescription != null) {
                     headerPanel.setCellDescription(cell, cellDescription);
                 }
@@ -495,6 +526,39 @@ public class LadderView implements UiEventHandler {
         if (null != stackData) {
             final double uppyDownyValue = stackData.getPriceOffsetTickSize();
             leftHandPanel.setBPSTooltip(uppyDownyValue);
+        }
+    }
+
+    private String formatNumber(final double convertedValue, final PricingMode activePricingMode, final LadderTextNumberUnits units) {
+        final double absVal = Math.abs(convertedValue);
+
+        if (PricingMode.BPS == activePricingMode && LadderTextNumberUnits.RAW != units) {
+            if (convertedValue >= 100) {
+                return ladderTextDF.format(convertedValue / 100) + '%';
+            } else {
+                return ladderTextDF.format(convertedValue);
+            }
+        } else {
+            if (absVal > 1_000_000_000) {
+                return (int) (convertedValue / 1_000_000_000) + "B";
+            } else if (absVal > 1_000_000) {
+                return (int) (convertedValue / 1_000_000) + "M";
+            } else if (absVal > 1_000) {
+                return (int) (convertedValue / 1_000) + "K";
+            } else {
+                return ladderTextDF.format(convertedValue);
+            }
+        }
+    }
+
+    private static double convertFrom(final PricingMode activePricingMode, final LadderTextNumberUnits units, final double value,
+            final double refPrice) {
+        if (PricingMode.BPS == activePricingMode && LadderTextNumberUnits.EFP == units) {
+            return value / refPrice * 1_00_00;
+        } else if (PricingMode.EFP == activePricingMode && LadderTextNumberUnits.BPS == units) {
+            return value / 1_00_00 * refPrice;
+        } else {
+            return value;
         }
     }
 
@@ -937,4 +1001,21 @@ public class LadderView implements UiEventHandler {
         Unknown
     }
 
+    private Double getRefPrice() {
+        if (null == marketData || null == marketData.getBook()) {
+            return null;
+        } else {
+            final IBook<?> book = marketData.getBook();
+            final IBookLevel bestBid = book.getBestBid();
+            final IBookLevel bestAsk = book.getBestAsk();
+            final IBookReferencePrice yestClose = book.getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
+            if (book.isValid() && null != bestBid && null != bestAsk) {
+                return ((bestBid.getPrice() >> 1) + (bestAsk.getPrice() >> 1)) / (double) Constants.NORMALISING_FACTOR;
+            } else if (book.isValid() && yestClose.isValid()) {
+                return yestClose.getPrice() / (double) Constants.NORMALISING_FACTOR;
+            } else {
+                return null;
+            }
+        }
+    }
 }
