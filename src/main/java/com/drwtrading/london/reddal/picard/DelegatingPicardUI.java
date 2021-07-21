@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.picard;
 
+import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
 import com.drwtrading.london.reddal.symbols.DisplaySymbol;
 
 import java.util.HashMap;
@@ -7,68 +8,47 @@ import java.util.Map;
 
 public class DelegatingPicardUI {
 
-    private final PicardUI fiPicardUI;
-    private final PicardUI fcPicardUI;
-    private final PicardUI emPicardUI;
-    private final PicardUI dmPicardUI;
-    private final PicardUI crPicardUI;
+    private final Map<String, PicardUI> symbolToUI;
 
-    private final Map<String, PicardUI> isinToUI;
+    private final Map<StackCommunity, PicardUI> picardUIs;
+    private final PicardUI allView;
 
-    private final PicardUI defaultUI;
+    public DelegatingPicardUI(final Map<StackCommunity, PicardUI> picardUIs, final PicardUI allView) {
 
-    public DelegatingPicardUI(final PicardUI fiPicardUI, final PicardUI fcPicardUI, final PicardUI emPicardUI, final PicardUI dmPicardUI,
-            final PicardUI crPicardUI) {
-
-        this.fiPicardUI = fiPicardUI;
-        this.fcPicardUI = fcPicardUI;
-        this.emPicardUI = emPicardUI;
-        this.dmPicardUI = dmPicardUI;
-        this.crPicardUI = crPicardUI;
-        isinToUI = new HashMap<>();
-        defaultUI = dmPicardUI;
+        this.picardUIs = picardUIs;
+        this.allView = allView;
+        this.symbolToUI = new HashMap<>();
     }
 
-    public void addFIIsin(final String isin) {
-        isinToUI.put(isin, fiPicardUI);
-    }
-
-    public void addFCIsin(final String isin) {
-        isinToUI.put(isin, fcPicardUI);
-    }
-
-    public void addEMIsin(final String isin) {
-        isinToUI.put(isin, emPicardUI);
-    }
-
-    public void addCRIsin(final String isin) {
-        isinToUI.put(isin, crPicardUI);
-    }
-
-    public void addDMIsin(final String isin) {
-        isinToUI.put(isin, dmPicardUI);
+    public void addSymbol(final StackCommunity community, final String symbol) {
+        final PicardUI picardUI = picardUIs.get(community);
+        if (null != picardUI) {
+            symbolToUI.put(symbol, picardUI);
+        }
     }
 
     public void addPicardRow(final PicardRowWithInstID row) {
-        final PicardUI picardUI = isinToUI.getOrDefault(row.instrumentID.isin, defaultUI);
-        picardUI.addPicardRow(row);
+        final PicardUI picardUI = symbolToUI.get(row.symbol);
+        if (null != picardUI) {
+            picardUI.addPicardRow(row);
+        }
+        allView.addPicardRow(row);
     }
 
     public void setDisplaySymbol(final DisplaySymbol displaySymbol) {
-        fiPicardUI.setDisplaySymbol(displaySymbol);
-        fcPicardUI.setDisplaySymbol(displaySymbol);
-        emPicardUI.setDisplaySymbol(displaySymbol);
-        dmPicardUI.setDisplaySymbol(displaySymbol);
-        crPicardUI.setDisplaySymbol(displaySymbol);
+        for (final PicardUI ui : picardUIs.values()) {
+            ui.setDisplaySymbol(displaySymbol);
+        }
+        allView.setDisplaySymbol(displaySymbol);
     }
 
     public long flush() {
-        final long delay1 = fiPicardUI.flush();
-        final long delay2 = emPicardUI.flush();
-        final long delay3 = dmPicardUI.flush();
-        final long delay4 = fcPicardUI.flush();
-        final long delay5 = crPicardUI.flush();
-        return Math.min(Math.min(delay4, Math.min(delay3, Math.min(delay1, delay2))), delay5);
+        long nextDelay = Long.MAX_VALUE;
+        for (final PicardUI ui : picardUIs.values()) {
+            nextDelay = Math.min(nextDelay, ui.flush());
+        }
+        nextDelay = Math.min(allView.flush(), nextDelay);
+        return nextDelay;
     }
 
 }
