@@ -35,7 +35,9 @@ import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
 import com.drwtrading.london.eeif.utils.io.channels.IOConfigParser;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
+import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.marketData.fx.md.FXMDUtils;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.MDTransportComponents;
@@ -47,6 +49,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.monitoring.IgnoredFuseBox;
 import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredFuseBox;
+import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
@@ -123,6 +126,7 @@ import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.LiquidityFinderViewUI;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 import com.drwtrading.london.reddal.picard.PicardRow;
+import com.drwtrading.london.reddal.picard.PicardRowState;
 import com.drwtrading.london.reddal.picard.PicardRowWithInstID;
 import com.drwtrading.london.reddal.picard.PicardSounds;
 import com.drwtrading.london.reddal.picard.PicardSpotter;
@@ -1464,11 +1468,6 @@ public class Main {
             final TypedChannel<StackRunnableInfo> runnableInfo, final SelectIOChannel<Set<String>> picardDMFilterSymbols,
             final WebApplication webApp) {
 
-        final PicardUI picardDM =
-                setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.of(InstType.ETF),
-                        PicardSounds.ETF, webApp, "picardetf");
-        picardDMFilterSymbols.subscribe(selectIO, picardDM::setOPXLFilterList);
-
         final PicardUI allViews =
                 setupPicardUI(selectIO, fiber, webLog, recenterLadderChannel, displaySymbol, runnableInfo, EnumSet.of(InstType.ETF),
                         PicardSounds.ETF, webApp, "picardetf-all");
@@ -1486,7 +1485,8 @@ public class Main {
                 stringTypedChannel.subscribe(fiber, symbol -> delegatingUI.addSymbol(community, symbol));
             }
         }
-
+        final PicardUI picardDM = communityScreens.get(StackCommunity.DM);
+        picardDMFilterSymbols.subscribe(selectIO, picardDM::setOPXLFilterList);
         picardRows.subscribe(fiber, delegatingUI::addPicardRow);
     }
 
