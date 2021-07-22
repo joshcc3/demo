@@ -1,5 +1,7 @@
 package com.drwtrading.london.reddal.data;
 
+import com.drwtrading.london.eeif.utils.Constants;
+
 import java.text.DecimalFormat;
 
 public class LazilyFormattedMetadataDouble {
@@ -18,7 +20,7 @@ public class LazilyFormattedMetadataDouble {
 
     public void updateValue(final DecimalFormat formatter, final double value) {
 
-        this.isDirty = this.value != value || null == formattedValue;
+        this.isDirty |= Constants.EPSILON < Math.abs(this.value - value) || null == formattedValue;
         this.formatter = formatter;
         this.value = value;
         this.isInitialised = true;
