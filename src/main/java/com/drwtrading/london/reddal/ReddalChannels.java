@@ -103,6 +103,7 @@ class ReddalChannels {
     final TypedChannel<OrderEntryCommandToServer> orderEntryCommandToServer;
     final TypedChannel<OrderEntrySymbolChannel> orderEntrySymbols;
     final TypedChannel<ISINsGoingEx> isinsGoingEx;
+    final SelectIOChannel<Set<String>> shortSensitiveIsins;
 
     final TypedChannel<SymbolSelection> symbolSelections;
     final TypedChannel<UltimateParentMapping> ultimateParents;
@@ -170,6 +171,7 @@ class ReddalChannels {
         this.orderEntrySymbols = create(OrderEntrySymbolChannel.class);
         this.orderEntryCommandToServer = create(OrderEntryCommandToServer.class);
         this.isinsGoingEx = create(ISINsGoingEx.class);
+        this.shortSensitiveIsins = new SelectIOChannel<>();
 
         this.symbolSelections = create(SymbolSelection.class);
         this.ultimateParents = create(UltimateParentMapping.class);

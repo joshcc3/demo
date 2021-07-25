@@ -35,9 +35,7 @@ import com.drwtrading.london.eeif.utils.config.ConfigGroup;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.io.SelectIOComponents;
 import com.drwtrading.london.eeif.utils.io.channels.IOConfigParser;
-import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.MDSource;
-import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.marketData.fx.md.FXMDUtils;
 import com.drwtrading.london.eeif.utils.marketData.transport.tcpShaped.MDTransportComponents;
@@ -49,7 +47,6 @@ import com.drwtrading.london.eeif.utils.monitoring.IErrorLogger;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.monitoring.IgnoredFuseBox;
 import com.drwtrading.london.eeif.utils.monitoring.MultiLayeredFuseBox;
-import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
 import com.drwtrading.london.eeif.utils.time.SystemClock;
@@ -107,6 +104,7 @@ import com.drwtrading.london.reddal.opxl.OpxlDividendTweets;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlFXCalcUpdater;
 import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
+import com.drwtrading.london.reddal.opxl.OpxlShortSensitiveIsinsSubscriber;
 import com.drwtrading.london.reddal.opxl.UltimateParentOPXL;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
@@ -128,7 +126,6 @@ import com.drwtrading.london.reddal.picard.LiquidityFinderData;
 import com.drwtrading.london.reddal.picard.LiquidityFinderViewUI;
 import com.drwtrading.london.reddal.picard.PicardFXCalcComponents;
 import com.drwtrading.london.reddal.picard.PicardRow;
-import com.drwtrading.london.reddal.picard.PicardRowState;
 import com.drwtrading.london.reddal.picard.PicardRowWithInstID;
 import com.drwtrading.london.reddal.picard.PicardSounds;
 import com.drwtrading.london.reddal.picard.PicardSpotter;
@@ -883,6 +880,10 @@ public class Main {
         final OpxlExDateSubscriber isinsGoingEx = new OpxlExDateSubscriber(opxlSelectIO, opxlMonitor, logDir, channels.isinsGoingEx);
         app.addStartUpAction(isinsGoingEx::start);
 
+        final OpxlShortSensitiveIsinsSubscriber shortSensitiveIsinsSubscriber =
+                new OpxlShortSensitiveIsinsSubscriber(opxlSelectIO, opxlMonitor, logDir, channels.shortSensitiveIsins);
+        app.addStartUpAction(shortSensitiveIsinsSubscriber::start);
+
         if (isFuturesSearchable) {
             final OpxlDividendTweets divTweets = new OpxlDividendTweets(opxlSelectIO, opxlMonitor, logDir, channels.stockAlerts);
             app.addStartUpAction(divTweets::start);
@@ -1015,6 +1016,7 @@ public class Main {
         channels.ladderText.subscribe(displaySelectIO, ladderPresenter::setLadderText);
         channels.ladderNumber.subscribe(displaySelectIO, ladderPresenter::setLadderNumber);
         channels.isinsGoingEx.subscribe(fiberBuilder.getFiber(), ladderPresenter::setISINsGoingEx);
+        channels.shortSensitiveIsins.subscribe(displaySelectIO, ladderPresenter::setShortSensitiveIsins);
 
         channels.laserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);
         channels.ladderClickTradingIssues.subscribe(fiberBuilder.getFiber(), ladderPresenter::displayTradeIssue);

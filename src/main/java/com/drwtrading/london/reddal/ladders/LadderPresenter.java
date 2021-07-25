@@ -147,6 +147,7 @@ public class LadderPresenter implements IStackPresenterCallback {
     private final Publisher<HostWorkspaceRequest> userWorkspaceRequests;
 
     private Set<String> isinsGoingEx;
+    private Set<String> shortSensitiveIsins;
 
     public LadderPresenter(final IFuseBox<ReddalComponents> monitor, final IMDSubscriber bookSubscriber, final String ewokBaseURL,
             final Publisher<IOrderCmd> remoteOrderCommandByServer, final LadderOptions ladderOptions, final IPicardSpotter picardSpotter,
@@ -265,6 +266,9 @@ public class LadderPresenter implements IStackPresenterCallback {
 
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
+        }
+        if(null != shortSensitiveIsins) {
+            ladderView.setShortSensitiveIsins(shortSensitiveIsins);
         }
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
         viewsByUser.put(connected.getClient().getUserName(), ladderView);
@@ -397,6 +401,7 @@ public class LadderPresenter implements IStackPresenterCallback {
         }
         return prefs;
     }
+
 
     private static int getRollsHence(final String leg, final FutureConstant futureFromSymbol, final FutureExpiryCalc expiryCalc) {
         for (int firstExp = 0; firstExp < 8; firstExp++) {
@@ -587,6 +592,12 @@ public class LadderPresenter implements IStackPresenterCallback {
     public void setISINsGoingEx(final ISINsGoingEx isinsGoingEx) {
         this.isinsGoingEx = isinsGoingEx.isins;
         viewBySocket.values().forEach(ladderView -> ladderView.setIsinsGoingEx(isinsGoingEx.isins));
+    }
+
+
+    public void setShortSensitiveIsins(final Set<String> isins) {
+        this.shortSensitiveIsins = isins;
+        viewBySocket.values().forEach(ladderView -> ladderView.setShortSensitiveIsins(isins));
     }
 
     @Subscribe

@@ -39,6 +39,10 @@ body#search_page {
 	background-color: #d4d09b;
 }
 
+#symbol.short_sensitive {
+	border-bottom: solid 3px #8c2629;
+}
+
 div {
 	text-spacing: allow-end;
 	-webkit-box-sizing: border-box;

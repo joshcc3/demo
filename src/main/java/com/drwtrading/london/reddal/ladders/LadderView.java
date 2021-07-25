@@ -172,6 +172,8 @@ public class LadderView implements UiEventHandler {
     private ILadderBoard activeView;
     private Set<String> isinsGoingEx;
     private GoingExState exState = GoingExState.Unknown;
+    private Set<String> shortSensitiveIsins;
+    private boolean isShortSensitive;
 
     LadderView(final IFuseBox<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view,
             final String ewokBaseURL, final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
@@ -521,6 +523,8 @@ public class LadderView implements UiEventHandler {
             // Going ex
             checkGoingEx();
             ladderModel.setClass(HTML.TEXT, CSSClass.GOING_EX, exState == GoingExState.YES);
+            checkShortSensitive();
+            ladderModel.setClass(HTML.SYMBOL, CSSClass.SHORT_SENSITIVE, isShortSensitive);
         }
 
         if (null != stackData) {
@@ -979,6 +983,11 @@ public class LadderView implements UiEventHandler {
         checkGoingEx();
     }
 
+    void setShortSensitiveIsins(final Set<String> isins) {
+        this.shortSensitiveIsins = isins;
+        checkShortSensitive();
+    }
+
     private void checkGoingEx() {
 
         if (this.exState != GoingExState.Unknown) {
@@ -993,6 +1002,11 @@ public class LadderView implements UiEventHandler {
             }
         }
         this.exState = exState;
+    }
+
+    private void checkShortSensitive() {
+        final boolean bookAvailable = null != shortSensitiveIsins && null != marketData && null != marketData.getBook();
+        this.isShortSensitive = bookAvailable && this.shortSensitiveIsins.contains(marketData.getBook().getISIN());
     }
 
     enum GoingExState {
