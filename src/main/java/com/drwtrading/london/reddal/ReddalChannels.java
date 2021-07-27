@@ -51,7 +51,6 @@ import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuoteOblig
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.monitoring.stats.status.StatusStat;
-import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import drw.eeif.photons.mrchill.Position;
 import org.jetlang.channels.Channel;
@@ -127,8 +126,6 @@ class ReddalChannels {
     final TypedChannel<GTCBettermentPricesRequest> gtcBettermentRequests;
     final TypedChannel<GTCBettermentPrices> gtcBettermentResponses;
 
-    final TypedChannel<EeifConfiguration> eeifConfiguration;
-
     final TypedChannel<QuoteObligationsEnableCmd> quotingObligationsCmds;
 
     ReddalChannels() {
@@ -201,8 +198,6 @@ class ReddalChannels {
 
         this.gtcBettermentRequests = create(GTCBettermentPricesRequest.class);
         this.gtcBettermentResponses = create(GTCBettermentPrices.class);
-
-        this.eeifConfiguration = create(EeifConfiguration.class);
 
         this.quotingObligationsCmds = create(QuoteObligationsEnableCmd.class);
     }

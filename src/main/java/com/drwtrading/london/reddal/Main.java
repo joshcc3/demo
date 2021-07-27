@@ -190,7 +190,6 @@ import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
 import com.drwtrading.photocols.handlers.JetlangChannelHandler;
-import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
 import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
@@ -1285,7 +1284,18 @@ public class Main {
                 channel.subscribe(selectIOFiber, symbol -> quotingObligationsPresenter.setSymbol(community, symbol));
             }
             channels.quotingObligationsCmds.subscribe(selectIOFiber, quotingObligationsPresenter::enableQuotes);
-            final FutureObligationPresenter futureObligationPresenter = new FutureObligationPresenter();
+
+            final String futureObligationsTopic;
+            final boolean enableFutureObligations = app.config.paramExists("futureObligationsTopic");
+            if (enableFutureObligations) {
+                futureObligationsTopic = app.config.getString("futureObligationsTopic");
+            } else {
+                futureObligationsTopic = "";
+            }
+
+            final FutureObligationPresenter futureObligationPresenter =
+                    new FutureObligationPresenter(opxlClient, app.selectIO, opxlMonitor, OPXLComponents.OPXL_QUOTING_OBLIGATIONS,
+                            futureObligationsTopic, app.logDir);
 
             final IWorkingOrdersCallback bestWorkingOrderMaintainer;
 
@@ -1420,28 +1430,12 @@ public class Main {
             createWebPageWithWebSocket("quotingObligations", "quotingObligations", fibers.ui, webApp, quotingObligationsWebSocket);
             quotingObligationsWebSocket.subscribe(selectIOFiber, quotingObligationsPresenter::webControl);
 
-            final ConfigGroup indyConfigGroup = app.config.getEnabledGroup("indyConfig");
-
-            if (null != indyConfigGroup) {
-
-                channels.eeifConfiguration.subscribe(selectIOFiber, futureObligationPresenter::setEeifConfig);
-                app.addStartUpAction(() -> futureObligationPresenter.start(app.selectIO));
-
-                final InetSocketAddress indyAddress = IOConfigParser.getTargetAddress(indyConfigGroup);
-                final OnHeapBufferPhotocolsNioClient<EeifConfiguration, Void> client =
-                        OnHeapBufferPhotocolsNioClient.client(indyAddress, "0.0.0.0", EeifConfiguration.class, Void.class,
-                                fibers.indy.getFiber(), uncaughtExceptionHandler);
-
-                client.reconnectMillis(1000);
-                client.logFile(app.logDir.resolve("eeif-config.photocols.log").toFile(), fibers.logging.getFiber());
-                client.handler(new JetlangChannelHandler<>(channels.eeifConfiguration));
-                app.addStartUpAction(client::start);
-
+            if (enableFutureObligations) {
+                app.addStartUpAction(futureObligationPresenter::start);
                 final TypedChannel<WebSocketControlMessage> futureObligationsWebSocket =
                         TypedChannels.create(WebSocketControlMessage.class);
                 createWebPageWithWebSocket("futureObligations", "futureObligations", fibers.ui, webApp, futureObligationsWebSocket);
                 futureObligationsWebSocket.subscribe(selectIOFiber, futureObligationPresenter::webControl);
-
             }
         }
 

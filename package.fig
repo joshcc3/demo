@@ -54,7 +54,6 @@ config default
 	include drw.eeif.photons.mrchill/2
 	include com.drwtrading.london.photons.reddal/2
 	include drw.eeif.eeifoe/2
-	include com.drwtrading.photons.eeif.configuration/13
 	include drw.eeif.photons.signals/1
 	include com.drwtrading.photons.ladder/38
 

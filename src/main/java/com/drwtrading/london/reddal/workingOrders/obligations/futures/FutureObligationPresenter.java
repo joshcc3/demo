@@ -1,37 +1,53 @@
 package com.drwtrading.london.reddal.workingOrders.obligations.futures;
 
+import com.drwtrading.london.eeif.opxl.OpxlClient;
+import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
+import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
+import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
+import com.drwtrading.london.reddal.OPXLComponents;
+import com.drwtrading.london.reddal.opxl.QuotingObligation;
 import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.PriceQtyPair;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
 import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByBestPrice;
 import com.drwtrading.london.websocket.WebSocketViews;
-import com.drwtrading.photons.eeif.configuration.EeifConfiguration;
-import com.drwtrading.photons.eeif.configuration.QuotingObligation;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import com.drwtrading.websockets.WebSocketDisconnected;
 
+import java.nio.file.Path;
 import java.text.DecimalFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
-public class FutureObligationPresenter implements IWorkingOrdersCallback {
+public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents, Map<String, QuotingObligation>>
+        implements IWorkingOrdersCallback {
 
+    public static final String SYMBOL = "Symbol";
+    public static final String QUANTITY = "Quantity";
+    public static final String WIDTH = "Width";
     private static final long OBLIGATION_CALC_PERIOD_MILLIS = 1000;
+    private static final String TODAY = DateTimeFormatter.ofPattern(DateTimeUtil.DATE_FILE_FORMAT).format(LocalDate.now());
 
     private final Map<String, FutureObligationPerformance> performanceMap;
     private final Map<String, WorkingOrdersByBestPrice> workingOrders;
-    private final Map<String, QuotingObligation> obligations;
 
     private final WebSocketViews<IFutureObligationView> views;
-
     private final DecimalFormat oneDP;
+    private final SelectIO selectIO;
 
-    public FutureObligationPresenter() {
+    private Map<String, QuotingObligation> obligations;
 
+    public FutureObligationPresenter(final OpxlClient<OPXLComponents> opxlClient, final SelectIO callbackSelectIO,
+            final IFuseBox<OPXLComponents> monitor, final OPXLComponents component, final String topicPrefix, final Path logDir) {
+
+        super(opxlClient, callbackSelectIO, monitor, component, topicPrefix.replace("{DATE}", TODAY), logDir);
+        this.selectIO = callbackSelectIO;
         this.performanceMap = new HashMap<>();
         this.workingOrders = new HashMap<>();
         this.obligations = new HashMap<>();
@@ -41,17 +57,9 @@ public class FutureObligationPresenter implements IWorkingOrdersCallback {
         this.oneDP = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 1);
     }
 
-    public void start(final SelectIO selectIO) {
+    @Override
+    public void start() {
         selectIO.addDelayedAction(OBLIGATION_CALC_PERIOD_MILLIS, this::calcObligations);
-    }
-
-    public void setEeifConfig(final EeifConfiguration eeifConfig) {
-
-        if (eeifConfig instanceof QuotingObligation) {
-
-            final QuotingObligation quotingObligation = (QuotingObligation) eeifConfig;
-            obligations.put(quotingObligation.getSymbol(), quotingObligation);
-        }
     }
 
     @Override
@@ -129,6 +137,41 @@ public class FutureObligationPresenter implements IWorkingOrdersCallback {
         final String qtyShowing = Long.toString(performance.getQtyShowing());
 
         view.setObligation(obligation.getSymbol(), bpsObligation, qtyObligation, isObligationMet, bpsWide, qtyShowing);
+    }
+
+    @Override
+    protected boolean isConnectionWanted() {
+        return true;
+    }
+
+    @Override
+    protected Map<String, QuotingObligation> parseTable(final Object[][] opxlTable) {
+
+        final Map<String, QuotingObligation> obligationMap = new HashMap<>();
+
+        if (0 < opxlTable.length) {
+            final Object[] headerRow = opxlTable[0];
+            final int symbolCol = findColumn(headerRow, SYMBOL);
+            final int quantityCol = findColumn(headerRow, QUANTITY);
+            final int widthCol = findColumn(headerRow, WIDTH);
+
+            for (int i = 1; i < opxlTable.length; ++i) {
+                final Object[] row = opxlTable[i];
+                if (testColsPresent(row, symbolCol, quantityCol, widthCol)) {
+                    final int quantity = Integer.parseInt(row[quantityCol].toString());
+                    final int width = Integer.parseInt(row[widthCol].toString());
+                    final QuotingObligation obligation = new QuotingObligation(row[symbolCol].toString(), quantity, width, TODAY);
+                    obligationMap.put(obligation.getSymbol(), obligation);
+                }
+            }
+        }
+
+        return obligationMap;
+    }
+
+    @Override
+    protected void handleUpdate(final Map<String, QuotingObligation> previous, final Map<String, QuotingObligation> current) {
+        this.obligations = current;
     }
 
     private static FutureObligationPerformance getObligationPerformance(final QuotingObligation obligation,

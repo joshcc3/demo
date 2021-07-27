@@ -1,6 +1,6 @@
 package com.drwtrading.london.reddal.workingOrders.obligations.futures;
 
-import com.drwtrading.photons.eeif.configuration.QuotingObligation;
+import com.drwtrading.london.reddal.opxl.QuotingObligation;
 
 public class FutureObligationPerformance {
 
