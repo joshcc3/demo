@@ -11,13 +11,13 @@ public class QuotingObligation implements IJSONable, Jsonable {
     private final String symbol;
     private final int quantity;
     private final int width;
-    private final String date;
+    private final QuotingObligationType type;
 
-    public QuotingObligation(final String symbol, final int quantity, final int width, final String date) {
+    public QuotingObligation(final String symbol, final int quantity, final int width, final QuotingObligationType type) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.width = width;
-        this.date = date;
+        this.type = type;
     }
 
     @Override
@@ -25,7 +25,7 @@ public class QuotingObligation implements IJSONable, Jsonable {
         jsonWriter.add("symbol", symbol);
         jsonWriter.add("quantity", quantity);
         jsonWriter.add("width", width);
-        jsonWriter.add("date", date);
+        jsonWriter.add("type", type);
     }
 
     @Override
@@ -34,11 +34,15 @@ public class QuotingObligation implements IJSONable, Jsonable {
         writer.writeJSON(this);
     }
 
+    public QuotingObligationType getType() {
+        return type;
+    }
+
     public String getSymbol() {
         return symbol;
     }
 
-    public int getBpsWide() {
+    public int getQuotingWidth() {
         return width;
     }
 

@@ -21,7 +21,7 @@ $(function () {
 
 });
 
-function setObligation(symbol, bpsObligation, qtyObligation, obligationMet, bpsWide, qtyShowing) {
+function setObligation(symbol, type, bpsObligation, qtyObligation, obligationMet, bpsWide, qtyShowing) {
 
 	let row = Contracts[symbol];
 
@@ -29,6 +29,7 @@ function setObligation(symbol, bpsObligation, qtyObligation, obligationMet, bpsW
 		const spreadTable = $("#spreadTable");
 		row = spreadTable.find('tr.template').clone().removeClass('template');
 		Contracts[symbol] = row;
+
 		const symbolCell = row.find('.symbol');
 		symbolCell.text(symbol);
 		symbolCell.bind('click', function () {
@@ -42,6 +43,7 @@ function setObligation(symbol, bpsObligation, qtyObligation, obligationMet, bpsW
 		});
 	}
 
+	row.find('.symbol').toggleClass('widthInIndexPoints', type === 'INDEX_POINTS');
 	row.find('.bpsObligation').text(bpsObligation);
 	row.find('.qtyObligation').text(qtyObligation);
 	row.find('.bpsWide').text(bpsWide);

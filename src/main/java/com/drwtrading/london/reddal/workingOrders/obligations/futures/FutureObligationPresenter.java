@@ -9,6 +9,7 @@ import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.time.DateTimeUtil;
 import com.drwtrading.london.reddal.OPXLComponents;
 import com.drwtrading.london.reddal.opxl.QuotingObligation;
+import com.drwtrading.london.reddal.opxl.QuotingObligationType;
 import com.drwtrading.london.reddal.workingOrders.IWorkingOrdersCallback;
 import com.drwtrading.london.reddal.workingOrders.PriceQtyPair;
 import com.drwtrading.london.reddal.workingOrders.SourcedWorkingOrder;
@@ -31,8 +32,10 @@ public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents
     public static final String SYMBOL = "Symbol";
     public static final String QUANTITY = "Quantity";
     public static final String WIDTH = "Width";
+    public static final String WIDTH_TYPE = "WidthType";
     private static final long OBLIGATION_CALC_PERIOD_MILLIS = 1000;
     private static final String TODAY = DateTimeFormatter.ofPattern(DateTimeUtil.DATE_FILE_FORMAT).format(LocalDate.now());
+    public static final double INDEX_POINTS_TO_BPS_RATIO = 10000d;
 
     private final Map<String, FutureObligationPerformance> performanceMap;
     private final Map<String, WorkingOrdersByBestPrice> workingOrders;
@@ -128,15 +131,16 @@ public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents
 
         final QuotingObligation obligation = performance.getObligation();
 
-        final String bpsObligation = Integer.toString(obligation.getBpsWide());
+        final String quotingWidthObligation = Integer.toString(obligation.getQuotingWidth());
         final String qtyObligation = Integer.toString(obligation.getQuantity());
 
         final boolean isObligationMet = performance.isObligationMet();
 
-        final String bpsWide = oneDP.format(performance.getBpsWide());
+        final String widthShowing = oneDP.format(performance.getBpsWide());
         final String qtyShowing = Long.toString(performance.getQtyShowing());
 
-        view.setObligation(obligation.getSymbol(), bpsObligation, qtyObligation, isObligationMet, bpsWide, qtyShowing);
+        view.setObligation(obligation.getSymbol(), obligation.getType(), quotingWidthObligation, qtyObligation, isObligationMet,
+                widthShowing, qtyShowing);
     }
 
     @Override
@@ -154,13 +158,16 @@ public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents
             final int symbolCol = findColumn(headerRow, SYMBOL);
             final int quantityCol = findColumn(headerRow, QUANTITY);
             final int widthCol = findColumn(headerRow, WIDTH);
+            final int widthType = findColumn(headerRow, WIDTH_TYPE);
 
             for (int i = 1; i < opxlTable.length; ++i) {
                 final Object[] row = opxlTable[i];
-                if (testColsPresent(row, symbolCol, quantityCol, widthCol)) {
+                if (testColsPresent(row, symbolCol, quantityCol, widthCol, widthType)) {
+
                     final int quantity = Integer.parseInt(row[quantityCol].toString());
                     final int width = Integer.parseInt(row[widthCol].toString());
-                    final QuotingObligation obligation = new QuotingObligation(row[symbolCol].toString(), quantity, width, TODAY);
+                    final QuotingObligationType type = QuotingObligationType.valueOf(row[widthType].toString());
+                    final QuotingObligation obligation = new QuotingObligation(row[symbolCol].toString(), quantity, width, type);
                     obligationMap.put(obligation.getSymbol(), obligation);
                 }
             }
@@ -185,19 +192,28 @@ public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents
             final PriceQtyPair bidShowing = workingOrders.getPriceToQty(BookSide.BID, obligation.getQuantity());
             final PriceQtyPair askShowing = workingOrders.getPriceToQty(BookSide.ASK, obligation.getQuantity());
 
-            final double bpsWide;
+            final double indexPointsWide;
 
             if (0 < bidShowing.qty && 0 < askShowing.qty) {
-                bpsWide = (askShowing.price - bidShowing.price) * 10000d / bidShowing.price;
+                indexPointsWide = (askShowing.price - bidShowing.price) / (double) bidShowing.price;
             } else {
-                bpsWide = Double.POSITIVE_INFINITY;
+                indexPointsWide = Double.POSITIVE_INFINITY;
             }
 
             final long qtyShowing = Math.min(bidShowing.qty, askShowing.qty);
 
-            final boolean isObligationMet = bpsWide <= obligation.getBpsWide() && obligation.getQuantity() <= qtyShowing;
+            if (obligation.getType() == QuotingObligationType.BPS) {
 
-            return new FutureObligationPerformance(obligation, isObligationMet, bpsWide, qtyShowing);
+                final double bpsWide = indexPointsWide * INDEX_POINTS_TO_BPS_RATIO;
+                final boolean isObligationMet = bpsWide <= obligation.getQuotingWidth() && obligation.getQuantity() <= qtyShowing;
+                return new FutureObligationPerformance(obligation, isObligationMet, bpsWide, qtyShowing);
+            } else if (obligation.getType() == QuotingObligationType.INDEX_POINTS) {
+
+                final boolean isObligationMet = indexPointsWide <= obligation.getQuotingWidth() && obligation.getQuantity() <= qtyShowing;
+                return new FutureObligationPerformance(obligation, isObligationMet, indexPointsWide, qtyShowing);
+            } else {
+                throw new IllegalStateException("Unsupported future obligation quoting type [" + obligation.getType() + "].");
+            }
         }
     }
 

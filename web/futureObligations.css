@@ -279,6 +279,10 @@ tr.spread:hover {
 	background-color: #3a3a3a;
 }
 
+.widthInIndexPoints {
+	color: orange;
+}
+
 .obligationMet {
 	background-color: #166659;
 }
