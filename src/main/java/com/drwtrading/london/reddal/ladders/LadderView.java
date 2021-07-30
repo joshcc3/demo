@@ -5,6 +5,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
+import com.drwtrading.london.eeif.utils.marketData.InstrumentID;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
@@ -902,23 +903,8 @@ public class LadderView implements UiEventHandler {
     }
 
     private void popupEwok() {
-        final String symbol = marketData.getBook().getSymbol();
-
-        final String url;
-
-        if (symbol.endsWith(" RFQ")) {
-            if (symbol.length() > 6) { //suffix +" RFQ" e.g. "LN RFQ"
-                final int length = symbol.length() - 4;
-                final String originalSymbol = symbol.substring(0, length - 2) + ' ' + symbol.substring(length - 2, length);
-
-                url = ewokBaseURL + "/smart#" + originalSymbol;
-            } else {
-                url = ewokBaseURL + "/smart#" + symbol;
-            }
-        } else {
-            url = ewokBaseURL + "/smart#" + symbol;
-        }
-
+        final InstrumentID instID = marketData.getBook().getInstID();
+        final String url = ewokBaseURL + "/smart#" + instID.toString();
         view.popUp(url, "Ewok " + symbol, 1200, 800);
     }
 
