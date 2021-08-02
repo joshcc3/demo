@@ -549,10 +549,9 @@ public class LadderView implements UiEventHandler {
 
     private static double convertFrom(final PricingMode activePricingMode, final LadderTextNumberUnits units, final double value,
             final SymbolStackData symbolData) {
-        if (null != symbolData && null != symbolData.getTheoValue() && symbolData.getTheoValue().isValid()) {
-            final TheoValue theoValue = symbolData.getTheoValue();
-            final double nav = theoValue.getOriginalValue();
-            final double theo = theoValue.getTheoreticalValue();
+        if (null != symbolData && symbolData.getTheoLaserLine().isValid() && symbolData.getNavLaserLine().isValid()) {
+            final double nav = symbolData.getNavLaserLine().getValue() / (double) Constants.NORMALISING_FACTOR;
+            final double theo = symbolData.getTheoLaserLine().getValue() / (double) Constants.NORMALISING_FACTOR;
             if (PricingMode.BPS == activePricingMode && LadderTextNumberUnits.EFP == units) {
                 return ((value + nav) - theo) / theo * 1_00_00;
             } else if (PricingMode.EFP == activePricingMode && LadderTextNumberUnits.BPS == units) {
