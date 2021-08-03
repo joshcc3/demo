@@ -26,6 +26,7 @@ public class LadderMetaData {
     private PKSExposure pksData;
     public final LazilyFormattedMetadataDouble pksExposure;
     public final LazilyFormattedMetadataDouble pksPosition;
+    public final LadderSmoothRefValues smoothTheoNav;
 
     public String chixSwitchSymbol;
     public SpreadContractSet spreadContractSet;
@@ -43,6 +44,7 @@ public class LadderMetaData {
         this.freeTextCells = new EnumMap<>(ReddalFreeTextCell.class);
         this.ladderTextNumberCells = new EnumMap<>(ReddalFreeTextCell.class);
         this.ladderTextDescription = new EnumMap<>(ReddalFreeTextCell.class);
+        this.smoothTheoNav = new LadderSmoothRefValues();
     }
 
     public void onLadderText(final LadderText ladderText) {

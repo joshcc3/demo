@@ -19,6 +19,7 @@ import com.drwtrading.london.reddal.UserCycleRequest;
 import com.drwtrading.london.reddal.data.InstrumentMetaData;
 import com.drwtrading.london.reddal.data.LadderMetaData;
 import com.drwtrading.london.reddal.data.LadderPrefsForSymbolUser;
+import com.drwtrading.london.reddal.data.LadderSmoothRefValues;
 import com.drwtrading.london.reddal.data.NibblerLastTradeDataForSymbol;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.TradingStatusForAll;
@@ -196,7 +197,7 @@ public class LadderView implements UiEventHandler {
         this.fxCalc = fxCalc;
         this.feesCalc = feesCalc;
         this.feeDF = feeDF;
-        this.ladderTextDF = NumberFormatUtil.getDF("0.#");
+        this.ladderTextDF = NumberFormatUtil.getDF("0.##");
 
         this.recenterLaddersForUser = recenterLaddersForUser;
         this.ladderClickTradingIssuePublisher = ladderClickTradingIssuePublisher;
@@ -496,7 +497,8 @@ public class LadderView implements UiEventHandler {
                 final ReddalFreeTextCell cell = ladderNumber.getKey();
                 final LadderNumberUpdate update = ladderNumber.getValue();
                 final double value = (double) update.value / Constants.NORMALISING_FACTOR;
-                final double convertedValue = convertFrom(bookView.getActivePricingMode(), update.units, value, stackData);
+                metaData.smoothTheoNav.update(stackData);
+                final double convertedValue = convertFrom(bookView.getActivePricingMode(), update.units, value, metaData.smoothTheoNav);
                 final String formattedValue = formatNumber(convertedValue, bookView.getActivePricingMode(), update.units);
                 headerPanel.setLadderText(cell, formattedValue);
 
@@ -548,12 +550,12 @@ public class LadderView implements UiEventHandler {
     }
 
     private static double convertFrom(final PricingMode activePricingMode, final LadderTextNumberUnits units, final double value,
-            final SymbolStackData symbolData) {
-        if (null != symbolData && symbolData.getTheoLaserLine().isValid() && symbolData.getNavLaserLine().isValid()) {
-            final double nav = symbolData.getNavLaserLine().getValue() / (double) Constants.NORMALISING_FACTOR;
-            final double theo = symbolData.getTheoLaserLine().getValue() / (double) Constants.NORMALISING_FACTOR;
+            final LadderSmoothRefValues refValues) {
+        if (refValues.isValid()) {
+            final double nav = refValues.getSmoothNav();
+            final double theo = refValues.getSmoothTheo();
             if (PricingMode.BPS == activePricingMode && LadderTextNumberUnits.EFP == units) {
-                return ((value + nav) - theo) / theo * 1_00_00;
+                return value / nav * 1_00_00;
             } else if (PricingMode.EFP == activePricingMode && LadderTextNumberUnits.BPS == units) {
                 return (theo + (value / 1_00_00) * theo) - nav;
             } else {
