@@ -717,9 +717,10 @@ public class StackFamilyView {
             final String listing = instDef.bbgCode;
             final ChildUIData uiData = childrenUIData.get(listing);
             if (null != uiData && null != uiData.getFamily()) {
-                allOrphans &= StackOrphanage.ORPHANAGE.equals(uiData.getFamily());
+                final boolean isOrphan = StackOrphanage.ORPHANAGE.equals(uiData.getFamily());
+                allOrphans &= isOrphan;
                 etfFamily = null == etfFamily ? uiData.getFamily() : etfFamily;
-                allPartOfSameFamily &= null == etfFamily || etfFamily.equals(uiData.getFamily());
+                allPartOfSameFamily &= null == etfFamily || etfFamily.equals(uiData.getFamily()) || isOrphan;
             } else {
                 allPartOfSameFamily = null != etfFamily;
             }
