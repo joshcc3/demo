@@ -7,6 +7,7 @@ import com.drwtrading.london.eeif.nibbler.transport.data.types.OrderType;
 import com.drwtrading.london.eeif.nibbler.transport.data.types.Tag;
 import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.User;
+import com.drwtrading.london.eeif.utils.marketData.MDSource;
 import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
@@ -582,17 +583,17 @@ public class LadderBookView implements ILadderBoard {
 
             final IBookLevel bestBid = book.getBestBid();
             final IBookLevel bestAsk = book.getBestAsk();
-            final boolean isBookNotAuction = book.getStatus() != BookMarketState.AUCTION;
+            final boolean shouldUseBBO = book.getStatus() != BookMarketState.AUCTION || MDSource.RFQ == book.getSourceExch();
             final IBookReferencePrice auctionIndicativePrice = marketData.getBook().getRefPriceData(ReferencePoint.AUCTION_INDICATIVE);
             final IBookReferencePrice auctionSummaryPrice = marketData.getBook().getRefPriceData(ReferencePoint.AUCTION_SUMMARY);
             final IBookReferencePrice yestClose = marketData.getBook().getRefPriceData(ReferencePoint.YESTERDAY_CLOSE);
 
             final long center;
-            if (isBookNotAuction && null != bestBid && null != bestAsk) {
+            if (shouldUseBBO && null != bestBid && null != bestAsk) {
                 center = (bestBid.getPrice() + bestAsk.getPrice()) / 2;
-            } else if (isBookNotAuction && null != bestBid) {
+            } else if (shouldUseBBO && null != bestBid) {
                 center = bestBid.getPrice();
-            } else if (isBookNotAuction && null != bestAsk) {
+            } else if (shouldUseBBO && null != bestAsk) {
                 center = bestAsk.getPrice();
             } else if (auctionIndicativePrice.isValid()) {
                 center = auctionIndicativePrice.getPrice();
