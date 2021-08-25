@@ -109,6 +109,11 @@ function launchBasket(symbol, noPopUp) {
 	if (symbol.indexOf("-") != -1) {
 		symbol = symbol.split("-")[0];
 	}
+	if(symbol.indexOf(" RFQ") != -1) {
+		const rootTicker = symbol.split(" RFQ")[0];
+		let length = rootTicker.length;
+		symbol = rootTicker.substr(0, length - 2) + " " + rootTicker.substr(length - 2);
+	}
 	const basketHost = "http://prod-bop.eeif.drw:8113";
 	$.ajax({
 		success: function (d, s, x) {
