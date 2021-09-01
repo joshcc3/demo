@@ -1339,27 +1339,6 @@ public class LadderBookView implements ILadderBoard {
                     stackData.adjustAskStackLevels(-1);
                 }
 
-            } else if (label.equals(HTML.START_BUY)) {
-
-                if (null != metaData.spreadContractSet.parentSymbol) {
-
-                    final StacksSetSiblingsEnableCmd cmd =
-                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, null, BookSide.BID,
-                                    true);
-                    stackSiblingsCmdPublisher.publish(cmd);
-                }
-                stackData.startBidStrategy(user);
-
-            } else if (label.equals(HTML.START_SELL)) {
-
-                stackData.startAskStrategy(user);
-                if (null != metaData.spreadContractSet.parentSymbol) {
-
-                    final StacksSetSiblingsEnableCmd cmd =
-                            new StacksSetSiblingsEnableCmd(LADDER_SOURCE, metaData.spreadContractSet.parentSymbol, null, BookSide.ASK,
-                                    true);
-                    stackSiblingsCmdPublisher.publish(cmd);
-                }
             } else if (label.equals(HTML.STOP_BUY)) {
                 stackData.stopBidStrategy();
             } else if (label.equals(HTML.STOP_SELL)) {

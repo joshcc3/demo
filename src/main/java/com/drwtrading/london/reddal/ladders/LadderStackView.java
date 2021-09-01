@@ -708,22 +708,6 @@ public class LadderStackView implements ILadderBoard {
                 } else if (!stackData.adjustAskStackLevels(-1)) {
                     throw new IllegalStateException("Could not send msg - stack connection down.");
                 }
-            } else if (label.equals(HTML.START_BUY)) {
-
-                stackData.startBidStrategy(user);
-
-                final StacksSetSiblingsEnableCmd cmd =
-                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, null, BookSide.BID, true);
-                disableSiblingsCmdPublisher.publish(cmd);
-
-            } else if (label.equals(HTML.START_SELL)) {
-
-                stackData.startAskStrategy(user);
-
-                final StacksSetSiblingsEnableCmd cmd =
-                        new StacksSetSiblingsEnableCmd(STACK_SOURCE, metaData.spreadContractSet.parentSymbol, null, BookSide.ASK, true);
-                disableSiblingsCmdPublisher.publish(cmd);
-
             } else if (label.equals(HTML.STOP_BUY)) {
                 stackData.stopBidStrategy();
             } else if (label.equals(HTML.STOP_SELL)) {
