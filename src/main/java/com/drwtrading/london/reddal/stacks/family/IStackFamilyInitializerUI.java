@@ -14,6 +14,5 @@ public interface IStackFamilyInitializerUI {
             final String bidInfo, final boolean isBidPicardEnabled, final boolean isBidQuoterEnabled, final boolean isAskStrategyOn,
             final String askInfo, final boolean isAskPicardEnabled, final boolean isAskQuoterEnabled);
 
-    void setIsRunnable(String familyName, final boolean state);
-
+    public void setIsRunnable(final String familyName, final boolean state);
 }

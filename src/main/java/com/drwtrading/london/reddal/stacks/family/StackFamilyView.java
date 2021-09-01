@@ -231,6 +231,7 @@ public class StackFamilyView {
     }
 
     public void setStrategyRunnableForDate(final String parentSymbol, final Date date, final boolean isRunnable) {
+
         final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
         if (null != familyUIData) {
             mustRefresh = true;
