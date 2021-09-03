@@ -711,20 +711,20 @@ function addFamily(familyName, isAsylum, _uiName, unhide) {
 		};
 
 		let bidOffsetDiv = familyDetails.children[11];
-		const bidOffsetUpButton = bidOffsetDiv.children[0]; //.find(".bid .priceOffsetUp");
+		const bidOffsetUpButton = bidOffsetDiv.children[0];
 		bidOffsetUpButton.onmousedown = priceOffsetChange("increaseOffset", familyName, "BID", 1);
 
 		const bidOffsetDownButton = bidOffsetDiv.children[1];
 		bidOffsetDownButton.onmousedown = priceOffsetChange("increaseOffset", familyName, "BID", -1);
 
 		let askOffsetDiv = familyDetails.children[13];
-		const askOffsetUpButton = askOffsetDiv.children[0]; // find(".ask .priceOffsetUp");
+		const askOffsetUpButton = askOffsetDiv.children[0];
 		askOffsetUpButton.onmousedown = priceOffsetChange("increaseOffset", familyName, "ASK", 1);
 
 		const askOffsetDownButton = askOffsetDiv.children[1];
 		askOffsetDownButton.onmousedown = priceOffsetChange("increaseOffset", familyName, "ASK", -1);
 
-		const openConfigWindowDiv = familyDetails.children[14].children[0]; // family.find(".configControls .configWindow");
+		const openConfigWindowDiv = familyDetails.children[14].children[0];
 		openConfigWindowDiv.onclick = function () {
 			let configs = familyName;
 			family.find(".children .row:not(.header)").each(function () {
@@ -748,7 +748,7 @@ function addFamily(familyName, isAsylum, _uiName, unhide) {
 		};
 
 		let bidStackControlsDiv = familyDetails.children[15];
-		const bidPicardDiv = bidStackControlsDiv.children[0];// find(".bid .picardEnabled");
+		const bidPicardDiv = bidStackControlsDiv.children[0];
 		bidPicardDiv.onmousedown = stackEnableStackChange(familyName, "BID", "PICARD");
 
 		const bidQuoterDiv = bidStackControlsDiv.children[1];
@@ -761,15 +761,15 @@ function addFamily(familyName, isAsylum, _uiName, unhide) {
 		const askPicardDiv = askStackControlsDiv.children[1];
 		askPicardDiv.onmousedown = stackEnableStackChange(familyName, "ASK", "PICARD");
 
-		const allEnableDiv = familyDetails.children[17]; // family.find(".stackControls.allEnabled");
+		const allEnableDiv = familyDetails.children[17];
 		allEnableDiv.onmousedown = stackEnableAllStackChange(familyName);
 
-		const cleanFamilyDiv = familyDetails.children[18]; // family.find(".stackControls.cleanParent");
+		const cleanFamilyDiv = familyDetails.children[18];
 		cleanFamilyDiv.onmousedown = function () {
 			ws.send(command("cleanParent", [familyName]));
 		};
 
-		const disableFamilyDiv = familyDetails.children[19]; // family.find(".stackControls.cleanParent");
+		const disableFamilyDiv = familyDetails.children[19];
 		disableFamilyDiv.onmousedown = function () {
 			const isNotRunnable = notRunnableFamilies.has(familyName)
 			ws.send(command("setFamilyRunnableForToday", [familyName, isNotRunnable]));

@@ -19,6 +19,7 @@ public class JasperTradesListener implements ITransportCacheListener<String, ITr
 
     @Override
     public boolean initialValue(final int transportID, final ITrade trade) {
+
         if (seenTradeIds.add(trade.getTradeId())) {
             final String tag = trade.getTag().toLowerCase();
             if (tag.startsWith("jasper") || tag.startsWith("tow")) {

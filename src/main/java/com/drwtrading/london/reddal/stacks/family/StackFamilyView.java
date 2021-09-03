@@ -221,6 +221,7 @@ public class StackFamilyView {
     }
 
     public void setMetadata(final String parentSymbol, final String uiName) {
+
         final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
         if (null != familyUIData) {
             mustRefresh = true;
@@ -1733,6 +1734,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void renameFamily(final String parentSymbol, final String newUIName, final WebSocketInboundData data) {
+
         final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
         if (null != familyUIData && !communityUINames.contains(newUIName)) {
             communityUINames.remove(familyUIData.getUIName());
@@ -1789,6 +1791,7 @@ public class StackFamilyView {
 
     @FromWebSocketView
     public void setFamilyRunnableForToday(final String familyName, final boolean isRunnable, final WebSocketInboundData data) {
+
         communityManager.setFamilyIsRunnableForDate(SOURCE_UI, familyName, today, isRunnable);
     }
 
