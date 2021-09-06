@@ -33,7 +33,6 @@ import com.drwtrading.websockets.WebSocketOutboundData;
 import org.jetlang.channels.Publisher;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -239,9 +238,10 @@ public class StackFamilyPresenter implements IStackRelationshipListener {
         }
     }
 
-    void setStrategyRunnableForDate(final String source, final String parentSymbol, final Date date, final boolean isRunnable) {
+    void setIsFamilyRunnableToday(final String source, final String parentSymbol, final boolean isRunnable) {
+
         for (final StackFamilyView familyView : communityViews.values()) {
-            familyView.setStrategyRunnableForDate(parentSymbol, date, isRunnable);
+            familyView.setIsFamilyRunnableToday(parentSymbol, isRunnable);
         }
     }
 

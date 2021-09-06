@@ -55,7 +55,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -86,7 +85,6 @@ public class StackFamilyView {
 
     public static final String RFQ_SUFFIX = " RFQ";
     private static final String OTC_SUFFIX = " OTC";
-    private final Date today;
 
     private static final double GLOBAL_OFFSET_INCREMENT_BPS = 1d;
 
@@ -152,8 +150,6 @@ public class StackFamilyView {
 
         this.managementSelectIO = managementSelectIO;
         this.backgroundSelectIO = backgroundSelectIO;
-
-        this.today = new Date(managementSelectIO.getMillisAtMidnightUTC());
 
         this.fuseBox = fuseBox;
         this.errorLogger = errorLogger;
@@ -231,19 +227,21 @@ public class StackFamilyView {
         }
     }
 
-    public void setStrategyRunnableForDate(final String parentSymbol, final Date date, final boolean isRunnable) {
+    public void setIsFamilyRunnableToday(final String parentSymbol, final boolean isRunnable) {
 
         final FamilyUIData familyUIData = this.familyUIData.get(parentSymbol);
         if (null != familyUIData) {
+
             mustRefresh = true;
-            if (today.equals(date)) {
-                familyUIData.setIsRunnable(isRunnable);
-                updateFamilyUIData(familyUIData);
-                for (final StackUIRelationship relationship : familyUIData.getAllRelationships()) {
-                    final String symbol = relationship.childSymbol;
-                    final StackRunnableInfo info = new StackRunnableInfo(symbol, isRunnable);
-                    runnableInfoChan.publish(info);
-                }
+
+            familyUIData.setIsRunnable(isRunnable);
+            updateFamilyUIData(familyUIData);
+
+            for (final StackUIRelationship relationship : familyUIData.getAllRelationships()) {
+
+                final String symbol = relationship.childSymbol;
+                final StackRunnableInfo info = new StackRunnableInfo(symbol, isRunnable);
+                runnableInfoChan.publish(info);
             }
         }
     }
@@ -1792,7 +1790,7 @@ public class StackFamilyView {
     @FromWebSocketView
     public void setFamilyRunnableForToday(final String familyName, final boolean isRunnable, final WebSocketInboundData data) {
 
-        communityManager.setFamilyIsRunnableForDate(SOURCE_UI, familyName, today, isRunnable);
+        communityManager.setFamilyIsRunnableToday(SOURCE_UI, familyName, isRunnable);
     }
 
     @FromWebSocketView
