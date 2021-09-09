@@ -70,6 +70,9 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
         this.rulesByID = new LongMap<>();
         this.rulesBySymbol = new HashMap<>();
         this.lastRuleStates = new LongMap<>();
+
+        addMDSubscription("ZU1-ZZ1");
+        addMDSubscription("JFCEU1-JFCEZ1");
     }
 
     public void setWorkingOrder(final SourcedWorkingOrder sourcedOrder) {
@@ -124,13 +127,21 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
 
         final TreeSet<Long> prices = new TreeSet<>(Comparator.reverseOrder());
 
+        System.out.println("Get price for [" + symbol + "].");
+
         final Set<SourcedWorkingOrder> sourcedOrders = workingOrders.get(symbol);
         if (null != sourcedOrders) {
+
+            System.out.println("Found [" + sourcedOrders.size() + "] orders.");
+
             addAllPrices(sourcedOrders, prices);
         }
 
         final LongMap<AutoPullerPullRule> pullRules = rulesBySymbol.get(symbol);
         if (null != pullRules) {
+
+            System.out.println("Found [" + pullRules.size() + "] existing rules.");
+
             for (final LongMapNode<AutoPullerPullRule> pullRuleNode : pullRules) {
 
                 final AutoPullerPullRule rule = pullRuleNode.getValue();
@@ -147,22 +158,29 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
         }
 
         final MDForSymbol md = mdForSymbols.get(symbol);
+        System.out.println("MD [" + md + "] and [" + (null != md ? md.getBook() : "null") + "].");
         if (null != md && null != md.getBook()) {
 
             final IBook<?> book = md.getBook();
             IBookLevel bestBid = book.getBestBid();
             IBookLevel bestAsk = book.getBestAsk();
 
-            if (bestBid == null && null != bestAsk) {
+            System.out.println("Best bid [" + (null == bestBid ? "null" : bestBid.getPrice()) + "].");
+            System.out.println("Best ask [" + (null == bestBid ? "null" : bestBid.getPrice()) + "].");
+
+            if (null == bestBid && null != bestAsk) {
                 bestBid = bestAsk;
             }
-            if (bestAsk == null && null != bestBid) {
+            if (null != bestBid && null == bestAsk) {
                 bestAsk = bestBid;
             }
             if (bestBid != null) {
                 prices.add(book.getTickTable().subtractTicks(bestBid.getPrice(), MAX_DEPTH_TO_DISPLAY));
                 prices.add(book.getTickTable().addTicks(bestAsk.getPrice(), MAX_DEPTH_TO_DISPLAY));
             }
+
+            System.out.println("Min [" + prices.last() + "] max [" + prices.first() + "].");
+
             if (!prices.isEmpty()) {
                 for (long price = prices.first(); prices.last() <= price; price = book.getTickTable().subtractTicks(price, 1)) {
                     prices.add(price);
@@ -204,6 +222,8 @@ public class AutoPuller implements IAutoPullerCmdHandler, IMDCallback {
     private MDForSymbol addMDSubscription(final String symbol) {
 
         final MDForSymbol oldMDForSystem = mdForSymbols.get(symbol);
+        System.out.println("Subscribing for [" + symbol + "] and found [" + oldMDForSystem + "].");
+
         if (null == oldMDForSystem) {
             final MDForSymbol mdForSymbol = mdSubscriber.subscribeForMDCallbacks(symbol, this);
             mdForSymbols.put(symbol, mdForSymbol);

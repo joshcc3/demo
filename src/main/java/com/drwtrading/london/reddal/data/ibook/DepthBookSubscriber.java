@@ -55,11 +55,11 @@ public class DepthBookSubscriber implements IMDSubscriber {
 
     @Override
     public void unsubscribeForMD(final String symbol, final Object listener) {
+
         final MDForSymbol mdForSymbol = mdForSymbols.get(symbol);
         if (null != mdForSymbol && mdForSymbol.removeListener(listener)) {
             this.l3BookSubscriber.unsubscribeForMD(mdForSymbol);
             this.l2BookSubscriber.unsubscribeForMD(mdForSymbol);
         }
     }
-
 }
