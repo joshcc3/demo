@@ -33,13 +33,12 @@ import org.jetlang.channels.Publisher;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
+import java.util.TreeSet;
 
 public class AutoPullerUI implements IAutoPullerUpdateHandler {
 
@@ -52,7 +51,7 @@ public class AutoPullerUI implements IAutoPullerUpdateHandler {
     private final WebSocketViews<IAutoPullerView> views = new WebSocketViews<>(IAutoPullerView.class, this);
     private final Set<IAutoPullerView> viewSet = new HashSet<>();
 
-    private final Map<String, List<String>> relevantPrices;
+    private final Map<String, Set<String>> relevantPrices;
     private final LongMap<AutoPullerRuleState> ruleStates;
 
     private final DecimalFormat priceDF;
@@ -72,8 +71,8 @@ public class AutoPullerUI implements IAutoPullerUpdateHandler {
 
         for (final PullRule rule : persistence.getPullRules().values()) {
             sendRule(rule);
-            relevantPrices.put(rule.orderSymbol, Collections.emptyList());
-            relevantPrices.put(rule.mdSymbol, Collections.emptyList());
+            relevantPrices.put(rule.orderSymbol, new TreeSet<>());
+            relevantPrices.put(rule.mdSymbol, new TreeSet<>());
         }
 
         final Calendar cal = DateTimeUtil.getCalendar();
@@ -95,7 +94,7 @@ public class AutoPullerUI implements IAutoPullerUpdateHandler {
         final IAutoPullerView view = views.register(connected);
         viewSet.add(view);
 
-        views.all().updateGlobals(relevantPrices.keySet(), relevantPrices, relevantPrices);
+        views.all().updateGlobals(relevantPrices.keySet(), relevantPrices);
 
         for (final LongMapNode<AutoPullerRuleState> ruleStateNode : ruleStates) {
             final AutoPullerRuleState ruleState = ruleStateNode.getValue();
@@ -219,10 +218,16 @@ public class AutoPullerUI implements IAutoPullerUpdateHandler {
         for (final Map.Entry<String, List<Long>> symbolPrice : symbolPrices.entrySet()) {
 
             final String symbol = symbolPrice.getKey();
-            final List<String> priceList = symbolPrice.getValue().stream().map(this::formatPx).collect(Collectors.toList());
-            relevantPrices.put(symbol, priceList);
+            final List<Long> prices = symbolPrice.getValue();
+
+            final Set<String> priceList = relevantPrices.computeIfAbsent(symbol, a -> new TreeSet<>());
+            for (final Long price : prices) {
+                final String humanPrice = formatPx(price);
+                priceList.add(humanPrice);
+            }
+
         }
-        views.all().updateGlobals(relevantPrices.keySet(), relevantPrices, relevantPrices);
+        views.all().updateGlobals(relevantPrices.keySet(), relevantPrices);
     }
 
     private void displayRule(final IAutoPullerView view, final AutoPullerRuleState enabledPullRule) {

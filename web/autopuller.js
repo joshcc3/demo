@@ -1,6 +1,5 @@
 let ws;
 const Rows = {};
-let WorkingPx = {};
 let MdPx = {};
 let Symbols = [];
 let Sound;
@@ -57,9 +56,9 @@ function populateRowPrices(inputRow, symbol) {
 
 	const fromPrice = inputRow.find(".fromPrice");
 	const toPrice = inputRow.find(".toPrice");
-	if (WorkingPx[symbol]) {
-		populateSelect(fromPrice, WorkingPx[symbol], WorkingPx[symbol][WorkingPx[symbol].length - 1]);
-		populateSelect(toPrice, WorkingPx[symbol], WorkingPx[symbol][0]);
+	if (MdPx[symbol]) {
+		populateSelect(fromPrice, MdPx[symbol], MdPx[symbol][MdPx[symbol].length - 1]);
+		populateSelect(toPrice, MdPx[symbol], MdPx[symbol][0]);
 	} else {
 		populateSelect(fromPrice, []);
 		populateSelect(toPrice, []);
@@ -77,11 +76,11 @@ function populateMDPrices(inputRow, symbol) {
 }
 
 function populateRuleRow(row, side, orderSymbol, mdSymbol, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition,
-						 qtyThreshold) {
+	qtyThreshold) {
 
 	row.find(".side").val(side);
-	populateSelect(row.find(".fromPrice"), WorkingPx[orderSymbol], orderPriceFrom);
-	populateSelect(row.find(".toPrice"), WorkingPx[orderSymbol], orderPriceTo);
+	populateSelect(row.find(".fromPrice"), MdPx[orderSymbol], orderPriceFrom);
+	populateSelect(row.find(".toPrice"), MdPx[orderSymbol], orderPriceTo);
 	populateSelect(row.find(".priceCondition"), MdPx[mdSymbol], conditionPrice);
 	row.find(".conditionSide").val(conditionSide);
 	row.find(".qtyCondition").val(qtyCondition);
@@ -92,11 +91,10 @@ function playSound() {
 	Sound.play();
 }
 
-function updateGlobals(symbols, symbolToWorkingPrice, symbolToMdPrice) {
+function updateGlobals(symbols, prices) {
 
 	Symbols = symbols;
-	WorkingPx = symbolToWorkingPrice;
-	MdPx = symbolToMdPrice;
+	MdPx = prices;
 
 	const currSymbol = Symbols[0];
 	const inputRow = $("#rules").find("tr.ruleInput");
@@ -121,7 +119,7 @@ function ruleFired(key) {
 }
 
 function displayRule(key, orderSymbol, mdSymbol, side, orderPriceFrom, orderPriceTo, conditionPrice, conditionSide, qtyCondition,
-					 qtyThreshold, enabled, enabledByUser, instantPullCount) {
+	qtyThreshold, enabled, enabledByUser, instantPullCount) {
 
 	let row = Rows[key];
 	if (!row) {

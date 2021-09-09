@@ -1,13 +1,12 @@
 package com.drwtrading.london.reddal.autopull.autopuller.ui;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface IAutoPullerView {
 
-    public void updateGlobals(final Collection<String> relevantSymbols, final Map<String, List<String>> symbolToWorkingPrice,
-            final Map<String, List<String>> symbolToPossiblePrices);
+    public void updateGlobals(final Collection<String> relevantSymbols, final Map<String, Set<String>> prices);
 
     public void displayRule(final String key, final String orderSymbol, final String mdSymbol, String side, final String orderPriceFrom,
             final String orderPriceTo, final String conditionPrice, final String conditionSide, final String qtyCondition,
