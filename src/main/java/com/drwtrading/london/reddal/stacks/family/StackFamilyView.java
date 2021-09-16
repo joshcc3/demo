@@ -721,8 +721,6 @@ public class StackFamilyView {
                 allOrphans &= isOrphan;
                 etfFamily = null == etfFamily ? uiData.getFamily() : etfFamily;
                 allPartOfSameFamily &= null == etfFamily || etfFamily.equals(uiData.getFamily()) || isOrphan;
-            } else {
-                allPartOfSameFamily = null != etfFamily;
             }
         }
 
