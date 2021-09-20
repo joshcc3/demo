@@ -17,7 +17,7 @@ config default
 	include drw.london.eeif-opxl-client/451
 	include drw.london.eeif-position-transport/332
 	include drw.london.eeif-stack-transport/435
-	include drw.london.eeif-trades-transport/238
+	include drw.london.eeif-trades-transport/239
 	include drw.london.eeif-yoda-transport/355
 
 	# Libraries and containers
