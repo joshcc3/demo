@@ -3,11 +3,12 @@ package com.drwtrading.london.reddal.trades;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.london.eeif.utils.transport.cache.ITransportCacheListener;
 import drw.eeif.trades.transport.outbound.ITrade;
+import drw.eeif.trades.transport.outbound.io.ITradesListener;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class JasperTradesListener implements ITransportCacheListener<String, ITrade> {
+public class JasperTradesListener implements ITradesListener {
 
     private final Set<String> seenTradeIds = new HashSet<>();
 
@@ -18,7 +19,7 @@ public class JasperTradesListener implements ITransportCacheListener<String, ITr
     }
 
     @Override
-    public boolean initialValue(final int transportID, final ITrade trade) {
+    public void newTrade(final ITrade trade) {
 
         if (seenTradeIds.add(trade.getTradeId())) {
             final String tag = trade.getTag().toLowerCase();
@@ -29,17 +30,20 @@ public class JasperTradesListener implements ITransportCacheListener<String, ITr
                 trades.publish(mrChillTrade);
             }
         }
-        return true;
     }
 
     @Override
-    public boolean updateValue(final int transportID, final ITrade item) {
-        return true;
+    public void tradeUpdate(final ITrade trade) {
+        // NO-OP
+    }
+
+    @Override
+    public void disconnected() {
+        // NO-OP
     }
 
     @Override
     public void batchComplete() {
-        //NO-OP
+        // NO-OP
     }
-
 }

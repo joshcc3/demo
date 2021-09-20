@@ -956,8 +956,8 @@ public class Main {
                 new ExpandedDetailResourceMonitor<>(app.monitor, "Chill Trades", errorLog, TradesTransportComponents.class,
                         ReddalComponents.MR_CHILL_TRADES);
         final TradesClientHandler cache =
-                TradesClientFactory.createClientCache(EnumSet.allOf(AccountGroup.class), EnumSet.allOf(TradingEntity.class), true, false,
-                        mrChillSelectIO, tradesMonitor);
+                TradesClientFactory.createClientCache(app.appName, EnumSet.allOf(AccountGroup.class), EnumSet.allOf(TradingEntity.class),
+                        true, false, mrChillSelectIO, tradesMonitor);
         final TransportTCPKeepAliveConnection<TradesTransportComponents, TradesTransportBaseMsg> tradesClient =
                 TradesClientFactory.createClient(mrChillSelectIO, mrChillConfig, tradesMonitor, cache);
 
