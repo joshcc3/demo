@@ -29,6 +29,7 @@ import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.application.AccountGroup;
 import com.drwtrading.london.eeif.utils.application.Application;
 import com.drwtrading.london.eeif.utils.application.TradingEntity;
+import com.drwtrading.london.eeif.utils.application.User;
 import com.drwtrading.london.eeif.utils.collections.MapUtils;
 import com.drwtrading.london.eeif.utils.config.ConfigException;
 import com.drwtrading.london.eeif.utils.config.ConfigGroup;
@@ -314,6 +315,7 @@ public class Main {
         final WebApplication webApp = new WebApplication(webPort, channels.errorPublisher);
         System.out.println("http://localhost:" + webPort);
         webApp.enableSingleSignOn();
+        webApp.protectContent("/", User.viewers());
 
         app.addStartUpAction(() -> fibers.ui.execute(() -> {
             try {
