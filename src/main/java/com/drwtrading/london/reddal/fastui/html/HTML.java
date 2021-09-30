@@ -23,19 +23,14 @@ public final class HTML {
     public static final String R1C2 = "r1c2";
     public static final String R1C3 = "r1c3";
     public static final String R1C4 = "r1c4";
-    public static final String R1C5 = "r1c5";
 
     static final String R2C1 = "r2c1";
-    static final String R2C2 = "r2c2";
     static final String R2C3 = "r2c3";
-    static final String R2C4 = "r2c4";
     static final String R2C5 = "r2c5";
 
-    static final String R3C1 = "r3c1";
     static final String R3C2 = "r3c2";
     static final String R3C3 = "r3c3";
     static final String R3C4 = "r3c4";
-    static final String R3C5 = "r3c5";
 
     static final String R4C1 = "r4c1";
     static final String R4C2 = "r4c2";
