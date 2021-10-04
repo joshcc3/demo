@@ -203,6 +203,7 @@ import drw.eeif.phockets.Phockets;
 import drw.eeif.phockets.tcp.PhocketClient;
 import drw.eeif.photons.mrchill.Position;
 import drw.eeif.photons.signals.Signals;
+import drw.eeif.trades.transport.TradeType;
 import drw.eeif.trades.transport.outbound.io.TradesClientFactory;
 import drw.eeif.trades.transport.outbound.io.TradesClientHandler;
 import drw.eeif.trades.transport.outbound.io.TradesTransportComponents;
@@ -959,7 +960,7 @@ public class Main {
                         ReddalComponents.MR_CHILL_TRADES);
         final TradesClientHandler cache =
                 TradesClientFactory.createClientCache(app.appName, EnumSet.allOf(AccountGroup.class), EnumSet.allOf(TradingEntity.class),
-                        true, false, mrChillSelectIO, tradesMonitor);
+                        true, EnumSet.of(TradeType.RISK), mrChillSelectIO, tradesMonitor);
         final TransportTCPKeepAliveConnection<TradesTransportComponents, TradesTransportBaseMsg> tradesClient =
                 TradesClientFactory.createClient(mrChillSelectIO, mrChillConfig, tradesMonitor, cache);
 
