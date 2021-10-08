@@ -236,10 +236,17 @@ public class AutoPullerUI implements IAutoPullerUpdateHandler {
         final int pullCount = enabledPullRule.matchedOrders;
         final User associatedUser = null == enabledPullRule.associatedUser ? User.UNKNOWN : enabledPullRule.associatedUser;
 
-        view.displayRule(Long.toString(rule.ruleID), rule.orderSymbol, rule.mdSymbol, rule.orderSelection.side.toString(),
-                formatPx(rule.orderSelection.fromPrice), formatPx(rule.orderSelection.toPrice), formatPx(rule.mktCondition.price),
-                rule.mktCondition.side.toString(), rule.mktCondition.qtyCondition.toString(),
-                Integer.toString(rule.mktCondition.qtyThreshold), enabledPullRule.isEnabled, associatedUser.name(), pullCount);
+        final String ruleID = Long.toString(rule.ruleID);
+
+        final String fromPrice = formatPx(rule.orderSelection.fromPrice);
+        final String toPrice = formatPx(rule.orderSelection.toPrice);
+
+        final String conditionPrice = formatPx(rule.mktCondition.price);
+        final String qtyThreshold = Integer.toString(rule.mktCondition.qtyThreshold);
+
+        view.displayRule(ruleID, rule.orderSymbol, rule.mdSymbol, rule.orderSelection.side.toString(), fromPrice, toPrice, conditionPrice,
+                rule.mktCondition.side.toString(), rule.mktCondition.qtyCondition.toString(), qtyThreshold, enabledPullRule.isEnabled,
+                associatedUser.name(), pullCount);
     }
 
     private String formatPx(final long price) {
