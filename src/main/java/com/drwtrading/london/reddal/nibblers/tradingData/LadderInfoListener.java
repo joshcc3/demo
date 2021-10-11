@@ -103,10 +103,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
 
         final SourcedWorkingOrder sourcedOrder = new SourcedWorkingOrder(sourceNibbler, order);
         sourcedWorkingOrder.put(order.getWorkingOrderID(), sourcedOrder);
-        ladderPresenter.setWorkingOrder(sourcedOrder);
-        orderPresenter.setWorkingOrder(sourcedOrder);
-        autoPuller.setWorkingOrder(sourcedOrder);
-        shredderPresenter.setWorkingOrder(sourcedOrder);
+        addWorkingOrder(sourcedOrder);
         return true;
     }
 
@@ -114,10 +111,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     public boolean updateWorkingOrder(final WorkingOrder order) {
 
         final SourcedWorkingOrder sourcedOrder = sourcedWorkingOrder.get(order.getWorkingOrderID());
-        ladderPresenter.setWorkingOrder(sourcedOrder);
-        orderPresenter.setWorkingOrder(sourcedOrder);
-        autoPuller.setWorkingOrder(sourcedOrder);
-        shredderPresenter.setWorkingOrder(sourcedOrder);
+        addWorkingOrder(sourcedOrder);
         return true;
     }
 
@@ -125,10 +119,7 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
     public boolean deleteWorkingOrder(final WorkingOrder order) {
 
         final SourcedWorkingOrder sourcedOrder = sourcedWorkingOrder.remove(order.getWorkingOrderID());
-        ladderPresenter.deleteWorkingOrder(sourcedOrder);
-        orderPresenter.deleteWorkingOrder(sourcedOrder);
-        autoPuller.deleteWorkingOrder(sourcedOrder);
-        shredderPresenter.deleteWorkingOrder(sourcedOrder);
+        removeWorkingOrder(sourcedOrder);
         return true;
     }
 
@@ -159,12 +150,26 @@ public class LadderInfoListener implements INibblerTradingDataListener, INibbler
         for (final LongMapNode<SourcedWorkingOrder> sourcedOrderNode : sourcedWorkingOrder) {
 
             final SourcedWorkingOrder sourcedWorkingOrder = sourcedOrderNode.getValue();
-            ladderPresenter.deleteWorkingOrder(sourcedWorkingOrder);
-            orderPresenter.deleteWorkingOrder(sourcedWorkingOrder);
-            shredderPresenter.deleteWorkingOrder(sourcedWorkingOrder);
+            removeWorkingOrder(sourcedWorkingOrder);
         }
 
         sourcedWorkingOrder.clear();
+    }
+
+    private void addWorkingOrder(final SourcedWorkingOrder workingOrder) {
+
+        ladderPresenter.setWorkingOrder(workingOrder);
+        orderPresenter.setWorkingOrder(workingOrder);
+        autoPuller.setWorkingOrder(workingOrder);
+        shredderPresenter.setWorkingOrder(workingOrder);
+    }
+
+    private void removeWorkingOrder(final SourcedWorkingOrder workingOrder) {
+
+        ladderPresenter.deleteWorkingOrder(workingOrder);
+        orderPresenter.deleteWorkingOrder(workingOrder);
+        autoPuller.deleteWorkingOrder(workingOrder);
+        shredderPresenter.deleteWorkingOrder(workingOrder);
     }
 
     @Override
