@@ -10,7 +10,7 @@ config default
 	include drw.london.eeif-utils/709
 
 	include drw.london.eeif-additive-transport/90
-	include drw.london.eeif-fees/341
+	include drw.london.eeif-fees/342
 	include drw.london.eeif-icepie-transport/101
 	include drw.london.eeif-indy-transport/639
 	include drw.london.eeif-nibbler-transport/374
