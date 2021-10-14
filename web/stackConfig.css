@@ -97,6 +97,6 @@ button {
 	background-color: lightgrey;
 }
 
-.notPersisted {
+.notPersisted, .nanValue {
 	background-color: lightpink;
 }

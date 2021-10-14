@@ -105,7 +105,7 @@ public class StackConfigPresenter {
 
         final String leanToQuoteRatio;
         if (Double.isNaN(leanConfig.getLeanToQuoteRatio())) {
-            leanToQuoteRatio = "1";
+            leanToQuoteRatio = "NaN";
         } else {
             leanToQuoteRatio = Double.toString(leanConfig.getLeanToQuoteRatio());
         }

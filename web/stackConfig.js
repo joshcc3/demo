@@ -295,7 +295,16 @@ function setDoubleData(row, cellID, value) {
 	const input = row.find(cellID);
 	if (typeof value != "undefined") {
 		input.attr("data", value);
-		input.val(parseFloat(value));
+		const number = parseFloat(value);
+		const isNumberNaN = isNaN(number);
+		input.val(number);
+		input.toggleClass("nanValue", isNumberNaN);
+		if (isNumberNaN) {
+			input.attr("placeholder", "NaN");
+		} else {
+			input.attr("placeholder", "");
+		}
+		console.log(cellID, value, typeof value, number, input.val());
 	} else {
 		input.attr("data", "");
 		input.val("");
