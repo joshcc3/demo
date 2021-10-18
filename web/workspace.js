@@ -1,7 +1,7 @@
-var ws;
+let ws;
 
-var ladderWidth = 245;
-var ladderHeight = 332;
+const ladderWidth = 245;
+const ladderHeight = 332;
 
 ws = connect("ws://" + document.location.host + "/workspace/ws/");
 ws.logToConsole = false;
@@ -9,18 +9,18 @@ ws.onmessage = function (x) {
 	eval(x);
 };
 
-var LastRows = 0;
-var LastCols = 0;
-var NumBoxes = LastRows * LastCols;
+let LastRows = 0;
+let LastCols = 0;
+let NumBoxes = LastRows * LastCols;
 
-var Frames = [];
-var Ladders = {};
-var Locked = false;
-var Sets = false;
+const Frames = [];
+const Ladders = {};
+let Locked = false;
+let Sets = false;
 
 $(function () {
 
-	var parameters = parseHashcode();
+	const parameters = parseHashcode();
 
 	if (parameters.locking) {
 		toggleLock();
@@ -33,13 +33,13 @@ $(function () {
 	setInterval(function () {
 
 		// Compute number of rows and columns
-		var height = document.body.offsetHeight;
-		var width = $(window).width();
+		const height = document.body.offsetHeight;
+		const width = $(window).width();
 
-		var rows = parseInt(height / ladderHeight);
-		var cols = parseInt(width / ladderWidth);
+		const rows = Math.floor(height / ladderHeight);
+		const cols = Math.floor(width / ladderWidth);
 
-		if (rows != LastRows || cols != LastCols) {
+		if (rows !== LastRows || cols !== LastCols) {
 			LastRows = rows;
 			LastCols = cols;
 			NumBoxes = LastRows * LastCols;
@@ -74,28 +74,28 @@ function replace(from, to) {
 }
 
 function refreshHashCode() {
-	var params = parseHashcode();
+	const params = parseHashcode();
 	document.location.hash = generateHashcode(params.symbols);
 }
 
 function doLayout() {
 
-	var template = $('.ladder.template').clone().removeClass('template');
+	const template = $('.ladder.template').clone().removeClass('template');
 	template.width(ladderWidth);
 	template.height(ladderHeight);
 
-	var existing = $('.ladder:not(.template)');
-	var numExisting = existing.size();
+	const existing = $('.ladder:not(.template)');
+	const numExisting = existing.size();
 
 	if (numExisting > NumBoxes) {
-		var spliced = Frames.splice(NumBoxes);
+		const spliced = Frames.splice(NumBoxes);
 		spliced.forEach(function (frame) {
 			frame.remove();
 		});
 	}
 
-	for (var i = numExisting; i < NumBoxes; i++) {
-		var frame = template.clone();
+	for (let i = numExisting; i < NumBoxes; i++) {
+		const frame = template.clone();
 		$('#workspace').append(frame);
 		Frames.push(frame);
 	}
@@ -103,24 +103,24 @@ function doLayout() {
 }
 
 function doLadders() {
-	var parameters = parseHashcode();
-	var symbols = parameters.symbols;
-	for (var i = 0; i < Math.min(symbols.length, Frames.length); i++) {
+	const parameters = parseHashcode();
+	const symbols = parameters.symbols;
+	for (let i = 0; i < Math.min(symbols.length, Frames.length); i++) {
 
-		var frameTarget = symbols[i];
+		const frameTarget = symbols[i];
 
-		var symbolEnd = frameTarget.indexOf(';', 0);
-		var isStack;
+		let symbolEnd = frameTarget.indexOf(';', 0);
+		let isStack;
 		if (symbolEnd < 0) {
 			symbolEnd = frameTarget.length;
 			isStack = false;
 		} else {
-			var symbolSwitch = frameTarget.substr(symbolEnd + 1);
-			isStack = symbolSwitch == 'S'
+			const symbolSwitch = frameTarget.substr(symbolEnd + 1);
+			isStack = symbolSwitch === 'S'
 		}
 
 		if (isStack) {
-			var symbol = frameTarget.substr(0, symbolEnd);
+			const symbol = frameTarget.substr(0, symbolEnd);
 			setFrame(Frames[i], symbol, true);
 		} else {
 			setFrame(Frames[i], frameTarget, false);
@@ -129,11 +129,11 @@ function doLadders() {
 }
 
 function moveFrameToFront(index) {
-	if (index == 0) {
+	if (index === 0) {
 		return;
 	}
 	if (index < Frames.length) {
-		var el = Frames[index];
+		const el = Frames[index];
 		Frames.splice(index, 1);
 		Frames.unshift(el);
 		el.detach();
@@ -143,11 +143,11 @@ function moveFrameToFront(index) {
 
 function addSymbol(symbol) {
 
-	var parameters = parseHashcode();
-	var symbols = parameters.symbols;
+	const parameters = parseHashcode();
+	const symbols = parameters.symbols;
 
-	var index = findSymbol(symbols, symbol);
-	if (-1 != index) {
+	const index = findSymbol(symbols, symbol);
+	if (-1 !== index) {
 		// Move the symbol to the front and move its frame
 		moveFrameToFront(index, Frames);
 		symbols.splice(index, 1);
@@ -164,32 +164,32 @@ function addSymbol(symbol) {
 
 function findSymbol(symbols, frameTarget) {
 
-	var symbolEnd = frameTarget.indexOf(';', 0);
-	var isStack;
+	let symbolEnd = frameTarget.indexOf(';', 0);
+	let isStack;
 	if (symbolEnd < 0) {
 		symbolEnd = frameTarget.length;
 		isStack = false;
 	} else {
-		var symbolSwitch = frameTarget.substr(symbolEnd + 1);
-		isStack = symbolSwitch == 'S'
+		const symbolSwitch = frameTarget.substr(symbolEnd + 1);
+		isStack = symbolSwitch === 'S'
 	}
 
 	if (isStack) {
 		return symbols.indexOf(frameTarget);
 	} else {
 
-		var symbol = frameTarget.substr(0, symbolEnd);
-		for (var i = 0; i < Math.min(symbols.length, Frames.length); i++) {
+		const symbol = frameTarget.substr(0, symbolEnd);
+		for (let i = 0; i < Math.min(symbols.length, Frames.length); i++) {
 
-			var symbolsTarget = symbols[i];
-			var symbolsTargetEnd = symbolsTarget.indexOf(';', 0);
+			const symbolsTarget = symbols[i];
+			const symbolsTargetEnd = symbolsTarget.indexOf(';', 0);
 			if (symbolsTargetEnd < 0) {
-				if (symbol == symbolsTarget) {
+				if (symbol === symbolsTarget) {
 					return i;
 				}
 			} else {
-				var symbolsTargetSwitch = symbolsTarget.substr(symbolsTargetEnd + 1);
-				if ('S' != symbolsTargetSwitch && symbol == symbolsTarget.substr(0, symbolsTargetEnd)) {
+				const symbolsTargetSwitch = symbolsTarget.substr(symbolsTargetEnd + 1);
+				if ('S' !== symbolsTargetSwitch && symbol === symbolsTarget.substr(0, symbolsTargetEnd)) {
 					return i;
 				}
 			}
@@ -215,12 +215,12 @@ function toggleSets() {
 // -- utilities
 
 function parseHashcode() {
-	var hash = document.location.hash.substr(1).replace(/%20/g, " ");
-	var symbols, locking, sets;
-	locking = hash.indexOf("!") != -1;
-	sets = hash.indexOf("*") != -1;
+	const hash = document.location.hash.substr(1).replace(/%20/g, " ");
+	let symbols, locking, sets;
+	locking = hash.indexOf("!") !== -1;
+	sets = hash.indexOf("*") !== -1;
 	symbols = hash.split("!").join("").split("*").join("").split(",");
-	if (symbols.length == 1 && symbols[0] == "") {
+	if (symbols.length === 1 && symbols[0] === "") {
 		symbols = [];
 	}
 	return {symbols: symbols, locking: locking, sets: sets};
@@ -233,17 +233,17 @@ function generateHashcode(symbols) {
 }
 
 function getUrl(symbol) {
-	var port = parseInt(document.location.port);
-	var host = document.location.hostname;
+	const port = parseInt(document.location.port);
+	const host = document.location.hostname;
 	return 'http://' + host + ':' + (port - 1) + '/ladder#' + symbol;
 }
 
 function setFrame(ladder, symbol, isStack) {
 
-	var ladderDiv = $(ladder);
+	const ladderDiv = $(ladder);
 
-	var idSymbol;
-	var urlSymbol;
+	let idSymbol;
+	let urlSymbol;
 	if (isStack) {
 		idSymbol = symbol + "-S";
 		urlSymbol = symbol + ";S";
@@ -252,7 +252,7 @@ function setFrame(ladder, symbol, isStack) {
 		urlSymbol = symbol;
 	}
 
-	if (ladderDiv.attr("id") != symbolId(idSymbol)) {
+	if (ladderDiv.attr("id") !== symbolId(idSymbol)) {
 		ladderDiv.attr("id", symbolId(idSymbol));
 		ladderDiv.find(".frame").attr("src", getUrl(urlSymbol));
 	}

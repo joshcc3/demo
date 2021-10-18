@@ -191,8 +191,8 @@ public class WorkingOrdersPresenter {
 
     private void onDisconnected(final WebSocketDisconnected disconnected) {
 
-        final int remainingViewers = --numViewers;
-        webLog.write("workingOrders", disconnected, false, remainingViewers);
+        --numViewers;
+        webLog.write("workingOrders", disconnected, false, numViewers);
 
         views.unregister(disconnected);
         for (final NibblerView nibblerView : nibblers.values()) {

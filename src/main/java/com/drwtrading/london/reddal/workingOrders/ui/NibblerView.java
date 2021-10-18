@@ -174,13 +174,14 @@ class NibblerView {
 
     public void cancelAllNonGTC(final User user, final String reason, final boolean isAutomated) {
 
+        stopAllStrategies(reason);
+
         for (final SourcedWorkingOrder sourcedOrder : workingOrders.values()) {
             if (OrderType.GTC != sourcedOrder.order.getOrderType()) {
                 cancel(user, sourcedOrder, isAutomated);
             }
         }
         managedOrders.values().forEach(this::cancel);
-        stopAllStrategies(reason);
     }
 
     public void cancelAll(final User user, final String reason, final boolean isAutomated) {
