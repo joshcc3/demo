@@ -60,6 +60,7 @@ import com.drwtrading.london.eeif.yoda.transport.cache.YodaClientCacheFactory;
 import com.drwtrading.london.eeif.yoda.transport.cache.YodaNullClient;
 import com.drwtrading.london.eeif.yoda.transport.io.YodaClientHandler;
 import com.drwtrading.london.icepie.transport.IcePieTransportComponents;
+import com.drwtrading.london.icepie.transport.data.LadderTextColour;
 import com.drwtrading.london.icepie.transport.data.LadderTextFreeText;
 import com.drwtrading.london.icepie.transport.data.LaserLineValue;
 import com.drwtrading.london.icepie.transport.io.IcePieCacheFactory;
@@ -82,6 +83,7 @@ import com.drwtrading.london.reddal.data.ibook.LevelTwoBookSubscriber;
 import com.drwtrading.london.reddal.data.ibook.NoMDSubscriptions;
 import com.drwtrading.london.reddal.data.ibook.ReddalMDTransportClient;
 import com.drwtrading.london.reddal.icepie.FreeTextCacheListener;
+import com.drwtrading.london.reddal.icepie.LadderTextColourCacheListener;
 import com.drwtrading.london.reddal.icepie.LadderTextNumberCacheListener;
 import com.drwtrading.london.reddal.icepie.LaserLineCacheListener;
 import com.drwtrading.london.reddal.ladders.LadderClickTradingIssue;
@@ -761,21 +763,6 @@ public class Main {
             }
         }
 
-        final ConfigGroup metaDataConfig = root.getEnabledGroup("metadata");
-        if (null != metaDataConfig) {
-
-            final String statsName = metaDataConfig.getString("name");
-            final HostAndNic hostAndNic = Environment.getHostAndNic(metaDataConfig);
-            final OnHeapBufferPhotocolsNioClient<LadderMetadata, Void> client =
-                    OnHeapBufferPhotocolsNioClient.client(hostAndNic.host, NetworkInterfaces.find(hostAndNic.nic), LadderMetadata.class,
-                            Void.class, fibers.metaData.getFiber(), EXCEPTION_HANDLER);
-            client.reconnectMillis(RECONNECT_INTERVAL_MILLIS);
-            client.logFile(logDir.resolve("ladderText.risk.log").toFile(), fibers.logging.getFiber(), true);
-            client.handler(new PhotocolsStatsPublisher<>(channels.stats, statsName, 10));
-            client.handler(new JetlangChannelHandler<>(channels.metaData));
-            app.addStartUpAction(client::start);
-        }
-
         // Mr. Phil position
         final ConfigGroup mrChillPositionsConfig = root.getEnabledGroup("mrchill-positions");
         if (null != mrChillPositionsConfig) {
@@ -925,17 +912,21 @@ public class Main {
                 new TransportCache<>(icePieMonitor, IcePieTransportComponents.FREE_TEXT_CACHE);
         final TransportCache<?, String, LadderTextNumber> numberCache =
                 new TransportCache<>(icePieMonitor, IcePieTransportComponents.NUMBER_CACHE);
+        final TransportCache<?, String, LadderTextColour> colourCache =
+                new TransportCache<>(icePieMonitor, IcePieTransportComponents.COLOUR_CACHE);
         final TransportCache<?, String, LaserLineValue> laserLineCache =
                 new TransportCache<>(icePieMonitor, IcePieTransportComponents.LASER_LINE_CACHE);
 
         final TransportTCPKeepAliveConnection<?, ?> client =
                 IcePieCacheFactory.createClient(app.selectIO, app.config.getGroup("icepie"), icePieMonitor, freeTextCache, numberCache,
-                        laserLineCache, app.appName);
+                        colourCache, laserLineCache, app.appName);
 
         final ITransportCacheListener<String, LadderTextFreeText> textListener = new FreeTextCacheListener(channels.ladderText);
         freeTextCache.addListener(textListener, true);
         final ITransportCacheListener<String, LadderTextNumber> numberListener = new LadderTextNumberCacheListener(channels.ladderNumber);
         numberCache.addListener(numberListener, true);
+        final ITransportCacheListener<String, LadderTextColour> colourListener = new LadderTextColourCacheListener(channels.ladderColour);
+        colourCache.addListener(colourListener, true);
 
         final ITransportCacheListener<String, LaserLineValue> laserLineListener = new LaserLineCacheListener(channels.laserLineData);
         laserLineCache.addListener(laserLineListener, true);
@@ -1008,7 +999,7 @@ public class Main {
                         channels.userCycleContractPublisher, channels.userPriceModeRequestPublisher, channels.orderEntryCommandToServer,
                         channels.userWorkspaceRequests);
 
-        fiberBuilder.subscribe(ladderPresenter, webSocket, channels.metaData, channels.position, channels.ladderPrefsLoaded,
+        fiberBuilder.subscribe(ladderPresenter, webSocket, channels.position, channels.ladderPrefsLoaded,
                 channels.displaySymbol, channels.recenterLaddersForUser, channels.contractSets, channels.chixSymbolPairs,
                 channels.singleOrderCommand, channels.replaceCommand, channels.userCycleContractPublisher, channels.orderEntrySymbols,
                 channels.orderEntryFromServer, channels.searchResults, channels.symbolDescs);
@@ -1017,6 +1008,7 @@ public class Main {
         channels.nibblerTransportConnected.subscribe(fiberBuilder.getFiber(), ladderPresenter::setNibblerConnected);
         channels.ladderText.subscribe(displaySelectIO, ladderPresenter::setLadderText);
         channels.ladderNumber.subscribe(displaySelectIO, ladderPresenter::setLadderNumber);
+        channels.ladderColour.subscribe(displaySelectIO, ladderPresenter::setLadderColour);
         channels.isinsGoingEx.subscribe(fiberBuilder.getFiber(), ladderPresenter::setISINsGoingEx);
         channels.shortSensitiveIsins.subscribe(displaySelectIO, ladderPresenter::setShortSensitiveIsins);
 

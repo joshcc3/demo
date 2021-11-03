@@ -25,7 +25,9 @@ public enum ReddalFreeTextCell {
     R4C2(HTML.R4C2),
     R4C3(HTML.R4C3),
     R4C4(HTML.R4C4),
-    R4C5(HTML.R4C5);
+    R4C5(HTML.R4C5),
+
+    DESK_POSITION(HTML.DESK_POSITION);
 
     private final String cellID;
     public final String htmlID;
@@ -49,6 +51,7 @@ public enum ReddalFreeTextCell {
         FREETEXT_CELL_TO_REDDAL_FREETEXT_CELL_MAP.put(LadderTextCell.R4C3, R4C3);
         FREETEXT_CELL_TO_REDDAL_FREETEXT_CELL_MAP.put(LadderTextCell.R4C4, R4C4);
         FREETEXT_CELL_TO_REDDAL_FREETEXT_CELL_MAP.put(LadderTextCell.R4C5, R4C5);
+        FREETEXT_CELL_TO_REDDAL_FREETEXT_CELL_MAP.put(LadderTextCell.DESK_POSITION, DESK_POSITION);
     }
 
     private ReddalFreeTextCell(final String cellID) {

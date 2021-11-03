@@ -1,5 +1,6 @@
 package com.drwtrading.london.reddal.data;
 
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.reddal.fastui.html.ReddalFreeTextCell;
 import com.drwtrading.london.reddal.opxl.LadderNumberUpdate;
 import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
@@ -62,11 +63,15 @@ public class LadderMetaData {
         this.ladderTextDescription.put(cell, ladderText.description);
     }
 
-    public void setLadderNumber(final LadderNumberUpdate ladderNumber) {
+    public void setLadderNumber(final DecimalFormat formatter, final LadderNumberUpdate ladderNumber) {
         final ReddalFreeTextCell cell = ladderNumber.cell;
-        this.ladderTextNumberCells.put(cell, ladderNumber);
-        this.freeTextCells.remove(cell);
-        this.ladderTextDescription.put(cell, ladderNumber.description);
+        if (ReddalFreeTextCell.DESK_POSITION == cell) {
+            setDeskPosition(formatter, ladderNumber.value / Constants.NORMALISING_FACTOR);
+        } else {
+            this.ladderTextNumberCells.put(cell, ladderNumber);
+            this.freeTextCells.remove(cell);
+            this.ladderTextDescription.put(cell, ladderNumber.description);
+        }
     }
 
     public void setDeskPosition(final DecimalFormat formatter, final long position) {

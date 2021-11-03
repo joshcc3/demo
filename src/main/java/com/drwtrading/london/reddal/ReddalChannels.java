@@ -3,6 +3,7 @@ package com.drwtrading.london.reddal;
 import com.drwtrading.jetlang.autosubscribe.TypedChannel;
 import com.drwtrading.jetlang.autosubscribe.TypedChannels;
 import com.drwtrading.london.eeif.stack.manager.relations.StackCommunity;
+import com.drwtrading.london.icepie.transport.data.LadderTextColour;
 import com.drwtrading.london.indy.transport.data.ETFDef;
 import com.drwtrading.london.indy.transport.data.InstrumentDef;
 import com.drwtrading.london.reddal.autopull.autopuller.msgs.cmds.IAutoPullerCmd;
@@ -67,7 +68,7 @@ class ReddalChannels {
     final TypedChannel<LaserLine> laserLineData;
     final SelectIOChannel<Collection<LadderTextUpdate>> ladderText;
     final SelectIOChannel<Collection<LadderNumberUpdate>> ladderNumber;
-    final TypedChannel<LadderMetadata> metaData;
+    final SelectIOChannel<Collection<LadderTextColour>> ladderColour;
     final TypedChannel<OPXLDeskPositions> deskPositions;
     final TypedChannel<Position> position;
     final TypedChannel<PKSExposures> pksExposures;
@@ -135,7 +136,7 @@ class ReddalChannels {
         this.laserLineData = create(LaserLine.class);
         this.ladderText = new SelectIOChannel<>();
         this.ladderNumber = new SelectIOChannel<>();
-        this.metaData = create(LadderMetadata.class);
+        this.ladderColour = new SelectIOChannel<>();
         this.deskPositions = create(OPXLDeskPositions.class);
         this.position = create(Position.class);
         this.pksExposures = TypedChannels.create(PKSExposures.class);

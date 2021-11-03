@@ -23,6 +23,7 @@ import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.FutureExpiryCalc;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.staticData.MIC;
+import com.drwtrading.london.icepie.transport.data.LadderTextColour;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
 import com.drwtrading.london.reddal.UserCycleRequest;
@@ -68,7 +69,6 @@ import com.drwtrading.london.reddal.workingOrders.WorkingOrdersByPrice;
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.london.websocket.WebSocketOutputDispatcher;
-import com.drwtrading.photons.ladder.LadderText;
 import com.drwtrading.websockets.WebSocketConnected;
 import com.drwtrading.websockets.WebSocketDisconnected;
 import com.drwtrading.websockets.WebSocketInboundData;
@@ -267,7 +267,7 @@ public class LadderPresenter implements IStackPresenterCallback {
         if (null != isinsGoingEx) {
             ladderView.setIsinsGoingEx(isinsGoingEx);
         }
-        if(null != shortSensitiveIsins) {
+        if (null != shortSensitiveIsins) {
             ladderView.setShortSensitiveIsins(shortSensitiveIsins);
         }
         viewBySocket.put(connected.getOutboundChannel(), ladderView);
@@ -402,7 +402,6 @@ public class LadderPresenter implements IStackPresenterCallback {
         return prefs;
     }
 
-
     private static int getRollsHence(final String leg, final FutureConstant futureFromSymbol, final FutureExpiryCalc expiryCalc) {
         for (int firstExp = 0; firstExp < 8; firstExp++) {
             final String firstSymbol = expiryCalc.getFutureCode(futureFromSymbol, firstExp);
@@ -453,15 +452,6 @@ public class LadderPresenter implements IStackPresenterCallback {
         }
     }
 
-    @Subscribe
-    public void on(final LadderText ladderText) {
-        if ("execution".equals(ladderText.getCell())) {
-            displayTradeIssue(ladderText.getSymbol(), ladderText.getText());
-        } else {
-            getMetadataBySymbol(ladderText.getSymbol()).onLadderText(ladderText);
-        }
-    }
-
     public void setLadderText(final Collection<LadderTextUpdate> ladderTexts) {
 
         for (final LadderTextUpdate ladderText : ladderTexts) {
@@ -474,7 +464,7 @@ public class LadderPresenter implements IStackPresenterCallback {
 
         for (final LadderNumberUpdate ladderText : ladderNumberUpdates) {
             final LadderMetaData metaData = getMetadataBySymbol(ladderText.symbol);
-            metaData.setLadderNumber(ladderText);
+            metaData.setLadderNumber(oneDP, ladderText);
         }
     }
 
@@ -594,6 +584,14 @@ public class LadderPresenter implements IStackPresenterCallback {
         viewBySocket.values().forEach(ladderView -> ladderView.setIsinsGoingEx(isinsGoingEx.isins));
     }
 
+    public void setLadderColour(final Collection<LadderTextColour> ladderTextColours) {
+        for (final LadderTextColour ladderTextColour : ladderTextColours) {
+            final Collection<LadderView> ladderViews = viewsBySymbol.get(ladderTextColour.symbol);
+            for (final LadderView ladderView : ladderViews) {
+                ladderView.setColour(ladderTextColour.colour);
+            }
+        }
+    }
 
     public void setShortSensitiveIsins(final Set<String> isins) {
         this.shortSensitiveIsins = isins;

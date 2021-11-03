@@ -12,6 +12,7 @@ import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.monitoring.IFuseBox;
 import com.drwtrading.london.eeif.utils.staticData.FutureConstant;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
+import com.drwtrading.london.icepie.transport.data.BackgroundColour;
 import com.drwtrading.london.icepie.transport.io.LadderTextNumberUnits;
 import com.drwtrading.london.reddal.ReddalComponents;
 import com.drwtrading.london.reddal.ReplaceCommand;
@@ -173,6 +174,7 @@ public class LadderView implements UiEventHandler {
     private GoingExState exState = GoingExState.Unknown;
     private Set<String> shortSensitiveIsins;
     private boolean isShortSensitive;
+    private BackgroundColour backgroundColour;
 
     LadderView(final IFuseBox<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view,
             final String ewokBaseURL, final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
@@ -217,6 +219,7 @@ public class LadderView implements UiEventHandler {
         ui.setHandler(this);
 
         this.activeView = LadderNoView.SINGLETON;
+        this.backgroundColour = BackgroundColour.NONE;
     }
 
     void replaceSymbol(final ReplaceCommand replaceCommand) {
@@ -966,6 +969,10 @@ public class LadderView implements UiEventHandler {
         this.isinsGoingEx = isinsGoingEx;
         this.exState = GoingExState.Unknown;
         checkGoingEx();
+    }
+
+    void setColour(final BackgroundColour backgroundColour) {
+        this.backgroundColour = backgroundColour;
     }
 
     void setShortSensitiveIsins(final Set<String> isins) {
