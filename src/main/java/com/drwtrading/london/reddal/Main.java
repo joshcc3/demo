@@ -804,18 +804,6 @@ public class Main {
         final ConfigGroup opxlConfig = root.getEnabledGroup("opxl");
         final ConfigGroup icepieConfig = app.config.getEnabledGroup("icepie");
 
-        if (null != opxlConfig) {
-            // Desk Position
-            final ConfigGroup deskPositionConfig = opxlConfig.getEnabledGroup("deskposition");
-            if (null != deskPositionConfig) {
-
-                final Set<String> keys = deskPositionConfig.getSet("keys");
-                final OpxlPositionSubscriber opxlReader =
-                        new OpxlPositionSubscriber(opxlSelectIO, opxlMonitor, keys, channels.deskPositions);
-                app.addStartUpAction(opxlReader::start);
-            }
-        }
-
         if (null != icepieConfig) {
             initialiseIcePieClient(app, channels);
         } else {
@@ -1014,7 +1002,6 @@ public class Main {
 
         channels.laserLineData.subscribe(fiberBuilder.getFiber(), ladderPresenter::overrideLaserLine);
         channels.ladderClickTradingIssues.subscribe(fiberBuilder.getFiber(), ladderPresenter::displayTradeIssue);
-        channels.deskPositions.subscribe(fiberBuilder.getFiber(), ladderPresenter::setDeskPositions);
         channels.pksExposures.subscribe(fiberBuilder.getFiber(), ladderPresenter::setPKSExposures);
         channels.recenterLadder.subscribe(fiberBuilder.getFiber(), ladderPresenter::recenterLadder);
 
