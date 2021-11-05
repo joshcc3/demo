@@ -12,6 +12,12 @@ public enum CSSClass {
     ACTIVE_MODE("active_mode"),
     ENABLED("enabled"),
 
+    BG_RED("bg_red"),
+    BG_ORANGE("bg_orange"),
+    BG_YELLOW("bg_yellow"),
+    BG_WHITE("bg_white"),
+    BG_NONE("bg_none"),
+
     SLOW("slow"),
     VERY_SLOW("very-slow"),
 
@@ -164,4 +170,5 @@ public enum CSSClass {
     public static CSSClass getByOrdinal(final int ordinal) {
         return CLASSES[ordinal];
     }
+
 }

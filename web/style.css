@@ -1243,8 +1243,24 @@ div#after_hours_weight.isPoisoned {
 	color: white;
 }
 
-div#text.going_ex {
+div#text.bg_red {
+	background-color: red;
+}
+
+div#text.bg_yellow {
 	background-color: yellow;
+}
+
+div#text.bg_none {
+	background-color: inherit;
+}
+
+div#text.bg_orange {
+	background-color: orange;
+}
+
+div#text.bg_white {
+	background-color: white;
 }
 
 #ladder.zoomed_out .price.column, #ladder.zoomed_out .offer.column {

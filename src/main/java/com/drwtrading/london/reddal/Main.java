@@ -69,7 +69,6 @@ import com.drwtrading.london.indy.transport.IndyTransportComponents;
 import com.drwtrading.london.indy.transport.cache.IndyCacheFactory;
 import com.drwtrading.london.jetlang.DefaultJetlangFactory;
 import com.drwtrading.london.logging.JsonChannelLogger;
-import com.drwtrading.london.network.NetworkInterfaces;
 import com.drwtrading.london.reddal.autopull.autopuller.onMD.AutoPuller;
 import com.drwtrading.london.reddal.autopull.autopuller.ui.AutoPullPersistence;
 import com.drwtrading.london.reddal.autopull.autopuller.ui.AutoPullerUI;
@@ -106,8 +105,6 @@ import com.drwtrading.london.reddal.opxl.OPXLSpreadnoughtFilters;
 import com.drwtrading.london.reddal.opxl.OpxlDividendTweets;
 import com.drwtrading.london.reddal.opxl.OpxlExDateSubscriber;
 import com.drwtrading.london.reddal.opxl.OpxlFXCalcUpdater;
-import com.drwtrading.london.reddal.opxl.OpxlPositionSubscriber;
-import com.drwtrading.london.reddal.opxl.OpxlShortSensitiveIsinsSubscriber;
 import com.drwtrading.london.reddal.opxl.UltimateParentOPXL;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryClient;
@@ -192,8 +189,6 @@ import com.drwtrading.monitoring.stats.status.StatusStat;
 import com.drwtrading.photocols.PhotocolsConnection;
 import com.drwtrading.photocols.handlers.ConnectionAwareJetlangChannelHandler;
 import com.drwtrading.photocols.handlers.InboundTimeoutWatchdog;
-import com.drwtrading.photocols.handlers.JetlangChannelHandler;
-import com.drwtrading.photons.ladder.LadderMetadata;
 import com.drwtrading.simplewebserver.WebApplication;
 import com.drwtrading.websockets.WebSocketControlMessage;
 import drw.eeif.eeifoe.OrderEntryCommandMsg;
@@ -857,9 +852,6 @@ public class Main {
         final OpxlExDateSubscriber isinsGoingEx = new OpxlExDateSubscriber(opxlSelectIO, opxlMonitor, logDir, channels.isinsGoingEx);
         app.addStartUpAction(isinsGoingEx::start);
 
-        final OpxlShortSensitiveIsinsSubscriber shortSensitiveIsinsSubscriber =
-                new OpxlShortSensitiveIsinsSubscriber(opxlSelectIO, opxlMonitor, logDir, channels.shortSensitiveIsins);
-        app.addStartUpAction(shortSensitiveIsinsSubscriber::start);
 
         if (isFuturesSearchable) {
             final OpxlDividendTweets divTweets = new OpxlDividendTweets(opxlSelectIO, opxlMonitor, logDir, channels.stockAlerts);

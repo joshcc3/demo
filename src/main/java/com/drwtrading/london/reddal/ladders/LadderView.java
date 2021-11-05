@@ -53,6 +53,7 @@ import org.jetlang.channels.Publisher;
 
 import java.text.DecimalFormat;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -76,6 +77,7 @@ public class LadderView implements UiEventHandler {
     private static final int MINUS = 189;
 
     static final Map<InstType, Map<QtyButton, Integer>> INST_TYPE_BUTTON_QTIES;
+    static final EnumSet<CSSClass> BG_COLOUR_CLASSES;
 
     static {
         INST_TYPE_BUTTON_QTIES = new EnumMap<>(InstType.class);
@@ -120,6 +122,11 @@ public class LadderView implements UiEventHandler {
         INST_TYPE_BUTTON_QTIES.put(InstType.DR, equityQties);
         INST_TYPE_BUTTON_QTIES.put(InstType.EQUITY, equityQties);
         INST_TYPE_BUTTON_QTIES.put(InstType.ETF, equityQties);
+
+        BG_COLOUR_CLASSES = EnumSet.noneOf(CSSClass.class);
+        for (final BackgroundColour bgColour : BackgroundColour.values()) {
+            BG_COLOUR_CLASSES.add(CSSClass.getCSSClass("BG_" + bgColour.name()));
+        }
     }
 
     private final IFuseBox<ReddalComponents> monitor;
@@ -173,8 +180,7 @@ public class LadderView implements UiEventHandler {
     private Set<String> isinsGoingEx;
     private GoingExState exState = GoingExState.Unknown;
     private Set<String> shortSensitiveIsins;
-    private boolean isShortSensitive;
-    private BackgroundColour backgroundColour;
+    private CSSClass bgColourClass;
 
     LadderView(final IFuseBox<ReddalComponents> monitor, final WebSocketClient client, final UiPipeImpl ui, final ILadderUI view,
             final String ewokBaseURL, final Publisher<IOrderCmd> remoteOrderCommandToServerPublisher, final LadderOptions ladderOptions,
@@ -219,7 +225,7 @@ public class LadderView implements UiEventHandler {
         ui.setHandler(this);
 
         this.activeView = LadderNoView.SINGLETON;
-        this.backgroundColour = BackgroundColour.NONE;
+        this.bgColourClass = CSSClass.BG_NONE;
     }
 
     void replaceSymbol(final ReplaceCommand replaceCommand) {
@@ -517,11 +523,19 @@ public class LadderView implements UiEventHandler {
             final TheoValue theoValue = stackData.getTheoValue();
             headerPanel.setTheoValue(theoValue);
 
-            // Going ex
-            checkGoingEx();
-            ladderModel.setClass(HTML.TEXT, CSSClass.GOING_EX, exState == GoingExState.YES);
-            checkShortSensitive();
-            ladderModel.setClass(HTML.SYMBOL, CSSClass.SHORT_SENSITIVE, isShortSensitive);
+            for (final CSSClass cls : BG_COLOUR_CLASSES) {
+                ladderModel.setClass(HTML.TEXT, cls, false);
+            }
+            ladderModel.setClass(HTML.TEXT, bgColourClass, true);
+
+            //            // Going ex
+            //            checkGoingEx();
+            //            ladderModel.setClass(HTML.TEXT, CSSClass.GOING_EX, exState == GoingExState.YES);
+            //            checkShortSensitive();
+            //            ladderModel.setClass(HTML.SYMBOL, CSSClass.SHORT_SENSITIVE, isShortSensitive);
+
+            //            ladderModel.setClass(HTML.TEXT, CSSClass.);
+
         }
 
         if (null != stackData) {
@@ -972,7 +986,7 @@ public class LadderView implements UiEventHandler {
     }
 
     void setColour(final BackgroundColour backgroundColour) {
-        this.backgroundColour = backgroundColour;
+        this.bgColourClass = CSSClass.getCSSClass("BG_" + backgroundColour.name());
     }
 
     void setShortSensitiveIsins(final Set<String> isins) {
@@ -997,8 +1011,8 @@ public class LadderView implements UiEventHandler {
     }
 
     private void checkShortSensitive() {
-        final boolean bookAvailable = null != shortSensitiveIsins && null != marketData && null != marketData.getBook();
-        this.isShortSensitive = bookAvailable && this.shortSensitiveIsins.contains(marketData.getBook().getISIN());
+//        final boolean bookAvailable = null != shortSensitiveIsins && null != marketData && null != marketData.getBook();
+//        this.isShortSensitive = bookAvailable && this.shortSensitiveIsins.contains(marketData.getBook().getISIN());
     }
 
     enum GoingExState {
