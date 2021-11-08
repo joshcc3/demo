@@ -43,7 +43,6 @@ import com.drwtrading.london.reddal.ladders.settings.LadderSettingsStoreLadderPr
 import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
 import com.drwtrading.london.reddal.opxl.LadderNumberUpdate;
 import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
-import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntrySymbolChannel;
@@ -416,17 +415,6 @@ public class LadderPresenter implements IStackPresenterCallback {
 
         final SymbolStackData stackData = stackBySymbol.get(laserLine.symbol);
         stackData.overrideStackData(laserLine);
-    }
-
-    public void setDeskPositions(final OPXLDeskPositions deskPositions) {
-
-        for (final Map.Entry<String, Long> position : deskPositions.positions.entrySet()) {
-
-            final String symbol = position.getKey();
-            final LadderMetaData metaData = getMetadataBySymbol(symbol);
-
-            metaData.setDeskPosition(oneDP, position.getValue());
-        }
     }
 
     private LadderMetaData getMetadataBySymbol(final String symbol) {

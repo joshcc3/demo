@@ -21,7 +21,6 @@ import com.drwtrading.london.reddal.ladders.settings.LadderSettingsStoreLadderPr
 import com.drwtrading.london.reddal.opxl.ISINsGoingEx;
 import com.drwtrading.london.reddal.opxl.LadderNumberUpdate;
 import com.drwtrading.london.reddal.opxl.LadderTextUpdate;
-import com.drwtrading.london.reddal.opxl.OPXLDeskPositions;
 import com.drwtrading.london.reddal.opxl.UltimateParentMapping;
 import com.drwtrading.london.reddal.orderManagement.NibblerTransportConnected;
 import com.drwtrading.london.reddal.orderManagement.oe.OrderEntryCommandToServer;
@@ -52,7 +51,6 @@ import com.drwtrading.london.reddal.workingOrders.obligations.quoting.QuoteOblig
 import com.drwtrading.london.reddal.workspace.HostWorkspaceRequest;
 import com.drwtrading.london.reddal.workspace.SpreadContractSet;
 import com.drwtrading.monitoring.stats.status.StatusStat;
-import com.drwtrading.photons.ladder.LadderMetadata;
 import drw.eeif.photons.mrchill.Position;
 import org.jetlang.channels.Channel;
 import org.jetlang.channels.Publisher;
@@ -69,7 +67,6 @@ class ReddalChannels {
     final SelectIOChannel<Collection<LadderTextUpdate>> ladderText;
     final SelectIOChannel<Collection<LadderNumberUpdate>> ladderNumber;
     final SelectIOChannel<Collection<LadderTextColour>> ladderColour;
-    final TypedChannel<OPXLDeskPositions> deskPositions;
     final TypedChannel<Position> position;
     final TypedChannel<PKSExposures> pksExposures;
     final TypedChannel<NibblerTransportConnected> nibblerTransportConnected;
@@ -137,7 +134,6 @@ class ReddalChannels {
         this.ladderText = new SelectIOChannel<>();
         this.ladderNumber = new SelectIOChannel<>();
         this.ladderColour = new SelectIOChannel<>();
-        this.deskPositions = create(OPXLDeskPositions.class);
         this.position = create(Position.class);
         this.pksExposures = TypedChannels.create(PKSExposures.class);
         this.nibblerTransportConnected = create(NibblerTransportConnected.class);
