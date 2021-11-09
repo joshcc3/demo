@@ -138,7 +138,7 @@ public class ZoomableLadderTest {
         final LadderViewModel ladderModel = new LadderViewModel(uiPipe);
         ladderModel.extendToLevels(LEVELS);
         final int centerRow = LEVELS / 2;
-        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL);
+        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL, null);
         final Level3Book book = new Level3Book(bookViewer, SYMBOL, 1, INST_ID, InstType.EQUITY, TICK_TABLE, MDSource.HOTSPOT_EU, 1, 1);
         mdForSymbol.setL3Book(book);
         final WorkingOrdersByPrice workingOrders = new WorkingOrdersByPrice();
@@ -162,7 +162,7 @@ public class ZoomableLadderTest {
         final LadderViewModel ladderModel = new LadderViewModel(uiPipe);
         ladderModel.extendToLevels(LEVELS);
         final int centerRow = LEVELS / 2;
-        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL);
+        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL, null);
         final Level3Book book = new Level3Book(bookViewer, SYMBOL, 1, INST_ID, InstType.EQUITY, TICK_TABLE, MDSource.HOTSPOT_EU, 1, 1);
         mdForSymbol.setL3Book(book);
         final WorkingOrdersByPrice workingOrders = new WorkingOrdersByPrice();
@@ -189,7 +189,7 @@ public class ZoomableLadderTest {
         final LadderViewModel ladderModel = new LadderViewModel(uiPipe);
         ladderModel.extendToLevels(LEVELS);
         final int centerRow = LEVELS / 2;
-        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL);
+        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL, null);
         final Level3Book book = new Level3Book(bookViewer, SYMBOL, 1, INST_ID, InstType.EQUITY, TICK_TABLE, MDSource.HOTSPOT_EU, 1, 1);
         mdForSymbol.setL3Book(book);
         final WorkingOrdersByPrice workingOrders = new WorkingOrdersByPrice();
@@ -214,7 +214,7 @@ public class ZoomableLadderTest {
         final LadderViewModel ladderModel = new LadderViewModel(uiPipe);
         ladderModel.extendToLevels(LEVELS);
         final int centerRow = LEVELS / 2;
-        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL);
+        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL, null);
         final Level3Book book = new Level3Book(bookViewer, SYMBOL, 1, INST_ID, InstType.EQUITY, TICK_TABLE, MDSource.HOTSPOT_EU, 1, 1);
         mdForSymbol.setL3Book(book);
         final WorkingOrdersByPrice workingOrders = new WorkingOrdersByPrice();
@@ -240,7 +240,7 @@ public class ZoomableLadderTest {
         final LadderViewModel ladderModel = new LadderViewModel(uiPipe);
         ladderModel.extendToLevels(LEVELS);
         final int centerRow = LEVELS / 2;
-        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL);
+        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL, null);
         final Level3Book book = new Level3Book(bookViewer, SYMBOL, 1, INST_ID, InstType.EQUITY, TICK_TABLE, MDSource.HOTSPOT_EU, 1, 1);
         mdForSymbol.setL3Book(book);
         final WorkingOrdersByPrice workingOrders = new WorkingOrdersByPrice();
@@ -270,7 +270,7 @@ public class ZoomableLadderTest {
         final LadderViewModel ladderModel = new LadderViewModel(uiPipe);
         ladderModel.extendToLevels(LEVELS);
         final int centerRow = LEVELS / 2;
-        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL);
+        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL, null);
         final Level3Book book = new Level3Book(bookViewer, SYMBOL, 1, INST_ID, InstType.EQUITY, TICK_TABLE, MDSource.HOTSPOT_EU, 1, 1);
         mdForSymbol.setL3Book(book);
         final WorkingOrdersByPrice workingOrders = new WorkingOrdersByPrice();
@@ -300,7 +300,7 @@ public class ZoomableLadderTest {
         final LadderViewModel ladderModel = new LadderViewModel(uiPipe);
         ladderModel.extendToLevels(LEVELS);
         final int centerRow = LEVELS / 2;
-        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL);
+        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL, null);
         final Level3Book book = new Level3Book(bookViewer, SYMBOL, 1, INST_ID, InstType.EQUITY, TICK_TABLE, MDSource.HOTSPOT_EU, 1, 1);
         mdForSymbol.setL3Book(book);
         final WorkingOrdersByPrice workingOrders = new WorkingOrdersByPrice();
@@ -340,7 +340,7 @@ public class ZoomableLadderTest {
         final LadderViewModel ladderModel = new LadderViewModel(uiPipe);
         ladderModel.extendToLevels(LEVELS);
         final int centerRow = LEVELS / 2;
-        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL);
+        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL, null);
         final Level3Book book = new Level3Book(bookViewer, SYMBOL, 1, INST_ID, InstType.EQUITY, TICK_TABLE, MDSource.HOTSPOT_EU, 1, 1);
         mdForSymbol.setL3Book(book);
         final WorkingOrdersByPrice workingOrders = new WorkingOrdersByPrice();

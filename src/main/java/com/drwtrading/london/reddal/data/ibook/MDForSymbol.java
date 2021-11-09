@@ -15,14 +15,16 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-public class MDForSymbol {
+public class MDForSymbol implements IMDCallback {
 
     public final String symbol;
+    public IBook<?> frontMonthBook;
 
     private final Set<Object> listeners;
 
     private final boolean isPriceInverted;
     private final TradeTracker tradeTracker;
+    private final DepthBookSubscriber depthBookSubscriber;
 
     private final ArrayList<IMDCallback> bookUpdateCallbacks;
 
@@ -34,9 +36,10 @@ public class MDForSymbol {
 
     private boolean isReverseSpread;
 
-    public MDForSymbol(final String symbol) {
+    public MDForSymbol(final String symbol, final DepthBookSubscriber depthBookSubscriber) {
 
         this.symbol = symbol;
+        this.depthBookSubscriber = depthBookSubscriber;
 
         this.listeners = new HashSet<>();
 
@@ -56,12 +59,6 @@ public class MDForSymbol {
     public void setBook(final IBook<?> book) {
 
         this.book = book;
-        if (InstType.FUTURE_SPREAD == book.getInstType()) {
-
-            final String frontMonth = book.getSymbol().split("-")[0];
-            final FutureConstant future = FutureConstant.getFutureFromSymbol(frontMonth);
-            isReverseSpread = null != future && future.isReverseSpread;
-        }
 
         this.tradeMIC = getTradeMIC(book);
 
@@ -78,6 +75,27 @@ public class MDForSymbol {
         final int decimalPlaces = Math.max(0, 10 - leastSigDigit);
         this.df = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, decimalPlaces);
         this.nonTrailingDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 1, decimalPlaces);
+
+        if (InstType.FUTURE_SPREAD == book.getInstType()) {
+
+            final String frontMonth = book.getSymbol().split("-")[0];
+            final FutureConstant future = FutureConstant.getFutureFromSymbol(frontMonth);
+            isReverseSpread = null != future && future.isReverseSpread;
+
+            if (null != depthBookSubscriber) {
+                depthBookSubscriber.subscribeForMDCallbacks(frontMonth, this);
+            }
+        }
+
+    }
+
+    @Override
+    public void bookUpdated(final MDForSymbol mdForSymbol) {
+        final IBook<?> futureBook = mdForSymbol.book;
+        if (InstType.FUTURE_SPREAD == this.book.getInstType() || InstType.FUTURE == futureBook.getInstType() ||
+                futureBook.getSymbol().startsWith(symbol)) {
+            frontMonthBook = futureBook;
+        }
     }
 
     private static MIC getTradeMIC(final IInstrument book) {
@@ -175,4 +193,5 @@ public class MDForSymbol {
     void unsubscribed() {
         tradeTracker.clear();
     }
+
 }

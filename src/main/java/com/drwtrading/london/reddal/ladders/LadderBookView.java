@@ -634,6 +634,7 @@ public class LadderBookView implements ILadderBoard {
             final LaserLine navLaserLine = stackData.getNavLaserLine();
             final LaserLine spreadnoughtLine = stackData.getSpreadnoughtLaserLine();
             final BookPanel bookPanel = ladderModel.getBookPanel();
+            final InstType instType = null == marketData.getBook() ? InstType.UNKNOWN : marketData.getBook().getInstType();
 
             switch (pricingModes.get()) {
                 case RAW: {
@@ -642,20 +643,23 @@ public class LadderBookView implements ILadderBoard {
                 }
                 case BPS: {
 
-                    if (theoLine.isValid()) {
+                    if (InstType.FUTURE_SPREAD == instType && theoLine.isValid() && bookIsValid(marketData.frontMonthBook)) {
+                        final long basePrice = getMid(marketData.frontMonthBook);
+                        drawBPSBook(bookPanel, theoLine.getValue(), basePrice);
+                    } else if (InstType.FUTURE_SPREAD != instType && theoLine.isValid()) {
 
                         final long basePrice = theoLine.getValue();
-                        drawBPSBook(bookPanel, basePrice);
+                        drawBPSBook(bookPanel, basePrice, basePrice);
 
                     } else if (spreadnoughtLine.isValid()) {
 
                         final long basePrice = spreadnoughtLine.getValue();
-                        drawBPSBook(bookPanel, basePrice);
+                        drawBPSBook(bookPanel, basePrice, basePrice);
 
                     } else if (isFXInst && hasBestBid()) {
 
                         final long basePrice = marketData.getBook().getBestBid().getPrice();
-                        drawBPSBook(bookPanel, basePrice);
+                        drawBPSBook(bookPanel, basePrice, basePrice);
 
                     } else {
 
@@ -677,12 +681,21 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private void drawBPSBook(final BookPanel bookPanel, final long basePrice) {
+    private static long getMid(final IBook<?> frontMonthBook) {
+        return (frontMonthBook.getBestBid().getPrice() + frontMonthBook.getBestAsk().getPrice()) / 2;
+    }
+
+    private static boolean bookIsValid(final IBook<?> frontMonthBook) {
+        return null != frontMonthBook && frontMonthBook.isValid() && null != frontMonthBook.getBestBid() &&
+                null != frontMonthBook.getBestAsk();
+    }
+
+    private void drawBPSBook(final BookPanel bookPanel, final long anchor, final long basePrice) {
         bookPanel.setPricingMode(PricingMode.BPS);
 
         for (int i = 0; i < levels; ++i) {
             final BookPanelRow row = bookPanel.getRow(i);
-            final double points = (10000d * (row.getPrice() - basePrice)) / basePrice;
+            final double points = (10000d * (row.getPrice() - anchor)) / basePrice;
             bookPanel.setBPS(row, points);
         }
     }

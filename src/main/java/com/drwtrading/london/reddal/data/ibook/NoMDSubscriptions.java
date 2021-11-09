@@ -7,12 +7,12 @@ public class NoMDSubscriptions implements IMDSubscriber {
 
     @Override
     public MDForSymbol subscribeForMD(final String symbol, final Object listener) {
-        return new MDForSymbol(symbol);
+        return new MDForSymbol(symbol, null);
     }
 
     @Override
     public MDForSymbol subscribeForMDCallbacks(final String symbol, final IMDCallback callback) {
-        return new MDForSymbol(symbol);
+        return new MDForSymbol(symbol, null);
     }
 
     @Override

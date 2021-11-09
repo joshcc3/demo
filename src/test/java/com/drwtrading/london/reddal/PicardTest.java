@@ -228,7 +228,7 @@ public class PicardTest {
         book.setStatus(marketState);
         book.setValidity(true);
 
-        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL);
+        final MDForSymbol mdForSymbol = new MDForSymbol(SYMBOL, null);
         Mockito.when(bookSubscriber.subscribeForMD(Mockito.any(), Mockito.any())).thenReturn(mdForSymbol);
         mdForSymbol.setBook(book);
     }

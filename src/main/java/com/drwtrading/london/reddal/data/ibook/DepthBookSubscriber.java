@@ -36,7 +36,7 @@ public class DepthBookSubscriber implements IMDSubscriber {
 
         final MDForSymbol mdForSymbol = mdForSymbols.get(symbol);
         if (null == mdForSymbol) {
-            final MDForSymbol newMDForSymbol = new MDForSymbol(symbol);
+            final MDForSymbol newMDForSymbol = new MDForSymbol(symbol, this);
             mdForSymbols.put(symbol, newMDForSymbol);
             return addListener(newMDForSymbol, listener);
         } else {
