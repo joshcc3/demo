@@ -45,6 +45,10 @@ $(function () {
 	$("#setRFQConfig").click(function () {
 		setAllRFQConfig();
 	});
+
+	$("#setEMConfig").click(function () {
+		setAllRFQConfig();
+	});
 });
 
 function removeAll(nibblerName) {
@@ -117,6 +121,20 @@ function setAllRFQConfig() {
 		500, 50, 1, 3, 1.0,
 		0, false, 0, 0, 0,
 		1, 10000000, 1, 100, 1, 1, false, false, 1, 5, 100000, 0, 0, 0, 0, 0);
+
+	forceRowChanged(massControlRow);
+}
+
+function setAllEMConfig() {
+
+	const massControlRow = $("#massControlALL");
+
+	setRowDetails(massControlRow,
+		500, true, false, 300, false, 50, 100, 1, false, 0,
+		500, 50,
+		500, 50, 1, 3, 1.0, 0,
+		false, 0, 0, 0,
+		10, 1000000, 1, 100, 10, 2, false, true, 1, 50, 200, 100, 10, 100, 1000, 10000);
 
 	forceRowChanged(massControlRow);
 }
