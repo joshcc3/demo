@@ -131,7 +131,7 @@ public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents
 
         final QuotingObligation obligation = performance.getObligation();
 
-        final String quotingWidthObligation = Integer.toString(obligation.getQuotingWidth());
+        final String quotingWidthObligation = Double.toString(obligation.getQuotingWidth());
         final String qtyObligation = Integer.toString(obligation.getQuantity());
 
         final boolean isObligationMet = performance.isObligationMet();
@@ -165,7 +165,7 @@ public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents
                 if (testColsPresent(row, symbolCol, quantityCol, widthCol, widthType)) {
 
                     final int quantity = Integer.parseInt(row[quantityCol].toString());
-                    final int width = Integer.parseInt(row[widthCol].toString());
+                    final double width = Double.parseDouble(row[widthCol].toString());
                     final QuotingObligationType type = QuotingObligationType.valueOf(row[widthType].toString());
                     final QuotingObligation obligation = new QuotingObligation(row[symbolCol].toString(), quantity, width, type);
                     obligationMap.put(obligation.getSymbol(), obligation);

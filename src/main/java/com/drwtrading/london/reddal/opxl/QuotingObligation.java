@@ -10,10 +10,10 @@ public class QuotingObligation implements IJSONable, Jsonable {
 
     private final String symbol;
     private final int quantity;
-    private final int width;
+    private final double width;
     private final QuotingObligationType type;
 
-    public QuotingObligation(final String symbol, final int quantity, final int width, final QuotingObligationType type) {
+    public QuotingObligation(final String symbol, final int quantity, final double width, final QuotingObligationType type) {
         this.symbol = symbol;
         this.quantity = quantity;
         this.width = width;
@@ -42,7 +42,7 @@ public class QuotingObligation implements IJSONable, Jsonable {
         return symbol;
     }
 
-    public int getQuotingWidth() {
+    public double getQuotingWidth() {
         return width;
     }
 
