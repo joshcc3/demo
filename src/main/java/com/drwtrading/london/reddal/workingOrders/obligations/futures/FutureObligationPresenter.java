@@ -195,7 +195,7 @@ public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents
             final double indexPointsWide;
 
             if (0 < bidShowing.qty && 0 < askShowing.qty) {
-                indexPointsWide = (askShowing.price - bidShowing.price) / (double) bidShowing.price;
+                indexPointsWide = askShowing.price - bidShowing.price;
             } else {
                 indexPointsWide = Double.POSITIVE_INFINITY;
             }
@@ -204,7 +204,7 @@ public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents
 
             if (obligation.getType() == QuotingObligationType.BPS) {
 
-                final double bpsWide = indexPointsWide * INDEX_POINTS_TO_BPS_RATIO;
+                final double bpsWide = (indexPointsWide / bidShowing.price) * INDEX_POINTS_TO_BPS_RATIO;
                 final boolean isObligationMet = bpsWide <= obligation.getQuotingWidth() && obligation.getQuantity() <= qtyShowing;
                 return new FutureObligationPerformance(obligation, isObligationMet, bpsWide, qtyShowing);
             } else if (obligation.getType() == QuotingObligationType.INDEX_POINTS) {
