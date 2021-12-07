@@ -2,6 +2,7 @@ package com.drwtrading.london.reddal.workingOrders.obligations.futures;
 
 import com.drwtrading.london.eeif.opxl.OpxlClient;
 import com.drwtrading.london.eeif.opxl.reader.AOpxlLoggingReader;
+import com.drwtrading.london.eeif.utils.Constants;
 import com.drwtrading.london.eeif.utils.formatting.NumberFormatUtil;
 import com.drwtrading.london.eeif.utils.io.SelectIO;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
@@ -209,7 +210,9 @@ public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents
                 return new FutureObligationPerformance(obligation, isObligationMet, bpsWide, qtyShowing);
             } else if (obligation.getType() == QuotingObligationType.INDEX_POINTS) {
 
-                final boolean isObligationMet = indexPointsWide <= obligation.getQuotingWidth() && obligation.getQuantity() <= qtyShowing;
+                final double denormalisedIndexPointsWide = indexPointsWide / Constants.NORMALISING_FACTOR;
+                final boolean isObligationMet =
+                        denormalisedIndexPointsWide <= obligation.getQuotingWidth() && obligation.getQuantity() <= qtyShowing;
                 return new FutureObligationPerformance(obligation, isObligationMet, indexPointsWide, qtyShowing);
             } else {
                 throw new IllegalStateException("Unsupported future obligation quoting type [" + obligation.getType() + "].");
