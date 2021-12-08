@@ -43,6 +43,11 @@ public class JasperTradesListener implements ITradesListener {
     }
 
     @Override
+    public void connected() {
+        // NO-OP
+    }
+
+    @Override
     public void batchComplete() {
         // NO-OP
     }
