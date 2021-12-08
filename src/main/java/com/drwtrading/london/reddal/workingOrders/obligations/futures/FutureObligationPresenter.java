@@ -213,7 +213,7 @@ public class FutureObligationPresenter extends AOpxlLoggingReader<OPXLComponents
                 final double denormalisedIndexPointsWide = indexPointsWide / Constants.NORMALISING_FACTOR;
                 final boolean isObligationMet =
                         denormalisedIndexPointsWide <= obligation.getQuotingWidth() && obligation.getQuantity() <= qtyShowing;
-                return new FutureObligationPerformance(obligation, isObligationMet, indexPointsWide, qtyShowing);
+                return new FutureObligationPerformance(obligation, isObligationMet, denormalisedIndexPointsWide, qtyShowing);
             } else {
                 throw new IllegalStateException("Unsupported future obligation quoting type [" + obligation.getType() + "].");
             }
