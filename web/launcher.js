@@ -1,7 +1,7 @@
 const LADDER_HOST_PROP = "ladderHost";
 const WORKSPACE_HOST_PROP = "workspaceHost";
 
-const DEV_URLS = new Set(["localhost", "lnhq-wudrn01", "wud-ldnrn01", "lnlmp-rnewton1", "lnwld-jcoutinh1", "lnlmx-jcoutinh2"]);
+const DEV_URLS = new Set(["localhost", "lnhq-wudrn01", "wud-ldnrn01", "lnlmp-rnewton1", "lnwld-jcoutinh1", "lnlmx-jcoutinh2", "lnwld-mlouis1", "lnlmd-mlouis1"]);
 
 const FUTURES_LADDER_URLS = {ladderHost: "prod-futures-ladder.eeif.drw:9044", workspaceHost: "prod-futures-ladder.eeif.drw:9045"};
 const SELECTA_LADDERS_URLS = "http://prod-selecta.eeif.drw:9134/ladders_urls";
