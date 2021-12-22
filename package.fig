@@ -48,7 +48,6 @@ config default
 	include drw.london.sounds/20
 
 	# Photons
-	include log4j/1.2.16 # For protocols
 	include drw.london.eeif-photocols-client/579
 	include drw.london.eeif-phockets/319
 	include drw.eeif.photons.mrchill/2
