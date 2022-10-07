@@ -12,6 +12,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.IBookLevelWithOrders;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookOrder;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookReferencePrice;
 import com.drwtrading.london.eeif.utils.marketData.book.ReferencePoint;
+import com.drwtrading.london.reddal.data.DataUtils;
 import com.drwtrading.london.reddal.data.LaserLine;
 import com.drwtrading.london.reddal.data.SymbolStackData;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
@@ -35,6 +36,7 @@ class ShredderBookView {
     private static final int MAX_VISUAL_ORDER_SIZE = 20;
 
     private final NumberFormat BIG_NUMBER_DF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE + 'M', 0, 2);
+    private final NumberFormat NUMBER_DF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 0, 4);
 
     private long scalingFactor = 100;
     private long scalingStep = 10;
@@ -334,11 +336,11 @@ class ShredderBookView {
                 final IBookLevel askLevel = marketData.getBook().getAskLevel(price);
 
                 if (null != bidLevel) {
-                    final long bidLevelQty = bidLevel.getQty();
+                    final double bidLevelQty = DataUtils.normalizedQty(bidLevel.getQty());
                     bidQty(bookRow.htmlKeys, bidLevelQty);
                     ui.cls(bookRow.htmlKeys.bookSideKey, CSSClass.IMPLIED_BID, 0 < bidLevel.getImpliedQty());
                 } else if (null != askLevel) {
-                    final long askLevelQty = askLevel.getQty();
+                    final double askLevelQty = DataUtils.normalizedQty(askLevel.getQty());
                     askQty(bookRow.htmlKeys, askLevelQty);
                     ui.cls(bookRow.htmlKeys.bookSideKey, CSSClass.IMPLIED_ASK, 0 < askLevel.getImpliedQty());
                 } else {
@@ -392,9 +394,9 @@ class ShredderBookView {
     }
 
     private void setInitialScaling() {
-        long maxVolumeOfOrders = 0;
-        long volumeAtBid = 0;
-        long volumeAtAsk = 0;
+        double maxVolumeOfOrders = 0;
+        double volumeAtBid = 0;
+        double volumeAtAsk = 0;
         final IBook<?> book = marketData.getBook();
         if (null != book && book.isValid()) {
             IBookLevel bidLevel = book.getBestBid();
@@ -402,19 +404,19 @@ class ShredderBookView {
             for (int i = 0; i < 5; i++) {
 
                 if (null != bidLevel) {
-                    volumeAtBid = bidLevel.getQty();
+                    volumeAtBid = DataUtils.normalizedQty(bidLevel.getQty());
                     bidLevel = bidLevel.next();
                 }
                 if (null != askLevel) {
-                    volumeAtAsk = askLevel.getQty();
+                    volumeAtAsk = DataUtils.normalizedQty(askLevel.getQty());
                     askLevel = askLevel.next();
                 }
 
                 maxVolumeOfOrders = Math.max(maxVolumeOfOrders, Math.max(volumeAtBid, volumeAtAsk));
             }
 
-            scalingFactor = maxVolumeOfOrders;
-            scalingStep = scalingFactor / 20;
+            scalingFactor = (int)(maxVolumeOfOrders);
+            scalingStep = (int)scalingFactor / 20;
         }
     }
 
@@ -472,14 +474,14 @@ class ShredderBookView {
         }
     }
 
-    private void bidQty(final BookHTMLRow htmlRowKeys, final long qty) {
+    private void bidQty(final BookHTMLRow htmlRowKeys, final double qty) {
         ui.txt(htmlRowKeys.bookSideKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.bookSideKey, CSSClass.BID_ACTIVE, 0 < qty);
         ui.cls(htmlRowKeys.bookSideKey, CSSClass.ASK_ACTIVE, false);
         ui.cls(htmlRowKeys.bookSideKey, CSSClass.AUCTION, false);
     }
 
-    private void askQty(final BookHTMLRow htmlRowKeys, final long qty) {
+    private void askQty(final BookHTMLRow htmlRowKeys, final double qty) {
         ui.txt(htmlRowKeys.bookSideKey, formatMktQty(qty));
         ui.cls(htmlRowKeys.bookSideKey, CSSClass.ASK_ACTIVE, 0 < qty);
         ui.cls(htmlRowKeys.bookSideKey, CSSClass.BID_ACTIVE, false);
@@ -494,14 +496,12 @@ class ShredderBookView {
         scalingFactor = scalingFactor - scalingStep >= scalingStep ? scalingFactor - scalingStep : scalingFactor;
     }
 
-    private String formatMktQty(final long qty) {
-        if (qty <= 0) {
-            return HTML.EMPTY;
-        } else if (LadderBookView.REALLY_BIG_NUMBER_THRESHOLD <= qty) {
-            final double d = qty / 1000000d;
+    private String formatMktQty(final double qty) {
+        if (LadderBookView.REALLY_BIG_NUMBER_THRESHOLD <= qty) {
+            final double d = qty / 1_000_000d;
             return BIG_NUMBER_DF.format(d);
         } else {
-            return Long.toString(qty);
+            return NUMBER_DF.format(qty);
         }
     }
 

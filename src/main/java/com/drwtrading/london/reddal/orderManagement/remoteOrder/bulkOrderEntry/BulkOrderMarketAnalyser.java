@@ -6,6 +6,7 @@ import com.drwtrading.london.eeif.utils.marketData.book.BookMarketState;
 import com.drwtrading.london.eeif.utils.marketData.book.BookSide;
 import com.drwtrading.london.eeif.utils.marketData.book.IBook;
 import com.drwtrading.london.eeif.utils.marketData.book.IBookLevel;
+import com.drwtrading.london.reddal.data.DataUtils;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import com.drwtrading.london.reddal.data.ibook.MDForSymbol;
 import com.drwtrading.london.reddal.orderManagement.remoteOrder.bulkOrderEntry.msgs.GTCBettermentPrices;
@@ -88,7 +89,7 @@ public class BulkOrderMarketAnalyser {
 
                     if (currentPrice < bidPrice) {
 
-                        if (bestBid.getQty() < REQUIRED_LOTS_TO_BETTER) {
+                        if (DataUtils.normalizedQty(bestBid.getQty()) < REQUIRED_LOTS_TO_BETTER) {
                             bidPrices.put(symbol, bidPrice);
                         } else {
 
@@ -127,7 +128,7 @@ public class BulkOrderMarketAnalyser {
 
                     if (askPrice < currentPrice) {
 
-                        if (bestAsk.getQty() < REQUIRED_LOTS_TO_BETTER) {
+                        if (DataUtils.normalizedQty(bestAsk.getQty()) < REQUIRED_LOTS_TO_BETTER) {
                             askPrices.put(symbol, askPrice);
                         } else {
 

@@ -1,8 +1,14 @@
 package com.drwtrading.london.reddal.data;
 
+import com.drwtrading.london.eeif.utils.Constants;
+
 import java.text.DecimalFormat;
 
 public final class DataUtils {
+
+    public static double normalizedQty(final long qty) {
+        return qty / (double)Constants.NORMALISING_FACTOR;
+    }
 
     static String formatPosition(final DecimalFormat formatter, final double qty) {
 

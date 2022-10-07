@@ -12,13 +12,13 @@ public class BookPanelRow {
     private double humanPriceKey;
     private String formattedPrice;
 
-    private long workingOrderQty;
-    private long bidQty;
+    private double workingOrderQty;
+    private double bidQty;
 
     private PricingMode priceType;
     private double displayPrice;
 
-    private long askQty;
+    private double askQty;
     private long volume;
     private long lastTradePriceVolume;
 
@@ -77,9 +77,9 @@ public class BookPanelRow {
         }
     }
 
-    boolean setWorkingOrderQty(final long workingOrderQty) {
+    boolean setWorkingOrderQty(final double workingOrderQty) {
 
-        if (this.workingOrderQty != workingOrderQty) {
+        if (Constants.EPSILON < Math.abs(this.workingOrderQty - workingOrderQty)) {
             this.workingOrderQty = workingOrderQty;
             return true;
         } else {
@@ -87,9 +87,9 @@ public class BookPanelRow {
         }
     }
 
-    boolean setBidQty(final long qty) {
+    boolean setBidQty(final double qty) {
 
-        if (this.bidQty != qty) {
+        if (Constants.EPSILON < Math.abs(this.bidQty - qty)) {
             this.bidQty = qty;
             return true;
         } else {
@@ -97,9 +97,9 @@ public class BookPanelRow {
         }
     }
 
-    boolean setAskQty(final long qty) {
+    boolean setAskQty(final double qty) {
 
-        if (this.askQty != qty) {
+        if (Constants.EPSILON < Math.abs(this.askQty - qty)) {
             this.askQty = qty;
             return true;
         } else {

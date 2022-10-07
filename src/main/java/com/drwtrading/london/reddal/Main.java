@@ -312,8 +312,6 @@ public class Main {
 
         final WebApplication webApp = new WebApplication(webPort, channels.errorPublisher);
         System.out.println("http://localhost:" + webPort);
-        webApp.enableSingleSignOn();
-        webApp.protectContent(".*", User.viewers());
 
         app.addStartUpAction(() -> fibers.ui.execute(() -> {
             try {

@@ -48,6 +48,7 @@ public class BookPanel {
     private final DecimalFormat bpsDF;
     private final DecimalFormat efpDF;
     private final DecimalFormat bigNumberDF;
+    private final DecimalFormat numberDF;
 
     private CCY ccy;
     private MIC mic;
@@ -67,6 +68,7 @@ public class BookPanel {
         this.bpsDF = NumberFormatUtil.getDF(".0");
         this.efpDF = NumberFormatUtil.getDF("0.00");
         this.bigNumberDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE + 'M', 0, 2);
+        this.numberDF = NumberFormatUtil.getDF(NumberFormatUtil.SIMPLE, 0, 4);
 
         this.zoomLevel = 1;
         this.zoomIndex = 0;
@@ -211,7 +213,7 @@ public class BookPanel {
         }
     }
 
-    public void setWorkingQty(final BookPanelRow row, final long qty) {
+    public void setWorkingQty(final BookPanelRow row, final double qty) {
 
         if (row.setWorkingOrderQty(qty)) {
             final String formattedQty = formatMktQty(qty);
@@ -219,7 +221,7 @@ public class BookPanel {
         }
     }
 
-    public void setBidQty(final BookPanelRow row, final long qty) {
+    public void setBidQty(final BookPanelRow row, final double qty) {
 
         if (row.setBidQty(qty)) {
             final String formattedQty = formatMktQty(qty);
@@ -227,7 +229,8 @@ public class BookPanel {
         }
     }
 
-    public void setAskQty(final BookPanelRow row, final long qty) {
+
+    public void setAskQty(final BookPanelRow row, final double qty) {
 
         if (row.setAskQty(qty)) {
             final String formattedQty = formatMktQty(qty);
@@ -251,15 +254,13 @@ public class BookPanel {
         }
     }
 
-    private String formatMktQty(final long qty) {
+    private String formatMktQty(final double qty) {
 
-        if (qty < 1) {
-            return HTML.EMPTY;
-        } else if (REALLY_BIG_NUMBER_THRESHOLD <= qty) {
+        if (REALLY_BIG_NUMBER_THRESHOLD <= qty) {
             final double d = qty / 1_000_000d;
             return bigNumberDF.format(d);
         } else {
-            return Long.toString(qty);
+            return numberDF.format(qty);
         }
     }
 

@@ -252,7 +252,7 @@ public class LadderView implements UiEventHandler {
 
         final boolean wasBookView = null == bookView || activeView == bookView;
 
-        final User user = User.get(client.getUserName());
+        final User user = User.get(getUserName());
         final long bookCenteredPrice = null == bookView ? 0 : bookView.getCenteredPrice();
         this.bookView =
                 new LadderBookView(monitor, user, isTrader(), symbol, ladderModel, view, fxCalc, feesCalc, feeDF, ladderPrefsForSymbolUser,
@@ -595,7 +595,7 @@ public class LadderView implements UiEventHandler {
 
     void recenterLadderForUser(final RecenterLaddersForUser recenterLaddersForUser) {
 
-        if (client.getUserName().equals(recenterLaddersForUser.user)) {
+        if (getUserName().equals(recenterLaddersForUser.user)) {
             activeView.center();
             resetLastCenteredTime();
         }
@@ -603,7 +603,7 @@ public class LadderView implements UiEventHandler {
 
     void recenterLadder(final RecenterLadder recenterLadder) {
 
-        if (client.getUserName().equals(recenterLadder.username) && symbol.equals(recenterLadder.symbol)) {
+        if (getUserName().equals(recenterLadder.username) && symbol.equals(recenterLadder.symbol)) {
 
             activeView.setCenteredPrice(recenterLadder.price);
             resetLastCenteredTime();
@@ -704,7 +704,7 @@ public class LadderView implements UiEventHandler {
             lastHeartbeatSentMillis = null;
             lastHeartbeatRoundTripMillis = returnTimeMillis - sentTimeMillis;
             heartbeatRoundTripPublisher.publish(
-                    new HeartbeatRoundtrip(client.getUserName(), symbol, sentTimeMillis, returnTimeMillis, lastHeartbeatRoundTripMillis));
+                    new HeartbeatRoundtrip(getUserName(), symbol, sentTimeMillis, returnTimeMillis, lastHeartbeatRoundTripMillis));
         } else {
             throw new RuntimeException(
                     "Received heartbeat reply " + sentTimeMillis + " which does not match last sent heartbeat " + lastHeartbeatSentMillis);
@@ -744,7 +744,7 @@ public class LadderView implements UiEventHandler {
                 }
                 case "middle": {
                     if (label.startsWith(HTML.SYMBOL)) {
-                        final UserCycleRequest cycleRequest = new UserCycleRequest(client.getUserName());
+                        final UserCycleRequest cycleRequest = new UserCycleRequest(getUserName());
                         userCycleContractPublisher.publish(cycleRequest);
                         return;
                     }
@@ -799,7 +799,7 @@ public class LadderView implements UiEventHandler {
                 (label.startsWith(HTML.PRICE) || label.startsWith(HTML.STACK_BID_OFFSET) || label.startsWith(HTML.STACK_ASK_OFFSET) ||
                         label.startsWith(HTML.STACK_DIVIDER))) {
 
-            recenterLaddersForUser.publish(new RecenterLaddersForUser(client.getUserName()));
+            recenterLaddersForUser.publish(new RecenterLaddersForUser(getUserName()));
 
         } else if (label.equals(HTML.POSITION) || label.equals(HTML.TOTAL_TRADED)) {
             showTotalTraded = !showTotalTraded;
@@ -820,13 +820,13 @@ public class LadderView implements UiEventHandler {
                     contract = null;
             }
 
-            final UserCycleRequest cycleRequest = new UserCycleRequest(client.getUserName(), contract);
+            final UserCycleRequest cycleRequest = new UserCycleRequest(getUserName(), contract);
             userCycleContractPublisher.publish(cycleRequest);
             return;
         } else if (label.startsWith(HTML.PRICING) && "middle".equals(button)) {
             final PricingMode mode = PricingMode.getFromHtml(label);
             if (mode != null) {
-                final UserPriceModeRequest priceModeRequest = new UserPriceModeRequest(client.getUserName(), mode);
+                final UserPriceModeRequest priceModeRequest = new UserPriceModeRequest(getUserName(), mode);
                 userPriceModeRequestPublisher.publish(priceModeRequest);
             }
         } else {
@@ -947,8 +947,12 @@ public class LadderView implements UiEventHandler {
     }
 
     private boolean isTrader() {
-        final User user = User.getUser(client.getUserName());
+        final User user = User.getUser(getUserName());
         return ladderOptions.traders.contains(user);
+    }
+
+    private String getUserName() {
+        return "JCOUTINHO";
     }
 
     void onSingleOrderCommand(final ISingleOrderCommand singleOrderCommand) {

@@ -951,8 +951,8 @@ public class LadderBookView implements ILadderBoard {
 
             rowPrice = bottomPrice;
             while (rowPrice <= topPrice) {
-                long askQty = 0;
-                long askImpliedQty = 0;
+                double askQty = 0;
+                double askImpliedQty = 0;
 
                 while (ask != null && ask.getPrice() <= rowPrice) {
                     askQty += ask.getQty();
@@ -1137,7 +1137,7 @@ public class LadderBookView implements ILadderBoard {
         }
     }
 
-    private void workingQty(final BookPanel bookPanel, final BookPanelRow bookPanelRow, final long qty, final BookSide side,
+    private void workingQty(final BookPanel bookPanel, final BookPanelRow bookPanelRow, final double qty, final BookSide side,
             final Set<CSSClass> orderTypes, final boolean hasEeifOEOrder) {
 
         bookPanel.setWorkingQty(bookPanelRow, qty);
@@ -1424,7 +1424,7 @@ public class LadderBookView implements ILadderBoard {
         ladderModel.setClass(row.htmlData.bookBidKey, CSSClass.AUCTION, isAuctionPrice);
     }
 
-    private void askQty(final BookPanelRow row, final long qty, final boolean isAuctionPrice) {
+    private void askQty(final BookPanelRow row, final double qty, final boolean isAuctionPrice) {
         final BookPanel bookPanel = ladderModel.getBookPanel();
         bookPanel.setAskQty(row, qty);
         ladderModel.setClass(row.htmlData.bookAskKey, CSSClass.ASK_ACTIVE, 0 < qty);
@@ -1798,9 +1798,9 @@ public class LadderBookView implements ILadderBoard {
         final StringBuilder keys = new StringBuilder();
         final StringBuilder eeifKeys = new StringBuilder();
         final Set<CSSClass> orderTypes = EnumSet.noneOf(CSSClass.class);
-        long managedOrderQty = 0;
-        long hiddenTickTakerQty = 0;
-        long totalQty = 0;
+        double managedOrderQty = 0;
+        double hiddenTickTakerQty = 0;
+        double totalQty = 0;
         BookSide side = null;
 
         void clear() {

@@ -12,6 +12,7 @@ import com.drwtrading.london.eeif.utils.marketData.fx.FXCalc;
 import com.drwtrading.london.eeif.utils.staticData.CCY;
 import com.drwtrading.london.eeif.utils.staticData.InstType;
 import com.drwtrading.london.eeif.utils.time.IClock;
+import com.drwtrading.london.reddal.data.DataUtils;
 import com.drwtrading.london.reddal.data.LaserLine;
 import com.drwtrading.london.reddal.data.ibook.IMDSubscriber;
 import org.jetlang.channels.Publisher;
@@ -268,7 +269,7 @@ public class PicardSpotter implements IPicardSpotter {
     private static double opportunitySizeForLevel(final long theoreticalValue, final long levelPrice, final long levelQty, final double wpv,
             final double fx) {
 
-        return (Math.abs(theoreticalValue - levelPrice) * levelQty / (double) Constants.NORMALISING_FACTOR) * wpv * fx;
+        return (Math.abs(theoreticalValue - levelPrice) * levelQty / (double) Constants.NORMALISING_FACTOR/ (double) Constants.NORMALISING_FACTOR) * wpv * fx;
     }
 
     private static double calculateOpportunitySize(final long theoreticalValue, IBookLevel level, final BookSide side, final double fx) {
